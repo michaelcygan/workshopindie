@@ -9,11 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WorkshopsRouteImport } from './routes/workshops'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InstantRouteImport } from './routes/instant'
+import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
+import { Route as CollabNewRouteImport } from './routes/collab.new'
 
+const WorkshopsRoute = WorkshopsRouteImport.update({
+  id: '/workshops',
+  path: '/workshops',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
@@ -24,9 +35,24 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeRoute = MeRouteImport.update({
+  id: '/me',
+  path: '/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InstantRoute = InstantRouteImport.update({
+  id: '/instant',
+  path: '/instant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollabRoute = CollabRouteImport.update({
+  id: '/collab',
+  path: '/collab',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,43 +60,113 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
+const CollabNewRoute = CollabNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CollabRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/collab': typeof CollabRouteWithChildren
+  '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/workshops': typeof WorkshopsRouteWithChildren
+  '/collab/new': typeof CollabNewRoute
+  '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/collab': typeof CollabRouteWithChildren
+  '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/workshops': typeof WorkshopsRouteWithChildren
+  '/collab/new': typeof CollabNewRoute
+  '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/collab': typeof CollabRouteWithChildren
+  '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
+  '/me': typeof MeRoute
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/workshops': typeof WorkshopsRouteWithChildren
+  '/collab/new': typeof CollabNewRoute
+  '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/onboarding' | '/signup'
+  fullPaths:
+    | '/'
+    | '/collab'
+    | '/instant'
+    | '/login'
+    | '/me'
+    | '/onboarding'
+    | '/signup'
+    | '/workshops'
+    | '/collab/new'
+    | '/workshops/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/onboarding' | '/signup'
-  id: '__root__' | '/' | '/login' | '/onboarding' | '/signup'
+  to:
+    | '/'
+    | '/collab'
+    | '/instant'
+    | '/login'
+    | '/me'
+    | '/onboarding'
+    | '/signup'
+    | '/workshops'
+    | '/collab/new'
+    | '/workshops/new'
+  id:
+    | '__root__'
+    | '/'
+    | '/collab'
+    | '/instant'
+    | '/login'
+    | '/me'
+    | '/onboarding'
+    | '/signup'
+    | '/workshops'
+    | '/collab/new'
+    | '/workshops/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CollabRoute: typeof CollabRouteWithChildren
+  InstantRoute: typeof InstantRoute
   LoginRoute: typeof LoginRoute
+  MeRoute: typeof MeRoute
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
+  WorkshopsRoute: typeof WorkshopsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/workshops': {
+      id: '/workshops'
+      path: '/workshops'
+      fullPath: '/workshops'
+      preLoaderRoute: typeof WorkshopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/signup': {
       id: '/signup'
       path: '/signup'
@@ -85,11 +181,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me': {
+      id: '/me'
+      path: '/me'
+      fullPath: '/me'
+      preLoaderRoute: typeof MeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/instant': {
+      id: '/instant'
+      path: '/instant'
+      fullPath: '/instant'
+      preLoaderRoute: typeof InstantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collab': {
+      id: '/collab'
+      path: '/collab'
+      fullPath: '/collab'
+      preLoaderRoute: typeof CollabRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -99,14 +216,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/workshops/new': {
+      id: '/workshops/new'
+      path: '/new'
+      fullPath: '/workshops/new'
+      preLoaderRoute: typeof WorkshopsNewRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
+    '/collab/new': {
+      id: '/collab/new'
+      path: '/new'
+      fullPath: '/collab/new'
+      preLoaderRoute: typeof CollabNewRouteImport
+      parentRoute: typeof CollabRoute
+    }
   }
 }
 
+interface CollabRouteChildren {
+  CollabNewRoute: typeof CollabNewRoute
+}
+
+const CollabRouteChildren: CollabRouteChildren = {
+  CollabNewRoute: CollabNewRoute,
+}
+
+const CollabRouteWithChildren =
+  CollabRoute._addFileChildren(CollabRouteChildren)
+
+interface WorkshopsRouteChildren {
+  WorkshopsNewRoute: typeof WorkshopsNewRoute
+}
+
+const WorkshopsRouteChildren: WorkshopsRouteChildren = {
+  WorkshopsNewRoute: WorkshopsNewRoute,
+}
+
+const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
+  WorkshopsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CollabRoute: CollabRouteWithChildren,
+  InstantRoute: InstantRoute,
   LoginRoute: LoginRoute,
+  MeRoute: MeRoute,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
+  WorkshopsRoute: WorkshopsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
