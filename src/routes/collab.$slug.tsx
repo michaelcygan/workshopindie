@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import type { Category } from "@/lib/categories";
+import { useDocumentMeta } from "@/lib/seo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/collab/$slug")({
@@ -42,6 +43,12 @@ function CollabDetail() {
       if (error) throw error;
       return data;
     },
+  });
+
+  useDocumentMeta({
+    title: post?.title,
+    description: post?.description?.slice(0, 160) ?? "Open collab call on Workshop.",
+    type: "article",
   });
 
   const sendContact = useMutation({

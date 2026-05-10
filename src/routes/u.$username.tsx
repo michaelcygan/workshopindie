@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
+import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/u/$username")({ component: ProfilePage });
@@ -82,6 +83,21 @@ function ProfilePage() {
     queryFn: () => fetchUserWorks(profile!.id),
     enabled: !!profile?.id,
   });
+
+  useDocumentMeta({
+    title: profile ? (profile.display_name || profile.username || "Creator") : undefined,
+    description: profile?.headline ?? profile?.bio?.slice(0, 160) ?? undefined,
+    image: profile?.avatar_url ?? profile?.cover_url ?? undefined,
+    type: "profile",
+  });
+  useJsonLd(profile ? {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: profile.display_name ?? profile.username ?? "Creator",
+    alternateName: profile.username ?? undefined,
+    description: profile.headline ?? profile.bio ?? undefined,
+    image: profile.avatar_url ?? undefined,
+  } : null);
 
   if (isLoading) {
     return (

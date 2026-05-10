@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
+import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { format } from "date-fns";
 
@@ -50,6 +51,28 @@ function WorkDetail() {
   }, [work?.id]);
 
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
+
+  useDocumentMeta({
+    title: work?.title,
+    description: work?.excerpt ?? work?.description?.slice(0, 160) ?? undefined,
+    image: work?.cover_url,
+    type: "article",
+  });
+  useJsonLd(work ? {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    name: work.title,
+    description: work.excerpt ?? work.description ?? undefined,
+    image: work.cover_url ?? undefined,
+    url: work.primary_url ?? undefined,
+    datePublished: work.published_at ?? work.created_at,
+    license: work.license_type,
+    interactionStatistic: [
+      { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: work.like_count },
+      { "@type": "InteractionCounter", interactionType: "https://schema.org/ViewAction", userInteractionCount: work.view_count },
+    ],
+    creator: credits.map((c) => ({ "@type": "Person", name: c.profiles?.display_name ?? c.profiles?.username ?? "Anon" })),
+  } : null);
 
   if (isLoading) {
     return <main className="mx-auto max-w-4xl px-4 py-10"><div className="aspect-video animate-pulse rounded-3xl bg-surface-2" /></main>;
