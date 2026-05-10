@@ -43,6 +43,8 @@ export function TopNav() {
           </Link>
 
           {loading ? null : user ? (
+            <>
+            <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition">
