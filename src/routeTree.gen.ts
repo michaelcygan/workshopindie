@@ -16,6 +16,7 @@ import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
+import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
@@ -67,6 +68,11 @@ const InstantRoute = InstantRouteImport.update({
 const CollabRoute = CollabRouteImport.update({
   id: '/collab',
   path: '/collab',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitiesRoute = CitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -158,6 +164,7 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/cities': typeof CitiesRoute
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/cities': typeof CitiesRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/cities': typeof CitiesRoute
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -235,6 +244,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/cities'
     | '/collab'
     | '/instant'
     | '/login'
@@ -260,6 +270,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/cities'
     | '/login'
     | '/me'
     | '/onboarding'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/cities'
     | '/collab'
     | '/instant'
     | '/login'
@@ -310,6 +322,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  CitiesRoute: typeof CitiesRoute
   CollabRoute: typeof CollabRouteWithChildren
   InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -371,6 +384,13 @@ declare module '@tanstack/react-router' {
       path: '/collab'
       fullPath: '/collab'
       preLoaderRoute: typeof CollabRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cities': {
+      id: '/cities'
+      path: '/cities'
+      fullPath: '/cities'
+      preLoaderRoute: typeof CitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -566,6 +586,7 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  CitiesRoute: CitiesRoute,
   CollabRoute: CollabRouteWithChildren,
   InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
@@ -580,3 +601,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
