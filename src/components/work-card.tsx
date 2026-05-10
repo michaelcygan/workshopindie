@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { Heart, Bookmark, Eye } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { CategoryChip } from "./category-chip";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
