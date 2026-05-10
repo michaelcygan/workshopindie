@@ -10,6 +10,7 @@ import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { ReportDialog } from "@/components/report-dialog";
+import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import type { Category } from "@/lib/categories";
