@@ -14,7 +14,7 @@ import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/me")({ component: MeDashboard });
 
-type Tab = "hosting" | "applied" | "participating" | "drafts";
+type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
@@ -90,6 +90,19 @@ function MeDashboard() {
     },
   });
 
+  const { data: credits = [], refetch: refetchCredits } = useQuery({
+    queryKey: ["me-credits", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("work_credits")
+        .select("id,role_label,hidden_from_profile,sort_order,work:works!inner(id,title,slug,category,cover_url,status,visibility,published_at)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
   if (!user) return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
 
   const name = profile?.display_name || profile?.username || "Creator";
@@ -98,6 +111,7 @@ function MeDashboard() {
     applied: applied.length,
     participating: participating.length,
     drafts: drafts.length,
+    credits: credits.length,
   };
 
   return (
@@ -125,7 +139,7 @@ function MeDashboard() {
       </motion.header>
 
       <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
-        {(["hosting", "applied", "participating", "drafts"] as Tab[]).map((t) => (
+        {(["hosting", "applied", "participating", "drafts", "credits"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
               tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
@@ -139,6 +153,7 @@ function MeDashboard() {
         {tab === "applied" && <AppliedList items={applied as any} />}
         {tab === "participating" && <ParticipatingList items={participating as any} />}
         {tab === "drafts" && <DraftsList items={drafts as any} />}
+        {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
       </div>
     </main>
   );
