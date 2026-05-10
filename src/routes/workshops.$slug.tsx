@@ -112,6 +112,10 @@ function WorkshopDetail() {
         )}
       </motion.div>
 
+      {isHost && <HostStatusBar ws={ws} onChanged={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
+
+      <CheckInPanel ws={ws} />
+
       <RolesAndApply ws={ws} />
 
       {isHost && <HostApplications ws={ws} />}
