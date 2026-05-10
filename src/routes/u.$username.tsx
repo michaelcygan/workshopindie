@@ -164,6 +164,7 @@ function ProfilePage() {
               <>
                 <FollowButton targetUserId={profile.id} />
                 <ReportDialog entityType="profile" entityId={profile.id} />
+                <BlockButton targetUserId={profile.id} />
               </>
             )}
             {isOwn && (
