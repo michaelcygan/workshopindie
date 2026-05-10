@@ -30,9 +30,9 @@ export function WorkCard({ work, className }: { work: WorkCardData; className?: 
         className,
       )}
     >
+      <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
       <div className="relative aspect-[4/5] overflow-hidden bg-surface-2">
         {work.cover_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
           <img
             src={work.cover_url}
             alt={work.title}
