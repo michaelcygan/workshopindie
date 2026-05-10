@@ -145,9 +145,7 @@ function ProfilePage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
-              {profile.creator_status === "founding" && (
-                <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[11px] font-medium text-violet">Founding</span>
-              )}
+              <CreatorBadge status={profile.creator_status} />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
