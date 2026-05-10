@@ -52,6 +52,29 @@ function WorkshopDetail() {
 
   const { data: ws, isLoading } = useQuery({ queryKey: ["workshop", slug], queryFn: () => fetchWorkshop(slug) });
 
+  useDocumentMeta({
+    title: ws?.title,
+    description: ws?.prompt ?? `A ${ws?.category ?? ""} Workshop on Workshop.`,
+    type: "article",
+  });
+  useJsonLd(ws ? {
+    "@context": "https://schema.org",
+    "@type": "Event",
+    name: ws.title,
+    description: ws.prompt ?? undefined,
+    startDate: ws.starts_at ?? undefined,
+    endDate: ws.ends_at ?? undefined,
+    eventAttendanceMode: ws.location_type === "online"
+      ? "https://schema.org/OnlineEventAttendanceMode"
+      : ws.location_type === "hybrid" ? "https://schema.org/MixedEventAttendanceMode"
+      : "https://schema.org/OfflineEventAttendanceMode",
+    eventStatus: ws.status === "canceled" ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
+    location: ws.location_type === "online"
+      ? { "@type": "VirtualLocation", url: ws.external_call_url ?? undefined }
+      : { "@type": "Place", name: ws.location_text ?? "TBD" },
+    organizer: ws.host ? { "@type": "Person", name: ws.host.display_name ?? ws.host.username ?? "Host" } : undefined,
+  } : null);
+
   if (isLoading) return <main className="mx-auto max-w-4xl px-4 py-14"><div className="h-8 w-48 animate-pulse rounded bg-surface-2" /></main>;
   if (!ws) return <main className="mx-auto max-w-4xl px-4 py-14 text-center"><h1 className="font-display text-3xl">Workshop not found</h1><Link to="/workshops" className="mt-4 inline-block text-primary underline">Back to Workshops</Link></main>;
 
