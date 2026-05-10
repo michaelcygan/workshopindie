@@ -23,11 +23,10 @@ type RoleDraft = { role_name: string; quantity: number; description: string };
 const COMP_OPTIONS: { id: CompType; label: string }[] = [
   { id: "paid", label: "Paid" },
   { id: "credit", label: "Credit only" },
-  { id: "rev_share" as CompType, label: "Rev share" }, // not in enum, will fall back
   { id: "negotiable", label: "Negotiable" },
   { id: "unpaid", label: "Unpaid / passion" },
   { id: "unspecified", label: "Not specified" },
-].filter((o) => ["paid", "credit", "negotiable", "unpaid", "unspecified"].includes(o.id));
+];
 
 function NewCollab() {
   const { user, loading } = useAuth();

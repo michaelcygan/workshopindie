@@ -18,6 +18,7 @@ import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
@@ -25,6 +26,7 @@ import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
+import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
@@ -71,6 +73,11 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkshopsRoute,
 } as any)
+const CollabIndexRoute = CollabIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CollabRoute,
+} as any)
 const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -106,6 +113,11 @@ const CollabNewRoute = CollabNewRouteImport.update({
   path: '/new',
   getParentRoute: () => CollabRoute,
 } as any)
+const CollabSlugRoute = CollabSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CollabRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
@@ -123,16 +136,17 @@ export interface FileRoutesByFullPath {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/collab/': typeof CollabIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
@@ -140,6 +154,7 @@ export interface FileRoutesByTo {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/collab': typeof CollabIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesById {
@@ -152,6 +167,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
@@ -159,6 +175,7 @@ export interface FileRoutesById {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/collab/': typeof CollabIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRouteTypes {
@@ -172,6 +189,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/workshops'
+    | '/collab/$slug'
     | '/collab/new'
     | '/me/edit'
     | '/u/$username'
@@ -179,16 +197,17 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/collab/'
     | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/collab'
     | '/instant'
     | '/login'
     | '/me'
     | '/onboarding'
     | '/signup'
+    | '/collab/$slug'
     | '/collab/new'
     | '/me/edit'
     | '/u/$username'
@@ -196,6 +215,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/collab'
     | '/workshops'
   id:
     | '__root__'
@@ -207,6 +227,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/workshops'
+    | '/collab/$slug'
     | '/collab/new'
     | '/me/edit'
     | '/u/$username'
@@ -214,6 +235,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/collab/'
     | '/workshops/'
   fileRoutesById: FileRoutesById
 }
@@ -296,6 +318,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
     }
+    '/collab/': {
+      id: '/collab/'
+      path: '/'
+      fullPath: '/collab/'
+      preLoaderRoute: typeof CollabIndexRouteImport
+      parentRoute: typeof CollabRoute
+    }
     '/workshops/new': {
       id: '/workshops/new'
       path: '/new'
@@ -345,15 +374,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabNewRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/collab/$slug': {
+      id: '/collab/$slug'
+      path: '/$slug'
+      fullPath: '/collab/$slug'
+      preLoaderRoute: typeof CollabSlugRouteImport
+      parentRoute: typeof CollabRoute
+    }
   }
 }
 
 interface CollabRouteChildren {
+  CollabSlugRoute: typeof CollabSlugRoute
   CollabNewRoute: typeof CollabNewRoute
+  CollabIndexRoute: typeof CollabIndexRoute
 }
 
 const CollabRouteChildren: CollabRouteChildren = {
+  CollabSlugRoute: CollabSlugRoute,
   CollabNewRoute: CollabNewRoute,
+  CollabIndexRoute: CollabIndexRoute,
 }
 
 const CollabRouteWithChildren =
