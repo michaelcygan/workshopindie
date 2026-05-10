@@ -33,6 +33,7 @@ export function TopNav() {
           <Link to="/workshops" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Workshops</Link>
           <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Instant</Link>
           <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Collab Board</Link>
+          <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Cities</Link>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
