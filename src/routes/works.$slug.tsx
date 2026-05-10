@@ -129,7 +129,10 @@ function WorkDetail() {
               </span>
             )}
           </div>
-          <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+          <div className="flex items-center gap-1">
+            <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+            <ReportDialog entityType="work" entityId={work.id} />
+          </div>
         </div>
 
         {/* Body */}
