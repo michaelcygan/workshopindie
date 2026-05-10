@@ -370,7 +370,9 @@ export type Database = {
           category: Database["public"]["Enums"]["category"] | null
           city_id: string | null
           created_at: string
+          description: string | null
           id: string
+          slug: string | null
           status: Database["public"]["Enums"]["instant_status"]
           title: string
         }
@@ -378,7 +380,9 @@ export type Database = {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title: string
         }
@@ -386,7 +390,9 @@ export type Database = {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
           created_at?: string
+          description?: string | null
           id?: string
+          slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title?: string
         }
