@@ -492,7 +492,7 @@ function ShippedBanner({ workshopId }: { workshopId: string }) {
 function HostStatusBar({ ws, onChanged }: { ws: Workshop; onChanged: () => void }) {
   const [busy, setBusy] = useState(false);
 
-  async function setStatus(status: string, extra: Record<string, any> = {}) {
+  async function setStatus(status: "draft" | "open" | "check_in" | "active" | "finalizing" | "shipped" | "archived" | "canceled", extra: Record<string, any> = {}) {
     setBusy(true);
     const { error } = await supabase.from("workshops").update({ status, ...extra }).eq("id", ws.id);
     setBusy(false);
