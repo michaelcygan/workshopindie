@@ -9,7 +9,17 @@ import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card"
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/workshops/")({ component: WorkshopsPage });
+export const Route = createFileRoute("/workshops/")({
+  head: () => ({
+    meta: [
+      { title: "Workshops — Find people. Make the thing. — Workshop" },
+      { name: "description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+      { property: "og:title", content: "Workshops — Workshop" },
+      { property: "og:description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+    ],
+  }),
+  component: WorkshopsPage,
+});
 
 type Filter = "upcoming" | "happening" | "all";
 
