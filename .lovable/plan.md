@@ -1,95 +1,125 @@
+# Workshop — Remaining Build Roadmap
 
-# Workshop — Pass 1: Foundation
+Audit of what ships vs. what's still stubbed, grouped into four focused passes. Each pass is a single message-sized chunk that ends in a usable, demoable surface.
 
-The full spec is huge. We'll build it across several messages. This first pass locks in the things future UI must build on: **the data model, the design system, auth, and a working shell** with the homepage Works Gallery rendering real data. Subsequent passes layer on Workshops, Instant, Collab Board, Profiles, and Admin.
+## What's already shipped (passes 1–3)
 
-Guiding rule for the build: **never use "Project" as the artifact word — always "Work."**
+- Data model + RLS for the entire spec (~20 tables, all enums)
+- Design system (Stripe × Partiful), auth, onboarding, top nav
+- Works Gallery + Work detail + publish-a-Work
+- Profile / Portfolio + edit
+- Workshops: schedule → browse → apply → host approve → realtime room → finalize-to-Work with auto-credits
 
-## What ships in Pass 1
+## What's still stubbed
 
-### 1. Lovable Cloud + full database schema
-Enable Cloud and create every table from the spec in one migration so future UI never blocks on schema work.
-
-Tables: `profiles`, `user_roles`, `follows`, `cities`, `works`, `work_credits`, `work_reactions`, `comments`, `workshops`, `workshop_roles`, `workshop_applications`, `workshop_participants`, `workshop_messages`, `workshop_tools`, `workshop_tool_items`, `collab_posts`, `collab_roles`, `collab_contact_events`, `instant_rooms`, `instant_messages`, `instant_presence`, `standing_meetups`, `meetup_occurrences`, `relationship_edges`, `reports`.
-
-Plus enums: `category`, `work_source_type`, `work_license`, `workshop_status`, `workshop_mode`, `visibility`, `location_type`, `application_status`, `participant_status`, `compensation_type`, `contact_mode`, `collab_post_status`, `creator_status`, `app_role`, `report_status`, `relationship_type`.
-
-Conventions: UUID PKs, `created_at` / `updated_at`, slugs on public objects, denormalized counters (`like_count`, `view_count`, `work_count`, etc.), indexes on the hot fields called out in the spec (category, city_id, status, starts_at, published_at, popularity_score, source_type, visibility).
-
-Roles live in a separate `user_roles` table with a `has_role()` security-definer function (no roles on profiles).
-
-### 2. Row Level Security on every table
-- Public read for `profiles`, published `works`, public `workshops`, open `collab_posts`, `cities`, `standing_meetups`, public `comments`, `work_reactions`.
-- Owner-only write for content the user creates.
-- Workshop-scoped read for `workshop_messages`, `workshop_participants`, `workshop_tools` (only confirmed participants + host).
-- Instant: only room presences can read messages; messages auto-expire.
-- `reports` writable by any authed user, readable only by admins.
-- Admins (via `has_role`) can moderate everything.
-
-### 3. Design system (tokens only — no surfaces yet)
-A bright, modern, "Stripe × Partiful" feel — premium and warm without being dark.
-
-- Background: near-white with a faint warm tint
-- Ink: deep near-black for type
-- Accent: a confident warm coral/sunset primary with a complementary electric violet for highlights and gradients
-- Soft pastel surfaces for category chips (Film, Music, Writing, Build, Visual each get a tint)
-- Generous radii (cards 16–24px), subtle elevation, fine 1px hairlines
-- Type: a modern geometric sans for UI, a refined display serif for editorial Work titles
-- Motion tokens: spring-based hover lift, fade/slide page transitions, shimmer on loading
-
-All defined as `oklch` tokens in `src/styles.css` and mapped through `@theme inline`. Components later consume only semantic classes (`bg-surface`, `text-ink`, `bg-accent`, etc.) — no raw colors anywhere.
-
-A small `<Motion>` primitive wrapping framer-motion presets so future surfaces feel alive consistently.
-
-### 4. Auth + app shell
-- Email/password + Google sign-in (Lovable Cloud defaults)
-- `profiles` row auto-created on signup via trigger
-- `_authenticated` layout route for gated areas
-- `/login`, `/signup`, `/onboarding` (name, username, city, categories, optional bio/avatar)
-- Top nav with the three primary CTAs from the spec: **Schedule a Workshop · Join Instant · Post a Collab** (CTAs route to placeholder pages this pass; wired in later passes)
-- Avatar menu with profile link + sign out
-
-### 5. Homepage with real Works Gallery
-The only fully-built surface this pass, so the product is immediately legible:
-- Hero with the headline "Find people. Make the thing. Show the Work." and the three CTAs
-- Works Gallery: responsive masonry, category filter chips (All / Film / Music / Writing / Build / Visual), sort (Newest / Trending), each card with cover, title, category tag, source label, credits row, like/save/view counts
-- Empty state copy from spec: "Be the first to ship a Work."
-- Placeholder strips for Happening Now / Upcoming Workshops / Collab Board / City Meetups / Featured Creators (real data wired in later passes)
-
-### 6. Seed data
-A small server-side seed (idempotent) that inserts ~12 Works across all five categories with Unsplash cover URLs, 2 cities, a few demo profiles, so the gallery looks alive on first load.
-
-## What's deferred to later passes
-
-| Pass | Surfaces |
+| Surface | Status |
 |---|---|
-| 2 | Profile / Portfolio pages, Work detail page, publish-a-Work flow |
-| 3 | Workshops: create, browse, detail, application/check-in, active room, finalize → Work |
-| 4 | Collab Board: list, detail, post, contact-relay |
-| 5 | Instant rooms, presence, ephemeral chat, recently-met |
-| 6 | Cities + standing meetups, Founding Creator perks, Admin, reports/moderation UI |
+| Collab Board | "Coming soon" placeholder |
+| Instant rooms | "Coming soon" placeholder |
+| City standing meetups | Tables exist, no UI |
+| Workshop check-in window | Not surfaced |
+| `/me` dashboard (my workshops, applications, drafts) | Redirects to profile only |
+| Comments on Works | Component exists, not mounted |
+| Reports / moderation | Tables + RLS, no Report button or admin queue |
+| Admin panel | None |
+| Founding Creator / city host badges | Enum exists, never shown |
+| Notifications | Not started |
+| Workshop tools (pinboard, shot list, outline) | Tables exist, not wired |
+| Per-route SEO metadata | Generic only |
 
-Each pass uses tables already built in Pass 1, so no schema churn.
+---
 
-## Technical details
+## Pass 4 — Collab Board (full loop)
 
-**Stack:** TanStack Start (already in the project) + Lovable Cloud (Supabase under the hood) + TanStack Query + framer-motion + Tailwind v4 tokens.
+The third top-level CTA. Same shape as Workshops but for ideas already in motion that need people, no clock.
 
-**Data access:** All sensitive reads/writes go through `createServerFn` with `requireSupabaseAuth`. Public Works Gallery uses the browser client + RLS public-read policy so it's cacheable and works without auth.
+**Routes & components**
+- `/collab` — browse open posts, filter by category + city, sort newest/most-needed
+- `/collab/new` — create post: title, description, category, city, timeline text, location mode, compensation type, contact mode (email relay vs external link), roles repeater
+- `/collab/$slug` — detail with role list, "I'm interested" button per role, contact CTA, related profiles
+- `CollabCard` component matching `WorkshopCard` styling
+- Contact event logged to `collab_contact_events` on send (email relay is just a logged event in v1; actual email delivery deferred)
 
-**Key files this pass:**
-- `supabase/migrations/00000000000000_schema.sql` — full schema, enums, indexes, RLS, triggers, `has_role()`
-- `src/styles.css` — full token set (colors, radii, shadows, motion)
-- `src/integrations/supabase/*` — auto-generated by Cloud
-- `src/lib/auth.ts`, `src/hooks/use-auth.ts`
-- `src/routes/__root.tsx` — providers + top nav + Toaster
-- `src/routes/_authenticated.tsx` — gate
-- `src/routes/login.tsx`, `signup.tsx`, `onboarding.tsx`
-- `src/routes/index.tsx` — homepage with real gallery
-- `src/components/work-card.tsx`, `category-chip.tsx`, `nav.tsx`, `hero.tsx`
-- `src/lib/works.functions.ts` — list/filter Works
-- `scripts/seed.ts` (server fn) — idempotent seed
+**Auto-publish hook:** if the collab eventually ships a Work, the creator can link `source_collab_post_id` from `/works/new`.
 
-**RLS sanity:** every table starts denied; policies are explicitly added per table. Counters (`like_count`, etc.) are updated via triggers, not client writes.
+## Pass 5 — Instant (presence + ephemeral chat)
 
-After Pass 1 you'll be able to: sign up, complete onboarding, land on a real homepage with a beautiful Works Gallery, and click the three primary CTAs (which take you to coming-soon scaffolds). Pass 2 onward fills those in.
+Lightweight always-on rooms. Shows "happening now" energy on the homepage.
+
+**Routes & components**
+- `/instant` — grid of rooms by category × city, live presence counts
+- `/instant/$id` — room view with presence list + ephemeral 24h messages, realtime via supabase channels
+- `/instant/new` — quick spawn (category + optional city + title)
+- Heartbeat: client upserts `instant_presence` every 30s, marks `dropped` on unmount
+- Background cleanup: messages auto-expire via `expires_at` (already in schema); add a daily server fn to hard-delete expired rows
+- Wire homepage "Happening Now" strip to real Instant data
+
+**Workshop spawn:** an Instant room can spawn a 1-hour Workshop in place — sets `workshop_mode = 'instant_spawned'` and migrates participants.
+
+## Pass 6 — Workshop polish + `/me` dashboard + Comments + SEO
+
+Closes the loop on the Workshop product and gives users a home base.
+
+**`/me` dashboard**
+- Tabs: Hosting · Applied · Participating · Drafts
+- Quick actions per workshop (manage applications, enter room, finalize)
+- Inline notifications stub (just badge counts from queries for now)
+
+**Workshop polish**
+- Check-in screen during the `check_in_opens_at → check_in_closes_at` window with a big "I'm here" button → flips application + participant to `checked_in`
+- Status auto-progression on key actions (open → check_in → active → finalizing → shipped)
+- Share modal with copy-link
+- Workshop tools (pinboard MVP only): single tool type that participants can post text/links to, scoped to room
+
+**Comments on Works**
+- Mount `CommentThread` on `/works/$slug`
+- Optimistic post + realtime updates
+
+**SEO**
+- Per-route `head()` for `/works/$slug`, `/workshops/$slug`, `/u/$username`, `/collab/$slug`
+- Pull og:image from cover_url; structured data (JSON-LD CreativeWork for Works)
+
+## Pass 7 — Trust & Safety + badges + Founding Creator perks
+
+The product can't go live without this layer.
+
+**Reporting**
+- "⋯ → Report" menu on Work, Profile, Workshop, Collab post, comment
+- Modal with reason picker (spam, harassment, IP, off-topic, other) + free text
+- Writes to `reports` table
+
+**Admin (`/admin`, gated by `has_role(uid, 'admin')`)**
+- Reports queue (open / reviewed / dismissed / action_taken)
+- One-click hide/unhide on reported entity
+- City + category management
+- Ability to grant Founding Creator / city host / verified creator badges
+
+**Badges everywhere**
+- Small chip next to display name on Profile, Work credits, Workshop host card
+- Founding Creator gets a subtle gradient badge
+
+**Notifications (lightweight, no separate table needed for v1)**
+- Derived feed from queries: unanswered applications you sent, new applications on workshops you host, workshops starting in <1h
+- Bell in top nav with count + popover list
+
+---
+
+## Order of execution
+
+1. **Pass 4 — Collab Board** (highest spec coverage gap, mirrors Workshops so it's fast)
+2. **Pass 5 — Instant** (the third pillar, makes the homepage feel alive)
+3. **Pass 6 — Polish** (`/me`, check-in, comments, SEO — turns it into a real product)
+4. **Pass 7 — Trust & Safety** (admin + reports + badges — required before publishing)
+
+## Explicitly out of scope (won't be built)
+
+Per your original spec — keeping the product focused:
+- Native video / audio / call hosting
+- Payments, contracts, escrow
+- Complex rights / licensing systems beyond the four enum options
+- Project-management features (tasks, gantt, time tracking)
+- Mobile native apps
+
+---
+
+Approve and I'll start with **Pass 4 — Collab Board**, or pick a different starting point.
