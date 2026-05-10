@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { ImageUpload } from "@/components/image-upload";
+import { ReportDialog } from "@/components/report-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
