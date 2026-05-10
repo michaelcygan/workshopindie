@@ -18,6 +18,7 @@ import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as InstantIndexRouteImport } from './routes/instant.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
@@ -25,6 +26,8 @@ import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as MeEditRouteImport } from './routes/me.edit'
+import { Route as InstantNewRouteImport } from './routes/instant.new'
+import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 
@@ -73,6 +76,11 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkshopsRoute,
 } as any)
+const InstantIndexRoute = InstantIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InstantRoute,
+} as any)
 const CollabIndexRoute = CollabIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -108,6 +116,16 @@ const MeEditRoute = MeEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => MeRoute,
 } as any)
+const InstantNewRoute = InstantNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => InstantRoute,
+} as any)
+const InstantIdRoute = InstantIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => InstantRoute,
+} as any)
 const CollabNewRoute = CollabNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -122,7 +140,7 @@ const CollabSlugRoute = CollabSlugRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/collab': typeof CollabRouteWithChildren
-  '/instant': typeof InstantRoute
+  '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
@@ -130,6 +148,8 @@ export interface FileRoutesByFullPath {
   '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/instant/$id': typeof InstantIdRoute
+  '/instant/new': typeof InstantNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -137,17 +157,19 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/collab/': typeof CollabIndexRoute
+  '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/instant/$id': typeof InstantIdRoute
+  '/instant/new': typeof InstantNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -155,13 +177,14 @@ export interface FileRoutesByTo {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/collab': typeof CollabIndexRoute
+  '/instant': typeof InstantIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/collab': typeof CollabRouteWithChildren
-  '/instant': typeof InstantRoute
+  '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
@@ -169,6 +192,8 @@ export interface FileRoutesById {
   '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/instant/$id': typeof InstantIdRoute
+  '/instant/new': typeof InstantNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -176,6 +201,7 @@ export interface FileRoutesById {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/collab/': typeof CollabIndexRoute
+  '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRouteTypes {
@@ -191,6 +217,8 @@ export interface FileRouteTypes {
     | '/workshops'
     | '/collab/$slug'
     | '/collab/new'
+    | '/instant/$id'
+    | '/instant/new'
     | '/me/edit'
     | '/u/$username'
     | '/works/$slug'
@@ -198,17 +226,19 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/collab/'
+    | '/instant/'
     | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/instant'
     | '/login'
     | '/me'
     | '/onboarding'
     | '/signup'
     | '/collab/$slug'
     | '/collab/new'
+    | '/instant/$id'
+    | '/instant/new'
     | '/me/edit'
     | '/u/$username'
     | '/works/$slug'
@@ -216,6 +246,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/collab'
+    | '/instant'
     | '/workshops'
   id:
     | '__root__'
@@ -229,6 +260,8 @@ export interface FileRouteTypes {
     | '/workshops'
     | '/collab/$slug'
     | '/collab/new'
+    | '/instant/$id'
+    | '/instant/new'
     | '/me/edit'
     | '/u/$username'
     | '/works/$slug'
@@ -236,13 +269,14 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/collab/'
+    | '/instant/'
     | '/workshops/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CollabRoute: typeof CollabRouteWithChildren
-  InstantRoute: typeof InstantRoute
+  InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
   MeRoute: typeof MeRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
@@ -318,6 +352,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
     }
+    '/instant/': {
+      id: '/instant/'
+      path: '/'
+      fullPath: '/instant/'
+      preLoaderRoute: typeof InstantIndexRouteImport
+      parentRoute: typeof InstantRoute
+    }
     '/collab/': {
       id: '/collab/'
       path: '/'
@@ -367,6 +408,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeEditRouteImport
       parentRoute: typeof MeRoute
     }
+    '/instant/new': {
+      id: '/instant/new'
+      path: '/new'
+      fullPath: '/instant/new'
+      preLoaderRoute: typeof InstantNewRouteImport
+      parentRoute: typeof InstantRoute
+    }
+    '/instant/$id': {
+      id: '/instant/$id'
+      path: '/$id'
+      fullPath: '/instant/$id'
+      preLoaderRoute: typeof InstantIdRouteImport
+      parentRoute: typeof InstantRoute
+    }
     '/collab/new': {
       id: '/collab/new'
       path: '/new'
@@ -399,6 +454,21 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface InstantRouteChildren {
+  InstantIdRoute: typeof InstantIdRoute
+  InstantNewRoute: typeof InstantNewRoute
+  InstantIndexRoute: typeof InstantIndexRoute
+}
+
+const InstantRouteChildren: InstantRouteChildren = {
+  InstantIdRoute: InstantIdRoute,
+  InstantNewRoute: InstantNewRoute,
+  InstantIndexRoute: InstantIndexRoute,
+}
+
+const InstantRouteWithChildren =
+  InstantRoute._addFileChildren(InstantRouteChildren)
+
 interface MeRouteChildren {
   MeEditRoute: typeof MeEditRoute
 }
@@ -428,7 +498,7 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CollabRoute: CollabRouteWithChildren,
-  InstantRoute: InstantRoute,
+  InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
   MeRoute: MeRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
