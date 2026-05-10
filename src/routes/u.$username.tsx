@@ -84,6 +84,21 @@ function ProfilePage() {
     enabled: !!profile?.id,
   });
 
+  useDocumentMeta({
+    title: profile ? (profile.display_name || profile.username || "Creator") : undefined,
+    description: profile?.headline ?? profile?.bio?.slice(0, 160) ?? undefined,
+    image: profile?.avatar_url ?? profile?.cover_url ?? undefined,
+    type: "profile",
+  });
+  useJsonLd(profile ? {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: profile.display_name ?? profile.username ?? "Creator",
+    alternateName: profile.username ?? undefined,
+    description: profile.headline ?? profile.bio ?? undefined,
+    image: profile.avatar_url ?? undefined,
+  } : null);
+
   if (isLoading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-10">
