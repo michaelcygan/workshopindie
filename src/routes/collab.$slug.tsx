@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2 } from "lucide-react";
@@ -26,7 +26,7 @@ function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const router = useRouter();
-  const qc = useQueryClient();
+  
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
