@@ -283,3 +283,57 @@ function FeaturedCreatorsStrip() {
     </section>
   );
 }
+
+function LiveNowStrip() {
+  const { data } = useQuery({
+    queryKey: ["home-instant-live"],
+    queryFn: async () => {
+      const { data: rooms } = await supabase
+        .from("instant_rooms")
+        .select("id,slug,title,description,presence:instant_presence(count)")
+        .in("slug", ["lounge", "tonight"]);
+      return (rooms ?? []).map((r: any) => ({
+        slug: r.slug as string,
+        title: r.title as string,
+        description: r.description as string | null,
+        count: (r.presence?.[0]?.count ?? 0) as number,
+      }));
+    },
+    refetchInterval: 30_000,
+  });
+
+  if (!data || data.length === 0) return null;
+  const order = ["lounge", "tonight"];
+  const channels = [...data].sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug));
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
+      <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft md:p-6">
+        <div className="flex items-center gap-2">
+          <span className="relative inline-flex h-2 w-2">
+            <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+          </span>
+          <h3 className="font-display text-xl text-ink">Live now</h3>
+          <Link to="/instant" className="ml-auto text-sm text-primary hover:underline">Drop in →</Link>
+        </div>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {channels.map((c) => (
+            <Link key={c.slug} to="/instant" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
+              {c.slug === "tonight" ? <Calendar className="h-5 w-5 text-primary" /> : <Radio className="h-5 w-5 text-primary" />}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-display text-lg text-ink">{c.title}</h4>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-soft">
+                    <Users className="h-3 w-3" /> {c.count}
+                  </span>
+                </div>
+                {c.description && <p className="mt-0.5 truncate text-xs text-ink-muted">{c.description}</p>}
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
