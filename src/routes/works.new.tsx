@@ -156,6 +156,38 @@ function NewWork() {
           </select>
         </section>
 
+        <section className="space-y-2">
+          <Label>Source</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "manual", label: "Standalone" },
+              { id: "workshop", label: "From a Workshop" },
+              { id: "collab_board", label: "From a Collab" },
+            ] as const).map((s) => (
+              <button type="button" key={s.id} onClick={() => setSourceType(s.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  sourceType === s.id ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {sourceType === "workshop" && (
+            <select value={sourceWorkshopId} onChange={(e) => setSourceWorkshopId(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select a Workshop you hosted…</option>
+              {myWorkshops.map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
+            </select>
+          )}
+          {sourceType === "collab_board" && (
+            <select value={sourceCollabId} onChange={(e) => setSourceCollabId(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select one of your Collab posts…</option>
+              {myCollabs.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+            </select>
+          )}
+          <p className="text-xs text-ink-muted">Linking a source shows the lineage on the Work page.</p>
+        </section>
+
         <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-ink-muted">
           You'll be credited as <span className="text-ink">{myProfile?.display_name || myProfile?.username || "yourself"}</span>.
           Co-creator credits open up when you publish through a Workshop.
