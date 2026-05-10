@@ -34,6 +34,11 @@ function NewWork() {
   const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
   const [submitting, setSubmitting] = useState(false);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  const [sourceType, setSourceType] = useState<"manual" | "workshop" | "collab_post">("manual");
+  const [sourceWorkshopId, setSourceWorkshopId] = useState<string>("");
+  const [sourceCollabId, setSourceCollabId] = useState<string>("");
+  const [myWorkshops, setMyWorkshops] = useState<{ id: string; title: string }[]>([]);
+  const [myCollabs, setMyCollabs] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -43,6 +48,10 @@ function NewWork() {
     if (!user) return;
     supabase.from("profiles").select("display_name,username").eq("id", user.id).maybeSingle()
       .then(({ data }) => setMyProfile(data));
+    supabase.from("workshops").select("id,title").eq("host_user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => setMyWorkshops(data ?? []));
+    supabase.from("collab_posts").select("id,title").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => setMyCollabs(data ?? []));
   }, [user]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -61,7 +70,9 @@ function NewWork() {
         description: description || null,
         cover_url: coverUrl,
         primary_url: primaryUrl || null,
-        source_type: "manual",
+        source_type: sourceType,
+        source_workshop_id: sourceType === "workshop" && sourceWorkshopId ? sourceWorkshopId : null,
+        source_collab_post_id: sourceType === "collab_post" && sourceCollabId ? sourceCollabId : null,
         license_type: license,
         status: "published",
         visibility: "public",
