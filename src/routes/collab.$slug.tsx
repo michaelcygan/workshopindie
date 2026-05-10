@@ -45,6 +45,12 @@ function CollabDetail() {
     },
   });
 
+  useDocumentMeta({
+    title: post?.title,
+    description: post?.description?.slice(0, 160) ?? "Open collab call on Workshop.",
+    type: "article",
+  });
+
   const sendContact = useMutation({
     mutationFn: async () => {
       if (!user || !post) throw new Error("Sign in to contact");
