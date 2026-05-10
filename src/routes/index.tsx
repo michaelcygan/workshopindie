@@ -189,3 +189,96 @@ function Index() {
     </main>
   );
 }
+
+function CityMeetupsStrip() {
+  const { data } = useQuery({
+    queryKey: ["home-city-meetups"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("standing_meetups")
+        .select("id,title,description,default_category,city:cities(name,slug)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(6);
+      return data ?? [];
+    },
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-4 md:px-6">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl text-ink md:text-3xl">City Meetups</h2>
+          <p className="mt-1 text-sm text-ink-muted">Standing creative meetups, IRL.</p>
+        </div>
+        <Link to="/cities" className="text-sm text-primary hover:underline">All cities →</Link>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {(data as any[]).map((m) => (
+          <Link
+            key={m.id}
+            to="/cities/$slug"
+            params={{ slug: m.city?.slug ?? "" }}
+            className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft"
+          >
+            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+              <MapPin className="h-3.5 w-3.5" /> {m.city?.name ?? "—"}
+            </div>
+            <h3 className="mt-1 font-display text-lg text-ink line-clamp-1">{m.title}</h3>
+            {m.description && <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{m.description}</p>}
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeaturedCreatorsStrip() {
+  const { data } = useQuery({
+    queryKey: ["home-featured-creators"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,username,display_name,headline,avatar_url,creator_status,work_count,worked_with_count")
+        .gt("work_count", 0)
+        .not("username", "is", null)
+        .order("work_count", { ascending: false })
+        .limit(8);
+      return data ?? [];
+    },
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl text-ink md:text-3xl">Featured Creators</h2>
+          <p className="mt-1 text-sm text-ink-muted">People shipping Work.</p>
+        </div>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {(data as any[]).map((p) => (
+          <Link
+            key={p.id}
+            to="/u/$username"
+            params={{ username: p.username }}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft"
+          >
+            <Avatar className="h-12 w-12">
+              <AvatarImage src={p.avatar_url ?? undefined} />
+              <AvatarFallback>{(p.display_name ?? p.username ?? "?")[0]}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <h3 className="truncate font-medium text-ink">{p.display_name ?? p.username}</h3>
+                <CreatorBadge status={p.creator_status} />
+              </div>
+              {p.headline && <p className="truncate text-xs text-ink-muted">{p.headline}</p>}
+              <p className="mt-0.5 text-[11px] text-ink-muted inline-flex items-center gap-1"><Users className="h-3 w-3" /> {p.work_count} works</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
