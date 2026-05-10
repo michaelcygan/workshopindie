@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
+import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { format } from "date-fns";
 
