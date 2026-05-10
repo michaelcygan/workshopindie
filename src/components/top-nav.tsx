@@ -66,6 +66,11 @@ export function TopNav() {
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
+                    <Shield className="mr-2 h-4 w-4" /> Admin
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={async () => {
                     await supabase.auth.signOut();
@@ -76,6 +81,7 @@ export function TopNav() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </>
           ) : (
             <>
               <Link to="/login" className="hidden md:block">
