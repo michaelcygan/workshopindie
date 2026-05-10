@@ -14,7 +14,7 @@ import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/me")({ component: MeDashboard });
 
-type Tab = "hosting" | "applied" | "participating" | "drafts";
+type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
@@ -90,6 +90,19 @@ function MeDashboard() {
     },
   });
 
+  const { data: credits = [], refetch: refetchCredits } = useQuery({
+    queryKey: ["me-credits", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("work_credits")
+        .select("id,role_label,hidden_from_profile,sort_order,work:works!inner(id,title,slug,category,cover_url,status,visibility,published_at)")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
   if (!user) return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
 
   const name = profile?.display_name || profile?.username || "Creator";
@@ -98,6 +111,7 @@ function MeDashboard() {
     applied: applied.length,
     participating: participating.length,
     drafts: drafts.length,
+    credits: credits.length,
   };
 
   return (
@@ -125,7 +139,7 @@ function MeDashboard() {
       </motion.header>
 
       <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
-        {(["hosting", "applied", "participating", "drafts"] as Tab[]).map((t) => (
+        {(["hosting", "applied", "participating", "drafts", "credits"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
               tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
@@ -139,6 +153,7 @@ function MeDashboard() {
         {tab === "applied" && <AppliedList items={applied as any} />}
         {tab === "participating" && <ParticipatingList items={participating as any} />}
         {tab === "drafts" && <DraftsList items={drafts as any} />}
+        {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
       </div>
     </main>
   );
@@ -248,6 +263,38 @@ function DraftsList({ items }: { items: { id: string; title: string; slug: strin
             <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
           </div>
         </Link>
+      ))}
+    </div>
+  );
+}
+
+function CreditsList({ items, onChange }: { items: { id: string; role_label: string; hidden_from_profile: boolean; work: { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; visibility: string; published_at: string | null } }[]; onChange: () => void }) {
+  if (items.length === 0) return <EmptyState title="No credits yet." body="Ship a Workshop or publish a Work to start your portfolio." ctaLabel="Publish a Work" ctaTo="/works/new" />;
+  async function toggleHide(id: string, next: boolean) {
+    const { error } = await supabase.from("work_credits").update({ hidden_from_profile: next }).eq("id", id);
+    if (!error) onChange();
+  }
+  return (
+    <div className="space-y-2">
+      {items.map((c) => (
+        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3">
+          {c.work.cover_url ? <img src={c.work.cover_url} alt="" className="h-14 w-14 rounded-xl object-cover" /> : <div className="h-14 w-14 rounded-xl bg-surface-2" />}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <Link to="/works/$slug" params={{ slug: c.work.slug }} className="truncate font-medium text-ink hover:underline">{c.work.title}</Link>
+              <StatusPill status={c.work.status} />
+            </div>
+            <p className="text-xs text-ink-muted">Credit: {c.role_label}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => toggleHide(c.id, !c.hidden_from_profile)}
+            className={cn("rounded-full border px-3 py-1.5 text-xs transition",
+              c.hidden_from_profile ? "border-border bg-surface text-ink-soft hover:bg-muted" : "border-transparent bg-ink text-background hover:opacity-90")}
+          >
+            {c.hidden_from_profile ? "Hidden from profile" : "Shown on profile"}
+          </button>
+        </div>
       ))}
     </div>
   );

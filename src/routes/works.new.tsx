@@ -34,6 +34,11 @@ function NewWork() {
   const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
   const [submitting, setSubmitting] = useState(false);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  const [sourceType, setSourceType] = useState<"manual" | "workshop" | "collab_board">("manual");
+  const [sourceWorkshopId, setSourceWorkshopId] = useState<string>("");
+  const [sourceCollabId, setSourceCollabId] = useState<string>("");
+  const [myWorkshops, setMyWorkshops] = useState<{ id: string; title: string }[]>([]);
+  const [myCollabs, setMyCollabs] = useState<{ id: string; title: string }[]>([]);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -43,6 +48,10 @@ function NewWork() {
     if (!user) return;
     supabase.from("profiles").select("display_name,username").eq("id", user.id).maybeSingle()
       .then(({ data }) => setMyProfile(data));
+    supabase.from("workshops").select("id,title").eq("host_user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => setMyWorkshops(data ?? []));
+    supabase.from("collab_posts").select("id,title").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50)
+      .then(({ data }) => setMyCollabs(data ?? []));
   }, [user]);
 
   async function onSubmit(e: React.FormEvent) {
@@ -61,7 +70,9 @@ function NewWork() {
         description: description || null,
         cover_url: coverUrl,
         primary_url: primaryUrl || null,
-        source_type: "manual",
+        source_type: sourceType,
+        source_workshop_id: sourceType === "workshop" && sourceWorkshopId ? sourceWorkshopId : null,
+        source_collab_post_id: sourceType === "collab_board" && sourceCollabId ? sourceCollabId : null,
         license_type: license,
         status: "published",
         visibility: "public",
@@ -143,6 +154,38 @@ function NewWork() {
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
             {LICENSES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
           </select>
+        </section>
+
+        <section className="space-y-2">
+          <Label>Source</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "manual", label: "Standalone" },
+              { id: "workshop", label: "From a Workshop" },
+              { id: "collab_board", label: "From a Collab" },
+            ] as const).map((s) => (
+              <button type="button" key={s.id} onClick={() => setSourceType(s.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  sourceType === s.id ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {sourceType === "workshop" && (
+            <select value={sourceWorkshopId} onChange={(e) => setSourceWorkshopId(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select a Workshop you hosted…</option>
+              {myWorkshops.map((w) => <option key={w.id} value={w.id}>{w.title}</option>)}
+            </select>
+          )}
+          {sourceType === "collab_board" && (
+            <select value={sourceCollabId} onChange={(e) => setSourceCollabId(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <option value="">Select one of your Collab posts…</option>
+              {myCollabs.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
+            </select>
+          )}
+          <p className="text-xs text-ink-muted">Linking a source shows the lineage on the Work page.</p>
         </section>
 
         <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-ink-muted">
