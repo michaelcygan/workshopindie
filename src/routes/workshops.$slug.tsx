@@ -486,3 +486,201 @@ function ShippedBanner({ workshopId }: { workshopId: string }) {
     </section>
   );
 }
+
+/* ---------- Host Status Bar ---------- */
+
+function HostStatusBar({ ws, onChanged }: { ws: Workshop; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+
+  async function setStatus(status: string, extra: Record<string, any> = {}) {
+    setBusy(true);
+    const { error } = await supabase.from("workshops").update({ status, ...extra }).eq("id", ws.id);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Updated");
+    onChanged();
+  }
+
+  const isDraft = ws.status === "draft";
+  const isOpen = ws.status === "open";
+  const canCancel = ["draft", "open", "check_in", "active"].includes(ws.status);
+  if (!isDraft && !isOpen && !canCancel) return null;
+
+  return (
+    <section className="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3">
+      <span className="text-sm text-ink-muted">Status:</span>
+      <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status.replace("_", " ")}</span>
+      <div className="ml-auto flex flex-wrap gap-2">
+        {isDraft && (
+          <Button size="sm" disabled={busy} className="rounded-full gap-1.5" onClick={() => setStatus("open")}>
+            <Rocket className="h-3.5 w-3.5" /> Publish
+          </Button>
+        )}
+        {isOpen && (
+          <Button size="sm" disabled={busy} variant="outline" className="rounded-full gap-1.5"
+            onClick={() => {
+              const opens = new Date().toISOString();
+              const closes = new Date(Date.now() + 30 * 60_000).toISOString();
+              setStatus("check_in", { check_in_opens_at: opens, check_in_closes_at: closes });
+            }}>
+            <Clock className="h-3.5 w-3.5" /> Open check-in (30 min)
+          </Button>
+        )}
+        {canCancel && (
+          <Button size="sm" disabled={busy} variant="ghost" className="rounded-full gap-1.5 text-ink-muted hover:text-ink"
+            onClick={() => { if (confirm("Cancel this Workshop?")) setStatus("canceled"); }}>
+            <Ban className="h-3.5 w-3.5" /> Cancel
+          </Button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Check-in Panel ---------- */
+
+function CheckInPanel({ ws }: { ws: Workshop }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+
+  const { data: myPart } = useQuery({
+    queryKey: ["ws-mypart", ws.id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_participants")
+        .select("id,checked_in_at,participant_status")
+        .eq("workshop_id", ws.id).eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
+
+  if (!user || !myPart) return null;
+
+  const now = Date.now();
+  const opensAt = (ws as any).check_in_opens_at ? new Date((ws as any).check_in_opens_at).getTime() : null;
+  const closesAt = (ws as any).check_in_closes_at ? new Date((ws as any).check_in_closes_at).getTime() : null;
+  const inWindow = opensAt && closesAt && now >= opensAt && now <= closesAt;
+  if (!inWindow || myPart.checked_in_at) return null;
+
+  async function checkIn() {
+    const { error } = await supabase.from("workshop_participants")
+      .update({ checked_in_at: new Date().toISOString(), participant_status: "checked_in" })
+      .eq("id", myPart!.id);
+    if (error) return toast.error(error.message);
+    toast.success("Checked in. See you in The Room.");
+    qc.invalidateQueries({ queryKey: ["ws-mypart", ws.id, user!.id] });
+  }
+
+  return (
+    <section className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+      <Sparkles className="h-5 w-5 text-primary" />
+      <p className="text-sm text-ink"><span className="font-medium">Check-in is open.</span> Confirm you're here so the host can start.</p>
+      <Button size="sm" className="ml-auto rounded-full" onClick={checkIn}>Check in</Button>
+    </section>
+  );
+}
+
+/* ---------- Pinboard tool (MVP) ---------- */
+
+function Pinboard({ ws }: { ws: Workshop }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [body, setBody] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const { data: tool } = useQuery({
+    queryKey: ["ws-tool-pinboard", ws.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_tools")
+        .select("id,enabled").eq("workshop_id", ws.id).eq("tool_type", "pinboard").maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: items = [] } = useQuery({
+    queryKey: ["ws-tool-pinboard-items", tool?.id],
+    enabled: !!tool?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_tool_items")
+        .select("id,body,created_at,created_by_user_id, profile:profiles!workshop_tool_items_created_by_user_id_fkey(display_name,username,avatar_url)")
+        .eq("tool_id", tool!.id).order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  async function enableTool() {
+    if (!user) return;
+    const { error } = await supabase.from("workshop_tools").insert({ workshop_id: ws.id, tool_type: "pinboard", enabled: true });
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["ws-tool-pinboard", ws.id] });
+  }
+
+  async function addItem(e: React.FormEvent) {
+    e.preventDefault();
+    if (!user || !tool || !body.trim()) return;
+    setSubmitting(true);
+    const { error } = await supabase.from("workshop_tool_items").insert({
+      tool_id: tool.id, created_by_user_id: user.id, body: body.trim(),
+    });
+    setSubmitting(false);
+    if (error) return toast.error(error.message);
+    setBody("");
+    qc.invalidateQueries({ queryKey: ["ws-tool-pinboard-items", tool.id] });
+  }
+
+  async function removeItem(id: string) {
+    const { error } = await supabase.from("workshop_tool_items").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["ws-tool-pinboard-items", tool!.id] });
+  }
+
+  if (!user) return null;
+  const isHost = user.id === ws.host_user_id;
+
+  if (!tool) {
+    if (!isHost) return null;
+    return (
+      <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-center">
+        <p className="text-sm text-ink-muted">Open a Pinboard so the room can drop ideas, links, references.</p>
+        <Button size="sm" variant="outline" className="mt-2 rounded-full gap-1.5" onClick={enableTool}>
+          <Pin className="h-3.5 w-3.5" /> Enable Pinboard
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-border p-4">
+      <div className="flex items-center gap-2">
+        <Pin className="h-4 w-4 text-primary" />
+        <h3 className="font-medium text-ink">Pinboard</h3>
+        <span className="text-xs text-ink-muted">{items.length} pin{items.length === 1 ? "" : "s"}</span>
+      </div>
+      <form onSubmit={addItem} className="mt-3 flex gap-2">
+        <Input value={body} onChange={(e) => setBody(e.target.value)} placeholder="Drop a reference, idea, or link…" className="rounded-full" maxLength={500} />
+        <Button type="submit" size="sm" className="rounded-full" disabled={submitting || !body.trim()}>Pin</Button>
+      </form>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        {items.map((it: any) => {
+          const name = it.profile?.display_name || it.profile?.username || "Anon";
+          const canDelete = it.created_by_user_id === user.id || isHost;
+          return (
+            <div key={it.id} className="rounded-xl border border-border bg-surface-2 p-3">
+              <p className="whitespace-pre-wrap text-sm text-ink">{it.body}</p>
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
+                <Avatar className="h-4 w-4"><AvatarImage src={it.profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{name[0]}</AvatarFallback></Avatar>
+                <span>{name}</span>
+                {canDelete && (
+                  <button onClick={() => removeItem(it.id)} className="ml-auto inline-flex items-center gap-0.5 hover:text-ink">
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
