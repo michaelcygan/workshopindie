@@ -22,6 +22,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as InstantIndexRouteImport } from './routes/instant.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
+import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
@@ -33,6 +34,7 @@ import { Route as InstantNewRouteImport } from './routes/instant.new'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
+import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
@@ -100,6 +102,11 @@ const CollabIndexRoute = CollabIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CollabRoute,
 } as any)
+const CitiesIndexRoute = CitiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CitiesRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -155,6 +162,11 @@ const CollabSlugRoute = CollabSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => CollabRoute,
 } as any)
+const CitiesSlugRoute = CitiesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CitiesRoute,
+} as any)
 const AdminBadgesRoute = AdminBadgesRouteImport.update({
   id: '/badges',
   path: '/badges',
@@ -164,7 +176,7 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/cities': typeof CitiesRoute
+  '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -173,6 +185,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -184,18 +197,19 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
+  '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/cities': typeof CitiesRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -207,6 +221,7 @@ export interface FileRoutesByTo {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
+  '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/instant': typeof InstantIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
@@ -215,7 +230,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
-  '/cities': typeof CitiesRoute
+  '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -224,6 +239,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -235,6 +251,7 @@ export interface FileRoutesById {
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
+  '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -253,6 +270,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/workshops'
     | '/admin/badges'
+    | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -264,18 +282,19 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
+    | '/cities/'
     | '/collab/'
     | '/instant/'
     | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/cities'
     | '/login'
     | '/me'
     | '/onboarding'
     | '/signup'
     | '/admin/badges'
+    | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -287,6 +306,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
+    | '/cities'
     | '/collab'
     | '/instant'
     | '/workshops'
@@ -303,6 +323,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/workshops'
     | '/admin/badges'
+    | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -314,6 +335,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
+    | '/cities/'
     | '/collab/'
     | '/instant/'
     | '/workshops/'
@@ -322,7 +344,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
-  CitiesRoute: typeof CitiesRoute
+  CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
   InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -428,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabIndexRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/cities/': {
+      id: '/cities/'
+      path: '/'
+      fullPath: '/cities/'
+      preLoaderRoute: typeof CitiesIndexRouteImport
+      parentRoute: typeof CitiesRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -505,6 +534,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabSlugRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/cities/$slug': {
+      id: '/cities/$slug'
+      path: '/$slug'
+      fullPath: '/cities/$slug'
+      preLoaderRoute: typeof CitiesSlugRouteImport
+      parentRoute: typeof CitiesRoute
+    }
     '/admin/badges': {
       id: '/admin/badges'
       path: '/badges'
@@ -526,6 +562,19 @@ const AdminRouteChildren: AdminRouteChildren = {
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
+interface CitiesRouteChildren {
+  CitiesSlugRoute: typeof CitiesSlugRoute
+  CitiesIndexRoute: typeof CitiesIndexRoute
+}
+
+const CitiesRouteChildren: CitiesRouteChildren = {
+  CitiesSlugRoute: CitiesSlugRoute,
+  CitiesIndexRoute: CitiesIndexRoute,
+}
+
+const CitiesRouteWithChildren =
+  CitiesRoute._addFileChildren(CitiesRouteChildren)
 
 interface CollabRouteChildren {
   CollabSlugRoute: typeof CollabSlugRoute
@@ -586,7 +635,7 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
-  CitiesRoute: CitiesRoute,
+  CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
   InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
@@ -601,3 +650,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
