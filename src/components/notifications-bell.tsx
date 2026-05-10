@@ -11,7 +11,7 @@ type Notif = {
   title: string;
   subtitle: string;
   href: string;
-  icon: any;
+  icon: typeof Bell;
 };
 
 export function NotificationsBell() {
