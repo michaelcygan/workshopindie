@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ReportDialog } from "@/components/report-dialog";
 import type { Category } from "@/lib/categories";
 import { useDocumentMeta } from "@/lib/seo";
 import { toast } from "sonner";
