@@ -34,7 +34,7 @@ function NewWork() {
   const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
   const [submitting, setSubmitting] = useState(false);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
-  const [sourceType, setSourceType] = useState<"manual" | "workshop" | "collab_post">("manual");
+  const [sourceType, setSourceType] = useState<"manual" | "workshop" | "collab_board">("manual");
   const [sourceWorkshopId, setSourceWorkshopId] = useState<string>("");
   const [sourceCollabId, setSourceCollabId] = useState<string>("");
   const [myWorkshops, setMyWorkshops] = useState<{ id: string; title: string }[]>([]);
@@ -72,7 +72,7 @@ function NewWork() {
         primary_url: primaryUrl || null,
         source_type: sourceType,
         source_workshop_id: sourceType === "workshop" && sourceWorkshopId ? sourceWorkshopId : null,
-        source_collab_post_id: sourceType === "collab_post" && sourceCollabId ? sourceCollabId : null,
+        source_collab_post_id: sourceType === "collab_board" && sourceCollabId ? sourceCollabId : null,
         license_type: license,
         status: "published",
         visibility: "public",
