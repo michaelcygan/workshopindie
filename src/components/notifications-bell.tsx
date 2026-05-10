@@ -112,7 +112,7 @@ export function NotificationsBell() {
               <li key={n.id}>
                 <button
                   type="button"
-                  onClick={() => { setOpen(false); navigate({ to: n.href }); }}
+                  onClick={() => { setOpen(false); navigate({ to: n.href as any }); }}
                   className="flex w-full items-start gap-3 px-4 py-3 text-left text-sm hover:bg-muted/60"
                 >
                   <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-ink-soft">
