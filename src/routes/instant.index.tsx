@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { VoicePanel } from "@/components/voice-panel";
 
 export const Route = createFileRoute("/instant/")({
   component: InstantChannels,
