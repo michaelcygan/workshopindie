@@ -1,5 +1,25 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { ComingSoon } from "@/components/coming-soon";
-export const Route = createFileRoute("/me")({
-  component: () => <ComingSoon title="Your portfolio" blurb="Works you ship will land here automatically. Profile UI is next." />,
-});
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
+
+export const Route = createFileRoute("/me")({ component: MeRedirect });
+
+function MeRedirect() {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user) return void navigate({ to: "/login" });
+    (async () => {
+      const { data } = await supabase.from("profiles").select("username,onboarded").eq("id", user.id).maybeSingle();
+      if (!data?.onboarded || !data?.username) return void navigate({ to: "/onboarding" });
+      navigate({ to: "/u/$username", params: { username: data.username } });
+    })();
+  }, [user, loading, navigate]);
+
+  return (
+    <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading your profile…</main>
+  );
+}

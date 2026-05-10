@@ -1276,6 +1276,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      slugify: { Args: { _in: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

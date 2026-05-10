@@ -18,6 +18,10 @@ import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
+import { Route as WorksNewRouteImport } from './routes/works.new'
+import { Route as WorksSlugRouteImport } from './routes/works.$slug'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
@@ -65,6 +69,26 @@ const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => WorkshopsRoute,
 } as any)
+const WorksNewRoute = WorksNewRouteImport.update({
+  id: '/works/new',
+  path: '/works/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorksSlugRoute = WorksSlugRouteImport.update({
+  id: '/works/$slug',
+  path: '/works/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeEditRoute = MeEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => MeRoute,
+} as any)
 const CollabNewRoute = CollabNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -76,11 +100,15 @@ export interface FileRoutesByFullPath {
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
-  '/me': typeof MeRoute
+  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/new': typeof CollabNewRoute
+  '/me/edit': typeof MeEditRoute
+  '/u/$username': typeof UUsernameRoute
+  '/works/$slug': typeof WorksSlugRoute
+  '/works/new': typeof WorksNewRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesByTo {
@@ -88,11 +116,15 @@ export interface FileRoutesByTo {
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
-  '/me': typeof MeRoute
+  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/new': typeof CollabNewRoute
+  '/me/edit': typeof MeEditRoute
+  '/u/$username': typeof UUsernameRoute
+  '/works/$slug': typeof WorksSlugRoute
+  '/works/new': typeof WorksNewRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesById {
@@ -101,11 +133,15 @@ export interface FileRoutesById {
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRoute
   '/login': typeof LoginRoute
-  '/me': typeof MeRoute
+  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/new': typeof CollabNewRoute
+  '/me/edit': typeof MeEditRoute
+  '/u/$username': typeof UUsernameRoute
+  '/works/$slug': typeof WorksSlugRoute
+  '/works/new': typeof WorksNewRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +156,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/workshops'
     | '/collab/new'
+    | '/me/edit'
+    | '/u/$username'
+    | '/works/$slug'
+    | '/works/new'
     | '/workshops/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +172,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/workshops'
     | '/collab/new'
+    | '/me/edit'
+    | '/u/$username'
+    | '/works/$slug'
+    | '/works/new'
     | '/workshops/new'
   id:
     | '__root__'
@@ -144,6 +188,10 @@ export interface FileRouteTypes {
     | '/signup'
     | '/workshops'
     | '/collab/new'
+    | '/me/edit'
+    | '/u/$username'
+    | '/works/$slug'
+    | '/works/new'
     | '/workshops/new'
   fileRoutesById: FileRoutesById
 }
@@ -152,10 +200,13 @@ export interface RootRouteChildren {
   CollabRoute: typeof CollabRouteWithChildren
   InstantRoute: typeof InstantRoute
   LoginRoute: typeof LoginRoute
-  MeRoute: typeof MeRoute
+  MeRoute: typeof MeRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   SignupRoute: typeof SignupRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
+  UUsernameRoute: typeof UUsernameRoute
+  WorksSlugRoute: typeof WorksSlugRoute
+  WorksNewRoute: typeof WorksNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -223,6 +274,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsNewRouteImport
       parentRoute: typeof WorkshopsRoute
     }
+    '/works/new': {
+      id: '/works/new'
+      path: '/works/new'
+      fullPath: '/works/new'
+      preLoaderRoute: typeof WorksNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/works/$slug': {
+      id: '/works/$slug'
+      path: '/works/$slug'
+      fullPath: '/works/$slug'
+      preLoaderRoute: typeof WorksSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/edit': {
+      id: '/me/edit'
+      path: '/edit'
+      fullPath: '/me/edit'
+      preLoaderRoute: typeof MeEditRouteImport
+      parentRoute: typeof MeRoute
+    }
     '/collab/new': {
       id: '/collab/new'
       path: '/new'
@@ -244,6 +323,16 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface MeRouteChildren {
+  MeEditRoute: typeof MeEditRoute
+}
+
+const MeRouteChildren: MeRouteChildren = {
+  MeEditRoute: MeEditRoute,
+}
+
+const MeRouteWithChildren = MeRoute._addFileChildren(MeRouteChildren)
+
 interface WorkshopsRouteChildren {
   WorkshopsNewRoute: typeof WorkshopsNewRoute
 }
@@ -261,10 +350,13 @@ const rootRouteChildren: RootRouteChildren = {
   CollabRoute: CollabRouteWithChildren,
   InstantRoute: InstantRoute,
   LoginRoute: LoginRoute,
-  MeRoute: MeRoute,
+  MeRoute: MeRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   SignupRoute: SignupRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,
+  UUsernameRoute: UUsernameRoute,
+  WorksSlugRoute: WorksSlugRoute,
+  WorksNewRoute: WorksNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
