@@ -160,7 +160,10 @@ function ProfilePage() {
                 <Pencil className="h-4 w-4" /> Edit profile
               </Button>
             ) : (
-              <FollowButton targetUserId={profile.id} />
+              <>
+                <FollowButton targetUserId={profile.id} />
+                <ReportDialog entityType="profile" entityId={profile.id} />
+              </>
             )}
             {isOwn && (
               <Button className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new" })}>
