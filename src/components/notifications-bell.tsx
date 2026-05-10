@@ -17,7 +17,7 @@ type Notif = {
 export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
-  const [open, setOpen] = useState(false);
+  const navigate = useNavigate();
 
   async function load() {
     if (!user) { setItems([]); return; }
