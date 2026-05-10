@@ -170,10 +170,11 @@ function Index() {
       <CityMeetupsStrip />
       <FeaturedCreatorsStrip />
 
+      <LiveNowStrip />
+
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2">
           {[
-            { title: "Happening Now", body: "Drop into Instant rooms by category and city.", icon: Radio, to: "/instant" as const },
             { title: "Upcoming Workshops", body: "Apply to a seat or claim a role.", icon: Calendar, to: "/workshops" as const },
             { title: "Collab Board", body: "Find collaborators for ideas already in motion.", icon: Megaphone, to: "/collab" as const },
           ].map((c) => (
