@@ -106,10 +106,12 @@ function CollabDetail() {
         <div className="mb-4 flex items-center gap-2">
           <CategoryChip category={post.category as Category} />
           <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-ink-soft">{post.status}</span>
-          {isOwner && (
+          {isOwner ? (
             <Button size="sm" variant="ghost" className="ml-auto rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
               <Trash2 className="h-3.5 w-3.5" /> Delete
             </Button>
+          ) : (
+            user && <div className="ml-auto"><ReportDialog entityType="collab_post" entityId={post.id} /></div>
           )}
         </div>
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
