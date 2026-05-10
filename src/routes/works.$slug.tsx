@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
+import { ReportDialog } from "@/components/report-dialog";
+import { CreatorBadge } from "@/components/creator-badge";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { format } from "date-fns";
@@ -127,7 +129,10 @@ function WorkDetail() {
               </span>
             )}
           </div>
-          <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+          <div className="flex items-center gap-1">
+            <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+            <ReportDialog entityType="work" entityId={work.id} />
+          </div>
         </div>
 
         {/* Body */}

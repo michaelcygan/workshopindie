@@ -9,6 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
+import { ReportDialog } from "@/components/report-dialog";
+import { CreatorBadge } from "@/components/creator-badge";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import type { Category } from "@/lib/categories";
 
@@ -143,9 +145,7 @@ function ProfilePage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
-              {profile.creator_status === "founding" && (
-                <span className="rounded-full bg-violet/10 px-2 py-0.5 text-[11px] font-medium text-violet">Founding</span>
-              )}
+              <CreatorBadge status={profile.creator_status} />
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
@@ -160,7 +160,10 @@ function ProfilePage() {
                 <Pencil className="h-4 w-4" /> Edit profile
               </Button>
             ) : (
-              <FollowButton targetUserId={profile.id} />
+              <>
+                <FollowButton targetUserId={profile.id} />
+                <ReportDialog entityType="profile" entityId={profile.id} />
+              </>
             )}
             {isOwn && (
               <Button className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new" })}>

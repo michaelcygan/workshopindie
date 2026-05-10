@@ -16,10 +16,12 @@ import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as InstantIndexRouteImport } from './routes/instant.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
@@ -30,6 +32,7 @@ import { Route as InstantNewRouteImport } from './routes/instant.new'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
+import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
@@ -66,6 +69,11 @@ const CollabRoute = CollabRouteImport.update({
   path: '/collab',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -85,6 +93,11 @@ const CollabIndexRoute = CollabIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => CollabRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   id: '/new',
@@ -136,9 +149,15 @@ const CollabSlugRoute = CollabSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => CollabRoute,
 } as any)
+const AdminBadgesRoute = AdminBadgesRouteImport.update({
+  id: '/badges',
+  path: '/badges',
+  getParentRoute: () => AdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -146,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/admin/badges': typeof AdminBadgesRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -156,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -166,6 +187,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
+  '/admin/badges': typeof AdminBadgesRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -176,6 +198,7 @@ export interface FileRoutesByTo {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/collab': typeof CollabIndexRoute
   '/instant': typeof InstantIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
@@ -183,6 +206,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
@@ -190,6 +214,7 @@ export interface FileRoutesById {
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/admin/badges': typeof AdminBadgesRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
@@ -200,6 +225,7 @@ export interface FileRoutesById {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -208,6 +234,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/collab'
     | '/instant'
     | '/login'
@@ -215,6 +242,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/workshops'
+    | '/admin/badges'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -225,6 +253,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin/'
     | '/collab/'
     | '/instant/'
     | '/workshops/'
@@ -235,6 +264,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/onboarding'
     | '/signup'
+    | '/admin/badges'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -245,12 +275,14 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin'
     | '/collab'
     | '/instant'
     | '/workshops'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/collab'
     | '/instant'
     | '/login'
@@ -258,6 +290,7 @@ export interface FileRouteTypes {
     | '/onboarding'
     | '/signup'
     | '/workshops'
+    | '/admin/badges'
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
@@ -268,6 +301,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin/'
     | '/collab/'
     | '/instant/'
     | '/workshops/'
@@ -275,6 +309,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
   InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
@@ -338,6 +373,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -365,6 +407,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/collab/'
       preLoaderRoute: typeof CollabIndexRouteImport
       parentRoute: typeof CollabRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/workshops/new': {
       id: '/workshops/new'
@@ -436,8 +485,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabSlugRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/admin/badges': {
+      id: '/admin/badges'
+      path: '/badges'
+      fullPath: '/admin/badges'
+      preLoaderRoute: typeof AdminBadgesRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
+
+interface AdminRouteChildren {
+  AdminBadgesRoute: typeof AdminBadgesRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminBadgesRoute: AdminBadgesRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface CollabRouteChildren {
   CollabSlugRoute: typeof CollabSlugRoute
@@ -497,6 +565,7 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
   InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,

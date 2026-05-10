@@ -1,15 +1,18 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Radio, Megaphone } from "lucide-react";
+import { Calendar, Radio, Megaphone, Shield } from "lucide-react";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
   const { user, loading } = useAuth();
+  const { isAdmin } = useUserRoles();
   const navigate = useNavigate();
 
   const initial =
@@ -40,6 +43,8 @@ export function TopNav() {
           </Link>
 
           {loading ? null : user ? (
+            <>
+            <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition">
@@ -61,6 +66,11 @@ export function TopNav() {
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
+                {isAdmin && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
+                    <Shield className="mr-2 h-4 w-4" /> Admin
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   onClick={async () => {
                     await supabase.auth.signOut();
@@ -71,6 +81,7 @@ export function TopNav() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </>
           ) : (
             <>
               <Link to="/login" className="hidden md:block">
