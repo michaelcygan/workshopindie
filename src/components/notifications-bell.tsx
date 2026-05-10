@@ -18,6 +18,7 @@ export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Notif[]>([]);
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
 
   async function load() {
     if (!user) { setItems([]); return; }
