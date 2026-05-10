@@ -1,12 +1,14 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Radio, Megaphone } from "lucide-react";
+import { Calendar, Radio, Megaphone, Shield } from "lucide-react";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
   const { user, loading } = useAuth();
