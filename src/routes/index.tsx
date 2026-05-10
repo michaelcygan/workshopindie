@@ -2,7 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Radio, Megaphone, Sparkles } from "lucide-react";
+import { Calendar, Radio, Megaphone, Sparkles, MapPin, Users } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { CreatorBadge } from "@/components/creator-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
@@ -164,6 +166,9 @@ function Index() {
           )}
         </div>
       </section>
+
+      <CityMeetupsStrip />
+      <FeaturedCreatorsStrip />
 
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
         <div className="grid gap-4 md:grid-cols-3">
