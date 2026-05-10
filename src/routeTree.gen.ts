@@ -18,6 +18,7 @@ import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
+import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -69,6 +70,11 @@ const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => WorkshopsRoute,
 } as any)
+const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
 const WorksNewRoute = WorksNewRouteImport.update({
   id: '/works/new',
   path: '/works/new',
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesByTo {
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRoutesById {
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
 }
 export interface FileRouteTypes {
@@ -160,6 +169,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshops/$slug'
     | '/workshops/new'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshops/$slug'
     | '/workshops/new'
   id:
     | '__root__'
@@ -192,6 +203,7 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshops/$slug'
     | '/workshops/new'
   fileRoutesById: FileRoutesById
 }
@@ -274,6 +286,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsNewRouteImport
       parentRoute: typeof WorkshopsRoute
     }
+    '/workshops/$slug': {
+      id: '/workshops/$slug'
+      path: '/$slug'
+      fullPath: '/workshops/$slug'
+      preLoaderRoute: typeof WorkshopsSlugRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
     '/works/new': {
       id: '/works/new'
       path: '/works/new'
@@ -334,10 +353,12 @@ const MeRouteChildren: MeRouteChildren = {
 const MeRouteWithChildren = MeRoute._addFileChildren(MeRouteChildren)
 
 interface WorkshopsRouteChildren {
+  WorkshopsSlugRoute: typeof WorkshopsSlugRoute
   WorkshopsNewRoute: typeof WorkshopsNewRoute
 }
 
 const WorkshopsRouteChildren: WorkshopsRouteChildren = {
+  WorkshopsSlugRoute: WorkshopsSlugRoute,
   WorkshopsNewRoute: WorkshopsNewRoute,
 }
 
