@@ -15,11 +15,10 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/works/new")({ component: NewWork });
 
 const LICENSES = [
-  { id: "all_rights_reserved", label: "All rights reserved" },
-  { id: "cc_by", label: "CC BY" },
-  { id: "cc_by_nc", label: "CC BY-NC" },
-  { id: "cc_by_sa", label: "CC BY-SA" },
-  { id: "cc0", label: "CC0 (public domain)" },
+  { id: "cc_by", label: "CC BY — credit required" },
+  { id: "portfolio_credit_only", label: "Portfolio + credit only" },
+  { id: "rights_managed_externally", label: "Rights managed externally" },
+  { id: "private", label: "Private (you only)" },
 ] as const;
 
 function NewWork() {
