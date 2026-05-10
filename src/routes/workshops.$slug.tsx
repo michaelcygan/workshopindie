@@ -380,6 +380,8 @@ function Room({ ws }: { ws: Workshop }) {
           <Button type="submit" size="icon" className="rounded-full shrink-0"><Send className="h-4 w-4" /></Button>
         </form>
       </div>
+
+      <Pinboard ws={ws} />
     </section>
   );
 }
