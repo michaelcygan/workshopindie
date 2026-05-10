@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstantRouteImport } from './routes/instant'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
@@ -64,6 +65,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkshopsRoute,
 } as any)
 const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   id: '/new',
@@ -117,6 +123,7 @@ export interface FileRoutesByFullPath {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -126,7 +133,6 @@ export interface FileRoutesByTo {
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/signup': typeof SignupRoute
-  '/workshops': typeof WorkshopsRouteWithChildren
   '/collab/new': typeof CollabNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
@@ -134,6 +140,7 @@ export interface FileRoutesByTo {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/workshops': typeof WorkshopsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -152,6 +159,7 @@ export interface FileRoutesById {
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
+  '/workshops/': typeof WorkshopsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -171,6 +179,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/workshops/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -180,7 +189,6 @@ export interface FileRouteTypes {
     | '/me'
     | '/onboarding'
     | '/signup'
-    | '/workshops'
     | '/collab/new'
     | '/me/edit'
     | '/u/$username'
@@ -188,6 +196,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/workshops'
   id:
     | '__root__'
     | '/'
@@ -205,6 +214,7 @@ export interface FileRouteTypes {
     | '/works/new'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/workshops/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -278,6 +288,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/workshops/': {
+      id: '/workshops/'
+      path: '/'
+      fullPath: '/workshops/'
+      preLoaderRoute: typeof WorkshopsIndexRouteImport
+      parentRoute: typeof WorkshopsRoute
     }
     '/workshops/new': {
       id: '/workshops/new'
@@ -355,11 +372,13 @@ const MeRouteWithChildren = MeRoute._addFileChildren(MeRouteChildren)
 interface WorkshopsRouteChildren {
   WorkshopsSlugRoute: typeof WorkshopsSlugRoute
   WorkshopsNewRoute: typeof WorkshopsNewRoute
+  WorkshopsIndexRoute: typeof WorkshopsIndexRoute
 }
 
 const WorkshopsRouteChildren: WorkshopsRouteChildren = {
   WorkshopsSlugRoute: WorkshopsSlugRoute,
   WorkshopsNewRoute: WorkshopsNewRoute,
+  WorkshopsIndexRoute: WorkshopsIndexRoute,
 }
 
 const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
@@ -382,3 +401,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
