@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { VoicePanel } from "@/components/voice-panel";
 
 export const Route = createFileRoute("/instant/")({
   component: InstantChannels,
@@ -249,30 +250,46 @@ function ChannelView({ roomId, title }: { roomId: string; title: string }) {
         </form>
       </div>
 
-      <aside className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
-        <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
-          <Users className="h-3.5 w-3.5" /> Around · {presence.length}
-        </h3>
-        <ul className="mt-3 space-y-2">
-          {presence.map((p) => (
-            <li key={p.user_id} className="flex items-center gap-2">
-              <div className="h-7 w-7 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                {p.profile?.avatar_url ? <img src={p.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (p.profile?.display_name?.[0] || "?")}
-              </div>
-              {p.profile?.username ? (
-                <Link to="/u/$username" params={{ username: p.profile.username }} className="text-sm text-ink hover:underline truncate">
-                  {p.profile?.display_name || p.profile.username}
-                </Link>
-              ) : (
-                <span className="text-sm text-ink truncate">{p.profile?.display_name || "Anon"}</span>
-              )}
-            </li>
-          ))}
-        </ul>
-        <div className="mt-4 rounded-xl bg-muted p-3 text-xs text-ink-muted">
-          Voice rooms are coming. For now, chat here, then spin up a Workshop to actually make something.
-        </div>
-      </aside>
+      <div className="space-y-4">
+        <VoicePanel
+          roomId={roomId}
+          channelTitle={title}
+          profileLookup={
+            new Map(
+              presence.map((p) => [
+                p.user_id,
+                {
+                  user_id: p.user_id,
+                  display_name: p.profile?.display_name ?? null,
+                  username: p.profile?.username ?? null,
+                  avatar_url: p.profile?.avatar_url ?? null,
+                },
+              ]),
+            )
+          }
+        />
+        <aside className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
+          <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
+            <Users className="h-3.5 w-3.5" /> Around · {presence.length}
+          </h3>
+          <ul className="mt-3 space-y-2">
+            {presence.map((p) => (
+              <li key={p.user_id} className="flex items-center gap-2">
+                <div className="h-7 w-7 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
+                  {p.profile?.avatar_url ? <img src={p.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (p.profile?.display_name?.[0] || "?")}
+                </div>
+                {p.profile?.username ? (
+                  <Link to="/u/$username" params={{ username: p.profile.username }} className="text-sm text-ink hover:underline truncate">
+                    {p.profile?.display_name || p.profile.username}
+                  </Link>
+                ) : (
+                  <span className="text-sm text-ink truncate">{p.profile?.display_name || "Anon"}</span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </aside>
+      </div>
     </div>
   );
 }
