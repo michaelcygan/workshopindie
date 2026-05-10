@@ -12,6 +12,7 @@ import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
   const { user, loading } = useAuth();
+  const { isAdmin } = useUserRoles();
   const navigate = useNavigate();
 
   const initial =
