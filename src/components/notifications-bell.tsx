@@ -110,10 +110,10 @@ export function NotificationsBell() {
             const Icon = n.icon;
             return (
               <li key={n.id}>
-                <Link
-                  to={n.href}
-                  onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 px-4 py-3 text-sm hover:bg-muted/60"
+                <button
+                  type="button"
+                  onClick={() => { setOpen(false); navigate({ to: n.href }); }}
+                  className="flex w-full items-start gap-3 px-4 py-3 text-left text-sm hover:bg-muted/60"
                 >
                   <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-ink-soft">
                     <Icon className="h-3.5 w-3.5" />
@@ -122,7 +122,7 @@ export function NotificationsBell() {
                     <span className="block text-ink">{n.title}</span>
                     <span className="block truncate text-xs text-ink-muted">{n.subtitle}</span>
                   </span>
-                </Link>
+                </button>
               </li>
             );
           })}
