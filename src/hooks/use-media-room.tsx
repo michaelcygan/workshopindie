@@ -358,7 +358,7 @@ export function useMediaRoom(roomId: string | undefined) {
 
         ch.on("presence", { event: "join" }, ({ key, newPresences }) => {
           if (key === "lurker" || key === myId) return;
-          const peerMode = ((newPresences[0] as PresenceMeta | undefined)?.mode ?? "voice") as MediaMode;
+          const peerMode = (((newPresences[0] as unknown) as PresenceMeta | undefined)?.mode ?? "voice") as MediaMode;
           if (peerMode === "listening") return;
           if (modeRef.current === "listening") return;
           if (myId > key) {
