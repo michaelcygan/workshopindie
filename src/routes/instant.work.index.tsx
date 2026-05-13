@@ -46,21 +46,30 @@ function WorkBrowser() {
       const nowIso = new Date().toISOString();
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id,title,prompt,medium,ends_at,creator_id,participant_cap, creator:profiles!instant_rooms_creator_id_fkey(display_name,username,avatar_url)")
+        .select("id,title,prompt,medium,ends_at,creator_id,participant_cap")
         .eq("kind", "work")
         .or(`ends_at.is.null,ends_at.gt.${nowIso}`)
         .order("ends_at", { ascending: true, nullsFirst: false });
       if (error) throw error;
-      const ids = (data ?? []).map((r) => r.id);
+      const list = data ?? [];
+      const ids = list.map((r) => r.id);
+      const creatorIds = Array.from(new Set(list.map((r) => r.creator_id).filter((x): x is string => !!x)));
       const counts: Record<string, number> = {};
+      const creators: Record<string, WorkRoom["creator"]> = {};
       if (ids.length > 0) {
-        const { data: pres } = await supabase
-          .from("instant_presence")
-          .select("room_id")
-          .in("room_id", ids);
+        const { data: pres } = await supabase.from("instant_presence").select("room_id").in("room_id", ids);
         for (const p of pres ?? []) counts[p.room_id] = (counts[p.room_id] ?? 0) + 1;
       }
-      return (data ?? []).map((r) => ({ ...r, presence_count: counts[r.id] ?? 0 })) as WorkRoom[];
+      if (creatorIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles").select("id,display_name,username,avatar_url").in("id", creatorIds);
+        for (const p of profs ?? []) creators[p.id] = { display_name: p.display_name, username: p.username, avatar_url: p.avatar_url };
+      }
+      return list.map((r) => ({
+        ...r,
+        presence_count: counts[r.id] ?? 0,
+        creator: r.creator_id ? creators[r.creator_id] ?? null : null,
+      })) as WorkRoom[];
     },
     refetchInterval: 20_000,
   });

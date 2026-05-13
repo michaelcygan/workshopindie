@@ -27,11 +27,14 @@ function WorkLobby() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id,kind,title,prompt,medium,ends_at,participant_cap, creator:profiles!instant_rooms_creator_id_fkey(display_name,username)")
+        .select("id,kind,title,prompt,medium,ends_at,creator_id,participant_cap")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      if (!data?.creator_id) return data ? { ...data, creator: null as null | { display_name: string | null; username: string | null } } : null;
+      const { data: prof } = await supabase
+        .from("profiles").select("display_name,username").eq("id", data.creator_id).maybeSingle();
+      return { ...data, creator: prof ?? null };
     },
   });
 

@@ -30,12 +30,17 @@ import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as MeEditRouteImport } from './routes/me.edit'
+import { Route as InstantWorkRouteImport } from './routes/instant.work'
 import { Route as InstantNewRouteImport } from './routes/instant.new'
+import { Route as InstantLoungeRouteImport } from './routes/instant.lounge'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as InstantWorkIndexRouteImport } from './routes/instant.work.index'
+import { Route as InstantWorkNewRouteImport } from './routes/instant.work.new'
+import { Route as InstantWorkIdRouteImport } from './routes/instant.work.$id'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
@@ -142,9 +147,19 @@ const MeEditRoute = MeEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => MeRoute,
 } as any)
+const InstantWorkRoute = InstantWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => InstantRoute,
+} as any)
 const InstantNewRoute = InstantNewRouteImport.update({
   id: '/new',
   path: '/new',
+  getParentRoute: () => InstantRoute,
+} as any)
+const InstantLoungeRoute = InstantLoungeRouteImport.update({
+  id: '/lounge',
+  path: '/lounge',
   getParentRoute: () => InstantRoute,
 } as any)
 const InstantIdRoute = InstantIdRouteImport.update({
@@ -172,6 +187,21 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const InstantWorkIndexRoute = InstantWorkIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => InstantWorkRoute,
+} as any)
+const InstantWorkNewRoute = InstantWorkNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => InstantWorkRoute,
+} as any)
+const InstantWorkIdRoute = InstantWorkIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => InstantWorkRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -189,7 +219,9 @@ export interface FileRoutesByFullPath {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
+  '/instant/lounge': typeof InstantLoungeRoute
   '/instant/new': typeof InstantNewRoute
+  '/instant/work': typeof InstantWorkRouteWithChildren
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -201,6 +233,9 @@ export interface FileRoutesByFullPath {
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/instant/work/$id': typeof InstantWorkIdRoute
+  '/instant/work/new': typeof InstantWorkNewRoute
+  '/instant/work/': typeof InstantWorkIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -213,6 +248,7 @@ export interface FileRoutesByTo {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
+  '/instant/lounge': typeof InstantLoungeRoute
   '/instant/new': typeof InstantNewRoute
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
@@ -225,6 +261,9 @@ export interface FileRoutesByTo {
   '/collab': typeof CollabIndexRoute
   '/instant': typeof InstantIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/instant/work/$id': typeof InstantWorkIdRoute
+  '/instant/work/new': typeof InstantWorkNewRoute
+  '/instant/work': typeof InstantWorkIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -243,7 +282,9 @@ export interface FileRoutesById {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/instant/$id': typeof InstantIdRoute
+  '/instant/lounge': typeof InstantLoungeRoute
   '/instant/new': typeof InstantNewRoute
+  '/instant/work': typeof InstantWorkRouteWithChildren
   '/me/edit': typeof MeEditRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -255,6 +296,9 @@ export interface FileRoutesById {
   '/collab/': typeof CollabIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/instant/work/$id': typeof InstantWorkIdRoute
+  '/instant/work/new': typeof InstantWorkNewRoute
+  '/instant/work/': typeof InstantWorkIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -274,7 +318,9 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
+    | '/instant/lounge'
     | '/instant/new'
+    | '/instant/work'
     | '/me/edit'
     | '/u/$username'
     | '/works/$slug'
@@ -286,6 +332,9 @@ export interface FileRouteTypes {
     | '/collab/'
     | '/instant/'
     | '/workshops/'
+    | '/instant/work/$id'
+    | '/instant/work/new'
+    | '/instant/work/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -298,6 +347,7 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
+    | '/instant/lounge'
     | '/instant/new'
     | '/me/edit'
     | '/u/$username'
@@ -310,6 +360,9 @@ export interface FileRouteTypes {
     | '/collab'
     | '/instant'
     | '/workshops'
+    | '/instant/work/$id'
+    | '/instant/work/new'
+    | '/instant/work'
   id:
     | '__root__'
     | '/'
@@ -327,7 +380,9 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/instant/$id'
+    | '/instant/lounge'
     | '/instant/new'
+    | '/instant/work'
     | '/me/edit'
     | '/u/$username'
     | '/works/$slug'
@@ -339,6 +394,9 @@ export interface FileRouteTypes {
     | '/collab/'
     | '/instant/'
     | '/workshops/'
+    | '/instant/work/$id'
+    | '/instant/work/new'
+    | '/instant/work/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -506,11 +564,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeEditRouteImport
       parentRoute: typeof MeRoute
     }
+    '/instant/work': {
+      id: '/instant/work'
+      path: '/work'
+      fullPath: '/instant/work'
+      preLoaderRoute: typeof InstantWorkRouteImport
+      parentRoute: typeof InstantRoute
+    }
     '/instant/new': {
       id: '/instant/new'
       path: '/new'
       fullPath: '/instant/new'
       preLoaderRoute: typeof InstantNewRouteImport
+      parentRoute: typeof InstantRoute
+    }
+    '/instant/lounge': {
+      id: '/instant/lounge'
+      path: '/lounge'
+      fullPath: '/instant/lounge'
+      preLoaderRoute: typeof InstantLoungeRouteImport
       parentRoute: typeof InstantRoute
     }
     '/instant/$id': {
@@ -547,6 +619,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/badges'
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/instant/work/': {
+      id: '/instant/work/'
+      path: '/'
+      fullPath: '/instant/work/'
+      preLoaderRoute: typeof InstantWorkIndexRouteImport
+      parentRoute: typeof InstantWorkRoute
+    }
+    '/instant/work/new': {
+      id: '/instant/work/new'
+      path: '/new'
+      fullPath: '/instant/work/new'
+      preLoaderRoute: typeof InstantWorkNewRouteImport
+      parentRoute: typeof InstantWorkRoute
+    }
+    '/instant/work/$id': {
+      id: '/instant/work/$id'
+      path: '/$id'
+      fullPath: '/instant/work/$id'
+      preLoaderRoute: typeof InstantWorkIdRouteImport
+      parentRoute: typeof InstantWorkRoute
     }
   }
 }
@@ -591,15 +684,35 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface InstantWorkRouteChildren {
+  InstantWorkIdRoute: typeof InstantWorkIdRoute
+  InstantWorkNewRoute: typeof InstantWorkNewRoute
+  InstantWorkIndexRoute: typeof InstantWorkIndexRoute
+}
+
+const InstantWorkRouteChildren: InstantWorkRouteChildren = {
+  InstantWorkIdRoute: InstantWorkIdRoute,
+  InstantWorkNewRoute: InstantWorkNewRoute,
+  InstantWorkIndexRoute: InstantWorkIndexRoute,
+}
+
+const InstantWorkRouteWithChildren = InstantWorkRoute._addFileChildren(
+  InstantWorkRouteChildren,
+)
+
 interface InstantRouteChildren {
   InstantIdRoute: typeof InstantIdRoute
+  InstantLoungeRoute: typeof InstantLoungeRoute
   InstantNewRoute: typeof InstantNewRoute
+  InstantWorkRoute: typeof InstantWorkRouteWithChildren
   InstantIndexRoute: typeof InstantIndexRoute
 }
 
 const InstantRouteChildren: InstantRouteChildren = {
   InstantIdRoute: InstantIdRoute,
+  InstantLoungeRoute: InstantLoungeRoute,
   InstantNewRoute: InstantNewRoute,
+  InstantWorkRoute: InstantWorkRouteWithChildren,
   InstantIndexRoute: InstantIndexRoute,
 }
 
