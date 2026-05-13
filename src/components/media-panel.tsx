@@ -126,16 +126,6 @@ export function MediaPanel({
             </AnimatePresence>
           </ul>
 
-          {/* Listeners pill */}
-          {(() => {
-            const listeners = m.peers.filter((p) => p.mode === "listening").length + (m.mode === "listening" ? 1 : 0);
-            if (listeners === 0) return null;
-            return (
-              <div className="text-[11px] text-ink-muted inline-flex items-center gap-1">
-                <Headphones className="h-3 w-3" /> {listeners} listening
-              </div>
-            );
-          })()}
 
           {/* Controls */}
           <div className="flex gap-2">
