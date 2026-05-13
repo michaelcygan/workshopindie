@@ -66,8 +66,7 @@ export function MediaPanel({
       ) : (
         <div className="mt-3 space-y-3">
           {/* Mode switcher */}
-          <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
-            <ModeChip active={m.mode === "listening"} icon={Headphones} label="Listen" onClick={() => m.setMode("listening")} disabled={m.busy} />
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
             <ModeChip active={m.mode === "voice"} icon={Mic} label="Voice" onClick={() => m.setMode("voice")} disabled={m.busy} />
             <ModeChip active={m.mode === "video"} icon={Video} label="Video" onClick={() => m.setMode("video")} disabled={m.busy || (m.mode !== "video" && m.videoCount >= m.videoCap)} />
           </div>
