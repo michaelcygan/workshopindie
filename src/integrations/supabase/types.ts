@@ -370,8 +370,14 @@ export type Database = {
           category: Database["public"]["Enums"]["category"] | null
           city_id: string | null
           created_at: string
+          creator_id: string | null
           description: string | null
+          ends_at: string | null
           id: string
+          kind: string
+          medium: Database["public"]["Enums"]["category"] | null
+          participant_cap: number
+          prompt: string | null
           slug: string | null
           status: Database["public"]["Enums"]["instant_status"]
           title: string
@@ -380,8 +386,14 @@ export type Database = {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
+          ends_at?: string | null
           id?: string
+          kind?: string
+          medium?: Database["public"]["Enums"]["category"] | null
+          participant_cap?: number
+          prompt?: string | null
           slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title: string
@@ -390,8 +402,14 @@ export type Database = {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
           created_at?: string
+          creator_id?: string | null
           description?: string | null
+          ends_at?: string | null
           id?: string
+          kind?: string
+          medium?: Database["public"]["Enums"]["category"] | null
+          participant_cap?: number
+          prompt?: string | null
           slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title?: string
