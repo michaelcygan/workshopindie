@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Headphones, Video, VideoOff, PhoneOff, Radio, Loader2 } from "lucide-react";
+import { Mic, MicOff, Headphones, Video, PhoneOff, Radio, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
