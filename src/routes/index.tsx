@@ -288,23 +288,28 @@ function LiveNowStrip() {
   const { data } = useQuery({
     queryKey: ["home-instant-live"],
     queryFn: async () => {
-      const { data: rooms } = await supabase
-        .from("instant_rooms")
-        .select("id,slug,title,description,presence:instant_presence(count)")
-        .in("slug", ["lounge", "tonight"]);
-      return (rooms ?? []).map((r: any) => ({
-        slug: r.slug as string,
-        title: r.title as string,
-        description: r.description as string | null,
-        count: (r.presence?.[0]?.count ?? 0) as number,
-      }));
+      const nowIso = new Date().toISOString();
+      const [lounge, work] = await Promise.all([
+        supabase.from("instant_rooms").select("id,title,description").eq("slug", "lounge").maybeSingle(),
+        supabase.from("instant_rooms").select("id").eq("kind", "work").or(`ends_at.is.null,ends_at.gt.${nowIso}`),
+      ]);
+      let loungeCount = 0;
+      if (lounge.data?.id) {
+        const { count } = await supabase
+          .from("instant_presence")
+          .select("user_id", { count: "exact", head: true })
+          .eq("room_id", lounge.data.id);
+        loungeCount = count ?? 0;
+      }
+      return {
+        lounge: lounge.data ? { title: lounge.data.title, description: lounge.data.description, count: loungeCount } : null,
+        workCount: (work.data ?? []).length,
+      };
     },
     refetchInterval: 30_000,
   });
 
-  if (!data || data.length === 0) return null;
-  const order = ["lounge", "tonight"];
-  const channels = [...data].sort((a, b) => order.indexOf(a.slug) - order.indexOf(b.slug));
+  if (!data) return null;
 
   return (
     <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
@@ -318,20 +323,32 @@ function LiveNowStrip() {
           <Link to="/instant" className="ml-auto text-sm text-primary hover:underline">Drop in →</Link>
         </div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {channels.map((c) => (
-            <Link key={c.slug} to="/instant" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
-              {c.slug === "tonight" ? <Calendar className="h-5 w-5 text-primary" /> : <Radio className="h-5 w-5 text-primary" />}
+          {data.lounge && (
+            <Link to="/instant/lounge" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
+              <Radio className="h-5 w-5 text-primary" />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-display text-lg text-ink">{c.title}</h4>
+                  <h4 className="font-display text-lg text-ink">{data.lounge.title}</h4>
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-soft">
-                    <Users className="h-3 w-3" /> {c.count}
+                    <Users className="h-3 w-3" /> {data.lounge.count}
                   </span>
                 </div>
-                {c.description && <p className="mt-0.5 truncate text-xs text-ink-muted">{c.description}</p>}
+                {data.lounge.description && <p className="mt-0.5 truncate text-xs text-ink-muted">{data.lounge.description}</p>}
               </div>
             </Link>
-          ))}
+          )}
+          <Link to="/instant/work" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <h4 className="font-display text-lg text-ink">Work</h4>
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-soft">
+                  <Users className="h-3 w-3" /> {data.workCount} {data.workCount === 1 ? "lobby" : "lobbies"}
+                </span>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-ink-muted">Task-based lobbies. Make something now.</p>
+            </div>
+          </Link>
         </div>
       </div>
     </section>
