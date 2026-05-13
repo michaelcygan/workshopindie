@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Headphones, Video, VideoOff, PhoneOff, Radio, Loader2 } from "lucide-react";
+import { Mic, MicOff, Headphones, Video, PhoneOff, Radio, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,11 +51,11 @@ export function MediaPanel({
               ? "Quiet right now. Drop in to start."
               : `${m.voiceCount} ${m.voiceCount === 1 ? "person" : "people"} live${m.videoCount ? ` · ${m.videoCount} on cam` : ""}.`}
           </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            <ModeButton icon={Headphones} label="Listen" onClick={() => m.setMode("listening")} disabled={m.busy} />
+          <div className="grid grid-cols-2 gap-1.5">
             <ModeButton icon={Mic} label="Voice" onClick={() => m.setMode("voice")} disabled={m.busy || m.voiceCount >= m.cap} primary />
             <ModeButton icon={Video} label="Video" onClick={() => m.setMode("video")} disabled={m.busy || m.voiceCount >= m.cap || m.videoCount >= m.videoCap} />
           </div>
+          <p className="text-[11px] text-ink-muted">Mic or camera required to join.</p>
           {m.busy && (
             <p className="text-xs text-ink-muted inline-flex items-center gap-1.5">
               <Loader2 className="h-3 w-3 animate-spin" /> Connecting…
@@ -66,8 +66,7 @@ export function MediaPanel({
       ) : (
         <div className="mt-3 space-y-3">
           {/* Mode switcher */}
-          <div className="grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
-            <ModeChip active={m.mode === "listening"} icon={Headphones} label="Listen" onClick={() => m.setMode("listening")} disabled={m.busy} />
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
             <ModeChip active={m.mode === "voice"} icon={Mic} label="Voice" onClick={() => m.setMode("voice")} disabled={m.busy} />
             <ModeChip active={m.mode === "video"} icon={Video} label="Video" onClick={() => m.setMode("video")} disabled={m.busy || (m.mode !== "video" && m.videoCount >= m.videoCap)} />
           </div>
@@ -127,16 +126,6 @@ export function MediaPanel({
             </AnimatePresence>
           </ul>
 
-          {/* Listeners pill */}
-          {(() => {
-            const listeners = m.peers.filter((p) => p.mode === "listening").length + (m.mode === "listening" ? 1 : 0);
-            if (listeners === 0) return null;
-            return (
-              <div className="text-[11px] text-ink-muted inline-flex items-center gap-1">
-                <Headphones className="h-3 w-3" /> {listeners} listening
-              </div>
-            );
-          })()}
 
           {/* Controls */}
           <div className="flex gap-2">
