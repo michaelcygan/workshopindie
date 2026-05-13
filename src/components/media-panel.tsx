@@ -51,11 +51,11 @@ export function MediaPanel({
               ? "Quiet right now. Drop in to start."
               : `${m.voiceCount} ${m.voiceCount === 1 ? "person" : "people"} live${m.videoCount ? ` · ${m.videoCount} on cam` : ""}.`}
           </p>
-          <div className="grid grid-cols-3 gap-1.5">
-            <ModeButton icon={Headphones} label="Listen" onClick={() => m.setMode("listening")} disabled={m.busy} />
+          <div className="grid grid-cols-2 gap-1.5">
             <ModeButton icon={Mic} label="Voice" onClick={() => m.setMode("voice")} disabled={m.busy || m.voiceCount >= m.cap} primary />
             <ModeButton icon={Video} label="Video" onClick={() => m.setMode("video")} disabled={m.busy || m.voiceCount >= m.cap || m.videoCount >= m.videoCap} />
           </div>
+          <p className="text-[11px] text-ink-muted">Mic or camera required to join.</p>
           {m.busy && (
             <p className="text-xs text-ink-muted inline-flex items-center gap-1.5">
               <Loader2 className="h-3 w-3 animate-spin" /> Connecting…
