@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
-export type RoomViewMode = "chat" | "gallery";
+export type RoomViewMode = "chat" | "gallery" | "whiteboard";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
