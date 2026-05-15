@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { MediaPeer, useMediaRoom } from "@/hooks/use-media-room";
+import type { useMediaRoom } from "@/hooks/use-media-room";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
