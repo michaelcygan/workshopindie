@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Tldraw, type Editor, type TLAssetStore, type TLStoreSnapshot, getSnapshot, loadSnapshot, uniqueId } from "tldraw";
+import { Tldraw, type Editor, type TLAssetStore, type TLStoreSnapshot, getSnapshot, loadSnapshot } from "tldraw";
 import "tldraw/tldraw.css";
 import { Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
