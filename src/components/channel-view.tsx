@@ -76,6 +76,16 @@ export function ChannelView({
     router.navigate({ to: "/" });
   }
 
+  // Esc exits fullscreen.
+  useEffect(() => {
+    if (!fullscreen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
+
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
   const inactive = media.joined && media.muted && !media.cameraOn;
   useEffect(() => {
