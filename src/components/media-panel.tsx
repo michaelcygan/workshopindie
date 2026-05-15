@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
+
+export type RoomViewMode = "chat" | "gallery";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
@@ -33,17 +35,25 @@ export function MediaPanel({
   channelTitle,
   meDisplay,
   meAvatar,
+  meUserId,
   profileLookup,
   others,
   onExit,
+  viewMode,
+  onViewModeChange,
+  onOpenWork,
 }: {
   m: MediaState;
   channelTitle: string;
   meDisplay: string;
   meAvatar: string | null;
+  meUserId: string;
   profileLookup: Map<string, ProfileLite>;
   others: PresenceLite[];
   onExit: () => void;
+  viewMode?: RoomViewMode;
+  onViewModeChange?: (v: RoomViewMode) => void;
+  onOpenWork?: (workId: string) => void;
 }) {
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
@@ -58,6 +68,31 @@ export function MediaPanel({
           {totalHere}/{m.cap}
         </span>
       </header>
+
+      {viewMode && onViewModeChange && (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+          <button
+            type="button"
+            onClick={() => onViewModeChange("chat")}
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              viewMode === "chat" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange("gallery")}
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              viewMode === "gallery" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Gallery
+          </button>
+        </div>
+      )}
 
       {!m.joined ? (
         <p className="mt-3 text-xs text-ink-muted">
@@ -103,12 +138,14 @@ export function MediaPanel({
             <ul className="space-y-2">
               <SpeakerRow
                 key="me"
+                userId={meUserId}
                 speaking={m.speaking && !m.muted}
                 muted={m.muted}
                 displayName={meDisplay}
                 avatarUrl={meAvatar}
                 username={null}
                 isMe
+                onOpenWork={onOpenWork}
               />
               <AnimatePresence initial={false}>
                 {others.map((o) => {
@@ -116,11 +153,13 @@ export function MediaPanel({
                   return (
                     <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
                       <SpeakerRow
+                        userId={o.user_id}
                         speaking={!!peer?.speaking}
                         muted={false}
                         displayName={o.profile?.display_name || o.profile?.username || "Anon"}
                         avatarUrl={o.profile?.avatar_url ?? null}
                         username={o.profile?.username ?? null}
+                        onOpenWork={onOpenWork}
                       />
                     </motion.div>
                   );
@@ -534,17 +573,19 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  speaking, muted, displayName, avatarUrl, username, isMe,
+  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork,
 }: {
+  userId: string;
   speaking: boolean;
   muted: boolean;
   displayName: string;
   avatarUrl: string | null;
   username: string | null;
   isMe?: boolean;
+  onOpenWork?: (workId: string) => void;
 }) {
-  return (
-    <li className="flex items-center gap-2">
+  const inner = (
+    <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
       <div className={cn(
         "relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted ring-2 transition",
         speaking ? "ring-primary" : "ring-transparent",
@@ -552,15 +593,17 @@ function SpeakerRow({
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName[0]?.toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
-        {username && !isMe ? (
-          <Link to="/u/$username" params={{ username }} className="block text-sm text-ink hover:underline truncate">
-            {displayName}
-          </Link>
-        ) : (
-          <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
-        )}
+        <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
+        {username && <span className="block text-[10px] text-ink-muted truncate">@{username}</span>}
       </div>
       {muted && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
+    </button>
+  );
+  return (
+    <li>
+      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork}>
+        {inner}
+      </ProfilePeek>
     </li>
   );
 }
