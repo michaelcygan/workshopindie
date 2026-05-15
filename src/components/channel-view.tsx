@@ -302,43 +302,65 @@ export function ChannelView({
           profileLookup={profileLookup}
           onEnterFullscreen={() => setFullscreen(true)}
         />
-        <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
-          {messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-center">
-              <div>
-                <p className="font-display text-xl text-ink">Quiet in {title}.</p>
-                <p className="mt-1 text-sm text-ink-muted">Be the first to say hi. Messages vanish after 24h.</p>
-              </div>
+        {viewMode === "gallery" && user ? (
+          <div className="h-[60vh] p-3 md:p-4">
+            <RoomGallery
+              meUserId={user.id}
+              members={[
+                { user_id: user.id, display_name: meDisplay, username: me?.username ?? null, avatar_url: meAvatar, speaking: media.speaking && !media.muted },
+                ...others.map((o) => ({
+                  user_id: o.user_id,
+                  display_name: o.profile?.display_name ?? null,
+                  username: o.profile?.username ?? null,
+                  avatar_url: o.profile?.avatar_url ?? null,
+                  speaking: !!media.peers.find((p) => p.userId === o.user_id)?.speaking,
+                })),
+              ]}
+              onOpenWork={openWork}
+              className="h-full"
+            />
+          </div>
+        ) : (
+          <>
+            <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
+              {messages.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-center">
+                  <div>
+                    <p className="font-display text-xl text-ink">Quiet in {title}.</p>
+                    <p className="mt-1 text-sm text-ink-muted">Be the first to say hi. Messages vanish after 24h.</p>
+                  </div>
+                </div>
+              ) : (
+                <ul className="space-y-3">
+                  <AnimatePresence initial={false}>
+                    {messages.map((m) => {
+                      const p = presence.find((pp) => pp.user_id === m.user_id)?.profile;
+                      const mine = m.user_id === user?.id;
+                      return (
+                        <motion.li key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                          className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
+                          <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
+                            {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : (p?.display_name?.[0] || "?")}
+                          </div>
+                          <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-ink text-background" : "bg-muted text-ink"}`}>
+                            {!mine && p && <div className="text-[10px] font-medium opacity-70 mb-0.5">{p.display_name || p.username}</div>}
+                            <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                          </div>
+                        </motion.li>
+                      );
+                    })}
+                  </AnimatePresence>
+                </ul>
+              )}
             </div>
-          ) : (
-            <ul className="space-y-3">
-              <AnimatePresence initial={false}>
-                {messages.map((m) => {
-                  const p = presence.find((pp) => pp.user_id === m.user_id)?.profile;
-                  const mine = m.user_id === user?.id;
-                  return (
-                    <motion.li key={m.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-                      className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}>
-                      <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                        {p?.avatar_url ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" /> : (p?.display_name?.[0] || "?")}
-                      </div>
-                      <div className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-ink text-background" : "bg-muted text-ink"}`}>
-                        {!mine && p && <div className="text-[10px] font-medium opacity-70 mb-0.5">{p.display_name || p.username}</div>}
-                        <div className="whitespace-pre-wrap break-words">{m.body}</div>
-                      </div>
-                    </motion.li>
-                  );
-                })}
-              </AnimatePresence>
-            </ul>
-          )}
-        </div>
-        <form onSubmit={send} className="flex items-center gap-2 border-t border-border p-3">
-          <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Say something in ${title}…`} maxLength={1000} />
-          <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending}>
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
+            <form onSubmit={send} className="flex items-center gap-2 border-t border-border p-3">
+              <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={`Say something in ${title}…`} maxLength={1000} />
+              <Button type="submit" size="icon" className="rounded-full" disabled={!draft.trim() || sending}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </form>
+          </>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -347,11 +369,17 @@ export function ChannelView({
           channelTitle={title}
           meDisplay={meDisplay}
           meAvatar={meAvatar}
+          meUserId={user?.id ?? ""}
           profileLookup={profileLookup}
           others={others}
           onExit={handleExit}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onOpenWork={openWork}
         />
       </div>
+
+      <WorkPeek workId={peekWorkId} open={workPeekOpen} onOpenChange={setWorkPeekOpen} />
 
       <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
         <AlertDialogContent>
