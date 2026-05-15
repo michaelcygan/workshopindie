@@ -169,8 +169,6 @@ export default function RoomWhiteboard({
         <Tldraw
           onMount={handleMount}
           assets={assetStore}
-          persistenceKey={undefined}
-          inferDarkMode
         />
       </div>
     </div>
