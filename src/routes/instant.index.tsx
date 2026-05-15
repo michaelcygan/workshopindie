@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft } from "lucide-react";
+import { Mic, Video, Loader2, ArrowLeft, Radio } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge } from "@/lib/instant.functions";
