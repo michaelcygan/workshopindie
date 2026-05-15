@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
