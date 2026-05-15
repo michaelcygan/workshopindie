@@ -70,27 +70,10 @@ export function MediaPanel({
       </header>
 
       {viewMode && onViewModeChange && (
-        <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-          <button
-            type="button"
-            onClick={() => onViewModeChange("chat")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              viewMode === "chat" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            <MessageCircle className="h-3.5 w-3.5" /> Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewModeChange("gallery")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              viewMode === "gallery" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Gallery
-          </button>
+        <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
+          <ViewPill active={viewMode === "chat"} onClick={() => onViewModeChange("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
+          <ViewPill active={viewMode === "gallery"} onClick={() => onViewModeChange("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" />
+          <ViewPill active={viewMode === "whiteboard"} onClick={() => onViewModeChange("whiteboard")} icon={<PenLine className="h-3.5 w-3.5" />} label="Board" />
         </div>
       )}
 
