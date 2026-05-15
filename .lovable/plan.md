@@ -1,52 +1,34 @@
-## Changes
+## Instant Workshop — v5 polish
 
-**1. Merge "Live" + "Around" into one panel** (`channel-view.tsx`, `media-panel.tsx`)
-Single right-rail card titled `INSTANT WORKSHOP · n/5`:
-- Header with live dot + count chip
-- Mute / Camera / Exit buttons (same row layout as today)
-- Below the buttons: unified participant list — you first (with `(you)` + speaking ring + mute icon), then peers (with speaking ring, profile link). Each row shows avatar + name + mic state. No separate "Around" card.
-- Remove the standalone `<aside>` "Around" block and the `Users` import.
+### 1) Always join with both audio + video when both devices exist
 
-**2. Rename "Lounge 01" → "Instant Workshop"** (`instant.$id.tsx`)
-- Drop the `allRows` query and the `Lounge NN` index logic. Title is always `Instant Workshop`.
-- Page subtitle stays "Live room · up to 5 artists."
-- `ChannelView` `title` prop = `"Instant Workshop"`. Empty-state copy becomes "Quiet in here." Chat placeholder "Say something…".
-- Update `<head>` title to "Instant Workshop".
+**`src/routes/instant.index.tsx`** — when both mic and camera are detected, default mode is `"video"` (currently defaults to `"voice"` whenever a mic exists, so video never streams in even though browser allowed it). Mode logic becomes:
+- both mic + cam → `"video"`
+- mic only → `"voice"`
+- cam only → `"video"`
 
-**3. Layout polish**
-- Right rail keeps `md:grid-cols-[1fr_260px]`. Single card is shorter — fine.
+The existing pre-flight `getUserMedia({ audio, video })` already requests both — no change there. The room then auto-joins in `video` mode, capturing both tracks.
 
-## Scale audit (100k concurrent)
+### 2) Standardize video tiles to a 5-up row (no monopoly)
 
-Honest answer: **no, the current architecture won't hold 100k concurrent**. It's fine for early launch (hundreds, low thousands) but several pieces hard-cap before 100k:
+**`src/components/media-panel.tsx` → `VideoStage`** — replace the `total <= 1 ? grid-cols-1 ...` adaptive grid with a fixed 5-column stage so every tile is the size one of five would be. Render only occupied tiles (no empty placeholders). On narrow viewports collapse responsively:
+- `grid-cols-2 sm:grid-cols-3 md:grid-cols-5`
+- Each tile keeps `aspect-video` so a single video no longer fills the whole stage; it stays sized at ~1/5 width with the rest of the row empty.
+- Stage gets a min-height equal to one tile so the layout doesn't jump as people join/leave.
 
-**Hard limits today**
-- **Mesh WebRTC** (`use-media-room.tsx`) — every participant peers with every other in the room. Cap is 5, so the room itself is fine, but each client also uploads its stream N-1 times. At 100k users that's ~20k rooms × 5 uplinks — bandwidth is on the *clients*, so this part actually scales. ✅
-- **Supabase Realtime channels** — one channel per room (`media:${id}`, `media-lurker:${id}`, `instant:${id}`) = **3 channels per room × 20k rooms = 60k channels**. Supabase Realtime's published soft cap is ~10k concurrent channels per project on standard tiers. ❌ Needs sharding or a dedicated realtime tier.
-- **`join_lounge` RPC contention** — single SQL function does `UPDATE ... archived` + `SELECT ... ORDER BY live_count DESC` on every join. Under burst load (say 5k joins/sec) the archive UPDATE will lock-contend and the LATERAL count subquery is O(rooms × presence). Needs: (a) move stale-archive to a cron job, not inline; (b) maintain `live_count` as a column updated by presence triggers, indexed. ❌
-- **Presence heartbeat every 30s** writes to `instant_presence` from every client → 100k writes / 30s = ~3.3k writes/sec sustained, plus realtime fan-out. Postgres can handle the writes, but the realtime DELETE/INSERT broadcasts amplify badly. Better: use Supabase Realtime *presence* (in-memory, ephemeral) instead of a DB table for live count; keep DB only for the room registry.
-- **Lurker channel on home page** — every visitor to `/` subscribes to a global presence channel. At 100k that's 100k subscribers on one channel — Realtime will choke. Need to swap for a polled count endpoint with short cache (e.g., 5s edge cache).
-- **Chat fan-out via `postgres_changes`** is the slowest realtime path (DB → WAL → Realtime). At scale switch to `broadcast` channel events for chat, persist async.
+### 3) Fullscreen / video-forward view
 
-**Optimizations that fit the current launch (do now)**
-- Replace home-page lurker channel with a cached `/api/public/instant-stats` endpoint (5s cache).
-- Move `instant_presence` to Realtime presence (in-memory) — drop the table heartbeat entirely. Keep DB only for messages + rooms.
-- Add `live_count int` column on `instant_rooms`, maintained via presence join/leave events; index `(kind, status, live_count)`. Simplifies `join_lounge` to a one-shot `SELECT ... WHERE live_count < 5 ORDER BY live_count DESC LIMIT 1`.
-- Move ghost-room archival to a cron route (`/api/public/cron/archive-lounges`) running every minute.
-- Switch chat to `broadcast` events; insert to DB async for history.
+Add a fullscreen toggle on the stage:
+- Header bar inside `VideoStage` with a `Maximize2 / Minimize2` button (top-right overlay).
+- When fullscreen: stage takes the whole viewport (`fixed inset-0 z-50 bg-ink`), tiles use a larger grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3` capped at 5 visible), and a floating control bar (Mute / Camera / Exit / Minimize) sits at the bottom-center. Chat + side panel hidden in this mode.
+- State lives in `ChannelView` (`fullscreen` boolean) and is passed to `VideoStage` + `MediaPanel`. Esc key exits fullscreen.
+- Use the browser Fullscreen API (`requestFullscreen` / `exitFullscreen`) on the stage container in addition to the CSS overlay so the user gets a true OS-level fullscreen if they want it.
 
-**Required for true 100k (defer until needed)**
-- SFU (LiveKit / Daily / mediasoup) instead of mesh — needed if you ever raise the cap or add screenshare.
-- Sharded Realtime / dedicated realtime infra.
+### Files touched
+- `src/routes/instant.index.tsx` — default mode logic
+- `src/components/media-panel.tsx` — fixed 5-col `VideoStage`, fullscreen mode + button, floating controls
+- `src/components/channel-view.tsx` — own `fullscreen` state, hide chat/sidebar when active, Esc handler
 
-**Recommendation:** ship the 3 UI changes now. Do the home-stats cache + presence-in-memory + `live_count` column as a follow-up before any real launch push — that gets you to comfortably ~10k concurrent without touching WebRTC or adding an SFU. The 100k figure needs a separate infra workstream.
-
-## Out of scope for this plan
-- WebRTC SFU migration
-- Realtime sharding
-- The scale optimizations above (separate plan if you want them)
-
-## Files touched
-- `src/components/channel-view.tsx` — remove Around card, drop `Users` import, pass merged list to MediaPanel
-- `src/components/media-panel.tsx` — render full participant list under buttons
-- `src/routes/instant.$id.tsx` — static "Instant Workshop" title, drop indexing query
+### Out of scope
+- Scale work (SFU, Realtime sharding) from the prior audit
+- Picture-in-picture, screen share, background blur

@@ -75,8 +75,9 @@ function InstantPreflight() {
         setBusy(false);
         return;
       }
-      // Default mode: voice if mic available, else video-only.
-      const mode = devices.mic ? "voice" : "video";
+      // Default mode: video whenever a camera is available (mic still captured
+      // alongside via getUserMedia). Voice-only when there's no camera.
+      const mode = devices.cam ? "video" : "voice";
       const { roomId } = await drop();
       router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
