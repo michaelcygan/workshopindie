@@ -424,6 +424,30 @@ export type Database = {
           },
         ]
       }
+      instant_whiteboard_assets: {
+        Row: {
+          created_at: string
+          id: string
+          room_id: string
+          storage_path: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          room_id: string
+          storage_path: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          room_id?: string
+          storage_path?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meetup_occurrences: {
         Row: {
           ends_at: string | null
