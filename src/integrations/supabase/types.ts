@@ -1321,6 +1321,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      join_lounge: { Args: { _user_id: string }; Returns: string }
       slugify: { Args: { _in: string }; Returns: string }
     }
     Enums: {

@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MediaPanel } from "@/components/media-panel";
+import { MediaPanel, VideoStage } from "@/components/media-panel";
+import { useMediaRoom } from "@/hooks/use-media-room";
 import { toast } from "sonner";
 
 type Message = { id: string; user_id: string; body: string; created_at: string };
@@ -31,6 +32,9 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Lift media room to ChannelView so VideoStage and MediaPanel share a single mesh.
+  const media = useMediaRoom(roomId);
 
   useEffect(() => {
     if (!user) return;
@@ -110,6 +114,10 @@ export function ChannelView({
     ]),
   );
 
+  const me = user ? profileLookup.get(user.id) : undefined;
+  const meDisplay = me?.display_name || me?.username || "You";
+  const meAvatar = me?.avatar_url ?? null;
+
   return (
     <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
       <div className="flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
@@ -118,6 +126,7 @@ export function ChannelView({
             {pinned}
           </div>
         )}
+        <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
         <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center">
@@ -158,7 +167,7 @@ export function ChannelView({
       </div>
 
       <div className="space-y-4">
-        <MediaPanel roomId={roomId} channelTitle={title} profileLookup={profileLookup} />
+        <MediaPanel m={media} channelTitle={title} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
         <aside className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
           <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
             <Users className="h-3.5 w-3.5" /> Around · {presence.length}

@@ -8,10 +8,10 @@ const ICE_CONFIG: RTCConfiguration = {
   ],
 };
 
-export const ROOM_CAP = 8;
-export const VIDEO_CAP = 4;
+export const ROOM_CAP = 5;
+export const VIDEO_CAP = 5;
 
-export type MediaMode = "listening" | "voice" | "video";
+export type MediaMode = "voice" | "video";
 
 export type MediaPeer = {
   userId: string;
@@ -33,7 +33,7 @@ export function useMediaRoom(roomId: string | undefined) {
   const myId = user?.id;
 
   const [joined, setJoined] = useState(false);
-  const [mode, setModeState] = useState<MediaMode>("listening");
+  const [mode, setModeState] = useState<MediaMode>("voice");
   const [muted, setMuted] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [count, setCount] = useState(0); // total presence including listeners
@@ -48,7 +48,7 @@ export function useMediaRoom(roomId: string | undefined) {
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const speakingStopRef = useRef<(() => void) | null>(null);
   const lastSpeakingSentRef = useRef<boolean>(false);
-  const modeRef = useRef<MediaMode>("listening");
+  const modeRef = useRef<MediaMode>("voice");
 
   // ---- helpers ---------------------------------------------------------------
 
@@ -262,8 +262,8 @@ export function useMediaRoom(roomId: string | undefined) {
     }
     setJoined(false);
     setPeers({});
-    setModeState("listening");
-    modeRef.current = "listening";
+    setModeState("voice");
+    modeRef.current = "voice";
   }, []);
 
   // ---- join with a mode -----------------------------------------------------
@@ -347,10 +347,9 @@ export function useMediaRoom(roomId: string | undefined) {
             }
             return next;
           });
-          // Drop peers no longer present (or who switched to listening)
+          // Drop peers no longer present
           for (const peerId of Array.from(pcsRef.current.keys())) {
-            const peerMeta = state[peerId]?.[0];
-            if (!ids.includes(peerId) || !peerMeta || peerMeta.mode === "listening") {
+            if (!ids.includes(peerId) || !state[peerId]?.[0]) {
               closePeer(peerId);
             }
           }
@@ -359,8 +358,6 @@ export function useMediaRoom(roomId: string | undefined) {
         ch.on("presence", { event: "join" }, ({ key, newPresences }) => {
           if (key === "lurker" || key === myId) return;
           const peerMode = (((newPresences[0] as unknown) as PresenceMeta | undefined)?.mode ?? "voice") as MediaMode;
-          if (peerMode === "listening") return;
-          if (modeRef.current === "listening") return;
           if (myId > key) {
             setTimeout(() => { makeOffer(key).catch(() => {}); }, 250);
           } else {
@@ -392,11 +389,11 @@ export function useMediaRoom(roomId: string | undefined) {
         await ch.track({ mode: effectiveMode, joined_at: new Date().toISOString() } satisfies PresenceMeta);
       }
 
-      // If not listening, build mesh against current media participants.
-      if (effectiveMode !== "listening") {
+      // Build mesh against current media participants.
+      {
         const state = ch.presenceState() as Record<string, Array<PresenceMeta>>;
         const others = Object.entries(state).filter(
-          ([k, metas]) => k !== "lurker" && k !== myId && metas[0]?.mode !== "listening",
+          ([k]) => k !== "lurker" && k !== myId,
         );
         for (const [peerId, metas] of others) {
           const peerMode = (metas[0]?.mode ?? "voice") as MediaMode;
