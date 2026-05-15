@@ -64,6 +64,7 @@ export function ChannelView({
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
   const openWork = (id: string) => { setPeekWorkId(id); setWorkPeekOpen(true); };
   const dropNew = useServerFn(joinLounge);
+  const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
