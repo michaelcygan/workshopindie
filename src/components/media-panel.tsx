@@ -158,6 +158,21 @@ export function MediaPanel({
   );
 }
 
+function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium transition",
+        active ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+      )}
+    >
+      {icon} {label}
+    </button>
+  );
+}
+
 export function VideoStage({
   m,
   meDisplay,
