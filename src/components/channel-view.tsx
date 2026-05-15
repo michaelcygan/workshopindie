@@ -89,6 +89,10 @@ export function ChannelView({
   }, [media.error, media.joined, media.busy, router]);
 
   function handleExit() {
+    // If I'm the last one here, purge the ephemeral whiteboard for this room.
+    if (media.joined && media.count <= 1) {
+      purgeBoard({ data: { roomId } }).catch(() => {});
+    }
     media.leave();
     router.navigate({ to: "/" });
   }
