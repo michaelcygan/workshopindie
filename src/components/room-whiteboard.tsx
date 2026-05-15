@@ -38,7 +38,7 @@ export default function RoomWhiteboard({
   const assetStore = useMemo<TLAssetStore>(() => ({
     async upload(_asset, file) {
       const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "");
-      const path = `${roomId}/${uniqueId()}.${ext || "png"}`;
+      const path = `${roomId}/${crypto.randomUUID()}.${ext || "png"}`;
       const { error: upErr } = await supabase.storage
         .from("instant-whiteboard")
         .upload(path, file, { contentType: file.type, upsert: false });
