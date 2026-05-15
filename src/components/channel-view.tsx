@@ -360,6 +360,29 @@ export function ChannelView({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog open={endedOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're the only one left. Want to drop into a new Instant Workshop?
+              <br />
+              <span className="mt-2 inline-block text-ink-muted">
+                Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleExit} disabled={joiningNew}>
+              Back to home
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleJoinNew} disabled={joiningNew}>
+              {joiningNew ? "Finding a seat…" : "Join new Workshop"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </>
   );
