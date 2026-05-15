@@ -1,141 +1,71 @@
-# Instant v3 — One product, rolling drop-in
+## Goal
+Fix the broken Lounge room and tighten the drop-in flow so users always enter live, can toggle mute/camera inside, and get auto-dropped if they go quiet.
 
-Make Instant feel like falling into a live room. No menu, no chooser, no "full" dead-ends. The system always finds you a seat — either the live room with space, or a fresh one ready for the next person.
+## 1. Fix the "cannot add `presence` callbacks after `subscribe()`" error
 
-## Product shape
+Root cause: `useMediaRoom` opens a *lurker* channel named `media:${roomId}` in one effect, then `joinWithMode` opens **a second channel with the same name** for signaling. Supabase Realtime returns the same channel instance the second time, but it is already `SUBSCRIBED`, so the second `.on("presence", …)` registration throws. React 19 strict-mode double-mounting also triggers this on first paint.
 
-- **One product: Artist's Lounge.** Always a seat available.
-- **`/instant` is the drop-in action**, not a destination. Tapping it routes you straight into a room.
-- **Rolling/parallel rooms.** Cap = 5 per room. As rooms fill, new ones spawn automatically.
-- **Mic OR camera required to participate.** No listen-only.
-- **No "full" message ever.** The matchmaker guarantees a room.
+Fix: give the two channels distinct names and guard against double-subscribe.
+- Rename the always-on count subscription to `media-lurker:${roomId}` (presence key `lurker`).
+- Keep the join/signaling channel as `media:${roomId}` (presence key = `myId`).
+- Track subscription state with a ref so the lurker effect bails if the channel was already subscribed (defensive against strict-mode).
+- On `leave()`, also clear the channel ref synchronously before `removeChannel`.
 
-## The matchmaker (the new core primitive)
+## 2. Auto-join media when the room page loads
 
-When a user taps "Drop in" we run one server function: `joinLounge()`. It returns `{ roomId }` and the client navigates to `/instant/$roomId`.
+The user already passed pre-flight + got a permission grant. Reading `?mode=voice|video` should drive an immediate `media.setMode(mode)` once on mount of `/instant/$id`. Remove the "Quiet right now / Voice / Video" chooser inside `MediaPanel` — once inside the room, you are always live.
 
-**Algorithm (single SQL pass):**
+- `instant.$id.tsx`: read `Route.useSearch().mode` (default `"voice"`), pass it to `<ChannelView initialMode>`.
+- `ChannelView`: forward `initialMode` and call `media.setMode(initialMode)` once when `media` is unjoined and the room is ready.
+- If `setMode` fails (perm revoked between pre-flight and join), toast and route back to `/instant`.
 
-1. Find candidate rooms: `kind='lounge' AND status='active'`, ordered by `(live_count DESC, created_at ASC)` where `live_count = count(instant_presence active in last 60s)`.
-2. Pick the **fullest room with `live_count < 5`** → join it. (Bias toward consolidating energy — better to have one room of 4 than two of 2.)
-3. If none qualifies (all rooms ≥5, or zero rooms), **insert a new lounge row** and return its id.
-4. Mark stale rooms (`live_count == 0` for >5 min) as `status='archived'` so we don't accumulate ghosts. (Cron-light: do it inline at end of each `joinLounge` call.)
+## 3. Strip the in-room mode chooser; keep mute / camera-off / Exit
 
-This makes the "6th user spawns room 2, 7th joins room 2, 8th joins room 1" behavior automatic — no UI for picking rooms, ever.
+In `MediaPanel`, when joined:
+- Remove the Voice/Video segmented chip and the "Quiet right now" pre-join card.
+- Show four controls: **Mic mute**, **Camera on/off** (only when on video, also a "Turn camera on" entry from voice), **Exit** (replaces "Leave").
+- "Camera on/off" toggles the existing `localStream` video track without tearing down peer connections.
+- "Exit" calls `media.leave()` then `router.navigate({ to: "/" })`.
 
-**Why bias to fullest-with-room (not least-full):** the failure mode of social rooms is fragmentation into ghost towns. Always packing the live room first means each lounge feels alive until it splits.
+Add a small `setCameraEnabled(on: boolean)` to `useMediaRoom`:
+- If joining `video` from `voice`: tear down stream once and re-acquire with video (existing path via `setMode("video")`).
+- If toggling within `video`: flip `track.enabled` on the existing video track — no renegotiation, no PC churn.
+- Mirror this for mute (already in place; just keep `track.enabled = false`).
 
-## Drop-in flow
+## 4. Inactivity guard: 2-min muted → warning → 1-min → auto-exit
 
-```text
-Home → tap "Instant"
-      ↓
-   [pre-flight card: Voice / Video]   ← only choice the user makes
-      ↓ (mic/cam grant)
-   joinLounge() → /instant/$roomId
-      ↓
-   Lounge room (5 cap, video + chat stage + Around list)
-```
+Add a `useEffect` in `ChannelView` (or `useMediaRoom` exposes a hook) that watches "is the user contributing media?". The user is **inactive** when:
+- mic is muted **AND** (mode is `voice` OR camera is off in `video`).
 
-- **Pre-flight on `/instant`:** a single screen with the Voice / Video buttons (matches the screenshot you liked). No room selection. Tapping either grants media, calls `joinLounge`, then navigates.
-- **Skip:** `← Instant` back link goes home (`/`). No "next room" cycling — we're not Chatroulette, the whole point is the matchmaker already optimized.
-- **Re-drop:** if you leave and tap Instant again, you may land in a different room (whichever is the fullest-with-room *now*). That's a feature — keeps energy mixing.
+Behavior:
+- Inactive ≥ 2 min → show a non-blocking dialog: "Still here? You've been muted for 2 minutes. Tap to stay." with a "Stay" button.
+- 1 min after warning shown with no action and still inactive → call `leave()` + navigate to `/instant` with a toast: "Dropped from the Lounge — you went quiet."
+- Any of {unmute, turn camera on, click Stay, send a chat message} resets timers.
 
-## Layout (video + chat in the main stage)
+Implement with two timers (`setTimeout`) in a single effect that re-fires whenever `muted`, `cameraOn`, `mode`, or `lastChatSentAt` change. Cleanup on unmount.
 
-Same shell as today, with video tiles inside the main panel above the chat. Hidden when nobody is on cam — quiet rooms render exactly like your screenshot.
+## 5. Pre-flight tweak
 
-```text
-┌───────────────────────────────┬─────────────────────┐
-│  STAGE                        │  LIVE · LOUNGE 03   │
-│  ┌─────┬─────┬─────┐          │  N/5                │
-│  │ vid │ vid │ vid │  ← grid  │  [Mute] [Cam] [Leave]│
-│  └─────┴─────┴─────┘          ├─────────────────────┤
-│                               │  AROUND · N         │
-│  chat scroll …                │  • greenhousecrtv   │
-│  [ Say something… ]      ▶    │  • …                │
-└───────────────────────────────┴─────────────────────┘
-```
+`/instant` already disables "Drop in" until a device is detected. Two additions:
+- Acquire **both** audio and video in pre-flight when both devices exist, so the room page doesn't need a second permission prompt regardless of which mode the user picks. Stop the tracks immediately after.
+- Pass `mode=video` automatically when only camera exists (already handled), `mode=voice` otherwise.
 
-- Room title shows as "Lounge 03" (sequential index per active room) so users have a fuzzy sense of which one they're in without having to choose.
-- Right column: live count + media controls (Mute / Cam toggle / Leave) + Around list with `/u/$username` links.
+## 6. Small audit cleanups
 
-## Routes
+- `Around` list filters out the current user (it currently includes self alongside the "you" row in the speaker list).
+- `MediaPanel` header chip should read `voiceCount/cap` of *live* participants (`voice + video`), which it already does — keep.
+- Remove the `count` (lurker total) from any user-visible label; it can confuse — only show live count.
+- `useMediaRoom` cleanup on `roomId` change must also reset `peers` and `error` — current effect calls `leave()` but state from a previous room can briefly flash.
+- The "presence" delete subscription in `ChannelView` relies on Postgres `DELETE` events with a row filter; confirm RLS allows the realtime publication to see deletes. If not, fall back to a periodic refetch every 30s.
 
-| Route | Purpose |
-|---|---|
-| `/instant` | Pre-flight: Voice/Video grant + `joinLounge()` redirect |
-| `/instant/$roomId` | A specific live lounge (the one the matchmaker put you in) |
-| `/instant/lounge` | **delete** (collapsed into matchmaker) |
-| `/instant/work*` | **delete** (Work concept retired for launch) |
-| `/instant/new` | **delete** |
-| `/` LiveNowStrip | "N live across X lounges" — single pill linking to `/instant` |
+## Out of scope
+- SFU upgrade (mesh stays at 5 cap).
+- Screen share, raise hand, reactions.
+- Persisting "preferred mode" between sessions.
 
-## Caps & media rules
-
-- `ROOM_CAP`: **5** (per room). `VIDEO_CAP`: **5** (any of 5 can cam).
-- Strip `"listening"` mode entirely from `MediaMode`, `useMediaRoom`, `MediaPanel`. Default join = `"voice"`.
-- 6th simultaneous arrival never sees a "full" message — the matchmaker routed them to a different room before they got here.
-
-## DB
-
-Schema is fine — `instant_rooms` already supports multiple lounges (it's just a row per room). One migration:
-
-1. **Add** `instant_status` value `'archived'` if not present (or use existing status enum).
-2. **Index**: `CREATE INDEX ON instant_rooms (kind, status, created_at);` and `CREATE INDEX ON instant_presence (room_id, last_seen_at);` for the matchmaker query.
-3. **Cleanup**: archive any existing `kind='work'` rows (data only, schema stays).
-4. **RLS**: allow authenticated users to `INSERT` into `instant_rooms` when `kind='lounge'` (currently restricted to work rooms with `creator_id = auth.uid()`). The matchmaker server function will set `creator_id = auth.uid()` when spawning.
-
-## Server function: `joinLounge`
-
-`src/lib/instant.functions.ts`:
-
-```ts
-createServerFn({ method: 'POST' })
-  .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const { supabase } = context;
-    // 1. Archive ghost rooms inline (1 query)
-    // 2. Pick fullest active lounge with live_count < 5 (1 query, joins instant_presence with last_seen_at > now() - 60s)
-    // 3. If none, insert new lounge row
-    // 4. Return { roomId, slot: liveCount + 1 }
-  })
-```
-
-Single round-trip, idempotent enough that two simultaneous taps just produce two presences in adjacent slots.
-
-## Files to touch
-
-**Edit**
-- `src/hooks/use-media-room.tsx` — caps to 5/5, drop `"listening"`, default `"voice"`.
-- `src/components/media-panel.tsx` — strip listening UI, move video grid out (to stage), keep join card + speaker list + controls.
-- `src/components/channel-view.tsx` — restructure left panel into `<VideoStage media={...} />` + chat. Lift `useMediaRoom` here, pass down (one RTC instance per page).
-- `src/routes/instant.index.tsx` — replace chooser with pre-flight (Voice/Video → `joinLounge` → navigate).
-- `src/routes/instant.$id.tsx` — **stop redirecting**, render the room (the matchmaker target).
-- `src/routes/index.tsx` `LiveNowStrip` — show aggregate "N live across X lounges".
-
-**Create**
-- `src/lib/instant.functions.ts` — `joinLounge` server function.
-
-**Delete**
-- `src/routes/instant.lounge.tsx`
-- `src/routes/instant.work.tsx`, `instant.work.index.tsx`, `instant.work.$id.tsx`, `instant.work.new.tsx`
-- `src/routes/instant.new.tsx`
-
-**Keep**
-- `src/routes/instant.tsx` (layout outlet).
-
-## Technical notes
-
-- **Single `useMediaRoom` per room view** — lifted to `ChannelView` so video stage and side panel share one mesh.
-- **Room numbering** — derive client-side: query active lounges ordered by `created_at ASC`, find current room's index +1. Display "Lounge 03". Cosmetic only.
-- **Race conditions** — two users tapping Drop-in in the same 100ms might both spawn rooms when one would have sufficed. Acceptable: matchmaker will consolidate the next arrival into the fuller of the two.
-- **Lurker-safe count** — keep the lurker presence channel in `useMediaRoom` so the `N/5` chip on the side panel stays accurate without a join.
-- **No new dependencies.**
-
-## Out of scope (next pass)
-
-- Topic tags per room ("Right now: synths / poetry / VFX")
-- "Find me a different room" button (manual rematch)
-- SFU upgrade — mesh is fine at 5
-- Push notifications when rooms are live
+## Files touched
+- `src/hooks/use-media-room.tsx` — channel rename, double-subscribe guard, `setCameraEnabled`, expose `cameraOn`.
+- `src/components/media-panel.tsx` — strip pre-join + mode chooser, add Exit + Camera toggle.
+- `src/components/channel-view.tsx` — accept `initialMode`, auto-join, inactivity guard + warning dialog, exclude self from Around.
+- `src/routes/instant.$id.tsx` — pass `initialMode` from search param.
+- `src/routes/instant.index.tsx` — request audio+video together in pre-flight when both devices exist.

@@ -35,9 +35,10 @@ export function useMediaRoom(roomId: string | undefined) {
   const [joined, setJoined] = useState(false);
   const [mode, setModeState] = useState<MediaMode>("voice");
   const [muted, setMuted] = useState(false);
+  const [cameraOn, setCameraOnState] = useState(false);
   const [speaking, setSpeaking] = useState(false);
-  const [count, setCount] = useState(0); // total presence including listeners
-  const [voiceCount, setVoiceCount] = useState(0); // voice + video
+  const [count, setCount] = useState(0);
+  const [voiceCount, setVoiceCount] = useState(0);
   const [videoCount, setVideoCount] = useState(0);
   const [peers, setPeers] = useState<Record<string, MediaPeer>>({});
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +50,6 @@ export function useMediaRoom(roomId: string | undefined) {
   const speakingStopRef = useRef<(() => void) | null>(null);
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
-
-  // ---- helpers ---------------------------------------------------------------
 
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
@@ -154,8 +153,6 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
-  // ---- speaking detector -----------------------------------------------------
-
   function startSpeakingDetector(stream: MediaStream) {
     const AudioCtx: typeof AudioContext =
       (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext);
@@ -204,14 +201,12 @@ export function useMediaRoom(roomId: string | undefined) {
     };
   }
 
-  // ---- always-on count subscription -----------------------------------------
-  // Lurker channel watches presence to show counts before joining.
-  // CRITICAL: register .on() handlers BEFORE .subscribe() to avoid the
-  // "cannot add presence callbacks after subscribe()" error.
-
+  // ---- always-on lurker count subscription ----------------------------------
+  // CRITICAL: must use a DIFFERENT channel name than the join channel to avoid
+  // Supabase Realtime returning the already-subscribed instance.
   useEffect(() => {
     if (!roomId) return;
-    const ch = supabase.channel(`media:${roomId}`, {
+    const ch = supabase.channel(`media-lurker:${roomId}`, {
       config: { presence: { key: "lurker" }, broadcast: { self: false } },
     });
 
@@ -236,8 +231,6 @@ export function useMediaRoom(roomId: string | undefined) {
     };
   }, [roomId]);
 
-  // ---- internal: tear down media + peers without unsubscribing channel ------
-
   function teardownMedia() {
     for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
     if (localStreamRef.current) {
@@ -247,26 +240,24 @@ export function useMediaRoom(roomId: string | undefined) {
     if (speakingStopRef.current) speakingStopRef.current();
     setSpeaking(false);
     setMuted(false);
+    setCameraOnState(false);
     lastSpeakingSentRef.current = false;
   }
 
-  // ---- leave ----------------------------------------------------------------
-
   const leave = useCallback(() => {
     teardownMedia();
-    if (channelRef.current) {
-      const ch = channelRef.current;
+    const ch = channelRef.current;
+    channelRef.current = null;
+    if (ch) {
       ch.untrack().catch(() => {});
       supabase.removeChannel(ch);
-      channelRef.current = null;
     }
     setJoined(false);
     setPeers({});
+    setError(null);
     setModeState("voice");
     modeRef.current = "voice";
   }, []);
-
-  // ---- join with a mode -----------------------------------------------------
 
   const joinWithMode = useCallback(async (nextMode: MediaMode) => {
     if (!myId || !roomId) return;
@@ -274,46 +265,39 @@ export function useMediaRoom(roomId: string | undefined) {
     setError(null);
     setBusy(true);
     try {
-      // Cap checks
       if (count >= ROOM_CAP && !joined) {
         setError(`Room is full (${ROOM_CAP} max).`);
         setBusy(false);
         return;
       }
       let effectiveMode = nextMode;
-      if (effectiveMode === "video" && videoCount >= VIDEO_CAP) {
+      if (effectiveMode === "video" && videoCount >= VIDEO_CAP && !joined) {
         effectiveMode = "voice";
         setError(`Video full (${VIDEO_CAP} cams). Joined as voice.`);
       }
 
-      // If already joined, tear down media first (we're switching modes).
-      if (joined) {
-        teardownMedia();
-      }
+      if (joined) teardownMedia();
 
-      // Get media for the chosen mode.
       let stream: MediaStream | null = null;
-      if (effectiveMode === "voice" || effectiveMode === "video") {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia({
-            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-            video: effectiveMode === "video"
-              ? { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 24 } }
-              : false,
-          });
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : "Mic blocked";
-          setError(`Couldn't access ${effectiveMode === "video" ? "camera/mic" : "mic"}: ${msg}`);
-          setBusy(false);
-          return;
-        }
-        localStreamRef.current = stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+          video: effectiveMode === "video"
+            ? { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 24 } }
+            : false,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Mic blocked";
+        setError(`Couldn't access ${effectiveMode === "video" ? "camera/mic" : "mic"}: ${msg}`);
+        setBusy(false);
+        return;
       }
+      localStreamRef.current = stream;
+      setCameraOnState(effectiveMode === "video");
 
       modeRef.current = effectiveMode;
       setModeState(effectiveMode);
 
-      // Set up signaling channel if not already.
       let ch = channelRef.current;
       const firstJoin = !ch;
       if (!ch) {
@@ -322,11 +306,9 @@ export function useMediaRoom(roomId: string | undefined) {
         });
         channelRef.current = ch;
 
-        // Register all handlers BEFORE subscribe.
         ch.on("presence", { event: "sync" }, () => {
           const state = ch!.presenceState() as Record<string, Array<PresenceMeta>>;
           const ids = Object.keys(state).filter((k) => k !== "lurker" && k !== myId);
-          // Recompute counts
           const allEntries = Object.entries(state).filter(([k]) => k !== "lurker");
           setCount(allEntries.length);
           let v = 0, vid = 0;
@@ -337,7 +319,6 @@ export function useMediaRoom(roomId: string | undefined) {
           }
           setVoiceCount(v);
           setVideoCount(vid);
-          // Update peer modes
           setPeers((prev) => {
             const next = { ...prev };
             for (const [pid, metas] of allEntries) {
@@ -347,7 +328,6 @@ export function useMediaRoom(roomId: string | undefined) {
             }
             return next;
           });
-          // Drop peers no longer present
           for (const peerId of Array.from(pcsRef.current.keys())) {
             if (!ids.includes(peerId) || !state[peerId]?.[0]) {
               closePeer(peerId);
@@ -385,11 +365,9 @@ export function useMediaRoom(roomId: string | undefined) {
           });
         });
       } else {
-        // Already subscribed — just update our presence mode.
         await ch.track({ mode: effectiveMode, joined_at: new Date().toISOString() } satisfies PresenceMeta);
       }
 
-      // Build mesh against current media participants.
       {
         const state = ch.presenceState() as Record<string, Array<PresenceMeta>>;
         const others = Object.entries(state).filter(
@@ -438,7 +416,27 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }, [muted, myId]);
 
-  // Cleanup
+  // Toggle camera on/off WITHOUT renegotiating peers when already on video.
+  // From voice → video, this triggers a full re-join via setMode("video").
+  const setCameraEnabled = useCallback((on: boolean) => {
+    const stream = localStreamRef.current;
+    if (modeRef.current === "video" && stream) {
+      const tracks = stream.getVideoTracks();
+      if (tracks.length > 0) {
+        for (const t of tracks) t.enabled = on;
+        setCameraOnState(on);
+        return;
+      }
+    }
+    if (on) {
+      // Promote voice → video (full re-acquire).
+      joinWithMode("video");
+    } else {
+      // Demote video → voice (full re-acquire so cam light is OFF).
+      joinWithMode("voice");
+    }
+  }, [joinWithMode]);
+
   useEffect(() => {
     return () => { leave(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -454,6 +452,7 @@ export function useMediaRoom(roomId: string | undefined) {
     joined,
     mode,
     muted,
+    cameraOn,
     speaking,
     count,
     voiceCount,
@@ -465,6 +464,7 @@ export function useMediaRoom(roomId: string | undefined) {
     setMode,
     leave,
     toggleMute,
+    setCameraEnabled,
     cap: ROOM_CAP,
     videoCap: VIDEO_CAP,
   };
