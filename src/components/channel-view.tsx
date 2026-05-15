@@ -119,6 +119,67 @@ export function ChannelView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warnOpen, inactive]);
 
+  // "Workshop wrapped" — fire 1s after the user is the only one in the room.
+  const alone = media.joined && media.count <= 1;
+  useEffect(() => {
+    if (!alone) {
+      if (aloneTimerRef.current) {
+        clearTimeout(aloneTimerRef.current);
+        aloneTimerRef.current = null;
+      }
+      if (endedOpen) {
+        setEndedOpen(false);
+        setSecondsLeft(30);
+      }
+      return;
+    }
+    if (endedOpen || aloneTimerRef.current) return;
+    aloneTimerRef.current = window.setTimeout(() => {
+      aloneTimerRef.current = null;
+      setSecondsLeft(30);
+      setEndedOpen(true);
+    }, 1000);
+    return () => {
+      if (aloneTimerRef.current) {
+        clearTimeout(aloneTimerRef.current);
+        aloneTimerRef.current = null;
+      }
+    };
+  }, [alone, endedOpen]);
+
+  // 30s countdown while the prompt is open → auto-forward to home.
+  useEffect(() => {
+    if (!endedOpen) return;
+    const id = window.setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          handleExit();
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endedOpen]);
+
+  async function handleJoinNew() {
+    if (joiningNew) return;
+    setJoiningNew(true);
+    const nextMode: MediaMode = media.cameraOn || media.mode === "video" ? "video" : "voice";
+    try {
+      media.leave();
+      const { roomId: newId } = await dropNew();
+      setEndedOpen(false);
+      router.navigate({ to: "/instant/$id", params: { id: newId }, search: { mode: nextMode } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't find a new Workshop");
+      setJoiningNew(false);
+      router.navigate({ to: "/instant" });
+    }
+  }
+
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
