@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MediaPanel, VideoStage } from "@/components/media-panel";
+import { MediaPanel, VideoStage, FullscreenRoom } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import {
   AlertDialog,
@@ -194,6 +194,25 @@ export function ChannelView({
   const others = presence.filter((p) => p.user_id !== user?.id);
 
   return (
+    <>
+    {fullscreen && user && (
+      <FullscreenRoom
+        m={media}
+        channelTitle={title}
+        meDisplay={meDisplay}
+        meAvatar={meAvatar}
+        meUserId={user.id}
+        others={others}
+        profileLookup={profileLookup}
+        messages={messages}
+        draft={draft}
+        setDraft={setDraft}
+        onSend={send}
+        sending={sending}
+        onExit={handleExit}
+        onMinimize={() => setFullscreen(false)}
+      />
+    )}
     <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
       <div className="flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
         {pinned && (
@@ -205,9 +224,7 @@ export function ChannelView({
           m={media}
           meDisplay={meDisplay}
           profileLookup={profileLookup}
-          fullscreen={fullscreen}
-          onToggleFullscreen={() => setFullscreen((v) => !v)}
-          onExit={handleExit}
+          onEnterFullscreen={() => setFullscreen(true)}
         />
         <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
           {messages.length === 0 ? (
@@ -274,5 +291,6 @@ export function ChannelView({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </>
   );
 }
