@@ -470,7 +470,7 @@ function ChatPanel({
   sending: boolean;
   profileLookup: Map<string, ProfileLite>;
   meUserId: string;
-  scrollRef: React.RefObject<HTMLDivElement>;
+  scrollRef: React.RefObject<HTMLDivElement | null>;
   className?: string;
   onClose?: () => void;
 }) {
