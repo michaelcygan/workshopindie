@@ -69,6 +69,31 @@ export function MediaPanel({
         </span>
       </header>
 
+      {viewMode && onViewModeChange && (
+        <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
+          <button
+            type="button"
+            onClick={() => onViewModeChange("chat")}
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              viewMode === "chat" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            <MessageCircle className="h-3.5 w-3.5" /> Chat
+          </button>
+          <button
+            type="button"
+            onClick={() => onViewModeChange("gallery")}
+            className={cn(
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              viewMode === "gallery" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+            )}
+          >
+            <LayoutGrid className="h-3.5 w-3.5" /> Gallery
+          </button>
+        </div>
+      )}
+
       {!m.joined ? (
         <p className="mt-3 text-xs text-ink-muted">
           {m.busy ? "Connecting…" : "Joining the room…"}
@@ -113,12 +138,14 @@ export function MediaPanel({
             <ul className="space-y-2">
               <SpeakerRow
                 key="me"
+                userId={meUserId}
                 speaking={m.speaking && !m.muted}
                 muted={m.muted}
                 displayName={meDisplay}
                 avatarUrl={meAvatar}
                 username={null}
                 isMe
+                onOpenWork={onOpenWork}
               />
               <AnimatePresence initial={false}>
                 {others.map((o) => {
@@ -126,11 +153,13 @@ export function MediaPanel({
                   return (
                     <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
                       <SpeakerRow
+                        userId={o.user_id}
                         speaking={!!peer?.speaking}
                         muted={false}
                         displayName={o.profile?.display_name || o.profile?.username || "Anon"}
                         avatarUrl={o.profile?.avatar_url ?? null}
                         username={o.profile?.username ?? null}
+                        onOpenWork={onOpenWork}
                       />
                     </motion.div>
                   );
