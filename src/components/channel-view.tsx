@@ -47,6 +47,7 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
@@ -74,6 +75,16 @@ export function ChannelView({
     media.leave();
     router.navigate({ to: "/" });
   }
+
+  // Esc exits fullscreen.
+  useEffect(() => {
+    if (!fullscreen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFullscreen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullscreen]);
 
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
   const inactive = media.joined && media.muted && !media.cameraOn;
@@ -190,7 +201,14 @@ export function ChannelView({
             {pinned}
           </div>
         )}
-        <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
+        <VideoStage
+          m={media}
+          meDisplay={meDisplay}
+          profileLookup={profileLookup}
+          fullscreen={fullscreen}
+          onToggleFullscreen={() => setFullscreen((v) => !v)}
+          onExit={handleExit}
+        />
         <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center">

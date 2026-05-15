@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -132,34 +132,117 @@ export function VideoStage({
   m,
   meDisplay,
   profileLookup,
+  fullscreen,
+  onToggleFullscreen,
+  onExit,
 }: {
   m: MediaState;
   meDisplay: string;
   profileLookup: Map<string, ProfileLite>;
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  onExit?: () => void;
 }) {
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
   const showLocalVideo = m.cameraOn && m.localStream;
-  if (!showLocalVideo && videoPeers.length === 0) return null;
-  const total = (showLocalVideo ? 1 : 0) + videoPeers.length;
-  const cols = total <= 1 ? "grid-cols-1" : total === 2 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3";
-  return (
-    <div className="border-b border-border bg-ink/5 px-4 py-3 md:px-6">
-      <div className={cn("grid gap-2", cols)}>
-        {showLocalVideo && (
-          <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
-        )}
-        {videoPeers.map((p) => {
-          const prof = profileLookup.get(p.userId);
-          return (
-            <VideoTile
-              key={p.userId}
-              stream={p.stream!}
-              label={prof?.display_name || prof?.username || "Anon"}
-              speaking={p.speaking}
-            />
-          );
-        })}
+  const hasAny = showLocalVideo || videoPeers.length > 0;
+
+  // Fixed 5-up row: each tile sized as one of five so a single user can't
+  // monopolize the stage. Empty slots are not rendered.
+  const tileGrid = fullscreen
+    ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-5";
+
+  const tiles = (
+    <div className={cn("grid gap-2", tileGrid)}>
+      {showLocalVideo && (
+        <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
+      )}
+      {videoPeers.map((p) => {
+        const prof = profileLookup.get(p.userId);
+        return (
+          <VideoTile
+            key={p.userId}
+            stream={p.stream!}
+            label={prof?.display_name || prof?.username || "Anon"}
+            speaking={p.speaking}
+          />
+        );
+      })}
+    </div>
+  );
+
+  if (fullscreen) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col bg-ink">
+        <div className="absolute right-3 top-3 z-10">
+          <Button
+            size="icon"
+            variant="secondary"
+            onClick={onToggleFullscreen}
+            className="rounded-full bg-background/80 hover:bg-background"
+            aria-label="Exit fullscreen"
+          >
+            <Minimize2 className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex-1 overflow-auto p-4 md:p-8 flex items-center justify-center">
+          <div className="w-full max-w-6xl">
+            {hasAny ? tiles : (
+              <p className="text-center text-sm text-background/70">No cameras on yet.</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2 border-t border-background/10 bg-ink/95 p-3">
+          <Button
+            variant={m.muted ? "outline" : "secondary"}
+            size="sm"
+            onClick={m.toggleMute}
+            className="rounded-full gap-1.5"
+          >
+            {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+            {m.muted ? "Unmute" : "Mute"}
+          </Button>
+          <Button
+            variant={m.cameraOn ? "secondary" : "outline"}
+            size="sm"
+            onClick={() => m.setCameraEnabled(!m.cameraOn)}
+            disabled={m.busy}
+            className="rounded-full gap-1.5"
+          >
+            {m.cameraOn ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+            {m.cameraOn ? "Camera off" : "Camera on"}
+          </Button>
+          {onExit && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExit}
+              className="rounded-full gap-1.5 text-destructive hover:text-destructive"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Exit
+            </Button>
+          )}
+        </div>
       </div>
+    );
+  }
+
+  if (!hasAny) return null;
+
+  return (
+    <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
+      {onToggleFullscreen && (
+        <button
+          type="button"
+          onClick={onToggleFullscreen}
+          className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-1.5 text-ink shadow-sm hover:bg-background"
+          aria-label="Enter fullscreen"
+        >
+          <Maximize2 className="h-3.5 w-3.5" />
+        </button>
+      )}
+      {tiles}
     </div>
   );
 }
