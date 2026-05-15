@@ -8,10 +8,10 @@ const ICE_CONFIG: RTCConfiguration = {
   ],
 };
 
-export const ROOM_CAP = 8;
-export const VIDEO_CAP = 4;
+export const ROOM_CAP = 5;
+export const VIDEO_CAP = 5;
 
-export type MediaMode = "listening" | "voice" | "video";
+export type MediaMode = "voice" | "video";
 
 export type MediaPeer = {
   userId: string;
