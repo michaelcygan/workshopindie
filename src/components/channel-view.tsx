@@ -291,5 +291,6 @@ export function ChannelView({
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </>
   );
 }
