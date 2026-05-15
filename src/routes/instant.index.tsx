@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft } from "lucide-react";
+import { Mic, Video, Loader2, ArrowLeft, Radio } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge } from "@/lib/instant.functions";
@@ -22,34 +22,64 @@ function InstantPreflight() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const drop = useServerFn(joinLounge);
-  const [busy, setBusy] = useState<"voice" | "video" | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
   }, [user, loading, router]);
 
-  async function handleDrop(mode: "voice" | "video") {
-    if (busy) return;
-    setBusy(mode);
+  useEffect(() => {
+    let cancelled = false;
+    async function detect() {
+      try {
+        if (!navigator.mediaDevices?.enumerateDevices) {
+          if (!cancelled) setDevices({ mic: false, cam: false });
+          return;
+        }
+        const list = await navigator.mediaDevices.enumerateDevices();
+        const mic = list.some((d) => d.kind === "audioinput");
+        const cam = list.some((d) => d.kind === "videoinput");
+        if (!cancelled) setDevices({ mic, cam });
+      } catch {
+        if (!cancelled) setDevices({ mic: false, cam: false });
+      }
+    }
+    detect();
+    navigator.mediaDevices?.addEventListener?.("devicechange", detect);
+    return () => {
+      cancelled = true;
+      navigator.mediaDevices?.removeEventListener?.("devicechange", detect);
+    };
+  }, []);
+
+  const canDrop = !!devices && (devices.mic || devices.cam);
+
+  async function handleDrop() {
+    if (busy || !canDrop || !devices) return;
+    setBusy(true);
     try {
-      // Pre-grant media so the next page joins instantly without a permission prompt mid-flow.
+      // Default to voice when mic is available; fall back to video-only if camera is the only device.
+      const wantAudio = devices.mic;
+      const wantVideo = !devices.mic && devices.cam;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
-          video: mode === "video",
+          audio: wantAudio,
+          video: wantVideo,
         });
         for (const t of stream.getTracks()) t.stop();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Permission denied";
-        toast.error(`Couldn't access ${mode === "video" ? "camera/mic" : "mic"}: ${msg}`);
-        setBusy(null);
+        toast.error(`Couldn't access ${wantVideo ? "camera" : "mic"}: ${msg}`);
+        setBusy(false);
         return;
       }
+      const mode = wantVideo ? "video" : "voice";
       const { roomId } = await drop();
       router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't drop in");
-      setBusy(null);
+      setBusy(false);
     }
   }
 
@@ -71,30 +101,42 @@ function InstantPreflight() {
         </p>
       </motion.div>
 
-      <div className="mt-10 grid gap-3 sm:grid-cols-2">
-        <DropButton icon={Mic} label="Drop in with Voice" onClick={() => handleDrop("voice")} loading={busy === "voice"} disabled={!!busy} primary />
-        <DropButton icon={Video} label="Drop in with Video" onClick={() => handleDrop("video")} loading={busy === "video"} disabled={!!busy} />
-      </div>
-      <p className="mt-3 text-center text-xs text-ink-muted">
-        Mic or camera required. Rooms cap at 5 — when one fills, the next person opens a fresh one.
-      </p>
-    </main>
-  );
-}
+      <div className="mt-10">
+        <Button
+          onClick={handleDrop}
+          disabled={!canDrop || busy}
+          size="lg"
+          className="w-full rounded-2xl h-auto py-6 flex-col gap-2"
+        >
+          {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Radio className="h-6 w-6" />}
+          <span className="text-base font-medium">{busy ? "Finding you a seat…" : "Drop in"}</span>
+        </Button>
 
-function DropButton({
-  icon: Icon, label, onClick, loading, disabled, primary,
-}: { icon: typeof Mic; label: string; onClick: () => void; loading?: boolean; disabled?: boolean; primary?: boolean }) {
-  return (
-    <Button
-      onClick={onClick}
-      disabled={disabled}
-      variant={primary ? "default" : "outline"}
-      size="lg"
-      className="rounded-2xl h-auto py-6 flex-col gap-2"
-    >
-      {loading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Icon className="h-6 w-6" />}
-      <span className="text-sm font-medium">{label}</span>
-    </Button>
+        <div className="mt-4 flex items-center justify-center gap-4 text-xs">
+          {devices === null ? (
+            <span className="inline-flex items-center gap-1.5 text-ink-muted">
+              <Loader2 className="h-3 w-3 animate-spin" /> Checking devices…
+            </span>
+          ) : (
+            <>
+              <span className={`inline-flex items-center gap-1.5 ${devices.mic ? "text-ink" : "text-ink-muted opacity-60"}`}>
+                <Mic className="h-3.5 w-3.5" /> {devices.mic ? "Mic ready" : "No mic"}
+              </span>
+              <span className={`inline-flex items-center gap-1.5 ${devices.cam ? "text-ink" : "text-ink-muted opacity-60"}`}>
+                <Video className="h-3.5 w-3.5" /> {devices.cam ? "Camera ready" : "No camera"}
+              </span>
+            </>
+          )}
+        </div>
+        {devices && !canDrop && (
+          <p className="mt-3 text-center text-xs text-destructive">
+            Connect a mic or camera to drop in.
+          </p>
+        )}
+        <p className="mt-3 text-center text-xs text-ink-muted">
+          Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.
+        </p>
+      </div>
+    </main>
   );
 }
