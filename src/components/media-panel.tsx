@@ -573,17 +573,19 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  speaking, muted, displayName, avatarUrl, username, isMe,
+  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork,
 }: {
+  userId: string;
   speaking: boolean;
   muted: boolean;
   displayName: string;
   avatarUrl: string | null;
   username: string | null;
   isMe?: boolean;
+  onOpenWork?: (workId: string) => void;
 }) {
-  return (
-    <li className="flex items-center gap-2">
+  const inner = (
+    <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
       <div className={cn(
         "relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted ring-2 transition",
         speaking ? "ring-primary" : "ring-transparent",
@@ -591,15 +593,17 @@ function SpeakerRow({
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName[0]?.toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
-        {username && !isMe ? (
-          <Link to="/u/$username" params={{ username }} className="block text-sm text-ink hover:underline truncate">
-            {displayName}
-          </Link>
-        ) : (
-          <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
-        )}
+        <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
+        {username && <span className="block text-[10px] text-ink-muted truncate">@{username}</span>}
       </div>
       {muted && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
+    </button>
+  );
+  return (
+    <li>
+      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork}>
+        {inner}
+      </ProfilePeek>
     </li>
   );
 }
