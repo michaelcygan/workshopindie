@@ -201,7 +201,14 @@ export function ChannelView({
             {pinned}
           </div>
         )}
-        <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
+        <VideoStage
+          m={media}
+          meDisplay={meDisplay}
+          profileLookup={profileLookup}
+          fullscreen={fullscreen}
+          onToggleFullscreen={() => setFullscreen((v) => !v)}
+          onExit={handleExit}
+        />
         <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
           {messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-center">
