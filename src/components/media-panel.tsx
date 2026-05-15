@@ -1,13 +1,14 @@
 import { useEffect, useRef } from "react";
-import { Mic, MicOff, Headphones, Video, PhoneOff, Radio, Loader2 } from "lucide-react";
+import { Mic, MicOff, Video, PhoneOff, Radio, Loader2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAuth } from "@/hooks/use-auth";
-import { useMediaRoom, type MediaMode, type MediaPeer } from "@/hooks/use-media-room";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { MediaPeer, useMediaRoom } from "@/hooks/use-media-room";
 
-type ProfileLite = {
+export type MediaState = ReturnType<typeof useMediaRoom>;
+
+export type ProfileLite = {
   user_id: string;
   display_name: string | null;
   username: string | null;
@@ -15,23 +16,18 @@ type ProfileLite = {
 };
 
 export function MediaPanel({
-  roomId,
+  m,
   channelTitle,
+  meDisplay,
+  meAvatar,
   profileLookup,
 }: {
-  roomId: string | undefined;
+  m: MediaState;
   channelTitle: string;
+  meDisplay: string;
+  meAvatar: string | null;
   profileLookup: Map<string, ProfileLite>;
 }) {
-  const { user } = useAuth();
-  const m = useMediaRoom(roomId);
-
-  const me = user ? profileLookup.get(user.id) : undefined;
-  const meDisplay = me?.display_name || me?.username || "You";
-
-  const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
-  const showLocalVideo = m.mode === "video" && m.localStream;
-
   return (
     <section className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
       <header className="flex items-center gap-2">
@@ -65,81 +61,44 @@ export function MediaPanel({
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          {/* Mode switcher */}
           <div className="grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
             <ModeChip active={m.mode === "voice"} icon={Mic} label="Voice" onClick={() => m.setMode("voice")} disabled={m.busy} />
             <ModeChip active={m.mode === "video"} icon={Video} label="Video" onClick={() => m.setMode("video")} disabled={m.busy || (m.mode !== "video" && m.videoCount >= m.videoCap)} />
           </div>
 
-          {/* Video grid */}
-          {(showLocalVideo || videoPeers.length > 0) && (
-            <div className="grid grid-cols-2 gap-2">
-              {showLocalVideo && (
-                <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
-              )}
-              {videoPeers.map((p) => {
+          <ul className="space-y-2">
+            <SpeakerRow
+              key="me"
+              speaking={m.speaking && !m.muted}
+              muted={m.muted}
+              displayName={meDisplay}
+              avatarUrl={meAvatar}
+              username={null}
+              isMe
+            />
+            <AnimatePresence initial={false}>
+              {m.peers.map((p: MediaPeer) => {
                 const prof = profileLookup.get(p.userId);
                 return (
-                  <VideoTile
-                    key={p.userId}
-                    stream={p.stream!}
-                    label={prof?.display_name || prof?.username || "Anon"}
-                    speaking={p.speaking}
-                  />
+                  <motion.div key={p.userId} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
+                    <SpeakerRow
+                      speaking={p.speaking}
+                      muted={false}
+                      displayName={prof?.display_name || prof?.username || "Anon"}
+                      avatarUrl={prof?.avatar_url ?? null}
+                      username={prof?.username ?? null}
+                    />
+                  </motion.div>
                 );
               })}
-            </div>
-          )}
-
-          {/* Voice-only avatars */}
-          <ul className="space-y-2">
-            {m.mode !== "video" && (
-              <SpeakerRow
-                key="me"
-                speaking={m.speaking && !m.muted && m.mode === "voice"}
-                muted={m.muted}
-                mode={m.mode}
-                displayName={meDisplay}
-                avatarUrl={me?.avatar_url ?? null}
-                username={me?.username ?? null}
-                isMe
-              />
-            )}
-            <AnimatePresence initial={false}>
-              {m.peers
-                .filter((p) => p.mode === "voice")
-                .map((p) => {
-                  const prof = profileLookup.get(p.userId);
-                  return (
-                    <motion.div key={p.userId} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
-                      <SpeakerRow
-                        speaking={p.speaking}
-                        muted={false}
-                        mode={p.mode}
-                        displayName={prof?.display_name || prof?.username || "Anon"}
-                        avatarUrl={prof?.avatar_url ?? null}
-                        username={prof?.username ?? null}
-                      />
-                    </motion.div>
-                  );
-                })}
             </AnimatePresence>
           </ul>
 
-
-          {/* Controls */}
           <div className="flex gap-2">
-            {(m.mode === "voice" || m.mode === "video") && (
-              <Button
-                variant={m.muted ? "outline" : "secondary"}
-                size="sm"
-                onClick={m.toggleMute}
-                className="flex-1 rounded-full gap-1.5"
-              >
-                {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-                {m.muted ? "Unmute" : "Mute"}
-              </Button>
-            )}
+            <Button variant={m.muted ? "outline" : "secondary"} size="sm" onClick={m.toggleMute} className="flex-1 rounded-full gap-1.5">
+              {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+              {m.muted ? "Unmute" : "Mute"}
+            </Button>
             <Button variant="outline" size="sm" onClick={m.leave} className="flex-1 rounded-full gap-1.5 text-destructive hover:text-destructive">
               <PhoneOff className="h-3.5 w-3.5" /> Leave
             </Button>
@@ -148,6 +107,46 @@ export function MediaPanel({
         </div>
       )}
     </section>
+  );
+}
+
+/**
+ * Renders the active video grid (local + remote video peers). When nobody
+ * is on camera, renders nothing — chat alone fills the stage.
+ */
+export function VideoStage({
+  m,
+  meDisplay,
+  profileLookup,
+}: {
+  m: MediaState;
+  meDisplay: string;
+  profileLookup: Map<string, ProfileLite>;
+}) {
+  const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
+  const showLocalVideo = m.mode === "video" && m.localStream;
+  if (!showLocalVideo && videoPeers.length === 0) return null;
+  const total = (showLocalVideo ? 1 : 0) + videoPeers.length;
+  const cols = total <= 1 ? "grid-cols-1" : total === 2 ? "grid-cols-2" : "grid-cols-2 md:grid-cols-3";
+  return (
+    <div className="border-b border-border bg-ink/5 px-4 py-3 md:px-6">
+      <div className={cn("grid gap-2", cols)}>
+        {showLocalVideo && (
+          <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
+        )}
+        {videoPeers.map((p) => {
+          const prof = profileLookup.get(p.userId);
+          return (
+            <VideoTile
+              key={p.userId}
+              stream={p.stream!}
+              label={prof?.display_name || prof?.username || "Anon"}
+              speaking={p.speaking}
+            />
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -187,11 +186,10 @@ function ModeChip({
 }
 
 function SpeakerRow({
-  speaking, muted, mode, displayName, avatarUrl, username, isMe,
+  speaking, muted, displayName, avatarUrl, username, isMe,
 }: {
   speaking: boolean;
   muted: boolean;
-  mode: MediaMode;
   displayName: string;
   avatarUrl: string | null;
   username: string | null;
@@ -214,8 +212,7 @@ function SpeakerRow({
           <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
         )}
       </div>
-      {mode === "listening" && <Headphones className="h-3.5 w-3.5 text-ink-muted" />}
-      {muted && mode !== "listening" && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
+      {muted && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
     </li>
   );
 }
