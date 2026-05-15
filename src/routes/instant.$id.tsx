@@ -22,6 +22,7 @@ export const Route = createFileRoute("/instant/$id")({
 
 function LoungeRoomPage() {
   const { id } = Route.useParams();
+  const { mode } = Route.useSearch();
   const { user, loading } = useAuth();
   const router = useRouter();
 
