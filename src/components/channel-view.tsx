@@ -95,7 +95,8 @@ export function ChannelView({
   }, [fullscreen]);
 
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
-  const inactive = media.joined && media.muted && !media.cameraOn;
+  // Suppressed while the "workshop wrapped" prompt is open.
+  const inactive = media.joined && media.muted && !media.cameraOn && !endedOpen;
   useEffect(() => {
     if (!inactive) {
       setWarnOpen(false);
