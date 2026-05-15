@@ -35,17 +35,25 @@ export function MediaPanel({
   channelTitle,
   meDisplay,
   meAvatar,
+  meUserId,
   profileLookup,
   others,
   onExit,
+  viewMode,
+  onViewModeChange,
+  onOpenWork,
 }: {
   m: MediaState;
   channelTitle: string;
   meDisplay: string;
   meAvatar: string | null;
+  meUserId: string;
   profileLookup: Map<string, ProfileLite>;
   others: PresenceLite[];
   onExit: () => void;
+  viewMode?: RoomViewMode;
+  onViewModeChange?: (v: RoomViewMode) => void;
+  onOpenWork?: (workId: string) => void;
 }) {
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
