@@ -59,7 +59,7 @@ function LoungeRoomPage() {
       </div>
 
       {room?.id ? (
-        <ChannelView key={room.id} roomId={room.id} title={room.label} />
+        <ChannelView key={room.id} roomId={room.id} title={room.label} initialMode={mode ?? "voice"} />
       ) : (
         <div className="mt-6 h-[60vh] animate-pulse rounded-3xl bg-surface-2" />
       )}
