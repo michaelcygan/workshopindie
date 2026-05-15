@@ -57,6 +57,10 @@ export function ChannelView({
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
   const aloneTimerRef = useRef<number | null>(null);
+  const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
+  const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
+  const [workPeekOpen, setWorkPeekOpen] = useState(false);
+  const openWork = (id: string) => { setPeekWorkId(id); setWorkPeekOpen(true); };
   const dropNew = useServerFn(joinLounge);
   const scrollRef = useRef<HTMLDivElement>(null);
 
