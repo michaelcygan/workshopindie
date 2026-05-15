@@ -7,9 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MediaPanel, VideoStage, FullscreenRoom } from "@/components/media-panel";
+import { MediaPanel, VideoStage, FullscreenRoom, type RoomViewMode } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
+import { WorkPeek } from "@/components/work-peek";
+import { RoomGallery } from "@/components/room-gallery";
 import {
   AlertDialog,
   AlertDialogAction,
