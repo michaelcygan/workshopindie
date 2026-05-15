@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send } from "lucide-react";
+import { Send, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,10 @@ import { Input } from "@/components/ui/input";
 import { MediaPanel, VideoStage, FullscreenRoom, type RoomViewMode } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
+import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
+const RoomWhiteboard = lazy(() => import("@/components/room-whiteboard"));
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,6 +64,7 @@ export function ChannelView({
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
   const openWork = (id: string) => { setPeekWorkId(id); setWorkPeekOpen(true); };
   const dropNew = useServerFn(joinLounge);
+  const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
@@ -86,6 +89,10 @@ export function ChannelView({
   }, [media.error, media.joined, media.busy, router]);
 
   function handleExit() {
+    // If I'm the last one here, purge the ephemeral whiteboard for this room.
+    if (media.joined && media.count <= 1) {
+      purgeBoard({ data: { roomId } }).catch(() => {});
+    }
     media.leave();
     router.navigate({ to: "/" });
   }
@@ -302,7 +309,17 @@ export function ChannelView({
           profileLookup={profileLookup}
           onEnterFullscreen={() => setFullscreen(true)}
         />
-        {viewMode === "gallery" && user ? (
+        {viewMode === "whiteboard" && user ? (
+          <div className="h-[60vh] p-3 md:p-4">
+            <Suspense fallback={
+              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            }>
+              <RoomWhiteboard roomId={roomId} userId={user.id} className="h-full" />
+            </Suspense>
+          </div>
+        ) : viewMode === "gallery" && user ? (
           <div className="h-[60vh] p-3 md:p-4">
             <RoomGallery
               meUserId={user.id}

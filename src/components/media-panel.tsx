@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
-export type RoomViewMode = "chat" | "gallery";
+export type RoomViewMode = "chat" | "gallery" | "whiteboard";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
@@ -70,27 +70,10 @@ export function MediaPanel({
       </header>
 
       {viewMode && onViewModeChange && (
-        <div className="mt-3 grid grid-cols-2 gap-1 rounded-full bg-muted p-1">
-          <button
-            type="button"
-            onClick={() => onViewModeChange("chat")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              viewMode === "chat" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            <MessageCircle className="h-3.5 w-3.5" /> Chat
-          </button>
-          <button
-            type="button"
-            onClick={() => onViewModeChange("gallery")}
-            className={cn(
-              "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              viewMode === "gallery" ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
-            )}
-          >
-            <LayoutGrid className="h-3.5 w-3.5" /> Gallery
-          </button>
+        <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
+          <ViewPill active={viewMode === "chat"} onClick={() => onViewModeChange("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
+          <ViewPill active={viewMode === "gallery"} onClick={() => onViewModeChange("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" />
+          <ViewPill active={viewMode === "whiteboard"} onClick={() => onViewModeChange("whiteboard")} icon={<PenLine className="h-3.5 w-3.5" />} label="Board" />
         </div>
       )}
 
@@ -172,6 +155,21 @@ export function MediaPanel({
         </div>
       )}
     </section>
+  );
+}
+
+function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium transition",
+        active ? "bg-background text-ink shadow-sm" : "text-ink-muted hover:text-ink",
+      )}
+    >
+      {icon} {label}
+    </button>
   );
 }
 
