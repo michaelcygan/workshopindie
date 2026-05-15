@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,16 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaPanel, VideoStage } from "@/components/media-panel";
-import { useMediaRoom } from "@/hooks/use-media-room";
+import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 type Message = { id: string; user_id: string; body: string; created_at: string };
@@ -17,24 +26,78 @@ type Presence = {
   profile?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
+const QUIET_WARN_MS = 2 * 60 * 1000;
+const QUIET_KICK_MS = 60 * 1000;
+
 export function ChannelView({
   roomId,
   title,
   pinned,
+  initialMode = "voice",
 }: {
   roomId: string;
   title: string;
   pinned?: React.ReactNode;
+  initialMode?: MediaMode;
 }) {
   const { user } = useAuth();
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [presence, setPresence] = useState<Presence[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
+  const [warnOpen, setWarnOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Lift media room to ChannelView so VideoStage and MediaPanel share a single mesh.
   const media = useMediaRoom(roomId);
+
+  // Auto-join on mount with the chosen mode (user already pre-flighted permission).
+  const autoJoinedRef = useRef(false);
+  useEffect(() => {
+    if (autoJoinedRef.current) return;
+    if (!user || !roomId) return;
+    if (media.joined || media.busy) return;
+    autoJoinedRef.current = true;
+    media.setMode(initialMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, roomId, media.joined, media.busy, initialMode]);
+
+  // If join fails, route back to /instant.
+  useEffect(() => {
+    if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
+      toast.error(media.error);
+      router.navigate({ to: "/instant" });
+    }
+  }, [media.error, media.joined, media.busy, router]);
+
+  function handleExit() {
+    media.leave();
+    router.navigate({ to: "/" });
+  }
+
+  // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
+  const inactive = media.joined && media.muted && !media.cameraOn;
+  useEffect(() => {
+    if (!inactive) {
+      setWarnOpen(false);
+      return;
+    }
+    const warnT = setTimeout(() => setWarnOpen(true), QUIET_WARN_MS);
+    return () => clearTimeout(warnT);
+  }, [inactive]);
+
+  useEffect(() => {
+    if (!warnOpen) return;
+    const kickT = setTimeout(() => {
+      if (inactive) {
+        toast.error("Dropped from the Lounge — you went quiet.");
+        media.leave();
+        router.navigate({ to: "/instant" });
+      }
+    }, QUIET_KICK_MS);
+    return () => clearTimeout(kickT);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [warnOpen, inactive]);
 
   useEffect(() => {
     if (!user) return;
@@ -117,6 +180,7 @@ export function ChannelView({
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
+  const others = presence.filter((p) => p.user_id !== user?.id);
 
   return (
     <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
@@ -167,29 +231,47 @@ export function ChannelView({
       </div>
 
       <div className="space-y-4">
-        <MediaPanel m={media} channelTitle={title} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
+        <MediaPanel m={media} channelTitle={title} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} onExit={handleExit} />
         <aside className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
           <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
-            <Users className="h-3.5 w-3.5" /> Around · {presence.length}
+            <Users className="h-3.5 w-3.5" /> Around · {others.length}
           </h3>
-          <ul className="mt-3 space-y-2">
-            {presence.map((p) => (
-              <li key={p.user_id} className="flex items-center gap-2">
-                <div className="h-7 w-7 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                  {p.profile?.avatar_url ? <img src={p.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (p.profile?.display_name?.[0] || "?")}
-                </div>
-                {p.profile?.username ? (
-                  <Link to="/u/$username" params={{ username: p.profile.username }} className="text-sm text-ink hover:underline truncate">
-                    {p.profile?.display_name || p.profile.username}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-ink truncate">{p.profile?.display_name || "Anon"}</span>
-                )}
-              </li>
-            ))}
-          </ul>
+          {others.length === 0 ? (
+            <p className="mt-3 text-xs text-ink-muted">Just you for now.</p>
+          ) : (
+            <ul className="mt-3 space-y-2">
+              {others.map((p) => (
+                <li key={p.user_id} className="flex items-center gap-2">
+                  <div className="h-7 w-7 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
+                    {p.profile?.avatar_url ? <img src={p.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (p.profile?.display_name?.[0] || "?")}
+                  </div>
+                  {p.profile?.username ? (
+                    <Link to="/u/$username" params={{ username: p.profile.username }} className="text-sm text-ink hover:underline truncate">
+                      {p.profile?.display_name || p.profile.username}
+                    </Link>
+                  ) : (
+                    <span className="text-sm text-ink truncate">{p.profile?.display_name || "Anon"}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
         </aside>
       </div>
+
+      <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Still here?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You've been muted with camera off for 2 minutes. Tap Stay or unmute — otherwise we'll drop you in 1 minute.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setWarnOpen(false)}>Stay</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

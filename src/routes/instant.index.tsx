@@ -59,9 +59,10 @@ function InstantPreflight() {
     if (busy || !canDrop || !devices) return;
     setBusy(true);
     try {
-      // Default to voice when mic is available; fall back to video-only if camera is the only device.
+      // Pre-grant whichever the device has — request both when both exist so the
+      // room page never needs a second permission prompt.
       const wantAudio = devices.mic;
-      const wantVideo = !devices.mic && devices.cam;
+      const wantVideo = devices.cam;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           audio: wantAudio,
@@ -70,11 +71,12 @@ function InstantPreflight() {
         for (const t of stream.getTracks()) t.stop();
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Permission denied";
-        toast.error(`Couldn't access ${wantVideo ? "camera" : "mic"}: ${msg}`);
+        toast.error(`Couldn't access ${wantVideo && !wantAudio ? "camera" : "mic"}: ${msg}`);
         setBusy(false);
         return;
       }
-      const mode = wantVideo ? "video" : "voice";
+      // Default mode: voice if mic available, else video-only.
+      const mode = devices.mic ? "voice" : "video";
       const { roomId } = await drop();
       router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
