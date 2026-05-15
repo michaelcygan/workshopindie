@@ -4,7 +4,7 @@ import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { MediaPeer, useMediaRoom } from "@/hooks/use-media-room";
+import type { useMediaRoom } from "@/hooks/use-media-room";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
@@ -15,12 +15,18 @@ export type ProfileLite = {
   avatar_url: string | null;
 };
 
+export type PresenceLite = {
+  user_id: string;
+  profile?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+};
+
 export function MediaPanel({
   m,
   channelTitle,
   meDisplay,
   meAvatar,
   profileLookup,
+  others,
   onExit,
 }: {
   m: MediaState;
@@ -28,17 +34,20 @@ export function MediaPanel({
   meDisplay: string;
   meAvatar: string | null;
   profileLookup: Map<string, ProfileLite>;
+  others: PresenceLite[];
   onExit: () => void;
 }) {
+  const totalHere = 1 + others.length;
+  const peerById = new Map(m.peers.map((p) => [p.userId, p]));
   return (
     <section className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
       <header className="flex items-center gap-2">
         <Radio className="h-3.5 w-3.5 text-primary" />
         <h3 className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          Live · {channelTitle}
+          {channelTitle}
         </h3>
         <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-          {m.voiceCount}/{m.cap}
+          {totalHere}/{m.cap}
         </span>
       </header>
 
@@ -49,34 +58,6 @@ export function MediaPanel({
         </p>
       ) : (
         <div className="mt-3 space-y-3">
-          <ul className="space-y-2">
-            <SpeakerRow
-              key="me"
-              speaking={m.speaking && !m.muted}
-              muted={m.muted}
-              displayName={meDisplay}
-              avatarUrl={meAvatar}
-              username={null}
-              isMe
-            />
-            <AnimatePresence initial={false}>
-              {m.peers.map((p: MediaPeer) => {
-                const prof = profileLookup.get(p.userId);
-                return (
-                  <motion.div key={p.userId} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
-                    <SpeakerRow
-                      speaking={p.speaking}
-                      muted={false}
-                      displayName={prof?.display_name || prof?.username || "Anon"}
-                      avatarUrl={prof?.avatar_url ?? null}
-                      username={prof?.username ?? null}
-                    />
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </ul>
-
           <div className="grid grid-cols-2 gap-2">
             <Button
               variant={m.muted ? "outline" : "secondary"}
@@ -106,6 +87,40 @@ export function MediaPanel({
           >
             <LogOut className="h-3.5 w-3.5" /> Exit Lounge
           </Button>
+
+          <div className="border-t border-border pt-3">
+            <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+              In the room · {totalHere}
+            </h4>
+            <ul className="space-y-2">
+              <SpeakerRow
+                key="me"
+                speaking={m.speaking && !m.muted}
+                muted={m.muted}
+                displayName={meDisplay}
+                avatarUrl={meAvatar}
+                username={null}
+                isMe
+              />
+              <AnimatePresence initial={false}>
+                {others.map((o) => {
+                  const peer = peerById.get(o.user_id);
+                  return (
+                    <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
+                      <SpeakerRow
+                        speaking={!!peer?.speaking}
+                        muted={false}
+                        displayName={o.profile?.display_name || o.profile?.username || "Anon"}
+                        avatarUrl={o.profile?.avatar_url ?? null}
+                        username={o.profile?.username ?? null}
+                      />
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </ul>
+          </div>
+
           {m.error && <p className="text-xs text-destructive">{m.error}</p>}
         </div>
       )}

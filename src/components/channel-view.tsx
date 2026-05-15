@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Users } from "lucide-react";
+import { Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -231,32 +231,15 @@ export function ChannelView({
       </div>
 
       <div className="space-y-4">
-        <MediaPanel m={media} channelTitle={title} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} onExit={handleExit} />
-        <aside className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
-          <h3 className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-ink-muted">
-            <Users className="h-3.5 w-3.5" /> Around · {others.length}
-          </h3>
-          {others.length === 0 ? (
-            <p className="mt-3 text-xs text-ink-muted">Just you for now.</p>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {others.map((p) => (
-                <li key={p.user_id} className="flex items-center gap-2">
-                  <div className="h-7 w-7 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                    {p.profile?.avatar_url ? <img src={p.profile.avatar_url} alt="" className="h-full w-full object-cover" /> : (p.profile?.display_name?.[0] || "?")}
-                  </div>
-                  {p.profile?.username ? (
-                    <Link to="/u/$username" params={{ username: p.profile.username }} className="text-sm text-ink hover:underline truncate">
-                      {p.profile?.display_name || p.profile.username}
-                    </Link>
-                  ) : (
-                    <span className="text-sm text-ink truncate">{p.profile?.display_name || "Anon"}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </aside>
+        <MediaPanel
+          m={media}
+          channelTitle={title}
+          meDisplay={meDisplay}
+          meAvatar={meAvatar}
+          profileLookup={profileLookup}
+          others={others}
+          onExit={handleExit}
+        />
       </div>
 
       <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
