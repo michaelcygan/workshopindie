@@ -288,23 +288,15 @@ function LiveNowStrip() {
   const { data } = useQuery({
     queryKey: ["home-instant-live"],
     queryFn: async () => {
-      const nowIso = new Date().toISOString();
-      const [lounge, work] = await Promise.all([
-        supabase.from("instant_rooms").select("id,title,description").eq("slug", "lounge").maybeSingle(),
-        supabase.from("instant_rooms").select("id").eq("kind", "work").or(`ends_at.is.null,ends_at.gt.${nowIso}`),
+      const cutoff = new Date(Date.now() - 60_000).toISOString();
+      const [rooms, presence] = await Promise.all([
+        supabase.from("instant_rooms").select("id").eq("kind", "lounge").eq("status", "active"),
+        supabase.from("instant_presence").select("user_id,room_id").gt("last_seen_at", cutoff),
       ]);
-      let loungeCount = 0;
-      if (lounge.data?.id) {
-        const { count } = await supabase
-          .from("instant_presence")
-          .select("user_id", { count: "exact", head: true })
-          .eq("room_id", lounge.data.id);
-        loungeCount = count ?? 0;
-      }
-      return {
-        lounge: lounge.data ? { title: lounge.data.title, description: lounge.data.description, count: loungeCount } : null,
-        workCount: (work.data ?? []).length,
-      };
+      const roomIds = new Set((rooms.data ?? []).map((r) => r.id));
+      const livePresence = (presence.data ?? []).filter((p) => roomIds.has(p.room_id));
+      const liveRooms = new Set(livePresence.map((p) => p.room_id));
+      return { liveCount: livePresence.length, loungeCount: liveRooms.size };
     },
     refetchInterval: 30_000,
   });
@@ -313,44 +305,24 @@ function LiveNowStrip() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
-      <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft md:p-6">
+      <Link to="/instant" className="block rounded-3xl border border-border bg-surface p-5 shadow-soft transition hover:shadow-lift md:p-6">
         <div className="flex items-center gap-2">
           <span className="relative inline-flex h-2 w-2">
             <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
           <h3 className="font-display text-xl text-ink">Live now</h3>
-          <Link to="/instant" className="ml-auto text-sm text-primary hover:underline">Drop in →</Link>
+          <span className="ml-auto text-sm text-primary">Drop in →</span>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          {data.lounge && (
-            <Link to="/instant/lounge" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
-              <Radio className="h-5 w-5 text-primary" />
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <h4 className="font-display text-lg text-ink">{data.lounge.title}</h4>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-soft">
-                    <Users className="h-3 w-3" /> {data.lounge.count}
-                  </span>
-                </div>
-                {data.lounge.description && <p className="mt-0.5 truncate text-xs text-ink-muted">{data.lounge.description}</p>}
-              </div>
-            </Link>
-          )}
-          <Link to="/instant/work" className="group flex items-center gap-3 rounded-2xl border border-border bg-background p-4 transition hover:shadow-lift">
-            <Calendar className="h-5 w-5 text-primary" />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h4 className="font-display text-lg text-ink">Work</h4>
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-ink-soft">
-                  <Users className="h-3 w-3" /> {data.workCount} {data.workCount === 1 ? "lobby" : "lobbies"}
-                </span>
-              </div>
-              <p className="mt-0.5 truncate text-xs text-ink-muted">Task-based lobbies. Make something now.</p>
-            </div>
-          </Link>
+        <div className="mt-3 flex items-center gap-3 text-sm text-ink-muted">
+          <Radio className="h-4 w-4 text-primary" />
+          <span>
+            {data.liveCount === 0
+              ? "Nobody's in the Lounge yet — start it."
+              : `${data.liveCount} live across ${data.loungeCount} ${data.loungeCount === 1 ? "lounge" : "lounges"}.`}
+          </span>
         </div>
-      </div>
+      </Link>
     </section>
   );
 }
