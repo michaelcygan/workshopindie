@@ -1,58 +1,49 @@
-## Fullscreen v2 — beautiful, complete room view
+## Goal
 
-Goal: fullscreen becomes a true "in-the-room" view, not just a video stage. All participants visible (video tiles + audio-only avatar tiles), live chat docked to the side, polished dark aesthetic.
+When everyone else has left an Instant Workshop, the remaining user shouldn't be stranded in an empty room. After **1 second alone**, show a prompt offering to drop into a new Workshop, with a 30-second countdown that auto-forwards to home.
 
-### Layout (desktop ≥ md)
+## Trigger
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│  INSTANT WORKSHOP · 3/5                       ⤡ minimize│  ← top bar
-├──────────────────────────────────────┬──────────────────┤
-│                                      │  CHAT            │
-│        Participant tile grid         │  ┌────────────┐  │
-│   (videos + audio-only avatars       │  │ messages…  │  │
-│    in the same uniform grid)         │  │            │  │
-│                                      │  └────────────┘  │
-│                                      │  [ input ➤ ]     │
-├──────────────────────────────────────┴──────────────────┤
-│           ⏺ Mute    📷 Camera off    ⎋ Exit              │  ← floating dock
-└─────────────────────────────────────────────────────────┘
-```
+Inside `ChannelView`, watch the media room presence. When `media.joined === true` and `others.length === 0`, start a **1-second** debounce timer. If still alone after 1s, open the "workshop wrapped" overlay. If anyone joins (or rejoins) during that 1s — or while the overlay is open — clear the timer / dismiss the overlay and reset state.
 
-On `< md`: chat collapses into a bottom sheet toggled by a "Chat (n)" pill in the top bar; tile grid fills the screen.
+The 1s grace is just enough to ride out a single sync tick, not long enough to leave a vacant window sitting open.
 
-### Tile grid
+## Overlay UX
 
-One unified grid renders **everyone in the room**, video or not:
-- Video participant → existing `VideoTile` (aspect-video, mirrored for self).
-- Audio-only / camera-off participant → new `AudioTile`: same `aspect-video` shell, dark surface, large centered avatar (or initial), display name, mic-off badge if muted, primary-colored ring when speaking.
-- Self always first; peers follow in presence order.
-- Grid: `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4` (caps elegantly at 5 cap). Tiles centered with `max-w-6xl mx-auto`.
+- Centered modal (reuse `AlertDialog`) over the room view; doesn't unmount the room so reconnects cleanly cancel it.
+- Title: "Workshop wrapped"
+- Body: "You're the only one left. Want to drop into a new Instant Workshop?"
+- Live countdown: "Returning home in **Ns**…" (updates each second)
+- Two actions:
+  - **Primary** "Join new Workshop" — calls `joinLounge` server fn, navigates to `/instant/$id` with mode preserved (`video` if camera currently on, else `voice`). Permissions already granted in current room, so no re-prompt.
+  - **Secondary** "Back to home" — immediate `handleExit()` (leaves media + navigates to `/`).
 
-### Chat panel (fullscreen)
+## State and timers (in `channel-view.tsx`)
 
-- Reuses the existing message list + composer rendering (extracted from `ChannelView` into the same component, or inlined into a fullscreen branch — message data, send handler, scroll ref already live in `ChannelView`).
-- Fixed width `w-[340px]` on `lg+`, glassy panel: `bg-background/5 backdrop-blur border border-background/10 rounded-2xl`.
-- Same Send button + Input. Placeholder "Say something…".
-- Scrolls independently; auto-scrolls on new messages (existing effect already covers this).
+- `aloneTimerRef = useRef<number | null>(null)` — the 1s debounce.
+- `[endedOpen, setEndedOpen] = useState(false)` and `[secondsLeft, setSecondsLeft] = useState(30)`.
+- Effect on `[media.joined, others.length]`:
+  - If `media.joined && others.length === 0 && !endedOpen` → start 1s timer that flips `endedOpen = true` and resets `secondsLeft = 30`.
+  - Else clear the timer; if `others.length > 0`, also close the overlay and reset countdown.
+- Effect on `endedOpen`: when true, run a `setInterval` 1s decrementing `secondsLeft`; at 0 → `handleExit()`. Clear on close.
+- If `media.joined` flips false (manual exit), clear everything.
 
-### Top bar + dock styling
+## Interaction with the inactivity (mute + cam off) warn
 
-- Top bar: small `Radio` icon, "INSTANT WORKSHOP · n/5" in muted background-foreground, minimize button on the right (already exists).
-- Floating dock: `fixed bottom-6 left-1/2 -translate-x-1/2`, pill-shaped `bg-background/10 backdrop-blur border border-background/15 rounded-full px-2 py-2`, three buttons (Mute / Camera / Exit). Subtle entrance fade.
-- Chat-toggle pill (mobile only) lives in the top bar.
+Suppress the existing inactivity `warnOpen` dialog while `endedOpen` is true — gate the inactivity effect on `!endedOpen`.
 
-### State / wiring
+## Joining a new workshop
 
-- `ChannelView` already owns `fullscreen`, messages, presence, draft. Pass these into `VideoStage` (or rename to `RoomStage`) so the fullscreen branch can render the chat. Simplest: keep `VideoStage` as-is for the inline (non-fullscreen) case; add a new `FullscreenRoom` component in `media-panel.tsx` that takes `m`, presence, profileLookup, messages, draft state, send handler, onExit, onMinimize. `ChannelView` renders `<FullscreenRoom … />` when `fullscreen === true`, otherwise the existing inline layout.
-- Esc-to-exit + body scroll lock while fullscreen (add `overflow-hidden` to `document.body` via effect).
+Reuse `joinLounge` via `useServerFn`. Mode mirrors current `instant.index.tsx`:
+- If `media.cameraOn` (or `media.mode === "video"`), pass `mode: "video"`; else `"voice"`.
+- Toast on error, fall back to `/instant` on failure.
 
-### Files touched
+## Files
 
-- `src/components/media-panel.tsx` — add `AudioTile`, add `FullscreenRoom` (tiles + chat + dock + top bar). Trim fullscreen branch out of `VideoStage`; keep `VideoStage` for inline mini-stage only.
-- `src/components/channel-view.tsx` — render `<FullscreenRoom>` when fullscreen; pass messages, presence, send handler, draft state, profile lookup. Add body scroll-lock effect.
+- `src/components/channel-view.tsx` — add state/refs/effects, render `<AlertDialog>` for the "workshop wrapped" prompt, gate inactivity warn on `!endedOpen`. No changes to media hook, server fn, or DB.
 
-### Out of scope
-- New animations beyond simple fades
-- Picture-in-picture / screen share
-- Reordering or pinning participants
+## Out of scope
+
+- Server-side cleanup of abandoned rooms (presence already drives UX).
+- Matchmaker / 5-cap changes.
+- Fullscreen-specific styling (AlertDialog portals above both layouts).

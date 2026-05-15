@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,9 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaPanel, VideoStage, FullscreenRoom } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
+import { joinLounge } from "@/lib/instant.functions";
 import {
   AlertDialog,
   AlertDialogAction,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -48,6 +51,11 @@ export function ChannelView({
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [endedOpen, setEndedOpen] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(30);
+  const [joiningNew, setJoiningNew] = useState(false);
+  const aloneTimerRef = useRef<number | null>(null);
+  const dropNew = useServerFn(joinLounge);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
@@ -87,7 +95,8 @@ export function ChannelView({
   }, [fullscreen]);
 
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
-  const inactive = media.joined && media.muted && !media.cameraOn;
+  // Suppressed while the "workshop wrapped" prompt is open.
+  const inactive = media.joined && media.muted && !media.cameraOn && !endedOpen;
   useEffect(() => {
     if (!inactive) {
       setWarnOpen(false);
@@ -109,6 +118,67 @@ export function ChannelView({
     return () => clearTimeout(kickT);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warnOpen, inactive]);
+
+  // "Workshop wrapped" — fire 1s after the user is the only one in the room.
+  const alone = media.joined && media.count <= 1;
+  useEffect(() => {
+    if (!alone) {
+      if (aloneTimerRef.current) {
+        clearTimeout(aloneTimerRef.current);
+        aloneTimerRef.current = null;
+      }
+      if (endedOpen) {
+        setEndedOpen(false);
+        setSecondsLeft(30);
+      }
+      return;
+    }
+    if (endedOpen || aloneTimerRef.current) return;
+    aloneTimerRef.current = window.setTimeout(() => {
+      aloneTimerRef.current = null;
+      setSecondsLeft(30);
+      setEndedOpen(true);
+    }, 1000);
+    return () => {
+      if (aloneTimerRef.current) {
+        clearTimeout(aloneTimerRef.current);
+        aloneTimerRef.current = null;
+      }
+    };
+  }, [alone, endedOpen]);
+
+  // 30s countdown while the prompt is open → auto-forward to home.
+  useEffect(() => {
+    if (!endedOpen) return;
+    const id = window.setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          clearInterval(id);
+          handleExit();
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endedOpen]);
+
+  async function handleJoinNew() {
+    if (joiningNew) return;
+    setJoiningNew(true);
+    const nextMode: MediaMode = media.cameraOn || media.mode === "video" ? "video" : "voice";
+    try {
+      media.leave();
+      const { roomId: newId } = await dropNew();
+      setEndedOpen(false);
+      router.navigate({ to: "/instant/$id", params: { id: newId }, search: { mode: nextMode } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't find a new Workshop");
+      setJoiningNew(false);
+      router.navigate({ to: "/instant" });
+    }
+  }
 
   useEffect(() => {
     if (!user) return;
@@ -287,6 +357,29 @@ export function ChannelView({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogAction onClick={() => setWarnOpen(false)}>Stay</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={endedOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
+            <AlertDialogDescription>
+              You're the only one left. Want to drop into a new Instant Workshop?
+              <br />
+              <span className="mt-2 inline-block text-ink-muted">
+                Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleExit} disabled={joiningNew}>
+              Back to home
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleJoinNew} disabled={joiningNew}>
+              {joiningNew ? "Finding a seat…" : "Join new Workshop"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
