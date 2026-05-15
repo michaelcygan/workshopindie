@@ -51,6 +51,11 @@ export function ChannelView({
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
   const [fullscreen, setFullscreen] = useState(false);
+  const [endedOpen, setEndedOpen] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(30);
+  const [joiningNew, setJoiningNew] = useState(false);
+  const aloneTimerRef = useRef<number | null>(null);
+  const dropNew = useServerFn(joinLounge);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
