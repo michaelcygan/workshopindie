@@ -87,8 +87,8 @@ export function ProfilePeek({
   }
 
   return (
-    <HoverCard open={open} onOpenChange={setOpen} openDelay={120} closeDelay={120}>
-      <HoverCardTrigger asChild onClick={() => setOpen(true)}>{children}</HoverCardTrigger>
+      <HoverCard open={open} onOpenChange={setOpen} openDelay={120} closeDelay={120}>
+        <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent className="w-80 p-0 overflow-hidden" align="start" sideOffset={8}>
         {body}
       </HoverCardContent>
