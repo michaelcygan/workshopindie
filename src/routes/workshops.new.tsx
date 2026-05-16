@@ -34,7 +34,6 @@ function NewWorkshop() {
   const [category, setCategory] = useState<Category>("visual");
   const [prompt, setPrompt] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("online");
-  const [locationText, setLocationText] = useState("");
   const [venue, setVenue] = useState<SelectedVenue | null>(null);
   const resolveVenue = useServerFn(resolveVenueAndCity);
   const [externalCallUrl, setExternalCallUrl] = useState("");
