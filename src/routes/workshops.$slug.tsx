@@ -1,9 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, Users, Send, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { ChannelView } from "@/components/channel-view";
+import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
