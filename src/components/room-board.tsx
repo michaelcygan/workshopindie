@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
