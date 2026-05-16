@@ -23,6 +23,10 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "coworking", label: "Co-working" },
 ];
 
+export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
+  (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
+);
+
 export const SOURCE_LABELS: Record<string, string> = {
   workshop: "Workshop",
   collab_board: "Collab",
