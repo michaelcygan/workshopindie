@@ -118,7 +118,38 @@ function EditProfile() {
             <div className="space-y-1.5">
               <Label htmlFor="un">Username</Label>
               <Input id="un" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
+              <p className="text-xs text-ink-muted">Pick a username when you're ready — this is your public @handle.</p>
             </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="fn">First name</Label>
+            <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ln">Last name</Label>
+            <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </div>
+          <p className="col-span-2 -mt-1 text-xs text-ink-muted">
+            Shown as first name + last initial (e.g. "{(firstName || "Jane").trim()} {(lastName.trim()[0] || "S").toUpperCase()}.") as a trust signal where helpful.
+          </p>
+        </section>
+
+        <section className="space-y-1.5">
+          <Label htmlFor="ig">Instagram <span className="text-ink-muted font-normal">(optional)</span></Label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">@</span>
+            <Input
+              id="ig"
+              value={instagram}
+              onChange={(e) => setInstagram(sanitizeInstagramHandle(e.target.value))}
+              placeholder="yourhandle"
+              className="pl-7"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
           </div>
         </section>
 
