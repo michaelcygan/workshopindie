@@ -27,6 +27,7 @@ type Profile = {
   headline: string | null;
   categories: Category[];
   external_links: { label: string; url: string }[] | null;
+  instagram_handle: string | null;
   follower_count: number;
   following_count: number;
   work_count: number;
@@ -39,7 +40,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,external_links,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,city:cities(name,country)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,city:cities(name,country)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -151,6 +152,16 @@ function ProfilePage() {
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
               {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.city.name}</span>}
+              {profile.instagram_handle && (
+                <a
+                  href={`https://instagram.com/${profile.instagram_handle}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  IG @{profile.instagram_handle}
+                </a>
+              )}
             </div>
             {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
           </div>
