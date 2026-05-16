@@ -152,6 +152,16 @@ function ProfilePage() {
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
               {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.city.name}</span>}
+              {profile.instagram_handle && (
+                <a
+                  href={`https://instagram.com/${profile.instagram_handle}`}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                >
+                  IG @{profile.instagram_handle}
+                </a>
+              )}
             </div>
             {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
           </div>
