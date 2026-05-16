@@ -70,7 +70,9 @@ export function RoomGallery({
 
   const worksByUser = useMemo(() => {
     const map: Record<string, GalleryWork[]> = {};
-    members.forEach((m, i) => { map[m.user_id] = (results[i]?.data ?? []) as GalleryWork[]; });
+    members.forEach((m, i) => {
+      map[m.user_id] = (results[i]?.data ?? []) as GalleryWork[];
+    });
     return map;
   }, [members, results]);
 
@@ -83,41 +85,55 @@ export function RoomGallery({
   }, [worksByUser]);
 
   return (
-    <div className={cn(
-      "flex flex-col overflow-hidden border border-border bg-surface",
-      fullscreen ? "h-full rounded-2xl shadow-2xl" : "rounded-2xl",
-      className,
-    )}>
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden border border-border bg-surface",
+        fullscreen ? "h-full rounded-2xl shadow-2xl" : "rounded-2xl",
+        className,
+      )}
+    >
       <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">
-        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-2", fullscreen && "bg-background/5")}>
+        <div
+          className={cn(
+            "flex items-center gap-2 border-b border-border px-3 py-2",
+            fullscreen && "bg-background/5",
+          )}
+        >
           <div className="flex-1 overflow-x-auto">
             <TabsList className="bg-transparent gap-1 h-auto p-0 inline-flex">
-              <TabsTrigger value="everyone" className="rounded-full px-3 py-1 text-xs data-[state=active]:bg-ink data-[state=active]:text-background">
+              <TabsTrigger
+                value="everyone"
+                className="rounded-full px-3 py-1 text-xs data-[state=active]:bg-ink data-[state=active]:text-background"
+              >
                 Everyone <span className="ml-1.5 text-[10px] opacity-70">{everyone.length}</span>
               </TabsTrigger>
-            {members.map((m) => {
-              const count = worksByUser[m.user_id]?.length ?? 0;
-              const display = m.display_name || m.username || "Anon";
-              const initial = (display[0] || "?").toUpperCase();
-              return (
-                <TabsTrigger
-                  key={m.user_id}
-                  value={m.user_id}
-                  className="rounded-full px-2.5 py-1 text-xs gap-1.5 data-[state=active]:bg-ink data-[state=active]:text-background"
-                >
-                  <span className="relative inline-flex h-4 w-4 overflow-hidden rounded-full bg-muted">
-                    {m.avatar_url ? (
-                      <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <span className="flex h-full w-full items-center justify-center text-[8px] text-ink-muted">{initial}</span>
+              {members.map((m) => {
+                const count = worksByUser[m.user_id]?.length ?? 0;
+                const display = m.display_name || m.username || "Anon";
+                const initial = (display[0] || "?").toUpperCase();
+                return (
+                  <TabsTrigger
+                    key={m.user_id}
+                    value={m.user_id}
+                    className="rounded-full px-2.5 py-1 text-xs gap-1.5 data-[state=active]:bg-ink data-[state=active]:text-background"
+                  >
+                    <span className="relative inline-flex h-4 w-4 overflow-hidden rounded-full bg-muted">
+                      {m.avatar_url ? (
+                        <img src={m.avatar_url} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="flex h-full w-full items-center justify-center text-[8px] text-ink-muted">
+                          {initial}
+                        </span>
+                      )}
+                    </span>
+                    <span className="max-w-[80px] truncate">{display.split(" ")[0]}</span>
+                    {m.speaking && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                     )}
-                  </span>
-                  <span className="max-w-[80px] truncate">{display.split(" ")[0]}</span>
-                  {m.speaking && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
-                  <span className="text-[10px] opacity-70">{count}</span>
-                </TabsTrigger>
-              );
-            })}
+                    <span className="text-[10px] opacity-70">{count}</span>
+                  </TabsTrigger>
+                );
+              })}
             </TabsList>
           </div>
           {onEnterFullscreen && (
@@ -142,7 +158,13 @@ export function RoomGallery({
           ) : (
             <>
               <TabsContent value="everyone" className="m-0">
-                <Grid works={everyone} onOpen={onOpenWork} emptyMember={null} onOpenProfile={onOpenProfile} fullscreen={fullscreen} />
+                <Grid
+                  works={everyone}
+                  onOpen={onOpenWork}
+                  emptyMember={null}
+                  onOpenProfile={onOpenProfile}
+                  fullscreen={fullscreen}
+                />
               </TabsContent>
               {members.map((m) => (
                 <TabsContent key={m.user_id} value={m.user_id} className="m-0">
@@ -184,11 +206,17 @@ function Grid({
         <ImageOff className="mb-2 h-5 w-5 opacity-50" />
         {emptyMember ? (
           isMe ? (
-            <p>You haven't published anything yet.<br />Share a piece — your room can see it here.</p>
+            <p>
+              You haven't published anything yet.
+              <br />
+              Share a piece — your room can see it here.
+            </p>
           ) : (
             <p>
-              {emptyMember.display_name || emptyMember.username || "They"} hasn't published anything yet.
-              <br />Ask them about what they're working on.
+              {emptyMember.display_name || emptyMember.username || "They"} hasn't published anything
+              yet.
+              <br />
+              Ask them about what they're working on.
             </p>
           )
         ) : (
@@ -198,7 +226,14 @@ function Grid({
     );
   }
   return (
-    <div className={cn("grid gap-2", fullscreen ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" : "grid-cols-2 sm:grid-cols-3")}>
+    <div
+      className={cn(
+        "grid gap-2",
+        fullscreen
+          ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
+          : "grid-cols-2 sm:grid-cols-3",
+      )}
+    >
       <AnimatePresence initial={false}>
         {works.map((w, i) => (
           <motion.button
@@ -212,7 +247,12 @@ function Grid({
             className="group relative aspect-[4/5] overflow-hidden rounded-lg bg-surface-2 ring-1 ring-border hover:ring-primary transition"
           >
             {w.cover_url ? (
-              <img src={w.cover_url} alt={w.title} loading="lazy" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]" />
+              <img
+                src={w.cover_url}
+                alt={w.title}
+                loading="lazy"
+                className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+              />
             ) : (
               <div className="h-full w-full gradient-soft" />
             )}
@@ -220,7 +260,9 @@ function Grid({
               <CategoryChip category={w.category} />
             </div>
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2 text-left">
-              <div className="text-[11px] font-medium leading-tight text-white line-clamp-2">{w.title}</div>
+              <div className="text-[11px] font-medium leading-tight text-white line-clamp-2">
+                {w.title}
+              </div>
             </div>
           </motion.button>
         ))}

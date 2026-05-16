@@ -26,7 +26,9 @@ export function FullscreenShell({
     setMounted(true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   if (!mounted) return null;
@@ -60,9 +62,7 @@ export function FullscreenShell({
           <Minimize2 className="h-4 w-4" />
         </button>
       </header>
-      <div className="flex-1 min-h-0 px-3 pb-3 md:px-6 md:pb-6">
-        {children}
-      </div>
+      <div className="flex-1 min-h-0 px-3 pb-3 md:px-6 md:pb-6">{children}</div>
     </motion.div>,
     document.body,
   );
