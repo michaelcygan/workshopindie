@@ -136,10 +136,24 @@ export function ChannelView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warnOpen, inactive]);
 
-  // "Workshop wrapped" — fire 1s after the user is the only one in the room.
+  // Track first moment the room became multi-party (>=2). Used to gate auto-end:
+  // a solo first-joiner should never be wrapped — only fire after a real
+  // session existed and has been live for 5+ minutes.
+  useEffect(() => {
+    if (media.joined && media.count >= 2 && multiPartySinceRef.current === null) {
+      multiPartySinceRef.current = Date.now();
+    }
+  }, [media.joined, media.count]);
+
+  // "Workshop wrapped" — only when the user has been alone after a real
+  // multi-party session that's at least 5 minutes old, and an admin hasn't
+  // dismissed it for this alone-stretch.
   const alone = media.joined && media.count <= 1;
+  const MIN_SESSION_MS = 5 * 60 * 1000;
   useEffect(() => {
     if (!alone) {
+      // Reset admin dismissal so future empties can re-trigger normally.
+      adminDismissedRef.current = false;
       if (aloneTimerRef.current) {
         clearTimeout(aloneTimerRef.current);
         aloneTimerRef.current = null;
@@ -150,6 +164,11 @@ export function ChannelView({
       }
       return;
     }
+    const eligible =
+      multiPartySinceRef.current !== null &&
+      Date.now() - multiPartySinceRef.current >= MIN_SESSION_MS &&
+      !adminDismissedRef.current;
+    if (!eligible) return;
     if (endedOpen || aloneTimerRef.current) return;
     aloneTimerRef.current = window.setTimeout(() => {
       aloneTimerRef.current = null;
