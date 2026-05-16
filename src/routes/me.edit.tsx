@@ -11,6 +11,7 @@ import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
+import { sanitizeInstagramHandle } from "@/lib/display-name";
 
 export const Route = createFileRoute("/me/edit")({ component: EditProfile });
 
@@ -24,6 +25,9 @@ function EditProfile() {
 
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
   const [avatar, setAvatar] = useState<string | null>(null);
@@ -45,8 +49,12 @@ function EditProfile() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
+      const d = data as any;
       setDisplayName(data.display_name ?? "");
       setUsername(data.username ?? "");
+      setFirstName(d.first_name ?? "");
+      setLastName(d.last_name ?? "");
+      setInstagram(d.instagram_handle ?? "");
       setHeadline(data.headline ?? "");
       setBio(data.bio ?? "");
       setAvatar(data.avatar_url ?? null);
@@ -62,9 +70,13 @@ function EditProfile() {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
+    const ig = sanitizeInstagramHandle(instagram);
     const { error } = await supabase.from("profiles").update({
       display_name: displayName,
       username: username || null,
+      first_name: firstName.trim() || null,
+      last_name: lastName.trim() || null,
+      instagram_handle: ig || null,
       headline: headline || null,
       bio: bio || null,
       avatar_url: avatar,
@@ -73,7 +85,7 @@ function EditProfile() {
       external_links: links.filter((l) => l.url),
       city_id: cityId || null,
       onboarded: true,
-    }).eq("id", user.id);
+    } as any).eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile saved");
@@ -106,7 +118,38 @@ function EditProfile() {
             <div className="space-y-1.5">
               <Label htmlFor="un">Username</Label>
               <Input id="un" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
+              <p className="text-xs text-ink-muted">Pick a username when you're ready — this is your public @handle.</p>
             </div>
+          </div>
+        </section>
+
+        <section className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="fn">First name</Label>
+            <Input id="fn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="ln">Last name</Label>
+            <Input id="ln" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          </div>
+          <p className="col-span-2 -mt-1 text-xs text-ink-muted">
+            Shown as first name + last initial (e.g. "{(firstName || "Jane").trim()} {(lastName.trim()[0] || "S").toUpperCase()}.") as a trust signal where helpful.
+          </p>
+        </section>
+
+        <section className="space-y-1.5">
+          <Label htmlFor="ig">Instagram <span className="text-ink-muted font-normal">(optional)</span></Label>
+          <div className="relative">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">@</span>
+            <Input
+              id="ig"
+              value={instagram}
+              onChange={(e) => setInstagram(sanitizeInstagramHandle(e.target.value))}
+              placeholder="yourhandle"
+              className="pl-7"
+              autoCapitalize="none"
+              autoCorrect="off"
+            />
           </div>
         </section>
 

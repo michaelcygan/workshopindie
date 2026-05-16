@@ -17,7 +17,6 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [cats, setCats] = useState<Category[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
@@ -49,7 +48,6 @@ function Onboarding() {
       .from("profiles")
       .update({
         display_name: name,
-        username: username || null,
         bio: bio || null,
         categories: cats,
         city_id: cityId || null,
@@ -69,15 +67,10 @@ function Onboarding() {
         <p className="mt-1 text-sm text-ink-muted">Tell us how to credit you. You can change all of this later.</p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="name">Display name</Label>
-              <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5 col-span-2">
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" placeholder="your-handle" value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} />
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="name">Display name</Label>
+            <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+            <p className="text-xs text-ink-muted">You can claim your public @handle later from your profile.</p>
           </div>
 
           <div className="space-y-1.5">
