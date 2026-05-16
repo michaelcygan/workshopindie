@@ -1477,6 +1477,7 @@ export type Database = {
         | "critique"
         | "business"
         | "mentorship"
+        | "coworking"
       collab_post_status: "open" | "closed" | "archived" | "removed"
       compensation_type:
         | "paid"
@@ -1679,6 +1680,7 @@ export const Constants = {
         "critique",
         "business",
         "mentorship",
+        "coworking",
       ],
       collab_post_status: ["open", "closed", "archived", "removed"],
       compensation_type: [
