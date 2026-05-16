@@ -381,6 +381,7 @@ export type Database = {
           slug: string | null
           status: Database["public"]["Enums"]["instant_status"]
           title: string
+          workshop_id: string | null
         }
         Insert: {
           category?: Database["public"]["Enums"]["category"] | null
@@ -397,6 +398,7 @@ export type Database = {
           slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title: string
+          workshop_id?: string | null
         }
         Update: {
           category?: Database["public"]["Enums"]["category"] | null
@@ -413,6 +415,7 @@ export type Database = {
           slug?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title?: string
+          workshop_id?: string | null
         }
         Relationships: [
           {
@@ -420,6 +423,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
         ]
@@ -1343,6 +1353,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_workshop_room_member: {
+        Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
       join_lounge: { Args: { _user_id: string }; Returns: string }

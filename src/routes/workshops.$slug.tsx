@@ -1,9 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, Users, Send, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { ChannelView } from "@/components/channel-view";
+import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,7 +53,6 @@ function WorkshopDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
   const { data: ws, isLoading } = useQuery({ queryKey: ["workshop", slug], queryFn: () => fetchWorkshop(slug) });
 
@@ -288,102 +290,86 @@ function HostApplications({ ws }: { ws: Workshop }) {
 
 function Room({ ws }: { ws: Workshop }) {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
-  const [body, setBody] = useState("");
-  const [participants, setParticipants] = useState<any[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const ensureRoom = useServerFn(ensureWorkshopRoom);
 
-  useEffect(() => {
-    if (!user) return;
-    let mounted = true;
-    Promise.all([
-      supabase.from("workshop_messages").select("*, author:profiles!workshop_messages_user_id_fkey(display_name,username,avatar_url)").eq("workshop_id", ws.id).order("created_at"),
-      supabase.from("workshop_participants").select("*, profile:profiles!workshop_participants_user_id_fkey(display_name,username,avatar_url)").eq("workshop_id", ws.id),
-    ]).then(([m, p]) => {
-      if (!mounted) return;
-      setMessages(m.data ?? []);
-      setParticipants(p.data ?? []);
-    });
+  // Gate: only host or a confirmed participant can mount the live room.
+  const { data: myPart } = useQuery({
+    queryKey: ["ws-room-membership", ws.id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workshop_participants")
+        .select("id,participant_status")
+        .eq("workshop_id", ws.id).eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
 
-    const ch = supabase.channel(`ws-room-${ws.id}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "workshop_messages", filter: `workshop_id=eq.${ws.id}` },
-        async (payload) => {
-          const { data: full } = await supabase.from("workshop_messages")
-            .select("*, author:profiles!workshop_messages_user_id_fkey(display_name,username,avatar_url)")
-            .eq("id", (payload.new as any).id).maybeSingle();
-          if (full) setMessages((m) => [...m, full]);
-        })
-      .subscribe();
-    return () => { mounted = false; supabase.removeChannel(ch); };
-  }, [ws.id, user]);
+  const isHost = user?.id === ws.host_user_id;
+  const memberStatus = myPart?.participant_status ?? null;
+  const isMember =
+    isHost || (memberStatus !== null && ["confirmed", "checked_in", "completed"].includes(memberStatus));
 
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-  }, [messages.length]);
-
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user || !body.trim()) return;
-    const text = body.trim();
-    setBody("");
-    const { error } = await supabase.from("workshop_messages").insert({ workshop_id: ws.id, user_id: user.id, body: text });
-    if (error) { toast.error(error.message); setBody(text); }
-  }
+  const { data: roomData, isLoading: roomLoading, error: roomError } = useQuery({
+    queryKey: ["ws-paired-room", ws.id],
+    enabled: !!user && isMember,
+    staleTime: Infinity,
+    queryFn: () => ensureRoom({ data: { workshopId: ws.id } }),
+  });
 
   if (!user) return null;
 
-  const amParticipant = participants.some((p) => p.user_id === user.id);
-  if (!amParticipant) {
+  if (!isMember) {
     return (
       <section className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
         <Sparkles className="mx-auto h-5 w-5 text-primary" />
-        <p className="mt-2 text-sm text-ink-muted">The active room opens for confirmed participants.</p>
+        <p className="mt-2 text-sm text-ink-muted">The live room opens for confirmed participants.</p>
       </section>
     );
   }
 
+  if (roomLoading || !roomData) {
+    return (
+      <section className="mt-10 flex items-center justify-center rounded-2xl border border-border bg-surface p-10">
+        <Loader2 className="h-4 w-4 animate-spin text-ink-muted" />
+      </section>
+    );
+  }
+
+  if (roomError) {
+    return (
+      <section className="mt-10 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-ink-soft">
+        Couldn't open the live room: {(roomError as Error).message}
+      </section>
+    );
+  }
+
+  const pinned = (
+    <div className="flex flex-wrap items-center gap-2 text-sm">
+      <Sparkles className="h-4 w-4 text-primary" />
+      <span className="font-medium text-ink">{ws.title}</span>
+      {ws.external_call_url && (
+        <a
+          href={ws.external_call_url}
+          target="_blank"
+          rel="noreferrer"
+          className="ml-auto inline-flex items-center gap-1.5 text-primary hover:underline"
+        >
+          <ExternalLink className="h-3.5 w-3.5" /> Join external call
+        </a>
+      )}
+    </div>
+  );
+
   return (
     <section className="mt-10">
-      <div className="flex items-center justify-between">
-        <h2 className="font-display text-2xl text-ink">The Room</h2>
-        {ws.external_call_url && (
-          <a href={ws.external_call_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">
-            <ExternalLink className="h-3.5 w-3.5" /> Join call
-          </a>
-        )}
-      </div>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {participants.map((p) => (
-          <div key={p.id} className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-2 py-1 text-xs">
-            <Avatar className="h-5 w-5"><AvatarImage src={p.profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[9px]">{(p.profile?.display_name || p.profile?.username || "·")[0]}</AvatarFallback></Avatar>
-            {p.profile?.display_name || p.profile?.username || "Member"}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-3 rounded-2xl border border-border bg-surface">
-        <div ref={scrollRef} className="max-h-[420px] min-h-[260px] overflow-y-auto p-4 space-y-3">
-          {messages.length === 0 && <p className="text-center text-sm text-ink-muted">No messages yet — say hi.</p>}
-          {messages.map((m) => (
-            <div key={m.id} className="flex gap-2.5">
-              <Avatar className="h-8 w-8 shrink-0"><AvatarImage src={m.author?.avatar_url ?? undefined} /><AvatarFallback className="text-xs">{(m.author?.display_name || m.author?.username || "·")[0]}</AvatarFallback></Avatar>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-baseline gap-2">
-                  <span className="text-sm font-medium text-ink">{m.author?.display_name || m.author?.username || "Someone"}</span>
-                  <span className="text-[11px] text-ink-muted"><Clock className="mr-0.5 inline h-3 w-3" />{new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</span>
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-ink-soft">{m.body}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-        <form onSubmit={send} className="flex gap-2 border-t border-border p-2">
-          <Input placeholder="Message the room…" value={body} onChange={(e) => setBody(e.target.value)} className="rounded-full" />
-          <Button type="submit" size="icon" className="rounded-full shrink-0"><Send className="h-4 w-4" /></Button>
-        </form>
-      </div>
-
+      <ChannelView
+        key={roomData.roomId}
+        roomId={roomData.roomId}
+        title={ws.title}
+        initialMode="voice"
+        pinned={pinned}
+      />
       <WorkshopToolsPanel workshopId={ws.id} hostUserId={ws.host_user_id} category={ws.category} />
     </section>
   );
