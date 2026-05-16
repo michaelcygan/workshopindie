@@ -184,13 +184,20 @@ export function ChannelView({
   }, [alone, endedOpen]);
 
   // 30s countdown while the prompt is open → auto-forward to home.
+  // Admins are never force-routed: on tick to 0 we just dismiss the dialog.
   useEffect(() => {
     if (!endedOpen) return;
     const id = window.setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(id);
-          handleExit();
+          if (isAdmin) {
+            adminDismissedRef.current = true;
+            setEndedOpen(false);
+            setSecondsLeft(30);
+          } else {
+            handleExit();
+          }
           return 0;
         }
         return s - 1;
@@ -198,7 +205,13 @@ export function ChannelView({
     }, 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endedOpen]);
+  }, [endedOpen, isAdmin]);
+
+  function dismissEnded() {
+    adminDismissedRef.current = true;
+    setEndedOpen(false);
+    setSecondsLeft(30);
+  }
 
   async function handleJoinNew() {
     if (joiningNew) return;
