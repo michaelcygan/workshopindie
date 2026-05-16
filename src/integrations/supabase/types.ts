@@ -287,6 +287,54 @@ export type Database = {
           },
         ]
       }
+      instant_board_items: {
+        Row: {
+          content: Json
+          created_at: string
+          h: number
+          id: string
+          kind: string
+          room_id: string
+          rotation: number
+          updated_at: string
+          user_id: string
+          w: number
+          x: number
+          y: number
+          z: number
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          h?: number
+          id?: string
+          kind: string
+          room_id: string
+          rotation?: number
+          updated_at?: string
+          user_id: string
+          w?: number
+          x?: number
+          y?: number
+          z?: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          h?: number
+          id?: string
+          kind?: string
+          room_id?: string
+          rotation?: number
+          updated_at?: string
+          user_id?: string
+          w?: number
+          x?: number
+          y?: number
+          z?: number
+        }
+        Relationships: []
+      }
       instant_messages: {
         Row: {
           body: string
@@ -1353,6 +1401,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_room_member: {
+        Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
       is_workshop_room_member: {
