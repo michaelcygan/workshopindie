@@ -14,6 +14,7 @@ import { joinLounge } from "@/lib/instant.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
+import { FullscreenShell } from "@/components/fullscreen-shell";
 const RoomBoard = lazy(() => import("@/components/room-board"));
 import {
   AlertDialog,
