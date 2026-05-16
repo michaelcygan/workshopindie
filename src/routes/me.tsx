@@ -27,8 +27,8 @@ function MeDashboard() {
   useEffect(() => {
     if (loading) return;
     if (!user) return void navigate({ to: "/login" });
-    supabase.from("profiles").select("username,onboarded").eq("id", user.id).maybeSingle().then(({ data }) => {
-      if (!data?.onboarded || !data?.username) navigate({ to: "/onboarding" });
+    supabase.from("profiles").select("onboarded").eq("id", user.id).maybeSingle().then(({ data }) => {
+      if (!data?.onboarded) navigate({ to: "/onboarding" });
     });
   }, [user, loading, navigate]);
 
