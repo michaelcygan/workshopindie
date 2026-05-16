@@ -224,3 +224,6 @@
     .animate-marquee-x { animation: none; }
   }
 }
+@layer utilities {
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+}
