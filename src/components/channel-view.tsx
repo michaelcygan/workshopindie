@@ -2,9 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, UserPlus } from "lucide-react";
+import { Send, Loader2, UserPlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MediaPanel, VideoStage, FullscreenRoom, type RoomViewMode } from "@/components/media-panel";
@@ -48,6 +49,7 @@ export function ChannelView({
   initialMode?: MediaMode;
 }) {
   const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [presence, setPresence] = useState<Presence[]>([]);
@@ -59,6 +61,8 @@ export function ChannelView({
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
   const aloneTimerRef = useRef<number | null>(null);
+  const multiPartySinceRef = useRef<number | null>(null);
+  const adminDismissedRef = useRef(false);
   const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
@@ -132,10 +136,24 @@ export function ChannelView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warnOpen, inactive]);
 
-  // "Workshop wrapped" — fire 1s after the user is the only one in the room.
+  // Track first moment the room became multi-party (>=2). Used to gate auto-end:
+  // a solo first-joiner should never be wrapped — only fire after a real
+  // session existed and has been live for 5+ minutes.
+  useEffect(() => {
+    if (media.joined && media.count >= 2 && multiPartySinceRef.current === null) {
+      multiPartySinceRef.current = Date.now();
+    }
+  }, [media.joined, media.count]);
+
+  // "Workshop wrapped" — only when the user has been alone after a real
+  // multi-party session that's at least 5 minutes old, and an admin hasn't
+  // dismissed it for this alone-stretch.
   const alone = media.joined && media.count <= 1;
+  const MIN_SESSION_MS = 5 * 60 * 1000;
   useEffect(() => {
     if (!alone) {
+      // Reset admin dismissal so future empties can re-trigger normally.
+      adminDismissedRef.current = false;
       if (aloneTimerRef.current) {
         clearTimeout(aloneTimerRef.current);
         aloneTimerRef.current = null;
@@ -146,6 +164,11 @@ export function ChannelView({
       }
       return;
     }
+    const eligible =
+      multiPartySinceRef.current !== null &&
+      Date.now() - multiPartySinceRef.current >= MIN_SESSION_MS &&
+      !adminDismissedRef.current;
+    if (!eligible) return;
     if (endedOpen || aloneTimerRef.current) return;
     aloneTimerRef.current = window.setTimeout(() => {
       aloneTimerRef.current = null;
@@ -161,13 +184,20 @@ export function ChannelView({
   }, [alone, endedOpen]);
 
   // 30s countdown while the prompt is open → auto-forward to home.
+  // Admins are never force-routed: on tick to 0 we just dismiss the dialog.
   useEffect(() => {
     if (!endedOpen) return;
     const id = window.setInterval(() => {
       setSecondsLeft((s) => {
         if (s <= 1) {
           clearInterval(id);
-          handleExit();
+          if (isAdmin) {
+            adminDismissedRef.current = true;
+            setEndedOpen(false);
+            setSecondsLeft(30);
+          } else {
+            handleExit();
+          }
           return 0;
         }
         return s - 1;
@@ -175,7 +205,13 @@ export function ChannelView({
     }, 1000);
     return () => clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [endedOpen]);
+  }, [endedOpen, isAdmin]);
+
+  function dismissEnded() {
+    adminDismissedRef.current = true;
+    setEndedOpen(false);
+    setSecondsLeft(30);
+  }
 
   async function handleJoinNew() {
     if (joiningNew) return;
@@ -424,8 +460,18 @@ export function ChannelView({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={endedOpen}>
-        <AlertDialogContent>
+      <AlertDialog open={endedOpen} onOpenChange={(o) => { if (!o && isAdmin) dismissEnded(); }}>
+        <AlertDialogContent className="relative">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={dismissEnded}
+              aria-label="Dismiss"
+              className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           <AlertDialogHeader>
             <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
             <AlertDialogDescription>
