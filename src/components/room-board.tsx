@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink } from "lucide-react";
+import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
+const CANVAS_W = 4000;
+const CANVAS_H = 3000;
 
 /**
  * Ephemeral pinboard for any Instant/Workshop room. Items (image, sticky note,
@@ -46,6 +52,10 @@ function stickyPalette(name: string) {
 export default function RoomBoard({ roomId, userId, className }: { roomId: string; userId: string; className?: string }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [zoom, setZoom] = useState(1);
+  const zoomRef = useRef(1);
+  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<{ id: string; startX: number; startY: number; itemX: number; itemY: number } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -86,11 +96,14 @@ export default function RoomBoard({ roomId, userId, className }: { roomId: strin
   const addItem = useCallback(async (kind: Kind, content: Content, size?: { w: number; h: number }) => {
     const w = size?.w ?? (kind === "text" ? 240 : kind === "link" ? 220 : kind === "image" ? 240 : 200);
     const h = size?.h ?? (kind === "text" ? 60 : kind === "link" ? 56 : kind === "image" ? 180 : 200);
-    const rect = canvasRef.current?.getBoundingClientRect();
-    const cw = rect?.width ?? 800;
-    const ch = rect?.height ?? 500;
-    const x = Math.max(20, Math.random() * Math.max(40, cw - w - 40));
-    const y = Math.max(20, Math.random() * Math.max(40, ch - h - 40));
+    // Drop near the center of the visible viewport (in canvas coords).
+    const sc = scrollRef.current;
+    const z = zoomRef.current;
+    const viewCx = sc ? (sc.scrollLeft + sc.clientWidth / 2) / z : CANVAS_W / 2;
+    const viewCy = sc ? (sc.scrollTop + sc.clientHeight / 2) / z : CANVAS_H / 2;
+    const jitter = () => (Math.random() - 0.5) * 80;
+    const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
+    const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
     const row = { room_id: roomId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
     const { data, error } = await supabase.from("instant_board_items").insert(row).select().single();
     if (error) { toast.error(error.message); return; }
@@ -109,19 +122,19 @@ export default function RoomBoard({ roomId, userId, className }: { roomId: strin
     if (error) toast.error(error.message);
   }, []);
 
-  // Drag handlers
+  // Drag handlers — divide screen-space deltas by zoom to keep the cursor on the item.
   const onPointerDown = (e: React.PointerEvent, item: Item) => {
     if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
     dragRef.current = { id: item.id, startX: e.clientX, startY: e.clientY, itemX: item.x, itemY: item.y };
-    // bring to front locally
     setItems((prev) => prev.map((x) => x.id === item.id ? { ...x, z: maxZ + 1 } : x));
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
     if (!d) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
+    const z = zoomRef.current;
+    const dx = (e.clientX - d.startX) / z;
+    const dy = (e.clientY - d.startY) / z;
     setItems((prev) => prev.map((x) => x.id === d.id ? { ...x, x: d.itemX + dx, y: d.itemY + dy } : x));
   };
   const onPointerUp = (e: React.PointerEvent) => {
@@ -134,48 +147,102 @@ export default function RoomBoard({ roomId, userId, className }: { roomId: strin
     (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
+  // Zoom — keep the viewport center anchored when scale changes.
+  const applyZoom = useCallback((next: number) => {
+    const clamped = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, Math.round(next * 100) / 100));
+    const sc = scrollRef.current;
+    if (sc) {
+      const cx = (sc.scrollLeft + sc.clientWidth / 2) / zoomRef.current;
+      const cy = (sc.scrollTop + sc.clientHeight / 2) / zoomRef.current;
+      zoomRef.current = clamped;
+      setZoom(clamped);
+      requestAnimationFrame(() => {
+        sc.scrollLeft = Math.max(0, cx * clamped - sc.clientWidth / 2);
+        sc.scrollTop = Math.max(0, cy * clamped - sc.clientHeight / 2);
+      });
+    } else {
+      zoomRef.current = clamped;
+      setZoom(clamped);
+    }
+  }, []);
+
   return (
     <div className={cn("relative flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Board · ephemeral</div>
         <Toolbar onAdd={addItem} roomId={roomId} userId={userId} />
       </div>
 
-      <div ref={canvasRef} className="relative flex-1 min-h-0 overflow-auto bg-muted/20">
+      <div ref={scrollRef} className="relative flex-1 min-h-0 overflow-auto bg-muted/20">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center text-ink-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
           </div>
         )}
         {!loading && items.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
             <p className="text-sm text-ink-muted">Drop an image, sticky, link, or text to start.</p>
           </div>
         )}
-        {items.map((it) => {
-          const canEdit = it.user_id === userId;
-          return (
-            <div
-              key={it.id}
-              onPointerDown={(e) => onPointerDown(e, it)}
-              onPointerMove={onPointerMove}
-              onPointerUp={onPointerUp}
-              onPointerCancel={onPointerUp}
-              style={{ left: it.x, top: it.y, width: it.w, minHeight: it.h, zIndex: it.z }}
-              className="absolute touch-none select-none cursor-grab active:cursor-grabbing group"
-            >
-              <ItemView
-                item={it}
-                editing={editingId === it.id}
-                canEdit={canEdit}
-                onStartEdit={() => canEdit && setEditingId(it.id)}
-                onStopEdit={() => setEditingId(null)}
-                onChange={(patch) => updateItem(it.id, patch)}
-                onDelete={() => deleteItem(it.id)}
-              />
-            </div>
-          );
-        })}
+        <div
+          ref={canvasRef}
+          style={{
+            width: CANVAS_W,
+            height: CANVAS_H,
+            transform: `scale(${zoom})`,
+            transformOrigin: "0 0",
+          }}
+          className="relative"
+        >
+          {items.map((it) => {
+            const canEdit = it.user_id === userId;
+            return (
+              <div
+                key={it.id}
+                onPointerDown={(e) => onPointerDown(e, it)}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                onPointerCancel={onPointerUp}
+                style={{ left: it.x, top: it.y, width: it.w, minHeight: it.h, zIndex: it.z }}
+                className="absolute touch-none select-none cursor-grab active:cursor-grabbing group"
+              >
+                <ItemView
+                  item={it}
+                  editing={editingId === it.id}
+                  canEdit={canEdit}
+                  onStartEdit={() => canEdit && setEditingId(it.id)}
+                  onStopEdit={() => setEditingId(null)}
+                  onChange={(patch) => updateItem(it.id, patch)}
+                  onDelete={() => deleteItem(it.id)}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Zoom controls — floating, sticky to the viewport */}
+        <div className="pointer-events-none sticky bottom-3 z-20 flex justify-end pr-3" style={{ top: "calc(100% - 2.75rem)" }}>
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-background/95 px-2 py-1.5 shadow-soft backdrop-blur">
+            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom - 0.1)} aria-label="Zoom out">
+              <ZoomOut className="h-3.5 w-3.5" />
+            </Button>
+            <Slider
+              value={[zoom]}
+              min={MIN_ZOOM}
+              max={MAX_ZOOM}
+              step={0.05}
+              onValueChange={(v) => applyZoom(v[0] ?? 1)}
+              className="w-32"
+            />
+            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom + 0.1)} aria-label="Zoom in">
+              <ZoomIn className="h-3.5 w-3.5" />
+            </Button>
+            <div className="w-10 text-center text-[10px] tabular-nums text-ink-muted">{Math.round(zoom * 100)}%</div>
+            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(1)} aria-label="Reset zoom">
+              <Maximize2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );
