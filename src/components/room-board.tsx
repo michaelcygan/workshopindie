@@ -1,5 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+import {
+  Image as ImageIcon,
+  StickyNote,
+  Link2,
+  Type,
+  X,
+  Upload,
+  Loader2,
+  ExternalLink,
+  ZoomIn,
+  ZoomOut,
+  Maximize2,
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -34,31 +46,55 @@ type Item = {
   user_id: string;
   kind: Kind;
   content: Content;
-  x: number; y: number; w: number; h: number; z: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  z: number;
 };
 
 const STICKY_COLORS = [
   { name: "yellow", bg: "#fef3c7", ink: "#78350f" },
-  { name: "pink",   bg: "#fce7f3", ink: "#831843" },
-  { name: "blue",   bg: "#dbeafe", ink: "#1e3a8a" },
-  { name: "green",  bg: "#d1fae5", ink: "#064e3b" },
-  { name: "lav",    bg: "#ede9fe", ink: "#4c1d95" },
-  { name: "peach",  bg: "#ffedd5", ink: "#7c2d12" },
+  { name: "pink", bg: "#fce7f3", ink: "#831843" },
+  { name: "blue", bg: "#dbeafe", ink: "#1e3a8a" },
+  { name: "green", bg: "#d1fae5", ink: "#064e3b" },
+  { name: "lav", bg: "#ede9fe", ink: "#4c1d95" },
+  { name: "peach", bg: "#ffedd5", ink: "#7c2d12" },
 ];
 
 function stickyPalette(name: string) {
   return STICKY_COLORS.find((c) => c.name === name) ?? STICKY_COLORS[0];
 }
 
-export default function RoomBoard({ roomId, userId, className, onEnterFullscreen }: { roomId: string; userId: string; className?: string; onEnterFullscreen?: () => void }) {
+export default function RoomBoard({
+  roomId,
+  userId,
+  className,
+  onEnterFullscreen,
+  fullscreen = false,
+}: {
+  roomId: string;
+  userId: string;
+  className?: string;
+  onEnterFullscreen?: () => void;
+  fullscreen?: boolean;
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
   const zoomRef = useRef(1);
-  useEffect(() => { zoomRef.current = zoom; }, [zoom]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ id: string; startX: number; startY: number; itemX: number; itemY: number } | null>(null);
+  const dragRef = useRef<{
+    id: string;
+    startX: number;
+    startY: number;
+    itemX: number;
+    itemY: number;
+  } | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Initial load + realtime
@@ -78,12 +114,40 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
 
     const ch = supabase
       .channel(`board:${roomId}`)
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "instant_board_items", filter: `room_id=eq.${roomId}` },
-        (p) => setItems((prev) => prev.some((x) => x.id === (p.new as Item).id) ? prev : [...prev, p.new as Item]))
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "instant_board_items", filter: `room_id=eq.${roomId}` },
-        (p) => setItems((prev) => prev.map((x) => x.id === (p.new as Item).id ? (p.new as Item) : x)))
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "instant_board_items", filter: `room_id=eq.${roomId}` },
-        (p) => setItems((prev) => prev.filter((x) => x.id !== (p.old as Item).id)))
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "instant_board_items",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) =>
+          setItems((prev) =>
+            prev.some((x) => x.id === (p.new as Item).id) ? prev : [...prev, p.new as Item],
+          ),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "instant_board_items",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) =>
+          setItems((prev) => prev.map((x) => (x.id === (p.new as Item).id ? (p.new as Item) : x))),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "instant_board_items",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) => setItems((prev) => prev.filter((x) => x.id !== (p.old as Item).id)),
+      )
       .subscribe();
 
     return () => {
@@ -94,25 +158,39 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
 
   const maxZ = useMemo(() => items.reduce((m, x) => Math.max(m, x.z), 0), [items]);
 
-  const addItem = useCallback(async (kind: Kind, content: Content, size?: { w: number; h: number }) => {
-    const w = size?.w ?? (kind === "text" ? 240 : kind === "link" ? 220 : kind === "image" ? 240 : 200);
-    const h = size?.h ?? (kind === "text" ? 60 : kind === "link" ? 56 : kind === "image" ? 180 : 200);
-    // Drop near the center of the visible viewport (in canvas coords).
-    const sc = scrollRef.current;
-    const z = zoomRef.current;
-    const viewCx = sc ? (sc.scrollLeft + sc.clientWidth / 2) / z : CANVAS_W / 2;
-    const viewCy = sc ? (sc.scrollTop + sc.clientHeight / 2) / z : CANVAS_H / 2;
-    const jitter = () => (Math.random() - 0.5) * 80;
-    const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
-    const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
-    const row = { room_id: roomId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
-    const { data, error } = await supabase.from("instant_board_items").insert(row).select().single();
-    if (error) { toast.error(error.message); return; }
-    setItems((prev) => prev.some((x) => x.id === data.id) ? prev : [...prev, data as unknown as Item]);
-  }, [roomId, userId, maxZ]);
+  const addItem = useCallback(
+    async (kind: Kind, content: Content, size?: { w: number; h: number }) => {
+      const w =
+        size?.w ?? (kind === "text" ? 240 : kind === "link" ? 220 : kind === "image" ? 240 : 200);
+      const h =
+        size?.h ?? (kind === "text" ? 60 : kind === "link" ? 56 : kind === "image" ? 180 : 200);
+      // Drop near the center of the visible viewport (in canvas coords).
+      const sc = scrollRef.current;
+      const z = zoomRef.current;
+      const viewCx = sc ? (sc.scrollLeft + sc.clientWidth / 2) / z : CANVAS_W / 2;
+      const viewCy = sc ? (sc.scrollTop + sc.clientHeight / 2) / z : CANVAS_H / 2;
+      const jitter = () => (Math.random() - 0.5) * 80;
+      const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
+      const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
+      const row = { room_id: roomId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
+      const { data, error } = await supabase
+        .from("instant_board_items")
+        .insert(row)
+        .select()
+        .single();
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      setItems((prev) =>
+        prev.some((x) => x.id === data.id) ? prev : [...prev, data as unknown as Item],
+      );
+    },
+    [roomId, userId, maxZ],
+  );
 
   const updateItem = useCallback(async (id: string, patch: Partial<Item>) => {
-    setItems((prev) => prev.map((x) => x.id === id ? { ...x, ...patch } as Item : x));
+    setItems((prev) => prev.map((x) => (x.id === id ? ({ ...x, ...patch } as Item) : x)));
     const { error } = await supabase.from("instant_board_items").update(patch).eq("id", id);
     if (error) toast.error(error.message);
   }, []);
@@ -127,8 +205,14 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
   const onPointerDown = (e: React.PointerEvent, item: Item) => {
     if ((e.target as HTMLElement).closest("[data-no-drag]")) return;
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { id: item.id, startX: e.clientX, startY: e.clientY, itemX: item.x, itemY: item.y };
-    setItems((prev) => prev.map((x) => x.id === item.id ? { ...x, z: maxZ + 1 } : x));
+    dragRef.current = {
+      id: item.id,
+      startX: e.clientX,
+      startY: e.clientY,
+      itemX: item.x,
+      itemY: item.y,
+    };
+    setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, z: maxZ + 1 } : x)));
   };
   const onPointerMove = (e: React.PointerEvent) => {
     const d = dragRef.current;
@@ -136,7 +220,9 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
     const z = zoomRef.current;
     const dx = (e.clientX - d.startX) / z;
     const dy = (e.clientY - d.startY) / z;
-    setItems((prev) => prev.map((x) => x.id === d.id ? { ...x, x: d.itemX + dx, y: d.itemY + dy } : x));
+    setItems((prev) =>
+      prev.map((x) => (x.id === d.id ? { ...x, x: d.itemX + dx, y: d.itemY + dy } : x)),
+    );
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const d = dragRef.current;
@@ -168,10 +254,23 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
   }, []);
 
   return (
-    <div className={cn("relative flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+    <div
+      className={cn(
+        "relative flex flex-col overflow-hidden border border-border bg-surface",
+        fullscreen ? "h-full rounded-2xl shadow-2xl" : "rounded-2xl",
+        className,
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 border-b border-border px-3 py-2",
+          fullscreen && "bg-background/5",
+        )}
+      >
         <div className="flex items-center gap-2">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Board · ephemeral</div>
+          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+            {fullscreen ? "Fullscreen Board" : "Board · ephemeral"}
+          </div>
           {onEnterFullscreen && (
             <button
               type="button"
@@ -234,9 +333,19 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
         </div>
 
         {/* Zoom controls — floating, sticky to the viewport */}
-        <div className="pointer-events-none sticky bottom-3 z-20 flex justify-end pr-3" style={{ top: "calc(100% - 2.75rem)" }}>
+        <div
+          className="pointer-events-none sticky bottom-3 z-20 flex justify-end pr-3"
+          style={{ top: "calc(100% - 2.75rem)" }}
+        >
           <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-border bg-background/95 px-2 py-1.5 shadow-soft backdrop-blur">
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom - 0.1)} aria-label="Zoom out">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => applyZoom(zoom - 0.1)}
+              aria-label="Zoom out"
+            >
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
             <Slider
@@ -247,7 +356,14 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
               onValueChange={(v) => applyZoom(v[0] ?? 1)}
               className="w-32"
             />
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom + 0.1)} aria-label="Zoom in">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
+              onClick={() => applyZoom(zoom + 0.1)}
+              aria-label="Zoom in"
+            >
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
             <button
@@ -267,36 +383,72 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
 
 /* ---------------- Toolbar ---------------- */
 
-function Toolbar({ onAdd, roomId, userId }: { onAdd: (k: Kind, c: Content, s?: { w: number; h: number }) => void; roomId: string; userId: string }) {
+function Toolbar({
+  onAdd,
+  roomId,
+  userId,
+}: {
+  onAdd: (k: Kind, c: Content, s?: { w: number; h: number }) => void;
+  roomId: string;
+  userId: string;
+}) {
   return (
     <div className="flex items-center gap-1">
       <ImageAdd onAdd={onAdd} roomId={roomId} userId={userId} />
-      <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 text-xs" onClick={() => onAdd("sticky", { text: "", color: "yellow" })}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="h-7 gap-1.5 text-xs"
+        onClick={() => onAdd("sticky", { text: "", color: "yellow" })}
+      >
         <StickyNote className="h-3.5 w-3.5" /> Sticky
       </Button>
       <LinkAdd onAdd={onAdd} />
-      <Button type="button" size="sm" variant="ghost" className="h-7 gap-1.5 text-xs" onClick={() => onAdd("text", { text: "Text" })}>
+      <Button
+        type="button"
+        size="sm"
+        variant="ghost"
+        className="h-7 gap-1.5 text-xs"
+        onClick={() => onAdd("text", { text: "Text" })}
+      >
         <Type className="h-3.5 w-3.5" /> Text
       </Button>
     </div>
   );
 }
 
-function ImageAdd({ onAdd, roomId, userId }: { onAdd: (k: Kind, c: Content) => void; roomId: string; userId: string }) {
+function ImageAdd({
+  onAdd,
+  roomId,
+  userId,
+}: {
+  onAdd: (k: Kind, c: Content) => void;
+  roomId: string;
+  userId: string;
+}) {
   const [open, setOpen] = useState(false);
   const [url, setUrl] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
-    if (file.size > 8 * 1024 * 1024) { toast.error("Max 8MB"); return; }
+    if (file.size > 8 * 1024 * 1024) {
+      toast.error("Max 8MB");
+      return;
+    }
     setUploading(true);
     try {
-      const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
+      const ext =
+        (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
       const path = `${roomId}/${crypto.randomUUID()}.${ext}`;
-      const { error } = await supabase.storage.from("instant-whiteboard").upload(path, file, { contentType: file.type });
+      const { error } = await supabase.storage
+        .from("instant-whiteboard")
+        .upload(path, file, { contentType: file.type });
       if (error) throw error;
-      await supabase.from("instant_whiteboard_assets").insert({ room_id: roomId, user_id: userId, storage_path: path });
+      await supabase
+        .from("instant_whiteboard_assets")
+        .insert({ room_id: roomId, user_id: userId, storage_path: path });
       const { data } = supabase.storage.from("instant-whiteboard").getPublicUrl(path);
       onAdd("image", { src: data.publicUrl });
       setOpen(false);
@@ -326,7 +478,11 @@ function ImageAdd({ onAdd, roomId, userId }: { onAdd: (k: Kind, c: Content) => v
               size="sm"
               className="w-full"
               disabled={!url.trim()}
-              onClick={() => { onAdd("image", { src: url.trim() }); setUrl(""); setOpen(false); }}
+              onClick={() => {
+                onAdd("image", { src: url.trim() });
+                setUrl("");
+                setOpen(false);
+              }}
             >
               Add image
             </Button>
@@ -337,10 +493,23 @@ function ImageAdd({ onAdd, roomId, userId }: { onAdd: (k: Kind, c: Content) => v
               type="file"
               accept="image/*"
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleFile(f); e.target.value = ""; }}
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) void handleFile(f);
+                e.target.value = "";
+              }}
             />
-            <Button size="sm" className="w-full gap-1.5" onClick={() => fileRef.current?.click()} disabled={uploading}>
-              {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            <Button
+              size="sm"
+              className="w-full gap-1.5"
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+            >
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Upload className="h-3.5 w-3.5" />
+              )}
               {uploading ? "Uploading…" : "Choose file"}
             </Button>
           </TabsContent>
@@ -362,7 +531,11 @@ function LinkAdd({ onAdd }: { onAdd: (k: Kind, c: Content) => void }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-72 space-y-2" align="end">
-        <Input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Button label" />
+        <Input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Button label"
+        />
         <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://…" />
         <Button
           size="sm"
@@ -372,7 +545,9 @@ function LinkAdd({ onAdd }: { onAdd: (k: Kind, c: Content) => void }) {
             let u = url.trim();
             if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
             onAdd("link", { url: u, label: label.trim() });
-            setUrl(""); setLabel(""); setOpen(false);
+            setUrl("");
+            setLabel("");
+            setOpen(false);
           }}
         >
           Add link
@@ -385,11 +560,21 @@ function LinkAdd({ onAdd }: { onAdd: (k: Kind, c: Content) => void }) {
 /* ---------------- Item view ---------------- */
 
 function ItemView({
-  item, editing, canEdit, onStartEdit, onStopEdit, onChange, onDelete,
+  item,
+  editing,
+  canEdit,
+  onStartEdit,
+  onStopEdit,
+  onChange,
+  onDelete,
 }: {
-  item: Item; editing: boolean; canEdit: boolean;
-  onStartEdit: () => void; onStopEdit: () => void;
-  onChange: (patch: Partial<Item>) => void; onDelete: () => void;
+  item: Item;
+  editing: boolean;
+  canEdit: boolean;
+  onStartEdit: () => void;
+  onStopEdit: () => void;
+  onChange: (patch: Partial<Item>) => void;
+  onDelete: () => void;
 }) {
   const deleteBtn = canEdit && (
     <button
@@ -407,7 +592,12 @@ function ItemView({
     return (
       <div className="relative h-full w-full overflow-hidden rounded-xl border border-border bg-surface shadow-soft">
         {deleteBtn}
-        <img src={c.src} alt={c.alt ?? ""} className="h-full w-full object-cover pointer-events-none" draggable={false} />
+        <img
+          src={c.src}
+          alt={c.alt ?? ""}
+          className="h-full w-full object-cover pointer-events-none"
+          draggable={false}
+        />
       </div>
     );
   }
@@ -428,7 +618,10 @@ function ItemView({
               <button
                 key={sc.name}
                 onClick={() => onChange({ content: { ...c, color: sc.name } })}
-                className={cn("h-3 w-3 rounded-full border border-black/10", c.color === sc.name && "ring-2 ring-ink ring-offset-1")}
+                className={cn(
+                  "h-3 w-3 rounded-full border border-black/10",
+                  c.color === sc.name && "ring-2 ring-ink ring-offset-1",
+                )}
                 style={{ background: sc.bg }}
                 aria-label={sc.name}
               />
@@ -480,10 +673,23 @@ function ItemView({
           </button>
         )}
         {editing && (
-          <div data-no-drag className="absolute left-0 top-full z-20 mt-1 w-full space-y-1 rounded-md border border-border bg-surface p-2 shadow-soft">
-            <Input value={c.label} onChange={(e) => onChange({ content: { ...c, label: e.target.value } })} placeholder="Label" />
-            <Input value={c.url} onChange={(e) => onChange({ content: { ...c, url: e.target.value } })} placeholder="URL" />
-            <Button size="sm" className="w-full" onClick={onStopEdit}>Done</Button>
+          <div
+            data-no-drag
+            className="absolute left-0 top-full z-20 mt-1 w-full space-y-1 rounded-md border border-border bg-surface p-2 shadow-soft"
+          >
+            <Input
+              value={c.label}
+              onChange={(e) => onChange({ content: { ...c, label: e.target.value } })}
+              placeholder="Label"
+            />
+            <Input
+              value={c.url}
+              onChange={(e) => onChange({ content: { ...c, url: e.target.value } })}
+              placeholder="URL"
+            />
+            <Button size="sm" className="w-full" onClick={onStopEdit}>
+              Done
+            </Button>
           </div>
         )}
       </div>
