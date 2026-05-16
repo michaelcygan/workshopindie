@@ -44,7 +44,6 @@ export function RoomGallery({
   meUserId,
   onOpenWork,
   onOpenProfile,
-  onEnterFullscreen,
   className,
   fullscreen = false,
 }: {
@@ -52,7 +51,6 @@ export function RoomGallery({
   meUserId: string;
   onOpenWork: (workId: string) => void;
   onOpenProfile?: (userId: string) => void;
-  onEnterFullscreen?: () => void;
   className?: string;
   fullscreen?: boolean;
 }) {
