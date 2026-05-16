@@ -50,7 +50,19 @@ function stickyPalette(name: string) {
   return STICKY_COLORS.find((c) => c.name === name) ?? STICKY_COLORS[0];
 }
 
-export default function RoomBoard({ roomId, userId, className, onEnterFullscreen }: { roomId: string; userId: string; className?: string; onEnterFullscreen?: () => void }) {
+export default function RoomBoard({
+  roomId,
+  userId,
+  className,
+  onEnterFullscreen,
+  fullscreen = false,
+}: {
+  roomId: string;
+  userId: string;
+  className?: string;
+  onEnterFullscreen?: () => void;
+  fullscreen?: boolean;
+}) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -168,10 +180,16 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
   }, []);
 
   return (
-    <div className={cn("relative flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
-      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
+    <div className={cn(
+      "relative flex flex-col overflow-hidden border border-border bg-surface",
+      fullscreen ? "h-full rounded-2xl shadow-2xl" : "rounded-2xl",
+      className,
+    )}>
+      <div className={cn("flex items-center justify-between gap-2 border-b border-border px-3 py-2", fullscreen && "bg-background/5") }>
         <div className="flex items-center gap-2">
-          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Board · ephemeral</div>
+          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+            {fullscreen ? "Fullscreen Board" : "Board · ephemeral"}
+          </div>
           {onEnterFullscreen && (
             <button
               type="button"
