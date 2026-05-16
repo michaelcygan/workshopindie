@@ -49,8 +49,12 @@ function EditProfile() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
+      const d = data as any;
       setDisplayName(data.display_name ?? "");
       setUsername(data.username ?? "");
+      setFirstName(d.first_name ?? "");
+      setLastName(d.last_name ?? "");
+      setInstagram(d.instagram_handle ?? "");
       setHeadline(data.headline ?? "");
       setBio(data.bio ?? "");
       setAvatar(data.avatar_url ?? null);
