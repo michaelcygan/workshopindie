@@ -50,7 +50,7 @@ function stickyPalette(name: string) {
   return STICKY_COLORS.find((c) => c.name === name) ?? STICKY_COLORS[0];
 }
 
-export default function RoomBoard({ roomId, userId, className }: { roomId: string; userId: string; className?: string }) {
+export default function RoomBoard({ roomId, userId, className, onEnterFullscreen }: { roomId: string; userId: string; className?: string; onEnterFullscreen?: () => void }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
