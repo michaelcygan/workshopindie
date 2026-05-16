@@ -1345,6 +1345,11 @@ export type Database = {
           subcategories: string[]
           title: string
           updated_at: string
+          venue_address: string | null
+          venue_lat: number | null
+          venue_lng: number | null
+          venue_name: string | null
+          venue_osm_ref: string | null
           visibility: Database["public"]["Enums"]["visibility"]
         }
         Insert: {
@@ -1372,6 +1377,11 @@ export type Database = {
           subcategories?: string[]
           title: string
           updated_at?: string
+          venue_address?: string | null
+          venue_lat?: number | null
+          venue_lng?: number | null
+          venue_name?: string | null
+          venue_osm_ref?: string | null
           visibility?: Database["public"]["Enums"]["visibility"]
         }
         Update: {
@@ -1399,6 +1409,11 @@ export type Database = {
           subcategories?: string[]
           title?: string
           updated_at?: string
+          venue_address?: string | null
+          venue_lat?: number | null
+          venue_lng?: number | null
+          venue_name?: string | null
+          venue_osm_ref?: string | null
           visibility?: Database["public"]["Enums"]["visibility"]
         }
         Relationships: [

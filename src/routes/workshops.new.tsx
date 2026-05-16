@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
+import { resolveVenueAndCity } from "@/lib/venues.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -31,7 +34,8 @@ function NewWorkshop() {
   const [category, setCategory] = useState<Category>("visual");
   const [prompt, setPrompt] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("online");
-  const [locationText, setLocationText] = useState("");
+  const [venue, setVenue] = useState<SelectedVenue | null>(null);
+  const resolveVenue = useServerFn(resolveVenueAndCity);
   const [externalCallUrl, setExternalCallUrl] = useState("");
   const [cap, setCap] = useState<number | "">(8);
 
@@ -61,6 +65,9 @@ function NewWorkshop() {
     if (!title.trim()) return toast.error("Give your Workshop a title");
     if (!startsAt || !endsAt) return toast.error("Set a start and end time");
     if (new Date(endsAt) <= new Date(startsAt)) return toast.error("End must be after start");
+    if ((locationType === "in_person" || locationType === "hybrid") && !venue) {
+      return toast.error("Pick a venue so people can find you");
+    }
 
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
@@ -71,6 +78,42 @@ function NewWorkshop() {
     const checkInCloses = new Date(start.getTime() + 10 * 60 * 1000);
     const finalize = new Date(new Date(endsAt).getTime() + 24 * 60 * 60 * 1000);
 
+    let venueFields: {
+      city_id: string | null;
+      venue_name: string | null;
+      venue_address: string | null;
+      venue_lat: number | null;
+      venue_lng: number | null;
+      venue_osm_ref: string | null;
+      location_text: string | null;
+    } = {
+      city_id: null,
+      venue_name: null,
+      venue_address: null,
+      venue_lat: null,
+      venue_lng: null,
+      venue_osm_ref: null,
+      location_text: null,
+    };
+
+    if (venue) {
+      try {
+        const resolved = await resolveVenue({ data: venue });
+        venueFields = {
+          city_id: resolved.city_id,
+          venue_name: resolved.venue_name,
+          venue_address: resolved.venue_address,
+          venue_lat: resolved.venue_lat,
+          venue_lng: resolved.venue_lng,
+          venue_osm_ref: resolved.venue_osm_ref,
+          location_text: resolved.venue_name,
+        };
+      } catch (err) {
+        setSubmitting(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't resolve venue");
+      }
+    }
+
     const { data: ws, error } = await supabase.from("workshops").insert({
       title: title.trim(),
       slug: "",
@@ -80,7 +123,6 @@ function NewWorkshop() {
       mode: "scheduled",
       visibility: "public",
       location_type: locationType,
-      location_text: locationText || null,
       external_call_url: externalCallUrl || null,
       starts_at: start.toISOString(),
       ends_at: new Date(endsAt).toISOString(),
@@ -89,6 +131,7 @@ function NewWorkshop() {
       finalization_deadline_at: finalize.toISOString(),
       participant_cap: cap === "" ? null : Number(cap),
       status: "open",
+      ...venueFields,
     }).select("id,slug").single();
 
     if (error || !ws) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't create"); }
@@ -164,7 +207,9 @@ function NewWorkshop() {
             ))}
           </div>
           {locationType !== "online" && (
-            <Input className="mt-2" placeholder="Address or neighborhood" value={locationText} onChange={(e) => setLocationText(e.target.value)} />
+            <div className="mt-2">
+              <VenueSearch value={venue} onChange={setVenue} />
+            </div>
           )}
           {locationType !== "in_person" && (
             <Input className="mt-2" type="url" placeholder="Call URL (Zoom, Meet, etc. — optional)" value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} />

@@ -166,6 +166,7 @@ function CityPage() {
       {/* Upcoming workshops */}
       <section className="mt-10">
         <h2 className="font-display text-2xl text-ink">Upcoming Workshops</h2>
+        <p className="mt-1 text-sm text-ink-muted">In-person and hybrid workshops in {city.name}.</p>
         {workshops.length === 0 ? (
           <p className="mt-3 text-sm text-ink-muted">Nothing scheduled here yet. <Link to="/workshops/new" className="text-primary underline">Schedule one.</Link></p>
         ) : (

@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
@@ -26,6 +27,7 @@ type Workshop = {
   id: string; title: string; slug: string; category: "film" | "music" | "writing" | "build" | "visual";
   prompt: string | null; starts_at: string | null; ends_at: string | null;
   location_type: "online" | "in_person" | "hybrid"; location_text: string | null; external_call_url: string | null;
+  venue_name: string | null; venue_address: string | null; venue_lat: number | null; venue_lng: number | null;
   participant_cap: number | null; confirmed_count: number; application_count: number;
   status: string; host_user_id: string; visibility: string;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
@@ -116,6 +118,17 @@ function WorkshopDetail() {
           </Link>
         )}
       </motion.div>
+
+      {ws.venue_lat != null && ws.venue_lng != null && (
+        <section className="mt-8 max-w-md">
+          <h2 className="font-display text-lg text-ink">Where</h2>
+          {ws.venue_name && <div className="mt-2 text-sm font-medium text-ink">{ws.venue_name}</div>}
+          {ws.venue_address && <div className="text-xs text-ink-muted">{ws.venue_address}</div>}
+          <div className="mt-3">
+            <VenueMap lat={ws.venue_lat} lng={ws.venue_lng} label={ws.venue_name ?? undefined} />
+          </div>
+        </section>
+      )}
 
       {isHost && <HostStatusBar ws={ws} onChanged={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 

@@ -1,52 +1,70 @@
-# Launch UI Tightening
+# In-Person Workshop Venues + Small Map
 
-## 1. Homepage hero: dead simple, two big buttons
+## API — Photon (keyless, free)
 
-Rebuild `src/routes/index.tsx` so the **first viewport** is a clean hero with just:
-- The "A creative collaboration network" chip
-- Headline "Find people. *Make the thing.* Show the Work."
-- One-line tagline
-- **Two large action cards** (side-by-side desktop, stacked mobile), each with icon + bold label + 1–2 line description:
-  - **Join an Instant Workshop** → `/instant` — "Drop into a live room with up to 5 artists right now. Voice or video, no scheduling."
-  - **Schedule a Workshop** → `/workshops/new` — "Pick a time, set a prompt, invite collaborators. Ship something on a clock."
-- "Post a Collab" button removed.
+**Photon** (`https://photon.komoot.io/api/?q=...&limit=6`) — OSM-backed typeahead geocoder. No API key, no signup, CORS-enabled. Returns lat/lng + structured address (street, city, state, country, OSM id/type).
 
-Cards are large (~180px min-height), rounded-2xl, hover lift. Instant = primary fill; Schedule = surface/outline — equally weighted.
+Fair use: 300ms debounce, AbortController on each keystroke, min 2 chars, limit 6 results. Fall back to a plain text input if Photon fails or rate-limits.
 
-## 2. Ambient warm video background
+## Map — Leaflet + OSM tiles (keyless)
 
-Behind the hero only, full-bleed muted looping video with a warm cream gradient veil for type contrast.
+`react-leaflet` with OpenStreetMap raster tiles — no API key. Rendered as a **small ~280×280 square** card on the workshop detail page, never the page header. Static-ish: marker at the venue, modest zoom (~15), `scrollWheelZoom={false}` so it doesn't hijack scroll, a small "Open in OpenStreetMap" link below for directions. Skipped on the create form for now (typeahead only).
 
-Pipeline:
-1. Three 10s / 1080p / 16:9 clips via `videogen--generate_video`, warm / golden-hour / soft / slightly desaturated, no people, no text, subtle camera drift:
-   - Painter's studio — easel, brushes in jars, dust motes in window light
-   - Darkroom — red safelight, prints in developer trays
-   - Ceramics studio — wet clay on a slowly turning wheel, shelves of bisque pots
-2. Stitch into one seamless ~28s loop via `ffmpeg` xfade between clips → `public/ambient/studios-loop.mp4` + `.webm` + poster JPG.
-3. Render as `<video autoPlay muted loop playsInline preload="auto" poster=...>` absolutely positioned `object-cover` behind the hero, warm gradient overlay on top.
-4. Honor `prefers-reduced-motion` — show poster only.
+SSR-safe: dynamic-import the Leaflet bits inside a client-only wrapper so SSR doesn't crash.
 
-## 3. Below the fold (kept sections, in order)
+## Schema additions
 
-After the hero viewport, keep these sections so they're scrolled-to, not crowding the top:
-1. **Works Gallery** (full controls + grid) — you'll populate with your own work
-2. **City Meetups strip** — kept for near-launch
-3. **Upcoming Workshops** card — kept (single card now that Collab is removed; will sit alone or full-width)
+`public.workshops` — 5 new nullable columns (safe for existing rows):
+- `venue_name text`
+- `venue_address text`
+- `venue_lat double precision`
+- `venue_lng double precision`
+- `venue_osm_ref text` (e.g. `node:1234`)
 
-Removed from homepage:
-- Featured Creators strip
-- Live Now strip
-- "Collab Board" card
+`city_id` already exists; we fill it from the resolved venue.
 
-## 4. Hide Collab for v1 (hide-only)
+## Reusable `<VenueSearch />` component
 
-- `src/components/top-nav.tsx`: remove "Collab Board" nav link and "Post a Collab" dropdown item.
-- Homepage drops all Collab references.
-- `/collab/*` routes, components, DB tables untouched — easy to restore.
+`src/components/venue-search.tsx` — controlled typeahead on existing Popover/Command primitives. Debounced Photon fetch, result rows show `venue · neighborhood, city, country`. On select → emits `{ name, address, lat, lng, osm_ref, city: { name, state_region, country } }`. "Change venue" link to clear.
+
+## Server function `resolveVenueAndCity`
+
+`src/lib/venues.functions.ts` — takes the selected Photon payload, slugifies `{city}-{country_code}`, upserts the row in `public.cities`, returns `{ city_id, venue_* }`. Server-side so clients can't spoof `city_id`. Uses `requireSupabaseAuth`.
+
+## Workshop create form (`workshops.new.tsx`)
+
+When `locationType` is `in_person` or `hybrid`, swap the "Address or neighborhood" input for `<VenueSearch />`. Hybrid keeps its Call URL field. On submit:
+1. Venue selected → call `resolveVenueAndCity`, merge returned fields into the insert (also write `location_text = venue_name` for back-compat).
+2. `in_person`/`hybrid` with no venue → block submit with inline error.
+
+## Workshop detail page (`workshops.$slug.tsx`)
+
+For workshops with `venue_lat`/`venue_lng`, add a compact "Where" card in the sidebar/secondary column:
+- Venue name (bold), address (muted)
+- Small ~280×280 Leaflet square with a single pin
+- "Open in OpenStreetMap" text link beneath the map
+
+Online-only workshops: unchanged.
+
+## City filtering — free win
+
+`cities.$slug.tsx` already filters workshops by `city_id` — in-person/hybrid workshops will populate the matching city page automatically once hosts pick venues. Add a one-line caption: "In-person and hybrid workshops in {city}." for clarity.
+
+## Out of scope
+
+- Map on the create form
+- Workshops index city filter chips
+- Reverse geocode from a manually dropped pin
 
 ## Technical details
 
-- Edited: `src/routes/index.tsx`, `src/components/top-nav.tsx`
-- New: `public/ambient/studios-loop.mp4`, `studios-loop.webm`, `studios-loop-poster.jpg`
-- Tools: 3× `videogen--generate_video`, one `ffmpeg` stitch via `code--exec`
-- No DB changes, no new deps, no route deletions
+**New deps**: `leaflet`, `react-leaflet`, `@types/leaflet`. Leaflet's default marker icon needs a tiny `L.Icon.Default` fix (well-known one-liner) since Vite hashes its bundled PNGs.
+
+**Files**:
+- New: `src/components/venue-search.tsx`, `src/components/venue-map.tsx` (client-only Leaflet wrapper), `src/lib/venues.functions.ts`
+- Edited: `src/routes/workshops.new.tsx`, `src/routes/workshops.$slug.tsx`, optionally `src/routes/cities.$slug.tsx` (one-line caption)
+- Migration: 5 nullable columns on `workshops`
+
+**Photon etiquette**: 300ms debounce, abort prior request, min 2 chars, `lang=en`, in-memory per-session cache by query string.
+
+**City auto-create**: default **yes**. Slug = `slugify(city)-{country_code_lowercase}` (e.g. `brooklyn-us`, `lisbon-pt`). Say the word if you'd rather restrict to admin-curated cities.
