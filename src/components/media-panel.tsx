@@ -575,7 +575,7 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork,
+  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
 }: {
   userId: string;
   speaking: boolean;
@@ -585,6 +585,7 @@ function SpeakerRow({
   username: string | null;
   isMe?: boolean;
   onOpenWork?: (workId: string) => void;
+  roomId?: string;
 }) {
   const inner = (
     <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
@@ -603,7 +604,7 @@ function SpeakerRow({
   );
   return (
     <li>
-      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork}>
+      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork} roomId={roomId}>
         {inner}
       </ProfilePeek>
     </li>

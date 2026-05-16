@@ -63,17 +63,19 @@ export function ProfilePeek({
   children,
   onWorkClick,
   onOpenChange,
+  roomId,
 }: {
   userId: string;
   speaking?: boolean;
   children: ReactNode;
   onWorkClick?: (workId: string) => void;
   onOpenChange?: (open: boolean) => void;
+  roomId?: string;
 }) {
   const isMobile = useIsMobile();
 
   const body = (close: () => void) => (
-    <PeekBody userId={userId} speaking={speaking} onWorkClick={(id) => { onWorkClick?.(id); close(); }} />
+    <PeekBody userId={userId} speaking={speaking} roomId={roomId} onWorkClick={(id) => { onWorkClick?.(id); close(); }} />
   );
 
   if (isMobile) {
@@ -102,10 +104,12 @@ function PeekBody({
   userId,
   speaking,
   onWorkClick,
+  roomId,
 }: {
   userId: string;
   speaking?: boolean;
   onWorkClick?: (workId: string) => void;
+  roomId?: string;
 }) {
   const { data, isLoading } = useQuery(profilePeekQueryOptions(userId));
 
