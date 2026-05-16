@@ -34,4 +34,7 @@ export const categoryClass = (c: Category) =>
     writing: "bg-cat-writing text-cat-writing-ink",
     build: "bg-cat-build text-cat-build-ink",
     visual: "bg-cat-visual text-cat-visual-ink",
+    critique: "bg-cat-critique text-cat-critique-ink",
+    business: "bg-cat-business text-cat-business-ink",
+    mentorship: "bg-cat-mentorship text-cat-mentorship-ink",
   })[c];
