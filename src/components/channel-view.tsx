@@ -366,7 +366,7 @@ export function ChannelView({
             <Loader2 className="h-4 w-4 animate-spin" />
           </div>
         }>
-          <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
+          <RoomBoard roomId={roomId} userId={user.id} className="h-full" fullscreen />
         </Suspense>
       </FullscreenShell>
     )}
@@ -377,6 +377,7 @@ export function ChannelView({
           members={galleryMembers}
           onOpenWork={openWork}
           className="h-full"
+          fullscreen
         />
       </FullscreenShell>
     )}
