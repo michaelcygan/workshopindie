@@ -14,7 +14,7 @@ import { joinLounge } from "@/lib/instant.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
-const RoomWhiteboard = lazy(() => import("@/components/room-whiteboard"));
+const RoomBoard = lazy(() => import("@/components/room-board"));
 import {
   AlertDialog,
   AlertDialogAction,
