@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -9,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
+import { resolveVenueAndCity } from "@/lib/venues.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -32,6 +35,8 @@ function NewWorkshop() {
   const [prompt, setPrompt] = useState("");
   const [locationType, setLocationType] = useState<LocationType>("online");
   const [locationText, setLocationText] = useState("");
+  const [venue, setVenue] = useState<SelectedVenue | null>(null);
+  const resolveVenue = useServerFn(resolveVenueAndCity);
   const [externalCallUrl, setExternalCallUrl] = useState("");
   const [cap, setCap] = useState<number | "">(8);
 
