@@ -26,5 +26,6 @@ export const purgeRoomWhiteboard = createServerFn({ method: "POST" })
       await supabaseAdmin.storage.from("instant-whiteboard").remove(paths);
     }
     await supabaseAdmin.from("instant_whiteboard_assets").delete().eq("room_id", roomId);
+    await supabaseAdmin.from("instant_board_items").delete().eq("room_id", roomId);
     return { ok: true, purged: paths.length };
   });
