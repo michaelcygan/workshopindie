@@ -363,7 +363,7 @@ export function ChannelView({
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             }>
-              <RoomWhiteboard roomId={roomId} userId={user.id} className="h-full" />
+              <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
             </Suspense>
           </div>
         ) : viewMode === "gallery" && user ? (
