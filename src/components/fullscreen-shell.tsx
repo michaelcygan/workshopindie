@@ -6,22 +6,25 @@ import { motion } from "framer-motion";
 /**
  * Generic dark fullscreen overlay used by Board and Gallery.
  * Matches the chrome of FullscreenRoom (media-panel.tsx) so the three
- * surfaces feel like one feature.
+ * surfaces feel like one feature. Optional `presence` slot renders a
+ * horizontal strip of live participant tiles above the body so the user
+ * can still see who else is in the room while in fullscreen.
  */
 export function FullscreenShell({
   title,
   badge,
+  presence,
   onMinimize,
   children,
 }: {
   title: string;
   badge?: ReactNode;
+  presence?: ReactNode;
   onMinimize: () => void;
   children: ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
 
-  // Lock body scroll while open.
   useEffect(() => {
     setMounted(true);
     const prev = document.body.style.overflow;
@@ -62,6 +65,11 @@ export function FullscreenShell({
           <Minimize2 className="h-4 w-4" />
         </button>
       </header>
+      {presence && (
+        <div className="px-4 pb-2 md:px-6">
+          <div className="flex gap-2 overflow-x-auto pb-1">{presence}</div>
+        </div>
+      )}
       <div className="flex-1 min-h-0 px-3 pb-3 md:px-6 md:pb-6">{children}</div>
     </motion.div>,
     document.body,

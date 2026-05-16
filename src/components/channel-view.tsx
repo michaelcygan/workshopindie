@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, UserPlus, X } from "lucide-react";
+import { Send, Loader2, UserPlus, X, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
@@ -12,6 +12,8 @@ import {
   MediaPanel,
   VideoStage,
   FullscreenRoom,
+  VideoTile,
+  AudioTile,
   type RoomViewMode,
 } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
@@ -66,8 +68,7 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [fsSurface, setFsSurface] = useState<null | "board" | "gallery">(null);
+  const [fsView, setFsView] = useState<null | "chat" | "board" | "gallery">(null);
   const [endedOpen, setEndedOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
@@ -117,16 +118,13 @@ export function ChannelView({
 
   // Esc exits fullscreen.
   useEffect(() => {
-    if (!fullscreen && !fsSurface) return;
+    if (!fsView) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setFullscreen(false);
-        setFsSurface(null);
-      }
+      if (e.key === "Escape") setFsView(null);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [fullscreen, fsSurface]);
+  }, [fsView]);
 
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
   // Suppressed while the "workshop wrapped" prompt is open.
@@ -394,28 +392,86 @@ export function ChannelView({
     [presence, user?.id],
   );
 
-  const galleryMembers = user
-    ? [
-        {
-          user_id: user.id,
-          display_name: meDisplay,
-          username: me?.username ?? null,
-          avatar_url: meAvatar,
-          speaking: media.speaking && !media.muted,
-        },
-        ...others.map((o) => ({
-          user_id: o.user_id,
-          display_name: o.profile?.display_name ?? null,
-          username: o.profile?.username ?? null,
-          avatar_url: o.profile?.avatar_url ?? null,
-          speaking: !!media.peers.find((p) => p.userId === o.user_id)?.speaking,
-        })),
-      ]
-    : [];
+  const galleryMembers = useMemo(
+    () =>
+      user
+        ? [
+            {
+              user_id: user.id,
+              display_name: meDisplay,
+              username: me?.username ?? null,
+              avatar_url: meAvatar,
+              speaking: media.speaking && !media.muted,
+            },
+            ...others.map((o) => ({
+              user_id: o.user_id,
+              display_name: o.profile?.display_name ?? null,
+              username: o.profile?.username ?? null,
+              avatar_url: o.profile?.avatar_url ?? null,
+              speaking: !!media.peers.find((p) => p.userId === o.user_id)?.speaking,
+            })),
+          ]
+        : [],
+    [user, meDisplay, me?.username, meAvatar, media.speaking, media.muted, media.peers, others],
+  );
+
+  // Live participant strip rendered inside Board/Gallery fullscreen so the
+  // user can still see who is in the room while focused on the surface.
+  const presenceStrip = user ? (
+    <>
+      {media.cameraOn && media.localStream ? (
+        <div className="w-40 shrink-0">
+          <VideoTile
+            stream={media.localStream}
+            label={`${meDisplay} (you)`}
+            muted
+            speaking={media.speaking && !media.muted}
+            mirrored
+          />
+        </div>
+      ) : (
+        <div className="w-40 shrink-0">
+          <AudioTile
+            displayName={`${meDisplay} (you)`}
+            avatarUrl={meAvatar}
+            speaking={media.speaking && !media.muted}
+            muted={media.muted}
+          />
+        </div>
+      )}
+      {others.map((o) => {
+        const peer = media.peers.find((p) => p.userId === o.user_id);
+        const name = o.profile?.display_name || o.profile?.username || "Anon";
+        if (peer && peer.mode === "video" && peer.stream) {
+          return (
+            <div key={o.user_id} className="w-40 shrink-0">
+              <VideoTile stream={peer.stream} label={name} speaking={peer.speaking} />
+            </div>
+          );
+        }
+        return (
+          <div key={o.user_id} className="w-40 shrink-0">
+            <AudioTile
+              displayName={name}
+              avatarUrl={o.profile?.avatar_url ?? null}
+              speaking={!!peer?.speaking}
+              muted={false}
+            />
+          </div>
+        );
+      })}
+    </>
+  ) : null;
+
+  // The persistent top-right expand button maps to whichever surface is active.
+  const fsTarget: "chat" | "board" | "gallery" =
+    viewMode === "whiteboard" ? "board" : viewMode === "gallery" ? "gallery" : "chat";
+  const fsLabel =
+    fsTarget === "board" ? "Expand board" : fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
 
   return (
     <>
-      {fullscreen && user && (
+      {fsView === "chat" && user && (
         <FullscreenRoom
           m={media}
           channelTitle={title}
@@ -430,11 +486,15 @@ export function ChannelView({
           onSend={send}
           sending={sending}
           onExit={handleExit}
-          onMinimize={() => setFullscreen(false)}
+          onMinimize={() => setFsView(null)}
         />
       )}
-      {fsSurface === "board" && user && (
-        <FullscreenShell title={`${title} · Board`} onMinimize={() => setFsSurface(null)}>
+      {fsView === "board" && user && (
+        <FullscreenShell
+          title={`${title} · Board`}
+          presence={presenceStrip}
+          onMinimize={() => setFsView(null)}
+        >
           <Suspense
             fallback={
               <div className="flex h-full items-center justify-center text-background/60">
@@ -446,8 +506,12 @@ export function ChannelView({
           </Suspense>
         </FullscreenShell>
       )}
-      {fsSurface === "gallery" && user && (
-        <FullscreenShell title={`${title} · Gallery`} onMinimize={() => setFsSurface(null)}>
+      {fsView === "gallery" && user && (
+        <FullscreenShell
+          title={`${title} · Gallery`}
+          presence={presenceStrip}
+          onMinimize={() => setFsView(null)}
+        >
           <RoomGallery
             meUserId={user.id}
             members={galleryMembers}
@@ -458,19 +522,24 @@ export function ChannelView({
         </FullscreenShell>
       )}
       <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
-        <div className="flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
+        <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
-          <VideoStage
-            m={media}
-            meDisplay={meDisplay}
-            profileLookup={profileLookup}
-            onEnterFullscreen={() => setFullscreen(true)}
-          />
+          {/* Persistent contextual expand — always available, routes to the active surface. */}
+          <button
+            type="button"
+            onClick={() => setFsView(fsTarget)}
+            className="absolute right-3 top-3 z-20 rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background"
+            aria-label={fsLabel}
+            title={fsLabel}
+          >
+            <Maximize2 className="h-3.5 w-3.5" />
+          </button>
+          <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
           {viewMode === "whiteboard" && user ? (
             <div className="h-[60vh] p-3 md:p-4">
-              {fsSurface === "board" ? (
+              {fsView === "board" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
                   Board open in fullscreen…
                 </div>
@@ -482,18 +551,13 @@ export function ChannelView({
                     </div>
                   }
                 >
-                  <RoomBoard
-                    roomId={roomId}
-                    userId={user.id}
-                    className="h-full"
-                    onEnterFullscreen={() => setFsSurface("board")}
-                  />
+                  <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
                 </Suspense>
               )}
             </div>
           ) : viewMode === "gallery" && user ? (
             <div className="h-[60vh] p-3 md:p-4">
-              {fsSurface === "gallery" ? (
+              {fsView === "gallery" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
                   Gallery open in fullscreen…
                 </div>
@@ -502,7 +566,6 @@ export function ChannelView({
                   meUserId={user.id}
                   members={galleryMembers}
                   onOpenWork={openWork}
-                  onEnterFullscreen={() => setFsSurface("gallery")}
                   className="h-full"
                 />
               )}
