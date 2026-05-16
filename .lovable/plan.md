@@ -1,125 +1,127 @@
+# Audit: In-Workshop Collaboration Suite
 
-# In-Workshop Collaboration Suite
-
-Four features, one shared design language: lightweight overlays/popovers that float over the live room so audio + video + chat never disconnect. Built on existing `ChannelView` + `MediaPanel` + `FullscreenRoom`, no schema changes for #1, #2, #4 — only the whiteboard adds a table + bucket.
-
----
-
-## 1. Profile peek popover
-
-**Trigger:** Click any name/avatar in the participants list (`MediaPanel` `SpeakerRow`, `FullscreenRoom` tile labels, chat message author chip).
-
-**Component:** new `ProfilePeek` using shadcn `HoverCard` on desktop / `Drawer` on mobile.
-
-**Contents:**
-- Avatar, display name, `@username`, headline, city
-- Bio (clamped 3 lines)
-- Stats row: followers · following · works
-- **Follow button** (reuses existing `FollowButton`)
-- Horizontal strip of up to 6 most recent published works (cover thumbnails, click → opens **Work peek** modal — see #2)
-- "View full profile →" link to `/u/$username` (opens new tab so the room stays alive)
-
-**Data:** single `getRoomMemberPeek(userId)` server fn (createServerFn) returning `{ profile, recentWorks: [...] }`. Cached client-side per userId for the session.
+I went through `profile-peek.tsx`, `work-peek.tsx`, `room-gallery.tsx`, `room-whiteboard.tsx`, `channel-view.tsx`, `media-panel.tsx`, `room-views.functions.ts`, and the two whiteboard migrations. Below is what's solid, what's incomplete, what won't scale, and what to add for a 2026-grade feel.
 
 ---
 
-## 2. Gallery view with tabbed works
+## What's solid
 
-**Toggle:** new "Gallery" pill button in `MediaPanel` header (icon: `LayoutGrid`). Clicking flips the chat panel into gallery mode; clicking again returns to chat.
-
-**Layout (per user pick — gallery-emphasis split):**
-
-```text
-┌─────────────────────────────────────────┬──────────┐
-│                                         │ Video    │
-│           GALLERY (dominant)            │ rail     │
-│   [Tabs: Everyone | @alex | @sam | …]   │ (compact │
-│   ┌────┐ ┌────┐ ┌────┐ ┌────┐           │  audio + │
-│   │work│ │work│ │work│ │work│           │  video   │
-│   └────┘ └────┘ └────┘ └────┘           │  tiles)  │
-│                                         ├──────────┤
-│                                         │ Chat     │
-│                                         │ (slim,   │
-│                                         │  collap- │
-│                                         │  sible)  │
-└─────────────────────────────────────────┴──────────┘
-```
-
-- Gallery takes ~70% width; right rail ~30%, video on top, chat below.
-- On mobile: gallery full-width, video as floating PiP bubble (draggable), chat as bottom-sheet toggle.
-- Tabs: "Everyone" (merged + sorted by recency) plus one tab per participant (avatar + first name).
-- Works fade/scale-in with `motion` stagger on tab change.
-
-**Work peek modal:** clicking a work card opens a centered `Dialog` over the gallery (NOT navigation). Shows cover, title, creator chip (clickable → Profile peek), excerpt, like/comment counts, license, "Open full work →" external link. Esc or backdrop closes — room never unmounts.
-
-**Data:** `getRoomGallery(userIds[])` server fn → `{ worksByUser: Record<userId, Work[]> }`. Refetched when participants change (debounced).
-
-**Fullscreen mode:** also gets the gallery toggle in the top bar; in fullscreen, gallery overlays as a center column with video tiles shrinking into a top strip.
+- RLS is correctly scoped: whiteboard asset rows + storage uploads both require being present in the room. Admin override exists. Bucket is mime/size-capped (5MB, image-only).
+- Lazy-loading `tldraw` via `React.lazy` keeps the main bundle clean.
+- Profile peek uses HoverCard on desktop / Drawer on mobile — right primitive choice.
+- Gallery batches works in a single `IN (...)` query.
+- `purgeRoomWhiteboard` is server-fn with admin client + zod-validated input.
 
 ---
 
-## 3. Ephemeral collaborative whiteboard
+## Gaps & bugs to fix
 
-**Library:** `tldraw` (`bun add tldraw`) — full freehand, shapes, text, images, sticky notes out of the box. ~250kb gz, code-split into a dynamic import so it only loads when the board opens.
+### Profile peek
+1. `HoverCardTrigger` has both `asChild` and an extra `onClick={() => setOpen(true)}` — this fights the hover behavior on desktop and causes flicker. Drop the manual onClick; let HoverCard own it (keep the Drawer onClick separately for mobile).
+2. Module-level `cache: Map` grows unbounded for a long session and is invisible to the rest of the app. Replace with TanStack Query (`['peek', userId]`, 60s `staleTime`), so it shares with the gallery query and follow mutations can invalidate it.
+3. Loading state is bare text — add a 3-line skeleton matching final layout so the card doesn't jump.
+4. Stat counters render raw (`12834 followers`). Add a `formatCompact` (`12.8k`).
+5. The "speaking ring" promised in the plan is wired in the avatar but not in the trigger — pass `speaking` through `SpeakerRow` so the ring pulses on the avatar in the participants list too.
 
-**Toggle:** "Whiteboard" pill in `MediaPanel` (icon: `PenLine`). Opens as a third view mode (chat | gallery | whiteboard) so the right rail stays as video+chat.
+### Work peek
+1. Two sequential round-trips (work, then profile). Collapse into one query with the embedded relation: `select('..., creator:profiles!works_created_by_fkey(id,display_name,username,avatar_url)')`.
+2. No view-count bump on open — fire-and-forget `rpc('increment_work_view', { _id })` so peeks count.
+3. No like/save/share inline — add the same `WorkActions` row used on `/works/$slug` so engagement doesn't require leaving the room.
+4. No skeleton, no error state.
 
-**Sync model:** tldraw `store.listen()` → Supabase Realtime broadcast on `whiteboard:${roomId}` channel, debounced 100ms. Each client applies inbound deltas via `store.mergeRemoteChanges`. No DB writes for shapes — pure realtime, dies with the channel.
+### Room gallery
+1. Single `.limit(120)` across all members starves prolific creators. Either paginate per-tab (cursor on `published_at`) or compute a per-user cap (e.g. `min(20, ceil(120/members))`).
+2. No realtime: if someone publishes a work mid-workshop, the gallery doesn't refresh. Subscribe to `INSERT/UPDATE` on `works` filtered by `created_by in (...)`.
+3. `Object.keys(worksByUser)` iteration order is insertion order — fine today, but the "Everyone" sort should also stable-tiebreak on `id` to avoid layout shuffles when timestamps tie.
+4. Add a category filter chip row (reuse `CategoryChip`) — instantly more browseable.
+5. Empty-state CTA: when it's me and I have nothing, button → `/works/new`.
+6. Gallery is hidden behind a toggle but the plan called for **side-by-side split with emphasis on gallery**. Right now toggling to Gallery removes chat entirely. Add a desktop split layout (`lg:grid-cols-[1fr_320px]`) where chat collapses to the right rail; on mobile keep the toggle.
 
-**Image uploads & pastes:**
-- Drag-drop / paste → upload to new public bucket `instant-whiteboard`, key `{roomId}/{uuid}.{ext}`, max 5MB.
-- "Paste URL" tldraw asset handler accepts http(s) URLs directly (no upload).
-- "From my works" picker (small button in tldraw toolbar) → opens a sheet listing the user's works, click inserts as image asset.
+### Whiteboard (this one has the biggest scaling/correctness issues)
+1. **Snapshot broadcast won't scale.** Today every change broadcasts the full `getSnapshot(editor.store)`. A canvas with a few images easily exceeds Supabase Realtime's 256KB payload cap and burns bandwidth at every stroke. Switch to incremental sync:
+   - Use `editor.store.listen` with `scope: 'document', source: 'user'` and broadcast the **diff** (`changes` from the listener callback) instead of the full snapshot.
+   - Apply remote diffs with `editor.store.mergeRemoteChanges(() => editor.store.applyDiff(diff))` so the local listener doesn't echo.
+   - Keep `request-state` for late joiners, but cap snapshot size and chunk if needed.
+   - For 100k MAU scale, plan an opt-in upgrade path to `@tldraw/sync` (a tldraw-supported sync server) — out of scope now, document it.
+2. `loadSnapshot` resets the entire store and **clobbers the recipient's in-flight edits** (last-write-wins on the whole document). The diff approach above fixes this.
+3. The asset uploader awaits storage but does **not** await the DB insert tracking row. If the insert fails, the file becomes an orphan invisible to `purgeRoomWhiteboard`. Await it, and on failure delete the object before throwing.
+4. `purgeRoomWhiteboard` only runs if the leaving user observes `count <= 1`. Two simultaneous exits = no purge. Add a server-side safety net:
+   - DB trigger on `instant_presence` AFTER DELETE: if no presence rows remain for that `room_id` AND room kind = `lounge`, mark room `archived` and enqueue a purge (either inline via plpgsql or via `pg_net` to the server fn).
+   - Add a nightly `pg_cron` job that purges orphaned assets older than 24h (belt + suspenders, also catches BrowserCloses that skipped `handleExit`).
+5. Bucket is `public: true` — image URLs are guessable & permanent until purge. Acceptable for ephemeral, but document it; if we want stronger privacy, switch to a private bucket + signed URLs (4h TTL).
+6. No collaborative cursors. Add `tldraw`'s `useCollaboration` via Realtime presence track — names + colored cursors are the single biggest "wow" upgrade.
+7. No "clear board" affordance for the host.
 
-**Cleanup (the "ephemeral" promise):**
-- New table `instant_whiteboard_assets (id, room_id, storage_path, created_at)`.
-- New `purge_room_whiteboard(_room_id)` server fn (admin client): deletes storage objects + rows.
-- Called from: (a) `join_lounge` ghost-archive sweep — purge when room flips to `archived`; (b) `handleExit` when the leaving user is the last presence.
-- Belt + suspenders: nightly cron-style cleanup of any assets older than 24h with no active room.
+### Channel view
+1. `profileLookup` and `peerById` Maps are rebuilt every render — wrap in `useMemo`.
+2. `instant_presence.upsert(...)` has no `onConflict` clause — relies on PK behavior; verify there's a unique `(room_id, user_id)` constraint, otherwise heartbeats race-insert dupes. If missing, add it.
+3. New-presence handler fires a per-row profile fetch (N+1). Move profiles into the initial join query via the embedded relation already used (`profile:profiles!instant_presence_user_id_fkey`) and trust the payload + a single batched refetch on N inserts (debounce 300ms).
+4. Per-room `postgres_changes` subscriptions scale poorly past a few thousand concurrent rooms. For 100k:
+   - Migrate `instant_messages` to Realtime **broadcast** (server fn inserts and broadcasts in one go); keep `postgres_changes` only for `instant_presence` or replace with Realtime `track()` presence entirely (eliminates the 30s heartbeat UPDATE storm).
+5. Messages claim "vanish after 24h" in the empty state but no cleanup job exists. Add a `pg_cron` daily delete.
+6. `handleExit` purges the board but doesn't `await` — works fine, but log failures so we can see orphans in production.
 
----
-
-## 4. In-room follow
-
-Already covered by Profile peek's `FollowButton` — no separate UI needed. Add one ambient touch:
-- When a follow happens inside the room, broadcast a tiny ephemeral toast to both users only ("You followed @alex" / "@sam followed you ✨") via the existing media channel. Decays in 4s, doesn't pollute chat.
-
----
-
-## World-class polish (small things that matter)
-
-1. **Speaking ring on profile peek avatar** — if the peek target is currently speaking, the avatar pulses with the existing primary ring.
-2. **Presence-aware tabs** — gallery tabs for users currently speaking get a subtle dot; tabs for users who left fade to 60% opacity for 10s before disappearing (no jarring layout shifts).
-3. **"Show me yours" nudge** — empty state in a user's gallery tab shows "@sam hasn't published anything yet — ask them about their work" with a one-click chat prefill.
-4. **Whiteboard cursors with names** — tldraw supports presence cursors; show each participant's name + accent color following their pointer.
-5. **Reaction confetti on follow** — when a follow lands, a tiny burst of motion particles emits from the followed user's tile (existing framer-motion, no new dep).
-6. **Keyboard shortcuts in fullscreen:** `G` toggle gallery, `W` toggle whiteboard, `C` toggle chat, `M` mute, `V` camera, `Esc` minimize. Footer hint on hover.
-7. **"Save board snapshot"** before the workshop wraps — when the 1s alone-trigger fires and the "Workshop wrapped" prompt appears, add a third button: "Download whiteboard PNG" so the work isn't lost. Uses `tldraw`'s built-in export.
-8. **Recently viewed works** — clicking work peeks adds them to a small "Just looked at" tray in the gallery footer for quick re-open during convo.
-
----
-
-## Technical notes
-
-- **Files added:**
-  - `src/components/profile-peek.tsx`
-  - `src/components/work-peek.tsx`
-  - `src/components/room-gallery.tsx`
-  - `src/components/room-whiteboard.tsx` (lazy)
-  - `src/lib/room-views.functions.ts` (`getRoomMemberPeek`, `getRoomGallery`, `purgeRoomWhiteboard`)
-- **Files edited:**
-  - `src/components/channel-view.tsx` — view-mode state (`"chat" | "gallery" | "whiteboard"`), passes through to right rail; wraps name/avatar mentions with `ProfilePeek`; Save-board option in the wrapped-workshop dialog.
-  - `src/components/media-panel.tsx` — view toggle pills; `SpeakerRow` becomes `ProfilePeek` trigger; new `RightRail` shell that renders chat/gallery/whiteboard.
-- **DB migration:** `instant_whiteboard_assets` table (RLS: insert=room presence, select=room presence, delete=admin/owner) + bucket `instant-whiteboard` (public read, authed write).
-- **No changes to** `use-media-room`, `joinLounge`, `instant_rooms`, `instant_messages`, `instant_presence`.
+### Follow flow in-room
+1. `FollowButton` exists in peek — good. But the plan promised an **ephemeral "X followed you" toast** broadcast to both users. Add a broadcast on the existing `instant:${roomId}` channel; toast decays 4s.
+2. On follow success, invalidate the peek query for both users so counters update live.
+3. Add a tiny "Followed in this workshop" badge in the participants list — social proof + reminds the user later.
 
 ---
 
-## Out of scope (callouts)
+## 2026-grade UI polish
 
-- Persisting whiteboards across sessions (explicitly ephemeral per request).
-- Server-side recording of audio/video.
-- Notifying the followed user via email — uses existing follow side-effects only.
-- Reordering or pinning gallery works (could be a v2 nice-to-have).
+- **Glass + grain.** Peek/Dialog surfaces: `bg-surface/85 backdrop-blur-xl` with a subtle noise overlay (single inline SVG bg). Modern, depth, no extra deps.
+- **Reduced motion.** Wrap framer transitions in `useReducedMotion()` so the stagger/fade respects OS pref.
+- **Speaking ring on participants list**, not just the peek.
+- **Now-viewing presence in gallery.** Tiny avatar stack on each card showing who's currently looking at it (broadcast `viewing:{workId}` over the room channel; decays on close).
+- **"Just looked at" rail** at gallery footer — last 6 works opened by anyone. Bridges silent browsing into conversation.
+- **Reaction layer.** Double-tap any work in gallery → floating emoji that everyone sees (broadcast). Confetti burst on follow.
+- **Whiteboard polish:** collaborative cursors w/ names, "download PNG" already exists — also add "copy to clipboard" and a snap-to-grid toggle. Host can clear board.
+- **Keyboard shortcuts** in fullscreen: `G` gallery, `B` board, `C` chat, `M` mute, `V` camera, `?` shows the cheatsheet.
+- **Empty-state nudges** — "Show me yours" button in a member's empty gallery tab pings them in chat with a deep link to upload.
+- **Tactile microinteractions** — Button press scale `0.97`, follow morphs from `Follow` → `✓ Following` with a checkmark draw-in.
 
-Once you approve, I'll start with the profile peek + gallery (no new infra), then ship the whiteboard + storage migration as the second pass so you can review each piece live.
+---
+
+## Scale-to-100k summary (priorities)
+
+1. **Whiteboard: switch from full-snapshot to diff broadcasts** (correctness + bandwidth + payload cap).
+2. **Presence via Realtime `track()` instead of DB heartbeats** (kills a 30s write-per-user load).
+3. **Messages via broadcast, not `postgres_changes`** (Realtime's `postgres_changes` is the first thing to bottleneck at scale).
+4. **Server-side empty-room cleanup** (DB trigger + nightly cron) — don't rely on the client to purge.
+5. **TanStack Query everywhere** for peek/gallery — shared cache, automatic invalidation on follow/publish, suspense-friendly.
+
+---
+
+## Implementation phases
+
+**Phase A — correctness & scale (highest impact)**
+- Whiteboard diff sync + tracked-asset await + cleanup trigger + nightly cron
+- Presence via Realtime `track()` (drop heartbeat UPDATEs)
+- TanStack Query migration for peek + gallery
+- HoverCard onClick fix; profileLookup `useMemo`; ensure `(room_id,user_id)` unique on presence
+- Realtime subscription for `works` inserts in gallery
+- Work peek single-query + view-count bump + inline like/save
+
+**Phase B — collaboration features**
+- Gallery side-by-side layout w/ collapsible chat rail
+- Follow-broadcast toast + "followed in this workshop" badge
+- Whiteboard collaborative cursors + host "clear board"
+- Category filter chips + per-user pagination in gallery
+- 24h message cleanup cron
+
+**Phase C — polish**
+- Speaking ring everywhere, reduced-motion guards, glass+grain surfaces
+- Now-viewing avatar stacks, "Just looked at" rail, reaction emojis, follow confetti
+- Keyboard shortcut layer in fullscreen + `?` cheatsheet
+
+---
+
+## Technical notes (skip if non-technical)
+
+- tldraw diff API: `editor.store.listen((entry) => entry.changes /* added/updated/removed */)` with `mergeRemoteChanges` on the receiver. Confirm against installed tldraw version before wiring.
+- Realtime broadcast for messages requires a small `sendMessage` server fn that does `insert` + `channel.send` atomically; the client subscribes to broadcast only.
+- Empty-room trigger: `CREATE TRIGGER ... AFTER DELETE ON instant_presence ... WHEN (NOT EXISTS (SELECT 1 FROM instant_presence WHERE room_id = OLD.room_id))` → call a SECURITY DEFINER function that updates room status and `pg_net.http_post` to `/api/public/hooks/purge-room` (apikey header).
+- Out of scope: persisting boards across sessions, full sync server (`@tldraw/sync`), comment threads on works inside the peek, push notifications.
+
+Approve and I'll start with Phase A.
