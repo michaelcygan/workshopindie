@@ -53,7 +53,6 @@ function WorkshopDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const qc = useQueryClient();
-  const navigate = useNavigate();
 
   const { data: ws, isLoading } = useQuery({ queryKey: ["workshop", slug], queryFn: () => fetchWorkshop(slug) });
 
