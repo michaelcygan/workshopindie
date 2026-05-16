@@ -66,6 +66,9 @@ function NewWorkshop() {
     if (!title.trim()) return toast.error("Give your Workshop a title");
     if (!startsAt || !endsAt) return toast.error("Set a start and end time");
     if (new Date(endsAt) <= new Date(startsAt)) return toast.error("End must be after start");
+    if ((locationType === "in_person" || locationType === "hybrid") && !venue) {
+      return toast.error("Pick a venue so people can find you");
+    }
 
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
@@ -76,6 +79,42 @@ function NewWorkshop() {
     const checkInCloses = new Date(start.getTime() + 10 * 60 * 1000);
     const finalize = new Date(new Date(endsAt).getTime() + 24 * 60 * 60 * 1000);
 
+    let venueFields: {
+      city_id: string | null;
+      venue_name: string | null;
+      venue_address: string | null;
+      venue_lat: number | null;
+      venue_lng: number | null;
+      venue_osm_ref: string | null;
+      location_text: string | null;
+    } = {
+      city_id: null,
+      venue_name: null,
+      venue_address: null,
+      venue_lat: null,
+      venue_lng: null,
+      venue_osm_ref: null,
+      location_text: locationText || null,
+    };
+
+    if (venue) {
+      try {
+        const resolved = await resolveVenue({ data: venue });
+        venueFields = {
+          city_id: resolved.city_id,
+          venue_name: resolved.venue_name,
+          venue_address: resolved.venue_address,
+          venue_lat: resolved.venue_lat,
+          venue_lng: resolved.venue_lng,
+          venue_osm_ref: resolved.venue_osm_ref,
+          location_text: resolved.venue_name,
+        };
+      } catch (err) {
+        setSubmitting(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't resolve venue");
+      }
+    }
+
     const { data: ws, error } = await supabase.from("workshops").insert({
       title: title.trim(),
       slug: "",
@@ -85,7 +124,6 @@ function NewWorkshop() {
       mode: "scheduled",
       visibility: "public",
       location_type: locationType,
-      location_text: locationText || null,
       external_call_url: externalCallUrl || null,
       starts_at: start.toISOString(),
       ends_at: new Date(endsAt).toISOString(),
@@ -94,6 +132,7 @@ function NewWorkshop() {
       finalization_deadline_at: finalize.toISOString(),
       participant_cap: cap === "" ? null : Number(cap),
       status: "open",
+      ...venueFields,
     }).select("id,slug").single();
 
     if (error || !ws) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't create"); }
