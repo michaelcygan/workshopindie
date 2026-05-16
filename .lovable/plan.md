@@ -1,61 +1,48 @@
-## Changes to `src/components/channel-view.tsx`
+# Unify Workshop room template
 
-### 1. Suppress "Workshop wrapped" for first-joiner / fresh rooms
+Yes — a Workshop should be a standard "live room" backed by `ChannelView`. Scheduled Workshops layer scheduling extras (applications, check-in, finalize/credits) on top of the same room, so any future room-level improvement (auto-end, admin dismiss, whiteboard, gallery, video, presence) ships to both flows automatically.
 
-Track when the room first became multi-party. The "alone" auto-end only triggers when:
-- The user is the only one left (`media.count <= 1`), AND
-- The room has been live for ≥ 5 minutes (measured from mount, OR from when a 2nd participant first appeared — see below)
-
-Approach: store `multiPartySinceRef` — the first timestamp we observed `media.count >= 2`. If that has never happened, never auto-end (they're the first to arrive, waiting for others). If it has, only fire the end prompt once `now - multiPartySinceRef >= 5 min` AND they're alone.
-
-Replace the existing `alone` effect:
-- `const everHadCompany = multiPartySinceRef.current !== null`
-- `const aloneEligible = everHadCompany && Date.now() - multiPartySinceRef.current >= 5*60*1000`
-- Only schedule the 1s `setEndedOpen(true)` timer when both `alone` and `aloneEligible` are true.
-
-This means a solo first-joiner can sit indefinitely; the wrap only fires after a real session has happened and emptied out.
-
-### 2. Admin can dismiss the auto-end countdown
-
-Use existing `useUserRoles()` (`src/hooks/use-user-role.tsx`) to get `isAdmin`.
-
-In the `endedOpen` AlertDialog:
-- If `isAdmin`, render an `X` close button in the header (absolute top-right, `lucide-react` `X` icon) that calls a `dismissEnded()` handler.
-- `dismissEnded()` clears the countdown interval, sets `endedOpen=false`, resets `secondsLeft=30`, and sets a new ref `adminDismissedRef.current = true` so the alone-effect won't immediately re-open it for this alone-session.
-- Reset `adminDismissedRef.current = false` whenever `alone` flips back to false (someone else joined).
-- Gate the countdown `handleExit()` auto-forward: skip it if `isAdmin` (admins should never be force-routed home). Countdown can still tick down visually, but on reaching 0 we just close the dialog instead of navigating.
-
-Also make the `AlertDialog`'s `onOpenChange` honor admin dismissal (currently it has no `onOpenChange`, so users can't close it at all).
-
-### Technical details
+## Architecture
 
 ```text
-state/refs added:
-  multiPartySinceRef: Ref<number | null>
-  adminDismissedRef: Ref<boolean>
-  { isAdmin } = useUserRoles()
-
-effect (new): when media.count >= 2 and multiPartySinceRef.current === null
-  → multiPartySinceRef.current = Date.now()
-
-modified alone effect:
-  const eligible = multiPartySinceRef.current !== null
-    && Date.now() - multiPartySinceRef.current >= 5*60_000
-    && !adminDismissedRef.current
-  schedule end prompt only if alone && eligible
-
-countdown effect:
-  on tick to 0 → if isAdmin: close dialog only; else: handleExit()
-
-dialog JSX:
-  <AlertDialog open={endedOpen} onOpenChange={(o) => { if (!o && isAdmin) dismissEnded(); }}>
-    <AlertDialogContent>
-      {isAdmin && (
-        <button onClick={dismissEnded} className="absolute right-3 top-3 ...">
-          <X className="h-4 w-4" />
-        </button>
-      )}
-      ...
+ChannelView (single source of truth for any live room)
+  ├── Instant Workshop  → backing instant_rooms row (kind='lounge')
+  └── Scheduled Workshop → backing instant_rooms row (kind='workshop')
+       wrapped by scheduling shell:
+         Hero · HostStatusBar · CheckIn · Roles/Apply · Applications · Finalize
 ```
 
-No DB or server changes. No other files touched.
+A `workshops` row holds the scheduling metadata (title, time, roles, applications, host, status). When the host opens the live room, we lazily create/find a paired `instant_rooms` row of `kind='workshop'` and use its UUID as `roomId` for `ChannelView`. Confirmed participants (and host) gate entry.
+
+## Changes
+
+**DB migration**
+- Allow `kind='workshop'` in `instant_rooms.kind` check constraint.
+- Add nullable `instant_rooms.workshop_id uuid references workshops(id) on delete cascade` with unique index (one room per workshop).
+- RLS: read/write on `instant_*` rows tied to a workshop allowed for the host plus confirmed/checked-in/completed participants.
+- Server function `ensureWorkshopRoom({ workshopId })`: host-or-confirmed-participant gate; inserts the paired room if missing, returns its id.
+
+**Frontend**
+- `src/routes/workshops.$slug.tsx`: delete the bespoke `Room` (custom chat + participants list) and the duplicated message/presence wiring. Replace with `<ChannelView roomId={pairedRoomId} title={ws.title} initialMode="voice" pinned={<WorkshopPinnedHeader …/>} />` once `pairedRoomId` is fetched.
+- Keep all scheduling pieces (`HostStatusBar`, `CheckInPanel`, `RolesAndApply`, `HostApplications`, `FinalizePanel`, `ShippedBanner`) — they live above/below the unified room.
+- `WorkshopToolsPanel` moves into the `pinned` slot (or below the room) so the unified template stays clean.
+- Gate the room mount: only render `ChannelView` when `isLive || isHost` AND the user is host/confirmed; otherwise show the existing "opens for confirmed participants" notice.
+
+**ChannelView (no behavior changes, light tweaks only)**
+- Already accepts `roomId`, `title`, `pinned`, `initialMode` → works as-is.
+- The 5-min/alone auto-end already gated by multi-party history; scheduled rooms behave identically (admins can still dismiss).
+- Whiteboard purge already keys off `roomId` — works for either kind.
+
+## Migration of existing data
+
+Existing `workshop_messages` / `workshop_participants` stay (used for credits + finalize). Chat history from old scheduled workshops won't auto-port into the unified room — acceptable since the live chat is ephemeral. Credits/finalize still read from `workshop_participants`, which is unchanged.
+
+## Out of scope
+- No changes to applications/check-in/finalize/credits logic.
+- No changes to Instant Workshop UX.
+- `workshop_messages` table left in place; can be deprecated later.
+
+## Files touched
+- new `supabase/migrations/<ts>_workshop_unified_room.sql`
+- new `src/lib/workshop-room.functions.ts` (`ensureWorkshopRoom`)
+- edit `src/routes/workshops.$slug.tsx` (drop bespoke Room, mount ChannelView)
