@@ -250,10 +250,14 @@ export default function RoomBoard({ roomId, userId, className, onEnterFullscreen
             <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom + 0.1)} aria-label="Zoom in">
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
-            <div className="w-10 text-center text-[10px] tabular-nums text-ink-muted">{Math.round(zoom * 100)}%</div>
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(1)} aria-label="Reset zoom">
-              <Maximize2 className="h-3.5 w-3.5" />
-            </Button>
+            <button
+              type="button"
+              onClick={() => applyZoom(1)}
+              className="w-12 text-center text-[10px] tabular-nums text-ink-muted hover:text-ink"
+              aria-label="Reset zoom to 100%"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
           </div>
         </div>
       </div>
