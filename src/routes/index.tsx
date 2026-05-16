@@ -2,9 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Radio, Megaphone, Sparkles, MapPin, Users } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CreatorBadge } from "@/components/creator-badge";
+import { Calendar, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
@@ -47,12 +45,33 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-border">
-      <div className="absolute inset-0 gradient-soft" />
-      <div className="relative mx-auto max-w-6xl px-4 pt-16 pb-20 md:px-6 md:pt-24 md:pb-28 text-center">
+    <section className="relative isolate overflow-hidden border-b border-border min-h-[88vh] flex items-center">
+      {/* Ambient video background */}
+      <video
+        className="absolute inset-0 -z-20 h-full w-full object-cover motion-reduce:hidden"
+        autoPlay
+        muted
+        loop
+        playsInline
+        preload="auto"
+        poster="/ambient/studios-loop-poster.jpg"
+      >
+        <source src="/ambient/studios-loop.mp4" type="video/mp4" />
+      </video>
+      <img
+        src="/ambient/studios-loop-poster.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 -z-20 h-full w-full object-cover hidden motion-reduce:block"
+      />
+      {/* Warm cream veil for type contrast */}
+      <div className="absolute inset-0 -z-10 bg-background/70" />
+      <div className="absolute inset-0 -z-10 gradient-soft opacity-60" />
+
+      <div className="relative mx-auto w-full max-w-6xl px-4 py-20 md:px-6 md:py-28 text-center">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-soft shadow-soft"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
         >
           <Sparkles className="h-3.5 w-3.5 text-primary" /> A creative collaboration network
         </motion.div>
@@ -67,15 +86,48 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Schedule time-boxed creative Workshops, meet collaborators, and build a portfolio from what you ship.
+          Make something with other artists — live, or on a clock.
         </motion.p>
+
         <motion.div
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}
-          className="mt-7 flex flex-wrap items-center justify-center gap-2"
+          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.18 }}
+          className="mx-auto mt-10 grid max-w-3xl gap-4 md:grid-cols-2"
         >
-          <Link to="/workshops/new"><Button size="lg" className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule a Workshop</Button></Link>
-          <Link to="/instant"><Button size="lg" variant="outline" className="rounded-full gap-2 bg-surface"><Radio className="h-4 w-4" /> Join Instant</Button></Link>
-          <Link to="/collab/new"><Button size="lg" variant="ghost" className="rounded-full gap-2"><Megaphone className="h-4 w-4" /> Post a Collab</Button></Link>
+          <Link
+            to="/instant"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl bg-primary p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
+              <Radio className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-display text-2xl md:text-[26px] leading-tight">Join an Instant Workshop</div>
+              <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
+                Drop into a live room with up to 5 artists right now. Voice or video, no scheduling.
+              </p>
+            </div>
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
+              Drop in <ArrowRight className="h-4 w-4" />
+            </span>
+          </Link>
+
+          <Link
+            to="/workshops/new"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+              <Calendar className="h-5 w-5 text-primary" />
+            </span>
+            <div>
+              <div className="font-display text-2xl md:text-[26px] leading-tight">Schedule a Workshop</div>
+              <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
+                Pick a time, set a prompt, invite collaborators. Ship something on a clock.
+              </p>
+            </div>
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary transition group-hover:gap-2">
+              Schedule one <ArrowRight className="h-4 w-4" />
+            </span>
+          </Link>
         </motion.div>
       </div>
     </section>
@@ -168,24 +220,17 @@ function Index() {
       </section>
 
       <CityMeetupsStrip />
-      <FeaturedCreatorsStrip />
-
-      <LiveNowStrip />
 
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          {[
-            { title: "Upcoming Workshops", body: "Apply to a seat or claim a role.", icon: Calendar, to: "/workshops" as const },
-            { title: "Collab Board", body: "Find collaborators for ideas already in motion.", icon: Megaphone, to: "/collab" as const },
-          ].map((c) => (
-            <Link key={c.title} to={c.to} className="group rounded-2xl border border-border bg-surface p-5 transition hover:shadow-lift">
-              <c.icon className="h-5 w-5 text-primary" />
-              <h3 className="mt-3 font-display text-xl text-ink">{c.title}</h3>
-              <p className="mt-1 text-sm text-ink-muted">{c.body}</p>
-              <div className="mt-3 text-sm text-primary group-hover:underline">Open →</div>
-            </Link>
-          ))}
-        </div>
+        <Link
+          to="/workshops"
+          className="group block rounded-2xl border border-border bg-surface p-5 transition hover:shadow-lift"
+        >
+          <Calendar className="h-5 w-5 text-primary" />
+          <h3 className="mt-3 font-display text-xl text-ink">Upcoming Workshops</h3>
+          <p className="mt-1 text-sm text-ink-muted">Apply to a seat or claim a role.</p>
+          <div className="mt-3 text-sm text-primary group-hover:underline">Open →</div>
+        </Link>
       </section>
     </main>
   );
@@ -230,99 +275,6 @@ function CityMeetupsStrip() {
           </Link>
         ))}
       </div>
-    </section>
-  );
-}
-
-function FeaturedCreatorsStrip() {
-  const { data } = useQuery({
-    queryKey: ["home-featured-creators"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id,username,display_name,headline,avatar_url,creator_status,work_count,worked_with_count")
-        .gt("work_count", 0)
-        .not("username", "is", null)
-        .order("work_count", { ascending: false })
-        .limit(8);
-      return data ?? [];
-    },
-  });
-  if (!data || data.length === 0) return null;
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-10">
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl text-ink md:text-3xl">Featured Creators</h2>
-          <p className="mt-1 text-sm text-ink-muted">People shipping Work.</p>
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {(data as any[]).map((p) => (
-          <Link
-            key={p.id}
-            to="/u/$username"
-            params={{ username: p.username }}
-            className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft"
-          >
-            <Avatar className="h-12 w-12">
-              <AvatarImage src={p.avatar_url ?? undefined} />
-              <AvatarFallback>{(p.display_name ?? p.username ?? "?")[0]}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <h3 className="truncate font-medium text-ink">{p.display_name ?? p.username}</h3>
-                <CreatorBadge status={p.creator_status} />
-              </div>
-              {p.headline && <p className="truncate text-xs text-ink-muted">{p.headline}</p>}
-              <p className="mt-0.5 text-[11px] text-ink-muted inline-flex items-center gap-1"><Users className="h-3 w-3" /> {p.work_count} works</p>
-            </div>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function LiveNowStrip() {
-  const { data } = useQuery({
-    queryKey: ["home-instant-live"],
-    queryFn: async () => {
-      const cutoff = new Date(Date.now() - 60_000).toISOString();
-      const [rooms, presence] = await Promise.all([
-        supabase.from("instant_rooms").select("id").eq("kind", "lounge").eq("status", "active"),
-        supabase.from("instant_presence").select("user_id,room_id").gt("last_seen_at", cutoff),
-      ]);
-      const roomIds = new Set((rooms.data ?? []).map((r) => r.id));
-      const livePresence = (presence.data ?? []).filter((p) => roomIds.has(p.room_id));
-      const liveRooms = new Set(livePresence.map((p) => p.room_id));
-      return { liveCount: livePresence.length, loungeCount: liveRooms.size };
-    },
-    refetchInterval: 30_000,
-  });
-
-  if (!data) return null;
-
-  return (
-    <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
-      <Link to="/instant" className="block rounded-3xl border border-border bg-surface p-5 shadow-soft transition hover:shadow-lift md:p-6">
-        <div className="flex items-center gap-2">
-          <span className="relative inline-flex h-2 w-2">
-            <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-          </span>
-          <h3 className="font-display text-xl text-ink">Live now</h3>
-          <span className="ml-auto text-sm text-primary">Drop in →</span>
-        </div>
-        <div className="mt-3 flex items-center gap-3 text-sm text-ink-muted">
-          <Radio className="h-4 w-4 text-primary" />
-          <span>
-            {data.liveCount === 0
-              ? "Nobody's in the Lounge yet — start it."
-              : `${data.liveCount} live across ${data.loungeCount} ${data.loungeCount === 1 ? "lounge" : "lounges"}.`}
-          </span>
-        </div>
-      </Link>
     </section>
   );
 }
