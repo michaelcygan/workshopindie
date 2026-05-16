@@ -132,6 +132,12 @@
   --cat-build-ink: oklch(0.40 0.10 180);
   --cat-visual: oklch(0.93 0.05 340);  /* rose */
   --cat-visual-ink: oklch(0.42 0.18 340);
+  --cat-critique: oklch(0.93 0.05 230);   /* sky blue */
+  --cat-critique-ink: oklch(0.40 0.18 230);
+  --cat-business: oklch(0.93 0.05 135);   /* sage */
+  --cat-business-ink: oklch(0.38 0.14 145);
+  --cat-mentorship: oklch(0.93 0.05 60);  /* amber */
+  --cat-mentorship-ink: oklch(0.42 0.16 55);
 
   --chart-1: oklch(0.68 0.20 32);
   --chart-2: oklch(0.62 0.24 295);
