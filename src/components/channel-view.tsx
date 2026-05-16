@@ -395,23 +395,35 @@ export function ChannelView({
         />
         {viewMode === "whiteboard" && user ? (
           <div className="h-[60vh] p-3 md:p-4">
-            <Suspense fallback={
-              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted">
-                <Loader2 className="h-4 w-4 animate-spin" />
+            {fsSurface === "board" ? (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
+                Board open in fullscreen…
               </div>
-            }>
-              <RoomBoard roomId={roomId} userId={user.id} className="h-full" onEnterFullscreen={() => setFsSurface("board")} />
-            </Suspense>
+            ) : (
+              <Suspense fallback={
+                <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              }>
+                <RoomBoard roomId={roomId} userId={user.id} className="h-full" onEnterFullscreen={() => setFsSurface("board")} />
+              </Suspense>
+            )}
           </div>
         ) : viewMode === "gallery" && user ? (
           <div className="h-[60vh] p-3 md:p-4">
-            <RoomGallery
-              meUserId={user.id}
-              members={galleryMembers}
-              onOpenWork={openWork}
-              onEnterFullscreen={() => setFsSurface("gallery")}
-              className="h-full"
-            />
+            {fsSurface === "gallery" ? (
+              <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
+                Gallery open in fullscreen…
+              </div>
+            ) : (
+              <RoomGallery
+                meUserId={user.id}
+                members={galleryMembers}
+                onOpenWork={openWork}
+                onEnterFullscreen={() => setFsSurface("gallery")}
+                className="h-full"
+              />
+            )}
           </div>
         ) : (
           <>
