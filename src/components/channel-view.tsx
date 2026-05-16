@@ -460,8 +460,18 @@ export function ChannelView({
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={endedOpen}>
-        <AlertDialogContent>
+      <AlertDialog open={endedOpen} onOpenChange={(o) => { if (!o && isAdmin) dismissEnded(); }}>
+        <AlertDialogContent className="relative">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={dismissEnded}
+              aria-label="Dismiss"
+              className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
           <AlertDialogHeader>
             <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
             <AlertDialogDescription>
