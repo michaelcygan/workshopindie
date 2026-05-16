@@ -12,6 +12,8 @@ import {
   MediaPanel,
   VideoStage,
   FullscreenRoom,
+  VideoTile,
+  AudioTile,
   type RoomViewMode,
 } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
