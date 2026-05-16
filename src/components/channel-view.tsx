@@ -68,8 +68,7 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
-  const [fullscreen, setFullscreen] = useState(false);
-  const [fsSurface, setFsSurface] = useState<null | "board" | "gallery">(null);
+  const [fsView, setFsView] = useState<null | "chat" | "board" | "gallery">(null);
   const [endedOpen, setEndedOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
