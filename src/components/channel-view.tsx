@@ -404,6 +404,7 @@ export function ChannelView({
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onOpenWork={openWork}
+          roomId={roomId}
         />
       </div>
 

@@ -181,7 +181,7 @@ function PeekBody({
         </div>
 
         <div className="flex items-center gap-2">
-          <FollowButton targetUserId={profile.id} />
+          <FollowButton targetUserId={profile.id} roomId={roomId} />
           {profile.username && (
             <a
               href={`/u/${profile.username}`}
