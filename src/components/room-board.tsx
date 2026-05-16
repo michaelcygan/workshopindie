@@ -1,13 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink } from "lucide-react";
+import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+const MIN_ZOOM = 0.25;
+const MAX_ZOOM = 2;
+const CANVAS_W = 4000;
+const CANVAS_H = 3000;
 
 /**
  * Ephemeral pinboard for any Instant/Workshop room. Items (image, sticky note,
