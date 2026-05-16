@@ -1,48 +1,83 @@
-# Unify Workshop room template
+## Rework the Board (v1)
 
-Yes — a Workshop should be a standard "live room" backed by `ChannelView`. Scheduled Workshops layer scheduling extras (applications, check-in, finalize/credits) on top of the same room, so any future room-level improvement (auto-end, admin dismiss, whiteboard, gallery, video, presence) ships to both flows automatically.
+Drop tldraw drawing entirely (it crashes, and freehand isn't needed yet). Replace with a simple, robust pinboard where anyone in the room can drop:
 
-## Architecture
+- **Images** — paste a URL or upload a file (temp, room-scoped)
+- **Sticky notes** — colored note with editable text
+- **Link buttons** — a labeled button that opens a URL in a new tab
+- **Text labels** — free-form text (a heading/caption, no background)
+
+Everything is draggable on a shared canvas, syncs live between participants, and is wiped when the room empties (same lifecycle as today's whiteboard).
+
+### What changes
 
 ```text
-ChannelView (single source of truth for any live room)
-  ├── Instant Workshop  → backing instant_rooms row (kind='lounge')
-  └── Scheduled Workshop → backing instant_rooms row (kind='workshop')
-       wrapped by scheduling shell:
-         Hero · HostStatusBar · CheckIn · Roles/Apply · Applications · Finalize
+src/components/room-whiteboard.tsx   →   src/components/room-board.tsx   (new component, tldraw removed)
+src/components/channel-view.tsx              (lazy-load RoomBoard instead of RoomWhiteboard)
+src/components/media-panel.tsx               (label stays "Board"; same PenLine icon)
+src/lib/room-views.functions.ts              (purge function now also deletes board items)
+supabase/migrations/<new>.sql                (new instant_board_items table + trigger update)
 ```
 
-A `workshops` row holds the scheduling metadata (title, time, roles, applications, host, status). When the host opens the live room, we lazily create/find a paired `instant_rooms` row of `kind='workshop'` and use its UUID as `roomId` for `ChannelView`. Confirmed participants (and host) gate entry.
+`bun remove tldraw` to drop the dependency.
 
-## Changes
+### Data model
 
-**DB migration**
-- Allow `kind='workshop'` in `instant_rooms.kind` check constraint.
-- Add nullable `instant_rooms.workshop_id uuid references workshops(id) on delete cascade` with unique index (one room per workshop).
-- RLS: read/write on `instant_*` rows tied to a workshop allowed for the host plus confirmed/checked-in/completed participants.
-- Server function `ensureWorkshopRoom({ workshopId })`: host-or-confirmed-participant gate; inserts the paired room if missing, returns its id.
+New table `instant_board_items`:
 
-**Frontend**
-- `src/routes/workshops.$slug.tsx`: delete the bespoke `Room` (custom chat + participants list) and the duplicated message/presence wiring. Replace with `<ChannelView roomId={pairedRoomId} title={ws.title} initialMode="voice" pinned={<WorkshopPinnedHeader …/>} />` once `pairedRoomId` is fetched.
-- Keep all scheduling pieces (`HostStatusBar`, `CheckInPanel`, `RolesAndApply`, `HostApplications`, `FinalizePanel`, `ShippedBanner`) — they live above/below the unified room.
-- `WorkshopToolsPanel` moves into the `pinned` slot (or below the room) so the unified template stays clean.
-- Gate the room mount: only render `ChannelView` when `isLive || isHost` AND the user is host/confirmed; otherwise show the existing "opens for confirmed participants" notice.
+- `room_id` (uuid, FK semantics to `instant_rooms.id`)
+- `user_id` (uuid, creator — used for "your items" affordances)
+- `kind` (text: `image` | `sticky` | `link` | `text`)
+- `content` (jsonb — shape per kind, below)
+- `x`, `y` (numeric, canvas coords) · `w`, `h` (numeric)
+- `z` (int, stacking) · `rotation` (numeric, default 0)
+- `created_at`, `updated_at`
 
-**ChannelView (no behavior changes, light tweaks only)**
-- Already accepts `roomId`, `title`, `pinned`, `initialMode` → works as-is.
-- The 5-min/alone auto-end already gated by multi-party history; scheduled rooms behave identically (admins can still dismiss).
-- Whiteboard purge already keys off `roomId` — works for either kind.
+Content shapes:
+- `image`: `{ src, alt? }`
+- `sticky`: `{ text, color }` (color = one of ~6 named tokens)
+- `link`: `{ url, label }`
+- `text`: `{ text, size? }` (size = sm/md/lg)
 
-## Migration of existing data
+RLS: anyone present in the room (existing `instant_presence` check) can `SELECT`/`INSERT`; only the creator OR the room creator can `UPDATE`/`DELETE`. Admins can manage.
 
-Existing `workshop_messages` / `workshop_participants` stay (used for credits + finalize). Chat history from old scheduled workshops won't auto-port into the unified room — acceptable since the live chat is ephemeral. Credits/finalize still read from `workshop_participants`, which is unchanged.
+Realtime: enable `postgres_changes` on `instant_board_items` so every client gets inserts/updates/deletes live — no custom broadcast layer, no late-joiner snapshot dance.
 
-## Out of scope
-- No changes to applications/check-in/finalize/credits logic.
-- No changes to Instant Workshop UX.
-- `workshop_messages` table left in place; can be deprecated later.
+Cleanup: extend the existing `tg_instant_presence_archive_empty` trigger to also `DELETE FROM instant_board_items WHERE room_id = OLD.room_id` when the last participant leaves. Image uploads keep using the existing `instant-whiteboard` storage bucket + `instant_whiteboard_assets` tracking table (no rename — minimizes churn, same purge path).
 
-## Files touched
-- new `supabase/migrations/<ts>_workshop_unified_room.sql`
-- new `src/lib/workshop-room.functions.ts` (`ensureWorkshopRoom`)
-- edit `src/routes/workshops.$slug.tsx` (drop bespoke Room, mount ChannelView)
+### UI
+
+A single `<RoomBoard roomId userId />` component that fills the panel:
+
+- **Toolbar** (top-left of the board): four buttons → Add image, Add sticky, Add link, Add text. Image opens a popover with "Paste URL" tab + "Upload" tab. Link opens a small inline form (URL + label). Sticky/text drop a default item near the toolbar.
+- **Canvas**: an absolutely-positioned layer inside a scrollable container. Items are simple `<div>`s with `position: absolute` driven by their `x/y/w/h`. Drag = mouse/touch pointer events; on drag end, `UPDATE` the row (debounced ~150ms during drag so we don't spam writes).
+- **Item chrome**: hover shows a tiny floating toolbar (move handle = whole card; delete = ✕; for sticky/text → inline edit; for link → edit URL/label; for image → no edit, just delete). Only the creator and the room owner see delete/edit.
+- **Visual language**: use existing semantic tokens (`bg-surface`, `border-border`, `text-ink`, `text-ink-muted`). Sticky colors map to muted token-based palette (yellow/pink/blue/green/lavender/peach via `oklch` variables added to `src/styles.css` if missing).
+- **Empty state**: subtle centered hint "Drop an image, sticky, or link to start."
+- **Header strip**: keep the existing "Board · ephemeral" label; replace "Save PNG" with a small "Clear my items" overflow (host/admin also gets "Clear board").
+
+No drawing tools, no shape picker, no z-index UI beyond "bring to front on drag start." Pan/zoom skipped for v1 — fixed canvas sized to the panel, items can overflow into a scrollable area.
+
+### Sync mechanics (technical)
+
+- On mount: `select * from instant_board_items where room_id = :roomId` → seed local state.
+- Subscribe to postgres_changes for that `room_id`; merge INSERT/UPDATE/DELETE into local state.
+- Local edits: optimistic update in state, then `upsert`/`update`/`delete` to DB. If the call fails, revert + toast.
+- Drag: while dragging, only update local state; on `pointerup`, write final `x,y` once (and `z = max+1`).
+
+### Out of scope (v2+)
+
+- Freehand drawing / tldraw replacement
+- Multi-select, group move, alignment guides
+- Resize handles (items have sensible default sizes; stickies grow with text)
+- Pan/zoom, infinite canvas
+- Export to PNG
+- Presence cursors on the board
+
+### Migration steps
+
+1. `bun remove tldraw`
+2. Migration: create `instant_board_items` + RLS + realtime publication + extend trigger to purge items.
+3. Build `src/components/room-board.tsx`.
+4. Swap the lazy import in `channel-view.tsx`; delete `src/components/room-whiteboard.tsx`.
+5. Update `purgeRoomWhiteboard` to also delete `instant_board_items` rows (storage purge stays as-is).
