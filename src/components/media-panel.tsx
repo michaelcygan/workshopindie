@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Maximize2, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, PenLine } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
