@@ -105,13 +105,16 @@ export function ChannelView({
 
   // Esc exits fullscreen.
   useEffect(() => {
-    if (!fullscreen) return;
+    if (!fullscreen && !fsSurface) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setFullscreen(false);
+      if (e.key === "Escape") {
+        setFullscreen(false);
+        setFsSurface(null);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [fullscreen]);
+  }, [fullscreen, fsSurface]);
 
   // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
   // Suppressed while the "workshop wrapped" prompt is open.
