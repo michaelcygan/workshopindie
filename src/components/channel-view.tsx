@@ -49,6 +49,7 @@ export function ChannelView({
   initialMode?: MediaMode;
 }) {
   const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [presence, setPresence] = useState<Presence[]>([]);
@@ -60,6 +61,8 @@ export function ChannelView({
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
   const aloneTimerRef = useRef<number | null>(null);
+  const multiPartySinceRef = useRef<number | null>(null);
+  const adminDismissedRef = useRef(false);
   const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
