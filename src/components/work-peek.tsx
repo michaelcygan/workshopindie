@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
-import { Heart, Bookmark, Eye, ExternalLink } from "lucide-react";
+import { Heart, Bookmark, Eye, ExternalLink, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CategoryChip } from "@/components/category-chip";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { formatCount } from "@/lib/utils";
+import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 
 export type WorkPeekData = {
   id: string;
@@ -36,43 +39,35 @@ export function WorkPeek({
   onOpenChange: (v: boolean) => void;
   onCreatorClick?: (userId: string) => void;
 }) {
-  const [work, setWork] = useState<WorkPeekData | null>(null);
-  const [creator, setCreator] = useState<Creator | null>(null);
-  const [loading, setLoading] = useState(false);
+  const fetchPeek = useServerFn(getWorkPeekDetail);
+  const { data, isLoading } = useQuery({
+    queryKey: ["work-peek", workId],
+    queryFn: () => fetchPeek({ data: { workId: workId! } }),
+    enabled: open && !!workId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
 
-  useEffect(() => {
-    if (!open || !workId) return;
-    let cancelled = false;
-    setLoading(true);
-    setWork(null);
-    setCreator(null);
-    (async () => {
-      const { data } = await supabase
-        .from("works")
-        .select("id,title,slug,category,cover_url,excerpt,description,source_type,like_count,save_count,view_count,comment_count,created_by")
-        .eq("id", workId)
-        .maybeSingle();
-      if (cancelled) return;
-      setWork((data as WorkPeekData | null) ?? null);
-      if (data?.created_by) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("id,display_name,username,avatar_url")
-          .eq("id", data.created_by)
-          .maybeSingle();
-        if (!cancelled) setCreator((prof as Creator | null) ?? null);
-      }
-      if (!cancelled) setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [open, workId]);
+  const work = (data?.work ?? null) as WorkPeekData | null;
+  const creator = (data?.creator ?? null) as Creator | null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
         <DialogTitle className="sr-only">{work?.title ?? "Work"}</DialogTitle>
-        {loading || !work ? (
-          <div className="flex h-64 items-center justify-center text-sm text-ink-muted">Loading…</div>
+        {isLoading || !work ? (
+          <div className="space-y-0">
+            <Skeleton className="aspect-video w-full rounded-none" />
+            <div className="p-5 space-y-3">
+              <Skeleton className="h-6 w-2/3" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-5/6" />
+              <div className="flex gap-2 pt-2">
+                <Skeleton className="h-8 w-24 rounded-full" />
+                <Skeleton className="h-8 w-20 rounded-full" />
+              </div>
+            </div>
+          </div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
             {work.cover_url ? (
@@ -114,9 +109,10 @@ export function WorkPeek({
                 </button>
               )}
               <div className="flex items-center gap-4 text-xs text-ink-muted">
-                <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {work.like_count}</span>
-                <span className="inline-flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" /> {work.save_count}</span>
-                <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {work.view_count}</span>
+                <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {formatCount(work.like_count)}</span>
+                <span className="inline-flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" /> {formatCount(work.save_count)}</span>
+                <span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {formatCount(work.comment_count)}</span>
+                <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {formatCount(work.view_count)}</span>
               </div>
               <div className="flex items-center justify-end pt-2">
                 <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
