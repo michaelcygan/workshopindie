@@ -112,7 +112,18 @@ export function RoomGallery({
                 </TabsTrigger>
               );
             })}
-          </TabsList>
+            </TabsList>
+          </div>
+          {onEnterFullscreen && (
+            <button
+              type="button"
+              onClick={onEnterFullscreen}
+              className="rounded-full p-1.5 text-ink-muted hover:bg-muted hover:text-ink"
+              aria-label="Enter fullscreen"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
