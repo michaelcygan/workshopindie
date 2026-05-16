@@ -328,6 +328,17 @@ export function ChannelView({
   const meAvatar = me?.avatar_url ?? null;
   const others = useMemo(() => presence.filter((p) => p.user_id !== user?.id), [presence, user?.id]);
 
+  const galleryMembers = user ? [
+    { user_id: user.id, display_name: meDisplay, username: me?.username ?? null, avatar_url: meAvatar, speaking: media.speaking && !media.muted },
+    ...others.map((o) => ({
+      user_id: o.user_id,
+      display_name: o.profile?.display_name ?? null,
+      username: o.profile?.username ?? null,
+      avatar_url: o.profile?.avatar_url ?? null,
+      speaking: !!media.peers.find((p) => p.userId === o.user_id)?.speaking,
+    })),
+  ] : [];
+
   return (
     <>
     {fullscreen && user && (
@@ -347,6 +358,27 @@ export function ChannelView({
         onExit={handleExit}
         onMinimize={() => setFullscreen(false)}
       />
+    )}
+    {fsSurface === "board" && user && (
+      <FullscreenShell title={`${title} · Board`} onMinimize={() => setFsSurface(null)}>
+        <Suspense fallback={
+          <div className="flex h-full items-center justify-center text-background/60">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        }>
+          <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
+        </Suspense>
+      </FullscreenShell>
+    )}
+    {fsSurface === "gallery" && user && (
+      <FullscreenShell title={`${title} · Gallery`} onMinimize={() => setFsSurface(null)}>
+        <RoomGallery
+          meUserId={user.id}
+          members={galleryMembers}
+          onOpenWork={openWork}
+          className="h-full"
+        />
+      </FullscreenShell>
     )}
     <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
       <div className="flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
@@ -368,24 +400,16 @@ export function ChannelView({
                 <Loader2 className="h-4 w-4 animate-spin" />
               </div>
             }>
-              <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
+              <RoomBoard roomId={roomId} userId={user.id} className="h-full" onEnterFullscreen={() => setFsSurface("board")} />
             </Suspense>
           </div>
         ) : viewMode === "gallery" && user ? (
           <div className="h-[60vh] p-3 md:p-4">
             <RoomGallery
               meUserId={user.id}
-              members={[
-                { user_id: user.id, display_name: meDisplay, username: me?.username ?? null, avatar_url: meAvatar, speaking: media.speaking && !media.muted },
-                ...others.map((o) => ({
-                  user_id: o.user_id,
-                  display_name: o.profile?.display_name ?? null,
-                  username: o.profile?.username ?? null,
-                  avatar_url: o.profile?.avatar_url ?? null,
-                  speaking: !!media.peers.find((p) => p.userId === o.user_id)?.speaking,
-                })),
-              ]}
+              members={galleryMembers}
               onOpenWork={openWork}
+              onEnterFullscreen={() => setFsSurface("gallery")}
               className="h-full"
             />
           </div>
