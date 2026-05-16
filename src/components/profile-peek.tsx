@@ -1,12 +1,14 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { ExternalLink } from "lucide-react";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { FollowButton } from "@/components/follow-button";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn, formatCount } from "@/lib/utils";
 
 export type PeekProfile = {
   id: string;
@@ -27,13 +29,7 @@ export type PeekWork = {
   cover_url: string | null;
 };
 
-// Tiny session-scoped cache so re-opening the same peek is instant.
-const cache = new Map<string, { profile: PeekProfile; works: PeekWork[]; ts: number }>();
-const TTL_MS = 60_000;
-
-async function loadPeek(userId: string) {
-  const hit = cache.get(userId);
-  if (hit && Date.now() - hit.ts < TTL_MS) return hit;
+async function fetchPeek(userId: string): Promise<{ profile: PeekProfile; works: PeekWork[] } | null> {
   const [{ data: profile }, { data: works }] = await Promise.all([
     supabase
       .from("profiles")
@@ -49,13 +45,16 @@ async function loadPeek(userId: string) {
       .limit(6),
   ]);
   if (!profile) return null;
-  const value = {
-    profile: profile as PeekProfile,
-    works: ((works ?? []) as PeekWork[]),
-    ts: Date.now(),
+  return { profile: profile as PeekProfile, works: (works ?? []) as PeekWork[] };
+}
+
+export function profilePeekQueryOptions(userId: string) {
+  return {
+    queryKey: ["profile-peek", userId] as const,
+    queryFn: () => fetchPeek(userId),
+    staleTime: 60_000,
+    gcTime: 5 * 60_000,
   };
-  cache.set(userId, value);
-  return value;
 }
 
 export function ProfilePeek({
@@ -63,34 +62,39 @@ export function ProfilePeek({
   speaking,
   children,
   onWorkClick,
+  onOpenChange,
+  roomId,
 }: {
   userId: string;
   speaking?: boolean;
   children: ReactNode;
   onWorkClick?: (workId: string) => void;
+  onOpenChange?: (open: boolean) => void;
+  roomId?: string;
 }) {
   const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
 
-  const body = <PeekBody userId={userId} speaking={speaking} onWorkClick={(id) => { onWorkClick?.(id); setOpen(false); }} />;
+  const body = (close: () => void) => (
+    <PeekBody userId={userId} speaking={speaking} roomId={roomId} onWorkClick={(id) => { onWorkClick?.(id); close(); }} />
+  );
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={setOpen}>
+      <Drawer onOpenChange={onOpenChange}>
         <DrawerTrigger asChild>{children}</DrawerTrigger>
         <DrawerContent className="px-4 pb-6">
           <DrawerTitle className="sr-only">Profile</DrawerTitle>
-          <div className="mx-auto w-full max-w-md pt-3">{body}</div>
+          <div className="mx-auto w-full max-w-md pt-3">{body(() => onOpenChange?.(false))}</div>
         </DrawerContent>
       </Drawer>
     );
   }
 
   return (
-      <HoverCard open={open} onOpenChange={setOpen} openDelay={120} closeDelay={120}>
-        <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+    <HoverCard openDelay={120} closeDelay={120} onOpenChange={onOpenChange}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
       <HoverCardContent className="w-80 p-0 overflow-hidden" align="start" sideOffset={8}>
-        {body}
+        {body(() => onOpenChange?.(false))}
       </HoverCardContent>
     </HoverCard>
   );
@@ -100,24 +104,33 @@ function PeekBody({
   userId,
   speaking,
   onWorkClick,
+  roomId,
 }: {
   userId: string;
   speaking?: boolean;
   onWorkClick?: (workId: string) => void;
+  roomId?: string;
 }) {
-  const [data, setData] = useState<{ profile: PeekProfile; works: PeekWork[] } | null>(() => {
-    const hit = cache.get(userId);
-    return hit && Date.now() - hit.ts < TTL_MS ? { profile: hit.profile, works: hit.works } : null;
-  });
+  const { data, isLoading } = useQuery(profilePeekQueryOptions(userId));
 
-  useEffect(() => {
-    let cancelled = false;
-    loadPeek(userId).then((v) => { if (!cancelled && v) setData({ profile: v.profile, works: v.works }); });
-    return () => { cancelled = true; };
-  }, [userId]);
-
+  if (isLoading) {
+    return (
+      <div className="p-4 space-y-3" aria-busy="true">
+        <div className="flex items-start gap-3">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="h-3 w-1/3" />
+            <Skeleton className="h-3 w-full" />
+          </div>
+        </div>
+        <Skeleton className="h-3 w-1/2" />
+        <Skeleton className="h-8 w-28 rounded-full" />
+      </div>
+    );
+  }
   if (!data) {
-    return <div className="p-4 text-xs text-ink-muted">Loading profile…</div>;
+    return <div className="p-4 text-xs text-ink-muted">Profile unavailable.</div>;
   }
   const { profile, works } = data;
   const display = profile.display_name || profile.username || "Anon";
@@ -162,13 +175,13 @@ function PeekBody({
         )}
 
         <div className="flex items-center gap-3 text-[11px] text-ink-muted">
-          <span><b className="text-ink">{profile.follower_count}</b> followers</span>
-          <span><b className="text-ink">{profile.following_count}</b> following</span>
-          <span><b className="text-ink">{profile.work_count}</b> works</span>
+          <span><b className="text-ink">{formatCount(profile.follower_count)}</b> followers</span>
+          <span><b className="text-ink">{formatCount(profile.following_count)}</b> following</span>
+          <span><b className="text-ink">{formatCount(profile.work_count)}</b> works</span>
         </div>
 
         <div className="flex items-center gap-2">
-          <FollowButton targetUserId={profile.id} />
+          <FollowButton targetUserId={profile.id} roomId={roomId} />
           {profile.username && (
             <a
               href={`/u/${profile.username}`}

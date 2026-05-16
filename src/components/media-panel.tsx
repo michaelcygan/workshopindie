@@ -42,6 +42,7 @@ export function MediaPanel({
   viewMode,
   onViewModeChange,
   onOpenWork,
+  roomId,
 }: {
   m: MediaState;
   channelTitle: string;
@@ -54,6 +55,7 @@ export function MediaPanel({
   viewMode?: RoomViewMode;
   onViewModeChange?: (v: RoomViewMode) => void;
   onOpenWork?: (workId: string) => void;
+  roomId?: string;
 }) {
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
@@ -129,6 +131,7 @@ export function MediaPanel({
                 username={null}
                 isMe
                 onOpenWork={onOpenWork}
+                roomId={roomId}
               />
               <AnimatePresence initial={false}>
                 {others.map((o) => {
@@ -143,6 +146,7 @@ export function MediaPanel({
                         avatarUrl={o.profile?.avatar_url ?? null}
                         username={o.profile?.username ?? null}
                         onOpenWork={onOpenWork}
+                        roomId={roomId}
                       />
                     </motion.div>
                   );
@@ -571,7 +575,7 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork,
+  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
 }: {
   userId: string;
   speaking: boolean;
@@ -581,6 +585,7 @@ function SpeakerRow({
   username: string | null;
   isMe?: boolean;
   onOpenWork?: (workId: string) => void;
+  roomId?: string;
 }) {
   const inner = (
     <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
@@ -599,7 +604,7 @@ function SpeakerRow({
   );
   return (
     <li>
-      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork}>
+      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork} roomId={roomId}>
         {inner}
       </ProfilePeek>
     </li>
