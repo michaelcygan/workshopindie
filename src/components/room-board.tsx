@@ -70,13 +70,11 @@ export default function RoomBoard({
   roomId,
   userId,
   className,
-  onEnterFullscreen,
   fullscreen = false,
 }: {
   roomId: string;
   userId: string;
   className?: string;
-  onEnterFullscreen?: () => void;
   fullscreen?: boolean;
 }) {
   const [items, setItems] = useState<Item[]>([]);
