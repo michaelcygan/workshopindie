@@ -183,7 +183,9 @@ export function VenueSearch({
           <ul className="max-h-72 overflow-auto py-1">
             {results.map((f, i) => {
               const v = featureToVenue(f);
-              const sub = [v.city.name, v.city.state_region, v.city.country].filter(Boolean).join(", ");
+              const full = formatAddress(f.properties);
+              const cityLine = [v.city.name, v.city.state_region, v.city.country].filter(Boolean).join(", ");
+              const sub = full && full !== v.name ? full : cityLine;
               return (
                 <li key={`${v.osm_ref ?? i}-${i}`}>
                   <button
