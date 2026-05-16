@@ -62,8 +62,8 @@
   --color-cat-critique-ink: var(--cat-critique-ink);
   --color-cat-business: var(--cat-business);
   --color-cat-business-ink: var(--cat-business-ink);
-  --color-cat-mentorship: var(--cat-mentorship);
-  --color-cat-mentorship-ink: var(--cat-mentorship-ink);
+  --color-cat-coworking: var(--cat-coworking);
+  --color-cat-coworking-ink: var(--cat-coworking-ink);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -136,8 +136,8 @@
   --cat-critique-ink: oklch(0.40 0.18 230);
   --cat-business: oklch(0.93 0.05 135);   /* sage */
   --cat-business-ink: oklch(0.38 0.14 145);
-  --cat-mentorship: oklch(0.93 0.05 60);  /* amber */
-  --cat-mentorship-ink: oklch(0.42 0.16 55);
+  --cat-coworking: oklch(0.93 0.05 60);  /* amber */
+  --cat-coworking-ink: oklch(0.42 0.16 55);
 
   --chart-1: oklch(0.68 0.20 32);
   --chart-2: oklch(0.62 0.24 295);
