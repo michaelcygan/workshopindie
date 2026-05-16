@@ -83,11 +83,12 @@ export function RoomGallery({
   return (
     <div className={cn("flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
       <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">
-        <div className="border-b border-border px-3 py-2 overflow-x-auto">
-          <TabsList className="bg-transparent gap-1 h-auto p-0 inline-flex">
-            <TabsTrigger value="everyone" className="rounded-full px-3 py-1 text-xs data-[state=active]:bg-ink data-[state=active]:text-background">
-              Everyone <span className="ml-1.5 text-[10px] opacity-70">{everyone.length}</span>
-            </TabsTrigger>
+        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+          <div className="flex-1 overflow-x-auto">
+            <TabsList className="bg-transparent gap-1 h-auto p-0 inline-flex">
+              <TabsTrigger value="everyone" className="rounded-full px-3 py-1 text-xs data-[state=active]:bg-ink data-[state=active]:text-background">
+                Everyone <span className="ml-1.5 text-[10px] opacity-70">{everyone.length}</span>
+              </TabsTrigger>
             {members.map((m) => {
               const count = worksByUser[m.user_id]?.length ?? 0;
               const display = m.display_name || m.username || "Anon";
