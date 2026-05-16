@@ -70,9 +70,13 @@ function EditProfile() {
     e.preventDefault();
     if (!user) return;
     setSaving(true);
+    const ig = sanitizeInstagramHandle(instagram);
     const { error } = await supabase.from("profiles").update({
       display_name: displayName,
       username: username || null,
+      first_name: firstName.trim() || null,
+      last_name: lastName.trim() || null,
+      instagram_handle: ig || null,
       headline: headline || null,
       bio: bio || null,
       avatar_url: avatar,
@@ -81,7 +85,7 @@ function EditProfile() {
       external_links: links.filter((l) => l.url),
       city_id: cityId || null,
       onboarded: true,
-    }).eq("id", user.id);
+    } as any).eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile saved");
