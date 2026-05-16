@@ -27,6 +27,7 @@ type Profile = {
   headline: string | null;
   categories: Category[];
   external_links: { label: string; url: string }[] | null;
+  instagram_handle: string | null;
   follower_count: number;
   following_count: number;
   work_count: number;
