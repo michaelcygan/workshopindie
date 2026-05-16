@@ -93,7 +93,7 @@ function NewWorkshop() {
       venue_lat: null,
       venue_lng: null,
       venue_osm_ref: null,
-      location_text: locationText || null,
+      location_text: null,
     };
 
     if (venue) {
