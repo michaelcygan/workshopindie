@@ -287,6 +287,33 @@ export type Database = {
           },
         ]
       }
+      instant_activity: {
+        Row: {
+          actor_display_name: string | null
+          created_at: string
+          id: string
+          kind: string
+          medium: Database["public"]["Enums"]["category"] | null
+          title: string
+        }
+        Insert: {
+          actor_display_name?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          medium?: Database["public"]["Enums"]["category"] | null
+          title: string
+        }
+        Update: {
+          actor_display_name?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          medium?: Database["public"]["Enums"]["category"] | null
+          title?: string
+        }
+        Relationships: []
+      }
       instant_board_items: {
         Row: {
           content: Json
@@ -1412,6 +1439,23 @@ export type Database = {
         Returns: boolean
       }
       join_lounge: { Args: { _user_id: string }; Returns: string }
+      join_medium_lounge: {
+        Args: {
+          _medium: Database["public"]["Enums"]["category"]
+          _user_id: string
+        }
+        Returns: string
+      }
+      list_active_instant_rooms: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          live_count: number
+          medium: Database["public"]["Enums"]["category"]
+          title: string
+        }[]
+      }
       slugify: { Args: { _in: string }; Returns: string }
     }
     Enums: {
