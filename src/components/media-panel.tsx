@@ -640,7 +640,7 @@ export function VideoTile({
   );
 }
 
-function AudioTile({
+export function AudioTile({
   displayName, avatarUrl, speaking, muted,
 }: { displayName: string; avatarUrl: string | null; speaking: boolean; muted: boolean }) {
   return (
