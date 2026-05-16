@@ -119,6 +119,17 @@ function WorkshopDetail() {
         )}
       </motion.div>
 
+      {ws.venue_lat != null && ws.venue_lng != null && (
+        <section className="mt-8 max-w-md">
+          <h2 className="font-display text-lg text-ink">Where</h2>
+          {ws.venue_name && <div className="mt-2 text-sm font-medium text-ink">{ws.venue_name}</div>}
+          {ws.venue_address && <div className="text-xs text-ink-muted">{ws.venue_address}</div>}
+          <div className="mt-3">
+            <VenueMap lat={ws.venue_lat} lng={ws.venue_lng} label={ws.venue_name ?? undefined} />
+          </div>
+        </section>
+      )}
+
       {isHost && <HostStatusBar ws={ws} onChanged={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
       <CheckInPanel ws={ws} />
