@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
-import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
