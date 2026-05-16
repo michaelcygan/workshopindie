@@ -122,7 +122,7 @@ function NewWork() {
         <section className="space-y-2">
           <Label>Category</Label>
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
+            {WORK_CATEGORIES.map((c) => (
               <button type="button" key={c.id} onClick={() => setCategory(c.id)}
                 className={cn("rounded-full border px-3 py-1.5 text-sm transition",
                   category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-surface text-ink-soft hover:bg-muted")}>
