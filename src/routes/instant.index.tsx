@@ -1,11 +1,14 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Video, Loader2, ArrowLeft, Radio } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { joinLounge } from "@/lib/instant.functions";
+import { joinLounge, joinMediumLounge } from "@/lib/instant.functions";
+import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
+import { InstantActivityTicker } from "@/components/instant-activity-ticker";
+import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/instant/")({
@@ -22,8 +25,10 @@ function InstantPreflight() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const drop = useServerFn(joinLounge);
+  const dropMedium = useServerFn(joinMediumLounge);
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
+  const [liveCount, setLiveCount] = useState(0);
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
@@ -55,33 +60,46 @@ function InstantPreflight() {
 
   const canDrop = !!devices && (devices.mic || devices.cam);
 
+  const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
+    if (!devices) return null;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: devices.mic,
+        video: devices.cam,
+      });
+      for (const t of stream.getTracks()) t.stop();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Permission denied";
+      toast.error(`Couldn't access ${devices.cam && !devices.mic ? "camera" : "mic"}: ${msg}`);
+      return null;
+    }
+    return devices.cam ? "video" : "voice";
+  }, [devices]);
+
   async function handleDrop() {
-    if (busy || !canDrop || !devices) return;
+    if (busy || !canDrop) return;
     setBusy(true);
     try {
-      // Pre-grant whichever the device has — request both when both exist so the
-      // room page never needs a second permission prompt.
-      const wantAudio = devices.mic;
-      const wantVideo = devices.cam;
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: wantAudio,
-          video: wantVideo,
-        });
-        for (const t of stream.getTracks()) t.stop();
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : "Permission denied";
-        toast.error(`Couldn't access ${wantVideo && !wantAudio ? "camera" : "mic"}: ${msg}`);
-        setBusy(false);
-        return;
-      }
-      // Default mode: video whenever a camera is available (mic still captured
-      // alongside via getUserMedia). Voice-only when there's no camera.
-      const mode = devices.cam ? "video" : "voice";
+      const mode = await preGrantMedia();
+      if (!mode) { setBusy(false); return; }
       const { roomId } = await drop();
       router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't drop in");
+      setBusy(false);
+    }
+  }
+
+  async function handleJoinMedium(medium: Category) {
+    if (busy || !canDrop) return;
+    setBusy(true);
+    try {
+      const mode = await preGrantMedia();
+      if (!mode) { setBusy(false); return; }
+      const { roomId } = await dropMedium({ data: { medium } });
+      router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't open that room");
       setBusy(false);
     }
   }
@@ -92,11 +110,26 @@ function InstantPreflight() {
         <ArrowLeft className="h-4 w-4" /> Home
       </Link>
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-        <h1 className="font-display text-4xl text-ink md:text-6xl flex items-center gap-3">
-          Artist's Lounge
-          <span className="relative inline-flex h-2.5 w-2.5">
-            <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+        <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <LoungeForkDropdown onJoinMedium={handleJoinMedium} onLiveCountChange={setLiveCount} />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <AnimatePresence mode="popLayout" initial={false}>
+              <motion.span
+                key={liveCount}
+                initial={{ y: 6, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -6, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="tabular-nums"
+              >
+                {liveCount}
+              </motion.span>
+            </AnimatePresence>
+            <span>live</span>
           </span>
         </h1>
         <p className="mt-3 text-lg text-ink-muted">
@@ -105,15 +138,17 @@ function InstantPreflight() {
       </motion.div>
 
       <div className="mt-10">
-        <Button
-          onClick={handleDrop}
-          disabled={!canDrop || busy}
-          size="lg"
-          className="w-full rounded-2xl h-auto py-6 flex-col gap-2"
-        >
-          {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Radio className="h-6 w-6" />}
-          <span className="text-base font-medium">{busy ? "Finding you a seat…" : "Drop in"}</span>
-        </Button>
+        <motion.div whileHover={{ scale: 1.005 }} whileTap={{ scale: 0.995 }}>
+          <Button
+            onClick={handleDrop}
+            disabled={!canDrop || busy}
+            size="lg"
+            className="w-full rounded-2xl h-auto py-6 flex-col gap-2"
+          >
+            {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Radio className="h-6 w-6" />}
+            <span className="text-base font-medium">{busy ? "Finding you a seat…" : "Drop in"}</span>
+          </Button>
+        </motion.div>
 
         <div className="mt-4 flex items-center justify-center gap-4 text-xs">
           {devices === null ? (
@@ -139,6 +174,8 @@ function InstantPreflight() {
         <p className="mt-3 text-center text-xs text-ink-muted">
           Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.
         </p>
+
+        <InstantActivityTicker />
       </div>
     </main>
   );
