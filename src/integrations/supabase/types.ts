@@ -586,10 +586,13 @@ export type Database = {
           creator_status: Database["public"]["Enums"]["creator_status"]
           display_name: string | null
           external_links: Json
+          first_name: string | null
           follower_count: number
           following_count: number
           headline: string | null
           id: string
+          instagram_handle: string | null
+          last_name: string | null
           onboarded: boolean
           pinned_work_ids: string[]
           updated_at: string
@@ -607,10 +610,13 @@ export type Database = {
           creator_status?: Database["public"]["Enums"]["creator_status"]
           display_name?: string | null
           external_links?: Json
+          first_name?: string | null
           follower_count?: number
           following_count?: number
           headline?: string | null
           id: string
+          instagram_handle?: string | null
+          last_name?: string | null
           onboarded?: boolean
           pinned_work_ids?: string[]
           updated_at?: string
@@ -628,10 +634,13 @@ export type Database = {
           creator_status?: Database["public"]["Enums"]["creator_status"]
           display_name?: string | null
           external_links?: Json
+          first_name?: string | null
           follower_count?: number
           following_count?: number
           headline?: string | null
           id?: string
+          instagram_handle?: string | null
+          last_name?: string | null
           onboarded?: boolean
           pinned_work_ids?: string[]
           updated_at?: string
