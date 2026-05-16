@@ -26,6 +26,7 @@ const PRESETS: Record<ToolType, {
 
 const CATEGORY_DEFAULTS: Record<Category, ToolType> = {
   film: "shot_list", music: "track_list", writing: "outline", build: "repo_links", visual: "moodboard",
+  critique: "outline", business: "outline", mentorship: "outline",
 };
 
 type Props = { workshopId: string; hostUserId: string; category: Category };

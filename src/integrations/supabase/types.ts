@@ -1468,7 +1468,15 @@ export type Database = {
         | "withdrawn"
         | "checked_in"
         | "no_show"
-      category: "film" | "music" | "writing" | "build" | "visual"
+      category:
+        | "film"
+        | "music"
+        | "writing"
+        | "build"
+        | "visual"
+        | "critique"
+        | "business"
+        | "mentorship"
       collab_post_status: "open" | "closed" | "archived" | "removed"
       compensation_type:
         | "paid"
@@ -1662,7 +1670,16 @@ export const Constants = {
         "checked_in",
         "no_show",
       ],
-      category: ["film", "music", "writing", "build", "visual"],
+      category: [
+        "film",
+        "music",
+        "writing",
+        "build",
+        "visual",
+        "critique",
+        "business",
+        "mentorship",
+      ],
       collab_post_status: ["open", "closed", "archived", "removed"],
       compensation_type: [
         "paid",

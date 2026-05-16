@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const MEDIUMS = ["film", "music", "writing", "build", "visual"] as const;
+const MEDIUMS = ["film", "music", "writing", "build", "visual", "critique", "business", "mentorship"] as const;
 const mediumSchema = z.enum(MEDIUMS);
 
 /**
