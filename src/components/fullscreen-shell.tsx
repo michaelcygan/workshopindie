@@ -1,4 +1,5 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Minimize2 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -18,19 +19,26 @@ export function FullscreenShell({
   onMinimize: () => void;
   children: ReactNode;
 }) {
+  const [mounted, setMounted] = useState(false);
+
   // Lock body scroll while open.
   useEffect(() => {
+    setMounted(true);
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-background"
+      className="fixed inset-0 z-[100] flex flex-col bg-ink text-background"
+      role="dialog"
+      aria-modal="true"
     >
       <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
         <div className="flex items-center gap-2">
@@ -55,6 +63,7 @@ export function FullscreenShell({
       <div className="flex-1 min-h-0 px-3 pb-3 md:px-6 md:pb-6">
         {children}
       </div>
-    </motion.div>
+    </motion.div>,
+    document.body,
   );
 }
