@@ -208,7 +208,9 @@ function NewWorkshop() {
             ))}
           </div>
           {locationType !== "online" && (
-            <Input className="mt-2" placeholder="Address or neighborhood" value={locationText} onChange={(e) => setLocationText(e.target.value)} />
+            <div className="mt-2">
+              <VenueSearch value={venue} onChange={setVenue} />
+            </div>
           )}
           {locationType !== "in_person" && (
             <Input className="mt-2" type="url" placeholder="Call URL (Zoom, Meet, etc. — optional)" value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} />
