@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Radio, Megaphone, Shield } from "lucide-react";
+import { Calendar, Radio, Shield } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
@@ -32,7 +32,6 @@ export function TopNav() {
           <Link to="/" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeOptions={{ exact: true }}>Gallery</Link>
           <Link to="/workshops" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Workshops</Link>
           <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Instant</Link>
-          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Collab Board</Link>
           <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Cities</Link>
         </nav>
 
@@ -62,9 +61,6 @@ export function TopNav() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/instant" })}>
                   <Radio className="mr-2 h-4 w-4" /> Join Instant
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
-                  <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (
