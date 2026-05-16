@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -223,6 +223,14 @@ export function ChannelView({
         })
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "instant_presence", filter: `room_id=eq.${roomId}` },
         (p) => setPresence((prev) => prev.filter((x) => x.user_id !== (p.old as Presence).user_id)))
+      .on("broadcast", { event: "follow" }, (msg) => {
+        const payload = msg.payload as { followed_id: string; display_name: string };
+        if (payload?.followed_id === user!.id) {
+          toast.success(`${payload.display_name} followed you`, {
+            icon: <UserPlus className="h-4 w-4 text-primary" />,
+          });
+        }
+      })
       .subscribe();
 
     const heartbeat = setInterval(() => {
@@ -259,22 +267,25 @@ export function ChannelView({
     if (error) toast.error(error.message);
   }
 
-  const profileLookup = new Map(
-    presence.map((p) => [
-      p.user_id,
-      {
-        user_id: p.user_id,
-        display_name: p.profile?.display_name ?? null,
-        username: p.profile?.username ?? null,
-        avatar_url: p.profile?.avatar_url ?? null,
-      },
-    ]),
+  const profileLookup = useMemo(
+    () => new Map(
+      presence.map((p) => [
+        p.user_id,
+        {
+          user_id: p.user_id,
+          display_name: p.profile?.display_name ?? null,
+          username: p.profile?.username ?? null,
+          avatar_url: p.profile?.avatar_url ?? null,
+        },
+      ]),
+    ),
+    [presence],
   );
 
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
-  const others = presence.filter((p) => p.user_id !== user?.id);
+  const others = useMemo(() => presence.filter((p) => p.user_id !== user?.id), [presence, user?.id]);
 
   return (
     <>
