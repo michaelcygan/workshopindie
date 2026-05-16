@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ImageOff } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { CategoryChip } from "@/components/category-chip";
@@ -25,6 +26,19 @@ export type GalleryMember = {
   speaking?: boolean;
 };
 
+const PER_USER_LIMIT = 30;
+
+async function fetchUserWorks(userId: string): Promise<GalleryWork[]> {
+  const { data } = await supabase
+    .from("works")
+    .select("id,title,slug,category,cover_url,created_by,published_at")
+    .eq("created_by", userId)
+    .eq("status", "published")
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(PER_USER_LIMIT);
+  return (data ?? []) as GalleryWork[];
+}
+
 export function RoomGallery({
   members,
   meUserId,
@@ -38,36 +52,25 @@ export function RoomGallery({
   onOpenProfile?: (userId: string) => void;
   className?: string;
 }) {
-  const [worksByUser, setWorksByUser] = useState<Record<string, GalleryWork[]>>({});
-  const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("everyone");
 
-  const userIds = useMemo(() => members.map((m) => m.user_id).sort().join(","), [members]);
+  // Per-user queries — independently cached so prolific creators don't starve.
+  const results = useQueries({
+    queries: members.map((m) => ({
+      queryKey: ["room-gallery-works", m.user_id] as const,
+      queryFn: () => fetchUserWorks(m.user_id),
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+    })),
+  });
 
-  useEffect(() => {
-    if (members.length === 0) { setWorksByUser({}); setLoading(false); return; }
-    let cancelled = false;
-    setLoading(true);
-    (async () => {
-      const ids = members.map((m) => m.user_id);
-      const { data } = await supabase
-        .from("works")
-        .select("id,title,slug,category,cover_url,created_by,published_at")
-        .in("created_by", ids)
-        .eq("status", "published")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(120);
-      if (cancelled) return;
-      const grouped: Record<string, GalleryWork[]> = {};
-      for (const id of ids) grouped[id] = [];
-      for (const w of (data ?? []) as GalleryWork[]) {
-        (grouped[w.created_by] ??= []).push(w);
-      }
-      setWorksByUser(grouped);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [userIds]);
+  const worksByUser = useMemo(() => {
+    const map: Record<string, GalleryWork[]> = {};
+    members.forEach((m, i) => { map[m.user_id] = (results[i]?.data ?? []) as GalleryWork[]; });
+    return map;
+  }, [members, results]);
+
+  const loading = results.some((r) => r.isLoading);
 
   const everyone = useMemo(() => {
     const all: GalleryWork[] = [];
@@ -110,7 +113,7 @@ export function RoomGallery({
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
-          {loading ? (
+          {loading && everyone.length === 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="aspect-[4/5] rounded-lg bg-muted animate-pulse" />
@@ -145,7 +148,6 @@ function Grid({
   onOpen,
   emptyMember,
   isMe,
-  onOpenProfile,
 }: {
   works: GalleryWork[];
   onOpen: (workId: string) => void;
