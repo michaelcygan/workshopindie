@@ -1,4 +1,12 @@
-export type Category = "film" | "music" | "writing" | "build" | "visual";
+export type Category =
+  | "film"
+  | "music"
+  | "writing"
+  | "build"
+  | "visual"
+  | "critique"
+  | "business"
+  | "mentorship";
 
 export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "film", label: "Film" },
@@ -6,6 +14,9 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "writing", label: "Writing" },
   { id: "build", label: "Build" },
   { id: "visual", label: "Visual" },
+  { id: "critique", label: "Critique" },
+  { id: "business", label: "Business of Art" },
+  { id: "mentorship", label: "Mentorship" },
 ];
 
 export const SOURCE_LABELS: Record<string, string> = {
