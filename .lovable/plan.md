@@ -1,83 +1,42 @@
-## Rework the Board (v1)
+## Fullscreen for Board and Gallery
 
-Drop tldraw drawing entirely (it crashes, and freehand isn't needed yet). Replace with a simple, robust pinboard where anyone in the room can drop:
+### The bug
+The `Maximize2` button in the Board's floating zoom bar currently calls `applyZoom(1)` — it's a "reset to 100%" button, but the icon looks like fullscreen, so clicking it just changes the zoom while the canvas (a 4000×3000 transformed div) visually overflows behind the room container. That's the "expands behind the container" symptom.
 
-- **Images** — paste a URL or upload a file (temp, room-scoped)
-- **Sticky notes** — colored note with editable text
-- **Link buttons** — a labeled button that opens a URL in a new tab
-- **Text labels** — free-form text (a heading/caption, no background)
+The Board has no real fullscreen state. The Gallery has none either. Only the video stage + chat does, via `FullscreenRoom` in `media-panel.tsx`.
 
-Everything is draggable on a shared canvas, syncs live between participants, and is wiped when the room empties (same lifecycle as today's whiteboard).
+### Plan
 
-### What changes
+**1. Reuse the existing fullscreen pattern**
+- `channel-view.tsx` already owns `const [fullscreen, setFullscreen] = useState(false)` with an Esc handler for the video room. Extend that to a single state: `const [fsView, setFsView] = useState<null | "video" | "board" | "gallery">(null)`.
+- Keep the Esc-to-exit handler; it now closes whichever view is open.
 
-```text
-src/components/room-whiteboard.tsx   →   src/components/room-board.tsx   (new component, tldraw removed)
-src/components/channel-view.tsx              (lazy-load RoomBoard instead of RoomWhiteboard)
-src/components/media-panel.tsx               (label stays "Board"; same PenLine icon)
-src/lib/room-views.functions.ts              (purge function now also deletes board items)
-supabase/migrations/<new>.sql                (new instant_board_items table + trigger update)
-```
+**2. Add Enter-fullscreen affordance to Board and Gallery**
+- Same visual language as `VideoStage`'s overlay button: floating top-right `Maximize2` in a translucent pill (`bg-background/80 ... rounded-full`).
+- In `channel-view.tsx`, when `viewMode === "whiteboard"` or `"gallery"` and not already fullscreen, render the inline Board/Gallery inside the normal `h-[60vh]` container with the overlay button.
+- Clicking the overlay button calls `setFsView("board" | "gallery")`.
 
-`bun remove tldraw` to drop the dependency.
+**3. New fullscreen surfaces**
+Mirror `FullscreenRoom`'s shell (fixed inset-0 z-50, dark backdrop, top bar with title + count + `Minimize2`, body-scroll lock, motion fade), but render Board or Gallery as the body instead of the tile grid + chat.
 
-### Data model
+- `FullscreenBoard`: full-viewport flex column; header with `INSTANT WORKSHOP · BOARD` label and `Minimize2`; body is `<RoomBoard roomId userId className="h-full" />`. The Board already has its own scroll container and toolbar, so it just fills the space. Zoom controls keep working as-is.
+- `FullscreenGallery`: same header; body is `<RoomGallery ... className="h-full" />` with `onOpenWork` wired to the same handler (we proxy through props so the WorkPeek dialog still opens above).
 
-New table `instant_board_items`:
+Place both in `media-panel.tsx` next to `FullscreenRoom` (consistent location) OR in a new `src/components/fullscreen-shell.tsx` that exports a shared `<FullscreenShell title onMinimize>{children}</FullscreenShell>` so all three (Room/Board/Gallery) share one chrome. Going with the shared shell — keeps the chat fullscreen header identical and means future surfaces inherit it for free.
 
-- `room_id` (uuid, FK semantics to `instant_rooms.id`)
-- `user_id` (uuid, creator — used for "your items" affordances)
-- `kind` (text: `image` | `sticky` | `link` | `text`)
-- `content` (jsonb — shape per kind, below)
-- `x`, `y` (numeric, canvas coords) · `w`, `h` (numeric)
-- `z` (int, stacking) · `rotation` (numeric, default 0)
-- `created_at`, `updated_at`
+**4. Fix the Board's broken button**
+- Remove the misleading `Maximize2` "reset zoom" button from the floating zoom bar.
+- Replace it by making the `100%` percentage label clickable (click resets to 100%) — minimal, no extra icon confusion.
+- The new fullscreen-enter `Maximize2` lives in the Board's *header strip* (next to the "Board · ephemeral" label), not inside the zoom bar, so the two affordances can't be confused.
 
-Content shapes:
-- `image`: `{ src, alt? }`
-- `sticky`: `{ text, color }` (color = one of ~6 named tokens)
-- `link`: `{ url, label }`
-- `text`: `{ text, size? }` (size = sm/md/lg)
+**5. No backend/data changes.** Pure presentation: state moves up to `channel-view.tsx`, two new fullscreen wrappers, one zoom-bar tweak.
 
-RLS: anyone present in the room (existing `instant_presence` check) can `SELECT`/`INSERT`; only the creator OR the room creator can `UPDATE`/`DELETE`. Admins can manage.
+### Files touched
+- `src/components/channel-view.tsx` — `fsView` state, conditional render of `FullscreenBoard` / `FullscreenGallery`, Esc handler update.
+- `src/components/media-panel.tsx` (or new `fullscreen-shell.tsx`) — extract `FullscreenShell`, add `FullscreenBoard` and `FullscreenGallery` wrappers.
+- `src/components/room-board.tsx` — drop the Maximize2 button from zoom bar; add enter-fullscreen button in the header strip (accept optional `onEnterFullscreen` prop); make percentage label reset zoom on click.
+- `src/components/room-gallery.tsx` — accept optional `onEnterFullscreen`; render the overlay button when provided.
 
-Realtime: enable `postgres_changes` on `instant_board_items` so every client gets inserts/updates/deletes live — no custom broadcast layer, no late-joiner snapshot dance.
-
-Cleanup: extend the existing `tg_instant_presence_archive_empty` trigger to also `DELETE FROM instant_board_items WHERE room_id = OLD.room_id` when the last participant leaves. Image uploads keep using the existing `instant-whiteboard` storage bucket + `instant_whiteboard_assets` tracking table (no rename — minimizes churn, same purge path).
-
-### UI
-
-A single `<RoomBoard roomId userId />` component that fills the panel:
-
-- **Toolbar** (top-left of the board): four buttons → Add image, Add sticky, Add link, Add text. Image opens a popover with "Paste URL" tab + "Upload" tab. Link opens a small inline form (URL + label). Sticky/text drop a default item near the toolbar.
-- **Canvas**: an absolutely-positioned layer inside a scrollable container. Items are simple `<div>`s with `position: absolute` driven by their `x/y/w/h`. Drag = mouse/touch pointer events; on drag end, `UPDATE` the row (debounced ~150ms during drag so we don't spam writes).
-- **Item chrome**: hover shows a tiny floating toolbar (move handle = whole card; delete = ✕; for sticky/text → inline edit; for link → edit URL/label; for image → no edit, just delete). Only the creator and the room owner see delete/edit.
-- **Visual language**: use existing semantic tokens (`bg-surface`, `border-border`, `text-ink`, `text-ink-muted`). Sticky colors map to muted token-based palette (yellow/pink/blue/green/lavender/peach via `oklch` variables added to `src/styles.css` if missing).
-- **Empty state**: subtle centered hint "Drop an image, sticky, or link to start."
-- **Header strip**: keep the existing "Board · ephemeral" label; replace "Save PNG" with a small "Clear my items" overflow (host/admin also gets "Clear board").
-
-No drawing tools, no shape picker, no z-index UI beyond "bring to front on drag start." Pan/zoom skipped for v1 — fixed canvas sized to the panel, items can overflow into a scrollable area.
-
-### Sync mechanics (technical)
-
-- On mount: `select * from instant_board_items where room_id = :roomId` → seed local state.
-- Subscribe to postgres_changes for that `room_id`; merge INSERT/UPDATE/DELETE into local state.
-- Local edits: optimistic update in state, then `upsert`/`update`/`delete` to DB. If the call fails, revert + toast.
-- Drag: while dragging, only update local state; on `pointerup`, write final `x,y` once (and `z = max+1`).
-
-### Out of scope (v2+)
-
-- Freehand drawing / tldraw replacement
-- Multi-select, group move, alignment guides
-- Resize handles (items have sensible default sizes; stickies grow with text)
-- Pan/zoom, infinite canvas
-- Export to PNG
-- Presence cursors on the board
-
-### Migration steps
-
-1. `bun remove tldraw`
-2. Migration: create `instant_board_items` + RLS + realtime publication + extend trigger to purge items.
-3. Build `src/components/room-board.tsx`.
-4. Swap the lazy import in `channel-view.tsx`; delete `src/components/room-whiteboard.tsx`.
-5. Update `purgeRoomWhiteboard` to also delete `instant_board_items` rows (storage purge stays as-is).
+### Out of scope
+- Multi-pane fullscreen (e.g. Board + chat side-by-side). The chat fullscreen already exists separately; users can switch views via the existing pill.
+- Pinch-to-zoom / trackpad gesture zoom on the Board.

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Image as ImageIcon, StickyNote, Link2, Type, X, Upload, Loader2, ExternalLink, ZoomIn, ZoomOut, Maximize2 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,7 @@ function stickyPalette(name: string) {
   return STICKY_COLORS.find((c) => c.name === name) ?? STICKY_COLORS[0];
 }
 
-export default function RoomBoard({ roomId, userId, className }: { roomId: string; userId: string; className?: string }) {
+export default function RoomBoard({ roomId, userId, className, onEnterFullscreen }: { roomId: string; userId: string; className?: string; onEnterFullscreen?: () => void }) {
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -169,7 +170,19 @@ export default function RoomBoard({ roomId, userId, className }: { roomId: strin
   return (
     <div className={cn("relative flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
       <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
-        <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Board · ephemeral</div>
+        <div className="flex items-center gap-2">
+          <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Board · ephemeral</div>
+          {onEnterFullscreen && (
+            <button
+              type="button"
+              onClick={onEnterFullscreen}
+              className="rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
+              aria-label="Enter fullscreen"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
         <Toolbar onAdd={addItem} roomId={roomId} userId={userId} />
       </div>
 
@@ -237,10 +250,14 @@ export default function RoomBoard({ roomId, userId, className }: { roomId: strin
             <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(zoom + 0.1)} aria-label="Zoom in">
               <ZoomIn className="h-3.5 w-3.5" />
             </Button>
-            <div className="w-10 text-center text-[10px] tabular-nums text-ink-muted">{Math.round(zoom * 100)}%</div>
-            <Button type="button" size="icon" variant="ghost" className="h-7 w-7" onClick={() => applyZoom(1)} aria-label="Reset zoom">
-              <Maximize2 className="h-3.5 w-3.5" />
-            </Button>
+            <button
+              type="button"
+              onClick={() => applyZoom(1)}
+              className="w-12 text-center text-[10px] tabular-nums text-ink-muted hover:text-ink"
+              aria-label="Reset zoom to 100%"
+            >
+              {Math.round(zoom * 100)}%
+            </button>
           </div>
         </div>
       </div>
