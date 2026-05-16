@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState as useReactState } from "react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Index });
