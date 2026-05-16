@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.tg_instant_presence_archive_empty() FROM PUBLIC, anon, authenticated;
