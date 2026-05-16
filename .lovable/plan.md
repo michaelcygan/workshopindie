@@ -1,44 +1,54 @@
-## Goal
+# Plan: Works categories + mobile category strip
 
-Collect **first name** and **last name** (required) and an **optional Instagram handle** at signup. The Workshop `@username` is no longer set during signup — users claim it later from their profile, so abandoned accounts don't squat handles.
+## 1. Works-eligible categories
 
-The "real first name + last initial" can then be rendered anywhere we need a trust signal (e.g. "Jane S.").
+Add a derived list in `src/lib/categories.ts`:
 
-## Changes
+```ts
+export const WORK_CATEGORIES = CATEGORIES.filter(c =>
+  ["film","music","writing","build","visual"].includes(c.id)
+);
+```
 
-### 1. Database (migration)
-Add to `public.profiles`:
-- `first_name text`
-- `last_name text`
-- `instagram_handle text` (stored without the `@`, lowercase, with a CHECK for allowed characters; nullable)
+Use `WORK_CATEGORIES` (not `CATEGORIES`) in:
+- `src/routes/index.tsx` → `GalleryControls` tabs
+- `src/routes/works.new.tsx` → category picker (verify it currently uses full list)
 
-Update the `handle_new_user()` trigger to also read `first_name`, `last_name`, `instagram_handle` from `raw_user_meta_data` and populate the new columns. `display_name` keeps falling back the same way (now also falls back to `first_name + ' ' + last_name`).
+Workshops, Collab, Onboarding, Cities keep using full `CATEGORIES`.
 
-No backfill needed — existing rows stay null; the profile editor lets people add them.
+Note: this is a UI filter only. No DB change — existing works already only use these 5 in practice, and any stray rows just won't be filterable from the chip strip (they'd still appear in "All").
 
-### 2. Signup form (`src/routes/signup.tsx`)
-Replace the single "Your name" field with:
-- First name (required)
-- Last name (required)
-- Email, Password (unchanged)
-- Instagram handle (optional, with a `@` prefix adornment, strip leading `@` and lowercase on input)
+## 2. Mobile auto-scrolling category strip
 
-No username field here. Pass all of the above through `supabase.auth.signUp({ options: { data: { first_name, last_name, instagram_handle, display_name: `${first} ${last}` } } })`.
+Refactor `GalleryControls` in `src/routes/index.tsx` into a small component that, on mobile (<768px), renders the category chips as a single-line horizontally scrolling marquee. Desktop keeps the current wrapped pill bar.
 
-### 3. Onboarding (`src/routes/onboarding.tsx`)
-Remove the username field from the onboarding step (it now belongs on the profile editor). Keep city, categories, bio. Display name is prefilled from `first_name + last_name`; user can edit.
+Behavior:
+- Single line, `overflow-x-auto`, `whitespace-nowrap`, hide scrollbar
+- Duplicate the chip list once and translate the inner track with a CSS keyframe (`marquee-x`) running ~30s linear infinite
+- Pause on `:hover`, `:focus-within`, and while `touch-active` (use `onTouchStart`/`onTouchEnd` to toggle a `paused` class, or pause via `:active` on the container)
+- Tapping a chip still selects the filter (handler unchanged)
+- Respect `prefers-reduced-motion`: disable animation, allow manual horizontal swipe instead
+- Sort/Newest/Trending bar stays as-is (already short)
 
-### 4. Profile editor (`src/routes/me.edit.tsx`)
-Add inputs for:
-- First name, Last name (required)
-- Instagram handle (optional, `@` prefix, same sanitisation)
+CSS additions in `src/styles.css`:
+```css
+@keyframes marquee-x {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee-x { animation: marquee-x 30s linear infinite; }
+.animate-marquee-x.is-paused,
+.animate-marquee-x:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee-x { animation: none; }
+}
+```
 
-Keep the existing Username input here — this is where users claim their `@handle`. Add a small hint: "Pick a username when you're ready — this is your public @handle."
+## Files
 
-### 5. Trust-layer helper
-Add `src/lib/display-name.ts` exporting `trustName(profile)` → returns `"Jane S."` when both names exist, otherwise falls back to `display_name` or `username`. Not wired into UI in this pass — just the helper, ready for callers (workshops, collab, comments) to adopt as we go.
+- `src/lib/categories.ts` — add `WORK_CATEGORIES`
+- `src/routes/index.tsx` — use `WORK_CATEGORIES`; new marquee chip row for mobile
+- `src/routes/works.new.tsx` — switch picker to `WORK_CATEGORIES` if it currently lists all 8
+- `src/styles.css` — `marquee-x` keyframe + utility
 
-## Out of scope
-- Changing existing username display anywhere
-- Verifying Instagram handles actually exist
-- Migrating existing single-field `display_name` into first/last (left for users to fill in)
+No DB, no schema, no new deps.

@@ -8,6 +8,10 @@ export type Category =
   | "business"
   | "coworking";
 
+/** Categories that can be published as a Work (excludes Critique, Business of Art, Co-working). */
+export const WORK_CATEGORY_IDS = ["film", "music", "writing", "build", "visual"] as const;
+export type WorkCategory = (typeof WORK_CATEGORY_IDS)[number];
+
 export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "film", label: "Film" },
   { id: "music", label: "Music" },
@@ -18,6 +22,10 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "business", label: "Business of Art" },
   { id: "coworking", label: "Co-working" },
 ];
+
+export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
+  (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
+);
 
 export const SOURCE_LABELS: Record<string, string> = {
   workshop: "Workshop",

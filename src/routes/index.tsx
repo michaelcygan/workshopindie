@@ -6,7 +6,8 @@ import { Calendar, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
-import { CATEGORIES, type Category } from "@/lib/categories";
+import { WORK_CATEGORIES, type Category } from "@/lib/categories";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -137,23 +138,47 @@ function Hero() {
 function GalleryControls({
   category, setCategory, sort, setSort,
 }: { category: Category | "all"; setCategory: (c: Category | "all") => void; sort: SortKey; setSort: (s: SortKey) => void }) {
-  const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];
+  const tabs: { id: Category | "all"; label: string }[] = [
+    { id: "all", label: "All" },
+    ...WORK_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+  ];
+  const isMobile = useIsMobile();
+  const [paused, setPaused] = useState(false);
+
+  const Chip = ({ t }: { t: { id: Category | "all"; label: string } }) => (
+    <button
+      key={t.id}
+      onClick={() => setCategory(t.id)}
+      className={cn(
+        "shrink-0 rounded-full px-3 py-1.5 text-sm transition",
+        category === t.id ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+      )}
+    >
+      {t.label}
+    </button>
+  );
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div className="flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setCategory(t.id)}
-            className={cn(
-              "rounded-full px-3 py-1.5 text-sm transition",
-              category === t.id ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-            )}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+    <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
+      {isMobile ? (
+        <div
+          className="relative overflow-hidden rounded-full border border-border bg-surface p-1 shadow-soft"
+          onTouchStart={() => setPaused(true)}
+          onTouchEnd={() => setPaused(false)}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+        >
+          <div className={cn("flex w-max gap-1 animate-marquee-x", paused && "is-paused")}>
+            {[...tabs, ...tabs].map((t, i) => (
+              <Chip key={`${t.id}-${i}`} t={t} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+          {tabs.map((t) => <Chip key={t.id} t={t} />)}
+        </div>
+      )}
       <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
         {(["newest", "trending"] as SortKey[]).map((s) => (
           <button
