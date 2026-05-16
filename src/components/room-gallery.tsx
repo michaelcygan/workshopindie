@@ -44,12 +44,14 @@ export function RoomGallery({
   meUserId,
   onOpenWork,
   onOpenProfile,
+  onEnterFullscreen,
   className,
 }: {
   members: GalleryMember[];
   meUserId: string;
   onOpenWork: (workId: string) => void;
   onOpenProfile?: (userId: string) => void;
+  onEnterFullscreen?: () => void;
   className?: string;
 }) {
   const [tab, setTab] = useState("everyone");
