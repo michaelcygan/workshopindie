@@ -17,7 +17,6 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
-  const [username, setUsername] = useState("");
   const [bio, setBio] = useState("");
   const [cats, setCats] = useState<Category[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
