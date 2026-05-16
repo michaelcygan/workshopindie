@@ -611,7 +611,7 @@ function SpeakerRow({
   );
 }
 
-function VideoTile({
+export function VideoTile({
   stream, label, muted, speaking, mirrored,
 }: { stream: MediaStream; label: string; muted?: boolean; speaking?: boolean; mirrored?: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
