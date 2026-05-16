@@ -269,16 +269,6 @@ export default function RoomBoard({
           <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
             {fullscreen ? "Fullscreen Board" : "Board · ephemeral"}
           </div>
-          {onEnterFullscreen && (
-            <button
-              type="button"
-              onClick={onEnterFullscreen}
-              className="rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
-              aria-label="Enter fullscreen"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-            </button>
-          )}
         </div>
         <Toolbar onAdd={addItem} roomId={roomId} userId={userId} />
       </div>
