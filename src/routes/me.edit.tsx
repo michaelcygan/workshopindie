@@ -11,6 +11,7 @@ import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
+import { sanitizeInstagramHandle } from "@/lib/display-name";
 
 export const Route = createFileRoute("/me/edit")({ component: EditProfile });
 
