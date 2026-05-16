@@ -46,6 +46,7 @@ export function RoomGallery({
   onOpenProfile,
   onEnterFullscreen,
   className,
+  fullscreen = false,
 }: {
   members: GalleryMember[];
   meUserId: string;
@@ -53,6 +54,7 @@ export function RoomGallery({
   onOpenProfile?: (userId: string) => void;
   onEnterFullscreen?: () => void;
   className?: string;
+  fullscreen?: boolean;
 }) {
   const [tab, setTab] = useState("everyone");
 
@@ -81,9 +83,13 @@ export function RoomGallery({
   }, [worksByUser]);
 
   return (
-    <div className={cn("flex flex-col rounded-2xl border border-border bg-surface overflow-hidden", className)}>
+    <div className={cn(
+      "flex flex-col overflow-hidden border border-border bg-surface",
+      fullscreen ? "h-full rounded-2xl shadow-2xl" : "rounded-2xl",
+      className,
+    )}>
       <Tabs value={tab} onValueChange={setTab} className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center gap-2 border-b border-border px-3 py-2">
+        <div className={cn("flex items-center gap-2 border-b border-border px-3 py-2", fullscreen && "bg-background/5")}>
           <div className="flex-1 overflow-x-auto">
             <TabsList className="bg-transparent gap-1 h-auto p-0 inline-flex">
               <TabsTrigger value="everyone" className="rounded-full px-3 py-1 text-xs data-[state=active]:bg-ink data-[state=active]:text-background">
@@ -126,7 +132,7 @@ export function RoomGallery({
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3">
+        <div className={cn("flex-1 overflow-y-auto", fullscreen ? "p-4 md:p-5" : "p-3")}>
           {loading && everyone.length === 0 ? (
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -136,7 +142,7 @@ export function RoomGallery({
           ) : (
             <>
               <TabsContent value="everyone" className="m-0">
-                <Grid works={everyone} onOpen={onOpenWork} emptyMember={null} onOpenProfile={onOpenProfile} />
+                <Grid works={everyone} onOpen={onOpenWork} emptyMember={null} onOpenProfile={onOpenProfile} fullscreen={fullscreen} />
               </TabsContent>
               {members.map((m) => (
                 <TabsContent key={m.user_id} value={m.user_id} className="m-0">
@@ -146,6 +152,7 @@ export function RoomGallery({
                     emptyMember={m}
                     isMe={m.user_id === meUserId}
                     onOpenProfile={onOpenProfile}
+                    fullscreen={fullscreen}
                   />
                 </TabsContent>
               ))}
@@ -162,12 +169,14 @@ function Grid({
   onOpen,
   emptyMember,
   isMe,
+  fullscreen = false,
 }: {
   works: GalleryWork[];
   onOpen: (workId: string) => void;
   emptyMember: GalleryMember | null;
   isMe?: boolean;
   onOpenProfile?: (userId: string) => void;
+  fullscreen?: boolean;
 }) {
   if (works.length === 0) {
     return (
@@ -189,7 +198,7 @@ function Grid({
     );
   }
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+    <div className={cn("grid gap-2", fullscreen ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5" : "grid-cols-2 sm:grid-cols-3")}>
       <AnimatePresence initial={false}>
         {works.map((w, i) => (
           <motion.button
