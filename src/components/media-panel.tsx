@@ -181,11 +181,11 @@ export function VideoStage({
   m,
   meDisplay,
   profileLookup,
-  onEnterFullscreen,
 }: {
   m: MediaState;
   meDisplay: string;
   profileLookup: Map<string, ProfileLite>;
+  /** Deprecated: parent now owns the persistent expand button. */
   onEnterFullscreen?: () => void;
 }) {
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
@@ -195,16 +195,6 @@ export function VideoStage({
 
   return (
     <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
-      {onEnterFullscreen && (
-        <button
-          type="button"
-          onClick={onEnterFullscreen}
-          className="absolute right-3 top-3 z-10 rounded-full bg-background/80 p-1.5 text-ink shadow-sm hover:bg-background"
-          aria-label="Enter fullscreen"
-        >
-          <Maximize2 className="h-3.5 w-3.5" />
-        </button>
-      )}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
         {showLocalVideo && (
           <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
