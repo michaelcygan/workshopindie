@@ -48,7 +48,6 @@ function Onboarding() {
       .from("profiles")
       .update({
         display_name: name,
-        username: username || null,
         bio: bio || null,
         categories: cats,
         city_id: cityId || null,
