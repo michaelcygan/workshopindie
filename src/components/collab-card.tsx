@@ -117,6 +117,15 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
           </div>
         )}
 
+        {tlLabel && (
+          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <Clock className="h-3 w-3" />
+            <span className="truncate">{tlLabel}</span>
+          </div>
+        )}
+
+
+
         <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
             <img
