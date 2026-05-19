@@ -535,7 +535,7 @@ function ChatPanel({
                   </div>
                   <div className={cn(
                     "max-w-[80%] rounded-2xl px-3 py-1.5 text-sm",
-                    mine ? "bg-primary text-primary-foreground" : "bg-background/10 text-background",
+                    mine ? "gradient-motion text-primary-foreground" : "bg-background/10 text-background",
                   )}>
                     {!mine && prof && (
                       <div className="text-[10px] font-medium opacity-60 mb-0.5">{prof.display_name || prof.username}</div>

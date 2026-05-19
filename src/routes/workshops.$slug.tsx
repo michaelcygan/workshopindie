@@ -82,7 +82,7 @@ function WorkshopDetail() {
   } : null);
 
   if (isLoading) return <main className="mx-auto max-w-4xl px-4 py-14"><div className="h-8 w-48 animate-pulse rounded bg-surface-2" /></main>;
-  if (!ws) return <main className="mx-auto max-w-4xl px-4 py-14 text-center"><h1 className="font-display text-3xl">Workshop not found</h1><Link to="/workshops" className="mt-4 inline-block text-primary underline">Back to Workshops</Link></main>;
+  if (!ws) return <main className="mx-auto max-w-4xl px-4 py-14 text-center"><h1 className="font-display text-3xl">Workshop not found</h1><Link to="/workshops" className="mt-4 inline-block text-gradient-motion underline">Back to Workshops</Link></main>;
 
   const isHost = user?.id === ws.host_user_id;
   const now = Date.now();
@@ -335,7 +335,7 @@ function Room({ ws }: { ws: Workshop }) {
   if (!isMember) {
     return (
       <section className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
-        <Sparkles className="mx-auto h-5 w-5 text-primary" />
+        <span className="gradient-motion mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
         <p className="mt-2 text-sm text-ink-muted">The live room opens for confirmed participants.</p>
       </section>
     );
@@ -359,14 +359,14 @@ function Room({ ws }: { ws: Workshop }) {
 
   const pinned = (
     <div className="flex flex-wrap items-center gap-2 text-sm">
-      <Sparkles className="h-4 w-4 text-primary" />
+      <span className="gradient-motion inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-4 w-4" /></span>
       <span className="font-medium text-ink">{ws.title}</span>
       {ws.external_call_url && (
         <a
           href={ws.external_call_url}
           target="_blank"
           rel="noreferrer"
-          className="ml-auto inline-flex items-center gap-1.5 text-primary hover:underline"
+          className="ml-auto inline-flex items-center gap-1.5 text-gradient-motion hover:underline"
         >
           <ExternalLink className="h-3.5 w-3.5" /> Join external call
         </a>
@@ -450,7 +450,7 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
   return (
     <section className="mt-10 rounded-3xl border border-border bg-surface p-6 shadow-soft">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-5 w-5 text-primary" />
+        <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
         <h2 className="font-display text-2xl text-ink">Finalize the Work</h2>
       </div>
       <p className="mt-1 text-sm text-ink-muted">Publish what you made. Every confirmed participant will be credited.</p>
@@ -480,7 +480,7 @@ function ShippedBanner({ workshopId }: { workshopId: string }) {
   if (!work) return null;
   return (
     <section className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-6 text-center">
-      <Sparkles className="mx-auto h-6 w-6 text-primary" />
+      <span className="gradient-motion mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-6 w-6" /></span>
       <h2 className="mt-2 font-display text-2xl text-ink">Shipped: {work.title}</h2>
       <Link to="/works/$slug" params={{ slug: work.slug }} className="mt-3 inline-block">
         <Button className="rounded-full">View the Work</Button>
@@ -575,7 +575,7 @@ function CheckInPanel({ ws }: { ws: Workshop }) {
 
   return (
     <section className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-      <Sparkles className="h-5 w-5 text-primary" />
+      <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
       <p className="text-sm text-ink"><span className="font-medium">Check-in is open.</span> Confirm you're here so the host can start.</p>
       <Button size="sm" className="ml-auto rounded-full" onClick={checkIn}>Check in</Button>
     </section>

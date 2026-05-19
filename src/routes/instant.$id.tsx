@@ -54,7 +54,7 @@ function LoungeRoomPage() {
       <div className="mt-3 flex items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-3xl md:text-4xl text-ink flex items-center gap-2">
-            <Coffee className="h-6 w-6 text-primary" /> {title}
+            <span className="gradient-motion inline-flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground"><Coffee className="h-5 w-5" /></span> {title}
           </h1>
           <p className="mt-1 text-sm text-ink-muted">Live room · up to 5 artists.</p>
         </div>

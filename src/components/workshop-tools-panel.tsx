@@ -218,7 +218,7 @@ function ToolItems({ tool, hostUserId }: { tool: { id: string; tool_type: ToolTy
                 {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
                 {it.url && (
                   <a href={it.url} target="_blank" rel="noreferrer noopener"
-                    className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary hover:underline">
+                    className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
                     {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
                   </a>
                 )}

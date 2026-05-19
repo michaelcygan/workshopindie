@@ -646,7 +646,7 @@ function ItemView({
           href={c.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex h-full w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-medium text-primary-foreground shadow-soft hover:opacity-90"
+          className="gradient-motion flex h-full w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-medium text-primary-foreground shadow-soft hover:opacity-90"
         >
           <ExternalLink className="h-4 w-4" />
           <span className="truncate">{c.label}</span>
