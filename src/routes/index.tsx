@@ -24,7 +24,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
-    .limit(24);
+    .limit(12);
 
   if (category !== "all") q = q.eq("category", category);
   if (sort === "newest") q = q.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
