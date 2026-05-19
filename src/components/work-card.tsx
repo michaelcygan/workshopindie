@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Heart, Bookmark, Eye } from "lucide-react";
+import { Heart, Bookmark, Eye, Play } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { CategoryChip } from "./category-chip";
 import { ProfilePeek } from "./profile-peek";
+import { providerFromUrl, providerLabel } from "./embed-player";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ export type WorkCardData = {
   like_count: number;
   save_count: number;
   view_count: number;
+  embed_url?: string | null;
   credits?: { id?: string | null; display_name: string | null; username: string | null }[];
 };
 
@@ -23,6 +25,8 @@ export function WorkCard({ work, className }: { work: WorkCardData; className?: 
   const credits = work.credits ?? [];
   const shown = credits.slice(0, 3);
   const extra = credits.length - shown.length;
+  const provider = work.embed_url ? providerFromUrl(work.embed_url) : null;
+  const pLabel = providerLabel(provider);
 
   return (
     <motion.article
@@ -53,6 +57,20 @@ export function WorkCard({ work, className }: { work: WorkCardData; className?: 
         <div className="absolute right-3 top-3 rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
           {SOURCE_LABELS[work.source_type] ?? work.source_type}
         </div>
+        {work.embed_url && (
+          <>
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 transition group-hover:opacity-100">
+              <span className="flex h-14 w-14 items-center justify-center rounded-full bg-background/90 backdrop-blur shadow-lift">
+                <Play className="h-6 w-6 fill-ink text-ink translate-x-0.5" />
+              </span>
+            </div>
+            {pLabel && (
+              <div className="absolute bottom-3 left-3 inline-flex items-center gap-1 rounded-full bg-background/90 backdrop-blur px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                <Play className="h-2.5 w-2.5" /> {pLabel}
+              </div>
+            )}
+          </>
+        )}
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="font-display text-lg leading-tight text-ink line-clamp-2">{work.title}</h3>
