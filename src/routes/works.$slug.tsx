@@ -12,6 +12,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { CreditStrip, type CreditChip } from "@/components/credit-strip";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
+import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 import { getCoCreditedWorks } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
@@ -118,8 +119,12 @@ function WorkDetail() {
           )}
         </motion.header>
 
-        {/* Cover / embed */}
-        {work.cover_url && (
+        {/* Embedded player (YouTube, Vimeo, SoundCloud, Spotify, Bandcamp…) or cover */}
+        {work.embed_url ? (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
+            <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} />
+          </motion.div>
+        ) : work.cover_url && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
             className="mt-8 overflow-hidden rounded-3xl border border-border bg-surface-2">
             <img src={work.cover_url} alt={work.title} className="w-full object-cover" />

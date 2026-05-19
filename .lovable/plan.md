@@ -1,56 +1,92 @@
-## What's wrong
+# Streamlining "Create a Work" — paste-a-link to portfolio
 
-1. **10s blank → pop-in.** `WorldArcs` runs 6,000 `geoContains` tests synchronously inside `useMemo` on first render. That blocks the hero's first paint until the land mask is built, then the parent re-renders.
-2. **Every frame re-renders the whole component.** `setLambda` + `setNow` fire on every `requestAnimationFrame`, so React re-runs `WorldArcs`, rebuilds `projection` (useMemo deps include `lambda`), recomputes 12 arc features and re-renders the canvas effect. That's why arcs "lag" and the page feels heavy.
-3. **Arc scheduling is wrong.** `((now - i*STAGGER) % (CYCLE * PAIRS.length))` gives each pair a single 7s window inside an 84s period — so you see a burst of arcs at start, then nothing for a minute, then another burst. Matches the "fire too quickly… then long time to reload" complaint.
-4. **Layout covers the text.** The globe is centered (`max-w-[1100px] mx-auto`) over the hero, so on desktop it sits behind the headline and squeezes the "Show your Work" / CTA area visually. Per screenshot 2, you want the headline + buttons back to their original centered full-width layout, with the globe as a softer backdrop offset to the left.
+The core idea: a user should be able to **paste a link and have a Work**. The form should appear *already filled in*, not as a wall of empty fields. Then "Add another" so they can dump 10 back-catalog items in 5 minutes.
 
-## Fix plan
+The current `/works/new` page is a long manual form. The `works` table already stores `embed_url`, `primary_url`, `cover_url`, `excerpt`, and `description` — so we don't need schema work, we need a metadata extractor and a redesigned flow.
 
-### A. Move all animation off React state (the big perf win)
+---
 
-Rewrite `src/components/world-arcs.tsx` so React renders the `<canvas>` + a single `<svg>` shell **once**, and a single rAF loop drives everything imperatively:
+## 1. New server function: `extractWorkFromUrl`
 
-- Keep `lambda`, `now`, and per-arc state in **refs**, not `useState`.
-- One canvas, drawn each frame: sphere fill + land dots + arcs + pins. Drop the SVG arc/label path entirely — draw arcs and pin glows on canvas, only render the small text pill labels in the DOM (positioned via `style.transform` updates on a ref'd `<div>`, no React re-render).
-- Recompute `projection.rotate([-lambda, -18, 0])` inside the rAF tick (cheap), not via `useMemo`.
+`src/lib/works-import.functions.ts` — `createServerFn` that takes a URL and returns:
+- `title`
+- `description` (short)
+- `cover_url` (remote image URL — we'll proxy/rehost into the `work-covers` bucket on confirm)
+- `embed_url` (iframe-safe URL, when supported)
+- `provider` ("soundcloud" | "youtube" | "vimeo" | "spotify" | "bandcamp" | "instagram" | "tiktok" | "generic")
+- `suggested_category` (audio → "music", video → "video", etc.)
+- `primary_url` (the canonical URL, cleaned of tracking params)
 
-Expected: 0 React renders/sec during animation instead of ~60.
+Resolution strategy, in order:
+1. **oEmbed** — YouTube, Vimeo, SoundCloud, Spotify, Flickr, TikTok all expose `https://<provider>/oembed?url=...&format=json`. Cleanest path. Gives title, author, thumbnail, and an `html` iframe we can parse for `embed_url`.
+2. **Open Graph fallback** — fetch the URL, parse `<meta property="og:title|og:description|og:image|og:video">`. Covers Bandcamp, Substack, personal sites, GitHub README repos, Behance, Are.na, Dribbble.
+3. **Provider-specific normalizers** for embeds we want to render inline (YouTube → `youtube.com/embed/<id>`, Vimeo → `player.vimeo.com/video/<id>`, Spotify → `open.spotify.com/embed/...`, SoundCloud → `w.soundcloud.com/player/?url=...`, Bandcamp → use their `EmbeddedPlayer` markup from the OG snippet).
 
-### B. Don't block first paint on the land mask
+Run server-side (CORS + HTML parsing belong on the server, never the browser). Use `fetch` + a small regex-based OG parser (no DOM lib needed — keep the bundle small for the Worker runtime).
 
-- Lower dot count to **~2,500** (visually identical at hero size).
-- Build the land-dot array **after first paint**: render the hero immediately, then in a `useEffect` schedule the build via `requestIdleCallback` (fallback `setTimeout 0`). The canvas shows the sphere + arcs immediately; dots fade in once ready (~150ms on a normal laptop with 2.5k samples vs ~1–2s with 6k).
-- Even better: chunk the geoContains loop across a few frames (process 500 points per frame) so the main thread never stalls.
+Cover handling: the extractor returns the *remote* `cover_url`. On submit, a second server fn `rehostCoverFromUrl` downloads it and uploads to the existing `work-covers` Supabase bucket so we don't depend on hotlink-allowed CDNs. Falls back to keeping the remote URL if rehost fails.
 
-### C. Fix arc timing
+## 2. Redesigned `/works/new`
 
-Replace the global cycle math with **independent per-arc timers**:
+Replace the current single-step form with two states on the same page:
 
-- Keep a pool of 3 concurrent arcs.
-- Each arc has lifecycle: draw-in 1.4s → hold 1.6s → fade-out 0.8s → cooldown 0.6s → pick next pair. Total ~4.4s per arc, 3 active staggered by ~1.5s → smooth, continuous rhythm. No 80s dead zones, no bursts.
-- Cycle through `PAIRS` round-robin so every connection eventually shows.
+**State A — Drop a link (default, ~90% of the path):**
+- One big input: `Paste a SoundCloud, YouTube, Vimeo, Bandcamp, Spotify, or any link…`
+- Below it, four small "examples" chips that prefill the input for users who don't have a link handy.
+- Submit triggers `extractWorkFromUrl` → page transitions to State B with everything filled.
+- A small text link below the input: *"Or start from scratch →"* to fall through to the manual form.
 
-### D. Restore full-width hero text, push globe to backdrop
+**State B — Confirm & publish:**
+- Live preview card at the top (cover + title + provider chip + embed if available) — feels like Twitter's link card.
+- Editable fields, all prefilled: title, excerpt (we generate from description), category (prefilled from `suggested_category`), description, primary URL, license.
+- The cover thumbnail is shown with a "Replace" affordance using the existing `ImageUpload` component.
+- Sticky bottom bar: **Publish Work**, **Save draft**, **+ Add another** (saves current as draft, returns to State A — this is the back-catalog flow).
 
-In `src/routes/index.tsx` `Hero`:
-- Remove `max-w-[1100px] mx-auto` from the `WorldArcs` wrapper.
-- Position the globe **left-anchored and partially off-canvas** on desktop so it reads as ambient backdrop, not a centered competing element. Concretely: `absolute -left-[10%] top-1/2 -translate-y-1/2 h-[110%] w-[70%] opacity-70 -z-[5]` on `md+`, and on mobile drop it below the headline (`top-[55%] left-0 w-full h-[60%] opacity-50`).
-- Headline + CTA grid keep their existing `max-w-6xl … text-center` and `md:grid-cols-2`, so "Find people. Make the thing. Show your Work." + the two CTA cards return to the full-width centered layout from screenshot 2.
-- Bump the cream veil opacity slightly on the right side (radial mask) so type contrast over the globe stays clean.
+**Manual mode** is the existing form, reached via the "Start from scratch" link. Don't delete it; some users will want it for things with no canonical URL.
 
-### E. Misc
+## 3. Inline embeds on the Work detail page
 
-- Respect `prefers-reduced-motion`: render dots + 2 static arcs, no rAF.
-- Pause rAF via `IntersectionObserver` (already exists — keep).
-- Drop the `<foreignObject>` labels (they force SVG layout on every frame). Use a single absolutely-positioned `<div>` whose `transform` is set imperatively.
+`src/routes/works.$slug.tsx` currently selects `embed_url` but never renders it. Add an `<EmbedPlayer url={work.embed_url} provider={…} />` component above the cover image. Render in a 16:9 frame for video, a fixed 160px tall iframe for audio (SoundCloud/Spotify standard). Falls back to the cover image when `embed_url` is null.
+
+`src/components/embed-player.tsx` — `<iframe loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups">`. Provider whitelist enforced (only known iframe hosts ever render).
+
+## 4. Quick-add from profile (the back-catalog moment)
+
+On the user's own `/u/$username` page, add a thin "+" pill next to "Publish a Work" labeled **"Drop a link"** that opens a small dialog containing State A. On submit, it pushes them into `/works/new?import=<encoded url>` so State B opens with everything ready. This gives the "paste 10 links, ship 10 Works" rhythm without leaving the profile.
+
+## 5. Gallery card affordances
+
+Tiny but high-impact:
+- `WorkCard` shows a small play-triangle overlay when `embed_url` is present and the work is in `music`/`video` category.
+- Provider chip in the bottom-left of the cover (YT/SC/VM/BC/SP) when `embed_url` exists. Tells visitors "this plays inline."
+- Sort tab "Has embed" hidden behind the existing filter row — defer to v2 if scope creeps.
+
+## 6. Honor-system note
+
+No verification of ownership. Below the URL input on State A: a small line — *"Drop links to work you made or co-made. We honor what you claim — report misuse from the Work page."* The existing `ReportDialog` already covers takedowns.
+
+---
 
 ## Files
 
-- edit `src/components/world-arcs.tsx` — full rewrite along the lines above.
-- edit `src/routes/index.tsx` — reposition `<WorldArcs />` wrapper classes only; headline/CTA markup unchanged.
+- **add** `src/lib/works-import.functions.ts` — `extractWorkFromUrl`, `rehostCoverFromUrl` server fns.
+- **add** `src/components/embed-player.tsx` — provider-whitelisted iframe renderer.
+- **add** `src/components/import-from-url.tsx` — the State A input + chips (reused on profile dialog).
+- **edit** `src/routes/works.new.tsx` — two-state flow, reads `?import=` query param to skip State A.
+- **edit** `src/routes/works.$slug.tsx` — render `<EmbedPlayer>` above the cover when `embed_url` is set.
+- **edit** `src/routes/u.$username.tsx` — "Drop a link" pill that opens the import dialog.
+- **edit** `src/components/work-card.tsx` — provider chip + play overlay when embed present.
 
-## Out of scope
+## Out of scope (intentionally, for v1)
 
-- Replacing `EtherealBackground` blur stack (separate concern; not the slow part here).
-- Real connection data.
+- Ownership verification / claim disputes — honor system, report-driven.
+- Pulling an artist's *whole* SoundCloud/YouTube channel in one shot — link-at-a-time keeps it honest and curated.
+- Audio waveform rendering — providers' own embeds already do this.
+- Auto-tagging collaborators from video credits — the existing `work_credits` flow stays manual.
+
+## Technical notes
+
+- oEmbed endpoints are public and CORS-permissive server-side; we still run from a server fn because some (Spotify, Instagram) require auth tokens we'd rather keep off the client.
+- The extractor must time out fast (3s) and never throw — return a partial `{ primary_url, title: <hostname> }` so the flow still works on an unknown link.
+- Cover rehost runs *after* publish-click, not during extract, so State A → State B is sub-second.
+- Add a small allowlist of known iframe-safe hosts; never render arbitrary HTML from oEmbed payloads.

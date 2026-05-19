@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -56,7 +56,7 @@ type ProfileWork = WorkCardData & { my_role: string };
 async function fetchUserWorks(userId: string): Promise<ProfileWork[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("role_label, work:works!inner(id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username)))")
+    .select("role_label, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username)))")
     .eq("user_id", userId)
     .eq("hidden_from_profile", false);
   if (error) throw error;
@@ -64,20 +64,19 @@ async function fetchUserWorks(userId: string): Promise<ProfileWork[]> {
     role_label: string;
     work: {
       id: string; title: string; slug: string; category: Category;
-      cover_url: string | null; source_type: string;
+      cover_url: string | null; embed_url: string | null; source_type: string;
       like_count: number; save_count: number; view_count: number;
       published_at: string | null; created_at: string; status: string; visibility: string;
       work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
     };
   };
   const rows = (data as unknown as Row[]).filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"));
-  // dedupe by work id, keep first role label
   const seen = new Map<string, ProfileWork>();
   for (const r of rows) {
     if (seen.has(r.work.id)) continue;
     seen.set(r.work.id, {
       id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
-      cover_url: r.work.cover_url, source_type: r.work.source_type,
+      cover_url: r.work.cover_url, embed_url: r.work.embed_url, source_type: r.work.source_type,
       like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
       my_role: r.role_label,
       credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order)
@@ -194,9 +193,14 @@ function ProfilePage() {
               </>
             )}
             {isOwn && (
-              <Button className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new" })}>
-                <Plus className="h-4 w-4" /> Publish a Work
-              </Button>
+              <>
+                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new" })}>
+                  <Link2 className="h-4 w-4" /> Drop a link
+                </Button>
+                <Button className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new", search: { manual: true } })}>
+                  <Plus className="h-4 w-4" /> Publish a Work
+                </Button>
+              </>
             )}
           </div>
         </div>
