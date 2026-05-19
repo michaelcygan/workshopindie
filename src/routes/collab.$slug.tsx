@@ -304,6 +304,16 @@ function CollabDetail() {
         postTitle={post.title}
         hostFirstName={hostUser?.first_name || hostUser?.display_name?.split(" ")[0] || ""}
       />
+
+      {isOwner && (
+        <PublishFromCollabSheet
+          open={publishOpen}
+          onOpenChange={setPublishOpen}
+          postId={post.id}
+          postTitle={post.title}
+          postDescription={post.description}
+        />
+      )}
     </main>
   );
 }
