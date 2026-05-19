@@ -24,10 +24,6 @@ export function MobileNav() {
   return (
     <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3 md:hidden">
       <div className="flex w-full max-w-md items-stretch gap-0.5 rounded-full border border-border/70 bg-background/90 px-2 py-1.5 shadow-lg backdrop-blur-md">
-        <Link to="/" activeOptions={{ exact: true }} className={tabBase} activeProps={{ className: tabActive }}>
-          <LayoutGrid className="h-[18px] w-[18px]" />
-          <span>Gallery</span>
-        </Link>
         <Link to="/instant" className={tabBase} activeProps={{ className: tabActive }}>
           <Radio className="h-[18px] w-[18px]" />
           <span>Workshop</span>
@@ -35,6 +31,10 @@ export function MobileNav() {
         <Link to="/collab" className={tabBase} activeProps={{ className: tabActive }}>
           <Users className="h-[18px] w-[18px]" />
           <span>Collab</span>
+        </Link>
+        <Link to="/" activeOptions={{ exact: true }} className={tabBase} activeProps={{ className: tabActive }}>
+          <LayoutGrid className="h-[18px] w-[18px]" />
+          <span>Gallery</span>
         </Link>
         <Link to="/cities" className={tabBase} activeProps={{ className: tabActive }}>
           <MapPin className="h-[18px] w-[18px]" />
