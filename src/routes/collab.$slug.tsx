@@ -177,14 +177,54 @@ function CollabDetail() {
               compensation={COMP_LABEL[post.compensation_type] ?? post.compensation_type}
             />
             {isOwner ? (
-              <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </Button>
+              <>
+                {post.status === "open" && (
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Close
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </Button>
+              </>
             ) : (
               user && <ReportDialog entityType="collab_post" entityId={post.id} />
             )}
           </div>
         </div>
+
+        {/* Owner-only nudge once closed but no Work published yet */}
+        {isOwner && post.status === "closed" && !post.resulting_work_id && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">Made something? Publish the Work.</p>
+              <p className="text-xs text-ink-muted">Three taps — your collaborators get credit automatically.</p>
+            </div>
+            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => reopenMut.mutate()}>
+              <RotateCcw className="h-3.5 w-3.5" /> Reopen
+            </Button>
+            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
+            </Button>
+          </div>
+        )}
+
+        {/* Public "this collab produced →" card, shown to everyone once linked */}
+        {resultingWork && (
+          <Link to="/works/$slug" params={{ slug: resultingWork.slug }} className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-lift">
+            {resultingWork.cover_url ? (
+              <img src={resultingWork.cover_url} alt="" className="h-16 w-14 rounded-xl object-cover" />
+            ) : (
+              <div className="h-16 w-14 rounded-xl gradient-motion" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-wide text-ink-muted">This collab produced</p>
+              <p className="truncate font-display text-lg text-ink">{resultingWork.title}</p>
+            </div>
+            <ExternalLink className="h-4 w-4 text-ink-muted" />
+          </Link>
+        )}
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
