@@ -52,22 +52,39 @@ function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const router = useRouter();
+  const qc = useQueryClient();
+  const closeFn = useServerFn(closeCollab);
+  const reopenFn = useServerFn(reopenCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [guestOpen, setGuestOpen] = useState(false);
   const [guestRoleId, setGuestRoleId] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["collab", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: resultingWork } = useQuery({
+    queryKey: ["collab-resulting-work", post?.resulting_work_id],
+    enabled: !!post?.resulting_work_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("works")
+        .select("id,slug,title,cover_url,category")
+        .eq("id", post!.resulting_work_id!)
+        .maybeSingle();
       return data;
     },
   });
