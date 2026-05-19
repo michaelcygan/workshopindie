@@ -97,9 +97,10 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background pb-28 md:pb-0">
           <TopNav />
           <Outlet />
+          <MobileNav />
         </div>
         <Toaster />
       </AuthProvider>
