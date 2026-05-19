@@ -254,16 +254,16 @@
   .ethereal-blob {
     position: absolute;
     display: block;
-    width: 70vmax;
-    height: 70vmax;
+    width: 85vmax;
+    height: 85vmax;
     border-radius: 9999px;
-    filter: blur(90px);
-    opacity: 0.85;
+    filter: blur(70px);
+    opacity: 1;
     will-change: transform;
     animation-name: ethereal-drift;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
-    mix-blend-mode: normal;
+    mix-blend-mode: multiply;
   }
   @media (prefers-reduced-motion: reduce) {
     .ethereal-palette { animation: none; opacity: 1; }
