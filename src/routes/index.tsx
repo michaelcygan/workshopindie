@@ -199,9 +199,20 @@ function Index() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {works.map((w) => <WorkCard key={w.id} work={w} />)}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {works.map((w) => <WorkCard key={w.id} work={w} />)}
+              </div>
+              <div className="mt-8 text-center">
+                <Link
+                  to="/gallery"
+                  search={{ q: "", tab: "for-you", cat: category, src: "all", sort: sort === "newest" ? "recent" : "trending" }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft hover:bg-muted transition"
+                >
+                  Browse the full Gallery <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
