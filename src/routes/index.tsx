@@ -72,7 +72,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Make something with other artists. Find them, build it, ship it.
+          Make something with other artists. Find them, create it, ship it.
         </motion.p>
 
         <motion.div
