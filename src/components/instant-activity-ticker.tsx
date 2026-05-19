@@ -74,7 +74,7 @@ export function InstantActivityTicker() {
                 transition={{ type: "spring", stiffness: 280, damping: 26 }}
                 className="truncate"
               >
-                <span className="mr-2 inline-block h-1.5 w-1.5 rounded-full bg-primary/70 align-middle" />
+                <span className="gradient-motion mr-2 inline-block h-1.5 w-1.5 rounded-full align-middle" />
                 {formatEvent(e)}
               </motion.li>
             ))}

@@ -149,7 +149,7 @@ function CityPage() {
         <div className="flex items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-2xl text-ink inline-flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Open to collaborate
+              <span className="gradient-motion inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-4 w-4" /></span> Open to collaborate
             </h2>
             <p className="mt-1 text-sm text-ink-muted">Live calls from people who want to make something in {city.name}.</p>
           </div>

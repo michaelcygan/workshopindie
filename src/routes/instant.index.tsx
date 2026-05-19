@@ -114,8 +114,8 @@ function InstantPreflight() {
           <LoungeForkDropdown onJoinMedium={handleJoinMedium} onLiveCountChange={setLiveCount} />
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <span className="relative inline-flex h-2 w-2">
-              <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
+              <span className="gradient-motion relative inline-flex h-2 w-2 rounded-full" />
             </span>
             <AnimatePresence mode="popLayout" initial={false}>
               <motion.span
