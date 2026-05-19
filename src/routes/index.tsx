@@ -81,7 +81,7 @@ function Hero() {
         >
           <Link
             to="/instant"
-            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl bg-primary p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
+            className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
               <Radio className="h-5 w-5" />
@@ -110,7 +110,7 @@ function Hero() {
                 The project you've been sitting on. List the roles, find the people.
               </p>
             </div>
-            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary transition group-hover:gap-2">
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
               Post a call <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
