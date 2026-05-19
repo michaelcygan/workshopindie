@@ -8,16 +8,27 @@ import { Label } from "@/components/ui/label";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/signup")({ component: Signup });
+export const Route = createFileRoute("/signup")({
+  component: Signup,
+  validateSearch: (s: Record<string, unknown>) => ({
+    email: typeof s.email === "string" ? s.email : undefined,
+    first: typeof s.first === "string" ? s.first : undefined,
+    last: typeof s.last === "string" ? s.last : undefined,
+    ig: typeof s.ig === "string" ? s.ig : undefined,
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
+});
 
 function Signup() {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [email, setEmail] = useState("");
+  const search = Route.useSearch();
+  const [firstName, setFirstName] = useState(search.first ?? "");
+  const [lastName, setLastName] = useState(search.last ?? "");
+  const [instagram, setInstagram] = useState(search.ig ?? "");
+  const [email, setEmail] = useState(search.email ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const fromGuest = search.from === "guest_apply";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

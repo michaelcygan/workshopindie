@@ -10,12 +10,33 @@ import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareCollabSheet } from "@/components/share-collab-sheet";
+import { GuestApplyDialog } from "@/components/guest-apply-dialog";
+import { ApplicantsPanel } from "@/components/applicants-panel";
 import type { Category } from "@/lib/categories";
-import { useDocumentMeta } from "@/lib/seo";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/collab/$slug")({
   component: CollabDetail,
+  head: ({ params }) => {
+    const url = `https://workshopindie.com/collab/${params.slug}`;
+    const title = `Open Collab Call — Workshop`;
+    const description = "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
   errorComponent: ({ error }) => <main className="mx-auto max-w-2xl p-10 text-center text-ink-muted">{error.message}</main>,
   notFoundComponent: () => <main className="mx-auto max-w-2xl p-10 text-center"><h1 className="font-display text-3xl">Not found</h1><Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link></main>,
 });
@@ -28,28 +49,24 @@ function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const router = useRouter();
-  
+
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
+  const [guestOpen, setGuestOpen] = useState(false);
+  const [guestRoleId, setGuestRoleId] = useState<string | null>(null);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["collab", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-  });
-
-  useDocumentMeta({
-    title: post?.title,
-    description: post?.description?.slice(0, 160) ?? "Open collab call on Workshop.",
-    type: "article",
   });
 
   const sendContact = useMutation({
@@ -84,15 +101,25 @@ function CollabDetail() {
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const roles = (post.roles ?? []).slice().sort((a: any, b: any) => a.sort_order - b.sort_order);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const hostUser = post.user as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const cityName = (post.city as any)?.name;
 
   function openContact(roleId: string | null) {
-    if (!user) { router.navigate({ to: "/login" }); return; }
-    if (post!.contact_mode === "external_link" && post!.external_contact_url) {
-      window.open(post!.external_contact_url, "_blank", "noopener,noreferrer");
-      // Still log the event so the host sees who clicked.
+    if (!post) return;
+    // Logged out → open the guest application dialog instead of redirecting away.
+    if (!user) {
+      setGuestRoleId(roleId);
+      setGuestOpen(true);
+      return;
+    }
+    if (post.contact_mode === "external_link" && post.external_contact_url) {
+      window.open(post.external_contact_url, "_blank", "noopener,noreferrer");
       supabase.from("collab_contact_events").insert({
-        collab_post_id: post!.id, collab_role_id: roleId, sender_user_id: user.id, message_preview: "(opened external link)",
+        collab_post_id: post.id, collab_role_id: roleId, sender_user_id: user.id, message_preview: "(opened external link)",
       });
       return;
     }
@@ -106,42 +133,54 @@ function CollabDetail() {
         <div className="mb-4 flex items-center gap-2">
           <CategoryChip category={post.category as Category} />
           <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-ink-soft">{post.status}</span>
-          {isOwner ? (
-            <Button size="sm" variant="ghost" className="ml-auto rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-              <Trash2 className="h-3.5 w-3.5" /> Delete
-            </Button>
-          ) : (
-            user && <div className="ml-auto"><ReportDialog entityType="collab_post" entityId={post.id} /></div>
-          )}
+          <div className="ml-auto flex items-center gap-2">
+            <ShareCollabSheet
+              postId={post.id}
+              slug={post.slug}
+              title={post.title}
+              hostName={hostUser?.display_name || hostUser?.username || "A Workshop artist"}
+              hostAvatarUrl={hostUser?.avatar_url}
+              roles={roles.map((r: { role_name: string }) => r.role_name)}
+              category={post.category}
+              location={post.location_mode === "online" ? "Online" : (cityName || post.location_mode)}
+              compensation={COMP_LABEL[post.compensation_type] ?? post.compensation_type}
+            />
+            {isOwner ? (
+              <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            ) : (
+              user && <ReportDialog entityType="collab_post" entityId={post.id} />
+            )}
+          </div>
         </div>
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
-          <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" /> {post.location_mode === "online" ? "Online" : (post.city as any)?.name || post.location_mode}</span>
+          <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" /> {post.location_mode === "online" ? "Online" : (cityName || post.location_mode)}</span>
           {post.timeline_text && <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" /> {post.timeline_text}</span>}
         </div>
 
-        {post.user && (
-          <Link to="/u/$username" params={{ username: (post.user as any).username || "" }} className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
+        {hostUser && (
+          <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
             <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
-              {(post.user as any).avatar_url && <img src={(post.user as any).avatar_url} alt="" className="h-full w-full object-cover" />}
+              {hostUser.avatar_url && <img src={hostUser.avatar_url} alt="" className="h-full w-full object-cover" />}
             </div>
             <div>
-              <div className="font-medium text-ink">{(post.user as any).display_name || (post.user as any).username}</div>
-              {(post.user as any).headline && <div className="text-xs text-ink-muted">{(post.user as any).headline}</div>}
+              <div className="font-medium text-ink">{hostUser.display_name || hostUser.username}</div>
+              {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
             </div>
           </Link>
         )}
 
         {post.description && (
-          <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">
-            {post.description}
-          </div>
+          <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">{post.description}</div>
         )}
 
         <section className="mt-10">
           <h2 className="font-display text-2xl text-ink">Roles</h2>
           <div className="mt-3 space-y-2">
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {roles.map((r: any) => (
               <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
                 <div className="flex-1">
@@ -153,7 +192,7 @@ function CollabDetail() {
                 </div>
                 {!isOwner && post.status === "open" && (
                   <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
-                    {post.contact_mode === "external_link" ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
+                    {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
                   </Button>
                 )}
               </div>
@@ -168,11 +207,13 @@ function CollabDetail() {
             </div>
           )}
         </section>
+
+        {isOwner && <ApplicantsPanel postId={post.id} />}
       </motion.div>
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Tell {((post.user as any)?.display_name || "the host")} you're in</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Tell {(hostUser?.display_name || "the host")} you're in</DialogTitle></DialogHeader>
           <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quick intro: who you are, why this caught your eye, links to your work…" />
           <p className="text-xs text-ink-muted">They'll get a notification with your message and a link to your profile.</p>
           <DialogFooter>
@@ -183,6 +224,15 @@ function CollabDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <GuestApplyDialog
+        open={guestOpen}
+        onOpenChange={setGuestOpen}
+        collabPostId={post.id}
+        collabRoleId={guestRoleId}
+        postTitle={post.title}
+        hostFirstName={hostUser?.first_name || hostUser?.display_name?.split(" ")[0] || ""}
+      />
     </main>
   );
 }
