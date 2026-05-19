@@ -57,9 +57,7 @@ function Hero() {
       <div className="absolute inset-0 -z-10 bg-background/70" />
       <div className="absolute inset-0 -z-10 gradient-soft opacity-60" />
       {/* Animated globe of creative collaborations */}
-      <WorldArcs className="pointer-events-none absolute -z-[5] left-0 top-[55%] h-[60%] w-full opacity-50 md:left-[-10%] md:top-1/2 md:-translate-y-1/2 md:h-[110%] md:w-[70%] md:opacity-70" />
-      {/* Right-side soft veil so headline stays legible over the globe */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 -z-[4] hidden md:block w-3/5 bg-gradient-to-l from-background/80 via-background/40 to-transparent" />
+      <WorldArcs className="pointer-events-none absolute inset-0 -z-[5] h-full w-full opacity-60 md:opacity-70" />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 py-20 md:px-6 md:py-28 text-center">
         <motion.div
