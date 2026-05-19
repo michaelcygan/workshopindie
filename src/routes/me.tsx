@@ -158,6 +158,10 @@ function MeDashboard() {
         </div>
       </motion.header>
 
+      {closedNudges.length > 0 && (
+        <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
+      )}
+
       <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
         {(["hosting", "applied", "participating", "drafts", "credits"] as Tab[]).map((t) => (
           <button key={t} onClick={() => setTab(t)}
