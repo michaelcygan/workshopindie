@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
+import { Megaphone, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
@@ -87,9 +87,9 @@ function Hero() {
               <Radio className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-2xl md:text-[26px] leading-tight">Join an Instant Workshop</div>
+              <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
               <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                Drop into a live room with up to 5 artists right now. Voice or video, no scheduling.
+                Live room with up to 5 artists, right now. Voice or video — meet your people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -98,20 +98,20 @@ function Hero() {
           </Link>
 
           <Link
-            to="/workshops/new"
+            to="/collab/new"
             className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Calendar className="h-5 w-5 text-primary" />
+              <Megaphone className="h-5 w-5 text-primary" />
             </span>
             <div>
-              <div className="font-display text-2xl md:text-[26px] leading-tight">Schedule a Workshop</div>
+              <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                Pick a time, set a prompt, invite collaborators. Ship something on a clock.
+                The project you've been sitting on. List the roles, find the people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary transition group-hover:gap-2">
-              Schedule one <ArrowRight className="h-4 w-4" />
+              Post a call <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
         </motion.div>
