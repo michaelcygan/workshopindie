@@ -203,16 +203,16 @@ export function WorldArcs({ className }: { className?: string }) {
           if (zr < 0.02) continue;
           const px = w / 2 + x3 * radius;
           const py = h / 2 - yr * radius;
-          const alpha = (0.25 + zr * 0.5) * 0.55 * dotA;
-          ctx.fillStyle = `rgba(229,103,60,${alpha})`;
-          ctx.fillRect(px - 0.6, py - 0.6, 1.2, 1.2);
+          const alpha = (0.4 + zr * 0.6) * dotA;
+          ctx.fillStyle = `rgba(190,70,40,${alpha})`;
+          ctx.fillRect(px - 0.7, py - 0.7, 1.4, 1.4);
         }
       }
 
       // Sphere outline
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(200,140,120,0.25)";
+      ctx.strokeStyle = "rgba(160,100,80,0.45)";
       ctx.lineWidth = 1;
       ctx.stroke();
 
