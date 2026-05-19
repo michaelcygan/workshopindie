@@ -48,24 +48,8 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
 function Hero() {
   return (
     <section className="relative isolate overflow-hidden border-b border-border min-h-[88vh] flex items-center">
-      {/* Ambient video background */}
-      <video
-        className="absolute inset-0 -z-20 h-full w-full object-cover motion-reduce:hidden"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="auto"
-        poster="/ambient/studios-loop-poster.jpg"
-      >
-        <source src="/ambient/studios-loop.mp4" type="video/mp4" />
-      </video>
-      <img
-        src="/ambient/studios-loop-poster.jpg"
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 -z-20 h-full w-full object-cover hidden motion-reduce:block"
-      />
+      {/* Ambient ethereal background */}
+      <EtherealBackground className="absolute inset-0 -z-20" />
       {/* Warm cream veil for type contrast */}
       <div className="absolute inset-0 -z-10 bg-background/70" />
       <div className="absolute inset-0 -z-10 gradient-soft opacity-60" />
