@@ -227,6 +227,7 @@ export type Database = {
       }
       collab_posts: {
         Row: {
+          also_cities: string[]
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           close_nudge_dismissed_at: string | null
@@ -236,19 +237,23 @@ export type Database = {
           contact_mode: Database["public"]["Enums"]["contact_mode"]
           created_at: string
           description: string | null
+          ends_on: string | null
           external_contact_url: string | null
           id: string
           location_mode: Database["public"]["Enums"]["location_type"]
           resulting_work_id: string | null
           slug: string
+          starts_on: string | null
           status: Database["public"]["Enums"]["collab_post_status"]
           subcategories: string[]
+          timeline_mode: Database["public"]["Enums"]["timeline_mode"]
           timeline_text: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
+          also_cities?: string[]
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -258,19 +263,23 @@ export type Database = {
           contact_mode?: Database["public"]["Enums"]["contact_mode"]
           created_at?: string
           description?: string | null
+          ends_on?: string | null
           external_contact_url?: string | null
           id?: string
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
           slug: string
+          starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]
+          timeline_mode?: Database["public"]["Enums"]["timeline_mode"]
           timeline_text?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
+          also_cities?: string[]
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -280,13 +289,16 @@ export type Database = {
           contact_mode?: Database["public"]["Enums"]["contact_mode"]
           created_at?: string
           description?: string | null
+          ends_on?: string | null
           external_contact_url?: string | null
           id?: string
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
           slug?: string
+          starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]
+          timeline_mode?: Database["public"]["Enums"]["timeline_mode"]
           timeline_text?: string | null
           title?: string
           updated_at?: string
@@ -1695,6 +1707,7 @@ export type Database = {
         | "completed"
       relationship_type: "worked_with" | "made_with_at_event" | "recently_met"
       report_status: "open" | "reviewed" | "dismissed" | "action_taken"
+      timeline_mode: "asap" | "by_date" | "window" | "ongoing" | "flexible"
       tool_type:
         | "pinboard"
         | "external_call_link"
@@ -1903,6 +1916,7 @@ export const Constants = {
       ],
       relationship_type: ["worked_with", "made_with_at_event", "recently_met"],
       report_status: ["open", "reviewed", "dismissed", "action_taken"],
+      timeline_mode: ["asap", "by_date", "window", "ongoing", "flexible"],
       tool_type: [
         "pinboard",
         "external_call_link",

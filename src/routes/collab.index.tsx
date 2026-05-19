@@ -40,7 +40,7 @@ async function fetchPosts({ cat, city, online }: Filters) {
   let q = supabase
     .from("collab_posts")
     .select(
-      "id,title,slug,category,description,timeline_text,location_mode,compensation_type,status,created_at," +
+      "id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at," +
         "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
@@ -53,8 +53,8 @@ async function fetchPosts({ cat, city, online }: Filters) {
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {
-    // City selected: include posts in that city OR any online post.
-    q = q.or(`city_id.eq.${city},location_mode.eq.online`);
+    // City selected: include posts in that city, posts open to that city, or online posts.
+    q = q.or(`city_id.eq.${city},also_cities.cs.{${city}},location_mode.eq.online`);
   }
 
   const { data, error } = await q;

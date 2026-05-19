@@ -1,101 +1,92 @@
-# Collab Board Optimization
+## Post a Collab — scale pass
 
-A focused pass on `src/routes/collab.index.tsx` plus a card refresh in `src/components/collab-card.tsx`. No schema or business-logic changes — frontend only.
+Today's `collab.new` ships two scrappy v1 fields:
+- **City:** a `<select>` populated from the first 200 rows of `cities` — most of the world is invisible, and "Anywhere" is the only escape hatch.
+- **Timeline:** a freeform `text` input — great for vibe, useless for filtering, sorting, or expiry.
 
-## 1. Categories — medium-only
+The good news: the app already uses **OpenStreetMap via Photon** (`photon.komoot.io`) in `VenueSearch` — keyless, no API key needed, same provider we'll standardize on. And `resolveVenueAndCity` already knows how to find-or-create a city from an OSM result with a deterministic slug.
 
-Currently uses `CATEGORIES` (all 8). Switch to `WORK_CATEGORIES` so the chips become: All, Film, Music, Writing, Build, Visual. This drops Critique, Business of Art, and Co-working — none of which describe a *thing being made*, so they don't belong on a project-collaboration board.
+Here's the pass.
 
-(Note: `collab_posts.category` in the DB can still hold those legacy values; we simply stop offering them as filters. Existing posts in those categories fall outside the chip filters but still appear under "All". No migration required.)
+---
 
-## 2. One-line infinite-scroll category bar
+### 1. Location: OSM-backed, multi-city, remote-friendly
 
-Reuse the exact pattern from the homepage `GalleryControls`: pill bar with single horizontal row, auto-scroll loop on mobile, drag-to-pan, click chip to filter. On desktop, render as a normal pill row (no scroll).
+**Replace the City `<select>` with a Photon CityCombobox** — same component pattern as `collab.index.tsx`, but typeahead-backed by Photon (`osm_tag=place:city,place:town`) instead of the local `cities` table. Selecting a city calls a new `resolveCityFromOSM` server fn (a slimmer sibling of `resolveVenueAndCity`) that find-or-creates the row using the existing `${slug}-${cc}` dedupe logic. New cities become permanent records the moment the first user picks them — the table grows organically and stays canonical.
 
-I'll extract the scroller into a small reusable component `src/components/category-scroller.tsx` so the homepage and Collab Board share one implementation (refactor + reuse, not copy-paste). Homepage gets updated to consume it — zero visual change there.
+**Add "Primary city + also open to" multi-select.** One required primary `city_id` (already exists). New `also_cities uuid[]` column for up to 4 additional cities. Searching "Chicago" still matches; searching "Detroit" *also* matches if the poster checked "open to nearby/remote-friendly cities." This unlocks cross-city collabs without changing the index card UI.
 
-## 3. Location filter — radically simplified
+**Keep the existing `location_mode` enum** (`online | in_person | hybrid`) — it composes cleanly with multi-city: `hybrid + primary=Chicago + also=[NYC, LA]` reads exactly right.
 
-Replace the current absence of a location filter (and the redundant "Newest / Most roles" sort row) with **one row, two controls**:
+**Why this scales to 100M:** city rows are deduped by slug-cc, OSM is the single source of truth, no manual seeding, and the `also_cities` array stays small (max 4) so GIN-index lookups are cheap.
 
-```text
-[ 🔍  City — type to search… (Anywhere)        ] [ ☑ Online only ]
-```
+---
 
-- **City search**: a single combobox input. Type → debounced query against `cities(name)` → dropdown of matches → pick one to filter. Empty = anywhere. A small `×` clears it.
-- **Online only**: a single checkbox-chip. When on, results are filtered to `location_mode = 'online'` and the city input is disabled/greyed (it's irrelevant).
-- When a city is selected and Online-only is off, we include posts that are `in_person` or `hybrid` in that city **plus** all `online` posts (online posts are location-agnostic and always relevant). This is the "GOAT" behavior — you never miss an online collab just because you set a city.
+### 2. Timeline: structured underneath, freeform on top
 
-Sort: drop the visible sort toggle. Default to a smart blended order — newest first, but posts with more open roles bubble slightly. (Implemented as `ORDER BY created_at DESC` after a light client-side score; no UI needed. If you'd rather keep an explicit sort toggle, say the word.)
+Keep the vibes input — add structure beside it.
 
-All filter state goes into URL search params via `validateSearch` + `Route.useSearch()` so links are shareable and back/forward works.
+New columns on `collab_posts`:
+- `timeline_mode` enum: `asap | by_date | window | ongoing | flexible`
+- `starts_on date` (nullable)
+- `ends_on date` (nullable)
+- `timeline_text text` stays — it's the human-readable note ("evenings only, async OK")
 
-## 4. Card redesign — modern, scannable
+UI: a row of mode chips, then date pickers that appear conditionally:
+- **ASAP** → no dates, badge says "Starting now"
+- **By date** → one date picker ("Need someone by Jun 12")
+- **Window** → start + end ("Jun 10 – Jul 1")
+- **Ongoing** → no dates ("Open-ended")
+- **Flexible** → no dates ("Whenever")
 
-The current card crams chips, status, title, description, four meta icons, and a "posted by" line into one rectangle. New layout, mobile-first:
+Freeform `timeline_text` becomes a small optional "Anything else about timing?" field below.
 
-```text
-┌─────────────────────────────────────────┐
-│  [Film]                      2d ago  ⋯  │
-│                                          │
-│  Looking for a vocalist for a            │
-│  moody synthwave EP                      │
-│                                          │
-│  Two-track EP, mostly tracked. Need a    │
-│  voice that sits between Phoebe and…     │
-│                                          │
-│  ◐ Vocalist   ◐ Mixing engineer  +1     │
-│                                          │
-│  ─────────────────────────────────────   │
-│  👤 Maya R.    · Online · Paid           │
-└─────────────────────────────────────────┘
-```
+**Why this matters for launch:**
+- Sort by urgency (`starts_on ASC NULLS LAST` for ASAP/By date)
+- Auto-close `by_date` posts whose `ends_on < today` (cron, reuses existing `expires_at` plumbing)
+- Filter chip on the board: "This week" / "This month" / "Anytime" derived from structured dates, not regex on text
+- Card UI shows a clean badge ("By Jun 12") instead of whatever the user typed
 
-Key changes:
-- **Open role chips** are the visual anchor (was buried as a number). Pulled from `collab_roles` — first 2 by name, then `+N` overflow.
-- **One meta line** at the bottom: avatar + display name · location summary · comp. Drops the four-icon row.
-- **Relative time** ("2d ago") replaces redundant "open" status chip — status is implicit (only open posts are listed).
-- **Hover**: subtle lift + the title gets `text-gradient-motion` to match the new button/accent treatment.
-- **Layout**: 1 col mobile, 2 col `md`, 3 col `xl` (was 1/2/3 starting at `sm`, which felt cramped). More breathing room.
+---
 
-Card stays a single `<Link>` to `/collab/$slug`.
+### 3. Scale hygiene while we're in here
 
-## 5. Empty state
+- **Index:** `CREATE INDEX collab_posts_starts_on_idx ON collab_posts (starts_on) WHERE status = 'open';` — partial index, tiny, makes the "soonest" sort fast.
+- **Index:** `CREATE INDEX collab_posts_also_cities_gin ON collab_posts USING GIN (also_cities);` for multi-city filter.
+- **Validation:** Zod schema on the server fn enforces `starts_on <= ends_on`, `also_cities.length <= 4`, no duplicates with `city_id`.
+- **Slug collisions:** already handled by the existing `collab_autoslug` trigger — no change.
+- **City inserts:** wrap in the existing race-safe pattern from `resolveVenueAndCity` (try insert, on conflict re-select).
 
-Refresh copy to match the new flow:
+---
 
-- Old: "No open calls yet." / "Be the first. Post your idea, list the roles you need, see who shows up."
-- New: "Nothing open right now." / "Be the first to post — list the roles, the people show up."
+### Files
 
-## Technical details
+**Migration** (one file):
+- Add `also_cities uuid[]`, `timeline_mode`, `starts_on`, `ends_on` to `collab_posts`
+- Create `timeline_mode` enum
+- Add the two indexes above
 
-**Files:**
-- `src/routes/collab.index.tsx` — rewrite filter row, swap to `WORK_CATEGORIES`, add `validateSearch`, update query to join city + filter by `location_mode`/`city_id`, drop sort toggle, update empty state.
-- `src/components/collab-card.tsx` — redesign, add `roles: { role_name }[]` and `created_at` to the data shape (already partially fetched), render relative time.
-- `src/components/category-scroller.tsx` — new shared component extracted from `index.tsx`.
-- `src/routes/index.tsx` — replace inline mobile scroller with `<CategoryScroller>`, no visual change.
+**New:**
+- `src/components/city-combobox.tsx` — Photon-backed typeahead, returns `{ name, country_code, lat, lng, osm_ref }`. Reusable across `collab.new`, `collab.index`, and eventually `me.edit`.
+- `src/lib/cities.functions.ts` — `resolveCityFromOSM` server fn (find-or-create, returns `city_id`).
+- `src/components/timeline-picker.tsx` — mode chips + conditional date inputs.
 
-**Query change:** Add `roles:collab_roles(role_name,sort_order)` to the existing select so we can render up to 2 role chips per card without a second round-trip.
+**Edited:**
+- `src/routes/collab.new.tsx` — swap City `<select>` → `CityCombobox`, add "Also open to" multi-picker (max 4), add `TimelinePicker`, demote `timeline_text` to optional note.
+- `src/routes/collab.index.tsx` — filter chips can now use structured `starts_on` for "This week / month."
+- `src/components/collab-card.tsx` — render structured timeline badge when present, fall back to `timeline_text`.
 
-**Filter SQL pattern:**
-```text
-status = 'open'
-AND (online_only ? location_mode = 'online' : true)
-AND (city_id set ? (city_id = $1 OR location_mode = 'online') : true)
-AND (category != 'all' ? category = $cat : true)
-```
+---
 
-**Search params (zod):**
-```text
-{ cat: WorkCategory | "all"   (default "all"),
-  city: string | undefined,     (city id)
-  online: boolean               (default false) }
-```
+### Deliberately NOT in this pass
 
-## Out of scope
-- No changes to `/collab/new`, `/collab/$slug`, or any RLS / DB schema.
-- No changes to the way posts are created, applied to, or notified.
-- The legacy category values (`critique`, `business`, `coworking`) remain valid in the DB; they're just hidden from the filter UI.
+- **No city merging UI.** OSM gives us canonical slugs; duplicates are vanishingly rare with `${slug}-${cc}`. If two emerge, an admin SQL one-liner fixes it. Don't build a merger before there's data to merge.
+- **No timezone on dates.** Dates are local-to-the-poster; rendering shows "Jun 12" without TZ math. Add TZ only when scheduling/notifications need it.
+- **No timeline on the filter UI yet.** Ship the structured fields first, add the "This week" chip in a follow-up once data exists.
+- **No Mapbox/Google.** OSM/Photon is keyless, already in use, and fine to 100M. We can layer a paid geocoder later if rate limits bite — the `osm_ref` column means we won't have to re-resolve.
 
-## Open question
-Drop the "Newest / Most roles" sort toggle entirely, or keep it as a small text dropdown next to the filter row? My recommendation is drop — fewer controls, smarter default — but happy to keep it if you want explicit user control.
+---
+
+### Open question for you
+
+For **"Also open to" cities** — do you want it surfaced on the post-a-call form as a visible secondary picker (clear, but adds UI weight), or hidden behind a "+ open to other cities" disclosure that expands on click? I'd lean disclosure for v1 cleanliness, but the explicit version drives more cross-city matches.

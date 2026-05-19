@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
+import { Clock } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
+import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
 
 export type CollabCardData = {
@@ -11,6 +13,9 @@ export type CollabCardData = {
   category: Category;
   description: string | null;
   timeline_text: string | null;
+  timeline_mode?: TimelineMode | null;
+  starts_on?: string | null;
+  ends_on?: string | null;
   location_mode: "online" | "in_person" | "hybrid";
   compensation_type: "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
   status: string;
@@ -58,6 +63,10 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
   const overflow = Math.max(0, roles.length - shownRoles.length);
   const author = post.user?.display_name || post.user?.username || "Anon";
   const initial = author.trim().charAt(0).toUpperCase() || "·";
+  const tlBadge = post.timeline_mode
+    ? timelineBadgeText(post.timeline_mode, post.starts_on ?? null, post.ends_on ?? null)
+    : null;
+  const tlLabel = tlBadge ?? post.timeline_text;
 
   return (
     <motion.article
@@ -107,6 +116,15 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
             )}
           </div>
         )}
+
+        {tlLabel && (
+          <div className="flex items-center gap-1.5 text-xs text-ink-muted">
+            <Clock className="h-3 w-3" />
+            <span className="truncate">{tlLabel}</span>
+          </div>
+        )}
+
+
 
         <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
