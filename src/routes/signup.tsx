@@ -8,16 +8,27 @@ import { Label } from "@/components/ui/label";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/signup")({ component: Signup });
+export const Route = createFileRoute("/signup")({
+  component: Signup,
+  validateSearch: (s: Record<string, unknown>) => ({
+    email: typeof s.email === "string" ? s.email : undefined,
+    first: typeof s.first === "string" ? s.first : undefined,
+    last: typeof s.last === "string" ? s.last : undefined,
+    ig: typeof s.ig === "string" ? s.ig : undefined,
+    from: typeof s.from === "string" ? s.from : undefined,
+  }),
+});
 
 function Signup() {
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [email, setEmail] = useState("");
+  const search = Route.useSearch();
+  const [firstName, setFirstName] = useState(search.first ?? "");
+  const [lastName, setLastName] = useState(search.last ?? "");
+  const [instagram, setInstagram] = useState(search.ig ?? "");
+  const [email, setEmail] = useState(search.email ?? "");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const fromGuest = search.from === "guest_apply";
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,8 +61,12 @@ function Signup() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
-        <h1 className="font-display text-3xl text-ink">Join Workshop</h1>
-        <p className="mt-1 text-sm text-ink-muted">Find people. Make the thing. Show your Work.</p>
+        <h1 className="font-display text-3xl text-ink">{fromGuest ? "Boost your application" : "Join Workshop"}</h1>
+        <p className="mt-1 text-sm text-ink-muted">
+          {fromGuest
+            ? "Your application is sent. Finish your profile so the host can see your face and past work — applications from members get replied to faster."
+            : "Find people. Make the thing. Show your Work."}
+        </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

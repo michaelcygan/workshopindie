@@ -99,6 +99,81 @@ export type Database = {
           },
         ]
       }
+      collab_guest_applications: {
+        Row: {
+          collab_post_id: string
+          collab_role_id: string | null
+          contacted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          instagram_handle: string | null
+          ip_hash: string | null
+          matched_at: string | null
+          matched_user_id: string | null
+          message: string
+          name: string
+          phone: string | null
+          portfolio_url: string | null
+          reel_url: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          collab_post_id: string
+          collab_role_id?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          instagram_handle?: string | null
+          ip_hash?: string | null
+          matched_at?: string | null
+          matched_user_id?: string | null
+          message: string
+          name: string
+          phone?: string | null
+          portfolio_url?: string | null
+          reel_url?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          collab_post_id?: string
+          collab_role_id?: string | null
+          contacted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          instagram_handle?: string | null
+          ip_hash?: string | null
+          matched_at?: string | null
+          matched_user_id?: string | null
+          message?: string
+          name?: string
+          phone?: string | null
+          portfolio_url?: string | null
+          reel_url?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_guest_applications_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_guest_applications_collab_role_id_fkey"
+            columns: ["collab_role_id"]
+            isOneToOne: false
+            referencedRelation: "collab_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_invites: {
         Row: {
           collab_post_id: string
@@ -253,6 +328,38 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "collab_roles_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_share_events: {
+        Row: {
+          channel: string
+          collab_post_id: string
+          created_at: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          collab_post_id: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          collab_post_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_share_events_collab_post_id_fkey"
             columns: ["collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
