@@ -1,8 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, X } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { Plus, X, Globe2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { CityCombobox, type CityValue } from "@/components/city-combobox";
+import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -35,9 +36,13 @@ function NewCollab() {
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("visual");
   const [description, setDescription] = useState("");
-  const [timeline, setTimeline] = useState("");
+  const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
+  const [timelineNote, setTimelineNote] = useState("");
   const [locationMode, setLocationMode] = useState<LocationMode>("online");
-  const [cityId, setCityId] = useState<string | "">("");
+  const [city, setCity] = useState<CityValue | null>(null);
+  const [showAlsoCities, setShowAlsoCities] = useState(false);
+  const [alsoCities, setAlsoCities] = useState<CityValue[]>([]);
+  const [pendingAlso, setPendingAlso] = useState<CityValue | null>(null);
   const [comp, setComp] = useState<CompType>("unspecified");
   const [contactMode, setContactMode] = useState<ContactMode>("email_relay");
   const [externalUrl, setExternalUrl] = useState("");
@@ -48,13 +53,15 @@ function NewCollab() {
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
 
-  const { data: cities } = useQuery({
-    queryKey: ["cities"],
-    queryFn: async () => {
-      const { data } = await supabase.from("cities").select("id,name").order("name").limit(200);
-      return data ?? [];
-    },
-  });
+  // When user adds an "also" city, append + reset
+  useEffect(() => {
+    if (!pendingAlso) return;
+    if (city?.id === pendingAlso.id) { setPendingAlso(null); return; }
+    if (alsoCities.some((c) => c.id === pendingAlso.id)) { setPendingAlso(null); return; }
+    if (alsoCities.length >= 4) { toast.error("Up to 4 additional cities"); setPendingAlso(null); return; }
+    setAlsoCities((cs) => [...cs, pendingAlso]);
+    setPendingAlso(null);
+  }, [pendingAlso, alsoCities, city]);
 
   function updateRole(i: number, patch: Partial<RoleDraft>) {
     setRoles((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
@@ -67,6 +74,7 @@ function NewCollab() {
     if (!user) return;
     if (!title.trim()) return toast.error("Give your post a title");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
+    if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Online");
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
 
@@ -76,9 +84,13 @@ function NewCollab() {
       slug: "",
       category,
       description: description || null,
-      timeline_text: timeline || null,
+      timeline_text: timelineNote.trim() || null,
+      timeline_mode: timeline.mode,
+      starts_on: timeline.starts_on,
+      ends_on: timeline.ends_on,
       location_mode: locationMode,
-      city_id: cityId || null,
+      city_id: city?.id ?? null,
+      also_cities: alsoCities.map((c) => c.id),
       compensation_type: comp,
       contact_mode: contactMode,
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
@@ -136,18 +148,12 @@ function NewCollab() {
             placeholder="What are you making? What's the vibe? What's already done? What does success look like?" />
         </section>
 
-        <section className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="timeline">Timeline</Label>
-            <Input id="timeline" maxLength={80} value={timeline} onChange={(e) => setTimeline(e.target.value)} placeholder="Next 2 weeks" />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="city">City</Label>
-            <select id="city" value={cityId} onChange={(e) => setCityId(e.target.value)}
-              className="h-10 w-full rounded-md border border-border bg-surface px-3 text-sm">
-              <option value="">Anywhere</option>
-              {cities?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+        <section className="space-y-2">
+          <Label>Timeline</Label>
+          <TimelinePicker value={timeline} onChange={setTimeline} />
+          <div className="space-y-1.5 pt-1">
+            <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
+            <Input id="tlnote" maxLength={120} value={timelineNote} onChange={(e) => setTimelineNote(e.target.value)} placeholder="Evenings only, async OK" />
           </div>
         </section>
 
@@ -162,6 +168,63 @@ function NewCollab() {
               </button>
             ))}
           </div>
+          {locationMode !== "online" && (
+            <div className="space-y-2 pt-2">
+              <Label className="text-xs text-ink-muted">Primary city</Label>
+              <CityCombobox value={city} onChange={setCity} />
+
+              {!showAlsoCities && alsoCities.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAlsoCities(true)}
+                  className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink"
+                >
+                  <Globe2 className="h-3.5 w-3.5" /> + Open to other cities
+                </button>
+              )}
+
+              {(showAlsoCities || alsoCities.length > 0) && (
+                <div className="space-y-2 rounded-xl border border-dashed border-border bg-surface/40 p-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-ink-muted">Also open to (up to 4)</Label>
+                    {alsoCities.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAlsoCities(false)}
+                        className="text-xs text-ink-muted hover:text-ink"
+                      >
+                        Hide
+                      </button>
+                    )}
+                  </div>
+                  {alsoCities.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {alsoCities.map((c) => (
+                        <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+                          {c.name}
+                          <button
+                            type="button"
+                            onClick={() => setAlsoCities((cs) => cs.filter((x) => x.id !== c.id))}
+                            className="text-ink-muted hover:text-ink"
+                            aria-label={`Remove ${c.name}`}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {alsoCities.length < 4 && (
+                    <CityCombobox
+                      value={null}
+                      onChange={(v) => v && setPendingAlso(v)}
+                      placeholder="Add another city"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </section>
 
         <section className="space-y-2">
