@@ -184,7 +184,7 @@ function whenText(starts: string | null) {
 type WSRow = { id: string; title: string; slug: string; category: Category; status: string; starts_at: string | null; location_type: string; location_text: string | null; confirmed_count: number; application_count: number; participant_cap: number | null };
 
 function HostingList({ items }: { items: WSRow[] }) {
-  if (items.length === 0) return <EmptyState title="You're not hosting yet." body="Schedule a Workshop to start building with people." ctaLabel="Schedule a Workshop" ctaTo="/workshops/new" />;
+  if (items.length === 0) return <EmptyState title="No Collabs posted yet." body="Post a Collab to find collaborators and start building." ctaLabel="Post a Collab" ctaTo="/collab" />;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {items.map((w) => (
