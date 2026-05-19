@@ -49,7 +49,7 @@ function CitiesIndex() {
                 <Link key={c.id} to="/cities/$slug" params={{ slug: c.slug }}
                   className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-lift">
                   <div className="flex items-center gap-2 text-ink">
-                    <MapPin className="h-4 w-4 text-primary" />
+                    <span className="gradient-motion inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-foreground"><MapPin className="h-4 w-4" /></span>
                     <h3 className="font-display text-lg">{c.name}</h3>
                   </div>
                   <p className="mt-1 text-xs text-ink-muted">{c.state_region ? `${c.state_region}, ` : ""}{c.country}</p>
