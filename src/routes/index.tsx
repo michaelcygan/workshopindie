@@ -301,10 +301,12 @@ function Index() {
           to="/collab"
           className="group block rounded-2xl border border-border bg-surface p-5 transition hover:shadow-lift"
         >
-          <Megaphone className="h-5 w-5 text-primary" />
+          <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground">
+            <Megaphone className="h-5 w-5" />
+          </span>
           <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
           <p className="mt-1 text-sm text-ink-muted">Projects looking for people. Apply for a role.</p>
-          <div className="mt-3 text-sm text-primary group-hover:underline">Browse the board →</div>
+          <div className="mt-3 text-sm text-gradient-motion group-hover:underline">Browse the board →</div>
         </Link>
       </section>
     </main>
