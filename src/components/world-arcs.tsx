@@ -219,7 +219,7 @@ export function WorldArcs({ className }: { className?: string }) {
   }
 
   return (
-    <div ref={wrapRef} className={className}>
+    <div ref={wrapRef} className={`relative ${className ?? ""}`}>
       <canvas ref={canvasRef} className="absolute inset-0" />
       <svg
         width={w}
