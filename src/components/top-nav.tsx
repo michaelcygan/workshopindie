@@ -22,17 +22,17 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
-      <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:px-6">
+      <div className="relative mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink">
           <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
           Workshop
         </Link>
 
-        <nav className="ml-6 hidden items-center gap-1 md:flex">
-          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
-          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
-          <Link to="/gallery" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
-          <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Cities</Link>
+        <nav className="pointer-events-none absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
+          <Link to="/instant" className="pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
+          <Link to="/collab" className="pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
+          <Link to="/gallery" className="pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
+          <Link to="/cities" className="pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "pointer-events-auto rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Cities</Link>
         </nav>
 
 
