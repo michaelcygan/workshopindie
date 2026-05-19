@@ -1,80 +1,72 @@
-## Goal
+## Auto-creation & affiliation (1, 2, 3) — already wired, verify only
 
-A dedicated `/gallery` page that's the "browse everything" surface — denser than the landing feed, with real filters, search, and a Following tab. Index page stays the curated welcome.
+Good news: the data model already does most of this. No new tables needed.
 
-## New route: `src/routes/gallery.tsx`
+- **Cities auto-create** when anyone picks a place: `resolveCityFromOSM` in `src/lib/cities.functions.ts` upserts a row in `cities` keyed by `slug` (e.g. `chicago-us`) whenever a profile, work, collab, or workshop form resolves a location through OpenStreetMap. So any new city the user types in *already* gets a city page at `/cities/{slug}`.
+- **Creators auto-listed**: `profiles.city_id` is set on profile save; the city page already queries `profiles where city_id = ?` and shows them under "Local creators".
+- **Works auto-listed**: `works.city_id` is set on publish; the page already queries them under "Made here".
+- **Collabs auto-listed**: `collab_posts.city_id` is set on create; collabs render under "Open calls". One gap: `collab_posts.also_cities` (array of secondary city_ids) is currently ignored — extend the collabs query to `OR also_cities @> ARRAY[city.id]` so cross-posted calls show up.
 
-Layout (top-down, calm and uncluttered):
+Action: no migration, just verify each form (profile edit, works/new, collab/new, workshops/new) routes its city pick through `resolveCityFromOSM`, and extend the collabs query for `also_cities`.
 
-1. **Slim page header** — `font-display` "Gallery" + one-line subtitle ("Everything people have shipped."). No hero.
-2. **Sticky toolbar** (single row on desktop, stacked on mobile):
-   - **Search input** (left, grows) — debounced 250ms, searches `title` + `excerpt` via `ilike`.
-   - **Sort pill group** — Recent / Trending (existing pattern from index).
-3. **Tabs row** — `For you` (default, all published) · `Following` (only when signed in).
-4. **Filter chips row** (horizontal scroll on mobile, reuses `CategoryScroller`):
-   - Category chips: All / Film / Music / Writing / Build / Visual.
-   - Provider chips (second line, smaller, muted): All sources / YouTube / SoundCloud / Spotify / Vimeo / Bandcamp / Other. Driven by `embed_url` host match server-side via `ilike` on a small set of patterns; "Other" = no embed_url.
-5. **Dense grid** — `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` with `gap-4`. Reuses `<WorkCard />`. Denser than index's max-4-col layout.
-6. **Infinite scroll** — `useInfiniteQuery` with `IntersectionObserver` sentinel, page size 30. Skeleton tiles while loading next page.
-7. **Empty state** — when filters yield nothing: "No works match. Try clearing filters." with a clear-all button. When Following + 0 follows: "Follow people to see their work here →" linking to `/` or a creator's profile.
+## Fix the broken creator link (4)
 
-URL state lives in search params so filters are shareable/back-button-safe:
-`/gallery?q=&tab=for-you&cat=all&src=all&sort=recent`. Use TanStack Router's `validateSearch` with a Zod schema.
+Mike has no `username`, so `<Link to="/u/$username" params={{ username: p.username ?? "" }}>` resolves to `/u/` → 404. Two fixes, do both:
+- Skip rendering as a link when `username` is null; render as a plain card (or eventually link to a fallback `/u/by-id/$id`).
+- Also fix the same pattern on `WorkCard` credits.
 
-## Following tab
+## Filter creators by medium (4)
 
-- Only renders when `useAuth()` has a user.
-- Query joins `follows` (where `follower_user_id = me`) to `work_credits.user_id` to find works by followed creators. Done via a server fn `getFollowingWorks({ limit, cursor, filters })` because RLS-safe joining + DISTINCT works best server-side.
-- Sort respected; category + provider + search filters apply.
+Above the creators grid, add a horizontal `CategoryScroller` (already exists in `src/components/`) that filters the local creators list against `profiles.categories @> ARRAY[selected]`. "All" by default. Pure client-side filter — small enough at v1.
 
-## Server function: `src/lib/gallery.functions.ts`
+## Repurpose "Upcoming Workshops" (5)
 
-Two exported server fns (both use `requireSupabaseAuth` only for the Following one; "for-you" can stay client-side using the publishable client since `works` is publicly readable):
+Scheduled workshops aren't live yet. Replace that section with two stronger v1 signals that actually drive collaboration:
 
-- `listFollowingWorks({ limit, cursor, category, provider, sort, q })` — middleware: `requireSupabaseAuth`. Builds query against `works` joined to `work_credits` filtered by `user_id IN (select followed_user_id from follows where follower_user_id = auth.uid())`. Cursor = `(published_at, id)` keyset.
+1. **"Open to collaborate here"** — top of page, right under the header. Pulls active `collab_posts` for the city (already queried, just promote it up the page and make it the hero block). Each card shows category chip, title, timeline, and a "Reach out" CTA. If empty: a single inline "Post a collab in {city}" button → `/collab/new?city={slug}`.
 
-"For-you" fetch stays in the route file using the existing `supabase` client pattern from `index.tsx` for parity, extended with:
-- `q` → `or(title.ilike.%q%,excerpt.ilike.%q%)`.
-- `provider` → `ilike('embed_url', '%youtube.com%')` etc; "other" → `is('embed_url', null)`.
-- keyset pagination via `lt('published_at', cursorTs)`.
+2. **"Recently made here"** — keep the existing "Made here" works grid but rename and tighten to 6 items with a "See all in {city}" link to `/gallery?city={slug}` (the gallery filter we already built).
 
-## Nav wiring
+Drop the "Upcoming Workshops" section entirely for now; add a small one-liner at the bottom: "Scheduled workshops coming soon — start a standing meetup in the meantime."
 
-- `src/components/top-nav.tsx` line 34: change `to="/"` Gallery link → `to="/gallery"`, drop `activeOptions={{ exact: true }}` (let prefix match).
-- `src/components/mobile-nav.tsx`: the "Gallery" dock item currently points to `/` — repoint to `/gallery`. Home logo in top-nav stays `to="/"`.
+## City page v2026 layout (still simple)
 
-## Index page cleanup (minimal)
+Final stacking order, mobile-first:
 
-Keep the curated `Works Gallery` section on `/` but:
-- Trim from 24 → 12 items so it feels curated, not exhaustive.
-- Add a "Browse the full Gallery →" link under it pointing to `/gallery` (preserving current category/sort as search params).
+```text
+[← All cities]
+[📍 Chicago, IL USA]                        [+ Post a collab here] [+ Standing meetup]
 
-## Scaling considerations (build later, not now)
+Open to collaborate · {n}                   [See all open calls →]
+  · grid of active collab cards (or empty-state CTA)
 
-- Add a Postgres trigram index on `works.title` and `works.excerpt` when search volume justifies it.
-- Add a generated `provider` column on `works` derived from `embed_url` + btree index, replacing the `ilike` filter.
-- "Saved" tab (works you bookmarked via `work_reactions.reaction='save'`) — same shape as Following.
-- City filter chip (works.city_id) — reuse `city-combobox`.
-- Server-side faceted counts ("Film 142 · Music 89") — needs a materialized view; skip for v1.
+Standing meetups · {n}                      [+ Start one]
+  · grid (existing)
 
-## Out of scope (v1)
+Recently made here · {n}                    [See all in Chicago →]
+  · 6-up WorkCard grid (existing, capped)
 
-- Saved tab, city filter, faceted counts, "creators" tab, recommended-for-you ranking, tag filters.
+Local creators · {n}                        [filter chips: All Film Music Writing …]
+  · grid (existing, with medium filter + fixed links)
 
-## Files
+Scheduled workshops — coming soon. Start a standing meetup in the meantime.
+```
 
-**New**
-- `src/routes/gallery.tsx`
-- `src/lib/gallery.functions.ts`
+## Scale considerations (not built in v1, just designed for)
 
-**Edited**
-- `src/components/top-nav.tsx` — repoint Gallery link
-- `src/components/mobile-nav.tsx` — repoint Gallery dock item
-- `src/routes/index.tsx` — trim count, add "Browse full Gallery →" link
+- City pages are O(cities) — fine; list page already paginates implicitly via ordering. When >50 cities, add server-side search on `/cities` (typeahead over `cities.name`).
+- Creator lists are capped at 12; switch to keyset pagination by `work_count` when any city exceeds that.
+- `also_cities` on collabs lets a single post surface in multiple city feeds without duplication.
+- Future: a `city_followers` table for "Follow this city" notifications (new collab, new work). Schema is one composite-PK table; deferred to v2.
 
-## Technical notes
+## Files to touch
 
-- Sticky toolbar: `sticky top-[64px] z-20 bg-background/85 backdrop-blur border-b border-border` (offset to clear top-nav).
-- Debounce search with a small `useDebouncedValue` hook inline; no new dep.
-- Infinite query key includes all filter params so changing any filter resets pages cleanly.
-- Provider detection uses the same allowlist already in `src/components/embed-player.tsx` (`providerFromUrl`) for the chip → ilike map.
+- `src/routes/cities.$slug.tsx` — reorder sections, add medium filter for creators, fix `Link to /u/$username` (skip when null), drop workshops section, add "Post a collab here" header button and `also_cities` to collabs query.
+- `src/components/work-card.tsx` — guard credit links against empty username (quick audit).
+- No new migrations. No new server functions.
+
+## Out of scope (call out)
+
+- No new auth, no new tables, no email/notifications.
+- No map view (nice but defer).
+- No "Follow city" (defer to v2 with a real notifications surface).
