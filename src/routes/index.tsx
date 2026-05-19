@@ -66,7 +66,7 @@ function Hero() {
           className="font-display mt-5 text-5xl leading-[1.05] tracking-tight text-ink md:text-7xl"
         >
           Find people. <span className="italic text-gradient-motion">Make the thing.</span> <br className="hidden md:block" />
-          Show the Work.
+          Show your Work.
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
