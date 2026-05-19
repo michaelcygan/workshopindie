@@ -71,7 +71,7 @@ export function ApplicantsPanel({ postId }: Props) {
         <div className="mt-3 space-y-3">
           {/* Member applicants — link to profile */}
           {members.map((m) => {
-            const sender = (m as { sender: { username?: string; display_name?: string; avatar_url?: string; headline?: string; instagram_handle?: string } | null }).sender;
+            const sender = m.sender;
             return (
               <div key={m.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 md:flex-row md:items-start">
                 <div className="flex items-start gap-3 md:flex-1">
