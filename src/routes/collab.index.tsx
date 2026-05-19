@@ -195,15 +195,16 @@ function CollabPage() {
     [],
   );
 
+  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean };
   function setCat(next: WorkCategory | "all") {
-    navigate({ search: (prev) => ({ ...prev, cat: next }) });
+    navigate({ search: (prev: SearchShape) => ({ ...prev, cat: next }) });
   }
   function setCity(next: { id?: string; name?: string }) {
-    navigate({ search: (prev) => ({ ...prev, city: next.id, cityName: next.name }) });
+    navigate({ search: (prev: SearchShape) => ({ ...prev, city: next.id, cityName: next.name }) });
   }
   function toggleOnline() {
     navigate({
-      search: (prev) => ({
+      search: (prev: SearchShape) => ({
         ...prev,
         online: !prev.online,
         // If switching ON, clear city since it's irrelevant for online-only.
