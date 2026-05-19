@@ -99,7 +99,7 @@
   --popover-foreground: oklch(0.16 0.02 270);
 
   /* Coral primary — confident, warm */
-  --primary: oklch(0.68 0.20 32);
+  --primary: oklch(0.62 0.22 350);
   --primary-foreground: oklch(0.99 0 0);
 
   /* Electric violet highlight */
@@ -119,7 +119,7 @@
   --border: oklch(0.92 0.005 80);
   --border-strong: oklch(0.86 0.008 80);
   --input: oklch(0.92 0.005 80);
-  --ring: oklch(0.68 0.20 32 / 0.4);
+  --ring: oklch(0.62 0.22 350 / 0.4);
 
   /* Category pastel tints + their ink */
   --cat-film: oklch(0.94 0.04 30);     /* warm peach */
@@ -139,7 +139,7 @@
   --cat-coworking: oklch(0.93 0.05 60);  /* amber */
   --cat-coworking-ink: oklch(0.42 0.16 55);
 
-  --chart-1: oklch(0.68 0.20 32);
+  --chart-1: oklch(0.62 0.22 350);
   --chart-2: oklch(0.62 0.24 295);
   --chart-3: oklch(0.65 0.18 175);
   --chart-4: oklch(0.70 0.18 80);
@@ -147,12 +147,12 @@
 
   --sidebar: oklch(0.98 0.008 80);
   --sidebar-foreground: oklch(0.16 0.02 270);
-  --sidebar-primary: oklch(0.68 0.20 32);
+  --sidebar-primary: oklch(0.62 0.22 350);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.95 0.01 80);
   --sidebar-accent-foreground: oklch(0.16 0.02 270);
   --sidebar-border: oklch(0.92 0.005 80);
-  --sidebar-ring: oklch(0.68 0.20 32 / 0.4);
+  --sidebar-ring: oklch(0.62 0.22 350 / 0.4);
 }
 
 .dark {
@@ -167,7 +167,7 @@
   --card-foreground: oklch(0.98 0.005 80);
   --popover: oklch(0.20 0.02 270);
   --popover-foreground: oklch(0.98 0.005 80);
-  --primary: oklch(0.72 0.20 32);
+  --primary: oklch(0.66 0.22 350);
   --primary-foreground: oklch(0.14 0.02 270);
   --violet: oklch(0.70 0.22 295);
   --violet-foreground: oklch(0.14 0.02 270);
@@ -182,7 +182,7 @@
   --border: oklch(1 0 0 / 0.10);
   --border-strong: oklch(1 0 0 / 0.18);
   --input: oklch(1 0 0 / 0.14);
-  --ring: oklch(0.72 0.20 32 / 0.5);
+  --ring: oklch(0.66 0.22 350 / 0.5);
 }
 
 @layer base {
@@ -195,7 +195,7 @@
     text-rendering: optimizeLegibility;
   }
   .font-display { font-family: var(--font-display); letter-spacing: -0.01em; }
-  ::selection { background: oklch(0.68 0.20 32 / 0.20); }
+  ::selection { background: oklch(0.62 0.22 350 / 0.20); }
 }
 
 @layer utilities {
@@ -204,10 +204,10 @@
     background-size: 3px 3px;
   }
   .gradient-warm {
-    background-image: linear-gradient(135deg, oklch(0.68 0.20 32) 0%, oklch(0.62 0.24 295) 100%);
+    background-image: linear-gradient(135deg, oklch(0.62 0.22 350) 0%, oklch(0.62 0.24 295) 100%);
   }
   .gradient-soft {
-    background-image: radial-gradient(60% 80% at 20% 0%, oklch(0.68 0.20 32 / 0.10), transparent 60%),
+    background-image: radial-gradient(60% 80% at 20% 0%, oklch(0.62 0.22 350 / 0.10), transparent 60%),
                       radial-gradient(50% 60% at 90% 10%, oklch(0.62 0.24 295 / 0.10), transparent 60%);
   }
 }
@@ -254,16 +254,16 @@
   .ethereal-blob {
     position: absolute;
     display: block;
-    width: 70vmax;
-    height: 70vmax;
+    width: 85vmax;
+    height: 85vmax;
     border-radius: 9999px;
-    filter: blur(90px);
-    opacity: 0.85;
+    filter: blur(70px);
+    opacity: 1;
     will-change: transform;
     animation-name: ethereal-drift;
     animation-timing-function: ease-in-out;
     animation-iteration-count: infinite;
-    mix-blend-mode: normal;
+    mix-blend-mode: multiply;
   }
   @media (prefers-reduced-motion: reduce) {
     .ethereal-palette { animation: none; opacity: 1; }
