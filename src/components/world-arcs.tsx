@@ -340,7 +340,7 @@ export function WorldArcs({ className }: { className?: string }) {
   }, []);
 
   return (
-    <div ref={wrapRef} className={`relative ${className ?? ""}`}>
+    <div ref={wrapRef} className={className ?? "relative"}>
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div
         ref={labelRef}
