@@ -9,6 +9,7 @@ import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { EtherealBackground } from "@/components/ethereal-background";
 
 export const Route = createFileRoute("/")({ component: Index });
 
