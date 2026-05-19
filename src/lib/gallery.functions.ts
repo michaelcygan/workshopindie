@@ -59,7 +59,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       .in("id", workIds)
       .limit(data.limit);
 
-    if (data.category !== "all") q = q.eq("category", data.category);
+    if (data.category !== "all") q = q.eq("category", data.category as Category);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");
       q = q.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
