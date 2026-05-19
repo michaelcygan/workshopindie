@@ -126,7 +126,7 @@ function GalleryPage() {
   // Push debounced search to URL
   useEffect(() => {
     if (qDebounced !== search.q) {
-      navigate({ search: (prev) => ({ ...prev, q: qDebounced }), replace: true });
+      navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }), replace: true });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [qDebounced]);
@@ -187,7 +187,7 @@ function GalleryPage() {
   }, [hasNext, isFetchingNext, fetchNext]);
 
   const setSearch = (patch: Partial<typeof search>) =>
-    navigate({ search: (prev) => ({ ...prev, ...patch }), replace: true });
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
   const categoryTabs: { id: string; label: string }[] = [
     { id: "all", label: "All" },

@@ -15,6 +15,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstantRouteImport } from './routes/instant'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -64,6 +65,11 @@ const LoginRoute = LoginRouteImport.update({
 const InstantRoute = InstantRouteImport.update({
   id: '/instant',
   path: '/instant',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CollabRoute = CollabRouteImport.update({
@@ -172,6 +178,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
+  '/gallery': typeof GalleryRoute
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
@@ -197,6 +204,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/gallery': typeof GalleryRoute
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
@@ -224,6 +232,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
+  '/gallery': typeof GalleryRoute
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/me': typeof MeRouteWithChildren
@@ -254,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cities'
     | '/collab'
+    | '/gallery'
     | '/instant'
     | '/login'
     | '/me'
@@ -279,6 +289,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/gallery'
     | '/login'
     | '/me'
     | '/onboarding'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cities'
     | '/collab'
+    | '/gallery'
     | '/instant'
     | '/login'
     | '/me'
@@ -334,6 +346,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
+  GalleryRoute: typeof GalleryRoute
   InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
   MeRoute: typeof MeRouteWithChildren
@@ -387,6 +400,13 @@ declare module '@tanstack/react-router' {
       path: '/instant'
       fullPath: '/instant'
       preLoaderRoute: typeof InstantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/collab': {
@@ -616,6 +636,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
+  GalleryRoute: GalleryRoute,
   InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
   MeRoute: MeRouteWithChildren,
