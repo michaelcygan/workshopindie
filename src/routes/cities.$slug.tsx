@@ -168,7 +168,7 @@ function CityPage() {
         <h2 className="font-display text-2xl text-ink">Upcoming Workshops</h2>
         <p className="mt-1 text-sm text-ink-muted">In-person and hybrid workshops in {city.name}.</p>
         {workshops.length === 0 ? (
-          <p className="mt-3 text-sm text-ink-muted">Nothing scheduled here yet. <Link to="/workshops/new" className="text-primary underline">Schedule one.</Link></p>
+          <p className="mt-3 text-sm text-ink-muted">Nothing scheduled here yet.</p>
         ) : (
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {workshops.map((w: any) => (
