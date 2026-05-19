@@ -63,6 +63,10 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
   const overflow = Math.max(0, roles.length - shownRoles.length);
   const author = post.user?.display_name || post.user?.username || "Anon";
   const initial = author.trim().charAt(0).toUpperCase() || "·";
+  const tlBadge = post.timeline_mode
+    ? timelineBadgeText(post.timeline_mode, post.starts_on ?? null, post.ends_on ?? null)
+    : null;
+  const tlLabel = tlBadge ?? post.timeline_text;
 
   return (
     <motion.article
