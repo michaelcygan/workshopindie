@@ -23,7 +23,7 @@ export function MobileNav() {
 
   return (
     <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3 md:hidden">
-      <div className="relative flex w-full max-w-md items-stretch gap-0.5 rounded-full border border-border/70 bg-background/90 px-2 py-1.5 shadow-lg backdrop-blur-md">
+      <div className="flex w-full max-w-md items-stretch gap-0.5 rounded-full border border-border/70 bg-background/90 px-2 py-1.5 shadow-lg backdrop-blur-md">
         <Link to="/" activeOptions={{ exact: true }} className={tabBase} activeProps={{ className: tabActive }}>
           <LayoutGrid className="h-[18px] w-[18px]" />
           <span>Gallery</span>
@@ -32,10 +32,6 @@ export function MobileNav() {
           <Radio className="h-[18px] w-[18px]" />
           <span>Workshop</span>
         </Link>
-
-        {/* Center FAB spacer — matches FAB footprint */}
-        <div className="w-12 shrink-0" aria-hidden />
-
         <Link to="/collab" className={tabBase} activeProps={{ className: tabActive }}>
           <Users className="h-[18px] w-[18px]" />
           <span>Collab</span>
@@ -45,7 +41,6 @@ export function MobileNav() {
           <span>Cities</span>
         </Link>
 
-        {/* You tab — same shape as the others */}
         {user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -81,17 +76,6 @@ export function MobileNav() {
             <span>Sign in</span>
           </Link>
         )}
-
-        {/* Center FAB */}
-        <Link
-          to="/collab/new"
-          aria-label="Post a Collab"
-          className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2"
-        >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full gradient-motion text-primary-foreground shadow-xl ring-4 ring-background">
-            <Megaphone className="h-[20px] w-[20px]" />
-          </span>
-        </Link>
       </div>
     </div>
   );
