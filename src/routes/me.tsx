@@ -1,13 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink } from "lucide-react";
+import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CategoryChip } from "@/components/category-chip";
+import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
+import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
 import type { Category } from "@/lib/categories";
