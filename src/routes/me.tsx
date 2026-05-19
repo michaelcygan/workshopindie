@@ -13,6 +13,7 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
+import { useUserRoles } from "@/hooks/use-user-role";
 import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/me")({ component: MeDashboard });
@@ -21,8 +22,9 @@ type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
+  const { isAdmin } = useUserRoles();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<Tab>("hosting");
+  const [tab, setTab] = useState<Tab>("drafts");
 
   useDocumentMeta({ title: "Your dashboard", description: "Manage your Workshops, applications, and drafts." });
 
@@ -162,15 +164,23 @@ function MeDashboard() {
         <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
       )}
 
-      <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
-        {(["hosting", "applied", "participating", "drafts", "credits"] as Tab[]).map((t) => (
-          <button key={t} onClick={() => setTab(t)}
-            className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
-              tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
-            {t} <span className="ml-1 text-[11px] opacity-70">{counts[t]}</span>
-          </button>
-        ))}
-      </div>
+      {(() => {
+        const hasWorkshopHistory = counts.hosting + counts.applied + counts.participating > 0;
+        const tabs: Tab[] = (isAdmin || hasWorkshopHistory)
+          ? ["hosting", "applied", "participating", "drafts", "credits"]
+          : ["drafts", "credits"];
+        return (
+          <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
+            {tabs.map((t) => (
+              <button key={t} onClick={() => setTab(t)}
+                className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
+                  tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
+                {t} <span className="ml-1 text-[11px] opacity-70">{counts[t]}</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="mt-6">
         {tab === "hosting" && <HostingList items={hosting as any} />}
@@ -183,7 +193,7 @@ function MeDashboard() {
   );
 }
 
-function EmptyState({ title, body, ctaLabel, ctaTo }: { title: string; body: string; ctaLabel: string; ctaTo: "/workshops" | "/workshops/new" | "/works/new" | "/collab" }) {
+function EmptyState({ title, body, ctaLabel, ctaTo }: { title: string; body: string; ctaLabel: string; ctaTo: "/instant" | "/works/new" | "/collab" | "/collab/new" }) {
   return (
     <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
       <span className="gradient-motion mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
@@ -229,7 +239,7 @@ function HostingList({ items }: { items: WSRow[] }) {
 }
 
 function AppliedList({ items }: { items: { id: string; status: string; submitted_at: string; role: { role_name: string } | null; workshop: WSRow }[] }) {
-  if (items.length === 0) return <EmptyState title="No applications yet." body="Find a Workshop and apply for a role." ctaLabel="Browse Workshops" ctaTo="/workshops" />;
+  if (items.length === 0) return <EmptyState title="No applications yet." body="Browse open collabs and pitch on a role." ctaLabel="Browse Collabs" ctaTo="/collab" />;
   return (
     <div className="space-y-2">
       {items.map((a) => (
@@ -247,7 +257,7 @@ function AppliedList({ items }: { items: { id: string; status: string; submitted
 }
 
 function ParticipatingList({ items }: { items: { id: string; participant_status: string; workshop: WSRow & { ends_at: string | null; check_in_opens_at: string | null; check_in_closes_at: string | null } }[] }) {
-  if (items.length === 0) return <EmptyState title="No active rooms." body="When you're in a room, it shows up here." ctaLabel="Find a Workshop" ctaTo="/workshops" />;
+  if (items.length === 0) return <EmptyState title="No active rooms." body="Drop into a live Workshop — when you're in one, it shows up here." ctaLabel="Drop into a Workshop" ctaTo="/instant" />;
   const now = Date.now();
   return (
     <div className="space-y-2">

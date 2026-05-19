@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
+import { ComingSoon } from "@/components/coming-soon";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,7 @@ function toLocalInput(d: Date) {
 
 function NewWorkshop() {
   const { user, loading } = useAuth();
+  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -52,6 +55,20 @@ function NewWorkshop() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
+
+  if (rolesLoading || loading) {
+    return <main className="mx-auto max-w-2xl p-10"><div className="h-40 animate-pulse rounded-3xl bg-surface-2" /></main>;
+  }
+  if (user && !isAdmin) {
+    return (
+      <ComingSoon
+        title="Scheduled Workshops"
+        blurb="Coming soon — for now, drop into a live Workshop or post a Collab to find people."
+        ctaLabel="Back to home"
+      />
+    );
+  }
+
 
   function updateRole(i: number, patch: Partial<RoleDraft>) {
     setRoles((rs) => rs.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
