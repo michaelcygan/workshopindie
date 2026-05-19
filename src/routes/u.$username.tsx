@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, ExternalLink, Pencil, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,10 @@ import { FollowButton } from "@/components/follow-button";
 import { ReportDialog } from "@/components/report-dialog";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
+import { ProfilePeek } from "@/components/profile-peek";
+import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/u/$username")({ component: ProfilePage });
@@ -47,33 +51,44 @@ async function fetchProfile(username: string) {
   return (data as unknown as Profile) ?? null;
 }
 
-async function fetchUserWorks(userId: string) {
+type ProfileWork = WorkCardData & { my_role: string };
+
+async function fetchUserWorks(userId: string): Promise<ProfileWork[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("work:works!inner(id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(display_name,username)))")
+    .select("role_label, work:works!inner(id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username)))")
     .eq("user_id", userId)
     .eq("hidden_from_profile", false);
   if (error) throw error;
-  type WorkRow = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
-    published_at: string | null; created_at: string; status: string; visibility: string;
-    work_credits?: { sort_order: number; profiles: { display_name: string | null; username: string | null } | null }[];
+  type Row = {
+    role_label: string;
+    work: {
+      id: string; title: string; slug: string; category: Category;
+      cover_url: string | null; source_type: string;
+      like_count: number; save_count: number; view_count: number;
+      published_at: string | null; created_at: string; status: string; visibility: string;
+      work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+    };
   };
-  const works = (data as unknown as { work: WorkRow }[])
-    .map((r) => r.work)
-    .filter((w) => w && w.status === "published" && (w.visibility === "public" || w.visibility === "unlisted"));
-  // dedupe
-  const seen = new Set<string>();
-  const unique = works.filter((w) => (seen.has(w.id) ? false : (seen.add(w.id), true)));
-  unique.sort((a, b) => (b.published_at ?? b.created_at).localeCompare(a.published_at ?? a.created_at));
-  return unique.map<WorkCardData>((r) => ({
-    id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url,
-    source_type: r.source_type, like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-    credits: (r.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
-  }));
+  const rows = (data as unknown as Row[]).filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"));
+  // dedupe by work id, keep first role label
+  const seen = new Map<string, ProfileWork>();
+  for (const r of rows) {
+    if (seen.has(r.work.id)) continue;
+    seen.set(r.work.id, {
+      id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
+      cover_url: r.work.cover_url, source_type: r.work.source_type,
+      like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
+      my_role: r.role_label,
+      credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order)
+        .map((c) => ({
+          id: c.profiles?.id ?? null,
+          display_name: c.profiles?.display_name ?? null,
+          username: c.profiles?.username ?? null,
+        })),
+    });
+  }
+  return [...seen.values()].sort((a, b) => (b.id).localeCompare(a.id));
 }
 
 function ProfilePage() {
@@ -123,7 +138,7 @@ function ProfilePage() {
 
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
-  const pinned = (profile.pinned_work_ids ?? []).map((id) => works?.find((w) => w.id === id)).filter(Boolean) as WorkCardData[];
+  const pinned = (profile.pinned_work_ids ?? []).map((id) => works?.find((w) => w.id === id)).filter(Boolean) as ProfileWork[];
   const rest = works?.filter((w) => !profile.pinned_work_ids?.includes(w.id)) ?? [];
 
   return (
@@ -236,30 +251,186 @@ function ProfilePage() {
           </section>
         )}
 
-        {/* All works */}
+        {/* Frequent collaborators — the visible spine of the network */}
+        <FrequentCollaborators userId={profile.id} />
+
+        {/* All works (with category + role filters) */}
         <section className="mt-12 pb-20">
-          <h2 className="font-display text-2xl text-ink">Works</h2>
-          {!works ? (
-            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}
-            </div>
-          ) : rest.length === 0 && pinned.length === 0 ? (
-            <div className="mt-4 rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-              <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${name} hasn't shipped a Work yet.`}</p>
-              {isOwn && (
-                <Link to="/works/new" className="mt-4 inline-block">
-                  <Button className="rounded-full">Publish a Work</Button>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {rest.map((w) => <WorkCard key={w.id} work={w} />)}
-            </div>
-          )}
+          <WorksWithFilters
+            works={rest}
+            isLoading={!works}
+            isOwn={isOwn}
+            ownerName={name}
+            pinnedCount={pinned.length}
+          />
         </section>
       </div>
     </main>
+  );
+}
+
+function FrequentCollaborators({ userId }: { userId: string }) {
+  const { data } = useQuery({
+    queryKey: ["frequent-collaborators", userId],
+    queryFn: () => getFrequentCollaborators(userId, 8),
+    staleTime: 60_000,
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="font-display text-2xl text-ink">Frequent collaborators</h2>
+      <p className="mt-1 text-sm text-ink-muted">People they've made things with most.</p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {data.map((c: Collaborator) => {
+          const display = c.display_name || c.username || "Anon";
+          const inner = (
+            <div className="flex w-44 items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={c.avatar_url ?? undefined} />
+                <AvatarFallback>{display[0]}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-ink">{display}</div>
+                <div className="truncate text-[11px] text-ink-muted">{c.shared_works} together</div>
+              </div>
+            </div>
+          );
+          if (c.username) {
+            return (
+              <Link key={c.id} to="/u/$username" params={{ username: c.username }}>{inner}</Link>
+            );
+          }
+          return (
+            <ProfilePeek key={c.id} userId={c.id}>
+              <button type="button" className="cursor-pointer">{inner}</button>
+            </ProfilePeek>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function WorksWithFilters({
+  works, isLoading, isOwn, ownerName, pinnedCount,
+}: {
+  works: ProfileWork[];
+  isLoading: boolean;
+  isOwn: boolean;
+  ownerName: string;
+  pinnedCount: number;
+}) {
+  const [activeCat, setActiveCat] = useState<Category | "all">("all");
+  const [activeRole, setActiveRole] = useState<string | "all">("all");
+
+  const availableCats = useMemo(
+    () => Array.from(new Set(works.map((w) => w.category))) as Category[],
+    [works],
+  );
+  const availableRoles = useMemo(
+    () => Array.from(new Set(works.map((w) => w.my_role))).sort(),
+    [works],
+  );
+
+  const filtered = useMemo(
+    () => works.filter((w) =>
+      (activeCat === "all" || w.category === activeCat) &&
+      (activeRole === "all" || w.my_role === activeRole),
+    ),
+    [works, activeCat, activeRole],
+  );
+
+  if (isLoading) {
+    return (
+      <>
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}
+        </div>
+      </>
+    );
+  }
+
+  if (works.length === 0 && pinnedCount === 0) {
+    return (
+      <>
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <div className="mt-4 rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+          <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${ownerName} hasn't shipped a Work yet.`}</p>
+          {isOwn && (
+            <Link to="/works/new" className="mt-4 inline-block">
+              <Button className="rounded-full">Publish a Work</Button>
+            </Link>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <span className="text-xs text-ink-muted">{filtered.length} shown</span>
+      </div>
+
+      {(availableCats.length > 1 || availableRoles.length > 1) && (
+        <div className="mt-4 space-y-2">
+          {availableCats.length > 1 && (
+            <FilterRow
+              options={[{ id: "all", label: "All categories" }, ...availableCats.map((c) => ({ id: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))]}
+              value={activeCat}
+              onChange={(v) => setActiveCat(v as Category | "all")}
+            />
+          )}
+          {availableRoles.length > 1 && (
+            <FilterRow
+              options={[{ id: "all", label: "All roles" }, ...availableRoles.map((r) => ({ id: r, label: r }))]}
+              value={activeRole}
+              onChange={(v) => setActiveRole(v as string | "all")}
+            />
+          )}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+          Nothing matches that filter.
+        </div>
+      ) : (
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((w) => <WorkCard key={w.id} work={w} />)}
+        </div>
+      )}
+    </>
+  );
+}
+
+function FilterRow({
+  options, value, onChange,
+}: {
+  options: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(o.id)}
+          className={cn(
+            "rounded-full border px-3 py-1 text-xs font-medium transition",
+            value === o.id
+              ? "border-transparent bg-ink text-background"
+              : "border-border bg-surface text-ink-soft hover:bg-muted",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
   );
 }
 

@@ -4,10 +4,12 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Megaphone, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
+import { getNetworkFeed } from "@/lib/network.functions";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 
@@ -18,7 +20,7 @@ type SortKey = "newest" | "trending";
 async function fetchWorks(category: Category | "all", sort: SortKey) {
   let q = supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(display_name, username))")
+    .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .limit(24);
@@ -33,7 +35,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
-    work_credits?: { sort_order: number; profiles: { display_name: string | null; username: string | null } | null }[];
+    work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
   return (data as Row[]).map<WorkCardData>((r) => ({
     id: r.id, title: r.title, slug: r.slug, category: r.category,
@@ -41,7 +43,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
   }));
 }
 
@@ -161,6 +163,8 @@ function Index() {
     <main>
       <Hero />
 
+      <NetworkRail />
+
       <section className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
@@ -252,6 +256,35 @@ function CityMeetupsStrip() {
             <h3 className="mt-1 font-display text-lg text-ink line-clamp-1">{m.title}</h3>
             {m.description && <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{m.description}</p>}
           </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function NetworkRail() {
+  const { user } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["network-feed", user?.id],
+    queryFn: () => getNetworkFeed(user!.id, 8),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+  // Auto-hide until it has real density.
+  if (!user || !data || data.length < 3) return null;
+  return (
+    <section className="mx-auto max-w-7xl px-4 pt-10 md:px-6 md:pt-14">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl text-ink md:text-3xl">From your network</h2>
+          <p className="mt-1 text-sm text-ink-muted">People you've made things with — and people you follow.</p>
+        </div>
+      </div>
+      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+        {data.map((w) => (
+          <div key={w.id} className="w-64 shrink-0">
+            <WorkCard work={w} />
+          </div>
         ))}
       </div>
     </section>
