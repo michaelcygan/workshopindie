@@ -18,7 +18,7 @@ type SortKey = "newest" | "trending";
 async function fetchWorks(category: Category | "all", sort: SortKey) {
   let q = supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(display_name, username))")
+    .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .limit(24);
@@ -33,7 +33,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
-    work_credits?: { sort_order: number; profiles: { display_name: string | null; username: string | null } | null }[];
+    work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
   return (data as Row[]).map<WorkCardData>((r) => ({
     id: r.id, title: r.title, slug: r.slug, category: r.category,
@@ -41,7 +41,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
   }));
 }
 
