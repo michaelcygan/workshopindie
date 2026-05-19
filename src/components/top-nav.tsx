@@ -21,7 +21,7 @@ export function TopNav() {
     "·";
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink">
           <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
@@ -29,23 +29,12 @@ export function TopNav() {
         </Link>
 
         <nav className="ml-6 hidden items-center gap-1 md:flex">
-          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Workshop</Link>
-          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Collab</Link>
-          {user && (
-            <Link to="/me" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Profile</Link>
-          )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="inline-flex items-center gap-0.5 rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">
-                More <ChevronDown className="h-3.5 w-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-40">
-              <DropdownMenuItem onClick={() => navigate({ to: "/" })}>Gallery</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/cities" })}>Cities</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
+          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
+          <Link to="/" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeOptions={{ exact: true }} activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
+          <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Cities</Link>
         </nav>
+
 
         <div className="ml-auto flex items-center gap-2">
           <Link to="/collab/new" className="hidden md:inline-flex">
