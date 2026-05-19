@@ -53,8 +53,8 @@ async function fetchPosts({ cat, city, online }: Filters) {
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {
-    // City selected: include posts in that city OR any online post.
-    q = q.or(`city_id.eq.${city},location_mode.eq.online`);
+    // City selected: include posts in that city, posts open to that city, or online posts.
+    q = q.or(`city_id.eq.${city},also_cities.cs.{${city}},location_mode.eq.online`);
   }
 
   const { data, error } = await q;
