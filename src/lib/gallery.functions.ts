@@ -8,18 +8,10 @@ const FilterSchema = z.object({
   limit: z.number().int().min(1).max(60).default(30),
   cursor: z.string().nullable().optional(),
   category: z.string().default("all"),
-  provider: z.string().default("all"),
+  city: z.string().default("all"), // city slug or "all"
   sort: z.enum(["recent", "trending"]).default("recent"),
   q: z.string().default(""),
 });
-
-const PROVIDER_PATTERNS: Record<string, string[]> = {
-  youtube: ["youtube.com", "youtu.be"],
-  vimeo: ["vimeo.com"],
-  soundcloud: ["soundcloud.com"],
-  spotify: ["spotify.com"],
-  bandcamp: ["bandcamp.com"],
-};
 
 export const listFollowingWorks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -27,7 +19,6 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // get followed user ids
     const { data: follows, error: fErr } = await supabase
       .from("follows")
       .select("followed_user_id")
@@ -38,7 +29,6 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       return { works: [] as WorkCardData[], nextCursor: null as string | null };
     }
 
-    // find work ids credited to followed users
     const { data: creditRows, error: cErr } = await supabase
       .from("work_credits")
       .select("work_id")
@@ -47,6 +37,20 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
     const workIds = Array.from(new Set((creditRows ?? []).map((r) => r.work_id)));
     if (workIds.length === 0) {
       return { works: [] as WorkCardData[], nextCursor: null as string | null };
+    }
+
+    // Resolve city slug -> id (server-side)
+    let cityId: string | null = null;
+    if (data.city !== "all") {
+      const { data: c } = await supabase
+        .from("cities")
+        .select("id")
+        .eq("slug", data.city)
+        .maybeSingle();
+      cityId = c?.id ?? null;
+      if (!cityId) {
+        return { works: [] as WorkCardData[], nextCursor: null as string | null };
+      }
     }
 
     let q = supabase
@@ -60,19 +64,10 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       .limit(data.limit);
 
     if (data.category !== "all") q = q.eq("category", data.category as Category);
+    if (cityId) q = q.eq("city_id", cityId);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");
       q = q.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
-    }
-    if (data.provider !== "all") {
-      if (data.provider === "other") {
-        q = q.is("embed_url", null);
-      } else {
-        const patterns = PROVIDER_PATTERNS[data.provider];
-        if (patterns?.length) {
-          q = q.or(patterns.map((p) => `embed_url.ilike.%${p}%`).join(","));
-        }
-      }
     }
     if (data.sort === "recent") {
       q = q
@@ -133,15 +128,3 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
 
     return { works, nextCursor };
   });
-
-export const PROVIDER_OPTIONS: { id: string; label: string }[] = [
-  { id: "all", label: "All sources" },
-  { id: "youtube", label: "YouTube" },
-  { id: "soundcloud", label: "SoundCloud" },
-  { id: "spotify", label: "Spotify" },
-  { id: "vimeo", label: "Vimeo" },
-  { id: "bandcamp", label: "Bandcamp" },
-  { id: "other", label: "Other" },
-];
-
-export { PROVIDER_PATTERNS };
