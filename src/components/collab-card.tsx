@@ -1,7 +1,9 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
+import { Clock } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
+import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
 
 export type CollabCardData = {
@@ -11,6 +13,9 @@ export type CollabCardData = {
   category: Category;
   description: string | null;
   timeline_text: string | null;
+  timeline_mode?: TimelineMode | null;
+  starts_on?: string | null;
+  ends_on?: string | null;
   location_mode: "online" | "in_person" | "hybrid";
   compensation_type: "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
   status: string;
