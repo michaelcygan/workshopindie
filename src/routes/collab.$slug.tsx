@@ -117,6 +117,17 @@ function CollabDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const closeMut = useMutation({
+    mutationFn: () => closeFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reopenMut = useMutation({
+    mutationFn: () => reopenFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => { toast.success("Reopened"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
