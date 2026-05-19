@@ -1,72 +1,52 @@
-## Auto-creation & affiliation (1, 2, 3) — already wired, verify only
+## Launch audit — findings
 
-Good news: the data model already does most of this. No new tables needed.
+I walked every route file and every internal `<Link>` / `<Button>` in `src/routes/` and `src/components/`. All declared `to="/..."` targets resolve to real route files. The dead surfaces are concentrated in one place: **scheduled Workshops is admin-gated, but several places still send normal users there**.
 
-- **Cities auto-create** when anyone picks a place: `resolveCityFromOSM` in `src/lib/cities.functions.ts` upserts a row in `cities` keyed by `slug` (e.g. `chicago-us`) whenever a profile, work, collab, or workshop form resolves a location through OpenStreetMap. So any new city the user types in *already* gets a city page at `/cities/{slug}`.
-- **Creators auto-listed**: `profiles.city_id` is set on profile save; the city page already queries `profiles where city_id = ?` and shows them under "Local creators".
-- **Works auto-listed**: `works.city_id` is set on publish; the page already queries them under "Made here".
-- **Collabs auto-listed**: `collab_posts.city_id` is set on create; collabs render under "Open calls". One gap: `collab_posts.also_cities` (array of secondary city_ids) is currently ignored — extend the collabs query to `OR also_cities @> ARRAY[city.id]` so cross-posted calls show up.
+### Findings
 
-Action: no migration, just verify each form (profile edit, works/new, collab/new, workshops/new) routes its city pick through `resolveCityFromOSM`, and extend the collabs query for `also_cities`.
+**1. Workshops layout is admin-only — non-admins hit "Coming soon" from logged-in surfaces**
 
-## Fix the broken creator link (4)
+`src/routes/workshops.tsx` wraps the entire `/workshops/*` subtree in an `isAdmin` check and renders `<ComingSoon>` otherwise. That means every link below ends at the coming-soon screen for normal users:
 
-Mike has no `username`, so `<Link to="/u/$username" params={{ username: p.username ?? "" }}>` resolves to `/u/` → 404. Two fixes, do both:
-- Skip rendering as a link when `username` is null; render as a plain card (or eventually link to a fallback `/u/by-id/$id`).
-- Also fix the same pattern on `WorkCard` credits.
+- `src/routes/me.tsx`
+  - `HostingList` empty state → `ctaTo="/collab"` (already fine), but the items themselves `<Link to="/workshops/$slug">` → ComingSoon for non-admins
+  - `AppliedList` empty state → `ctaTo="/workshops"` (dead) + items link to `/workshops/$slug` (dead)
+  - `ParticipatingList` empty state → `ctaTo="/workshops"` (dead) + items link to `/workshops/$slug` (dead)
+- `src/components/workshop-card.tsx` — entire card overlay links to `/workshops/$slug`. Currently only rendered from `workshops.index.tsx` (admin-only), so safe today, but worth noting.
 
-## Filter creators by medium (4)
+**2. `me.tsx` tabs assume workshops exist for everyone**
 
-Above the creators grid, add a horizontal `CategoryScroller` (already exists in `src/components/`) that filters the local creators list against `profiles.categories @> ARRAY[selected]`. "All" by default. Pure client-side filter — small enough at v1.
+The `hosting / applied / participating` tabs are visible to all users but only ever populate from scheduled-workshop tables. For non-admins they will always be empty and their empty-state CTAs point at the gated `/workshops` routes.
 
-## Repurpose "Upcoming Workshops" (5)
+**3. Misc — verified OK, no changes needed**
 
-Scheduled workshops aren't live yet. Replace that section with two stronger v1 signals that actually drive collaboration:
+- All `to="/..."` targets exist as route files (cross-checked the full list).
+- `gallery` accepts the `city` search param the city page passes.
+- No `href="#"`, no buttons without `onClick`, no obvious "TODO" stubs in user-facing routes.
+- `/admin` and `/admin/badges` are correctly gated and reachable only from the admin dropdown.
+- Hero CTAs, top-nav, mobile-nav, notifications bell, signup/login crosslinks, profile / works / collab / cities cards all resolve.
 
-1. **"Open to collaborate here"** — top of page, right under the header. Pulls active `collab_posts` for the city (already queried, just promote it up the page and make it the hero block). Each card shows category chip, title, timeline, and a "Reach out" CTA. If empty: a single inline "Post a collab in {city}" button → `/collab/new?city={slug}`.
+### Fix plan (frontend only, no new functionality)
 
-2. **"Recently made here"** — keep the existing "Made here" works grid but rename and tighten to 6 items with a "See all in {city}" link to `/gallery?city={slug}` (the gallery filter we already built).
+**A. Make `/workshops/$slug` viewable for everyone (read-only deep-link).**
+Move the `isAdmin` gate off the layout so detail pages stay accessible for anyone with the URL or a `me.tsx` history row. Keep gating only on the index + new pages:
 
-Drop the "Upcoming Workshops" section entirely for now; add a small one-liner at the bottom: "Scheduled workshops coming soon — start a standing meetup in the meantime."
+- `src/routes/workshops.tsx` → revert to a plain `<Outlet />` wrapper.
+- `src/routes/workshops.index.tsx` → wrap its component body with the `isAdmin` / `ComingSoon` check (so `/workshops` itself still says "Coming soon").
+- `src/routes/workshops.new.tsx` → same admin gate at the component level so non-admins can't open the creation form directly.
 
-## City page v2026 layout (still simple)
+This keeps existing host/applied/participating history clickable from `/me` without re-launching scheduled workshops to the public.
 
-Final stacking order, mobile-first:
+**B. Repoint `me.tsx` empty-state CTAs away from `/workshops`.**
 
-```text
-[← All cities]
-[📍 Chicago, IL USA]                        [+ Post a collab here] [+ Standing meetup]
+- `AppliedList` empty: change copy + `ctaTo` to `"/collab"` ("Browse open collabs").
+- `ParticipatingList` empty: change to `"/instant"` ("Drop into a live Workshop").
+- `HostingList` empty already points at `/collab` — leave it.
+- Update the `EmptyState` `ctaTo` union type accordingly (drop `"/workshops" | "/workshops/new"`).
 
-Open to collaborate · {n}                   [See all open calls →]
-  · grid of active collab cards (or empty-state CTA)
+**C. Hide the workshop-history tabs when they're empty AND the user is a non-admin.**
+In `me.tsx`, if `counts.hosting + counts.applied + counts.participating === 0` and the user is not an admin, hide those three tabs and default `tab` to `drafts`. Users who actually have legacy workshop rows still see them.
 
-Standing meetups · {n}                      [+ Start one]
-  · grid (existing)
+### Out of scope
 
-Recently made here · {n}                    [See all in Chicago →]
-  · 6-up WorkCard grid (existing, capped)
-
-Local creators · {n}                        [filter chips: All Film Music Writing …]
-  · grid (existing, with medium filter + fixed links)
-
-Scheduled workshops — coming soon. Start a standing meetup in the meantime.
-```
-
-## Scale considerations (not built in v1, just designed for)
-
-- City pages are O(cities) — fine; list page already paginates implicitly via ordering. When >50 cities, add server-side search on `/cities` (typeahead over `cities.name`).
-- Creator lists are capped at 12; switch to keyset pagination by `work_count` when any city exceeds that.
-- `also_cities` on collabs lets a single post surface in multiple city feeds without duplication.
-- Future: a `city_followers` table for "Follow this city" notifications (new collab, new work). Schema is one composite-PK table; deferred to v2.
-
-## Files to touch
-
-- `src/routes/cities.$slug.tsx` — reorder sections, add medium filter for creators, fix `Link to /u/$username` (skip when null), drop workshops section, add "Post a collab here" header button and `also_cities` to collabs query.
-- `src/components/work-card.tsx` — guard credit links against empty username (quick audit).
-- No new migrations. No new server functions.
-
-## Out of scope (call out)
-
-- No new auth, no new tables, no email/notifications.
-- No map view (nice but defer).
-- No "Follow city" (defer to v2 with a real notifications surface).
+No backend, schema, or new feature work. Pure frontend cleanup so nothing on the live site routes to a dead page.
