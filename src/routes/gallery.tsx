@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Plus, MapPin } from "lucide-react";
+import { Search, X, Plus } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
+import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
@@ -45,7 +46,7 @@ function useDebounced<T>(value: T, ms = 250): T {
   return v;
 }
 
-type CityChip = { id: string; name: string; slug: string; country: string; count: number };
+type CityChip = CityOption;
 
 async function fetchGalleryCities(): Promise<CityChip[]> {
   // Pull a sample of recent published works with their city; aggregate client-side.
@@ -167,7 +168,7 @@ function GalleryPage() {
     for (const c of cities) m.set(c.slug, c.id);
     return m;
   }, [cities]);
-  const topCities = useMemo(() => cities.slice(0, 10), [cities]);
+  
 
   const queryKey = useMemo(
     () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null],
@@ -322,64 +323,29 @@ function GalleryPage() {
             </div>
           </div>
 
-          {/* Category chips */}
-          <div className="mt-3">
+          {/* Category chips (left) + city filter (right) on desktop; stacked on mobile */}
+          <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
             <CategoryScroller
               tabs={categoryTabs}
               value={category}
               onChange={(v) => setSearch({ cat: v })}
+              className="md:w-fit"
             />
-          </div>
-
-          {/* Location chips */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="flex items-center gap-1 px-1 text-ink-muted">
-              <MapPin className="h-3 w-3" />
-              Location:
-            </span>
-            <button
-              onClick={() => setSearch({ city: "all" })}
-              className={cn(
-                "rounded-full border px-2.5 py-1 transition",
-                citySlug === "all"
-                  ? "border-ink bg-ink text-background"
-                  : "border-border bg-surface text-ink-soft hover:bg-muted",
+            <div className="flex items-center gap-2 md:shrink-0">
+              <GalleryCityFilter
+                cities={cities}
+                value={citySlug}
+                onChange={(slug) => setSearch({ city: slug })}
+              />
+              {filtersActive && (
+                <button
+                  onClick={clearAll}
+                  className="rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink"
+                >
+                  Clear filters
+                </button>
               )}
-            >
-              Anywhere
-            </button>
-            {topCities.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSearch({ city: c.slug })}
-                className={cn(
-                  "rounded-full border px-2.5 py-1 transition",
-                  citySlug === c.slug
-                    ? "border-ink bg-ink text-background"
-                    : "border-border bg-surface text-ink-soft hover:bg-muted",
-                )}
-                title={`${c.name}, ${c.country} · ${c.count}`}
-              >
-                {c.name}
-                <span className="ml-1 opacity-60">{c.count}</span>
-              </button>
-            ))}
-            {/* Show the active city even if it's not in the top list */}
-            {citySlug !== "all" &&
-              !topCities.some((c) => c.slug === citySlug) &&
-              cities.find((c) => c.slug === citySlug) && (
-                <span className="rounded-full border border-ink bg-ink px-2.5 py-1 text-background">
-                  {cities.find((c) => c.slug === citySlug)!.name}
-                </span>
-              )}
-            {filtersActive && (
-              <button
-                onClick={clearAll}
-                className="ml-auto rounded-full px-2.5 py-1 text-ink-muted hover:text-ink"
-              >
-                Clear filters
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </div>
