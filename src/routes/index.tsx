@@ -110,7 +110,7 @@ function Hero() {
                 The project you've been sitting on. List the roles, find the people.
               </p>
             </div>
-            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-primary transition group-hover:gap-2">
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
               Post a call <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
