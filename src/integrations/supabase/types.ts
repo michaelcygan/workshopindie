@@ -229,6 +229,8 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
+          close_nudge_dismissed_at: string | null
+          closed_at: string | null
           compensation_type: Database["public"]["Enums"]["compensation_type"]
           contact_email_encrypted: string | null
           contact_mode: Database["public"]["Enums"]["contact_mode"]
@@ -237,6 +239,7 @@ export type Database = {
           external_contact_url: string | null
           id: string
           location_mode: Database["public"]["Enums"]["location_type"]
+          resulting_work_id: string | null
           slug: string
           status: Database["public"]["Enums"]["collab_post_status"]
           subcategories: string[]
@@ -248,6 +251,8 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
+          close_nudge_dismissed_at?: string | null
+          closed_at?: string | null
           compensation_type?: Database["public"]["Enums"]["compensation_type"]
           contact_email_encrypted?: string | null
           contact_mode?: Database["public"]["Enums"]["contact_mode"]
@@ -256,6 +261,7 @@ export type Database = {
           external_contact_url?: string | null
           id?: string
           location_mode?: Database["public"]["Enums"]["location_type"]
+          resulting_work_id?: string | null
           slug: string
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]
@@ -267,6 +273,8 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
+          close_nudge_dismissed_at?: string | null
+          closed_at?: string | null
           compensation_type?: Database["public"]["Enums"]["compensation_type"]
           contact_email_encrypted?: string | null
           contact_mode?: Database["public"]["Enums"]["contact_mode"]
@@ -275,6 +283,7 @@ export type Database = {
           external_contact_url?: string | null
           id?: string
           location_mode?: Database["public"]["Enums"]["location_type"]
+          resulting_work_id?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]

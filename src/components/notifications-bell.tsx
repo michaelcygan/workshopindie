@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Mail, UserPlus, Megaphone } from "lucide-react";
+import { Bell, Mail, UserPlus, Megaphone, Award } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type Notif = {
   id: string;
-  kind: "collab_invite" | "collab_application";
+  kind: "collab_invite" | "collab_application" | "work_credit";
   title: string;
   subtitle: string;
   href: string;
@@ -69,6 +69,27 @@ export function NotificationsBell() {
           icon: Mail,
         });
       }
+    }
+
+    // 3) Recent Work credits where I was credited by someone else
+    const since = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: creds } = await supabase
+      .from("work_credits")
+      .select("id,role_label,created_at,work:works!inner(slug,title,created_by)")
+      .eq("user_id", user.id)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    for (const c of (creds ?? []) as any[]) {
+      if (!c.work || c.work.created_by === user.id) continue;
+      out.push({
+        id: `cred-${c.id}`,
+        kind: "work_credit",
+        title: `You were credited as ${c.role_label}`,
+        subtitle: c.work.title,
+        href: `/works/${c.work.slug}`,
+        icon: Award,
+      });
     }
 
     setItems(out);

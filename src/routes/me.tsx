@@ -1,13 +1,16 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink } from "lucide-react";
+import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { CategoryChip } from "@/components/category-chip";
+import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
+import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
 import type { Category } from "@/lib/categories";
@@ -103,6 +106,23 @@ function MeDashboard() {
     },
   });
 
+  const { data: closedNudges = [] } = useQuery({
+    queryKey: ["me-closed-collabs", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("id,title,slug,description")
+        .eq("user_id", user!.id)
+        .eq("status", "closed")
+        .is("resulting_work_id", null)
+        .is("close_nudge_dismissed_at", null)
+        .order("closed_at", { ascending: false })
+        .limit(5);
+      return data ?? [];
+    },
+  });
+
   if (!user) return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
 
   const name = profile?.display_name || profile?.username || "Creator";
@@ -137,6 +157,10 @@ function MeDashboard() {
           <Link to="/me/edit"><Button variant="ghost" className="rounded-full gap-1.5"><Pencil className="h-4 w-4" /> Edit</Button></Link>
         </div>
       </motion.header>
+
+      {closedNudges.length > 0 && (
+        <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
+      )}
 
       <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
         {(["hosting", "applied", "participating", "drafts", "credits"] as Tab[]).map((t) => (
@@ -297,5 +321,47 @@ function CreditsList({ items, onChange }: { items: { id: string; role_label: str
         </div>
       ))}
     </div>
+  );
+}
+
+function ClosedCollabNudges({ items }: { items: { id: string; title: string; slug: string; description: string | null }[] }) {
+  const qc = useQueryClient();
+  const dismissFn = useServerFn(dismissPublishNudge);
+  const [active, setActive] = useState<{ id: string; title: string; description: string | null } | null>(null);
+
+  async function dismiss(id: string) {
+    try {
+      await dismissFn({ data: { collabPostId: id } });
+      qc.invalidateQueries({ queryKey: ["me-closed-collabs"] });
+    } catch (e) { /* silent */ }
+  }
+
+  return (
+    <section className="mt-6 space-y-2">
+      {items.map((c) => (
+        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-ink">Wrap up: {c.title}</p>
+            <p className="text-xs text-ink-muted">Publish the Work that came out of this collab — 3 taps.</p>
+          </div>
+          <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => dismiss(c.id)}>
+            <X className="h-4 w-4" />
+          </Button>
+          <Button size="sm" className="rounded-full gap-1" onClick={() => setActive({ id: c.id, title: c.title, description: c.description })}>
+            <Sparkles className="h-3.5 w-3.5" /> Publish Work
+          </Button>
+        </div>
+      ))}
+      {active && (
+        <PublishFromCollabSheet
+          open={!!active}
+          onOpenChange={(o) => { if (!o) { setActive(null); qc.invalidateQueries({ queryKey: ["me-closed-collabs"] }); } }}
+          postId={active.id}
+          postTitle={active.title}
+          postDescription={active.description}
+        />
+      )}
+    </section>
   );
 }

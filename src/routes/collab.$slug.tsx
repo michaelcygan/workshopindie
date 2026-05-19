@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2 } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { ReportDialog } from "@/components/report-dialog";
 import { ShareCollabSheet } from "@/components/share-collab-sheet";
 import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
+import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
+import { closeCollab, reopenCollab } from "@/lib/collab-publish.functions";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 
@@ -49,22 +52,39 @@ function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
   const router = useRouter();
+  const qc = useQueryClient();
+  const closeFn = useServerFn(closeCollab);
+  const reopenFn = useServerFn(reopenCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [guestOpen, setGuestOpen] = useState(false);
   const [guestRoleId, setGuestRoleId] = useState<string | null>(null);
+  const [publishOpen, setPublishOpen] = useState(false);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["collab", slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: resultingWork } = useQuery({
+    queryKey: ["collab-resulting-work", post?.resulting_work_id],
+    enabled: !!post?.resulting_work_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("works")
+        .select("id,slug,title,cover_url,category")
+        .eq("id", post!.resulting_work_id!)
+        .maybeSingle();
       return data;
     },
   });
@@ -94,6 +114,17 @@ function CollabDetail() {
       if (error) throw error;
     },
     onSuccess: () => { toast.success("Post removed"); router.navigate({ to: "/collab" }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const closeMut = useMutation({
+    mutationFn: () => closeFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const reopenMut = useMutation({
+    mutationFn: () => reopenFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => { toast.success("Reopened"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -146,14 +177,54 @@ function CollabDetail() {
               compensation={COMP_LABEL[post.compensation_type] ?? post.compensation_type}
             />
             {isOwner ? (
-              <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-                <Trash2 className="h-3.5 w-3.5" /> Delete
-              </Button>
+              <>
+                {post.status === "open" && (
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Close
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
+                  <Trash2 className="h-3.5 w-3.5" /> Delete
+                </Button>
+              </>
             ) : (
               user && <ReportDialog entityType="collab_post" entityId={post.id} />
             )}
           </div>
         </div>
+
+        {/* Owner-only nudge once closed but no Work published yet */}
+        {isOwner && post.status === "closed" && !post.resulting_work_id && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">Made something? Publish the Work.</p>
+              <p className="text-xs text-ink-muted">Three taps — your collaborators get credit automatically.</p>
+            </div>
+            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => reopenMut.mutate()}>
+              <RotateCcw className="h-3.5 w-3.5" /> Reopen
+            </Button>
+            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
+            </Button>
+          </div>
+        )}
+
+        {/* Public "this collab produced →" card, shown to everyone once linked */}
+        {resultingWork && (
+          <Link to="/works/$slug" params={{ slug: resultingWork.slug }} className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-lift">
+            {resultingWork.cover_url ? (
+              <img src={resultingWork.cover_url} alt="" className="h-16 w-14 rounded-xl object-cover" />
+            ) : (
+              <div className="h-16 w-14 rounded-xl gradient-motion" />
+            )}
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] uppercase tracking-wide text-ink-muted">This collab produced</p>
+              <p className="truncate font-display text-lg text-ink">{resultingWork.title}</p>
+            </div>
+            <ExternalLink className="h-4 w-4 text-ink-muted" />
+          </Link>
+        )}
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
@@ -233,6 +304,16 @@ function CollabDetail() {
         postTitle={post.title}
         hostFirstName={hostUser?.first_name || hostUser?.display_name?.split(" ")[0] || ""}
       />
+
+      {isOwner && (
+        <PublishFromCollabSheet
+          open={publishOpen}
+          onOpenChange={setPublishOpen}
+          postId={post.id}
+          postTitle={post.title}
+          postDescription={post.description}
+        />
+      )}
     </main>
   );
 }
