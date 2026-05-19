@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Clock, MapPin, Users, DollarSign } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -18,7 +17,7 @@ export type CollabCardData = {
   created_at: string;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
-  roles_count?: { count: number }[] | null;
+  roles?: { id: string; role_name: string; sort_order: number }[] | null;
 };
 
 const COMP_LABEL: Record<CollabCardData["compensation_type"], string> = {
@@ -29,36 +28,106 @@ const COMP_LABEL: Record<CollabCardData["compensation_type"], string> = {
   unspecified: "Comp TBD",
 };
 
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diff = Date.now() - then;
+  const s = Math.max(1, Math.floor(diff / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 7) return `${d}d ago`;
+  const w = Math.floor(d / 7);
+  if (w < 5) return `${w}w ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(d / 365)}y ago`;
+}
+
+function locationLabel(post: CollabCardData): string {
+  if (post.location_mode === "online") return "Online";
+  if (post.location_mode === "hybrid") return post.city?.name ? `Hybrid · ${post.city.name}` : "Hybrid";
+  return post.city?.name || "In person";
+}
+
 export function CollabCard({ post, className }: { post: CollabCardData; className?: string }) {
-  const rolesCount = post.roles_count?.[0]?.count ?? 0;
+  const roles = (post.roles ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
+  const shownRoles = roles.slice(0, 2);
+  const overflow = Math.max(0, roles.length - shownRoles.length);
+  const author = post.user?.display_name || post.user?.username || "Anon";
+  const initial = author.trim().charAt(0).toUpperCase() || "·";
+
   return (
     <motion.article
-      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
-      className={cn("group relative flex flex-col overflow-hidden rounded-2xl bg-surface border border-border shadow-soft hover:shadow-lift transition-shadow", className)}
+      className={cn(
+        "group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition-shadow hover:shadow-lift",
+        className,
+      )}
     >
-      <Link to="/collab/$slug" params={{ slug: post.slug }} className="absolute inset-0 z-10" aria-label={post.title} />
-      <div className="flex items-center gap-2 p-4 pb-2">
+      <Link
+        to="/collab/$slug"
+        params={{ slug: post.slug }}
+        className="absolute inset-0 z-10"
+        aria-label={post.title}
+      />
+
+      <div className="flex items-center gap-2 px-5 pt-5">
         <CategoryChip category={post.category} />
-        <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">
-          {post.status}
-        </span>
+        <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
       </div>
-      <div className="flex flex-1 flex-col gap-2 px-4 pb-4">
-        <h3 className="font-display text-xl leading-tight text-ink line-clamp-2">{post.title}</h3>
-        {post.description && <p className="text-sm text-ink-muted line-clamp-3">{post.description}</p>}
-        <div className="mt-auto flex flex-wrap items-center gap-3 pt-3 text-xs text-ink-soft">
-          {rolesCount > 0 && <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {rolesCount} role{rolesCount === 1 ? "" : "s"}</span>}
-          <span className="inline-flex items-center gap-1"><DollarSign className="h-3.5 w-3.5" /> {COMP_LABEL[post.compensation_type]}</span>
-          <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {post.location_mode === "online" ? "Online" : post.city?.name || post.location_mode}</span>
-          {post.timeline_text && <span className="inline-flex items-center gap-1"><Clock className="h-3.5 w-3.5" /> {post.timeline_text}</span>}
-        </div>
-        {post.user && (
-          <p className="text-xs text-ink-muted">
-            Posted by {post.user.display_name || post.user.username || "Anon"}
-          </p>
+
+      <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-3">
+        <h3 className="font-display text-[22px] leading-[1.15] text-ink line-clamp-2 transition-colors group-hover:text-gradient-motion">
+          {post.title}
+        </h3>
+        {post.description && (
+          <p className="text-sm leading-relaxed text-ink-muted line-clamp-3">{post.description}</p>
         )}
+
+        {shownRoles.length > 0 && (
+          <div className="mt-1 flex flex-wrap gap-1.5">
+            {shownRoles.map((r) => (
+              <span
+                key={r.id}
+                className="inline-flex items-center rounded-full border border-border bg-surface-2/60 px-2.5 py-0.5 text-xs text-ink"
+              >
+                {r.role_name}
+              </span>
+            ))}
+            {overflow > 0 && (
+              <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs text-ink-muted">
+                +{overflow} more
+              </span>
+            )}
+          </div>
+        )}
+
+        <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
+          {post.user?.avatar_url ? (
+            <img
+              src={post.user.avatar_url}
+              alt=""
+              className="h-6 w-6 rounded-full object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-ink-soft">
+              {initial}
+            </span>
+          )}
+          <span className="truncate font-medium text-ink">{author}</span>
+          <span className="text-ink-muted/60">·</span>
+          <span className="truncate">{locationLabel(post)}</span>
+          <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
+            {COMP_LABEL[post.compensation_type]}
+          </span>
+        </div>
       </div>
     </motion.article>
   );

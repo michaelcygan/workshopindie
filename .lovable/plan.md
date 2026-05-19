@@ -1,51 +1,101 @@
-## What I found
+# Collab Board Optimization
 
-Two flavors of fix: (a) the post-simplification residue ("on a clock", "ship a Work", "Schedule a Workshop") that no longer matches the launch flow, and (b) LLM-flavored copy that sounds like a system describing itself instead of a person talking about the product.
+A focused pass on `src/routes/collab.index.tsx` plus a card refresh in `src/components/collab-card.tsx`. No schema or business-logic changes — frontend only.
 
-## Copy edits
+## 1. Categories — medium-only
 
-### Home (`src/routes/index.tsx`)
+Currently uses `CATEGORIES` (all 8). Switch to `WORK_CATEGORIES` so the chips become: All, Film, Music, Writing, Build, Visual. This drops Critique, Business of Art, and Co-working — none of which describe a *thing being made*, so they don't belong on a project-collaboration board.
 
-| Where | Now | Proposed |
-|---|---|---|
-| Hero subhead | "Make something with other artists — live, or on a clock." | "Make something with other artists. Find them, build it, ship it." |
-| Workshop card body | "Live room with up to 5 artists, right now. Voice or video — meet your people." | "A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work." |
-| Collab card body | "The project you've been sitting on. List the roles, find the people." | "Got an idea sitting in your drafts? Post it. List the roles you need. People show up." |
-| Gallery empty headline | "Be the first to ship a Work." | "Nothing here yet — go make something." |
-| Gallery empty body | "Drop into a Workshop, meet your people, make something." | "Drop into a Workshop. Meet people. Build something worth showing." |
-| Open Collab calls body | "Projects looking for people. Apply for a role." | "Real projects, real roles. Jump on one." |
+(Note: `collab_posts.category` in the DB can still hold those legacy values; we simply stop offering them as filters. Existing posts in those categories fall outside the chip filters but still appear under "All". No migration required.)
 
-### Workshop room landing (`src/routes/instant.index.tsx`)
+## 2. One-line infinite-scroll category bar
 
-| Where | Now | Proposed |
-|---|---|---|
-| Subhead | "Drop into a live room with up to 5 artists. We'll find you a seat — there's always one open." | "Walk into a live room with up to 5 artists. A seat opens up — take it." |
+Reuse the exact pattern from the homepage `GalleryControls`: pill bar with single horizontal row, auto-scroll loop on mobile, drag-to-pan, click chip to filter. On desktop, render as a normal pill row (no scroll).
 
-### Collab Board (`src/routes/collab.index.tsx`)
+I'll extract the scroller into a small reusable component `src/components/category-scroller.tsx` so the homepage and Collab Board share one implementation (refactor + reuse, not copy-paste). Homepage gets updated to consume it — zero visual change there.
 
-| Where | Now | Proposed |
-|---|---|---|
-| Subhead | "Ideas already in motion that need people. No clock — just open calls." | "Projects looking for people. Find one. Pitch yourself." |
-| Empty body | "Be the first — post the idea you've been sitting on and the roles you need." | "Be the first. Post your idea, list the roles you need, see who shows up." |
+## 3. Location filter — radically simplified
 
-### Auth (`src/routes/signup.tsx`)
+Replace the current absence of a location filter (and the redundant "Newest / Most roles" sort row) with **one row, two controls**:
 
-| Where | Now | Proposed |
-|---|---|---|
-| Tagline | "Find people. Make the thing. Show the Work." | "Find people. Make the thing. Show your Work." (mirrors the new hero) |
+```text
+[ 🔍  City — type to search… (Anywhere)        ] [ ☑ Online only ]
+```
 
-### Profile / dashboard (`src/routes/me.tsx`)
+- **City search**: a single combobox input. Type → debounced query against `cities(name)` → dropdown of matches → pick one to filter. Empty = anywhere. A small `×` clears it.
+- **Online only**: a single checkbox-chip. When on, results are filtered to `location_mode = 'online'` and the city input is disabled/greyed (it's irrelevant).
+- When a city is selected and Online-only is off, we include posts that are `in_person` or `hybrid` in that city **plus** all `online` posts (online posts are location-agnostic and always relevant). This is the "GOAT" behavior — you never miss an online collab just because you set a city.
 
-| Where | Now | Proposed |
-|---|---|---|
-| Credits empty body | "Ship a Workshop or publish a Work to start your portfolio." | "Publish a Work to start your portfolio." |
-| Drafts empty body | "When you start a Work, unfinished pieces land here." | "Unfinished Works land here while you're still cooking." |
-| Participating empty body | "Once a host confirms you, your seat shows up here." | "When you're in a room, it shows up here." |
+Sort: drop the visible sort toggle. Default to a smart blended order — newest first, but posts with more open roles bubble slightly. (Implemented as `ORDER BY created_at DESC` after a light client-side score; no UI needed. If you'd rather keep an explicit sort toggle, say the word.)
 
-## Flag (not changing in this pass)
+All filter state goes into URL search params via `validateSearch` + `Route.useSearch()` so links are shareable and back/forward works.
 
-The `/workshops` index page (`src/routes/workshops.index.tsx`) and the "Applications" / "Hosting" tabs in `/me` still expose the **scheduled Workshops** flow you said to hide before launch — copy like "Time-boxed creative sessions. Apply, show up, make the thing.", "Schedule a Workshop", "Pick a category, set a clock, define roles." Fixing the copy here would just polish a surface that's supposed to be hidden. Recommend a separate pass to hide those routes/tabs (keep the schema dormant), rather than rewording stale-flow language. Say the word and I'll handle it in the next turn.
+## 4. Card redesign — modern, scannable
+
+The current card crams chips, status, title, description, four meta icons, and a "posted by" line into one rectangle. New layout, mobile-first:
+
+```text
+┌─────────────────────────────────────────┐
+│  [Film]                      2d ago  ⋯  │
+│                                          │
+│  Looking for a vocalist for a            │
+│  moody synthwave EP                      │
+│                                          │
+│  Two-track EP, mostly tracked. Need a    │
+│  voice that sits between Phoebe and…     │
+│                                          │
+│  ◐ Vocalist   ◐ Mixing engineer  +1     │
+│                                          │
+│  ─────────────────────────────────────   │
+│  👤 Maya R.    · Online · Paid           │
+└─────────────────────────────────────────┘
+```
+
+Key changes:
+- **Open role chips** are the visual anchor (was buried as a number). Pulled from `collab_roles` — first 2 by name, then `+N` overflow.
+- **One meta line** at the bottom: avatar + display name · location summary · comp. Drops the four-icon row.
+- **Relative time** ("2d ago") replaces redundant "open" status chip — status is implicit (only open posts are listed).
+- **Hover**: subtle lift + the title gets `text-gradient-motion` to match the new button/accent treatment.
+- **Layout**: 1 col mobile, 2 col `md`, 3 col `xl` (was 1/2/3 starting at `sm`, which felt cramped). More breathing room.
+
+Card stays a single `<Link>` to `/collab/$slug`.
+
+## 5. Empty state
+
+Refresh copy to match the new flow:
+
+- Old: "No open calls yet." / "Be the first. Post your idea, list the roles you need, see who shows up."
+- New: "Nothing open right now." / "Be the first to post — list the roles, the people show up."
+
+## Technical details
+
+**Files:**
+- `src/routes/collab.index.tsx` — rewrite filter row, swap to `WORK_CATEGORIES`, add `validateSearch`, update query to join city + filter by `location_mode`/`city_id`, drop sort toggle, update empty state.
+- `src/components/collab-card.tsx` — redesign, add `roles: { role_name }[]` and `created_at` to the data shape (already partially fetched), render relative time.
+- `src/components/category-scroller.tsx` — new shared component extracted from `index.tsx`.
+- `src/routes/index.tsx` — replace inline mobile scroller with `<CategoryScroller>`, no visual change.
+
+**Query change:** Add `roles:collab_roles(role_name,sort_order)` to the existing select so we can render up to 2 role chips per card without a second round-trip.
+
+**Filter SQL pattern:**
+```text
+status = 'open'
+AND (online_only ? location_mode = 'online' : true)
+AND (city_id set ? (city_id = $1 OR location_mode = 'online') : true)
+AND (category != 'all' ? category = $cat : true)
+```
+
+**Search params (zod):**
+```text
+{ cat: WorkCategory | "all"   (default "all"),
+  city: string | undefined,     (city id)
+  online: boolean               (default false) }
+```
 
 ## Out of scope
+- No changes to `/collab/new`, `/collab/$slug`, or any RLS / DB schema.
+- No changes to the way posts are created, applied to, or notified.
+- The legacy category values (`critique`, `business`, `coworking`) remain valid in the DB; they're just hidden from the filter UI.
 
-No code structure, layout, gradient, or icon changes — copy only.
+## Open question
+Drop the "Newest / Most roles" sort toggle entirely, or keep it as a small text dropdown next to the filter row? My recommendation is drop — fewer controls, smarter default — but happy to keep it if you want explicit user control.
