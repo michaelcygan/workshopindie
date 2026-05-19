@@ -168,7 +168,7 @@ function GalleryPage() {
     for (const c of cities) m.set(c.slug, c.id);
     return m;
   }, [cities]);
-  const topCities = useMemo(() => cities.slice(0, 10), [cities]);
+  
 
   const queryKey = useMemo(
     () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null],
