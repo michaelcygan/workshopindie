@@ -51,7 +51,7 @@ function Signup() {
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <h1 className="font-display text-3xl text-ink">Join Workshop</h1>
-        <p className="mt-1 text-sm text-ink-muted">Find people. Make the thing. Show the Work.</p>
+        <p className="mt-1 text-sm text-ink-muted">Find people. Make the thing. Show your Work.</p>
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">

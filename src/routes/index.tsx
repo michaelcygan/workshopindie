@@ -72,7 +72,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Make something with other artists — live, or on a clock.
+          Make something with other artists. Find them, build it, ship it.
         </motion.p>
 
         <motion.div
@@ -89,7 +89,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
               <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                Live room with up to 5 artists, right now. Voice or video — meet your people.
+                A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -107,7 +107,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                The project you've been sitting on. List the roles, find the people.
+                Got an idea sitting in your drafts? Post it. List the roles you need. People show up.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
@@ -278,9 +278,9 @@ function Index() {
             </div>
           ) : !works || works.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-              <h3 className="font-display text-2xl text-ink">Be the first to ship a Work.</h3>
+              <h3 className="font-display text-2xl text-ink">Nothing here yet — go make something.</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                Drop into a Workshop, meet your people, make something.
+                Drop into a Workshop. Meet people. Build something worth showing.
               </p>
               <Link to="/instant" className="mt-5 inline-block">
                 <Button className="rounded-full">Drop into a Workshop</Button>
@@ -305,7 +305,7 @@ function Index() {
             <Megaphone className="h-5 w-5" />
           </span>
           <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
-          <p className="mt-1 text-sm text-ink-muted">Projects looking for people. Apply for a role.</p>
+          <p className="mt-1 text-sm text-ink-muted">Real projects, real roles. Jump on one.</p>
           <div className="mt-3 text-sm text-gradient-motion group-hover:underline">Browse the board →</div>
         </Link>
       </section>

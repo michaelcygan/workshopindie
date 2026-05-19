@@ -223,7 +223,7 @@ function AppliedList({ items }: { items: { id: string; status: string; submitted
 }
 
 function ParticipatingList({ items }: { items: { id: string; participant_status: string; workshop: WSRow & { ends_at: string | null; check_in_opens_at: string | null; check_in_closes_at: string | null } }[] }) {
-  if (items.length === 0) return <EmptyState title="No active rooms." body="Once a host confirms you, your seat shows up here." ctaLabel="Find a Workshop" ctaTo="/workshops" />;
+  if (items.length === 0) return <EmptyState title="No active rooms." body="When you're in a room, it shows up here." ctaLabel="Find a Workshop" ctaTo="/workshops" />;
   const now = Date.now();
   return (
     <div className="space-y-2">
@@ -248,7 +248,7 @@ function ParticipatingList({ items }: { items: { id: string; participant_status:
 }
 
 function DraftsList({ items }: { items: { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; updated_at: string }[] }) {
-  if (items.length === 0) return <EmptyState title="No drafts." body="When you start a Work, unfinished pieces land here." ctaLabel="Publish a Work" ctaTo="/works/new" />;
+  if (items.length === 0) return <EmptyState title="No drafts." body="Unfinished Works land here while you're still cooking." ctaLabel="Publish a Work" ctaTo="/works/new" />;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {items.map((w) => (
@@ -269,7 +269,7 @@ function DraftsList({ items }: { items: { id: string; title: string; slug: strin
 }
 
 function CreditsList({ items, onChange }: { items: { id: string; role_label: string; hidden_from_profile: boolean; work: { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; visibility: string; published_at: string | null } }[]; onChange: () => void }) {
-  if (items.length === 0) return <EmptyState title="No credits yet." body="Ship a Workshop or publish a Work to start your portfolio." ctaLabel="Publish a Work" ctaTo="/works/new" />;
+  if (items.length === 0) return <EmptyState title="No credits yet." body="Publish a Work to start your portfolio." ctaLabel="Publish a Work" ctaTo="/works/new" />;
   async function toggleHide(id: string, next: boolean) {
     const { error } = await supabase.from("work_credits").update({ hidden_from_profile: next }).eq("id", id);
     if (!error) onChange();
