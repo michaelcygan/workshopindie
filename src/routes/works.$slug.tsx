@@ -111,6 +111,11 @@ function WorkDetail() {
           </div>
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
           {work.excerpt && <p className="text-lg text-ink-soft">{work.excerpt}</p>}
+
+          {/* Byline — the cast, right under the title */}
+          {credits.length > 0 && (
+            <Byline credits={credits} />
+          )}
         </motion.header>
 
         {/* Cover / embed */}
@@ -149,35 +154,30 @@ function WorkDetail() {
           </a>
         )}
 
-        {/* Credits */}
+        {/* Credits — cast strip */}
         {credits.length > 0 && (
           <section className="mt-12">
             <h2 className="font-display text-2xl text-ink">Credits</h2>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {credits.map((c) => {
-                const p = c.profiles;
-                const name = p?.display_name || p?.username || "Anon";
-                const inner = (
-                  <div className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
-                    <Avatar className="h-11 w-11">
-                      <AvatarImage src={p?.avatar_url ?? undefined} />
-                      <AvatarFallback>{name[0]}</AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate font-medium text-ink">{name}</div>
-                      <div className="truncate text-xs text-ink-muted">{c.role_label}</div>
-                    </div>
-                  </div>
-                );
-                return p?.username ? (
-                  <Link key={c.id} to="/u/$username" params={{ username: p.username }}>{inner}</Link>
-                ) : (
-                  <div key={c.id}>{inner}</div>
-                );
-              })}
-            </div>
+            <CreditStrip
+              className="mt-4"
+              credits={credits.map<CreditChip>((c) => ({
+                id: c.id,
+                role_label: c.role_label,
+                profiles: c.profiles
+                  ? {
+                      id: c.profiles.id,
+                      display_name: c.profiles.display_name,
+                      username: c.profiles.username,
+                      avatar_url: c.profiles.avatar_url,
+                    }
+                  : null,
+              }))}
+            />
           </section>
         )}
+
+        {/* Also worked together — the first visible network payoff */}
+        <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
 
         {/* Comments */}
         <section className="mt-14">
@@ -185,5 +185,62 @@ function WorkDetail() {
         </section>
       </article>
     </main>
+  );
+}
+
+function Byline({ credits }: { credits: WorkRow["work_credits"] }) {
+  const shown = credits.slice(0, 3);
+  const extra = credits.length - shown.length;
+  return (
+    <p className="text-sm text-ink-muted">
+      by{" "}
+      {shown.map((c, i) => {
+        const p = c.profiles;
+        const name = p?.display_name || p?.username || "Anon";
+        const sep = i < shown.length - 1 ? ", " : extra > 0 ? `, +${extra} more` : "";
+        const inner = (
+          <span className="font-medium text-ink hover:text-gradient-motion hover:underline underline-offset-2 transition">
+            {name}
+          </span>
+        );
+        if (p?.username) {
+          return (
+            <span key={c.id}>
+              <Link to="/u/$username" params={{ username: p.username }}>{inner}</Link>
+              {sep}
+            </span>
+          );
+        }
+        if (p?.id) {
+          return (
+            <span key={c.id}>
+              <ProfilePeek userId={p.id}>
+                <button type="button" className="cursor-pointer">{inner}</button>
+              </ProfilePeek>
+              {sep}
+            </span>
+          );
+        }
+        return <span key={c.id}>{inner}{sep}</span>;
+      })}
+    </p>
+  );
+}
+
+function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: string }) {
+  const { data } = useQuery({
+    queryKey: ["co-credited-works", workId],
+    queryFn: () => getCoCreditedWorks(workId, createdBy),
+    staleTime: 60_000,
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mt-14">
+      <h2 className="font-display text-2xl text-ink">Also made together</h2>
+      <p className="mt-1 text-sm text-ink-muted">Other Works these collaborators have shipped as a group.</p>
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} />)}
+      </div>
+    </section>
   );
 }
