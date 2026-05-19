@@ -55,7 +55,7 @@ function CollabPage() {
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Collab Board</h1>
-          <p className="mt-1 text-ink-muted">Ideas already in motion that need people. No clock — just open calls.</p>
+          <p className="mt-1 text-ink-muted">Projects looking for people. Find one. Pitch yourself.</p>
         </div>
         <Link to="/collab/new">
           <Button className="rounded-full gap-2"><Megaphone className="h-4 w-4" /> Post a call</Button>
@@ -93,7 +93,7 @@ function CollabPage() {
         ) : !posts || posts.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
             <h3 className="font-display text-2xl text-ink">No open calls yet.</h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">Be the first — post the idea you've been sitting on and the roles you need.</p>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">Be the first. Post your idea, list the roles you need, see who shows up.</p>
             <Link to="/collab/new" className="mt-5 inline-block">
               <Button className="rounded-full">Post a call</Button>
             </Link>
