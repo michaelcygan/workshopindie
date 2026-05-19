@@ -32,7 +32,7 @@ export function MobileNav() {
           <Users className="h-[18px] w-[18px]" />
           <span>Collab</span>
         </Link>
-        <Link to="/" activeOptions={{ exact: true }} className={tabBase} activeProps={{ className: tabActive }}>
+        <Link to="/gallery" className={tabBase} activeProps={{ className: tabActive }}>
           <LayoutGrid className="h-[18px] w-[18px]" />
           <span>Gallery</span>
         </Link>
