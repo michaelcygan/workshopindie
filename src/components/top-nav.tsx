@@ -24,7 +24,7 @@ export function TopNav() {
     <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 md:px-6">
         <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink">
-          <span className="inline-block h-2.5 w-2.5 rounded-full gradient-warm" />
+          <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
           Workshop
         </Link>
 

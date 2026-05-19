@@ -59,7 +59,7 @@ function Hero() {
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
         >
-          <Sparkles className="h-3.5 w-3.5 text-primary" /> A creative collaboration network
+          <span className="gradient-motion inline-flex h-5 w-5 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-3 w-3" /></span> A creative collaboration network
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
@@ -101,8 +101,8 @@ function Hero() {
             to="/collab/new"
             className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
           >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-              <Megaphone className="h-5 w-5 text-primary" />
+            <span className="gradient-motion inline-flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground">
+              <Megaphone className="h-5 w-5" />
             </span>
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
