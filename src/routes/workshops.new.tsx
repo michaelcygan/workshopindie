@@ -4,6 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
+import { ComingSoon } from "@/components/coming-soon";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +30,7 @@ function toLocalInput(d: Date) {
 
 function NewWorkshop() {
   const { user, loading } = useAuth();
+  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
