@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Mail, Clock } from "lucide-react";
+import { Bell, Mail, UserPlus, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type Notif = {
   id: string;
-  kind: "incoming_app" | "outgoing_app" | "starting_soon";
+  kind: "collab_invite" | "collab_application";
   title: string;
   subtitle: string;
   href: string;
@@ -24,53 +24,49 @@ export function NotificationsBell() {
     if (!user) { setItems([]); return; }
     const out: Notif[] = [];
 
-    // 1) Pending applications on workshops I host
-    const { data: hosted } = await supabase
-      .from("workshops")
-      .select("id,title,slug")
-      .eq("host_user_id", user.id);
-    const hostedIds = (hosted ?? []).map((w: any) => w.id);
-    if (hostedIds.length) {
-      const { data: apps } = await supabase
-        .from("workshop_applications")
-        .select("id,workshop_id,status")
-        .in("workshop_id", hostedIds)
-        .eq("status", "applied")
-        .limit(20);
-      const byWs = new Map((hosted ?? []).map((w: any) => [w.id, w]));
-      for (const a of apps ?? []) {
-        const ws: any = byWs.get(a.workshop_id);
-        if (!ws) continue;
-        out.push({
-          id: `app-${a.id}`,
-          kind: "incoming_app",
-          title: "New application",
-          subtitle: ws.title,
-          href: `/workshops/${ws.slug}`,
-          icon: Mail,
-        });
-      }
+    // 1) Pending Collab invites where I'm the invitee
+    const { data: invites } = await supabase
+      .from("collab_invites")
+      .select("id,collab_post_id,collab_role_id,post:collab_posts!collab_invites_collab_post_id_fkey(title,slug),role:collab_roles!collab_invites_collab_role_id_fkey(role_name)")
+      .eq("invitee_user_id", user.id)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false })
+      .limit(20);
+    for (const inv of (invites ?? []) as any[]) {
+      out.push({
+        id: `invite-${inv.id}`,
+        kind: "collab_invite",
+        title: inv.role?.role_name ? `Invited as ${inv.role.role_name}` : "Collab invite",
+        subtitle: inv.post?.title ?? "",
+        href: `/collab/${inv.post?.slug ?? ""}`,
+        icon: UserPlus,
+      });
     }
 
-    // 2) Workshops I'm in starting in <60 min
-    const inOneHour = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-    const nowIso = new Date().toISOString();
-    const { data: parts } = await supabase
-      .from("workshop_participants")
-      .select("workshop_id, workshops:workshops(id,title,slug,starts_at,status)")
-      .eq("user_id", user.id)
-      .limit(50);
-    for (const p of parts ?? []) {
-      const w: any = (p as any).workshops;
-      if (!w?.starts_at) continue;
-      if (w.starts_at > nowIso && w.starts_at < inOneHour) {
+    // 2) Applications on Collabs I own
+    const { data: myPosts } = await supabase
+      .from("collab_posts")
+      .select("id,title,slug")
+      .eq("user_id", user.id);
+    const postIds = (myPosts ?? []).map((p: any) => p.id);
+    if (postIds.length) {
+      const byPost = new Map((myPosts ?? []).map((p: any) => [p.id, p]));
+      const { data: apps } = await supabase
+        .from("collab_contact_events")
+        .select("id,collab_post_id,sent_at")
+        .in("collab_post_id", postIds)
+        .order("sent_at", { ascending: false })
+        .limit(20);
+      for (const a of (apps ?? []) as any[]) {
+        const p: any = byPost.get(a.collab_post_id);
+        if (!p) continue;
         out.push({
-          id: `soon-${w.id}`,
-          kind: "starting_soon",
-          title: "Starting soon",
-          subtitle: w.title,
-          href: `/workshops/${w.slug}`,
-          icon: Clock,
+          id: `app-${a.id}`,
+          kind: "collab_application",
+          title: "New application",
+          subtitle: p.title,
+          href: `/collab/${p.slug}`,
+          icon: Mail,
         });
       }
     }
