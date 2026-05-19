@@ -323,3 +323,45 @@ function CreditsList({ items, onChange }: { items: { id: string; role_label: str
     </div>
   );
 }
+
+function ClosedCollabNudges({ items }: { items: { id: string; title: string; slug: string; description: string | null }[] }) {
+  const qc = useQueryClient();
+  const dismissFn = useServerFn(dismissPublishNudge);
+  const [active, setActive] = useState<{ id: string; title: string; description: string | null } | null>(null);
+
+  async function dismiss(id: string) {
+    try {
+      await dismissFn({ data: { collabPostId: id } });
+      qc.invalidateQueries({ queryKey: ["me-closed-collabs"] });
+    } catch (e) { /* silent */ }
+  }
+
+  return (
+    <section className="mt-6 space-y-2">
+      {items.map((c) => (
+        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-ink">Wrap up: {c.title}</p>
+            <p className="text-xs text-ink-muted">Publish the Work that came out of this collab — 3 taps.</p>
+          </div>
+          <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => dismiss(c.id)}>
+            <X className="h-4 w-4" />
+          </Button>
+          <Button size="sm" className="rounded-full gap-1" onClick={() => setActive({ id: c.id, title: c.title, description: c.description })}>
+            <Sparkles className="h-3.5 w-3.5" /> Publish Work
+          </Button>
+        </div>
+      ))}
+      {active && (
+        <PublishFromCollabSheet
+          open={!!active}
+          onOpenChange={(o) => { if (!o) { setActive(null); qc.invalidateQueries({ queryKey: ["me-closed-collabs"] }); } }}
+          postId={active.id}
+          postTitle={active.title}
+          postDescription={active.description}
+        />
+      )}
+    </section>
+  );
+}
