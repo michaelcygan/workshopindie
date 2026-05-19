@@ -151,13 +151,10 @@ export const listApplicants = createServerFn({ method: "POST" })
       throw new Error("Only the post owner can view applicants.");
     }
 
-    const [members, guests] = await Promise.all([
+    const [eventsRes, guestsRes] = await Promise.all([
       supabase
         .from("collab_contact_events")
-        .select(
-          "id,sent_at,message_preview,collab_role_id," +
-            "sender:profiles!collab_contact_events_sender_user_id_fkey(id,username,display_name,avatar_url,headline,instagram_handle)",
-        )
+        .select("id,sent_at,message_preview,collab_role_id,sender_user_id")
         .eq("collab_post_id", data.collabPostId)
         .order("sent_at", { ascending: false }),
       supabase
@@ -169,13 +166,29 @@ export const listApplicants = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false }),
     ]);
 
-    // Hide guest rows that have been mirrored into the member feed via signup.
-    const guestRows = (guests.data ?? []).filter((g) => !g.matched_user_id);
+    const events = eventsRes.data ?? [];
+    const guestRows = (guestsRes.data ?? []).filter((g) => !g.matched_user_id);
 
-    return {
-      members: members.data ?? [],
-      guests: guestRows,
-    };
+    // Hydrate sender profiles in one batched query.
+    const senderIds = Array.from(new Set(events.map((e) => e.sender_user_id).filter(Boolean)));
+    let profileMap: Record<string, { id: string; username: string | null; display_name: string | null; avatar_url: string | null; headline: string | null; instagram_handle: string | null }> = {};
+    if (senderIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,username,display_name,avatar_url,headline,instagram_handle")
+        .in("id", senderIds);
+      profileMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
+    }
+
+    const members = events.map((e) => ({
+      id: e.id,
+      sent_at: e.sent_at,
+      message_preview: e.message_preview,
+      collab_role_id: e.collab_role_id,
+      sender: profileMap[e.sender_user_id] ?? null,
+    }));
+
+    return { members, guests: guestRows };
   });
 
 export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
