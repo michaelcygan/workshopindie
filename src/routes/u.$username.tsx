@@ -433,10 +433,6 @@ function FilterRow({
     </div>
   );
 }
-      </div>
-    </main>
-  );
-}
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
