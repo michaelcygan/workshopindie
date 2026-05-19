@@ -99,10 +99,10 @@
   --popover-foreground: oklch(0.16 0.02 270);
 
   /* Instagram/Lovable orange-magenta primary */
-  --primary: oklch(0.64 0.22 18);
+  --primary: oklch(0.62 0.24 5);
   --primary-foreground: oklch(0.99 0 0);
-  --primary-warm: oklch(0.72 0.20 50);   /* burnt orange lean */
-  --primary-deep: oklch(0.56 0.25 350);  /* deeper magenta lean */
+  --primary-warm: oklch(0.70 0.21 40);   /* burnt orange lean */
+  --primary-deep: oklch(0.55 0.26 345);  /* deeper magenta lean */
 
   /* Electric violet highlight */
   --violet: oklch(0.62 0.24 295);
