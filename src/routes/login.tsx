@@ -43,7 +43,7 @@ function Login() {
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
-          New to Workshop? <Link to="/signup" className="text-primary hover:underline">Create an account</Link>
+          New to Workshop? <Link to="/signup" className="text-gradient-motion hover:underline">Create an account</Link>
         </p>
       </motion.div>
     </div>

@@ -162,7 +162,7 @@ function MeDashboard() {
 function EmptyState({ title, body, ctaLabel, ctaTo }: { title: string; body: string; ctaLabel: string; ctaTo: "/workshops" | "/workshops/new" | "/works/new" | "/collab" }) {
   return (
     <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-      <Sparkles className="mx-auto h-5 w-5 text-primary" />
+      <span className="gradient-motion mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
       <h3 className="mt-2 font-display text-2xl text-ink">{title}</h3>
       <p className="mx-auto mt-1 max-w-sm text-sm text-ink-muted">{body}</p>
       <Link to={ctaTo} className="mt-5 inline-block"><Button className="rounded-full">{ctaLabel}</Button></Link>

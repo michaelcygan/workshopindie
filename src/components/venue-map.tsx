@@ -86,7 +86,7 @@ export function VenueMap({
         href={`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=16/${lat}/${lng}`}
         target="_blank"
         rel="noreferrer"
-        className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        className="mt-2 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline"
       >
         Open in OpenStreetMap <ExternalLink className="h-3 w-3" />
       </a>

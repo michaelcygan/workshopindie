@@ -104,7 +104,7 @@ function CityPage() {
   if (!city) return (
     <main className="mx-auto max-w-3xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-ink">City not found</h1>
-      <Link to="/cities" className="mt-4 inline-block text-primary underline">Back to cities</Link>
+      <Link to="/cities" className="mt-4 inline-block text-gradient-motion underline">Back to cities</Link>
     </main>
   );
 
@@ -114,7 +114,7 @@ function CityPage() {
       <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl inline-flex items-center gap-2">
-            <MapPin className="h-7 w-7 text-primary" /> {city.name}
+            <span className="gradient-motion inline-flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground"><MapPin className="h-6 w-6" /></span> {city.name}
           </h1>
           <p className="mt-1 text-sm text-ink-muted">{city.state_region ? `${city.state_region}, ` : ""}{city.country}</p>
         </div>
@@ -138,7 +138,7 @@ function CityPage() {
         <h2 className="font-display text-2xl text-ink">Standing meetups</h2>
         {meetups.length === 0 ? (
           <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
-            No standing meetups yet. {user ? "Start the first one." : <Link to="/login" className="text-primary underline">Sign in</Link>} to host one.
+            No standing meetups yet. {user ? "Start the first one." : <Link to="/login" className="text-gradient-motion underline">Sign in</Link>} to host one.
           </div>
         ) : (
           <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -198,7 +198,7 @@ function CityPage() {
       {/* Collabs */}
       {collabs.length > 0 && (
         <section className="mt-10">
-          <h2 className="font-display text-2xl text-ink inline-flex items-center gap-2"><Megaphone className="h-5 w-5 text-primary" /> Open calls</h2>
+          <h2 className="font-display text-2xl text-ink inline-flex items-center gap-2"><span className="gradient-motion inline-flex h-8 w-8 items-center justify-center rounded-full text-primary-foreground"><Megaphone className="h-4 w-4" /></span> Open calls</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {collabs.map((c: any) => (
               <Link key={c.id} to="/collab/$slug" params={{ slug: c.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
