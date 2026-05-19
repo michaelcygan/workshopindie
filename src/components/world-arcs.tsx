@@ -199,7 +199,7 @@ export function WorldArcs({ className }: { className?: string }) {
       const u = (s / steps) * end;
       coords.push(interp(u) as [number, number]);
     }
-    return { type: "Feature", geometry: { type: "LineString", coordinates: coords } } as Feature;
+    return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } } as Feature;
   }
 
   function project(lon: number, lat: number) {
