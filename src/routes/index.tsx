@@ -24,7 +24,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
-    .limit(24);
+    .limit(12);
 
   if (category !== "all") q = q.eq("category", category);
   if (sort === "newest") q = q.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
@@ -199,9 +199,20 @@ function Index() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {works.map((w) => <WorkCard key={w.id} work={w} />)}
-            </div>
+            <>
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {works.map((w) => <WorkCard key={w.id} work={w} />)}
+              </div>
+              <div className="mt-8 text-center">
+                <Link
+                  to="/gallery"
+                  search={{ q: "", tab: "for-you", cat: category, src: "all", sort: sort === "newest" ? "recent" : "trending" }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft hover:bg-muted transition"
+                >
+                  Browse the full Gallery <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>

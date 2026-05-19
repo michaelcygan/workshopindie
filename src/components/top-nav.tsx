@@ -31,7 +31,7 @@ export function TopNav() {
         <nav className="ml-6 hidden items-center gap-1 md:flex">
           <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
           <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
-          <Link to="/" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeOptions={{ exact: true }} activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
+          <Link to="/gallery" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
           <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Cities</Link>
         </nav>
 

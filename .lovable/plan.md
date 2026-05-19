@@ -1,92 +1,80 @@
-# Streamlining "Create a Work" — paste-a-link to portfolio
+## Goal
 
-The core idea: a user should be able to **paste a link and have a Work**. The form should appear *already filled in*, not as a wall of empty fields. Then "Add another" so they can dump 10 back-catalog items in 5 minutes.
+A dedicated `/gallery` page that's the "browse everything" surface — denser than the landing feed, with real filters, search, and a Following tab. Index page stays the curated welcome.
 
-The current `/works/new` page is a long manual form. The `works` table already stores `embed_url`, `primary_url`, `cover_url`, `excerpt`, and `description` — so we don't need schema work, we need a metadata extractor and a redesigned flow.
+## New route: `src/routes/gallery.tsx`
 
----
+Layout (top-down, calm and uncluttered):
 
-## 1. New server function: `extractWorkFromUrl`
+1. **Slim page header** — `font-display` "Gallery" + one-line subtitle ("Everything people have shipped."). No hero.
+2. **Sticky toolbar** (single row on desktop, stacked on mobile):
+   - **Search input** (left, grows) — debounced 250ms, searches `title` + `excerpt` via `ilike`.
+   - **Sort pill group** — Recent / Trending (existing pattern from index).
+3. **Tabs row** — `For you` (default, all published) · `Following` (only when signed in).
+4. **Filter chips row** (horizontal scroll on mobile, reuses `CategoryScroller`):
+   - Category chips: All / Film / Music / Writing / Build / Visual.
+   - Provider chips (second line, smaller, muted): All sources / YouTube / SoundCloud / Spotify / Vimeo / Bandcamp / Other. Driven by `embed_url` host match server-side via `ilike` on a small set of patterns; "Other" = no embed_url.
+5. **Dense grid** — `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5` with `gap-4`. Reuses `<WorkCard />`. Denser than index's max-4-col layout.
+6. **Infinite scroll** — `useInfiniteQuery` with `IntersectionObserver` sentinel, page size 30. Skeleton tiles while loading next page.
+7. **Empty state** — when filters yield nothing: "No works match. Try clearing filters." with a clear-all button. When Following + 0 follows: "Follow people to see their work here →" linking to `/` or a creator's profile.
 
-`src/lib/works-import.functions.ts` — `createServerFn` that takes a URL and returns:
-- `title`
-- `description` (short)
-- `cover_url` (remote image URL — we'll proxy/rehost into the `work-covers` bucket on confirm)
-- `embed_url` (iframe-safe URL, when supported)
-- `provider` ("soundcloud" | "youtube" | "vimeo" | "spotify" | "bandcamp" | "instagram" | "tiktok" | "generic")
-- `suggested_category` (audio → "music", video → "video", etc.)
-- `primary_url` (the canonical URL, cleaned of tracking params)
+URL state lives in search params so filters are shareable/back-button-safe:
+`/gallery?q=&tab=for-you&cat=all&src=all&sort=recent`. Use TanStack Router's `validateSearch` with a Zod schema.
 
-Resolution strategy, in order:
-1. **oEmbed** — YouTube, Vimeo, SoundCloud, Spotify, Flickr, TikTok all expose `https://<provider>/oembed?url=...&format=json`. Cleanest path. Gives title, author, thumbnail, and an `html` iframe we can parse for `embed_url`.
-2. **Open Graph fallback** — fetch the URL, parse `<meta property="og:title|og:description|og:image|og:video">`. Covers Bandcamp, Substack, personal sites, GitHub README repos, Behance, Are.na, Dribbble.
-3. **Provider-specific normalizers** for embeds we want to render inline (YouTube → `youtube.com/embed/<id>`, Vimeo → `player.vimeo.com/video/<id>`, Spotify → `open.spotify.com/embed/...`, SoundCloud → `w.soundcloud.com/player/?url=...`, Bandcamp → use their `EmbeddedPlayer` markup from the OG snippet).
+## Following tab
 
-Run server-side (CORS + HTML parsing belong on the server, never the browser). Use `fetch` + a small regex-based OG parser (no DOM lib needed — keep the bundle small for the Worker runtime).
+- Only renders when `useAuth()` has a user.
+- Query joins `follows` (where `follower_user_id = me`) to `work_credits.user_id` to find works by followed creators. Done via a server fn `getFollowingWorks({ limit, cursor, filters })` because RLS-safe joining + DISTINCT works best server-side.
+- Sort respected; category + provider + search filters apply.
 
-Cover handling: the extractor returns the *remote* `cover_url`. On submit, a second server fn `rehostCoverFromUrl` downloads it and uploads to the existing `work-covers` Supabase bucket so we don't depend on hotlink-allowed CDNs. Falls back to keeping the remote URL if rehost fails.
+## Server function: `src/lib/gallery.functions.ts`
 
-## 2. Redesigned `/works/new`
+Two exported server fns (both use `requireSupabaseAuth` only for the Following one; "for-you" can stay client-side using the publishable client since `works` is publicly readable):
 
-Replace the current single-step form with two states on the same page:
+- `listFollowingWorks({ limit, cursor, category, provider, sort, q })` — middleware: `requireSupabaseAuth`. Builds query against `works` joined to `work_credits` filtered by `user_id IN (select followed_user_id from follows where follower_user_id = auth.uid())`. Cursor = `(published_at, id)` keyset.
 
-**State A — Drop a link (default, ~90% of the path):**
-- One big input: `Paste a SoundCloud, YouTube, Vimeo, Bandcamp, Spotify, or any link…`
-- Below it, four small "examples" chips that prefill the input for users who don't have a link handy.
-- Submit triggers `extractWorkFromUrl` → page transitions to State B with everything filled.
-- A small text link below the input: *"Or start from scratch →"* to fall through to the manual form.
+"For-you" fetch stays in the route file using the existing `supabase` client pattern from `index.tsx` for parity, extended with:
+- `q` → `or(title.ilike.%q%,excerpt.ilike.%q%)`.
+- `provider` → `ilike('embed_url', '%youtube.com%')` etc; "other" → `is('embed_url', null)`.
+- keyset pagination via `lt('published_at', cursorTs)`.
 
-**State B — Confirm & publish:**
-- Live preview card at the top (cover + title + provider chip + embed if available) — feels like Twitter's link card.
-- Editable fields, all prefilled: title, excerpt (we generate from description), category (prefilled from `suggested_category`), description, primary URL, license.
-- The cover thumbnail is shown with a "Replace" affordance using the existing `ImageUpload` component.
-- Sticky bottom bar: **Publish Work**, **Save draft**, **+ Add another** (saves current as draft, returns to State A — this is the back-catalog flow).
+## Nav wiring
 
-**Manual mode** is the existing form, reached via the "Start from scratch" link. Don't delete it; some users will want it for things with no canonical URL.
+- `src/components/top-nav.tsx` line 34: change `to="/"` Gallery link → `to="/gallery"`, drop `activeOptions={{ exact: true }}` (let prefix match).
+- `src/components/mobile-nav.tsx`: the "Gallery" dock item currently points to `/` — repoint to `/gallery`. Home logo in top-nav stays `to="/"`.
 
-## 3. Inline embeds on the Work detail page
+## Index page cleanup (minimal)
 
-`src/routes/works.$slug.tsx` currently selects `embed_url` but never renders it. Add an `<EmbedPlayer url={work.embed_url} provider={…} />` component above the cover image. Render in a 16:9 frame for video, a fixed 160px tall iframe for audio (SoundCloud/Spotify standard). Falls back to the cover image when `embed_url` is null.
+Keep the curated `Works Gallery` section on `/` but:
+- Trim from 24 → 12 items so it feels curated, not exhaustive.
+- Add a "Browse the full Gallery →" link under it pointing to `/gallery` (preserving current category/sort as search params).
 
-`src/components/embed-player.tsx` — `<iframe loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" sandbox="allow-scripts allow-same-origin allow-presentation allow-popups">`. Provider whitelist enforced (only known iframe hosts ever render).
+## Scaling considerations (build later, not now)
 
-## 4. Quick-add from profile (the back-catalog moment)
+- Add a Postgres trigram index on `works.title` and `works.excerpt` when search volume justifies it.
+- Add a generated `provider` column on `works` derived from `embed_url` + btree index, replacing the `ilike` filter.
+- "Saved" tab (works you bookmarked via `work_reactions.reaction='save'`) — same shape as Following.
+- City filter chip (works.city_id) — reuse `city-combobox`.
+- Server-side faceted counts ("Film 142 · Music 89") — needs a materialized view; skip for v1.
 
-On the user's own `/u/$username` page, add a thin "+" pill next to "Publish a Work" labeled **"Drop a link"** that opens a small dialog containing State A. On submit, it pushes them into `/works/new?import=<encoded url>` so State B opens with everything ready. This gives the "paste 10 links, ship 10 Works" rhythm without leaving the profile.
+## Out of scope (v1)
 
-## 5. Gallery card affordances
-
-Tiny but high-impact:
-- `WorkCard` shows a small play-triangle overlay when `embed_url` is present and the work is in `music`/`video` category.
-- Provider chip in the bottom-left of the cover (YT/SC/VM/BC/SP) when `embed_url` exists. Tells visitors "this plays inline."
-- Sort tab "Has embed" hidden behind the existing filter row — defer to v2 if scope creeps.
-
-## 6. Honor-system note
-
-No verification of ownership. Below the URL input on State A: a small line — *"Drop links to work you made or co-made. We honor what you claim — report misuse from the Work page."* The existing `ReportDialog` already covers takedowns.
-
----
+- Saved tab, city filter, faceted counts, "creators" tab, recommended-for-you ranking, tag filters.
 
 ## Files
 
-- **add** `src/lib/works-import.functions.ts` — `extractWorkFromUrl`, `rehostCoverFromUrl` server fns.
-- **add** `src/components/embed-player.tsx` — provider-whitelisted iframe renderer.
-- **add** `src/components/import-from-url.tsx` — the State A input + chips (reused on profile dialog).
-- **edit** `src/routes/works.new.tsx` — two-state flow, reads `?import=` query param to skip State A.
-- **edit** `src/routes/works.$slug.tsx` — render `<EmbedPlayer>` above the cover when `embed_url` is set.
-- **edit** `src/routes/u.$username.tsx` — "Drop a link" pill that opens the import dialog.
-- **edit** `src/components/work-card.tsx` — provider chip + play overlay when embed present.
+**New**
+- `src/routes/gallery.tsx`
+- `src/lib/gallery.functions.ts`
 
-## Out of scope (intentionally, for v1)
-
-- Ownership verification / claim disputes — honor system, report-driven.
-- Pulling an artist's *whole* SoundCloud/YouTube channel in one shot — link-at-a-time keeps it honest and curated.
-- Audio waveform rendering — providers' own embeds already do this.
-- Auto-tagging collaborators from video credits — the existing `work_credits` flow stays manual.
+**Edited**
+- `src/components/top-nav.tsx` — repoint Gallery link
+- `src/components/mobile-nav.tsx` — repoint Gallery dock item
+- `src/routes/index.tsx` — trim count, add "Browse full Gallery →" link
 
 ## Technical notes
 
-- oEmbed endpoints are public and CORS-permissive server-side; we still run from a server fn because some (Spotify, Instagram) require auth tokens we'd rather keep off the client.
-- The extractor must time out fast (3s) and never throw — return a partial `{ primary_url, title: <hostname> }` so the flow still works on an unknown link.
-- Cover rehost runs *after* publish-click, not during extract, so State A → State B is sub-second.
-- Add a small allowlist of known iframe-safe hosts; never render arbitrary HTML from oEmbed payloads.
+- Sticky toolbar: `sticky top-[64px] z-20 bg-background/85 backdrop-blur border-b border-border` (offset to clear top-nav).
+- Debounce search with a small `useDebouncedValue` hook inline; no new dep.
+- Infinite query key includes all filter params so changing any filter resets pages cleanly.
+- Provider detection uses the same allowlist already in `src/components/embed-player.tsx` (`providerFromUrl`) for the chip → ilike map.
