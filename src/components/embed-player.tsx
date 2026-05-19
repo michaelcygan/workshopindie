@@ -59,6 +59,30 @@ export function EmbedPlayer({
   );
 }
 
+export function providerFromUrl(url: string | null | undefined): Provider | null {
+  if (!url) return null;
+  try {
+    const h = new URL(url).hostname.replace(/^www\./, "");
+    if (h.endsWith("youtube.com") || h === "youtu.be" || h.endsWith("youtube-nocookie.com")) return "youtube";
+    if (h.endsWith("vimeo.com")) return "vimeo";
+    if (h.endsWith("soundcloud.com")) return "soundcloud";
+    if (h.endsWith("spotify.com")) return "spotify";
+    if (h.endsWith("bandcamp.com")) return "bandcamp";
+    if (h.endsWith("tiktok.com")) return "tiktok";
+    if (h.endsWith("instagram.com")) return "instagram";
+    if (h === "twitter.com" || h === "x.com") return "twitter";
+    if (h.endsWith("github.com")) return "github";
+    if (h.endsWith("behance.net")) return "behance";
+    if (h.endsWith("dribbble.com")) return "dribbble";
+    if (h.endsWith("are.na")) return "arena";
+    if (h.endsWith("substack.com")) return "substack";
+    if (h.endsWith("medium.com")) return "medium";
+    return "generic";
+  } catch {
+    return null;
+  }
+}
+
 export function providerLabel(p?: Provider | string | null): string | null {
   switch (p) {
     case "youtube": return "YouTube";
