@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X, Plus, MapPin } from "lucide-react";
+import { Search, X, Plus } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
+import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
