@@ -7,7 +7,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Calendar, Radio, Shield } from "lucide-react";
+import { Radio, Shield, Megaphone, ChevronDown } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
@@ -29,16 +29,28 @@ export function TopNav() {
         </Link>
 
         <nav className="ml-6 hidden items-center gap-1 md:flex">
-          <Link to="/" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeOptions={{ exact: true }}>Gallery</Link>
-          <Link to="/workshops" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Workshops</Link>
-          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Instant</Link>
-          <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Cities</Link>
+          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Workshop</Link>
+          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Collab</Link>
+          {user && (
+            <Link to="/me" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">Profile</Link>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-0.5 rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition">
+                More <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-40">
+              <DropdownMenuItem onClick={() => navigate({ to: "/" })}>Gallery</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/cities" })}>Cities</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
-          <Link to="/workshops/new" className="hidden md:inline-flex">
+          <Link to="/collab/new" className="hidden md:inline-flex">
             <Button size="sm" className="rounded-full gap-1.5">
-              <Calendar className="h-4 w-4" /> Schedule a Workshop
+              <Megaphone className="h-4 w-4" /> Post a Collab
             </Button>
           </Link>
 
@@ -56,11 +68,11 @@ export function TopNav() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/workshops/new" })}>
-                  <Calendar className="mr-2 h-4 w-4" /> Schedule a Workshop
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/instant" })}>
-                  <Radio className="mr-2 h-4 w-4" /> Join Instant
+                  <Radio className="mr-2 h-4 w-4" /> Drop into Workshop
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
+                  <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (

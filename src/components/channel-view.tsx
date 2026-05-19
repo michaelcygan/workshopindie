@@ -22,6 +22,7 @@ import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
+import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 const RoomBoard = lazy(() => import("@/components/room-board"));
 import {
   AlertDialog,
@@ -658,6 +659,27 @@ export function ChannelView({
             onOpenWork={openWork}
             roomId={roomId}
           />
+
+          {user && (
+            <div className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
+              <WorkshopCollabsPanel
+                presenceUsers={[
+                  {
+                    user_id: user.id,
+                    display_name: meDisplay,
+                    username: me?.username ?? null,
+                    avatar_url: meAvatar,
+                  },
+                  ...others.map((o) => ({
+                    user_id: o.user_id,
+                    display_name: o.profile?.display_name ?? null,
+                    username: o.profile?.username ?? null,
+                    avatar_url: o.profile?.avatar_url ?? null,
+                  })),
+                ]}
+              />
+            </div>
+          )}
         </div>
 
         <WorkPeek workId={peekWorkId} open={workPeekOpen} onOpenChange={setWorkPeekOpen} />
@@ -697,7 +719,7 @@ export function ChannelView({
             <AlertDialogHeader>
               <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
               <AlertDialogDescription>
-                You're the only one left. Want to drop into a new Instant Workshop?
+                You're the only one left. Want to drop into a new Workshop?
                 <br />
                 <span className="mt-2 inline-block text-ink-muted">
                   Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…

@@ -99,6 +99,57 @@ export type Database = {
           },
         ]
       }
+      collab_invites: {
+        Row: {
+          collab_post_id: string
+          collab_role_id: string | null
+          created_at: string
+          id: string
+          invitee_user_id: string
+          inviter_user_id: string
+          message: string | null
+          responded_at: string | null
+          status: Database["public"]["Enums"]["collab_invite_status"]
+        }
+        Insert: {
+          collab_post_id: string
+          collab_role_id?: string | null
+          created_at?: string
+          id?: string
+          invitee_user_id: string
+          inviter_user_id: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["collab_invite_status"]
+        }
+        Update: {
+          collab_post_id?: string
+          collab_role_id?: string | null
+          created_at?: string
+          id?: string
+          invitee_user_id?: string
+          inviter_user_id?: string
+          message?: string | null
+          responded_at?: string | null
+          status?: Database["public"]["Enums"]["collab_invite_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_invites_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_invites_collab_role_id_fkey"
+            columns: ["collab_role_id"]
+            isOneToOne: false
+            referencedRelation: "collab_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_posts: {
         Row: {
           category: Database["public"]["Enums"]["category"]
@@ -1502,6 +1553,7 @@ export type Database = {
         | "business"
         | "mentorship"
         | "coworking"
+      collab_invite_status: "pending" | "accepted" | "declined" | "withdrawn"
       collab_post_status: "open" | "closed" | "archived" | "removed"
       compensation_type:
         | "paid"
@@ -1706,6 +1758,7 @@ export const Constants = {
         "mentorship",
         "coworking",
       ],
+      collab_invite_status: ["pending", "accepted", "declined", "withdrawn"],
       collab_post_status: ["open", "closed", "archived", "removed"],
       compensation_type: [
         "paid",

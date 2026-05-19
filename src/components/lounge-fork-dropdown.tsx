@@ -48,7 +48,7 @@ export function LoungeForkDropdown({ onJoinMedium, onLiveCountChange }: Props) {
         onClick={() => setOpen((v) => !v)}
         className="group inline-flex items-baseline gap-2 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
-        <span className="font-display text-4xl md:text-6xl text-ink">Artist's Lounge</span>
+        <span className="font-display text-4xl md:text-6xl text-ink">Workshop</span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
           transition={{ type: "spring", stiffness: 300, damping: 22 }}
@@ -71,7 +71,7 @@ export function LoungeForkDropdown({ onJoinMedium, onLiveCountChange }: Props) {
             <div className="flex items-center justify-between rounded-xl bg-muted/40 px-3 py-2.5">
               <div className="flex items-center gap-2">
                 <Radio className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium text-ink">Artist's Lounge</span>
+                <span className="text-sm font-medium text-ink">Workshop</span>
               </div>
               <span className="text-xs text-ink-muted">Click "Drop in"</span>
             </div>
@@ -103,7 +103,7 @@ export function LoungeForkDropdown({ onJoinMedium, onLiveCountChange }: Props) {
             )}
 
             <div className="mt-4 px-2 pb-2 text-xs uppercase tracking-wide text-ink-muted">
-              Start a medium-specific Instant Workshop
+              Start a medium-specific Workshop
             </div>
             <div className="flex flex-wrap gap-1.5 px-1 pb-1">
               {CATEGORIES.map((c) => {
