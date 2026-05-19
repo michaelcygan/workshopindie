@@ -261,3 +261,32 @@ function CityMeetupsStrip() {
     </section>
   );
 }
+
+function NetworkRail() {
+  const { user } = useAuth();
+  const { data } = useQuery({
+    queryKey: ["network-feed", user?.id],
+    queryFn: () => getNetworkFeed(user!.id, 8),
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+  // Auto-hide until it has real density.
+  if (!user || !data || data.length < 3) return null;
+  return (
+    <section className="mx-auto max-w-7xl px-4 pt-10 md:px-6 md:pt-14">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-2xl text-ink md:text-3xl">From your network</h2>
+          <p className="mt-1 text-sm text-ink-muted">People you've made things with — and people you follow.</p>
+        </div>
+      </div>
+      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+        {data.map((w) => (
+          <div key={w.id} className="w-64 shrink-0">
+            <WorkCard work={w} />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
