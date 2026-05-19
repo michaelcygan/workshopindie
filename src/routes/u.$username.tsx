@@ -138,7 +138,7 @@ function ProfilePage() {
 
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
-  const pinned = (profile.pinned_work_ids ?? []).map((id) => works?.find((w) => w.id === id)).filter(Boolean) as WorkCardData[];
+  const pinned = (profile.pinned_work_ids ?? []).map((id) => works?.find((w) => w.id === id)).filter(Boolean) as ProfileWork[];
   const rest = works?.filter((w) => !profile.pinned_work_ids?.includes(w.id)) ?? [];
 
   return (
