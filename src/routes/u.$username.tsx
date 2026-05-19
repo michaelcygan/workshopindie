@@ -251,28 +251,188 @@ function ProfilePage() {
           </section>
         )}
 
-        {/* All works */}
+        {/* Frequent collaborators — the visible spine of the network */}
+        <FrequentCollaborators userId={profile.id} />
+
+        {/* All works (with category + role filters) */}
         <section className="mt-12 pb-20">
-          <h2 className="font-display text-2xl text-ink">Works</h2>
-          {!works ? (
-            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}
-            </div>
-          ) : rest.length === 0 && pinned.length === 0 ? (
-            <div className="mt-4 rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-              <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${name} hasn't shipped a Work yet.`}</p>
-              {isOwn && (
-                <Link to="/works/new" className="mt-4 inline-block">
-                  <Button className="rounded-full">Publish a Work</Button>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {rest.map((w) => <WorkCard key={w.id} work={w} />)}
-            </div>
-          )}
+          <WorksWithFilters
+            works={rest}
+            isLoading={!works}
+            isOwn={isOwn}
+            ownerName={name}
+            pinnedCount={pinned.length}
+          />
         </section>
+      </div>
+    </main>
+  );
+}
+
+function FrequentCollaborators({ userId }: { userId: string }) {
+  const { data } = useQuery({
+    queryKey: ["frequent-collaborators", userId],
+    queryFn: () => getFrequentCollaborators(userId, 8),
+    staleTime: 60_000,
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="font-display text-2xl text-ink">Frequent collaborators</h2>
+      <p className="mt-1 text-sm text-ink-muted">People they've made things with most.</p>
+      <div className="mt-4 flex flex-wrap gap-3">
+        {data.map((c: Collaborator) => {
+          const display = c.display_name || c.username || "Anon";
+          const inner = (
+            <div className="flex w-44 items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={c.avatar_url ?? undefined} />
+                <AvatarFallback>{display[0]}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium text-ink">{display}</div>
+                <div className="truncate text-[11px] text-ink-muted">{c.shared_works} together</div>
+              </div>
+            </div>
+          );
+          if (c.username) {
+            return (
+              <Link key={c.id} to="/u/$username" params={{ username: c.username }}>{inner}</Link>
+            );
+          }
+          return (
+            <ProfilePeek key={c.id} userId={c.id}>
+              <button type="button" className="cursor-pointer">{inner}</button>
+            </ProfilePeek>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function WorksWithFilters({
+  works, isLoading, isOwn, ownerName, pinnedCount,
+}: {
+  works: ProfileWork[];
+  isLoading: boolean;
+  isOwn: boolean;
+  ownerName: string;
+  pinnedCount: number;
+}) {
+  const [activeCat, setActiveCat] = useState<Category | "all">("all");
+  const [activeRole, setActiveRole] = useState<string | "all">("all");
+
+  const availableCats = useMemo(
+    () => Array.from(new Set(works.map((w) => w.category))) as Category[],
+    [works],
+  );
+  const availableRoles = useMemo(
+    () => Array.from(new Set(works.map((w) => w.my_role))).sort(),
+    [works],
+  );
+
+  const filtered = useMemo(
+    () => works.filter((w) =>
+      (activeCat === "all" || w.category === activeCat) &&
+      (activeRole === "all" || w.my_role === activeRole),
+    ),
+    [works, activeCat, activeRole],
+  );
+
+  if (isLoading) {
+    return (
+      <>
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}
+        </div>
+      </>
+    );
+  }
+
+  if (works.length === 0 && pinnedCount === 0) {
+    return (
+      <>
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <div className="mt-4 rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+          <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${ownerName} hasn't shipped a Work yet.`}</p>
+          {isOwn && (
+            <Link to="/works/new" className="mt-4 inline-block">
+              <Button className="rounded-full">Publish a Work</Button>
+            </Link>
+          )}
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h2 className="font-display text-2xl text-ink">Works</h2>
+        <span className="text-xs text-ink-muted">{filtered.length} shown</span>
+      </div>
+
+      {(availableCats.length > 1 || availableRoles.length > 1) && (
+        <div className="mt-4 space-y-2">
+          {availableCats.length > 1 && (
+            <FilterRow
+              options={[{ id: "all", label: "All categories" }, ...availableCats.map((c) => ({ id: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))]}
+              value={activeCat}
+              onChange={(v) => setActiveCat(v as Category | "all")}
+            />
+          )}
+          {availableRoles.length > 1 && (
+            <FilterRow
+              options={[{ id: "all", label: "All roles" }, ...availableRoles.map((r) => ({ id: r, label: r }))]}
+              value={activeRole}
+              onChange={(v) => setActiveRole(v as string | "all")}
+            />
+          )}
+        </div>
+      )}
+
+      {filtered.length === 0 ? (
+        <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+          Nothing matches that filter.
+        </div>
+      ) : (
+        <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((w) => <WorkCard key={w.id} work={w} />)}
+        </div>
+      )}
+    </>
+  );
+}
+
+function FilterRow({
+  options, value, onChange,
+}: {
+  options: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          onClick={() => onChange(o.id)}
+          className={cn(
+            "rounded-full border px-3 py-1 text-xs font-medium transition",
+            value === o.id
+              ? "border-transparent bg-ink text-background"
+              : "border-border bg-surface text-ink-soft hover:bg-muted",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
       </div>
     </main>
   );
