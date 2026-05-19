@@ -106,6 +106,23 @@ function MeDashboard() {
     },
   });
 
+  const { data: closedNudges = [] } = useQuery({
+    queryKey: ["me-closed-collabs", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("id,title,slug,description")
+        .eq("user_id", user!.id)
+        .eq("status", "closed")
+        .is("resulting_work_id", null)
+        .is("close_nudge_dismissed_at", null)
+        .order("closed_at", { ascending: false })
+        .limit(5);
+      return data ?? [];
+    },
+  });
+
   if (!user) return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
 
   const name = profile?.display_name || profile?.username || "Creator";
