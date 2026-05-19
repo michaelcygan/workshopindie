@@ -15,8 +15,8 @@ export const Route = createFileRoute("/instant/")({
   component: InstantPreflight,
   head: () => ({
     meta: [
-      { title: "Instant — Drop into the Artist's Lounge" },
-      { name: "description", content: "Drop into a live Artist's Lounge. Voice or video, up to 5 per room." },
+      { title: "Workshop — Drop in" },
+      { name: "description", content: "Drop into a live Workshop. Voice or video, up to 5 per room." },
     ],
   }),
 });

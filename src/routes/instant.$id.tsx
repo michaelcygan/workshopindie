@@ -8,15 +8,15 @@ import { ChannelView } from "@/components/channel-view";
 import { supabase } from "@/integrations/supabase/client";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
-const FALLBACK_TITLE = "Instant Workshop";
+const FALLBACK_TITLE = "Workshop";
 
 export const Route = createFileRoute("/instant/$id")({
   component: LoungeRoomPage,
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Instant Workshop" },
-      { name: "description", content: "A live Instant Workshop. Drop in, talk shop, find your people." },
+      { title: "Workshop" },
+      { name: "description", content: "A live Workshop. Drop in, talk shop, find your people." },
     ],
   }),
 });
