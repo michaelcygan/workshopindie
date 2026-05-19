@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, ExternalLink, Pencil, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +13,10 @@ import { FollowButton } from "@/components/follow-button";
 import { ReportDialog } from "@/components/report-dialog";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
+import { ProfilePeek } from "@/components/profile-peek";
+import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 
 export const Route = createFileRoute("/u/$username")({ component: ProfilePage });
