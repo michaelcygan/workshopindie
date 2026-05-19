@@ -1,43 +1,56 @@
-## Goal
-Add a calm, Stripe-style world map animation to the homepage hero — a tilted, minimal hemisphere with slowly drifting dot-arcs between cities and small pin labels that fade in/out describing the connection (e.g. "Lagos → Berlin · Score").
+## What's wrong
 
-## Approach: pure SVG, no heavy libs
-- One new component `src/components/world-arcs.tsx`.
-- Render a **dotted hemisphere** as background: thousands of small circles placed on a sphere projection (orthographic), filtered to land only using a low-res GeoJSON of country outlines. Land dots are slightly darker / more saturated; ocean is empty. This gives the Stripe/Mercury "particle continents" look.
-- The sphere is **tilted ~20° and rotates very slowly** on the Y axis (full rotation ~120s) via a single `requestAnimationFrame` loop that recomputes projected dot positions. Use `d3-geo`'s `geoOrthographic` projection (tiny, ~15kb) + a pre-baked land GeoJSON in `src/assets/land-110m.json` (Natural Earth 110m, ~80kb gzipped) for the land mask test.
-- Above the dots, render **animated arcs** between pairs of cities:
-  - Use `geoInterpolate` to get great-circle arcs, sample 64 points, project each to 2D, draw as an SVG `path`.
-  - Animate `stroke-dasharray` so each arc draws over ~2.5s, holds briefly, then fades. Stagger arcs with a 1.5s offset.
-  - At each arc endpoint, drop a small ring + pulse circle (the "pin").
-  - When the arc completes, show a **small pill label** near the destination pin with the connection metaphor — fades in for ~3s, then out. Examples (since this is aspirational/global-adoption framing): "Lagos → Berlin · Scoring a short film", "São Paulo → Tokyo · Co-writing a track", "Mexico City → Lisbon · Cover photography", "Nairobi → Toronto · Edit pass".
-- Cull arcs/pins that fall on the **far side** of the globe (z < 0 in orthographic) so the animation stays clean as the sphere rotates.
+1. **10s blank → pop-in.** `WorldArcs` runs 6,000 `geoContains` tests synchronously inside `useMemo` on first render. That blocks the hero's first paint until the land mask is built, then the parent re-renders.
+2. **Every frame re-renders the whole component.** `setLambda` + `setNow` fire on every `requestAnimationFrame`, so React re-runs `WorldArcs`, rebuilds `projection` (useMemo deps include `lambda`), recomputes 12 arc features and re-renders the canvas effect. That's why arcs "lag" and the page feels heavy.
+3. **Arc scheduling is wrong.** `((now - i*STAGGER) % (CYCLE * PAIRS.length))` gives each pair a single 7s window inside an 84s period — so you see a burst of arcs at start, then nothing for a minute, then another burst. Matches the "fire too quickly… then long time to reload" complaint.
+4. **Layout covers the text.** The globe is centered (`max-w-[1100px] mx-auto`) over the hero, so on desktop it sits behind the headline and squeezes the "Show your Work" / CTA area visually. Per screenshot 2, you want the headline + buttons back to their original centered full-width layout, with the globe as a softer backdrop offset to the left.
 
-## Styling
-- Land dots: `bg → primary` blend, low opacity (~0.35–0.55), 1px radius.
-- Arcs: 1px stroke, gradient from `--primary` to `--accent` (using a single `<linearGradient>`).
-- Pin labels: small rounded surface chip with city + verb, matches existing `border-border bg-surface` aesthetic.
-- Respect `prefers-reduced-motion`: stop rotation, show 2–3 static arcs only.
-- Fully responsive: SVG `viewBox`, contains itself, no layout shift.
+## Fix plan
 
-## Hero integration
-- Edit `src/routes/index.tsx`. Mount `<WorldArcs />` in the hero section as a soft visual layer between the cream veil and the text — `absolute inset-0 -z-[5] opacity-[0.9]` (above EtherealBackground, behind text). Hero copy stays unchanged.
-- On mobile (`< md`), shift the globe so its center sits below the headline (translate-y) so it acts as a backdrop without competing with type. On desktop, keep it centered behind the hero.
+### A. Move all animation off React state (the big perf win)
 
-## Performance
-- ~1,200 land dots, pre-computed once at mount; only the transform (rotation matrix) is updated per frame — no DOM diffing of every dot. Render dots into a single `<canvas>` layered behind the SVG (canvas for dots = cheap; SVG for arcs/pins/labels = crisp + interactive). This is the same split Stripe uses.
-- ~4 active arcs at any time; pool of 12 city pairs cycled.
-- Pause rAF when the hero section is not in viewport (`IntersectionObserver`).
+Rewrite `src/components/world-arcs.tsx` so React renders the `<canvas>` + a single `<svg>` shell **once**, and a single rAF loop drives everything imperatively:
 
-## New deps
-- `d3-geo` (~30kb), `topojson-client` (only if I ship the land as TopoJSON; GeoJSON avoids it). I'll ship GeoJSON to skip topojson-client.
+- Keep `lambda`, `now`, and per-arc state in **refs**, not `useState`.
+- One canvas, drawn each frame: sphere fill + land dots + arcs + pins. Drop the SVG arc/label path entirely — draw arcs and pin glows on canvas, only render the small text pill labels in the DOM (positioned via `style.transform` updates on a ref'd `<div>`, no React re-render).
+- Recompute `projection.rotate([-lambda, -18, 0])` inside the rAF tick (cheap), not via `useMemo`.
+
+Expected: 0 React renders/sec during animation instead of ~60.
+
+### B. Don't block first paint on the land mask
+
+- Lower dot count to **~2,500** (visually identical at hero size).
+- Build the land-dot array **after first paint**: render the hero immediately, then in a `useEffect` schedule the build via `requestIdleCallback` (fallback `setTimeout 0`). The canvas shows the sphere + arcs immediately; dots fade in once ready (~150ms on a normal laptop with 2.5k samples vs ~1–2s with 6k).
+- Even better: chunk the geoContains loop across a few frames (process 500 points per frame) so the main thread never stalls.
+
+### C. Fix arc timing
+
+Replace the global cycle math with **independent per-arc timers**:
+
+- Keep a pool of 3 concurrent arcs.
+- Each arc has lifecycle: draw-in 1.4s → hold 1.6s → fade-out 0.8s → cooldown 0.6s → pick next pair. Total ~4.4s per arc, 3 active staggered by ~1.5s → smooth, continuous rhythm. No 80s dead zones, no bursts.
+- Cycle through `PAIRS` round-robin so every connection eventually shows.
+
+### D. Restore full-width hero text, push globe to backdrop
+
+In `src/routes/index.tsx` `Hero`:
+- Remove `max-w-[1100px] mx-auto` from the `WorldArcs` wrapper.
+- Position the globe **left-anchored and partially off-canvas** on desktop so it reads as ambient backdrop, not a centered competing element. Concretely: `absolute -left-[10%] top-1/2 -translate-y-1/2 h-[110%] w-[70%] opacity-70 -z-[5]` on `md+`, and on mobile drop it below the headline (`top-[55%] left-0 w-full h-[60%] opacity-50`).
+- Headline + CTA grid keep their existing `max-w-6xl … text-center` and `md:grid-cols-2`, so "Find people. Make the thing. Show your Work." + the two CTA cards return to the full-width centered layout from screenshot 2.
+- Bump the cream veil opacity slightly on the right side (radial mask) so type contrast over the globe stays clean.
+
+### E. Misc
+
+- Respect `prefers-reduced-motion`: render dots + 2 static arcs, no rAF.
+- Pause rAF via `IntersectionObserver` (already exists — keep).
+- Drop the `<foreignObject>` labels (they force SVG layout on every frame). Use a single absolutely-positioned `<div>` whose `transform` is set imperatively.
 
 ## Files
-- create `src/components/world-arcs.tsx`
-- create `src/assets/land-110m.json` (Natural Earth low-res land outlines)
-- edit `src/routes/index.tsx` (mount in `Hero`)
-- `bun add d3-geo @types/d3-geo`
 
-## Out of scope (good followups, not now)
-- Real connection data from the network (hook arcs to actual Collab matches once there's volume).
-- Click an arc → open that Collab.
-- Dark-mode tuning beyond what semantic tokens already give.
+- edit `src/components/world-arcs.tsx` — full rewrite along the lines above.
+- edit `src/routes/index.tsx` — reposition `<WorldArcs />` wrapper classes only; headline/CTA markup unchanged.
+
+## Out of scope
+
+- Replacing `EtherealBackground` blur stack (separate concern; not the slow part here).
+- Real connection data.

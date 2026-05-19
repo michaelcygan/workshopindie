@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { geoOrthographic, geoPath, geoInterpolate, geoContains } from "d3-geo";
+import { useEffect, useRef } from "react";
+import { geoOrthographic, geoInterpolate, geoContains } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import landRaw from "@/assets/land-110m.json";
 
 const land = landRaw as unknown as FeatureCollection<Polygon | MultiPolygon>;
-// Flatten into a single Feature for fast geoContains tests
 const landFeature = {
   type: "Feature",
   geometry: {
@@ -52,236 +51,302 @@ const PAIRS: Pair[] = [
   { from: CITIES.berlin, to: CITIES.saopaulo, verb: "Remix swap" },
 ];
 
-// Generate a dense lon/lat grid, keep only land points
-function buildLandDots(): Array<[number, number]> {
-  const dots: Array<[number, number]> = [];
-  // golden-spiral-ish sampling: uniform on sphere
-  const N = 6000;
-  for (let i = 0; i < N; i++) {
-    const y = 1 - (i / (N - 1)) * 2; // -1..1
-    const lat = (Math.asin(y) * 180) / Math.PI;
-    const lon = ((i * 137.508) % 360) - 180;
-    if (geoContains(landFeature, [lon, lat])) dots.push([lon, lat]);
-  }
-  return dots;
-}
-
 const REDUCE_MOTION =
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+const ACTIVE_ARCS = 3;
+const DRAW_MS = 1400;
+const HOLD_MS = 1600;
+const FADE_MS = 800;
+const COOL_MS = 600;
+const LIFE = DRAW_MS + HOLD_MS + FADE_MS + COOL_MS;
+
+type ArcSlot = { pairIdx: number; start: number };
+
 export function WorldArcs({ className }: { className?: string }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [size, setSize] = useState({ w: 800, h: 800 });
-  const [lambda, setLambda] = useState(20); // rotation longitude
-  const [now, setNow] = useState(0);
+  const labelRef = useRef<HTMLDivElement | null>(null);
+  const dotsRef = useRef<Array<[number, number]> | null>(null);
+  const dotAlphaRef = useRef(0);
   const inViewRef = useRef(true);
-  const dots = useMemo(() => buildLandDots(), []);
 
-  // Resize observer
+  // Build land dots after first paint, chunked so we never block the main thread.
   useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => {
-      const r = el.getBoundingClientRect();
-      setSize({ w: Math.max(320, r.width), h: Math.max(320, r.height) });
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
+    let cancelled = false;
+    const N = 2500;
+    const CHUNK = 400;
+    const acc: Array<[number, number]> = [];
+    let i = 0;
+
+    const step = () => {
+      if (cancelled) return;
+      const end = Math.min(N, i + CHUNK);
+      for (; i < end; i++) {
+        const y = 1 - (i / (N - 1)) * 2;
+        const lat = (Math.asin(y) * 180) / Math.PI;
+        const lon = ((i * 137.508) % 360) - 180;
+        if (geoContains(landFeature, [lon, lat])) acc.push([lon, lat]);
+      }
+      if (i < N) {
+        (window.requestIdleCallback || window.requestAnimationFrame)(step as any);
+      } else {
+        dotsRef.current = acc;
+      }
+    };
+    (window.requestIdleCallback || window.requestAnimationFrame)(step as any);
+    return () => { cancelled = true; };
   }, []);
 
-  // Visibility observer
+  // Visibility observer — pause rAF when offscreen.
   useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(([e]) => {
-      inViewRef.current = e.isIntersecting;
-    });
+    const io = new IntersectionObserver(([e]) => { inViewRef.current = e.isIntersecting; });
     io.observe(el);
     return () => io.disconnect();
   }, []);
 
-  // rAF loop
+  // Main animation loop — fully imperative, no React state per frame.
   useEffect(() => {
-    let raf = 0;
-    let last = performance.now();
-    const tick = (t: number) => {
-      const dt = t - last;
-      last = t;
-      if (inViewRef.current && !REDUCE_MOTION) {
-        setLambda((l) => (l + dt * 0.006) % 360); // ~60s/rev
-        setNow(t);
-      } else {
-        setNow(t);
-      }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const { w, h } = size;
-  const radius = Math.min(w, h) * 0.46;
-
-  const projection = useMemo(() => {
-    return geoOrthographic()
-      .translate([w / 2, h / 2])
-      .scale(radius)
-      .rotate([-lambda, -18, 0])
-      .clipAngle(90);
-  }, [w, h, radius, lambda]);
-
-  // Draw dots to canvas
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const dpr = window.devicePixelRatio || 1;
-    c.width = w * dpr;
-    c.height = h * dpr;
-    c.style.width = `${w}px`;
-    c.style.height = `${h}px`;
-    const ctx = c.getContext("2d");
+    const wrap = wrapRef.current;
+    const canvas = canvasRef.current;
+    const label = labelRef.current;
+    if (!wrap || !canvas) return;
+    const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
 
-    // Sphere subtle fill
-    ctx.beginPath();
-    ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(255,255,255,0.35)";
-    ctx.fill();
+    let w = 0, h = 0, radius = 0, dpr = 1;
+    const resize = () => {
+      const r = wrap.getBoundingClientRect();
+      w = Math.max(320, r.width);
+      h = Math.max(320, r.height);
+      dpr = window.devicePixelRatio || 1;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = `${w}px`;
+      canvas.style.height = `${h}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      radius = Math.min(w, h) * 0.46;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(wrap);
 
-    // Land dots
-    const rotate = projection.rotate();
-    const lam = -rotate[0] * (Math.PI / 180);
-    const phi = -rotate[1] * (Math.PI / 180);
-    const cosPhi = Math.cos(phi);
-    const sinPhi = Math.sin(phi);
+    const projection = geoOrthographic().clipAngle(90);
 
-    for (const [lon, lat] of dots) {
-      const l = (lon * Math.PI) / 180 - lam;
-      const p = (lat * Math.PI) / 180;
-      // 3D
-      const x3 = Math.cos(p) * Math.sin(l);
-      const y3 = Math.sin(p);
-      const z3 = Math.cos(p) * Math.cos(l);
-      // rotate around X by phi
-      const yr = y3 * cosPhi - z3 * sinPhi;
-      const zr = y3 * sinPhi + z3 * cosPhi;
-      if (zr < 0.02) continue; // back side
-      const px = w / 2 + x3 * radius;
-      const py = h / 2 - yr * radius;
-      const alpha = 0.25 + zr * 0.5;
-      ctx.fillStyle = `hsla(14, 80%, 55%, ${alpha * 0.55})`;
-      ctx.fillRect(px - 0.6, py - 0.6, 1.2, 1.2);
-    }
-  }, [dots, projection, w, h, radius]);
+    // Initialize arc slots, staggered
+    let nextPair = 0;
+    const t0 = performance.now();
+    const slots: ArcSlot[] = Array.from({ length: ACTIVE_ARCS }, (_, i) => ({
+      pairIdx: (nextPair++) % PAIRS.length,
+      start: t0 + i * (LIFE / ACTIVE_ARCS),
+    }));
 
-  // Arcs: cycle through pairs, each has a 6s lifecycle, staggered
-  const CYCLE = 7000;
-  const STAGGER = 1700;
-  const arcs = PAIRS.map((p, i) => {
-    const local = ((now - i * STAGGER) % (CYCLE * PAIRS.length) + CYCLE * PAIRS.length) % (CYCLE * PAIRS.length);
-    if (local > CYCLE) return null;
-    const t = local / CYCLE; // 0..1
-    return { pair: p, t, idx: i };
-  });
+    let lambda = 20;
+    let last = t0;
+    let raf = 0;
 
-  const pathGen = geoPath(projection);
+    // Cache arc sample coords per slot (lon,lat) to avoid re-interpolating every frame
+    const cachedSamples: Array<{ idx: number; samples: [number, number][] } | null> = slots.map(() => null);
 
-  function arcFeature(pair: Pair, t: number) {
-    const interp = geoInterpolate([pair.from.lon, pair.from.lat], [pair.to.lon, pair.to.lat]);
-    const steps = 48;
-    const end = Math.min(1, t * 1.6);
-    const coords: [number, number][] = [];
-    for (let s = 0; s <= steps; s++) {
-      const u = (s / steps) * end;
-      coords.push(interp(u) as [number, number]);
-    }
-    return { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } } as Feature;
-  }
+    const sampleArc = (pair: Pair): [number, number][] => {
+      const interp = geoInterpolate([pair.from.lon, pair.from.lat], [pair.to.lon, pair.to.lat]);
+      const N = 40;
+      const out: [number, number][] = new Array(N + 1);
+      for (let i = 0; i <= N; i++) out[i] = interp(i / N) as [number, number];
+      return out;
+    };
 
-  function project(lon: number, lat: number) {
-    const p = projection([lon, lat]);
-    if (!p) return null;
-    // visibility test via rotation
-    const rotate = projection.rotate();
-    const lam = -rotate[0] * (Math.PI / 180);
-    const phi = -rotate[1] * (Math.PI / 180);
-    const l = (lon * Math.PI) / 180 - lam;
-    const ph = (lat * Math.PI) / 180;
-    const y3 = Math.sin(ph);
-    const z3 = Math.cos(ph) * Math.cos(l);
-    const zr = y3 * Math.sin(phi) + z3 * Math.cos(phi);
-    if (zr < 0) return null;
-    return p;
-  }
+    const draw = (now: number) => {
+      const dt = now - last;
+      last = now;
+      if (inViewRef.current && !REDUCE_MOTION) {
+        lambda = (lambda + dt * 0.006) % 360;
+        // dot alpha fades in once dots are ready
+        if (dotsRef.current && dotAlphaRef.current < 1) {
+          dotAlphaRef.current = Math.min(1, dotAlphaRef.current + dt / 600);
+        }
+      }
+
+      projection.translate([w / 2, h / 2]).scale(radius).rotate([-lambda, -18, 0]);
+      const rot = projection.rotate();
+      const lam = -rot[0] * (Math.PI / 180);
+      const phi = -rot[1] * (Math.PI / 180);
+      const cosPhi = Math.cos(phi);
+      const sinPhi = Math.sin(phi);
+
+      ctx.clearRect(0, 0, w, h);
+
+      // Sphere subtle fill
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255,255,255,0.32)";
+      ctx.fill();
+
+      // Land dots
+      const dots = dotsRef.current;
+      if (dots) {
+        const dotA = dotAlphaRef.current;
+        for (let i = 0; i < dots.length; i++) {
+          const lon = dots[i][0];
+          const lat = dots[i][1];
+          const l = (lon * Math.PI) / 180 - lam;
+          const p = (lat * Math.PI) / 180;
+          const cosP = Math.cos(p);
+          const x3 = cosP * Math.sin(l);
+          const y3 = Math.sin(p);
+          const z3 = cosP * Math.cos(l);
+          const yr = y3 * cosPhi - z3 * sinPhi;
+          const zr = y3 * sinPhi + z3 * cosPhi;
+          if (zr < 0.02) continue;
+          const px = w / 2 + x3 * radius;
+          const py = h / 2 - yr * radius;
+          const alpha = (0.25 + zr * 0.5) * 0.55 * dotA;
+          ctx.fillStyle = `rgba(229,103,60,${alpha})`;
+          ctx.fillRect(px - 0.6, py - 0.6, 1.2, 1.2);
+        }
+      }
+
+      // Sphere outline
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(200,140,120,0.25)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
+      // Arcs
+      let activeLabel: { pair: Pair; x: number; y: number; opacity: number } | null = null;
+      for (let s = 0; s < slots.length; s++) {
+        const slot = slots[s];
+        let local = now - slot.start;
+        if (local < 0) continue;
+        if (local >= LIFE) {
+          slot.pairIdx = nextPair++ % PAIRS.length;
+          slot.start = now;
+          cachedSamples[s] = null;
+          local = 0;
+        }
+        const pair = PAIRS[slot.pairIdx];
+        if (!cachedSamples[s] || cachedSamples[s]!.idx !== slot.pairIdx) {
+          cachedSamples[s] = { idx: slot.pairIdx, samples: sampleArc(pair) };
+        }
+        const samples = cachedSamples[s]!.samples;
+
+        // progress
+        let drawT = 0;
+        let fade = 1;
+        if (local < DRAW_MS) {
+          drawT = local / DRAW_MS;
+        } else if (local < DRAW_MS + HOLD_MS) {
+          drawT = 1;
+        } else if (local < DRAW_MS + HOLD_MS + FADE_MS) {
+          drawT = 1;
+          fade = 1 - (local - DRAW_MS - HOLD_MS) / FADE_MS;
+        } else {
+          continue; // cooldown — nothing to draw
+        }
+
+        // Project samples, cull back-side, draw up to drawT
+        const lastIdx = Math.floor(drawT * (samples.length - 1));
+        ctx.beginPath();
+        let started = false;
+        let lastVisible: { x: number; y: number } | null = null;
+        for (let i = 0; i <= lastIdx; i++) {
+          const lon = samples[i][0];
+          const lat = samples[i][1];
+          const l = (lon * Math.PI) / 180 - lam;
+          const p = (lat * Math.PI) / 180;
+          const cosP = Math.cos(p);
+          const x3 = cosP * Math.sin(l);
+          const y3 = Math.sin(p);
+          const z3 = cosP * Math.cos(l);
+          const yr = y3 * cosPhi - z3 * sinPhi;
+          const zr = y3 * sinPhi + z3 * cosPhi;
+          if (zr < 0) { started = false; continue; }
+          const px = w / 2 + x3 * radius;
+          const py = h / 2 - yr * radius;
+          if (!started) { ctx.moveTo(px, py); started = true; }
+          else ctx.lineTo(px, py);
+          lastVisible = { x: px, y: py };
+        }
+        ctx.strokeStyle = `rgba(232,93,58,${0.85 * fade})`;
+        ctx.lineWidth = 1.25;
+        ctx.lineCap = "round";
+        ctx.stroke();
+
+        // From pin
+        const project = (lon: number, lat: number) => {
+          const l = (lon * Math.PI) / 180 - lam;
+          const p = (lat * Math.PI) / 180;
+          const cosP = Math.cos(p);
+          const x3 = cosP * Math.sin(l);
+          const y3 = Math.sin(p);
+          const z3 = cosP * Math.cos(l);
+          const yr = y3 * cosPhi - z3 * sinPhi;
+          const zr = y3 * sinPhi + z3 * cosPhi;
+          if (zr < 0) return null;
+          return { x: w / 2 + x3 * radius, y: h / 2 - yr * radius };
+        };
+        const from = project(pair.from.lon, pair.from.lat);
+        if (from) {
+          const g = ctx.createRadialGradient(from.x, from.y, 0, from.x, from.y, 9);
+          g.addColorStop(0, `rgba(232,93,58,${0.55 * fade})`);
+          g.addColorStop(1, "rgba(232,93,58,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(from.x, from.y, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(232,93,58,${0.95 * fade})`;
+          ctx.beginPath(); ctx.arc(from.x, from.y, 2.4, 0, Math.PI * 2); ctx.fill();
+        }
+        // To pin (only once arc has reached it)
+        if (drawT >= 1 && lastVisible) {
+          const to = project(pair.to.lon, pair.to.lat);
+          const tp = to ?? lastVisible;
+          const g = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, 11);
+          g.addColorStop(0, `rgba(214,68,116,${0.6 * fade})`);
+          g.addColorStop(1, "rgba(214,68,116,0)");
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(tp.x, tp.y, 11, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(214,68,116,${0.95 * fade})`;
+          ctx.beginPath(); ctx.arc(tp.x, tp.y, 3, 0, Math.PI * 2); ctx.fill();
+
+          // Pick the most recently-completed arc as the label
+          if (!activeLabel || fade > activeLabel.opacity) {
+            activeLabel = { pair, x: tp.x, y: tp.y, opacity: fade };
+          }
+        }
+      }
+
+      // Update single label DOM imperatively
+      if (label) {
+        if (activeLabel) {
+          label.style.opacity = String(activeLabel.opacity);
+          label.style.transform = `translate(${activeLabel.x + 12}px, ${activeLabel.y - 30}px)`;
+          label.textContent = `${activeLabel.pair.from.name} → ${activeLabel.pair.to.name} · ${activeLabel.pair.verb}`;
+        } else {
+          label.style.opacity = "0";
+        }
+      }
+
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
+  }, []);
 
   return (
     <div ref={wrapRef} className={`relative ${className ?? ""}`}>
       <canvas ref={canvasRef} className="absolute inset-0" />
-      <svg
-        width={w}
-        height={h}
-        viewBox={`0 0 ${w} ${h}`}
-        className="absolute inset-0 pointer-events-none"
-      >
-        <defs>
-          <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="hsl(14 90% 60%)" stopOpacity="0" />
-            <stop offset="50%" stopColor="hsl(14 90% 60%)" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="hsl(330 85% 65%)" stopOpacity="0.95" />
-          </linearGradient>
-          <radialGradient id="pinGlow">
-            <stop offset="0%" stopColor="hsl(14 90% 60%)" stopOpacity="0.8" />
-            <stop offset="100%" stopColor="hsl(14 90% 60%)" stopOpacity="0" />
-          </radialGradient>
-        </defs>
-
-        {/* sphere outline */}
-        <circle cx={w / 2} cy={h / 2} r={radius} fill="none" stroke="hsl(14 30% 80% / 0.35)" strokeWidth={1} />
-
-        {arcs.map((a) => {
-          if (!a) return null;
-          const { pair, t, idx } = a;
-          const fade = t < 0.15 ? t / 0.15 : t > 0.85 ? (1 - t) / 0.15 : 1;
-          const feat = arcFeature(pair, t);
-          const d = pathGen(feat);
-          if (!d) return null;
-          const from = project(pair.from.lon, pair.from.lat);
-          const to = project(pair.to.lon, pair.to.lat);
-          const showLabel = t > 0.55;
-          return (
-            <g key={idx} opacity={fade}>
-              <path d={d} fill="none" stroke="url(#arcGrad)" strokeWidth={1.25} strokeLinecap="round" />
-              {from && (
-                <g transform={`translate(${from[0]},${from[1]})`}>
-                  <circle r={8} fill="url(#pinGlow)" />
-                  <circle r={2.5} fill="hsl(14 90% 55%)" />
-                </g>
-              )}
-              {to && t > 0.55 && (
-                <g transform={`translate(${to[0]},${to[1]})`}>
-                  <circle r={10} fill="url(#pinGlow)" opacity={fade} />
-                  <circle r={3} fill="hsl(330 85% 60%)" />
-                </g>
-              )}
-              {to && showLabel && (
-                <foreignObject x={to[0] + 10} y={to[1] - 28} width={220} height={48}>
-                  <div
-                    style={{ opacity: fade }}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 backdrop-blur px-2.5 py-1 text-[11px] text-ink shadow-soft whitespace-nowrap"
-                  >
-                    <span className="font-medium">{pair.from.name} → {pair.to.name}</span>
-                    <span className="text-ink-soft">· {pair.verb}</span>
-                  </div>
-                </foreignObject>
-              )}
-            </g>
-          );
-        })}
-      </svg>
+      <div
+        ref={labelRef}
+        className="pointer-events-none absolute left-0 top-0 origin-top-left whitespace-nowrap rounded-full border border-border bg-surface/95 backdrop-blur px-2.5 py-1 text-[11px] text-ink shadow-soft transition-opacity duration-300"
+        style={{ opacity: 0 }}
+      />
     </div>
   );
 }
