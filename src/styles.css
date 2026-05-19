@@ -206,7 +206,7 @@
     background-size: 3px 3px;
   }
   .gradient-warm {
-    background-image: linear-gradient(135deg, oklch(0.28 0.12 258) 0%, oklch(0.62 0.24 295) 100%);
+    background-image: linear-gradient(135deg, oklch(0.72 0.20 50) 0%, oklch(0.64 0.22 18) 50%, oklch(0.56 0.25 350) 100%);
   }
   .gradient-soft {
     background-image: radial-gradient(60% 80% at 20% 0%, oklch(0.62 0.22 350 / 0.10), transparent 60%),
