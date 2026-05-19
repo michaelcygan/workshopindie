@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, Plus, MapPin } from "lucide-react";
 import { z } from "zod";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,17 +11,13 @@ import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  listFollowingWorks,
-  PROVIDER_OPTIONS,
-  PROVIDER_PATTERNS,
-} from "@/lib/gallery.functions";
+import { listFollowingWorks } from "@/lib/gallery.functions";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
   tab: fallback(z.enum(["for-you", "following"]), "for-you").default("for-you"),
   cat: fallback(z.string(), "all").default("all"),
-  src: fallback(z.string(), "all").default("all"),
+  city: fallback(z.string(), "all").default("all"),
   sort: fallback(z.enum(["recent", "trending"]), "recent").default("recent"),
 });
 
@@ -30,7 +26,7 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Gallery — Workshop" },
-      { name: "description", content: "Browse everything people have shipped on Workshop. Filter by medium, source, and what your network is making." },
+      { name: "description", content: "Browse everything people have shipped on Workshop. Filter by medium, location, and what your network is making." },
       { property: "og:title", content: "Gallery — Workshop" },
       { property: "og:description", content: "Browse everything people have shipped on Workshop." },
     ],
@@ -49,9 +45,37 @@ function useDebounced<T>(value: T, ms = 250): T {
   return v;
 }
 
+type CityChip = { id: string; name: string; slug: string; country: string; count: number };
+
+async function fetchGalleryCities(): Promise<CityChip[]> {
+  // Pull a sample of recent published works with their city; aggregate client-side.
+  const { data, error } = await supabase
+    .from("works")
+    .select("city_id, cities(id, name, slug, country)")
+    .eq("status", "published")
+    .in("visibility", ["public", "unlisted"])
+    .not("city_id", "is", null)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(1000);
+  if (error) return [];
+  const map = new Map<string, CityChip>();
+  for (const row of (data ?? []) as Array<{
+    city_id: string | null;
+    cities: { id: string; name: string; slug: string; country: string } | null;
+  }>) {
+    const c = row.cities;
+    if (!c) continue;
+    const ex = map.get(c.id);
+    if (ex) ex.count += 1;
+    else map.set(c.id, { id: c.id, name: c.name, slug: c.slug, country: c.country, count: 1 });
+  }
+  return Array.from(map.values()).sort((a, b) => b.count - a.count);
+}
+
 async function fetchForYouPage(params: {
   category: string;
-  provider: string;
+  citySlug: string;
+  cityIdMap: Map<string, string>;
   sort: "recent" | "trending";
   q: string;
   cursor: string | null;
@@ -66,19 +90,14 @@ async function fetchForYouPage(params: {
     .limit(PAGE_SIZE);
 
   if (params.category !== "all") qb = qb.eq("category", params.category as Category);
+  if (params.citySlug !== "all") {
+    const cid = params.cityIdMap.get(params.citySlug);
+    if (!cid) return { works: [], nextCursor: null };
+    qb = qb.eq("city_id", cid);
+  }
   if (params.q.trim()) {
     const s = params.q.trim().replace(/[%,]/g, " ");
     qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
-  }
-  if (params.provider !== "all") {
-    if (params.provider === "other") {
-      qb = qb.is("embed_url", null);
-    } else {
-      const patterns = PROVIDER_PATTERNS[params.provider];
-      if (patterns?.length) {
-        qb = qb.or(patterns.map((p) => `embed_url.ilike.%${p}%`).join(","));
-      }
-    }
   }
   if (params.sort === "recent") {
     qb = qb
@@ -123,7 +142,6 @@ function GalleryPage() {
   const [qInput, setQInput] = useState(search.q);
   const qDebounced = useDebounced(qInput, 250);
 
-  // Push debounced search to URL
   useEffect(() => {
     if (qDebounced !== search.q) {
       navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q: qDebounced }), replace: true });
@@ -133,19 +151,33 @@ function GalleryPage() {
 
   const tab = search.tab;
   const category = search.cat;
-  const provider = search.src;
+  const citySlug = search.city;
   const sort = search.sort;
   const q = search.q;
 
+  // Cities with counts (cached 5 min)
+  const citiesQuery = useQuery({
+    queryKey: ["gallery-cities"],
+    queryFn: fetchGalleryCities,
+    staleTime: 5 * 60_000,
+  });
+  const cities = citiesQuery.data ?? [];
+  const cityIdMap = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const c of cities) m.set(c.slug, c.id);
+    return m;
+  }, [cities]);
+  const topCities = useMemo(() => cities.slice(0, 10), [cities]);
+
   const queryKey = useMemo(
-    () => ["gallery", tab, category, provider, sort, q, user?.id ?? null],
-    [tab, category, provider, sort, q, user?.id],
+    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null],
+    [tab, category, citySlug, sort, q, user?.id],
   );
 
   const queryResult = useInfiniteQuery({
     queryKey,
     initialPageParam: null as string | null,
-    enabled: tab === "for-you" || !!user,
+    enabled: (tab === "for-you" || !!user) && (citySlug === "all" || cities.length > 0),
     queryFn: async ({ pageParam }) => {
       if (tab === "following") {
         return await listFollowingWorks({
@@ -153,13 +185,13 @@ function GalleryPage() {
             limit: PAGE_SIZE,
             cursor: pageParam,
             category,
-            provider,
+            city: citySlug,
             sort,
             q,
           },
         });
       }
-      return fetchForYouPage({ category, provider, sort, q, cursor: pageParam });
+      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam });
     },
     getNextPageParam: (last) => last.nextCursor,
   });
@@ -171,7 +203,6 @@ function GalleryPage() {
   const hasNext = queryResult.hasNextPage;
   const fetchNext = queryResult.fetchNextPage;
 
-  // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
@@ -195,22 +226,37 @@ function GalleryPage() {
   ];
 
   const filtersActive =
-    category !== "all" || provider !== "all" || sort !== "recent" || q.trim().length > 0;
+    category !== "all" || citySlug !== "all" || sort !== "recent" || q.trim().length > 0;
+
+  const clearAll = () => {
+    setQInput("");
+    navigate({
+      search: { q: "", tab, cat: "all", city: "all", sort: "recent" },
+      replace: true,
+    });
+  };
 
   return (
     <main>
       {/* Slim header */}
       <section className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
-          <h1 className="font-display text-3xl text-ink md:text-4xl">Gallery</h1>
-          <p className="mt-1 text-sm text-ink-muted">Everything people have shipped — film, music, writing, build, visuals.</p>
+        <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 px-4 py-8 md:px-6 md:py-10">
+          <div>
+            <h1 className="font-display text-3xl text-ink md:text-4xl">Gallery</h1>
+            <p className="mt-1 text-sm text-ink-muted">Everything people have shipped — film, music, writing, build, visuals.</p>
+          </div>
+          <Link to="/works/new" className="shrink-0">
+            <Button className="rounded-full">
+              <Plus className="h-4 w-4" />
+              Post Work
+            </Button>
+          </Link>
         </div>
       </section>
 
       {/* Sticky toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
         <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
-          {/* Row 1: search + sort + tabs */}
           <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
             <div className="relative flex-1">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
@@ -232,7 +278,6 @@ function GalleryPage() {
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Tabs */}
               <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
                 <button
                   onClick={() => setSearch({ tab: "for-you" })}
@@ -260,7 +305,6 @@ function GalleryPage() {
                 </button>
               </div>
 
-              {/* Sort */}
               <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
                 {(["recent", "trending"] as const).map((s) => (
                   <button
@@ -278,7 +322,7 @@ function GalleryPage() {
             </div>
           </div>
 
-          {/* Row 2: category chips */}
+          {/* Category chips */}
           <div className="mt-3">
             <CategoryScroller
               tabs={categoryTabs}
@@ -287,32 +331,50 @@ function GalleryPage() {
             />
           </div>
 
-          {/* Row 3: provider chips */}
+          {/* Location chips */}
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="px-1 text-ink-muted">Source:</span>
-            {PROVIDER_OPTIONS.map((p) => (
+            <span className="flex items-center gap-1 px-1 text-ink-muted">
+              <MapPin className="h-3 w-3" />
+              Location:
+            </span>
+            <button
+              onClick={() => setSearch({ city: "all" })}
+              className={cn(
+                "rounded-full border px-2.5 py-1 transition",
+                citySlug === "all"
+                  ? "border-ink bg-ink text-background"
+                  : "border-border bg-surface text-ink-soft hover:bg-muted",
+              )}
+            >
+              Anywhere
+            </button>
+            {topCities.map((c) => (
               <button
-                key={p.id}
-                onClick={() => setSearch({ src: p.id })}
+                key={c.id}
+                onClick={() => setSearch({ city: c.slug })}
                 className={cn(
                   "rounded-full border px-2.5 py-1 transition",
-                  provider === p.id
+                  citySlug === c.slug
                     ? "border-ink bg-ink text-background"
                     : "border-border bg-surface text-ink-soft hover:bg-muted",
                 )}
+                title={`${c.name}, ${c.country} · ${c.count}`}
               >
-                {p.label}
+                {c.name}
+                <span className="ml-1 opacity-60">{c.count}</span>
               </button>
             ))}
+            {/* Show the active city even if it's not in the top list */}
+            {citySlug !== "all" &&
+              !topCities.some((c) => c.slug === citySlug) &&
+              cities.find((c) => c.slug === citySlug) && (
+                <span className="rounded-full border border-ink bg-ink px-2.5 py-1 text-background">
+                  {cities.find((c) => c.slug === citySlug)!.name}
+                </span>
+              )}
             {filtersActive && (
               <button
-                onClick={() => {
-                  setQInput("");
-                  navigate({
-                    search: { q: "", tab, cat: "all", src: "all", sort: "recent" },
-                    replace: true,
-                  });
-                }}
+                onClick={clearAll}
                 className="ml-auto rounded-full px-2.5 py-1 text-ink-muted hover:text-ink"
               >
                 Clear filters
@@ -352,17 +414,7 @@ function GalleryPage() {
               title="No works match those filters"
               body="Try clearing filters or a different search."
               cta={
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setQInput("");
-                    navigate({
-                      search: { q: "", tab, cat: "all", src: "all", sort: "recent" },
-                      replace: true,
-                    });
-                  }}
-                  className="rounded-full"
-                >
+                <Button variant="outline" onClick={clearAll} className="rounded-full">
                   Clear filters
                 </Button>
               }
