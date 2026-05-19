@@ -1,107 +1,45 @@
 ## Goal
 
-Launch with just two primitives:
-- **Workshop** — the live drop-in room (currently `/instant`). "Drop into a Workshop."
-- **Collab** — the open-call board where people post projects with roles. "Post a Collab."
+Bring every primary button, accent link, and prominent brand-color icon in the app onto the new animated gradient system (`gradient-motion` for filled surfaces, `text-gradient-motion` for accent text). Keep small UI noise (status dots, soft tinted chips, ping pulses) as solid brand color so the animation reads as intentional, not chaotic.
 
-Hide all Scheduled Workshops UI (schema stays dormant — DB confirms 0 live non-draft workshops). Inside a live Workshop, surface each participant's open Collabs so people can **Apply** to a specific role or the Collab owner can **Invite** a participant to a specific role (or send a general invite).
+## Treatment rules
 
----
+1. **Filled "primary" surfaces** → swap `bg-primary` for `gradient-motion` (keeps `text-primary-foreground`). Applies to standalone buttons that aren't using the shared `<Button>` component, plus chat bubbles and pill CTAs.
+2. **Accent text links** → swap `text-primary` for `text-gradient-motion`. Applies to inline "Sign in", "All cities →", "Browse the board →", "Post one", "Back to cities", etc.
+3. **Prominent feature icons** (hero badges, empty-state Sparkles, big section headers) → wrap the Lucide icon in a small circular `gradient-motion` badge (the pattern already used for "Open Collab calls").
+4. **Small inline icons next to body text** (Calendar/MapPin/Users on metadata rows, dropdown row icons, venue list pins) → leave as `text-primary` solid. They're decorative and already on-brand; animating each one would be visually noisy.
+5. **Status dots, ping pulses, tiny markers** (`bg-primary` 1.5–2px circles, animate-ping halos) → leave as solid `bg-primary`. They read as live-status, not as brand accents.
+6. **Soft tinted chips/badges** (`bg-primary/10 text-primary` pills like "Check in now", "You're hosting" with violet) → leave as-is.
 
-## Scope
+## Files to update
 
-### 1. Nav + IA (frontend only)
+**Filled surfaces → `gradient-motion`**
+- `src/routes/__root.tsx` (2 inline CTA buttons at lines 18, 38)
+- `src/components/room-board.tsx` (line 649 — round "share" button)
+- `src/components/media-panel.tsx` (line 538 — own chat bubble)
 
-`src/components/top-nav.tsx`:
-- Replace `Gallery / Workshops / Instant / Cities` with **Workshop / Collab / Profile** plus a **More** dropdown containing **Gallery (Works)** and **Cities**.
-- Remove the "Schedule a Workshop" header CTA and the "Schedule a Workshop" item in the avatar dropdown. Keep "Drop into Workshop" (renamed from "Join Instant").
-- "Workshop" links to `/instant` (URL stays per user direction); "Collab" links to `/collab`; "Profile" links to `/me`.
+**Accent text → `text-gradient-motion`**
+- `src/routes/index.tsx` line 337 ("All cities →")
+- `src/routes/workshops.$slug.tsx` lines 85, 369 (back link, host link)
+- `src/routes/u.$username.tsx` lines 160, 210 (profile links)
+- `src/routes/signup.tsx` line 97, `src/routes/login.tsx` line 46 (auth switch links)
+- `src/routes/cities.$slug.tsx` lines 107, 141 (back link, "Sign in" inline)
+- `src/components/workshop-tools-panel.tsx` line 221
+- `src/components/workshop-collabs-panel.tsx` line 118 ("Post one")
+- `src/components/venue-map.tsx` line 89
 
-`src/routes/index.tsx` Hero:
-- Replace the two-card grid (Instant + Schedule Workshop) with two cards: **Drop into a Workshop** → `/instant`, and **Post a Collab** → `/collab/new` (with "Browse Collabs" secondary link to `/collab`).
-- Update copy: "Workshop" instead of "Instant Workshop", remove "scheduling" language.
+**Prominent icons → wrap in `gradient-motion` circle badge**
+- `src/routes/index.tsx` line 62 (Sparkles in "A creative collaboration network" hero pill — small inline, keep solid; SKIP)
+- `src/routes/workshops.$slug.tsx` lines 338, 453, 483, 578 (the four big Sparkles empty-state / banner icons)
+- `src/routes/me.tsx` line 165 (empty-state Sparkles)
+- `src/routes/instant.$id.tsx` line 57 (Coffee icon next to title — wrap)
+- `src/routes/cities.$slug.tsx` line 117 (big MapPin next to city name — wrap)
+- `src/routes/cities.$slug.tsx` line 201 (Megaphone "Open calls" section header — wrap, mirrors the home pattern)
 
-Copy sweep — search/replace user-facing strings on the affected screens only:
-- "Instant Workshop" → "Workshop"
-- "Artist's Lounge" / "lounge" labels → "Workshop"
-- "Schedule a Workshop" CTAs → removed
-- `/instant` page H1 + meta: "Drop into a Workshop"
+**Leave as-is** (intentional small/status accents): `instant.index.tsx` 117–118, `media-panel.tsx` 65, 323–324, `lounge-fork-dropdown.tsx` 73, 92–93, 122, `instant-activity-ticker.tsx` 77, `room-gallery.tsx` 129, `profile-peek.tsx` 155–156, `fullscreen-shell.tsx` 51–52, `channel-view.tsx` 327, `cities.index.tsx` 52, `workshops.$slug.tsx` 107–109 metadata icons, `venue-search.tsx` 143/202, `creator-badge.tsx`, `notifications-bell.tsx` 91, `admin.index.tsx` 121, all `bg-primary/10` soft pills, all shadcn `ui/*` primitives.
 
-### 2. Hide Scheduled Workshops surface
+## Technical notes
 
-- Top nav: no link to `/workshops`.
-- Remove links/CTAs to `/workshops` and `/workshops/new` from `index.tsx`, `top-nav.tsx`, profile pages, and notifications.
-- Leave the route files (`workshops.tsx`, `workshops.index.tsx`, `workshops.new.tsx`, `workshops.$slug.tsx`) in place but gate them behind an admin check — non-admins get a "Coming soon" view via the existing `coming-soon.tsx` component. This keeps schema + code dormant and easy to re-enable.
-- `notifications-bell.tsx`: drop the hosted-workshop applications + starting-soon items (gated behind isAdmin too), keep only the new collab notifications added below.
-
-### 3. Collab apply / invite (the new flow)
-
-#### Schema (one migration)
-
-New table `collab_invites` for owner→participant invites:
-- `id`, `collab_post_id`, `collab_role_id` (nullable = general invite), `inviter_user_id` (must equal collab owner), `invitee_user_id`, `message`, `status` (`pending|accepted|declined|withdrawn`), `created_at`, `responded_at`.
-- RLS: invitee + collab owner can SELECT; only collab owner can INSERT (enforced by trigger checking `collab_posts.user_id = auth.uid()`); invitee can UPDATE status to accepted/declined; owner can UPDATE to withdrawn.
-- Unique partial index on `(collab_post_id, invitee_user_id, collab_role_id)` where status='pending' to prevent dup invites.
-
-Light extension to existing `collab_contact_events` — already has `collab_role_id`, so a per-role apply is already representable. No schema change there. We'll just always pass `collab_role_id` from the new Apply UI (currently nullable / used for general contact).
-
-#### Backend (server fns)
-
-`src/lib/collab-invites.functions.ts`:
-- `inviteToCollab({ collabPostId, roleId|null, inviteeUserId, message })` — owner-only; inserts row.
-- `respondToInvite({ inviteId, accept: boolean })` — invitee-only.
-- `listMyInvites()` — invites where I'm invitee, pending.
-- `listInvitesForPost({ collabPostId })` — owner-only.
-
-`src/lib/collab-apply.functions.ts`:
-- `applyToCollabRole({ collabPostId, roleId, message })` — wraps the existing `collab_contact_events` insert with role required.
-
-#### UI
-
-**Inside the live Workshop room** (`src/components/channel-view.tsx`):
-- Add a "Collabs in this room" panel/tab alongside chat + board + gallery. It lists each present participant's open Collabs (query `collab_posts` where `user_id IN presence.user_ids AND status='open'`, with their `collab_roles`).
-- Each Collab card has:
-  - If viewer ≠ collab owner: per-role **Apply** buttons (opens existing contact dialog pre-filled with that role).
-  - If viewer === collab owner: per-role **Invite [participant name]** menu (and "General invite") for each other present participant.
-- New small component `src/components/workshop-collabs-panel.tsx`.
-
-**On `/collab/$slug`**:
-- Per-role Apply buttons (replacing the single "Contact" CTA, which becomes a fallback "General message" when there are no roles).
-- Owner-only "Invites" tab listing pending invites + status.
-
-**Notifications bell**:
-- Add: pending invites where I'm invitee → "Invited to [Collab] as [Role]".
-- Add: new applications on my Collabs → "[Name] applied to [Role] on [Collab]".
-- Remove workshop-host items.
-
-### 4. Out of scope (deferred)
-
-- Splitting Workshop into instant vs scheduled (post-launch).
-- Accept-flow side effects beyond status change (no auto-add to a "team" table — we don't have one yet).
-- Email/push for invites — bell only for v1.
-- Editing/removing existing copy on `/workshops/*` pages (just gated).
-
----
-
-## Files touched
-
-**Edit**
-- `src/components/top-nav.tsx` — nav restructure, dropdown for More.
-- `src/routes/index.tsx` — hero CTAs.
-- `src/routes/instant.index.tsx` + `src/routes/instant.$id.tsx` — copy: "Workshop" everywhere.
-- `src/components/channel-view.tsx` — add Collabs panel/tab.
-- `src/components/notifications-bell.tsx` — swap notification sources.
-- `src/routes/collab.$slug.tsx` — per-role Apply, owner Invites tab.
-- `src/routes/workshops.index.tsx`, `workshops.new.tsx`, `workshops.$slug.tsx` — admin-gate with ComingSoon for everyone else.
-
-**New**
-- `src/components/workshop-collabs-panel.tsx`
-- `src/lib/collab-invites.functions.ts`
-- `src/lib/collab-apply.functions.ts`
-- One Supabase migration: `collab_invites` table + RLS.
-
----
-
-## Open questions before I build
-
-None — your answers covered nav, URLs, the apply/invite shape, and the dormant-schema decision. Ready to implement on approval.
+- `text-gradient-motion` uses `background-clip: text` and only paints text — it cannot color a Lucide SVG stroke. That's why prominent icons get a wrapping `gradient-motion` circle badge instead.
+- All gradient utilities already exist in `src/styles.css` (added in the previous turn). No new CSS is required.
+- `<Button>` variants are already on the gradient system, so any `<Button>`-based CTAs in the app inherit it automatically — no per-call changes needed.
