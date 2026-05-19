@@ -46,7 +46,7 @@ function useDebounced<T>(value: T, ms = 250): T {
   return v;
 }
 
-type CityChip = { id: string; name: string; slug: string; country: string; count: number };
+type CityChip = CityOption;
 
 async function fetchGalleryCities(): Promise<CityChip[]> {
   // Pull a sample of recent published works with their city; aggregate client-side.
