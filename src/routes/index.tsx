@@ -280,10 +280,10 @@ function Index() {
             <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
               <h3 className="font-display text-2xl text-ink">Be the first to ship a Work.</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                Schedule a Workshop, make something on a clock, then publish it here.
+                Drop into a Workshop, meet your people, make something.
               </p>
-              <Link to="/workshops/new" className="mt-5 inline-block">
-                <Button className="rounded-full">Schedule a Workshop</Button>
+              <Link to="/instant" className="mt-5 inline-block">
+                <Button className="rounded-full">Drop into a Workshop</Button>
               </Link>
             </div>
           ) : (
@@ -298,13 +298,13 @@ function Index() {
 
       <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
         <Link
-          to="/workshops"
+          to="/collab"
           className="group block rounded-2xl border border-border bg-surface p-5 transition hover:shadow-lift"
         >
-          <Calendar className="h-5 w-5 text-primary" />
-          <h3 className="mt-3 font-display text-xl text-ink">Upcoming Workshops</h3>
-          <p className="mt-1 text-sm text-ink-muted">Apply to a seat or claim a role.</p>
-          <div className="mt-3 text-sm text-primary group-hover:underline">Open →</div>
+          <Megaphone className="h-5 w-5 text-primary" />
+          <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
+          <p className="mt-1 text-sm text-ink-muted">Projects looking for people. Apply for a role.</p>
+          <div className="mt-3 text-sm text-primary group-hover:underline">Browse the board →</div>
         </Link>
       </section>
     </main>
