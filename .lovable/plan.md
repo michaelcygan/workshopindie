@@ -1,54 +1,44 @@
-# Plan: Works categories + mobile category strip
+## Replace Hero video with ethereal animated gradient background
 
-## 1. Works-eligible categories
+Goal: swap the "studios-loop.mp4" background in the homepage Hero (`src/routes/index.tsx`) for an OpenAI/Stripe-style ambient background — soft, modern, slowly morphing amorphous color blobs that crossfade between several palettes.
 
-Add a derived list in `src/lib/categories.ts`:
+### Approach: pure CSS/SVG, no video file
 
-```ts
-export const WORK_CATEGORIES = CATEGORIES.filter(c =>
-  ["film","music","writing","build","visual"].includes(c.id)
-);
-```
+Rather than generating MP4s (heavy, palette-locked, hard to iterate), build it in code as a self-contained React component. Benefits:
+- Instant load, no asset pipeline, perfectly crisp at every resolution
+- Easy to add/edit palettes later
+- Respects `prefers-reduced-motion`
+- Matches the "subtle, ethereal, not too saturated" brief precisely
 
-Use `WORK_CATEGORIES` (not `CATEGORIES`) in:
-- `src/routes/index.tsx` → `GalleryControls` tabs
-- `src/routes/works.new.tsx` → category picker (verify it currently uses full list)
+### What it looks like
 
-Workshops, Collab, Onboarding, Cities keep using full `CATEGORIES`.
+3–4 large radial-gradient "blobs" (~60–80vmax each), heavily blurred (`filter: blur(80–120px)`), absolutely positioned and slowly drifting + scaling via long keyframe animations (40–60s loops, different durations so they never resync). A faint grain/noise overlay at low opacity for the OpenAI-style organic feel. A `bg-background/70` veil (already there) preserves text contrast.
 
-Note: this is a UI filter only. No DB change — existing works already only use these 5 in practice, and any stray rows just won't be filterable from the chip strip (they'd still appear in "All").
+3 palettes that crossfade every ~12s:
+1. **Sky/Peach/Cream** — pale blue → warm yellow → soft peach (like screenshot 1)
+2. **Coral/Sky** — coral pink → sky blue → cream (like screenshots 4/5)
+3. **Teal/Green/Navy** — deep teal → muted green → midnight (like screenshot 3)
 
-## 2. Mobile auto-scrolling category strip
+Each palette is a stacked layer; opacity animates on a shared timeline so one fades out as the next fades in, looping seamlessly.
 
-Refactor `GalleryControls` in `src/routes/index.tsx` into a small component that, on mobile (<768px), renders the category chips as a single-line horizontally scrolling marquee. Desktop keeps the current wrapped pill bar.
+### Files
 
-Behavior:
-- Single line, `overflow-x-auto`, `whitespace-nowrap`, hide scrollbar
-- Duplicate the chip list once and translate the inner track with a CSS keyframe (`marquee-x`) running ~30s linear infinite
-- Pause on `:hover`, `:focus-within`, and while `touch-active` (use `onTouchStart`/`onTouchEnd` to toggle a `paused` class, or pause via `:active` on the container)
-- Tapping a chip still selects the filter (handler unchanged)
-- Respect `prefers-reduced-motion`: disable animation, allow manual horizontal swipe instead
-- Sort/Newest/Trending bar stays as-is (already short)
+**New:** `src/components/ethereal-background.tsx` — self-contained component returning the layered blobs + grain. All animation via CSS keyframes defined inline or in `src/styles.css`.
 
-CSS additions in `src/styles.css`:
-```css
-@keyframes marquee-x {
-  from { transform: translateX(0); }
-  to   { transform: translateX(-50%); }
-}
-.animate-marquee-x { animation: marquee-x 30s linear infinite; }
-.animate-marquee-x.is-paused,
-.animate-marquee-x:hover { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) {
-  .animate-marquee-x { animation: none; }
-}
-```
+**Edit:** `src/routes/index.tsx` — replace the `<video>` + fallback `<img>` block (lines ~50–67) with `<EtherealBackground className="absolute inset-0 -z-20" />`. Keep the existing `bg-background/70` veil and `gradient-soft` overlay for text contrast.
 
-## Files
+**Edit:** `src/styles.css` — add keyframes (`blob-drift-1/2/3`, `palette-cycle`) and a `.grain` utility (tiny inline SVG noise data URI).
 
-- `src/lib/categories.ts` — add `WORK_CATEGORIES`
-- `src/routes/index.tsx` — use `WORK_CATEGORIES`; new marquee chip row for mobile
-- `src/routes/works.new.tsx` — switch picker to `WORK_CATEGORIES` if it currently lists all 8
-- `src/styles.css` — `marquee-x` keyframe + utility
+**Optional cleanup:** leave `/public/ambient/studios-loop.mp4` + poster in place for now (no other route uses them per grep); can be deleted in a follow-up.
 
-No DB, no schema, no new deps.
+### Reduced motion
+
+`@media (prefers-reduced-motion: reduce)` freezes all animations and shows the first palette as a static gradient.
+
+### Out of scope
+
+- No changes to hero copy, buttons, category strip, or anything below the fold.
+- No new dependencies.
+- No backend / data changes.
+
+Approve and I'll implement.
