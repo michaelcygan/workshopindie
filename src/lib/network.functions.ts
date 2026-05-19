@@ -57,7 +57,7 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
   const { data: works } = await supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order, profiles(id,display_name,username))",
     )
     .in("id", candidateIds)
     .eq("status", "published")
@@ -67,13 +67,13 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
 
   type Row = {
     id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; source_type: string;
+    cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
   return ((works ?? []) as Row[]).map<WorkCardData>((r) => ({
     id: r.id, title: r.title, slug: r.slug, category: r.category,
-    cover_url: r.cover_url, source_type: r.source_type,
+    cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -147,7 +147,7 @@ export async function getNetworkFeed(userId: string, limit = 8): Promise<WorkCar
   const { data: works } = await supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label,sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label,sort_order, profiles(id,display_name,username))",
     )
     .in("created_by", [...networkIds])
     .eq("status", "published")
@@ -157,13 +157,13 @@ export async function getNetworkFeed(userId: string, limit = 8): Promise<WorkCar
 
   type Row = {
     id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; source_type: string;
+    cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
   return ((works ?? []) as Row[]).map<WorkCardData>((r) => ({
     id: r.id, title: r.title, slug: r.slug, category: r.category,
-    cover_url: r.cover_url, source_type: r.source_type,
+    cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
