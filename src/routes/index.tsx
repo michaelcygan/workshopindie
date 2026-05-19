@@ -12,6 +12,7 @@ import { CategoryScroller } from "@/components/category-scroller";
 import { getNetworkFeed } from "@/lib/network.functions";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
+import { WorldArcs } from "@/components/world-arcs";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -55,6 +56,8 @@ function Hero() {
       {/* Warm cream veil for type contrast */}
       <div className="absolute inset-0 -z-10 bg-background/70" />
       <div className="absolute inset-0 -z-10 gradient-soft opacity-60" />
+      {/* Animated globe of creative collaborations */}
+      <WorldArcs className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 mx-auto -z-[5] h-[120%] w-full max-w-[1100px] opacity-80" />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 py-20 md:px-6 md:py-28 text-center">
         <motion.div
