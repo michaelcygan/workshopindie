@@ -51,33 +51,44 @@ async function fetchProfile(username: string) {
   return (data as unknown as Profile) ?? null;
 }
 
-async function fetchUserWorks(userId: string) {
+type ProfileWork = WorkCardData & { my_role: string };
+
+async function fetchUserWorks(userId: string): Promise<ProfileWork[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("work:works!inner(id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(display_name,username)))")
+    .select("role_label, work:works!inner(id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username)))")
     .eq("user_id", userId)
     .eq("hidden_from_profile", false);
   if (error) throw error;
-  type WorkRow = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
-    published_at: string | null; created_at: string; status: string; visibility: string;
-    work_credits?: { sort_order: number; profiles: { display_name: string | null; username: string | null } | null }[];
+  type Row = {
+    role_label: string;
+    work: {
+      id: string; title: string; slug: string; category: Category;
+      cover_url: string | null; source_type: string;
+      like_count: number; save_count: number; view_count: number;
+      published_at: string | null; created_at: string; status: string; visibility: string;
+      work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+    };
   };
-  const works = (data as unknown as { work: WorkRow }[])
-    .map((r) => r.work)
-    .filter((w) => w && w.status === "published" && (w.visibility === "public" || w.visibility === "unlisted"));
-  // dedupe
-  const seen = new Set<string>();
-  const unique = works.filter((w) => (seen.has(w.id) ? false : (seen.add(w.id), true)));
-  unique.sort((a, b) => (b.published_at ?? b.created_at).localeCompare(a.published_at ?? a.created_at));
-  return unique.map<WorkCardData>((r) => ({
-    id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url,
-    source_type: r.source_type, like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-    credits: (r.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
-  }));
+  const rows = (data as unknown as Row[]).filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"));
+  // dedupe by work id, keep first role label
+  const seen = new Map<string, ProfileWork>();
+  for (const r of rows) {
+    if (seen.has(r.work.id)) continue;
+    seen.set(r.work.id, {
+      id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
+      cover_url: r.work.cover_url, source_type: r.work.source_type,
+      like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
+      my_role: r.role_label,
+      credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order)
+        .map((c) => ({
+          id: c.profiles?.id ?? null,
+          display_name: c.profiles?.display_name ?? null,
+          username: c.profiles?.username ?? null,
+        })),
+    });
+  }
+  return [...seen.values()].sort((a, b) => (b.id).localeCompare(a.id));
 }
 
 function ProfilePage() {
