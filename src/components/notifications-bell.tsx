@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Bell, Mail, UserPlus, Megaphone } from "lucide-react";
+import { Bell, Mail, UserPlus, Megaphone, Award } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type Notif = {
   id: string;
-  kind: "collab_invite" | "collab_application";
+  kind: "collab_invite" | "collab_application" | "work_credit";
   title: string;
   subtitle: string;
   href: string;
