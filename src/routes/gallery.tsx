@@ -323,64 +323,29 @@ function GalleryPage() {
             </div>
           </div>
 
-          {/* Category chips */}
-          <div className="mt-3">
+          {/* Category chips (left) + city filter (right) on desktop; stacked on mobile */}
+          <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
             <CategoryScroller
               tabs={categoryTabs}
               value={category}
               onChange={(v) => setSearch({ cat: v })}
+              className="md:w-fit"
             />
-          </div>
-
-          {/* Location chips */}
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
-            <span className="flex items-center gap-1 px-1 text-ink-muted">
-              <MapPin className="h-3 w-3" />
-              Location:
-            </span>
-            <button
-              onClick={() => setSearch({ city: "all" })}
-              className={cn(
-                "rounded-full border px-2.5 py-1 transition",
-                citySlug === "all"
-                  ? "border-ink bg-ink text-background"
-                  : "border-border bg-surface text-ink-soft hover:bg-muted",
+            <div className="flex items-center gap-2 md:shrink-0">
+              <GalleryCityFilter
+                cities={cities}
+                value={citySlug}
+                onChange={(slug) => setSearch({ city: slug })}
+              />
+              {filtersActive && (
+                <button
+                  onClick={clearAll}
+                  className="rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink"
+                >
+                  Clear filters
+                </button>
               )}
-            >
-              Anywhere
-            </button>
-            {topCities.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSearch({ city: c.slug })}
-                className={cn(
-                  "rounded-full border px-2.5 py-1 transition",
-                  citySlug === c.slug
-                    ? "border-ink bg-ink text-background"
-                    : "border-border bg-surface text-ink-soft hover:bg-muted",
-                )}
-                title={`${c.name}, ${c.country} · ${c.count}`}
-              >
-                {c.name}
-                <span className="ml-1 opacity-60">{c.count}</span>
-              </button>
-            ))}
-            {/* Show the active city even if it's not in the top list */}
-            {citySlug !== "all" &&
-              !topCities.some((c) => c.slug === citySlug) &&
-              cities.find((c) => c.slug === citySlug) && (
-                <span className="rounded-full border border-ink bg-ink px-2.5 py-1 text-background">
-                  {cities.find((c) => c.slug === citySlug)!.name}
-                </span>
-              )}
-            {filtersActive && (
-              <button
-                onClick={clearAll}
-                className="ml-auto rounded-full px-2.5 py-1 text-ink-muted hover:text-ink"
-              >
-                Clear filters
-              </button>
-            )}
+            </div>
           </div>
         </div>
       </div>
