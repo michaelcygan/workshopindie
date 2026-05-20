@@ -69,10 +69,7 @@ function DmsIndex() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  if (loading) return null;
-  if (!user) {
-    throw redirect({ to: "/login", search: { redirect: "/dms" } as any });
-  }
+  if (loading || !user) return null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
