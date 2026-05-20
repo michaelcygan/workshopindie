@@ -3,12 +3,13 @@ import { useEffect, useState } from "react";
 import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
+import { RequireAuth } from "@/components/require-auth";
 
 export const Route = createFileRoute("/checkout/return")({
   validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
     session_id: typeof search.session_id === "string" ? search.session_id : undefined,
   }),
-  component: CheckoutReturn,
+  component: () => <RequireAuth><CheckoutReturn /></RequireAuth>,
   head: () => ({
     meta: [
       { title: "Checkout complete — Workshop" },
