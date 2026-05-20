@@ -16,6 +16,8 @@ import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.funct
 import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
+import { PlusGate } from "@/components/plus-gate";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -43,6 +45,8 @@ const EXAMPLES = [
 
 function NewWork() {
   const { user, loading } = useAuth();
+  const { isPlus } = usePlus();
+  const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
   const search = useSearch({ from: "/works/new" });
   const extract = useServerFn(extractWorkFromUrl);
@@ -122,6 +126,20 @@ function NewWork() {
   async function publish(opts: { thenAddAnother?: boolean } = {}) {
     if (!user) return;
     if (!title.trim()) return toast.error("Title is required");
+
+    // Free tier cap on published works
+    if (!isPlus) {
+      const { count } = await supabase
+        .from("works")
+        .select("id", { count: "exact", head: true })
+        .eq("created_by", user.id)
+        .eq("status", "published");
+      if ((count ?? 0) >= FREE_PORTFOLIO_CAP) {
+        setPlusGate(true);
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const { data: work, error } = await supabase
