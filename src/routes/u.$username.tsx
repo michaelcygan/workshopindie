@@ -19,7 +19,40 @@ import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 
-export const Route = createFileRoute("/u/$username")({ component: ProfilePage });
+export const Route = createFileRoute("/u/$username")({
+  component: ProfilePage,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("display_name,username,headline,bio,avatar_url")
+      .eq("username", params.username)
+      .maybeSingle();
+    return { seo: data ?? null };
+  },
+  head: ({ params, loaderData }) => {
+    const p = loaderData?.seo;
+    const url = `https://workshopindie.com/u/${params.username}`;
+    const name = p?.display_name ?? p?.username ?? params.username;
+    const title = `${name} — Workshop`;
+    const description = p?.headline ?? p?.bio?.slice(0, 160) ?? `${name}'s profile on Workshop.`;
+    const meta = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "profile" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: p?.avatar_url ? "summary" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (p?.avatar_url) {
+      meta.push({ property: "og:image", content: p.avatar_url });
+      meta.push({ name: "twitter:image", content: p.avatar_url });
+    }
+    return { meta, links: [{ rel: "canonical", href: url }] };
+  },
+});
 
 type Profile = {
   id: string;
