@@ -12,8 +12,11 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, X } from "lucide-react";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
+import { RequireAuth } from "@/components/require-auth";
 
-export const Route = createFileRoute("/me/edit")({ component: EditProfile });
+export const Route = createFileRoute("/me/edit")({
+  component: () => <RequireAuth><EditProfile /></RequireAuth>,
+});
 
 type Link = { label: string; url: string };
 
