@@ -64,11 +64,12 @@ function PricingPage() {
               <Button variant="outline" className="w-full rounded-full" disabled>You're Plus ✨</Button>
             ) : (
               <Button onClick={handleGoPlus} className="gradient-motion w-full rounded-full gap-2 text-primary-foreground">
-                <Sparkles className="h-4 w-4" /> Go Plus
+                <Sparkles className="h-4 w-4" /> Start 14-day free trial
               </Button>
             )
           }
           features={[
+            "14 days free, then $4.99/mo",
             "Unlimited published works",
             "Unlimited active open Collabs + boosted placement",
             "All cities — join, post, filter gallery",
@@ -81,7 +82,7 @@ function PricingPage() {
       </div>
 
       <p className="mx-auto mt-8 max-w-xl text-center text-xs text-ink-muted">
-        Cancel anytime. Taxes calculated at checkout. Plus auto-renews monthly until canceled.
+        14-day free trial on your first Plus signup. Cancel anytime. Taxes calculated at checkout. Plus auto-renews monthly until canceled.
       </p>
 
       {showCheckout && (
