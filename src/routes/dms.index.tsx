@@ -21,12 +21,7 @@ type ProfileLite = {
 };
 
 export const Route = createFileRoute("/dms/")({
-  component: DmsIndex,
-  beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      // client-side only check; real protection handled by RLS
-    }
-  },
+  component: () => <RequireAuth><DmsIndex /></RequireAuth>,
   head: () => ({ meta: [{ title: "Messages — Workshop" }] }),
 });
 
