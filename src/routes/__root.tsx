@@ -6,6 +6,7 @@ import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { TopNav } from "@/components/top-nav";
 import { MobileNav } from "@/components/mobile-nav";
+import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -98,6 +99,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <div className="min-h-screen bg-background pb-28 md:pb-0">
+          <PaymentTestModeBanner />
           <TopNav />
           <Outlet />
           <MobileNav />

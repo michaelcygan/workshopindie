@@ -1,18 +1,20 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { usePlus } from "@/hooks/use-plus";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone } from "lucide-react";
+import { Radio, Shield, Megaphone, Sparkles } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
   const { user, loading } = useAuth();
   const { isAdmin } = useUserRoles();
+  const { isPlus } = usePlus();
   const navigate = useNavigate();
 
   const initial =
@@ -37,6 +39,18 @@ export function TopNav() {
 
 
         <div className="ml-auto flex items-center gap-2">
+          {user && !isPlus && (
+            <Link to="/pricing" className="hidden md:inline-flex">
+              <Button size="sm" variant="ghost" className="rounded-full gap-1.5 text-primary hover:text-primary hover:bg-primary/10">
+                <Sparkles className="h-3.5 w-3.5" /> Go Plus
+              </Button>
+            </Link>
+          )}
+          {isPlus && (
+            <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              <Sparkles className="h-3 w-3" /> Plus
+            </span>
+          )}
           <Link to="/collab/new" className="hidden md:inline-flex">
             <Button size="sm" className="rounded-full gap-1.5">
               <Megaphone className="h-4 w-4" /> Post a Collab
@@ -62,6 +76,9 @@ export function TopNav() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
+                  <Sparkles className="mr-2 h-4 w-4" /> {isPlus ? "Manage Plus" : "Go Plus"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (

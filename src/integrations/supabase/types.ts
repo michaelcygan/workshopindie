@@ -1002,6 +1002,8 @@ export type Database = {
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
+          current_period_start: string | null
+          environment: Database["public"]["Enums"]["stripe_environment"]
           id: string
           status: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id: string | null
@@ -1015,6 +1017,8 @@ export type Database = {
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
           id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
@@ -1028,6 +1032,8 @@ export type Database = {
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
+          current_period_start?: string | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
           id?: string
           status?: Database["public"]["Enums"]["subscription_status"]
           stripe_customer_id?: string | null
@@ -1764,6 +1770,7 @@ export type Database = {
         | "completed"
       relationship_type: "worked_with" | "made_with_at_event" | "recently_met"
       report_status: "open" | "reviewed" | "dismissed" | "action_taken"
+      stripe_environment: "sandbox" | "live"
       subscription_status:
         | "active"
         | "trialing"
@@ -1980,6 +1987,7 @@ export const Constants = {
       ],
       relationship_type: ["worked_with", "made_with_at_event", "recently_met"],
       report_status: ["open", "reviewed", "dismissed", "action_taken"],
+      stripe_environment: ["sandbox", "live"],
       subscription_status: [
         "active",
         "trialing",
