@@ -307,6 +307,12 @@ function NewCollab() {
           </Button>
         </div>
       </form>
+      <PlusGate
+        open={plusGate}
+        onOpenChange={setPlusGate}
+        title="You've hit 2 active Collabs"
+        description="Free can run 2 open Collabs at a time. Go Plus for unlimited."
+      />
     </main>
   );
 }
