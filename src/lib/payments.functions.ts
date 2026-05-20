@@ -59,6 +59,15 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
 
     const customerId = await resolveOrCreateCustomer(stripe, { email, userId });
 
+    // Check if user has ever had a paid subscription — only first-timers get the trial
+    const { data: existingSub } = await context.supabase
+      .from("subscriptions")
+      .select("id, stripe_subscription_id")
+      .eq("user_id", userId)
+      .not("stripe_subscription_id", "is", null)
+      .maybeSingle();
+    const isFirstTime = !existingSub?.stripe_subscription_id;
+
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: stripePrice.id, quantity: 1 }],
       mode: "subscription",
@@ -68,7 +77,10 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       automatic_tax: { enabled: true },
       customer_update: { address: "auto" },
       metadata: { userId },
-      subscription_data: { metadata: { userId } },
+      subscription_data: {
+        metadata: { userId },
+        ...(isFirstTime && data.priceId === "plus_monthly" ? { trial_period_days: 14 } : {}),
+      },
     });
 
     return session.client_secret;

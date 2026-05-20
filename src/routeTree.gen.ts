@@ -25,6 +25,7 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as InstantIndexRouteImport } from './routes/instant.index'
+import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -33,8 +34,10 @@ import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
+import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
@@ -122,6 +125,11 @@ const InstantIndexRoute = InstantIndexRouteImport.update({
   path: '/',
   getParentRoute: () => InstantRoute,
 } as any)
+const DmsIndexRoute = DmsIndexRouteImport.update({
+  id: '/dms/',
+  path: '/dms/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CollabIndexRoute = CollabIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -162,6 +170,11 @@ const UUsernameRoute = UUsernameRouteImport.update({
   path: '/u/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RedeemCodeRoute = RedeemCodeRouteImport.update({
+  id: '/redeem/$code',
+  path: '/redeem/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeEditRoute = MeEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -171,6 +184,11 @@ const InstantIdRoute = InstantIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => InstantRoute,
+} as any)
+const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
+  id: '/dms/$conversationId',
+  path: '/dms/$conversationId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CollabNewRoute = CollabNewRouteImport.update({
   id: '/new',
@@ -224,8 +242,10 @@ export interface FileRoutesByFullPath {
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/edit': typeof MeEditRoute
+  '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
@@ -234,6 +254,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
+  '/dms/': typeof DmsIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -253,8 +274,10 @@ export interface FileRoutesByTo {
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/edit': typeof MeEditRoute
+  '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
@@ -263,6 +286,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
+  '/dms': typeof DmsIndexRoute
   '/instant': typeof InstantIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -288,8 +312,10 @@ export interface FileRoutesById {
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
+  '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/edit': typeof MeEditRoute
+  '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
@@ -298,6 +324,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
+  '/dms/': typeof DmsIndexRoute
   '/instant/': typeof InstantIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -324,8 +351,10 @@ export interface FileRouteTypes {
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
+    | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/edit'
+    | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
@@ -334,6 +363,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/cities/'
     | '/collab/'
+    | '/dms/'
     | '/instant/'
     | '/workshops/'
     | '/api/public/payments/webhook'
@@ -353,8 +383,10 @@ export interface FileRouteTypes {
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
+    | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/edit'
+    | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
@@ -363,6 +395,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/cities'
     | '/collab'
+    | '/dms'
     | '/instant'
     | '/workshops'
     | '/api/public/payments/webhook'
@@ -387,8 +420,10 @@ export interface FileRouteTypes {
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
+    | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/edit'
+    | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
@@ -397,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/cities/'
     | '/collab/'
+    | '/dms/'
     | '/instant/'
     | '/workshops/'
     | '/api/public/payments/webhook'
@@ -418,9 +454,12 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  DmsConversationIdRoute: typeof DmsConversationIdRoute
+  RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WorksSlugRoute: typeof WorksSlugRoute
   WorksNewRoute: typeof WorksNewRoute
+  DmsIndexRoute: typeof DmsIndexRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -538,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InstantIndexRouteImport
       parentRoute: typeof InstantRoute
     }
+    '/dms/': {
+      id: '/dms/'
+      path: '/dms'
+      fullPath: '/dms/'
+      preLoaderRoute: typeof DmsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/collab/': {
       id: '/collab/'
       path: '/'
@@ -594,6 +640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/redeem/$code': {
+      id: '/redeem/$code'
+      path: '/redeem/$code'
+      fullPath: '/redeem/$code'
+      preLoaderRoute: typeof RedeemCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/me/edit': {
       id: '/me/edit'
       path: '/edit'
@@ -607,6 +660,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/instant/$id'
       preLoaderRoute: typeof InstantIdRouteImport
       parentRoute: typeof InstantRoute
+    }
+    '/dms/$conversationId': {
+      id: '/dms/$conversationId'
+      path: '/dms/$conversationId'
+      fullPath: '/dms/$conversationId'
+      preLoaderRoute: typeof DmsConversationIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/collab/new': {
       id: '/collab/new'
@@ -748,9 +808,12 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  DmsConversationIdRoute: DmsConversationIdRoute,
+  RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WorksSlugRoute: WorksSlugRoute,
   WorksNewRoute: WorksNewRoute,
+  DmsIndexRoute: DmsIndexRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
