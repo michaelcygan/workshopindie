@@ -769,6 +769,8 @@ export type Database = {
           follower_count: number
           following_count: number
           headline: string | null
+          home_city_changed_at: string | null
+          home_city_id: string | null
           id: string
           instagram_handle: string | null
           last_name: string | null
@@ -793,6 +795,8 @@ export type Database = {
           follower_count?: number
           following_count?: number
           headline?: string | null
+          home_city_changed_at?: string | null
+          home_city_id?: string | null
           id: string
           instagram_handle?: string | null
           last_name?: string | null
@@ -817,6 +821,8 @@ export type Database = {
           follower_count?: number
           following_count?: number
           headline?: string | null
+          home_city_changed_at?: string | null
+          home_city_id?: string | null
           id?: string
           instagram_handle?: string | null
           last_name?: string | null
@@ -831,6 +837,13 @@ export type Database = {
           {
             foreignKeyName: "profiles_city_id_fkey"
             columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
@@ -983,6 +996,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          id: string
+          status: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["subscription_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["subscription_status"]
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["subscription_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_blocks: {
         Row: {
@@ -1626,6 +1681,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_plus: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1659,6 +1715,7 @@ export type Database = {
           title: string
         }[]
       }
+      lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       slugify: { Args: { _in: string }; Returns: string }
     }
     Enums: {
@@ -1707,6 +1764,13 @@ export type Database = {
         | "completed"
       relationship_type: "worked_with" | "made_with_at_event" | "recently_met"
       report_status: "open" | "reviewed" | "dismissed" | "action_taken"
+      subscription_status:
+        | "active"
+        | "trialing"
+        | "past_due"
+        | "canceled"
+        | "incomplete"
+      subscription_tier: "free" | "plus"
       timeline_mode: "asap" | "by_date" | "window" | "ongoing" | "flexible"
       tool_type:
         | "pinboard"
@@ -1916,6 +1980,14 @@ export const Constants = {
       ],
       relationship_type: ["worked_with", "made_with_at_event", "recently_met"],
       report_status: ["open", "reviewed", "dismissed", "action_taken"],
+      subscription_status: [
+        "active",
+        "trialing",
+        "past_due",
+        "canceled",
+        "incomplete",
+      ],
+      subscription_tier: ["free", "plus"],
       timeline_mode: ["asap", "by_date", "window", "ongoing", "flexible"],
       tool_type: [
         "pinboard",
