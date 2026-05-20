@@ -20,8 +20,8 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
         {!checkout ? (
           <>
             <SheetHeader className="text-left">
-              <div className="mx-auto mb-2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-                <Sparkles className="h-6 w-6 text-primary" />
+              <div className="gradient-motion mx-auto mb-2 inline-flex h-12 w-12 items-center justify-center rounded-full text-primary-foreground">
+                <Sparkles className="h-6 w-6" />
               </div>
               <SheetTitle className="text-center font-display text-2xl">{title}</SheetTitle>
               <SheetDescription className="text-center text-sm text-ink-muted">
@@ -38,7 +38,7 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
             </div>
 
             <div className="mx-auto mt-6 flex max-w-sm flex-col gap-2 pb-6">
-              <Button size="lg" className="rounded-full gap-2" onClick={() => setCheckout(true)}>
+              <Button size="lg" className="gradient-motion rounded-full gap-2 text-primary-foreground" onClick={() => setCheckout(true)}>
                 <Sparkles className="h-4 w-4" /> Go Plus — $4.99/mo
               </Button>
               <button
@@ -70,7 +70,7 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
 function PlusBullet({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-2 text-sm text-ink">
-      <span className="mt-1 inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+      <span className="gradient-motion mt-1 inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full" />
       <span>{children}</span>
     </div>
   );
