@@ -1,8 +1,9 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { RequireAuth } from "@/components/require-auth";
 
 type ConversationRow = {
   id: string;
