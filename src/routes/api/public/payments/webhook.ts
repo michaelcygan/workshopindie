@@ -68,6 +68,18 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
 
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
+  const eventId = (event as any).id as string | undefined;
+
+  // Idempotency: skip if already processed
+  if (eventId) {
+    const { error: insErr } = await (getSupabase().from("processed_stripe_events") as any).insert({
+      event_id: eventId,
+    });
+    if (insErr && (insErr as any).code === "23505") {
+      console.log("Duplicate webhook event, skipping:", eventId);
+      return;
+    }
+  }
 
   switch (event.type) {
     case "customer.subscription.created":
@@ -77,6 +89,19 @@ async function handleWebhook(req: Request, env: StripeEnv) {
     case "customer.subscription.deleted":
       await handleSubscriptionDeleted(event.data.object, env);
       break;
+    case "invoice.payment_failed": {
+      const inv: any = event.data.object;
+      const userId = inv?.subscription_details?.metadata?.userId || inv?.metadata?.userId;
+      if (userId) {
+        await (getSupabase().from("notifications") as any).insert({
+          user_id: userId,
+          kind: "payment_failed",
+          entity_type: "invoice",
+          payload: { hosted_invoice_url: inv?.hosted_invoice_url ?? null },
+        });
+      }
+      break;
+    }
     default:
       console.log("Unhandled event:", event.type);
   }
