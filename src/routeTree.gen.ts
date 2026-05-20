@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -48,6 +49,11 @@ import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/publi
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
   path: '/workshops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SignupRoute = SignupRouteImport.update({
@@ -236,6 +242,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
   '/checkout/return': typeof CheckoutReturnRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -306,6 +314,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
   '/checkout/return': typeof CheckoutReturnRoute
@@ -345,6 +354,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/sitemap.xml'
     | '/workshops'
     | '/admin/badges'
     | '/checkout/return'
@@ -378,6 +388,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/sitemap.xml'
     | '/admin/badges'
     | '/checkout/return'
     | '/cities/$slug'
@@ -414,6 +425,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/reset-password'
     | '/signup'
+    | '/sitemap.xml'
     | '/workshops'
     | '/admin/badges'
     | '/checkout/return'
@@ -452,6 +464,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof WorkshopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/signup': {
@@ -806,6 +826,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
