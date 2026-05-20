@@ -42,7 +42,7 @@ export function TopNav() {
           {user && !isPlus && (
             <Link to="/pricing" className="hidden md:inline-flex">
               <Button size="sm" variant="ghost" className="rounded-full gap-1.5 hover:bg-muted">
-                <Sparkles className="h-3.5 w-3.5 text-gradient-motion" />
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span className="text-gradient-motion">Go Plus</span>
               </Button>
             </Link>
