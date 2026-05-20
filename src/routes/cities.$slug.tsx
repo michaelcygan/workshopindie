@@ -19,7 +19,40 @@ import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/cities/$slug")({ component: CityPage });
+export const Route = createFileRoute("/cities/$slug")({
+  component: CityPage,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("cities")
+      .select("name,country")
+      .eq("slug", params.slug)
+      .maybeSingle();
+    return { seo: data ?? null };
+  },
+  head: ({ params, loaderData }) => {
+    const c = loaderData?.seo;
+    const url = `https://workshopindie.com/cities/${params.slug}`;
+    const name = c?.name ?? params.slug;
+    const title = `${name} — Workshop`;
+    const description = c
+      ? `Open collabs, standing meetups, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
+      : "Creators on Workshop.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
+});
 
 function CityPage() {
   const { slug } = Route.useParams();

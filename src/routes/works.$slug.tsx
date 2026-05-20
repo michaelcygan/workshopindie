@@ -18,7 +18,40 @@ import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { format } from "date-fns";
 
-export const Route = createFileRoute("/works/$slug")({ component: WorkDetail });
+export const Route = createFileRoute("/works/$slug")({
+  component: WorkDetail,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("works")
+      .select("title,excerpt,description,cover_url,published_at")
+      .eq("slug", params.slug)
+      .eq("status", "published")
+      .maybeSingle();
+    return { seo: data ?? null };
+  },
+  head: ({ params, loaderData }) => {
+    const w = loaderData?.seo;
+    const url = `https://workshopindie.com/works/${params.slug}`;
+    const title = w?.title ? `${w.title} — Workshop` : "Work — Workshop";
+    const description = w?.excerpt ?? w?.description?.slice(0, 160) ?? "A creative work on Workshop.";
+    const meta = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "article" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: w?.cover_url ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (w?.cover_url) {
+      meta.push({ property: "og:image", content: w.cover_url });
+      meta.push({ name: "twitter:image", content: w.cover_url });
+    }
+    return { meta, links: [{ rel: "canonical", href: url }] };
+  },
+});
 
 type WorkRow = {
   id: string; title: string; slug: string; category: Category;

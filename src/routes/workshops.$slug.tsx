@@ -21,7 +21,37 @@ import { ReportDialog } from "@/components/report-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/workshops/$slug")({ component: WorkshopDetail });
+export const Route = createFileRoute("/workshops/$slug")({
+  component: WorkshopDetail,
+  loader: async ({ params }) => {
+    const { data } = await supabase
+      .from("workshops")
+      .select("title,prompt,category,starts_at")
+      .eq("slug", params.slug)
+      .maybeSingle();
+    return { seo: data ?? null };
+  },
+  head: ({ params, loaderData }) => {
+    const w = loaderData?.seo;
+    const url = `https://workshopindie.com/workshops/${params.slug}`;
+    const title = w?.title ? `${w.title} — Workshop` : "Workshop";
+    const description = w?.prompt?.slice(0, 160) ?? `A ${w?.category ?? "creative"} Workshop on Workshop.`;
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+        { name: "twitter:card", content: "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
+});
 
 type Workshop = {
   id: string; title: string; slug: string; category: "film" | "music" | "writing" | "build" | "visual";
