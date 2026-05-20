@@ -13,6 +13,8 @@ import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
+import { PlusGate } from "@/components/plus-gate";
 
 export const Route = createFileRoute("/collab/new")({ component: NewCollab });
 
@@ -31,6 +33,8 @@ const COMP_OPTIONS: { id: CompType; label: string }[] = [
 
 function NewCollab() {
   const { user, loading } = useAuth();
+  const { isPlus } = usePlus();
+  const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -77,6 +81,19 @@ function NewCollab() {
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Online");
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
+
+    if (!isPlus) {
+      const { count } = await supabase
+        .from("collab_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .eq("status", "open");
+      if ((count ?? 0) >= FREE_OPEN_COLLAB_CAP) {
+        setPlusGate(true);
+        return;
+      }
+    }
+
 
     setSubmitting(true);
     const { data: post, error } = await supabase.from("collab_posts").insert({

@@ -312,6 +312,12 @@ function NewWork() {
           </div>
         </form>
       )}
+      <PlusGate
+        open={plusGate}
+        onOpenChange={setPlusGate}
+        title="You've hit 10 published works"
+        description="Free portfolios cap at 10. Go Plus for unlimited works."
+      />
     </main>
   );
 }
