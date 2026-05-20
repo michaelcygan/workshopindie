@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { toast } from "sonner";
 
@@ -67,7 +68,13 @@ function Signup() {
             ? "Your application is sent. Finish your profile so the host can see your face and past work — applications from members get replied to faster."
             : "Find people. Make the thing. Show your Work."}
         </p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <div className="mt-6 space-y-3">
+          <GoogleSignIn label="Sign up with Google" />
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
+            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+        <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="first">First name</Label>

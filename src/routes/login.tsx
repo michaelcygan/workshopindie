@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { GoogleSignIn } from "@/components/google-sign-in";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -29,13 +30,22 @@ function Login() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <h1 className="font-display text-3xl text-ink">Welcome back</h1>
         <p className="mt-1 text-sm text-ink-muted">Sign in to make something today.</p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+        <div className="mt-6 space-y-3">
+          <GoogleSignIn />
+          <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
+            <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
+          </div>
+        </div>
+        <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
+            <div className="flex items-baseline justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link to="/forgot-password" className="text-xs text-ink-muted hover:underline">Forgot?</Link>
+            </div>
             <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
           <Button type="submit" className="w-full rounded-full" disabled={loading}>
