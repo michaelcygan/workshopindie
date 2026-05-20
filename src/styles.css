@@ -326,9 +326,20 @@
     0%, 100% { background-position: 0% 50%; }
     50%      { background-position: 100% 50%; }
   }
+  /* Icon counterpart — cycles currentColor through the same stops so SVG icons
+     animate in sync with adjacent .text-gradient-motion text. */
+  .icon-gradient-motion {
+    color: #d97743;
+    animation: icon-gradient-motion-color 14s ease-in-out infinite;
+  }
+  @keyframes icon-gradient-motion-color {
+    0%, 100% { color: #f2a85f; }
+    50%      { color: #c95f3f; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .gradient-motion::before,
     .gradient-motion::after { animation: none; }
     .text-gradient-motion { animation: none; }
+    .icon-gradient-motion { animation: none; }
   }
 }
