@@ -98,11 +98,11 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.16 0.02 270);
 
-  /* Instagram/Lovable orange-magenta primary */
-  --primary: oklch(0.62 0.24 5);
+  /* Warm coral primary; Plus/premium accents use the site-wide gradient utilities. */
+  --primary: oklch(0.68 0.17 32);
   --primary-foreground: oklch(0.99 0 0);
-  --primary-warm: oklch(0.70 0.21 40);   /* burnt orange lean */
-  --primary-deep: oklch(0.55 0.26 345);  /* deeper magenta lean */
+  --primary-warm: oklch(0.72 0.16 45);
+  --primary-deep: oklch(0.62 0.18 28);
 
   /* Electric violet highlight */
   --violet: oklch(0.62 0.24 295);
@@ -121,7 +121,7 @@
   --border: oklch(0.92 0.005 80);
   --border-strong: oklch(0.86 0.008 80);
   --input: oklch(0.92 0.005 80);
-  --ring: oklch(0.62 0.22 350 / 0.4);
+  --ring: oklch(0.68 0.17 32 / 0.4);
 
   /* Category pastel tints + their ink */
   --cat-film: oklch(0.94 0.04 30);     /* warm peach */
@@ -141,7 +141,7 @@
   --cat-coworking: oklch(0.93 0.05 60);  /* amber */
   --cat-coworking-ink: oklch(0.42 0.16 55);
 
-  --chart-1: oklch(0.62 0.24 5);
+  --chart-1: oklch(0.68 0.17 32);
   --chart-2: oklch(0.62 0.24 295);
   --chart-3: oklch(0.65 0.18 175);
   --chart-4: oklch(0.70 0.18 80);
@@ -149,12 +149,12 @@
 
   --sidebar: oklch(0.98 0.008 80);
   --sidebar-foreground: oklch(0.16 0.02 270);
-  --sidebar-primary: oklch(0.62 0.24 5);
+  --sidebar-primary: oklch(0.68 0.17 32);
   --sidebar-primary-foreground: oklch(0.99 0 0);
   --sidebar-accent: oklch(0.95 0.01 80);
   --sidebar-accent-foreground: oklch(0.16 0.02 270);
   --sidebar-border: oklch(0.92 0.005 80);
-  --sidebar-ring: oklch(0.62 0.22 350 / 0.4);
+  --sidebar-ring: oklch(0.68 0.17 32 / 0.4);
 }
 
 .dark {
@@ -169,7 +169,7 @@
   --card-foreground: oklch(0.98 0.005 80);
   --popover: oklch(0.20 0.02 270);
   --popover-foreground: oklch(0.98 0.005 80);
-  --primary: oklch(0.66 0.24 5);
+  --primary: oklch(0.72 0.16 32);
   --primary-foreground: oklch(0.14 0.02 270);
   --violet: oklch(0.70 0.22 295);
   --violet-foreground: oklch(0.14 0.02 270);
@@ -184,7 +184,7 @@
   --border: oklch(1 0 0 / 0.10);
   --border-strong: oklch(1 0 0 / 0.18);
   --input: oklch(1 0 0 / 0.14);
-  --ring: oklch(0.66 0.22 350 / 0.5);
+  --ring: oklch(0.72 0.16 32 / 0.5);
 }
 
 @layer base {
