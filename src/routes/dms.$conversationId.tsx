@@ -1,4 +1,5 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { RequireAuth } from "@/components/require-auth";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Send } from "lucide-react";
@@ -26,7 +27,7 @@ type ProfileLite = {
 };
 
 export const Route = createFileRoute("/dms/$conversationId")({
-  component: DmsThread,
+  component: () => <RequireAuth><DmsThread /></RequireAuth>,
   head: () => ({ meta: [{ title: "Conversation — Workshop" }] }),
 });
 
@@ -100,8 +101,7 @@ function DmsThread() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  if (loading) return null;
-  if (!user) throw redirect({ to: "/login", search: { redirect: `/dms/${conversationId}` } as any });
+  if (loading || !user) return null;
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();

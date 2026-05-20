@@ -1,8 +1,9 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { RequireAuth } from "@/components/require-auth";
 
 type ConversationRow = {
   id: string;
@@ -20,12 +21,7 @@ type ProfileLite = {
 };
 
 export const Route = createFileRoute("/dms/")({
-  component: DmsIndex,
-  beforeLoad: () => {
-    if (typeof window !== "undefined") {
-      // client-side only check; real protection handled by RLS
-    }
-  },
+  component: () => <RequireAuth><DmsIndex /></RequireAuth>,
   head: () => ({ meta: [{ title: "Messages — Workshop" }] }),
 });
 
@@ -73,10 +69,7 @@ function DmsIndex() {
     return () => { cancelled = true; };
   }, [user?.id]);
 
-  if (loading) return null;
-  if (!user) {
-    throw redirect({ to: "/login", search: { redirect: "/dms" } as any });
-  }
+  if (loading || !user) return null;
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">

@@ -10,8 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { RequireAuth } from "@/components/require-auth";
 
-export const Route = createFileRoute("/onboarding")({ component: Onboarding });
+export const Route = createFileRoute("/onboarding")({
+  component: () => <RequireAuth><Onboarding /></RequireAuth>,
+});
 
 function Onboarding() {
   const { user, loading } = useAuth();

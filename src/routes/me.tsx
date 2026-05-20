@@ -15,8 +15,11 @@ import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
 import { useUserRoles } from "@/hooks/use-user-role";
 import type { Category } from "@/lib/categories";
+import { RequireAuth } from "@/components/require-auth";
 
-export const Route = createFileRoute("/me")({ component: MeDashboard });
+export const Route = createFileRoute("/me")({
+  component: () => <RequireAuth><MeDashboard /></RequireAuth>,
+});
 
 type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
