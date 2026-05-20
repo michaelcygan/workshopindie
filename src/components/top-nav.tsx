@@ -42,14 +42,14 @@ export function TopNav() {
           {user && !isPlus && (
             <Link to="/pricing" className="hidden md:inline-flex">
               <Button size="sm" variant="ghost" className="rounded-full gap-1.5 hover:bg-muted">
-                <Sparkles className="h-3.5 w-3.5 text-gradient-motion" />
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 <span className="text-gradient-motion">Go Plus</span>
               </Button>
             </Link>
           )}
           {isPlus && (
             <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-              <Sparkles className="h-3 w-3 text-gradient-motion" />
+              <Sparkles className="h-3 w-3 text-primary" />
               <span className="text-gradient-motion">Plus</span>
             </span>
           )}
