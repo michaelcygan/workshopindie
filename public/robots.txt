@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dms
+Disallow: /me
+Disallow: /me/edit
+Disallow: /onboarding
+Disallow: /checkout
+Disallow: /reset-password
+Disallow: /forgot-password
+Disallow: /redeem
+
+Sitemap: https://workshopindie.com/sitemap.xml
