@@ -433,6 +433,102 @@ export type Database = {
           },
         ]
       }
+      comp_memberships: {
+        Row: {
+          code: string
+          created_at: string
+          duration_months: number
+          expires_at: string | null
+          granted_by: string | null
+          granted_to: string | null
+          id: string
+          note: string | null
+          redeemed_at: string | null
+          status: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          duration_months?: number
+          expires_at?: string | null
+          granted_by?: string | null
+          granted_to?: string | null
+          id?: string
+          note?: string | null
+          redeemed_at?: string | null
+          status?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          duration_months?: number
+          expires_at?: string | null
+          granted_by?: string | null
+          granted_to?: string | null
+          id?: string
+          note?: string | null
+          redeemed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comp_memberships_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comp_memberships_granted_to_fkey"
+            columns: ["granted_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          last_message_at: string | null
+          last_message_preview: string | null
+          user_a: string
+          user_b: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          user_a: string
+          user_b: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          last_message_preview?: string | null
+          user_a?: string
+          user_b?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string
@@ -712,6 +808,63 @@ export type Database = {
         }
         Relationships: []
       }
+      media_assets: {
+        Row: {
+          bytes: number | null
+          created_at: string
+          duration_s: number | null
+          hls_url: string | null
+          id: string
+          kind: string
+          mp4_fallback_url: string | null
+          owner_id: string
+          provider: string | null
+          status: string
+          work_id: string | null
+        }
+        Insert: {
+          bytes?: number | null
+          created_at?: string
+          duration_s?: number | null
+          hls_url?: string | null
+          id?: string
+          kind: string
+          mp4_fallback_url?: string | null
+          owner_id: string
+          provider?: string | null
+          status?: string
+          work_id?: string | null
+        }
+        Update: {
+          bytes?: number | null
+          created_at?: string
+          duration_s?: number | null
+          hls_url?: string | null
+          id?: string
+          kind?: string
+          mp4_fallback_url?: string | null
+          owner_id?: string
+          provider?: string | null
+          status?: string
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_assets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "media_assets_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetup_occurrences: {
         Row: {
           ends_at: string | null
@@ -754,6 +907,114 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          kind: string
+          payload: Json
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      processed_stripe_events: {
+        Row: {
+          event_id: string
+          processed_at: string
+        }
+        Insert: {
+          event_id: string
+          processed_at?: string
+        }
+        Update: {
+          event_id?: string
+          processed_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -776,6 +1037,7 @@ export type Database = {
           last_name: string | null
           onboarded: boolean
           pinned_work_ids: string[]
+          tour_completed_at: string | null
           updated_at: string
           username: string | null
           work_count: number
@@ -802,6 +1064,7 @@ export type Database = {
           last_name?: string | null
           onboarded?: boolean
           pinned_work_ids?: string[]
+          tour_completed_at?: string | null
           updated_at?: string
           username?: string | null
           work_count?: number
@@ -828,6 +1091,7 @@ export type Database = {
           last_name?: string | null
           onboarded?: boolean
           pinned_work_ids?: string[]
+          tour_completed_at?: string | null
           updated_at?: string
           username?: string | null
           work_count?: number
@@ -849,6 +1113,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limits: {
+        Row: {
+          action: string
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          action: string
+          count?: number
+          key: string
+          window_start: string
+        }
+        Update: {
+          action?: string
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
       }
       relationship_edges: {
         Row: {
@@ -1687,6 +1972,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
+      check_and_bump: {
+        Args: { _action: string; _key: string; _max: number; _window_s: number }
+        Returns: boolean
+      }
       has_plus: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
