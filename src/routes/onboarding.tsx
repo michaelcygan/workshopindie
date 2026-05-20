@@ -43,6 +43,7 @@ function Onboarding() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!cityId) return toast.error("Please pick your home city — it powers your feed.");
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -50,7 +51,8 @@ function Onboarding() {
         display_name: name,
         bio: bio || null,
         categories: cats,
-        city_id: cityId || null,
+        city_id: cityId,
+        home_city_id: cityId,
         onboarded: true,
       })
       .eq("id", user.id);
