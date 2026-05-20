@@ -63,7 +63,7 @@ function PricingPage() {
             isPlus ? (
               <Button variant="outline" className="w-full rounded-full" disabled>You're Plus ✨</Button>
             ) : (
-              <Button onClick={handleGoPlus} className="w-full rounded-full gap-2">
+              <Button onClick={handleGoPlus} className="gradient-motion w-full rounded-full gap-2 text-primary-foreground">
                 <Sparkles className="h-4 w-4" /> Go Plus
               </Button>
             )
@@ -114,12 +114,13 @@ function PlanCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-3xl border bg-surface p-6 md:p-8 ${highlight ? "border-primary shadow-lift" : "border-border"}`}>
+    <div className={`rounded-3xl border bg-surface p-6 md:p-8 ${highlight ? "border-border-strong shadow-lift" : "border-border"}`}>
       <div className="flex items-baseline justify-between">
         <h2 className="font-display text-2xl text-ink">{name}</h2>
         {highlight && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3 w-3" /> Recommended
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
+            <Sparkles className="h-3 w-3 text-gradient-motion" />
+            <span className="text-gradient-motion">Recommended</span>
           </span>
         )}
       </div>
@@ -131,7 +132,7 @@ function PlanCard({
       <ul className="mt-6 space-y-2.5">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-ink">
-            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-gradient-motion" />
             <span>{f}</span>
           </li>
         ))}
