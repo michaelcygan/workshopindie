@@ -49,7 +49,7 @@ export function TopNav() {
           )}
           {isPlus && (
             <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-              <Sparkles className="h-3 w-3 text-primary" />
+              <Sparkles className="h-3 w-3 icon-gradient-motion" />
               <span className="text-gradient-motion">Plus</span>
             </span>
           )}
