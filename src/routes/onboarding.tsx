@@ -43,6 +43,7 @@ function Onboarding() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!cityId) return toast.error("Please pick your home city — it powers your feed.");
     setSaving(true);
     const { error } = await supabase
       .from("profiles")
@@ -50,7 +51,8 @@ function Onboarding() {
         display_name: name,
         bio: bio || null,
         categories: cats,
-        city_id: cityId || null,
+        city_id: cityId,
+        home_city_id: cityId,
         onboarded: true,
       })
       .eq("id", user.id);
@@ -74,8 +76,9 @@ function Onboarding() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>City (optional)</Label>
+            <Label>Home city <span className="text-ink-muted">(required)</span></Label>
             <select
+              required
               value={cityId}
               onChange={(e) => setCityId(e.target.value)}
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
@@ -85,6 +88,7 @@ function Onboarding() {
                 <option key={c.id} value={c.id}>{c.name}, {c.country}</option>
               ))}
             </select>
+            <p className="text-xs text-ink-muted">Your home city powers your feed. You can change it once every 30 days.</p>
           </div>
 
           <div className="space-y-2">

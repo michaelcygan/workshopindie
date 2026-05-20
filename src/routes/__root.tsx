@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import { TopNav } from "@/components/top-nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
+import { WelcomeTour } from "@/components/welcome-tour";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -103,6 +104,7 @@ function RootComponent() {
           <TopNav />
           <Outlet />
           <MobileNav />
+          <WelcomeTour />
         </div>
         <Toaster />
       </AuthProvider>
