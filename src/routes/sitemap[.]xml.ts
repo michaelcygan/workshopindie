@@ -23,7 +23,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         const [works, profiles, workshops, collabs, cities] = await Promise.all([
           supabaseAdmin.from("works").select("slug,published_at").eq("status", "published").in("visibility", ["public", "unlisted"]).order("published_at", { ascending: false }).limit(5000),
           supabaseAdmin.from("profiles").select("username,updated_at").not("username", "is", null).limit(5000),
-          supabaseAdmin.from("workshops").select("slug,updated_at").eq("status", "scheduled").limit(2000),
+          supabaseAdmin.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active"]).limit(2000),
           supabaseAdmin.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(2000),
           supabaseAdmin.from("cities").select("slug").limit(500),
         ]);
