@@ -64,8 +64,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Workshop — Find people. Make things. Create a Portfolio." },
       { name: "twitter:description", content: "Drop into live collaboration workshops or schedule your own. Post collaboration requests, develop a creative community, and make real art." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1fcd4dbc-b5c8-45b7-9642-28bcadde4513/id-preview-f2a9a4b5--84780bfe-d835-44d6-a458-d2f2c53bca8d.lovable.app-1778895182765.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/1fcd4dbc-b5c8-45b7-9642-28bcadde4513/id-preview-f2a9a4b5--84780bfe-d835-44d6-a458-d2f2c53bca8d.lovable.app-1778895182765.png" },
+      { property: "og:site_name", content: "Workshop" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
