@@ -101,8 +101,7 @@ function DmsThread() {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  if (loading) return null;
-  if (!user) throw redirect({ to: "/login", search: { redirect: `/dms/${conversationId}` } as any });
+  if (loading || !user) return null;
 
   async function onSend(e: React.FormEvent) {
     e.preventDefault();
