@@ -260,7 +260,7 @@ function CityMeetupsStrip() {
         <Link to="/cities" className="text-sm text-gradient-motion hover:underline">All cities →</Link>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(data as any[]).map((m) => (
+        {data.map((m) => (
           <Link
             key={m.id}
             to="/cities/$slug"

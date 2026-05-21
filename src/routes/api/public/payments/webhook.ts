@@ -1,23 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { type StripeEnv, verifyWebhook } from "@/lib/stripe.server";
+import type Stripe from "stripe";
 
-let _supabase: ReturnType<typeof createClient> | null = null;
-function getSupabase() {
-  if (!_supabase) {
-    _supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
-  }
-  return _supabase;
-}
-
-function priceLookupKey(item: any): string | null {
+function priceLookupKey(item: Stripe.SubscriptionItem | undefined): string | null {
+  if (!item) return null;
+  const price = item.price as (Stripe.Price & { lookup_key?: string | null }) | undefined;
   return (
-    item?.price?.lookup_key ||
-    item?.price?.metadata?.lovable_external_id ||
-    item?.price?.id ||
+    price?.lookup_key ||
+    (price?.metadata as Record<string, string> | undefined)?.lovable_external_id ||
+    price?.id ||
     null
   );
 }
@@ -26,25 +18,46 @@ function tierFromPrice(priceId: string | null): "plus" | "free" {
   return priceId === "plus_monthly" ? "plus" : "free";
 }
 
-async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
-  const userId = subscription.metadata?.userId;
+type SubStatus = "active" | "canceled" | "incomplete" | "past_due" | "trialing";
+function mapSubStatus(s: Stripe.Subscription.Status): SubStatus {
+  switch (s) {
+    case "active":
+    case "canceled":
+    case "incomplete":
+    case "past_due":
+    case "trialing":
+      return s;
+    case "incomplete_expired":
+    case "unpaid":
+      return "canceled";
+    case "paused":
+      return "past_due";
+    default:
+      return "canceled";
+  }
+}
+
+async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: StripeEnv) {
+  const userId = (subscription.metadata as Record<string, string> | null)?.userId;
   if (!userId) {
     console.error("subscription event missing metadata.userId", subscription.id);
     return;
   }
   const item = subscription.items?.data?.[0];
   const priceId = priceLookupKey(item);
-  const periodEnd = item?.current_period_end ?? subscription.current_period_end;
-  const periodStart = item?.current_period_start ?? subscription.current_period_start;
+  const itemAny = item as (Stripe.SubscriptionItem & { current_period_end?: number; current_period_start?: number }) | undefined;
+  const subAny = subscription as Stripe.Subscription & { current_period_end?: number; current_period_start?: number };
+  const periodEnd = itemAny?.current_period_end ?? subAny.current_period_end;
+  const periodStart = itemAny?.current_period_start ?? subAny.current_period_start;
 
-  await (getSupabase().from("subscriptions") as any).upsert(
+  await supabaseAdmin.from("subscriptions").upsert(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
-      stripe_customer_id: subscription.customer,
+      stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
       stripe_price_id: priceId,
       tier: tierFromPrice(priceId),
-      status: subscription.status,
+      status: mapSubStatus(subscription.status),
       current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
       current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
@@ -55,8 +68,8 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv) {
   );
 }
 
-async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
-  await (getSupabase().from("subscriptions") as any)
+async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env: StripeEnv) {
+  await supabaseAdmin.from("subscriptions")
     .update({
       status: "canceled",
       tier: "free",
@@ -68,14 +81,14 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv) {
 
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
-  const eventId = (event as any).id as string | undefined;
+  const eventId = event.id;
 
   // Idempotency: skip if already processed
   if (eventId) {
-    const { error: insErr } = await (getSupabase().from("processed_stripe_events") as any).insert({
+    const { error: insErr } = await supabaseAdmin.from("processed_stripe_events").insert({
       event_id: eventId,
     });
-    if (insErr && (insErr as any).code === "23505") {
+    if (insErr && insErr.code === "23505") {
       console.log("Duplicate webhook event, skipping:", eventId);
       return;
     }
@@ -84,20 +97,24 @@ async function handleWebhook(req: Request, env: StripeEnv) {
   switch (event.type) {
     case "customer.subscription.created":
     case "customer.subscription.updated":
-      await handleSubscriptionUpsert(event.data.object, env);
+      await handleSubscriptionUpsert(event.data.object as Stripe.Subscription, env);
       break;
     case "customer.subscription.deleted":
-      await handleSubscriptionDeleted(event.data.object, env);
+      await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, env);
       break;
     case "invoice.payment_failed": {
-      const inv: any = event.data.object;
-      const userId = inv?.subscription_details?.metadata?.userId || inv?.metadata?.userId;
+      const inv = event.data.object as Stripe.Invoice & {
+        subscription_details?: { metadata?: Record<string, string> } | null;
+        hosted_invoice_url?: string | null;
+      };
+      const userId = inv.subscription_details?.metadata?.userId
+        || (inv.metadata as Record<string, string> | null)?.userId;
       if (userId) {
-        await (getSupabase().from("notifications") as any).insert({
+        await supabaseAdmin.from("notifications").insert({
           user_id: userId,
           kind: "payment_failed",
           entity_type: "invoice",
-          payload: { hosted_invoice_url: inv?.hosted_invoice_url ?? null },
+          payload: { hosted_invoice_url: inv.hosted_invoice_url ?? null },
         });
       }
       break;

@@ -132,12 +132,9 @@ function CollabDetail() {
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const roles = (post.roles ?? []).slice().sort((a: any, b: any) => a.sort_order - b.sort_order);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const hostUser = post.user as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const cityName = (post.city as any)?.name;
+  const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const hostUser = post.user;
+  const cityName = post.city?.name;
 
   function openContact(roleId: string | null) {
     if (!post) return;

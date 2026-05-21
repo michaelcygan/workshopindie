@@ -57,6 +57,7 @@ type Workshop = {
   venue_name: string | null; venue_address: string | null; venue_lat: number | null; venue_lng: number | null;
   participant_cap: number | null; confirmed_count: number; application_count: number;
   status: string; host_user_id: string; visibility: string;
+  check_in_opens_at: string | null; check_in_closes_at: string | null;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
@@ -586,8 +587,8 @@ function CheckInPanel({ ws }: { ws: Workshop }) {
   if (!user || !myPart) return null;
 
   const now = Date.now();
-  const opensAt = (ws as any).check_in_opens_at ? new Date((ws as any).check_in_opens_at).getTime() : null;
-  const closesAt = (ws as any).check_in_closes_at ? new Date((ws as any).check_in_closes_at).getTime() : null;
+  const opensAt = ws.check_in_opens_at ? new Date(ws.check_in_opens_at).getTime() : null;
+  const closesAt = ws.check_in_closes_at ? new Date(ws.check_in_closes_at).getTime() : null;
   const inWindow = opensAt && closesAt && now >= opensAt && now <= closesAt;
   if (!inWindow || myPart.checked_in_at) return null;
 

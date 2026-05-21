@@ -9,7 +9,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
-    if (!user) navigate({ to: "/login", search: { redirect: href } as any });
+    if (!user) navigate({ to: "/login", search: { redirect: href } });
   }, [user, loading, navigate, href]);
 
   if (loading || !user) {

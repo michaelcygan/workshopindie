@@ -61,11 +61,11 @@ export function useLoungeMinutesToday(): { minutes: number; loading: boolean } {
     enabled: !!user,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data, error } = await (supabase.rpc as any)("lounge_minutes_today", {
+      const { data, error } = await supabase.rpc("lounge_minutes_today", {
         _user_id: user!.id,
       });
       if (error) return 0;
-      return (data as number) ?? 0;
+      return data ?? 0;
     },
   });
   return { minutes: data ?? 0, loading: isLoading };

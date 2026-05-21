@@ -90,11 +90,20 @@ function CityPage() {
         .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order, profiles(id,display_name,username))")
         .eq("city_id", city!.id).eq("status", "published").in("visibility", ["public", "unlisted"])
         .order("published_at", { ascending: false, nullsFirst: false }).limit(6);
-      return ((data ?? []) as any[]).map<WorkCardData>((r) => ({
+      type Row = {
+        id: string; title: string; slug: string; category: WorkCardData["category"];
+        cover_url: string | null; source_type: WorkCardData["source_type"];
+        like_count: number | null; save_count: number | null; view_count: number | null;
+        work_credits: Array<{
+          role_label: string | null; sort_order: number | null;
+          profiles: { id: string; display_name: string | null; username: string | null } | null;
+        }> | null;
+      };
+      return ((data ?? []) as Row[]).map<WorkCardData>((r) => ({
         id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url, source_type: r.source_type,
-        like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-        credits: (r.work_credits ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order)
-          .map((c: any) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+        like_count: r.like_count ?? 0, save_count: r.save_count ?? 0, view_count: r.view_count ?? 0,
+        credits: (r.work_credits ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
       }));
     },
   });
@@ -126,7 +135,7 @@ function CityPage() {
 
   const filteredCreators = useMemo(() => {
     if (creatorFilter === "all") return creators;
-    return (creators as any[]).filter((p) => Array.isArray(p.categories) && p.categories.includes(creatorFilter));
+    return creators.filter((p) => Array.isArray(p.categories) && p.categories.includes(creatorFilter));
   }, [creators, creatorFilter]);
 
   const creatorTabs = useMemo(
@@ -236,7 +245,7 @@ function CityPage() {
         <section className="mt-10">
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-display text-2xl text-ink">Recently made here</h2>
-            <Link to="/gallery" search={{ city: city.slug } as any} className="text-sm text-ink-muted hover:text-ink">See all in {city.name} →</Link>
+            <Link to="/gallery" search={{ city: city.slug }} className="text-sm text-ink-muted hover:text-ink">See all in {city.name} →</Link>
           </div>
           <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {works.map((w) => <WorkCard key={w.id} work={w} />)}

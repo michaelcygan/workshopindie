@@ -14,6 +14,11 @@ export const Route = createFileRoute("/cities/")({
 });
 
 function CitiesIndex() {
+  type CityRow = {
+    id: string; name: string; slug: string; country: string; state_region: string | null;
+    meetups: { count: number }[] | null;
+    creators: { count: number }[] | null;
+  };
   const { data: cities = [], isLoading } = useQuery({
     queryKey: ["cities-with-counts"],
     queryFn: async () => {
@@ -21,7 +26,7 @@ function CitiesIndex() {
         .from("cities")
         .select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles(count)")
         .order("name");
-      return (data ?? []) as any[];
+      return (data ?? []) as unknown as CityRow[];
     },
   });
 
