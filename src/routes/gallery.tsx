@@ -357,9 +357,18 @@ function GalleryPage() {
                   Clear filters
                 </button>
               )}
-            </div>
+          </div>
+
+          <div className="mt-2">
+            <GeoDefaultBanner
+              defaultCity={defaultCity}
+              currentCity={citySlug}
+              onApply={(slug) => setSearch({ city: slug })}
+              onWorldwide={() => setSearch({ city: "all" })}
+            />
           </div>
         </div>
+      </div>
       </div>
 
       {/* Grid */}
