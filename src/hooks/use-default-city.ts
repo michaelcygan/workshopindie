@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { getDefaultHomeCity, type SuggestedCity } from "@/lib/geo.functions";
 
 /**
@@ -48,11 +48,4 @@ export function useApplyDefaultCity(opts: {
     opts.apply(opts.defaultCity.slug);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [opts.defaultCity?.slug, opts.currentCity]);
-}
-
-export function useNavigateApply(callback: (slug: string) => void) {
-  // Convenience: rebuild a stable apply fn when callers don't memoise.
-  // Re-exports useNavigate for callers that want the raw router.
-  const navigate = useNavigate();
-  return { navigate, callback };
 }
