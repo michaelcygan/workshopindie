@@ -103,6 +103,23 @@ function NewWork() {
     setStep("confirm");
   }
 
+  function applyVideoUpload(r: StreamUploadResult) {
+    setStreamUid(r.uid);
+    setProvider("cloudflare_stream");
+    setEmbedUrl(r.hlsUrl);
+    if (r.thumbnailUrl && !coverUrl) setCoverUrl(r.thumbnailUrl);
+    setExtracted({
+      title: title || "",
+      description: null,
+      cover_url: r.thumbnailUrl,
+      primary_url: r.hlsUrl,
+      embed_url: r.hlsUrl,
+      provider: "cloudflare_stream",
+      author_name: null,
+      suggested_category: "visual",
+    } as unknown as ExtractedWork);
+    setStep("confirm");
+
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
     if (!url) return toast.error("Paste a link first.");
