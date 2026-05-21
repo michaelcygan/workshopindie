@@ -22,7 +22,7 @@ function RedeemPage() {
 
   useEffect(() => {
     if (!loading && !user) {
-      throw redirect({ to: "/signup", search: { redirect: `/redeem/${code}` } as any });
+      throw redirect({ to: "/signup", search: { redirect: `/redeem/${code}` } });
     }
   }, [user, loading, code]);
 

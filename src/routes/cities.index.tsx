@@ -21,7 +21,7 @@ function CitiesIndex() {
         .from("cities")
         .select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles(count)")
         .order("name");
-      return (data ?? []) as any[];
+      return data ?? [];
     },
   });
 

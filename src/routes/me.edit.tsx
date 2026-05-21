@@ -52,12 +52,11 @@ function EditProfile() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
-      const d = data as any;
       setDisplayName(data.display_name ?? "");
       setUsername(data.username ?? "");
-      setFirstName(d.first_name ?? "");
-      setLastName(d.last_name ?? "");
-      setInstagram(d.instagram_handle ?? "");
+      setFirstName(data.first_name ?? "");
+      setLastName(data.last_name ?? "");
+      setInstagram(data.instagram_handle ?? "");
       setHeadline(data.headline ?? "");
       setBio(data.bio ?? "");
       setAvatar(data.avatar_url ?? null);
@@ -88,7 +87,7 @@ function EditProfile() {
       external_links: links.filter((l) => l.url),
       city_id: cityId || null,
       onboarded: true,
-    } as any).eq("id", user.id);
+    }).eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile saved");

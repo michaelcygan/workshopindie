@@ -90,12 +90,14 @@ export function WorldArcs({ className }: { className?: string }) {
         if (geoContains(landFeature, [lon, lat])) acc.push([lon, lat]);
       }
       if (i < N) {
-        (window.requestIdleCallback || window.requestAnimationFrame)(step as any);
+        const schedule = window.requestIdleCallback ?? window.requestAnimationFrame;
+        schedule(step as IdleRequestCallback & FrameRequestCallback);
       } else {
         dotsRef.current = acc;
       }
     };
-    (window.requestIdleCallback || window.requestAnimationFrame)(step as any);
+    const schedule = window.requestIdleCallback ?? window.requestAnimationFrame;
+    schedule(step as IdleRequestCallback & FrameRequestCallback);
     return () => { cancelled = true; };
   }, []);
 
