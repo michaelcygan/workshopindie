@@ -24,12 +24,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/workshops/$slug")({
   component: WorkshopDetail,
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("workshops")
-      .select("title,prompt,category,starts_at")
-      .eq("slug", params.slug)
-      .maybeSingle();
-    return { seo: data ?? null };
+    const { getWorkshopSeo } = await import("@/lib/seo-loaders.functions");
+    const data = await getWorkshopSeo({ data: { slug: params.slug } });
+    return { seo: data };
   },
   head: ({ params, loaderData }) => {
     const w = loaderData?.seo;
