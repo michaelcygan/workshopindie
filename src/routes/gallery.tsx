@@ -357,6 +357,7 @@ function GalleryPage() {
                   Clear filters
                 </button>
               )}
+            </div>
           </div>
 
           <div className="mt-2">
