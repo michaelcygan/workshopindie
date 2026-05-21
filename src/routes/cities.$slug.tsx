@@ -22,12 +22,9 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/cities/$slug")({
   component: CityPage,
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("cities")
-      .select("name,country")
-      .eq("slug", params.slug)
-      .maybeSingle();
-    return { seo: data ?? null };
+    const { getCitySeo } = await import("@/lib/seo-loaders.functions");
+    const data = await getCitySeo({ data: { slug: params.slug } });
+    return { seo: data };
   },
   head: ({ params, loaderData }) => {
     const c = loaderData?.seo;
