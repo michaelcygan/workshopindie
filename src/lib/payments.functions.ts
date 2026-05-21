@@ -50,6 +50,16 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const { userId, claims } = context;
+
+    // Rate limit: 5 checkout sessions / 60s per user
+    const { data: ok } = await context.supabase.rpc("check_and_bump", {
+      _action: "checkout_create",
+      _key: userId,
+      _window_s: 60,
+      _max: 5,
+    });
+    if (ok === false) throw new Error("Too many checkout attempts. Try again in a minute.");
+
     const email = (claims as { email?: string } | null)?.email;
     const stripe = createStripeClient(data.environment);
 

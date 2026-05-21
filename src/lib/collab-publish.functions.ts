@@ -35,6 +35,15 @@ export const publishWorkFromCollab = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
+    // Rate limit: 10 publishes / hour per user
+    const { data: ok } = await supabase.rpc("check_and_bump", {
+      _action: "work_publish",
+      _key: userId,
+      _window_s: 3600,
+      _max: 10,
+    });
+    if (ok === false) throw new Error("You're publishing too fast. Try again later.");
+
     // 1) Load the collab + verify ownership.
     const { data: post, error: postErr } = await supabase
       .from("collab_posts")
