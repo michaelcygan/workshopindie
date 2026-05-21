@@ -119,6 +119,9 @@ function NewWork() {
       suggested_category: "visual",
     } as unknown as ExtractedWork);
     setStep("confirm");
+  }
+
+
 
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
