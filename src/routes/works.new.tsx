@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
+import { VideoUploadButton, type StreamUploadResult } from "@/components/video-upload-button";
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
 import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
