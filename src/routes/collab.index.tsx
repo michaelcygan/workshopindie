@@ -271,6 +271,17 @@ function CollabPage() {
         </button>
       </div>
 
+      <div className="mt-3">
+        <GeoDefaultBanner
+          defaultCity={defaultCity}
+          isOnDefault={!!defaultCity && filters.city === defaultCity.id}
+          isWorldwide={!filters.city && !filters.online}
+          onApply={(city) => setCity({ id: city.id, name: city.name })}
+          onWorldwide={() => setCity({ id: undefined, name: undefined })}
+        />
+      </div>
+
+
       <div className="mt-8">
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
