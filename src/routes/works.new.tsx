@@ -357,13 +357,14 @@ function NewWork() {
 }
 
 function DropStep({
-  urlInput, setUrlInput, extracting, onSubmit, onManual,
+  urlInput, setUrlInput, extracting, onSubmit, onManual, onVideoUploaded,
 }: {
   urlInput: string;
   setUrlInput: (v: string) => void;
   extracting: boolean;
   onSubmit: () => void;
   onManual: () => void;
+  onVideoUploaded: (r: StreamUploadResult) => void;
 }) {
   return (
     <motion.div
