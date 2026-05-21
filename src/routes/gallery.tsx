@@ -223,6 +223,16 @@ function GalleryPage() {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
+  // Geo-default: auto-apply user's home city (or IP-inferred nearest) on first visit
+  const defaultCityQuery = useDefaultCity();
+  const defaultCity = defaultCityQuery.data?.city ?? null;
+  useApplyDefaultCity({
+    feedKey: "gallery",
+    currentCity: citySlug,
+    apply: (slug) => setSearch({ city: slug }),
+    defaultCity,
+  });
+
   const categoryTabs: { id: string; label: string }[] = [
     { id: "all", label: "All" },
     ...WORK_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
