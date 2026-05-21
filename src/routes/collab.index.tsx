@@ -11,6 +11,8 @@ import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { CategoryScroller } from "@/components/category-scroller";
 import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { GeoDefaultBanner } from "@/components/geo-default-banner";
 
 const searchSchema = z.object({
   cat: fallback(z.enum(["all", "film", "music", "writing", "build", "visual"]), "all").default("all"),
@@ -214,6 +216,15 @@ function CollabPage() {
     });
   }
 
+  const defaultCityQuery = useDefaultCity();
+  const defaultCity = defaultCityQuery.data?.city ?? null;
+  useApplyDefaultCity({
+    feedKey: "collab",
+    isWorldwide: !filters.city && !filters.online,
+    apply: (city) => setCity({ id: city.id, name: city.name }),
+    defaultCity,
+  });
+
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
       <motion.div
@@ -259,6 +270,17 @@ function CollabPage() {
           Online only
         </button>
       </div>
+
+      <div className="mt-3">
+        <GeoDefaultBanner
+          defaultCity={defaultCity}
+          isOnDefault={!!defaultCity && filters.city === defaultCity.id}
+          isWorldwide={!filters.city && !filters.online}
+          onApply={(city) => setCity({ id: city.id, name: city.name })}
+          onWorldwide={() => setCity({ id: undefined, name: undefined })}
+        />
+      </div>
+
 
       <div className="mt-8">
         {isLoading ? (

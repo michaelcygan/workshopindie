@@ -3,25 +3,23 @@ import type { SuggestedCity } from "@/lib/geo.functions";
 
 /**
  * Compact strip shown above a feed when a geo-default city is active.
- * Lets the user switch to "Worldwide" or apply the suggested city when
- * they're currently browsing worldwide.
+ * `isOnDefault` and `isWorldwide` are computed by the parent since each
+ * feed encodes the active city differently (slug vs uuid).
  */
 export function GeoDefaultBanner({
   defaultCity,
-  currentCity,
+  isOnDefault,
+  isWorldwide,
   onApply,
   onWorldwide,
 }: {
   defaultCity: SuggestedCity | null | undefined;
-  currentCity: string;
-  onApply: (slug: string) => void;
+  isOnDefault: boolean;
+  isWorldwide: boolean;
+  onApply: (city: SuggestedCity) => void;
   onWorldwide: () => void;
 }) {
   if (!defaultCity) return null;
-
-  const isOnDefault = currentCity === defaultCity.slug;
-  const isWorldwide = currentCity === "all";
-
   if (!isOnDefault && !isWorldwide) return null;
 
   return (
@@ -41,7 +39,7 @@ export function GeoDefaultBanner({
             Near you:{" "}
             <button
               type="button"
-              onClick={() => onApply(defaultCity.slug)}
+              onClick={() => onApply(defaultCity)}
               className="text-ink underline underline-offset-2 hover:text-primary"
             >
               {defaultCity.name}

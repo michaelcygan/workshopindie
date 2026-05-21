@@ -31,21 +31,21 @@ export function useDefaultCity() {
  */
 export function useApplyDefaultCity(opts: {
   feedKey: string;
-  currentCity: string;
-  apply: (slug: string) => void;
+  isWorldwide: boolean;
+  apply: (city: SuggestedCity) => void;
   defaultCity: SuggestedCity | null | undefined;
 }) {
   const applied = useRef(false);
   useEffect(() => {
     if (applied.current) return;
     if (!opts.defaultCity) return;
-    if (opts.currentCity !== "all") return;
+    if (!opts.isWorldwide) return;
     if (typeof window === "undefined") return;
     const key = `geo.applied.${opts.feedKey}`;
     if (window.sessionStorage.getItem(key) === "1") return;
     window.sessionStorage.setItem(key, "1");
     applied.current = true;
-    opts.apply(opts.defaultCity.slug);
+    opts.apply(opts.defaultCity);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.defaultCity?.slug, opts.currentCity]);
+  }, [opts.defaultCity?.slug, opts.isWorldwide]);
 }
