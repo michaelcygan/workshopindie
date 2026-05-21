@@ -196,6 +196,16 @@ function NewWork() {
       sort_order: 0,
     });
 
+    // Link uploaded Cloudflare Stream asset (if any) to this work
+    if (streamUid) {
+      await supabase
+        .from("media_assets")
+        .update({ work_id: work.id })
+        .eq("provider", "cloudflare_stream")
+        .eq("provider_uid", streamUid)
+        .eq("owner_id", user.id);
+    }
+
     setSubmitting(false);
     toast.success("Work published");
 
@@ -205,6 +215,7 @@ function NewWork() {
       setTitle(""); setExcerpt(""); setDescription("");
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setLicense("cc_by");
+      setStreamUid(null);
       setUrlInput("");
       setStep("drop");
       navigate({ to: "/works/new", search: {} });
