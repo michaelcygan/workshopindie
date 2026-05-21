@@ -120,7 +120,7 @@ export const getDefaultHomeCity = createServerFn({ method: "GET" }).handler(
       : null;
 
     if (token) {
-      const { data: userData } = await supabaseAnon.auth.getUser(token);
+      const { data: userData } = await supabaseAdmin.auth.getUser(token);
       const uid = userData.user?.id;
       if (uid) {
         const { data: profile } = await supabaseAdmin
