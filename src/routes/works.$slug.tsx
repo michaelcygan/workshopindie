@@ -21,13 +21,9 @@ import { format } from "date-fns";
 export const Route = createFileRoute("/works/$slug")({
   component: WorkDetail,
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("works")
-      .select("title,excerpt,description,cover_url,published_at")
-      .eq("slug", params.slug)
-      .eq("status", "published")
-      .maybeSingle();
-    return { seo: data ?? null };
+    const { getWorkSeo } = await import("@/lib/seo-loaders.functions");
+    const data = await getWorkSeo({ data: { slug: params.slug } });
+    return { seo: data };
   },
   head: ({ params, loaderData }) => {
     const w = loaderData?.seo;
