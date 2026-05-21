@@ -69,6 +69,7 @@ function NewWork() {
   const [provider, setProvider] = useState<string | null>(null);
   const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
   const [submitting, setSubmitting] = useState(false);
+  const [streamUid, setStreamUid] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
 
   useEffect(() => {
