@@ -18,6 +18,25 @@ function tierFromPrice(priceId: string | null): "plus" | "free" {
   return priceId === "plus_monthly" ? "plus" : "free";
 }
 
+type SubStatus = "active" | "canceled" | "incomplete" | "past_due" | "trialing";
+function mapSubStatus(s: Stripe.Subscription.Status): SubStatus {
+  switch (s) {
+    case "active":
+    case "canceled":
+    case "incomplete":
+    case "past_due":
+    case "trialing":
+      return s;
+    case "incomplete_expired":
+    case "unpaid":
+      return "canceled";
+    case "paused":
+      return "past_due";
+    default:
+      return "canceled";
+  }
+}
+
 async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: StripeEnv) {
   const userId = (subscription.metadata as Record<string, string> | null)?.userId;
   if (!userId) {
@@ -38,7 +57,7 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: 
       stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : subscription.customer.id,
       stripe_price_id: priceId,
       tier: tierFromPrice(priceId),
-      status: subscription.status,
+      status: mapSubStatus(subscription.status),
       current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
       current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end || false,
