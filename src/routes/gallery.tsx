@@ -228,8 +228,8 @@ function GalleryPage() {
   const defaultCity = defaultCityQuery.data?.city ?? null;
   useApplyDefaultCity({
     feedKey: "gallery",
-    currentCity: citySlug,
-    apply: (slug) => setSearch({ city: slug }),
+    isWorldwide: citySlug === "all",
+    apply: (city) => setSearch({ city: city.slug }),
     defaultCity,
   });
 
@@ -363,8 +363,9 @@ function GalleryPage() {
           <div className="mt-2">
             <GeoDefaultBanner
               defaultCity={defaultCity}
-              currentCity={citySlug}
-              onApply={(slug) => setSearch({ city: slug })}
+              isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
+              isWorldwide={citySlug === "all"}
+              onApply={(city) => setSearch({ city: city.slug })}
               onWorldwide={() => setSearch({ city: "all" })}
             />
           </div>
