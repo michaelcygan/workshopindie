@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Provider } from "@/lib/works-import.functions";
 import { cn } from "@/lib/utils";
 
@@ -20,21 +21,114 @@ function isAllowed(url: string): boolean {
   }
 }
 
+function isHls(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    // Match Cloudflare Stream and generic .m3u8 manifests
+    const isStreamHost =
+      u.hostname.endsWith("videodelivery.net") ||
+      u.hostname.endsWith("cloudflarestream.com");
+    return isStreamHost || u.pathname.toLowerCase().endsWith(".m3u8");
+  } catch {
+    return false;
+  }
+}
+
 // Audio embeds get a fixed short height; video gets 16:9.
 const AUDIO_PROVIDERS = new Set<Provider>(["soundcloud", "spotify", "bandcamp"]);
+
+function HlsVideo({
+  url,
+  title,
+  poster,
+  className,
+}: {
+  url: string;
+  title?: string;
+  poster?: string | null;
+  className?: string;
+}) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video) return;
+
+    // Safari (and iOS) play HLS natively.
+    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = url;
+      return;
+    }
+
+    let destroyed = false;
+    let hls: { destroy: () => void } | null = null;
+
+    (async () => {
+      const mod = await import("hls.js");
+      const Hls = mod.default;
+      if (destroyed) return;
+      if (Hls.isSupported()) {
+        const instance = new Hls();
+        instance.loadSource(url);
+        instance.attachMedia(video);
+        hls = instance;
+      } else {
+        // Last-resort fallback — most browsers will fail but try anyway.
+        video.src = url;
+      }
+    })().catch(() => {
+      video.src = url;
+    });
+
+    return () => {
+      destroyed = true;
+      hls?.destroy();
+    };
+  }, [url]);
+
+  return (
+    <video
+      ref={ref}
+      controls
+      playsInline
+      poster={poster ?? undefined}
+      title={title}
+      className={cn("w-full bg-black aspect-video", className)}
+    />
+  );
+}
 
 export function EmbedPlayer({
   url,
   provider,
   title,
+  poster,
   className,
 }: {
   url: string | null | undefined;
   provider?: Provider | string | null;
   title?: string;
+  poster?: string | null;
   className?: string;
 }) {
-  if (!url || !isAllowed(url)) return null;
+  if (!url) return null;
+
+  // HLS / hosted video path
+  if (isHls(url)) {
+    return (
+      <div
+        className={cn(
+          "overflow-hidden rounded-3xl border border-border bg-surface-2",
+          className,
+        )}
+      >
+        <HlsVideo url={url} title={title} poster={poster} />
+      </div>
+    );
+  }
+
+  if (!isAllowed(url)) return null;
   const isAudio = provider ? AUDIO_PROVIDERS.has(provider as Provider) : false;
   return (
     <div

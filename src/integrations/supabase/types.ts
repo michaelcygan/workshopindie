@@ -816,10 +816,15 @@ export type Database = {
           hls_url: string | null
           id: string
           kind: string
+          meta: Json
           mp4_fallback_url: string | null
           owner_id: string
           provider: string | null
+          provider_uid: string | null
+          ready_at: string | null
           status: string
+          thumbnail_url: string | null
+          updated_at: string
           work_id: string | null
         }
         Insert: {
@@ -829,10 +834,15 @@ export type Database = {
           hls_url?: string | null
           id?: string
           kind: string
+          meta?: Json
           mp4_fallback_url?: string | null
           owner_id: string
           provider?: string | null
+          provider_uid?: string | null
+          ready_at?: string | null
           status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
           work_id?: string | null
         }
         Update: {
@@ -842,10 +852,15 @@ export type Database = {
           hls_url?: string | null
           id?: string
           kind?: string
+          meta?: Json
           mp4_fallback_url?: string | null
           owner_id?: string
           provider?: string | null
+          provider_uid?: string | null
+          ready_at?: string | null
           status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
           work_id?: string | null
         }
         Relationships: [

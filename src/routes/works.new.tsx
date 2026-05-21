@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
+import { VideoUploadButton, type StreamUploadResult } from "@/components/video-upload-button";
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
 import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ function NewWork() {
   const [provider, setProvider] = useState<string | null>(null);
   const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
   const [submitting, setSubmitting] = useState(false);
+  const [streamUid, setStreamUid] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
 
   useEffect(() => {
@@ -100,6 +102,26 @@ function NewWork() {
     setProvider(e.provider);
     setStep("confirm");
   }
+
+  function applyVideoUpload(r: StreamUploadResult) {
+    setStreamUid(r.uid);
+    setProvider("cloudflare_stream");
+    setEmbedUrl(r.hlsUrl);
+    if (r.thumbnailUrl && !coverUrl) setCoverUrl(r.thumbnailUrl);
+    setExtracted({
+      title: title || "",
+      description: null,
+      cover_url: r.thumbnailUrl,
+      primary_url: r.hlsUrl,
+      embed_url: r.hlsUrl,
+      provider: "cloudflare_stream",
+      author_name: null,
+      suggested_category: "visual",
+    } as unknown as ExtractedWork);
+    setStep("confirm");
+  }
+
+
 
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
@@ -174,6 +196,16 @@ function NewWork() {
       sort_order: 0,
     });
 
+    // Link uploaded Cloudflare Stream asset (if any) to this work
+    if (streamUid) {
+      await supabase
+        .from("media_assets")
+        .update({ work_id: work.id })
+        .eq("provider", "cloudflare_stream")
+        .eq("provider_uid", streamUid)
+        .eq("owner_id", user.id);
+    }
+
     setSubmitting(false);
     toast.success("Work published");
 
@@ -183,6 +215,7 @@ function NewWork() {
       setTitle(""); setExcerpt(""); setDescription("");
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setLicense("cc_by");
+      setStreamUid(null);
       setUrlInput("");
       setStep("drop");
       navigate({ to: "/works/new", search: {} });
@@ -207,6 +240,7 @@ function NewWork() {
           extracting={extracting}
           onSubmit={() => runExtract(urlInput)}
           onManual={() => setStep("manual")}
+          onVideoUploaded={applyVideoUpload}
         />
       )}
 
@@ -323,13 +357,14 @@ function NewWork() {
 }
 
 function DropStep({
-  urlInput, setUrlInput, extracting, onSubmit, onManual,
+  urlInput, setUrlInput, extracting, onSubmit, onManual, onVideoUploaded,
 }: {
   urlInput: string;
   setUrlInput: (v: string) => void;
   extracting: boolean;
   onSubmit: () => void;
   onManual: () => void;
+  onVideoUploaded: (r: StreamUploadResult) => void;
 }) {
   return (
     <motion.div
@@ -378,7 +413,8 @@ function DropStep({
         </p>
       </div>
 
-      <div className="text-center">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <VideoUploadButton onUploaded={onVideoUploaded} />
         <button
           type="button"
           onClick={onManual}

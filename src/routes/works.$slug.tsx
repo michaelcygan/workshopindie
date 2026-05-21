@@ -151,7 +151,7 @@ function WorkDetail() {
         {/* Embedded player (YouTube, Vimeo, SoundCloud, Spotify, Bandcamp…) or cover */}
         {work.embed_url ? (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
-            <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} />
+            <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} poster={work.cover_url} />
           </motion.div>
         ) : work.cover_url && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
