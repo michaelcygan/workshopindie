@@ -22,12 +22,9 @@ import type { Category } from "@/lib/categories";
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
   loader: async ({ params }) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name,username,headline,bio,avatar_url")
-      .eq("username", params.username)
-      .maybeSingle();
-    return { seo: data ?? null };
+    const { getProfileSeo } = await import("@/lib/seo-loaders.functions");
+    const data = await getProfileSeo({ data: { username: params.username } });
+    return { seo: data };
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.seo;
