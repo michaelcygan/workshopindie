@@ -13,6 +13,8 @@ import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-fi
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
+import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { GeoDefaultBanner } from "@/components/geo-default-banner";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
