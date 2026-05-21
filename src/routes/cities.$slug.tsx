@@ -101,7 +101,7 @@ function CityPage() {
       };
       return ((data ?? []) as Row[]).map<WorkCardData>((r) => ({
         id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url, source_type: r.source_type,
-        like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+        like_count: r.like_count ?? 0, save_count: r.save_count ?? 0, view_count: r.view_count ?? 0,
         credits: (r.work_credits ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
           .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
       }));
