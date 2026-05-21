@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { supabase as supabaseAnon } from "@/integrations/supabase/client";
+
 
 export type SuggestedCity = {
   id: string;
