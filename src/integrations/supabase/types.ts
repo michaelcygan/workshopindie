@@ -1032,8 +1032,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age_filter_min: number | null
           avatar_url: string | null
           bio: string | null
+          birthdate: string | null
           categories: Database["public"]["Enums"]["category"][]
           city_id: string | null
           cover_url: string | null
@@ -1059,8 +1061,10 @@ export type Database = {
           worked_with_count: number
         }
         Insert: {
+          age_filter_min?: number | null
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
           city_id?: string | null
           cover_url?: string | null
@@ -1086,8 +1090,10 @@ export type Database = {
           worked_with_count?: number
         }
         Update: {
+          age_filter_min?: number | null
           avatar_url?: string | null
           bio?: string | null
+          birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
           city_id?: string | null
           cover_url?: string | null
@@ -1904,11 +1910,14 @@ export type Database = {
           ends_at: string | null
           external_call_url: string | null
           finalization_deadline_at: string | null
+          hide_from_ineligible: boolean
           host_user_id: string
           id: string
           license_type: Database["public"]["Enums"]["work_license"]
           location_text: string | null
           location_type: Database["public"]["Enums"]["location_type"]
+          max_age: number | null
+          min_age: number | null
           mode: Database["public"]["Enums"]["workshop_mode"]
           participant_cap: number | null
           prompt: string | null
@@ -1936,11 +1945,14 @@ export type Database = {
           ends_at?: string | null
           external_call_url?: string | null
           finalization_deadline_at?: string | null
+          hide_from_ineligible?: boolean
           host_user_id: string
           id?: string
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
+          max_age?: number | null
+          min_age?: number | null
           mode?: Database["public"]["Enums"]["workshop_mode"]
           participant_cap?: number | null
           prompt?: string | null
@@ -1968,11 +1980,14 @@ export type Database = {
           ends_at?: string | null
           external_call_url?: string | null
           finalization_deadline_at?: string | null
+          hide_from_ineligible?: boolean
           host_user_id?: string
           id?: string
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
+          max_age?: number | null
+          min_age?: number | null
           mode?: Database["public"]["Enums"]["workshop_mode"]
           participant_cap?: number | null
           prompt?: string | null
@@ -2016,6 +2031,14 @@ export type Database = {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
       }
+      has_max_age: {
+        Args: { _max: number; _user_id: string }
+        Returns: boolean
+      }
+      has_min_age: {
+        Args: { _min: number; _user_id: string }
+        Returns: boolean
+      }
       has_plus: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -2052,6 +2075,7 @@ export type Database = {
       }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       slugify: { Args: { _in: string }; Returns: string }
+      user_age: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"

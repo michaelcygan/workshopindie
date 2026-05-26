@@ -20,6 +20,16 @@ export function trustName(p: TrustNameInput | null | undefined): string {
   return "Someone";
 }
 
+/**
+ * Derive a display name from first + last name, with optional override.
+ * If override is non-empty, return it. Otherwise return "First Last" (trimmed).
+ */
+export function deriveDisplayName(first: string, last: string, override?: string | null): string {
+  const o = (override ?? "").trim();
+  if (o) return o;
+  return `${first.trim()} ${last.trim()}`.trim();
+}
+
 export function sanitizeInstagramHandle(input: string): string {
   return input
     .toLowerCase()

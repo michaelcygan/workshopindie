@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,9 +13,10 @@ import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Lock } from "lucide-react";
-import { sanitizeInstagramHandle } from "@/lib/display-name";
+import { sanitizeInstagramHandle, deriveDisplayName } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
+import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/me/edit")({
   component: () => <RequireAuth><EditProfile /></RequireAuth>,
@@ -33,7 +35,8 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
 ];
 
 type FormState = {
-  displayName: string;
+  displayNameOverride: string;     // empty = use derived
+  useDisplayOverride: boolean;
   username: string;
   firstName: string;
   lastName: string;
@@ -46,12 +49,14 @@ type FormState = {
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
+  ageFilterMin: number | null;     // private: 18 / 21 / null
 };
 
 const EMPTY: FormState = {
-  displayName: "", username: "", firstName: "", lastName: "", instagram: "",
+  displayNameOverride: "", useDisplayOverride: false, username: "",
+  firstName: "", lastName: "", instagram: "",
   headline: "", bio: "", avatar: null, cover: null, cats: [], links: [],
-  cityId: "", pinnedIds: [],
+  cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
 function EditProfile() {
@@ -62,6 +67,13 @@ function EditProfile() {
   const [initial, setInitial] = useState<FormState>(EMPTY);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
+  const [birthdate, setBirthdate] = useState<string>("");      // YYYY-MM-DD
+  const [birthdateLocked, setBirthdateLocked] = useState(false);
+  const [savingBirthdate, setSavingBirthdate] = useState(false);
+
+  const fetchAge = useServerFn(getMyAgeFields);
+  const saveBirthdateFn = useServerFn(setMyBirthdate);
+  const saveAgeFilterFn = useServerFn(setMyAgeFilter);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -93,11 +105,17 @@ function EditProfile() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
+      const first = (data.first_name as string | null) ?? "";
+      const last = (data.last_name as string | null) ?? "";
+      const stored = (data.display_name as string | null) ?? "";
+      const derived = `${first} ${last}`.trim();
+      const isOverride = !!stored && stored.trim() !== derived;
       const loaded: FormState = {
-        displayName: data.display_name ?? "",
+        displayNameOverride: isOverride ? stored : "",
+        useDisplayOverride: isOverride,
         username: data.username ?? "",
-        firstName: data.first_name ?? "",
-        lastName: data.last_name ?? "",
+        firstName: first,
+        lastName: last,
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
@@ -107,12 +125,20 @@ function EditProfile() {
         links: ((data.external_links as ExtLink[] | null) ?? []),
         cityId: data.city_id ?? "",
         pinnedIds: (data.pinned_work_ids ?? []) as string[],
+        ageFilterMin: null,
       };
       setInitial(loaded);
       setForm(loaded);
       setHydrated(true);
     });
-  }, [user]);
+
+    fetchAge().then((r) => {
+      setBirthdate(r.birthdate ?? "");
+      setBirthdateLocked(r.locked);
+      setInitial((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+      setForm((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+    }).catch(() => { /* ignore */ });
+  }, [user, fetchAge]);
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
 
@@ -145,14 +171,20 @@ function EditProfile() {
   async function onSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!user) return;
+    const first = form.firstName.trim();
+    const last = form.lastName.trim();
+    if (!first || !last) {
+      return toast.error("First and last name are required.");
+    }
     setSaving(true);
     const ig = sanitizeInstagramHandle(form.instagram);
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
+    const finalDisplay = deriveDisplayName(first, last, form.useDisplayOverride ? form.displayNameOverride : "");
     const { error } = await supabase.from("profiles").update({
-      display_name: form.displayName,
+      display_name: finalDisplay,
       username: form.username || null,
-      first_name: form.firstName.trim() || null,
-      last_name: form.lastName.trim() || null,
+      first_name: first,
+      last_name: last,
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
@@ -164,11 +196,36 @@ function EditProfile() {
       pinned_work_ids: cleanPinned,
       onboarded: true,
     }).eq("id", user.id);
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    // Age filter saves through a server fn (column is server-protected).
+    if (form.ageFilterMin !== initial.ageFilterMin) {
+      try {
+        await saveAgeFilterFn({ data: { ageFilterMin: form.ageFilterMin } });
+      } catch (err) {
+        setSaving(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't save age filter");
+      }
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Profile saved");
     setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig });
     setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig }));
+  }
+
+  async function onSaveBirthdate() {
+    if (!birthdate) return toast.error("Please pick your date of birth.");
+    setSavingBirthdate(true);
+    try {
+      await saveBirthdateFn({ data: { birthdate } });
+      setBirthdateLocked(true);
+      toast.success("Date of birth saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save");
+    } finally {
+      setSavingBirthdate(false);
+    }
   }
 
   if (!hydrated) return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
@@ -240,10 +297,19 @@ function EditProfile() {
                 </div>
               </div>
               <div className="flex-1 min-w-0 space-y-3 pt-7">
-                <div className="space-y-1.5">
-                  <Label htmlFor="dn">Display name</Label>
-                  <Input id="dn" required value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fn">First name</Label>
+                    <Input id="fn" required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ln">Last name</Label>
+                    <Input id="ln" required value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+                  </div>
                 </div>
+                <p className="text-xs text-ink-muted">
+                  Shown as "{(form.firstName || "Jane").trim()} {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it counts.
+                </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="un">Username</Label>
                   <Input id="un" value={form.username} onChange={(e) => set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
@@ -252,18 +318,38 @@ function EditProfile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="fn">First name</Label>
-                <Input id="fn" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+            {/* Display name: auto-derived with optional override */}
+            <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="block">Display name</Label>
+                  <p className="text-xs text-ink-muted">
+                    {form.useDisplayOverride ? "Custom display name" : "Auto from your first + last name."}
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={form.useDisplayOverride}
+                    onChange={(e) => set("useDisplayOverride", e.target.checked)}
+                  />
+                  Use a different name
+                </label>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="ln">Last name</Label>
-                <Input id="ln" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
-              </div>
-              <p className="col-span-2 -mt-1 text-xs text-ink-muted">
-                Shown as "{(form.firstName || "Jane").trim()} {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it counts.
-              </p>
+              {form.useDisplayOverride ? (
+                <Input
+                  value={form.displayNameOverride}
+                  onChange={(e) => set("displayNameOverride", e.target.value)}
+                  placeholder={`${form.firstName} ${form.lastName}`.trim() || "Display name"}
+                  maxLength={60}
+                />
+              ) : (
+                <Input
+                  disabled
+                  value={deriveDisplayName(form.firstName, form.lastName)}
+                  className="opacity-70"
+                />
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -281,7 +367,34 @@ function EditProfile() {
                 />
               </div>
             </div>
+
+            {/* Date of birth (private) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="dob">Date of birth <span className="text-ink-muted font-normal">(private)</span></Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="dob"
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
+                  max={new Date(Date.now() - 13 * 365.25 * 24 * 3600 * 1000).toISOString().slice(0, 10)}
+                  disabled={birthdateLocked}
+                  className="max-w-[12rem]"
+                />
+                {!birthdateLocked && birthdate && (
+                  <Button type="button" size="sm" variant="outline" className="rounded-full" disabled={savingBirthdate} onClick={onSaveBirthdate}>
+                    {savingBirthdate ? "Saving…" : "Save"}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-ink-muted">
+                {birthdateLocked
+                  ? "Locked. Contact support if this needs to change."
+                  : "Never shown on your profile. Powers optional age filters for Workshops."}
+              </p>
+            </div>
           </Section>
+
 
           {/* MEDIUMS & BIO */}
           <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Instant Workshops you see." refMap={sectionRefs}>
@@ -363,9 +476,38 @@ function EditProfile() {
           </Section>
 
           {/* PRIVACY */}
-          <Section id="privacy" title="Privacy" subtitle="Control who sees what." refMap={sectionRefs}>
+          <Section id="privacy" title="Privacy" subtitle="Control who sees what — and who you see." refMap={sectionRefs}>
+            <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+              <Label>Workshops age filter</Label>
+              <p className="text-xs text-ink-muted">Only show Workshops scoped to a minimum age. Private — only you see this setting.</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { v: null, label: "All ages" },
+                  { v: 18, label: "18+" },
+                  { v: 21, label: "21+" },
+                ].map((opt) => {
+                  const on = form.ageFilterMin === opt.v;
+                  return (
+                    <button
+                      key={String(opt.v)}
+                      type="button"
+                      onClick={() => set("ageFilterMin", opt.v as number | null)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition",
+                        on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted",
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.ageFilterMin !== null && !birthdateLocked && (
+                <p className="text-xs text-amber-700">Add your date of birth above to take effect.</p>
+              )}
+            </div>
             <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-sm text-ink-muted">
-              <p className="text-ink">Granular privacy controls are coming soon.</p>
+              <p className="text-ink">More granular privacy controls coming soon.</p>
               <p className="mt-1">You can already hide individual credits from your profile by opening that Work and toggling visibility per credit.</p>
             </div>
           </Section>
