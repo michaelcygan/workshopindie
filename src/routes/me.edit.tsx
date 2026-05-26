@@ -171,14 +171,20 @@ function EditProfile() {
   async function onSubmit(e?: React.FormEvent) {
     e?.preventDefault();
     if (!user) return;
+    const first = form.firstName.trim();
+    const last = form.lastName.trim();
+    if (!first || !last) {
+      return toast.error("First and last name are required.");
+    }
     setSaving(true);
     const ig = sanitizeInstagramHandle(form.instagram);
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
+    const finalDisplay = deriveDisplayName(first, last, form.useDisplayOverride ? form.displayNameOverride : "");
     const { error } = await supabase.from("profiles").update({
-      display_name: form.displayName,
+      display_name: finalDisplay,
       username: form.username || null,
-      first_name: form.firstName.trim() || null,
-      last_name: form.lastName.trim() || null,
+      first_name: first,
+      last_name: last,
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
@@ -190,11 +196,36 @@ function EditProfile() {
       pinned_work_ids: cleanPinned,
       onboarded: true,
     }).eq("id", user.id);
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    // Age filter saves through a server fn (column is server-protected).
+    if (form.ageFilterMin !== initial.ageFilterMin) {
+      try {
+        await saveAgeFilterFn({ data: { ageFilterMin: form.ageFilterMin } });
+      } catch (err) {
+        setSaving(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't save age filter");
+      }
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Profile saved");
     setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig });
     setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig }));
+  }
+
+  async function onSaveBirthdate() {
+    if (!birthdate) return toast.error("Please pick your date of birth.");
+    setSavingBirthdate(true);
+    try {
+      await saveBirthdateFn({ data: { birthdate } });
+      setBirthdateLocked(true);
+      toast.success("Date of birth saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't save");
+    } finally {
+      setSavingBirthdate(false);
+    }
   }
 
   if (!hydrated) return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
