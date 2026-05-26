@@ -60,7 +60,7 @@ function LoungeRoomPage() {
         </div>
       </div>
 
-      <ChannelView key={id} roomId={id} title={title} initialMode={mode ?? "voice"} />
+      <ChannelView key={id} roomId={id} title={title} initialMode={mode ?? "video"} />
     </main>
   );
 }
