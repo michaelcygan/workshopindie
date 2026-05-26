@@ -339,6 +339,11 @@ export function useMediaRoom(roomId: string | undefined) {
 
   function teardownMedia() {
     for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
+    for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
+    pairCheckTimersRef.current.clear();
+    pairUsedTurnRef.current.clear();
+    turnIceServersRef.current = null;
+    turnExpiresAtRef.current = 0;
     if (localStreamRef.current) {
       for (const t of localStreamRef.current.getTracks()) t.stop();
       localStreamRef.current = null;
@@ -349,8 +354,6 @@ export function useMediaRoom(roomId: string | undefined) {
     setCameraOnState(false);
     lastSpeakingSentRef.current = false;
   }
-
-  const leave = useCallback(() => {
     teardownMedia();
     const ch = channelRef.current;
     channelRef.current = null;
