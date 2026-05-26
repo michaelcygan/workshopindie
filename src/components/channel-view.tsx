@@ -247,7 +247,7 @@ export function ChannelView({
 
   useEffect(() => {
     if (!user) return;
-    if (!hasConnected) return;
+    // No gate — joined the moment the user dropped in from the lobby.
     let cancelled = false;
 
     async function join() {
