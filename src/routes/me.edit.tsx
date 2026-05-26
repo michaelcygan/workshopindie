@@ -476,9 +476,38 @@ function EditProfile() {
           </Section>
 
           {/* PRIVACY */}
-          <Section id="privacy" title="Privacy" subtitle="Control who sees what." refMap={sectionRefs}>
+          <Section id="privacy" title="Privacy" subtitle="Control who sees what — and who you see." refMap={sectionRefs}>
+            <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
+              <Label>Workshops age filter</Label>
+              <p className="text-xs text-ink-muted">Only show Workshops scoped to a minimum age. Private — only you see this setting.</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { v: null, label: "All ages" },
+                  { v: 18, label: "18+" },
+                  { v: 21, label: "21+" },
+                ].map((opt) => {
+                  const on = form.ageFilterMin === opt.v;
+                  return (
+                    <button
+                      key={String(opt.v)}
+                      type="button"
+                      onClick={() => set("ageFilterMin", opt.v as number | null)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition",
+                        on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted",
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {form.ageFilterMin !== null && !birthdateLocked && (
+                <p className="text-xs text-amber-700">Add your date of birth above to take effect.</p>
+              )}
+            </div>
             <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-sm text-ink-muted">
-              <p className="text-ink">Granular privacy controls are coming soon.</p>
+              <p className="text-ink">More granular privacy controls coming soon.</p>
               <p className="mt-1">You can already hide individual credits from your profile by opening that Work and toggling visibility per credit.</p>
             </div>
           </Section>
