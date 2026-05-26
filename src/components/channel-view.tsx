@@ -90,22 +90,23 @@ export function ChannelView({
 
   const media = useMediaRoom(roomId);
 
-  // Pre-join gate: require an explicit click before requesting mic/cam,
-  // subscribing to signaling, or minting any TURN credentials. This blocks
-  // bots and previews from triggering any of the room's machinery.
-  const [hasConnected, setHasConnected] = useState(false);
-  const handleConnect = (mode: MediaMode) => {
-    setHasConnected(true);
-    media.setMode(mode);
-  };
+  // The lobby "Drop in" button is the consent point — auto-join with mic + camera
+  // (or whatever mode was requested via ?mode=) as soon as the user is loaded.
+  const autoJoinedRef = useRef(false);
+  useEffect(() => {
+    if (!user || autoJoinedRef.current) return;
+    autoJoinedRef.current = true;
+    media.setMode(initialMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // If join fails, route back to /instant.
   useEffect(() => {
-    if (hasConnected && media.error && !media.joined && !media.busy) {
+    if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
       toast.error(media.error);
       router.navigate({ to: "/instant" });
     }
-  }, [hasConnected, media.error, media.joined, media.busy, router]);
+  }, [media.error, media.joined, media.busy, router]);
 
   function handleExit() {
     // If I'm the last one here, purge the ephemeral whiteboard for this room.
