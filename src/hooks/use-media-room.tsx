@@ -94,6 +94,8 @@ export function useMediaRoom(roomId: string | undefined) {
   }
 
   function closePeer(peerId: string) {
+    const t = pairCheckTimersRef.current.get(peerId);
+    if (t) { clearTimeout(t); pairCheckTimersRef.current.delete(peerId); }
     const pc = pcsRef.current.get(peerId);
     if (pc) {
       try { pc.close(); } catch { /* noop */ }
