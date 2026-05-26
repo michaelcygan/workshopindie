@@ -21,7 +21,7 @@ export const Route = createFileRoute("/me/")({
   component: () => <RequireAuth><MeDashboard /></RequireAuth>,
 });
 
-type Tab = "hosting" | "applied" | "participating" | "drafts";
+type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
