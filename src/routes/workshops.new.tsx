@@ -53,6 +53,11 @@ function NewWorkshop() {
     { role_name: "Collaborator", quantity: 3 },
   ]);
 
+  const [ageScope, setAgeScope] = useState<AgeScope>("all");
+  const [customMin, setCustomMin] = useState<number | "">("");
+  const [customMax, setCustomMax] = useState<number | "">("");
+  const [hideFromIneligible, setHideFromIneligible] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
