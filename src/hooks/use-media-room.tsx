@@ -218,15 +218,7 @@ export function useMediaRoom(roomId: string | undefined) {
 
   async function makeOffer(peerId: string) {
     const pc = ensurePeer(peerId);
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    if (myId && channelRef.current && pc.localDescription) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "signal",
-        payload: { type: "offer", from: myId, to: peerId, sdp: pc.localDescription.toJSON() } satisfies SignalEvent,
-      });
-    }
+    await makeOfferOn(pc, peerId);
   }
 
   async function handleSignal(ev: SignalEvent) {
