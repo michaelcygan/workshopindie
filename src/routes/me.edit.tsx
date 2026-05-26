@@ -13,7 +13,7 @@ import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Lock } from "lucide-react";
-import { sanitizeInstagramHandle, deriveDisplayName } from "@/lib/display-name";
+import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
 import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
@@ -35,11 +35,10 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
 ];
 
 type FormState = {
-  displayNameOverride: string;     // empty = use derived
-  useDisplayOverride: boolean;
   username: string;
   firstName: string;
   lastName: string;
+  aliases: string[];
   instagram: string;
   headline: string;
   bio: string;
@@ -53,8 +52,8 @@ type FormState = {
 };
 
 const EMPTY: FormState = {
-  displayNameOverride: "", useDisplayOverride: false, username: "",
-  firstName: "", lastName: "", instagram: "",
+  username: "",
+  firstName: "", lastName: "", aliases: [], instagram: "",
   headline: "", bio: "", avatar: null, cover: null, cats: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
@@ -107,15 +106,11 @@ function EditProfile() {
       if (!data) return;
       const first = (data.first_name as string | null) ?? "";
       const last = (data.last_name as string | null) ?? "";
-      const stored = (data.display_name as string | null) ?? "";
-      const derived = `${first} ${last}`.trim();
-      const isOverride = !!stored && stored.trim() !== derived;
       const loaded: FormState = {
-        displayNameOverride: isOverride ? stored : "",
-        useDisplayOverride: isOverride,
         username: data.username ?? "",
         firstName: first,
         lastName: last,
+        aliases: ((data.aliases as string[] | null) ?? []),
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
@@ -179,12 +174,24 @@ function EditProfile() {
     setSaving(true);
     const ig = sanitizeInstagramHandle(form.instagram);
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
-    const finalDisplay = deriveDisplayName(first, last, form.useDisplayOverride ? form.displayNameOverride : "");
+    const finalDisplay = `${first} ${last}`.trim();
+    const seenAlias = new Set<string>();
+    const cleanAliases = form.aliases
+      .map((a) => a.trim())
+      .filter((a) => {
+        if (!a || a.length > 40) return false;
+        const k = a.toLowerCase();
+        if (seenAlias.has(k)) return false;
+        seenAlias.add(k);
+        return true;
+      })
+      .slice(0, 5);
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
       first_name: first,
       last_name: last,
+      aliases: cleanAliases,
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
@@ -318,37 +325,46 @@ function EditProfile() {
               </div>
             </div>
 
-            {/* Display name: auto-derived with optional override */}
+            {/* Artist aliases (optional) */}
             <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Label className="block">Display name</Label>
-                  <p className="text-xs text-ink-muted">
-                    {form.useDisplayOverride ? "Custom display name" : "Auto from your first + last name."}
-                  </p>
+                  <Label className="block">Artist aliases <span className="text-ink-muted font-normal">(optional)</span></Label>
+                  <p className="text-xs text-ink-muted">Other names you go by — stage name, DJ name, real name. Shown as small chips on your profile. Up to 5.</p>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-ink-soft">
-                  <input
-                    type="checkbox"
-                    checked={form.useDisplayOverride}
-                    onChange={(e) => set("useDisplayOverride", e.target.checked)}
-                  />
-                  Use a different name
-                </label>
+                {form.aliases.length < 5 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full gap-1 shrink-0"
+                    onClick={() => set("aliases", [...form.aliases, ""])}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add alias
+                  </Button>
+                )}
               </div>
-              {form.useDisplayOverride ? (
-                <Input
-                  value={form.displayNameOverride}
-                  onChange={(e) => set("displayNameOverride", e.target.value)}
-                  placeholder={`${form.firstName} ${form.lastName}`.trim() || "Display name"}
-                  maxLength={60}
-                />
-              ) : (
-                <Input
-                  disabled
-                  value={deriveDisplayName(form.firstName, form.lastName)}
-                  className="opacity-70"
-                />
+              {form.aliases.length > 0 && (
+                <div className="space-y-2">
+                  {form.aliases.map((a, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input
+                        value={a}
+                        maxLength={40}
+                        placeholder="e.g. DJ Nightowl"
+                        onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => set("aliases", form.aliases.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 

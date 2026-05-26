@@ -78,6 +78,7 @@ type Profile = {
   worked_with_count: number;
   creator_status: string;
   pinned_work_ids: string[];
+  aliases: string[] | null;
   city: { name: string; country: string; slug: string } | null;
   home_city: { name: string; country: string; slug: string } | null;
 };
@@ -85,7 +86,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -325,6 +326,16 @@ function ProfilePage() {
               )}
             </div>
             {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
+            {profile.aliases && profile.aliases.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                <span>also known as</span>
+                {profile.aliases.map((a, i) => (
+                  <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">
+                    {a}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

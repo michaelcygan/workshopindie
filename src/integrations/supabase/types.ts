@@ -1033,6 +1033,7 @@ export type Database = {
       profiles: {
         Row: {
           age_filter_min: number | null
+          aliases: string[]
           avatar_url: string | null
           bio: string | null
           birthdate: string | null
@@ -1062,6 +1063,7 @@ export type Database = {
         }
         Insert: {
           age_filter_min?: number | null
+          aliases?: string[]
           avatar_url?: string | null
           bio?: string | null
           birthdate?: string | null
@@ -1091,6 +1093,7 @@ export type Database = {
         }
         Update: {
           age_filter_min?: number | null
+          aliases?: string[]
           avatar_url?: string | null
           bio?: string | null
           birthdate?: string | null
