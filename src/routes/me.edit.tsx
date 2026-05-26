@@ -35,11 +35,10 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
 ];
 
 type FormState = {
-  displayNameOverride: string;     // empty = use derived
-  useDisplayOverride: boolean;
   username: string;
   firstName: string;
   lastName: string;
+  aliases: string[];
   instagram: string;
   headline: string;
   bio: string;
@@ -53,8 +52,8 @@ type FormState = {
 };
 
 const EMPTY: FormState = {
-  displayNameOverride: "", useDisplayOverride: false, username: "",
-  firstName: "", lastName: "", instagram: "",
+  username: "",
+  firstName: "", lastName: "", aliases: [], instagram: "",
   headline: "", bio: "", avatar: null, cover: null, cats: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
