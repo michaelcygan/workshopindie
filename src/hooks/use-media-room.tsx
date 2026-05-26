@@ -56,6 +56,36 @@ export function useMediaRoom(roomId: string | undefined) {
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
 
+  // ---- TURN fallback (session-cached) ---------------------------------------
+  // STUN-only is tried first for every pair (free). We only fetch TURN
+  // credentials when at least one pair has actually failed to connect.
+  const turnIceServersRef = useRef<RTCIceServer[] | null>(null);
+  const turnFetchPromiseRef = useRef<Promise<RTCIceServer[]> | null>(null);
+  const turnExpiresAtRef = useRef<number>(0);
+  const pairUsedTurnRef = useRef<Set<string>>(new Set());
+  const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
+
+  async function getTurnIceServers(): Promise<RTCIceServer[]> {
+    const now = Date.now();
+    if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
+      return turnIceServersRef.current;
+    }
+    if (turnFetchPromiseRef.current) return turnFetchPromiseRef.current;
+
+    turnFetchPromiseRef.current = (async () => {
+      const res = await mintTurnCreds({ data: { roomId, ttlSeconds: 600 } });
+      turnIceServersRef.current = res.iceServers;
+      turnExpiresAtRef.current = new Date(res.expiresAt).getTime();
+      return res.iceServers;
+    })();
+
+    try {
+      return await turnFetchPromiseRef.current;
+    } finally {
+      turnFetchPromiseRef.current = null;
+    }
+  }
+
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
       ...prev,
