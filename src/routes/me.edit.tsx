@@ -225,14 +225,16 @@ function EditProfile() {
         <form onSubmit={onSubmit} className="min-w-0 space-y-12">
           {/* IDENTITY */}
           <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
-            <div className="space-y-3">
+            <div className="space-y-2">
               <Label>Cover image</Label>
-              <ImageUpload value={form.cover} onChange={(v) => set("cover", v)} bucket="covers" aspect="wide" label="Upload cover (16:6)" />
+              <div className="max-w-sm">
+                <ImageUpload value={form.cover} onChange={(v) => set("cover", v)} bucket="covers" aspect="wide" label="Upload cover (16:6)" />
+              </div>
             </div>
 
-            <div className="grid grid-cols-[8rem,1fr] gap-5 items-start">
+            <div className="grid grid-cols-[5rem,1fr] gap-4 items-start">
               <div>
-                <Label className="mb-2 block">Avatar</Label>
+                <Label className="mb-2 block">Profile picture</Label>
                 <ImageUpload value={form.avatar} onChange={(v) => set("avatar", v)} bucket="avatars" aspect="square" label="Upload" />
               </div>
               <div className="space-y-3 pt-7">
