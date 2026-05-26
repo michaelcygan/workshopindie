@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,9 @@ import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card"
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { useAuth } from "@/hooks/use-auth";
 import { ComingSoon } from "@/components/coming-soon";
+import { getMyAgeFields } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
