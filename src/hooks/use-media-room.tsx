@@ -354,6 +354,8 @@ export function useMediaRoom(roomId: string | undefined) {
     setCameraOnState(false);
     lastSpeakingSentRef.current = false;
   }
+
+  const leave = useCallback(() => {
     teardownMedia();
     const ch = channelRef.current;
     channelRef.current = null;
