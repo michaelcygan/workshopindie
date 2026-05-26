@@ -174,12 +174,24 @@ function EditProfile() {
     setSaving(true);
     const ig = sanitizeInstagramHandle(form.instagram);
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
-    const finalDisplay = deriveDisplayName(first, last, form.useDisplayOverride ? form.displayNameOverride : "");
+    const finalDisplay = `${first} ${last}`.trim();
+    const seenAlias = new Set<string>();
+    const cleanAliases = form.aliases
+      .map((a) => a.trim())
+      .filter((a) => {
+        if (!a || a.length > 40) return false;
+        const k = a.toLowerCase();
+        if (seenAlias.has(k)) return false;
+        seenAlias.add(k);
+        return true;
+      })
+      .slice(0, 5);
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
       first_name: first,
       last_name: last,
+      aliases: cleanAliases,
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
