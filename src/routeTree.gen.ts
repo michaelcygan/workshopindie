@@ -122,9 +122,9 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   getParentRoute: () => WorkshopsRoute,
 } as any)
 const MeIndexRoute = MeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => MeRoute,
+  id: '/me/',
+  path: '/me/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstantIndexRoute = InstantIndexRouteImport.update({
   id: '/',
@@ -182,9 +182,9 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeEditRoute = MeEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => MeRoute,
+  id: '/me/edit',
+  path: '/me/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstantIdRoute = InstantIdRouteImport.update({
   id: '/$id',
@@ -467,11 +467,13 @@ export interface RootRouteChildren {
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
+  MeEditRoute: typeof MeEditRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WorksSlugRoute: typeof WorksSlugRoute
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
+  MeIndexRoute: typeof MeIndexRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -584,10 +586,10 @@ declare module '@tanstack/react-router' {
     }
     '/me/': {
       id: '/me/'
-      path: '/'
+      path: '/me'
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
-      parentRoute: typeof MeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/instant/': {
       id: '/instant/'
@@ -668,10 +670,10 @@ declare module '@tanstack/react-router' {
     }
     '/me/edit': {
       id: '/me/edit'
-      path: '/edit'
+      path: '/me/edit'
       fullPath: '/me/edit'
       preLoaderRoute: typeof MeEditRouteImport
-      parentRoute: typeof MeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/instant/$id': {
       id: '/instant/$id'
@@ -818,23 +820,15 @@ const rootRouteChildren: RootRouteChildren = {
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
+  MeEditRoute: MeEditRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WorksSlugRoute: WorksSlugRoute,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
+  MeIndexRoute: MeIndexRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
