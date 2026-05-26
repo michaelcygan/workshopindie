@@ -261,6 +261,42 @@ function NewWorkshop() {
         </section>
 
         <section className="space-y-2">
+          <Label>Age scope</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "all", label: "All ages" },
+              { id: "18", label: "18+" },
+              { id: "21", label: "21+" },
+              { id: "custom", label: "Custom" },
+            ] as { id: AgeScope; label: string }[]).map((opt) => (
+              <button key={opt.id} type="button" onClick={() => setAgeScope(opt.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  ageScope === opt.id ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {ageScope === "custom" && (
+            <div className="mt-2 flex items-center gap-2">
+              <Input type="number" min={13} max={120} placeholder="Min" className="w-24"
+                value={customMin} onChange={(e) => setCustomMin(e.target.value === "" ? "" : Number(e.target.value))} />
+              <span className="text-ink-muted">to</span>
+              <Input type="number" min={13} max={120} placeholder="Max" className="w-24"
+                value={customMax} onChange={(e) => setCustomMax(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+          )}
+          {ageScope !== "all" && (
+            <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">
+              <input type="checkbox" checked={hideFromIneligible} onChange={(e) => setHideFromIneligible(e.target.checked)} />
+              Hide this Workshop from people outside the age range
+            </label>
+          )}
+          <p className="text-xs text-ink-muted">Applicants get a friendly message if they don't qualify. Their age stays private.</p>
+        </section>
+
+
+
+        <section className="space-y-2">
           <div className="flex items-center justify-between">
             <Label>Roles</Label>
             <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={addRole}>
