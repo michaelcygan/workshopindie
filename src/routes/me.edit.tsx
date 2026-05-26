@@ -325,37 +325,46 @@ function EditProfile() {
               </div>
             </div>
 
-            {/* Display name: auto-derived with optional override */}
+            {/* Artist aliases (optional) */}
             <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Label className="block">Display name</Label>
-                  <p className="text-xs text-ink-muted">
-                    {form.useDisplayOverride ? "Custom display name" : "Auto from your first + last name."}
-                  </p>
+                  <Label className="block">Artist aliases <span className="text-ink-muted font-normal">(optional)</span></Label>
+                  <p className="text-xs text-ink-muted">Other names you go by — stage name, DJ name, real name. Shown as small chips on your profile. Up to 5.</p>
                 </div>
-                <label className="flex items-center gap-2 text-xs text-ink-soft">
-                  <input
-                    type="checkbox"
-                    checked={form.useDisplayOverride}
-                    onChange={(e) => set("useDisplayOverride", e.target.checked)}
-                  />
-                  Use a different name
-                </label>
+                {form.aliases.length < 5 && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-full gap-1 shrink-0"
+                    onClick={() => set("aliases", [...form.aliases, ""])}
+                  >
+                    <Plus className="h-3.5 w-3.5" /> Add alias
+                  </Button>
+                )}
               </div>
-              {form.useDisplayOverride ? (
-                <Input
-                  value={form.displayNameOverride}
-                  onChange={(e) => set("displayNameOverride", e.target.value)}
-                  placeholder={`${form.firstName} ${form.lastName}`.trim() || "Display name"}
-                  maxLength={60}
-                />
-              ) : (
-                <Input
-                  disabled
-                  value={deriveDisplayName(form.firstName, form.lastName)}
-                  className="opacity-70"
-                />
+              {form.aliases.length > 0 && (
+                <div className="space-y-2">
+                  {form.aliases.map((a, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input
+                        value={a}
+                        maxLength={40}
+                        placeholder="e.g. DJ Nightowl"
+                        onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => set("aliases", form.aliases.filter((_, j) => j !== i))}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
 
