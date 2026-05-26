@@ -183,12 +183,14 @@ async function fetchWorkshops(userId: string): Promise<WorkshopRow[]> {
     supabase.from("workshop_participants").select("workshop:workshops!inner(id,title,slug,category,starts_at,status,visibility)").eq("user_id", userId).in("participant_status", ["confirmed", "checked_in", "completed"]),
   ]);
   const out: WorkshopRow[] = [];
-  for (const w of hosted.data ?? []) out.push({ ...w, role: "host" });
-  for (const row of (joined.data ?? []) as { workshop: { id: string; title: string; slug: string; category: Category; starts_at: string | null; status: string; visibility: string } }[]) {
+  for (const w of (hosted.data ?? []) as { id: string; title: string; slug: string; category: string; starts_at: string | null; status: string }[]) {
+    out.push({ id: w.id, title: w.title, slug: w.slug, category: w.category as Category, starts_at: w.starts_at, status: w.status, role: "host" });
+  }
+  for (const row of (joined.data ?? []) as { workshop: { id: string; title: string; slug: string; category: string; starts_at: string | null; status: string; visibility: string } }[]) {
     const w = row.workshop;
     if (!w || (w.visibility !== "public" && w.visibility !== "unlisted")) continue;
     if (out.some((x) => x.id === w.id)) continue;
-    out.push({ id: w.id, title: w.title, slug: w.slug, category: w.category, starts_at: w.starts_at, status: w.status, role: "participant" });
+    out.push({ id: w.id, title: w.title, slug: w.slug, category: w.category as Category, starts_at: w.starts_at, status: w.status, role: "participant" });
   }
   return out.sort((a, b) => (b.starts_at ?? "").localeCompare(a.starts_at ?? ""));
 }
