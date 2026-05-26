@@ -246,6 +246,7 @@ export function ChannelView({
 
   useEffect(() => {
     if (!user) return;
+    if (!hasConnected) return;
     let cancelled = false;
 
     async function join() {
