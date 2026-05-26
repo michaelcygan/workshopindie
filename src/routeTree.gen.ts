@@ -15,7 +15,6 @@ import { Route as SignupRouteImport } from './routes/signup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as MeRouteImport } from './routes/me'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InstantRouteImport } from './routes/instant'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -25,6 +24,7 @@ import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as MeIndexRouteImport } from './routes/me.index'
 import { Route as InstantIndexRouteImport } from './routes/instant.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
@@ -76,11 +76,6 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MeRoute = MeRouteImport.update({
-  id: '/me',
-  path: '/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -125,6 +120,11 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => WorkshopsRoute,
+} as any)
+const MeIndexRoute = MeIndexRouteImport.update({
+  id: '/me/',
+  path: '/me/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstantIndexRoute = InstantIndexRouteImport.update({
   id: '/',
@@ -182,9 +182,9 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeEditRoute = MeEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => MeRoute,
+  id: '/me/edit',
+  path: '/me/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const InstantIdRoute = InstantIdRouteImport.update({
   id: '/$id',
@@ -237,7 +237,6 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
-  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -263,6 +262,7 @@ export interface FileRoutesByFullPath {
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
   '/instant/': typeof InstantIndexRoute
+  '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -271,7 +271,6 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
   '/login': typeof LoginRoute
-  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -296,6 +295,7 @@ export interface FileRoutesByTo {
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
   '/instant': typeof InstantIndexRoute
+  '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -309,7 +309,6 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
-  '/me': typeof MeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -335,6 +334,7 @@ export interface FileRoutesById {
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
   '/instant/': typeof InstantIndexRoute
+  '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
 }
@@ -349,7 +349,6 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/instant'
     | '/login'
-    | '/me'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -375,6 +374,7 @@ export interface FileRouteTypes {
     | '/collab/'
     | '/dms/'
     | '/instant/'
+    | '/me/'
     | '/workshops/'
     | '/api/public/payments/webhook'
   fileRoutesByTo: FileRoutesByTo
@@ -383,7 +383,6 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/gallery'
     | '/login'
-    | '/me'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -408,6 +407,7 @@ export interface FileRouteTypes {
     | '/collab'
     | '/dms'
     | '/instant'
+    | '/me'
     | '/workshops'
     | '/api/public/payments/webhook'
   id:
@@ -420,7 +420,6 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/instant'
     | '/login'
-    | '/me'
     | '/onboarding'
     | '/pricing'
     | '/reset-password'
@@ -446,6 +445,7 @@ export interface FileRouteTypes {
     | '/collab/'
     | '/dms/'
     | '/instant/'
+    | '/me/'
     | '/workshops/'
     | '/api/public/payments/webhook'
   fileRoutesById: FileRoutesById
@@ -459,7 +459,6 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
-  MeRoute: typeof MeRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -468,11 +467,13 @@ export interface RootRouteChildren {
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
+  MeEditRoute: typeof MeEditRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WorksSlugRoute: typeof WorksSlugRoute
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
+  MeIndexRoute: typeof MeIndexRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
 }
 
@@ -518,13 +519,6 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me': {
-      id: '/me'
-      path: '/me'
-      fullPath: '/me'
-      preLoaderRoute: typeof MeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -589,6 +583,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/'
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
+    }
+    '/me/': {
+      id: '/me/'
+      path: '/me'
+      fullPath: '/me/'
+      preLoaderRoute: typeof MeIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/instant/': {
       id: '/instant/'
@@ -669,10 +670,10 @@ declare module '@tanstack/react-router' {
     }
     '/me/edit': {
       id: '/me/edit'
-      path: '/edit'
+      path: '/me/edit'
       fullPath: '/me/edit'
       preLoaderRoute: typeof MeEditRouteImport
-      parentRoute: typeof MeRoute
+      parentRoute: typeof rootRouteImport
     }
     '/instant/$id': {
       id: '/instant/$id'
@@ -786,16 +787,6 @@ const InstantRouteChildren: InstantRouteChildren = {
 const InstantRouteWithChildren =
   InstantRoute._addFileChildren(InstantRouteChildren)
 
-interface MeRouteChildren {
-  MeEditRoute: typeof MeEditRoute
-}
-
-const MeRouteChildren: MeRouteChildren = {
-  MeEditRoute: MeEditRoute,
-}
-
-const MeRouteWithChildren = MeRoute._addFileChildren(MeRouteChildren)
-
 interface WorkshopsRouteChildren {
   WorkshopsSlugRoute: typeof WorkshopsSlugRoute
   WorkshopsNewRoute: typeof WorkshopsNewRoute
@@ -821,7 +812,6 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
-  MeRoute: MeRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ResetPasswordRoute: ResetPasswordRoute,
@@ -830,11 +820,13 @@ const rootRouteChildren: RootRouteChildren = {
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
+  MeEditRoute: MeEditRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WorksSlugRoute: WorksSlugRoute,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
+  MeIndexRoute: MeIndexRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
 }
 export const routeTree = rootRouteImport

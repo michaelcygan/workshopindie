@@ -17,7 +17,7 @@ import { useUserRoles } from "@/hooks/use-user-role";
 import type { Category } from "@/lib/categories";
 import { RequireAuth } from "@/components/require-auth";
 
-export const Route = createFileRoute("/me")({
+export const Route = createFileRoute("/me/")({
   component: () => <RequireAuth><MeDashboard /></RequireAuth>,
 });
 
@@ -111,6 +111,8 @@ function MeDashboard() {
     },
   });
 
+
+
   const { data: closedNudges = [] } = useQuery({
     queryKey: ["me-closed-collabs", user?.id],
     enabled: !!user,
@@ -192,6 +194,13 @@ function MeDashboard() {
         {tab === "drafts" && <DraftsList items={drafts as any} />}
         {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
       </div>
+
+      <p className="mt-10 text-center text-xs text-ink-muted">
+        Your portfolio, credits, collabs, workshops, and groups live on your public profile.
+        {profile?.username && (
+          <> <Link to="/u/$username" params={{ username: profile.username }} className="underline">View it →</Link></>
+        )}
+      </p>
     </main>
   );
 }
