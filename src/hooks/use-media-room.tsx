@@ -107,10 +107,43 @@ export function useMediaRoom(roomId: string | undefined) {
     });
   }
 
-  function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
-    const existing = pcsRef.current.get(peerId);
-    if (existing) return existing;
-    const pc = new RTCPeerConnection(ICE_CONFIG);
+  function clearCheckTimer(peerId: string) {
+    const t = pairCheckTimersRef.current.get(peerId);
+    if (t) {
+      clearTimeout(t);
+      pairCheckTimersRef.current.delete(peerId);
+    }
+  }
+
+  async function upgradePeerToTurn(peerId: string, peerMode: MediaMode) {
+    if (pairUsedTurnRef.current.has(peerId)) return; // one retry per pair
+    pairUsedTurnRef.current.add(peerId);
+    clearCheckTimer(peerId);
+
+    let turnServers: RTCIceServer[];
+    try {
+      turnServers = await getTurnIceServers();
+    } catch (e) {
+      console.warn("TURN mint failed", e);
+      closePeer(peerId);
+      return;
+    }
+
+    // Tear down the failed pc and recreate with TURN servers.
+    closePeer(peerId);
+    const pc = createPeer(peerId, peerMode, [...STUN_ONLY, ...turnServers]);
+    // Only the lex-greater side re-offers (matches normal join handshake).
+    if (myId && myId > peerId) {
+      try { await makeOfferOn(pc, peerId); } catch (e) { console.warn("TURN re-offer failed", e); }
+    }
+  }
+
+  function createPeer(
+    peerId: string,
+    peerMode: MediaMode,
+    iceServers: RTCIceServer[] = STUN_ONLY,
+  ): RTCPeerConnection {
+    const pc = new RTCPeerConnection({ iceServers });
     pcsRef.current.set(peerId, pc);
     setPeers((prev) => ({
       ...prev,
@@ -133,10 +166,54 @@ export function useMediaRoom(roomId: string | undefined) {
         });
       }
     };
+    pc.oniceconnectionstatechange = () => {
+      const s = pc.iceConnectionState;
+      if (s === "connected" || s === "completed") {
+        clearCheckTimer(peerId);
+      } else if (s === "checking") {
+        // Arm 8s upgrade timer (only once per pair lifecycle).
+        if (!pairCheckTimersRef.current.has(peerId) && !pairUsedTurnRef.current.has(peerId)) {
+          const t = window.setTimeout(() => {
+            pairCheckTimersRef.current.delete(peerId);
+            if (pcsRef.current.get(peerId) === pc &&
+                (pc.iceConnectionState === "checking" || pc.iceConnectionState === "new")) {
+              upgradePeerToTurn(peerId, peerMode);
+            }
+          }, ICE_CHECKING_TIMEOUT_MS);
+          pairCheckTimersRef.current.set(peerId, t);
+        }
+      } else if (s === "failed" || s === "disconnected") {
+        if (!pairUsedTurnRef.current.has(peerId)) {
+          upgradePeerToTurn(peerId, peerMode);
+        } else if (s === "failed") {
+          closePeer(peerId);
+        }
+      }
+    };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") closePeer(peerId);
+      if (pc.connectionState === "failed" && pairUsedTurnRef.current.has(peerId)) {
+        closePeer(peerId);
+      }
     };
     return pc;
+  }
+
+  function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
+    const existing = pcsRef.current.get(peerId);
+    if (existing) return existing;
+    return createPeer(peerId, peerMode, STUN_ONLY);
+  }
+
+  async function makeOfferOn(pc: RTCPeerConnection, peerId: string) {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    if (myId && channelRef.current && pc.localDescription) {
+      channelRef.current.send({
+        type: "broadcast",
+        event: "signal",
+        payload: { type: "offer", from: myId, to: peerId, sdp: pc.localDescription.toJSON() } satisfies SignalEvent,
+      });
+    }
   }
 
   async function makeOffer(peerId: string) {
