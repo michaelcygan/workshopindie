@@ -23,6 +23,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
+import { RoomPreJoin } from "@/components/room-pre-join";
 const RoomBoard = lazy(() => import("@/components/room-board"));
 import {
   AlertDialog,
