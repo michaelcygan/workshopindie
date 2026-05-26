@@ -227,17 +227,19 @@ function EditProfile() {
           <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Cover image</Label>
-              <div className="max-w-sm">
+              <div className="w-full max-w-xs">
                 <ImageUpload value={form.cover} onChange={(v) => set("cover", v)} bucket="covers" aspect="wide" label="Upload cover (16:6)" />
               </div>
             </div>
 
-            <div className="grid grid-cols-[5rem,1fr] gap-4 items-start">
-              <div>
+            <div className="flex gap-4 items-start">
+              <div className="shrink-0">
                 <Label className="mb-2 block">Profile picture</Label>
-                <ImageUpload value={form.avatar} onChange={(v) => set("avatar", v)} bucket="avatars" aspect="square" label="Upload" />
+                <div className="h-20 w-20">
+                  <ImageUpload value={form.avatar} onChange={(v) => set("avatar", v)} bucket="avatars" aspect="square" label="Upload" />
+                </div>
               </div>
-              <div className="space-y-3 pt-7">
+              <div className="flex-1 min-w-0 space-y-3 pt-7">
                 <div className="space-y-1.5">
                   <Label htmlFor="dn">Display name</Label>
                   <Input id="dn" required value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
