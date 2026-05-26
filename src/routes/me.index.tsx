@@ -21,7 +21,7 @@ export const Route = createFileRoute("/me/")({
   component: () => <RequireAuth><MeDashboard /></RequireAuth>,
 });
 
-type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
+type Tab = "hosting" | "applied" | "participating" | "drafts";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
@@ -98,18 +98,6 @@ function MeDashboard() {
     },
   });
 
-  const { data: credits = [], refetch: refetchCredits } = useQuery({
-    queryKey: ["me-credits", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("work_credits")
-        .select("id,role_label,hidden_from_profile,sort_order,work:works!inner(id,title,slug,category,cover_url,status,visibility,published_at)")
-        .eq("user_id", user!.id)
-        .order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
 
   const { data: closedNudges = [] } = useQuery({
     queryKey: ["me-closed-collabs", user?.id],
@@ -136,7 +124,6 @@ function MeDashboard() {
     applied: applied.length,
     participating: participating.length,
     drafts: drafts.length,
-    credits: credits.length,
   };
 
   return (
@@ -170,8 +157,8 @@ function MeDashboard() {
       {(() => {
         const hasWorkshopHistory = counts.hosting + counts.applied + counts.participating > 0;
         const tabs: Tab[] = (isAdmin || hasWorkshopHistory)
-          ? ["hosting", "applied", "participating", "drafts", "credits"]
-          : ["drafts", "credits"];
+          ? ["hosting", "applied", "participating", "drafts"]
+          : ["drafts"];
         return (
           <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
             {tabs.map((t) => (
@@ -190,8 +177,14 @@ function MeDashboard() {
         {tab === "applied" && <AppliedList items={applied as any} />}
         {tab === "participating" && <ParticipatingList items={participating as any} />}
         {tab === "drafts" && <DraftsList items={drafts as any} />}
-        {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
       </div>
+
+      <p className="mt-10 text-center text-xs text-ink-muted">
+        Your portfolio, credits, collabs, workshops, and groups live on your public profile.
+        {profile?.username && (
+          <> <Link to="/u/$username" params={{ username: profile.username }} className="underline">View it →</Link></>
+        )}
+      </p>
     </main>
   );
 }
