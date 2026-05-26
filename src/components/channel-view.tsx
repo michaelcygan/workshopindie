@@ -471,9 +471,6 @@ export function ChannelView({
   const fsLabel =
     fsTarget === "board" ? "Expand board" : fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
 
-  if (!hasConnected) {
-    return <RoomPreJoin title={title} initialMode={initialMode} onConnect={handleConnect} />;
-  }
 
   return (
     <>
