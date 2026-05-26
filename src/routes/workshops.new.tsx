@@ -20,6 +20,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/workshops/new")({ component: NewWorkshop });
 
 type LocationType = "online" | "in_person" | "hybrid";
+type AgeScope = "all" | "18" | "21" | "custom";
 
 type RoleDraft = { role_name: string; quantity: number };
 
