@@ -1,37 +1,43 @@
-# Finish age + identity rollout
+## Goal
 
-The DB, server functions, and `/me/edit` are done. This plan covers the remaining four surfaces.
+Simplify identity on `/me/edit` and signup to **First name + Last name only** (no custom display name field). Add an optional **Artist aliases** list (e.g. music name, DJ name, real name) that shows on the public profile.
 
-## 1. Onboarding (`src/routes/onboarding.tsx`)
-- Replace single "display name" input with **First name** (required) + **Last name** (required).
-- Add **Date of birth** picker (required, 13+ enforced server-side by the existing birthdate guard trigger).
-- Derive `display_name` via `deriveDisplayName(first, last)` on submit — no manual override at onboarding (keep it simple; override lives in `/me/edit`).
-- Helper copy under DOB: "Private. Used only for age filters you choose to apply. Never shown on your profile."
-- Save birthdate through `setMyBirthdate` server fn (bypasses RLS column restriction).
+## 1. Database (migration)
 
-## 2. Workshop create (`src/routes/workshops.new.tsx`)
-- Add an **Age scope** field group with radio options:
-  - All ages (default) → `min_age = null, max_age = null`
-  - 18+ → `min_age = 18`
-  - 21+ → `min_age = 21`
-  - Custom → two number inputs for min/max
-- Add a **"Hide from users outside this range"** checkbox → `hide_from_ineligible`.
-- Persist to the new `workshops.min_age` / `max_age` / `hide_from_ineligible` columns.
+- Add `profiles.aliases text[] not null default '{}'` with a length cap (max 5 aliases, each 1–40 chars) enforced via a CHECK constraint.
+- Keep `display_name` column as-is — it stays the canonical "name" used across the app, but is now always derived from `first_name + last_name` on write. No UI override anymore.
 
-## 3. Workshop detail (`src/routes/workshops.$slug.tsx`)
-- Show a small chip near the title when `min_age` or `max_age` is set (e.g. "18+", "21+", "18–25"). Not loud.
-- The age-gate trigger on `workshop_applications` already blocks ineligible applies server-side. Catch that error in the apply handler and show a friendly inline message: "This workshop is limited to ages X+. Update your birthdate in Settings if this is incorrect."
+## 2. `/me/edit` (`src/routes/me.edit.tsx`)
 
-## 4. Workshop feed (`src/routes/workshops.index.tsx`)
-- Read `profiles.age_filter_min` for the signed-in user (already exposed via `getMyAgeFields`).
-- If set (18 or 21), filter the feed query: exclude workshops where `max_age IS NOT NULL AND max_age < age_filter_min` (i.e. don't show teen-only rooms to a user who opted into 18+/21+ only).
-- Also honor host's `hide_from_ineligible`: exclude workshops where the viewer's actual age falls outside `[min_age, max_age]` AND `hide_from_ineligible = true`. Use `has_min_age()` / `user_age()` via a server fn helper to avoid leaking birthdate.
-- No UI toggle here — the preference lives in `/me/edit` → Privacy (already built). Keep it invisible per user's "not super noticeable" requirement.
+- Remove the entire "Display name" card (label, "Use a different name" checkbox, custom override input, derived preview input).
+- Remove `displayNameOverride` and `useDisplayOverride` from `FormState` and `EMPTY`.
+- On save: always write `display_name = `${first} ${last}`.trim()` (drop the `deriveDisplayName(..., override)` path).
+- Add a new **"Artist aliases (optional)"** subsection inside the Identity section, just below the name row. UI: vertical list of pill rows with an `Input` per alias + remove (X) button, plus a small "+ Add alias" button. Cap at 5. Helper copy: "Other names you go by — stage name, DJ name, real name. Shown as small chips on your profile."
+- Hydrate `aliases` from the loaded profile; persist on submit (trim, dedupe case-insensitively, drop empties).
 
-## Technical notes
-- New server fn `getFeedAgeContext()` (returns `{ ageFilterMin, userAge }` for the caller) so the feed query can filter without exposing birthdate.
-- `onboarding.tsx` and `workshops.new.tsx` use shadcn Calendar/Popover per the datepicker pattern.
-- No new migrations; all schema is already in place.
+## 3. `/signup` (`src/routes/signup.tsx`)
+
+- Already collects First/Last and sets `display_name` from them via user metadata — leave as-is. No alias UI at signup (keep it minimal).
+
+## 4. Onboarding (`src/routes/onboarding.tsx`)
+
+- Already uses `deriveDisplayName(first, last)` (no override) — no changes needed.
+
+## 5. Public profile (`src/routes/u.$username.tsx`)
+
+- Add `aliases` to the profile select.
+- Render aliases as small muted chips directly under the name / headline area in the profile header (`also known as: <chip> <chip>`). Skip the row when empty.
+- No changes to credits/cards.
+
+## 6. `display-name.ts` helper
+
+- Keep `deriveDisplayName` for the rare onboarding path but stop using its `override` arg in `/me/edit`. No deletion to avoid touching unrelated call sites.
 
 ## Out of scope
-- ID verification, public age display, age gates on cities/collabs/DMs, fancy date picker, teen-only filter chips.
+
+- Searching by alias, alias verification, alias-as-handle, showing aliases anywhere outside the public profile header, or migrating existing custom `display_name` values (users with a previously-customized display name will see it overwritten to `${first} ${last}` next time they save — acceptable for this cleanup).
+
+## Technical notes
+
+- One migration, one server-trivial change (profile update payload). All other changes are presentational.
+- No RLS changes; `aliases` is part of the public profile read.
