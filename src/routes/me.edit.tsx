@@ -297,10 +297,19 @@ function EditProfile() {
                 </div>
               </div>
               <div className="flex-1 min-w-0 space-y-3 pt-7">
-                <div className="space-y-1.5">
-                  <Label htmlFor="dn">Display name</Label>
-                  <Input id="dn" required value={form.displayName} onChange={(e) => set("displayName", e.target.value)} />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="fn">First name</Label>
+                    <Input id="fn" required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="ln">Last name</Label>
+                    <Input id="ln" required value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+                  </div>
                 </div>
+                <p className="text-xs text-ink-muted">
+                  Shown as "{(form.firstName || "Jane").trim()} {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it counts.
+                </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="un">Username</Label>
                   <Input id="un" value={form.username} onChange={(e) => set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
@@ -309,18 +318,38 @@ function EditProfile() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="fn">First name</Label>
-                <Input id="fn" value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+            {/* Display name: auto-derived with optional override */}
+            <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <Label className="block">Display name</Label>
+                  <p className="text-xs text-ink-muted">
+                    {form.useDisplayOverride ? "Custom display name" : "Auto from your first + last name."}
+                  </p>
+                </div>
+                <label className="flex items-center gap-2 text-xs text-ink-soft">
+                  <input
+                    type="checkbox"
+                    checked={form.useDisplayOverride}
+                    onChange={(e) => set("useDisplayOverride", e.target.checked)}
+                  />
+                  Use a different name
+                </label>
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="ln">Last name</Label>
-                <Input id="ln" value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
-              </div>
-              <p className="col-span-2 -mt-1 text-xs text-ink-muted">
-                Shown as "{(form.firstName || "Jane").trim()} {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it counts.
-              </p>
+              {form.useDisplayOverride ? (
+                <Input
+                  value={form.displayNameOverride}
+                  onChange={(e) => set("displayNameOverride", e.target.value)}
+                  placeholder={`${form.firstName} ${form.lastName}`.trim() || "Display name"}
+                  maxLength={60}
+                />
+              ) : (
+                <Input
+                  disabled
+                  value={deriveDisplayName(form.firstName, form.lastName)}
+                  className="opacity-70"
+                />
+              )}
             </div>
 
             <div className="space-y-1.5">
@@ -338,7 +367,34 @@ function EditProfile() {
                 />
               </div>
             </div>
+
+            {/* Date of birth (private) */}
+            <div className="space-y-1.5">
+              <Label htmlFor="dob">Date of birth <span className="text-ink-muted font-normal">(private)</span></Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="dob"
+                  type="date"
+                  value={birthdate}
+                  onChange={(e) => setBirthdate(e.target.value)}
+                  max={new Date(Date.now() - 13 * 365.25 * 24 * 3600 * 1000).toISOString().slice(0, 10)}
+                  disabled={birthdateLocked}
+                  className="max-w-[12rem]"
+                />
+                {!birthdateLocked && birthdate && (
+                  <Button type="button" size="sm" variant="outline" className="rounded-full" disabled={savingBirthdate} onClick={onSaveBirthdate}>
+                    {savingBirthdate ? "Saving…" : "Save"}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-ink-muted">
+                {birthdateLocked
+                  ? "Locked. Contact support if this needs to change."
+                  : "Never shown on your profile. Powers optional age filters for Workshops."}
+              </p>
+            </div>
           </Section>
+
 
           {/* MEDIUMS & BIO */}
           <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Instant Workshops you see." refMap={sectionRefs}>
