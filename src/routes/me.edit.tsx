@@ -105,11 +105,17 @@ function EditProfile() {
     if (!user) return;
     supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
       if (!data) return;
+      const first = (data.first_name as string | null) ?? "";
+      const last = (data.last_name as string | null) ?? "";
+      const stored = (data.display_name as string | null) ?? "";
+      const derived = `${first} ${last}`.trim();
+      const isOverride = !!stored && stored.trim() !== derived;
       const loaded: FormState = {
-        displayName: data.display_name ?? "",
+        displayNameOverride: isOverride ? stored : "",
+        useDisplayOverride: isOverride,
         username: data.username ?? "",
-        firstName: data.first_name ?? "",
-        lastName: data.last_name ?? "",
+        firstName: first,
+        lastName: last,
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
@@ -119,12 +125,20 @@ function EditProfile() {
         links: ((data.external_links as ExtLink[] | null) ?? []),
         cityId: data.city_id ?? "",
         pinnedIds: (data.pinned_work_ids ?? []) as string[],
+        ageFilterMin: null,
       };
       setInitial(loaded);
       setForm(loaded);
       setHydrated(true);
     });
-  }, [user]);
+
+    fetchAge().then((r) => {
+      setBirthdate(r.birthdate ?? "");
+      setBirthdateLocked(r.locked);
+      setInitial((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+      setForm((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+    }).catch(() => { /* ignore */ });
+  }, [user, fetchAge]);
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
 
