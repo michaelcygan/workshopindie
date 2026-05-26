@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { mintTurnCreds } from "@/lib/turn.functions";
 
-const ICE_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-  ],
-};
+const STUN_ONLY: RTCIceServer[] = [
+  { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+];
+
+const ICE_CONFIG: RTCConfiguration = { iceServers: STUN_ONLY };
+
+// How long to wait for ICE to reach "connected" before assuming the direct
+// peer-to-peer path won't work and upgrading this pair to TURN relay.
+const ICE_CHECKING_TIMEOUT_MS = 8000;
 
 export const ROOM_CAP = 5;
 export const VIDEO_CAP = 5;
