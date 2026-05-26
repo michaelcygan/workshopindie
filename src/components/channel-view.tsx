@@ -351,7 +351,7 @@ export function ChannelView({
       window.removeEventListener("beforeunload", leave);
       leave();
     };
-  }, [roomId, user, hasConnected]);
+  }, [roomId, user]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
