@@ -35,7 +35,8 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
 ];
 
 type FormState = {
-  displayName: string;
+  displayNameOverride: string;     // empty = use derived
+  useDisplayOverride: boolean;
   username: string;
   firstName: string;
   lastName: string;
@@ -48,12 +49,14 @@ type FormState = {
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
+  ageFilterMin: number | null;     // private: 18 / 21 / null
 };
 
 const EMPTY: FormState = {
-  displayName: "", username: "", firstName: "", lastName: "", instagram: "",
+  displayNameOverride: "", useDisplayOverride: false, username: "",
+  firstName: "", lastName: "", instagram: "",
   headline: "", bio: "", avatar: null, cover: null, cats: [], links: [],
-  cityId: "", pinnedIds: [],
+  cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
 function EditProfile() {
