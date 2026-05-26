@@ -1,57 +1,101 @@
-# Polish `/me/edit`
+# Names + birthday + opt-in age filters (v2: all-ages)
 
-Bring the edit form up to the same caliber as the new public profile. Same fields, better structure — easier to scan, easier to fill out, and surfaces the new profile primitives (mediums, pinned works) clearly.
+Two related changes: clean up confusing name fields, and quietly capture a birthday so users can opt into age-range filters without making the platform feel age-gated. Everyone 13+ is welcome; age becomes a quiet two-way filter, not a gate.
 
-## Structure
+## Part 1 — Names
 
-Convert the single long form into a sectioned page with a sticky left sub-nav on desktop (collapsing to a horizontal scrollable pill row on mobile). Sections:
+Today there are three overlapping fields (Display name, First name, Last name) and signup already sets `display_name = "${first} ${last}"`. Confusing.
 
-1. **Identity** — avatar, cover, display name, username, first/last name, Instagram
-2. **Mediums & headline** — categories (relabelled "Mediums"), headline, bio
-3. **Location** — city
-4. **Links** — external links
-5. **Pinned works** — picker (new)
-6. **Privacy** — placeholder slot for future toggles (visibility of credits, etc.); ship empty-state copy now
+New model:
+- **First name + Last name** become canonical and **required** in onboarding and `/me/edit`. They power the "Jane S." trust signal already used on signup.
+- **Display name** becomes an **auto-derived field with an optional override**. Collapsed by default behind a small "Use a different display name" toggle. When off (default), the field shows a disabled preview of `${first} ${last}` and saves that value. When on, the field becomes editable and the override is what gets saved.
+- Existing users whose `display_name` already differs from `${first} ${last}` get the toggle pre-flipped to "on" so we never silently overwrite their chosen name.
+- Username (handle) stays unchanged — separate concern.
+- Onboarding gets the same first/last pair (replacing today's single "Display name" input), with the trust-signal helper copy.
+- `src/lib/display-name.ts` gains `deriveDisplayName(first, last, override)` used by both edit and onboarding.
 
-Each section gets a short helper sentence so multimedia artists understand why it matters (e.g. mediums → "Drives your Works tabs and which Instant Workshops you see").
+## Part 2 — Birthday + opt-in age filters
 
-## Pinned works picker
+Goal: enable 18+/21+ networking for people who want it, **without** turning the platform into a gated space or making younger users feel second-class.
 
-New section that lets the user pick up to 6 of their own published works to feature at the top of their public profile.
+### Floors
 
-- Fetch the user's published works (`created_by = me`, `status = 'published'`) ordered by `published_at desc`.
-- Render as a grid of selectable cover thumbnails with title + medium chip.
-- Selected = ordered list with up/down reorder and remove; cap at 6.
-- Persist to `profiles.pinned_work_ids uuid[]` (new column, default `'{}'`).
-- Public profile reads this array and renders pinned works first on the Works tab (and only on the "All" filter; medium filters keep their own ordering).
+- **Platform floor: 13+** (COPPA-aligned; standard for general-audience social platforms). Under-13s are blocked at signup with a friendly "Workshop is for ages 13 and up — come back soon."
+- No platform-wide 18+ requirement. Teens get the full platform by default, minus age-restricted workshops.
 
-## Sticky sub-nav
+### Collection
 
-- Desktop (`md:` and up): two-column layout, left column ~14rem sticky nav, right column form.
-- Mobile: horizontal scroll pill row pinned below the page heading.
-- Active section tracked via `IntersectionObserver` on section headings.
-- Clicking a nav item smooth-scrolls to that section.
+- **Onboarding**: required "Date of birth" field. Helper copy: "Private. Used only for age filters you choose to apply. Never shown on your profile." Validates 13+.
+- **`/me/edit` → Identity section**: editable, then **locked once set** (with "Contact support to change" affordance — prevents gaming age filters; we can soften later).
+- **Signup**: not added — keep signup short. Collected in onboarding.
+- **Existing users without birthdate**: shown an inline prompt next time they visit `/me/edit` or try to interact with an age-scoped workshop. Not a blocking modal — they can keep using the platform; they just can't apply to age-restricted workshops until they add it.
 
-## Save UX
+### Where age is used
 
-- Sticky footer save bar appears once the form is dirty (replaces the bottom-right Save button).
-- Shows "Unsaved changes" + Cancel / Save profile.
-- Disabled state while saving; toast on success (existing pattern).
+**Workshops (host-side):**
+- Hosts can optionally set an **age scope** on a workshop: `All ages` (default), `18+`, `21+`, or `Custom min/max`.
+- Apply/join server fn checks the applicant's birthdate against the scope. Ineligible users get a friendly inline message ("This workshop is 21+. Browse other sessions →") — no shaming, no hard wall.
+- Optional host toggle: "Hide from users outside this range" → workshop is filtered out of feeds for ineligible users. Default off (still visible, with a small `21+` chip).
+
+**Workshops (attendee-side):**
+- Personal opt-in filter in the workshops feed filter sheet: "Only show me 18+ / 21+ workshops." Off by default. Saved to `profiles.age_filter_min`. Available to everyone — a 17-year-old can also filter to "13–17 only" once we add that tier, but the v1 chips are just **18+** and **21+** for adults.
+
+**Groups (future):**
+- Same `min_age` / `max_age` shape reused when non-city group kinds land. Cities themselves stay all-ages.
+
+**Everywhere else:**
+- No age affordance on DMs, collabs, feed, comments, gallery, etc. Age only ever shows up as a workshop chip and as a filter the user opts into.
+
+### Privacy posture
+
+- Birthdate is never returned by any public-profile or peer-visible query.
+- RLS keeps profile rows publicly readable (existing pattern), but **`birthdate` is excluded from every public select** in `u.$username.tsx` and any other read path that surfaces other users' profile data.
+- Eligibility checks run server-side via a `has_min_age(user_id uuid, min int) returns boolean` security-definer function. Server functions call it; clients never see a raw birthdate other than their own.
+- No public "X years old" anywhere. Ever.
 
 ## Technical notes
 
-- **DB**: one migration adding `profiles.pinned_work_ids uuid[] not null default '{}'`. No RLS change needed — covered by existing `profiles` update policy. Skip a CHECK constraint (immutable rule); validate length ≤ 6 client-side and in a lightweight trigger if we want hard enforcement (defer trigger to a follow-up — client cap is fine for v1).
-- **Types**: `src/integrations/supabase/types.ts` regenerates automatically after the migration.
-- **Files**:
-  - edit `src/routes/me.edit.tsx` — refactor into sectioned layout, add sticky sub-nav, sticky save bar, dirty-state tracking
-  - new `src/components/pinned-works-picker.tsx` — grid picker + ordered selection UI
-  - edit `src/routes/u.$username.tsx` — read `pinned_work_ids`, render pinned works first on Works tab "All" filter
-  - new migration for `pinned_work_ids` column
-- No changes to `me.index.tsx`, auth, or other routes.
+### DB migration
+
+Add to `profiles`:
+- `birthdate date` — nullable for backfill; required for new signups via app logic.
+- `age_filter_min smallint` — user's personal "only show me X+" workshops preference. Nullable = no filter.
+
+Add to `workshops`:
+- `min_age smallint` nullable
+- `max_age smallint` nullable
+- `hide_from_ineligible boolean default false`
+
+New helpers:
+- `has_min_age(user_id uuid, min int)` security-definer function.
+- Reuse existing trigger pattern (no CHECK constraints — date math isn't immutable).
+
+### Server functions
+
+- Workshop apply/join: add eligibility check before insert. Return a typed error the UI renders as a friendly inline message.
+- Workshop feed query: when caller has `hide_from_ineligible` workshops to exclude, filter via the security-definer helper.
+- Profile update: enforce 13+ on birthdate; once set, reject changes unless caller is admin.
+
+### UI changes
+
+- `src/routes/me.edit.tsx` — Identity section: first/last required, display-name override pattern, birthdate (locked once set).
+- `src/routes/onboarding.tsx` — replace single "Display name" with first/last; add birthdate (13+).
+- `src/routes/workshops.new.tsx` — optional "Age scope" group (All ages / 18+ / 21+ / Custom) + "Hide from users outside this range" toggle.
+- `src/routes/workshops.$slug.tsx` — small age chip when restricted; eligibility error in the apply flow.
+- `src/routes/workshops.index.tsx` (or wherever filters live) — "Only 18+ / 21+" chip in the filter sheet, persisted to `age_filter_min`.
+- `src/lib/display-name.ts` — `deriveDisplayName()` helper.
 
 ## Out of scope
 
-- Section reordering by the user
-- Per-section visibility toggles (Privacy section ships as a "coming soon" stub)
-- Drag-and-drop reorder for pinned works (use up/down buttons; DnD is a follow-up)
-- Editing pinned works from the public profile
+- ID verification — self-reported, like most platforms.
+- Showing age publicly on profiles.
+- Age restrictions on cities, collabs, DMs, feed, or content discovery.
+- Country-specific legal-age handling beyond the flat 13+ floor.
+- Teen-only spaces beyond the existing filter mechanism (can layer later).
+- Drag-and-drop / fancy date picker — native date input is fine.
+
+## Confirm before I build
+
+1. **13+ floor** OK? (COPPA-aligned, matches Instagram / TikTok / Discord.)
+2. **Birthdate locked once set** (contact support to change) OK? — keeps age filters honest. Alternative: allow self-edit, accept some gaming.
+3. **v1 filter chips = 18+ and 21+ only** OK? — simplest. We can add 13–17, 25+, etc. later.
