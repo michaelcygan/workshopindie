@@ -127,6 +127,11 @@ function WorkshopDetail() {
           <CategoryChip category={ws.category} />
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status}</span>
           {isHost && <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-medium text-violet">You're hosting</span>}
+          {(ws.min_age != null || ws.max_age != null) && (
+            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-ink-soft">
+              {ws.min_age != null && ws.max_age != null ? `Ages ${ws.min_age}–${ws.max_age}` : ws.min_age != null ? `${ws.min_age}+` : `Up to ${ws.max_age}`}
+            </span>
+          )}
           {!isHost && user && <div className="ml-auto"><ReportDialog entityType="workshop" entityId={ws.id} /></div>}
         </div>
         <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">{ws.title}</h1>
