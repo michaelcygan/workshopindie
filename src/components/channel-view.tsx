@@ -94,9 +94,9 @@ export function ChannelView({
   // subscribing to signaling, or minting any TURN credentials. This blocks
   // bots and previews from triggering any of the room's machinery.
   const [hasConnected, setHasConnected] = useState(false);
-  const handleConnect = async (mode: MediaMode) => {
+  const handleConnect = (mode: MediaMode) => {
     setHasConnected(true);
-    await media.setMode(mode);
+    media.setMode(mode);
   };
 
   // If join fails, route back to /instant.
