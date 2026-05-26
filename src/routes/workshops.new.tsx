@@ -137,6 +137,18 @@ function NewWorkshop() {
       }
     }
 
+    let minAge: number | null = null;
+    let maxAge: number | null = null;
+    if (ageScope === "18") minAge = 18;
+    else if (ageScope === "21") minAge = 21;
+    else if (ageScope === "custom") {
+      minAge = customMin === "" ? null : Number(customMin);
+      maxAge = customMax === "" ? null : Number(customMax);
+      if (minAge !== null && (minAge < 13 || minAge > 120)) { setSubmitting(false); return toast.error("Min age must be 13–120"); }
+      if (maxAge !== null && (maxAge < 13 || maxAge > 120)) { setSubmitting(false); return toast.error("Max age must be 13–120"); }
+      if (minAge !== null && maxAge !== null && minAge > maxAge) { setSubmitting(false); return toast.error("Min age can't exceed max age"); }
+    }
+
     const { data: ws, error } = await supabase.from("workshops").insert({
       title: title.trim(),
       slug: "",
@@ -154,6 +166,9 @@ function NewWorkshop() {
       finalization_deadline_at: finalize.toISOString(),
       participant_cap: cap === "" ? null : Number(cap),
       status: "open",
+      min_age: minAge,
+      max_age: maxAge,
+      hide_from_ineligible: hideFromIneligible,
       ...venueFields,
     }).select("id,slug").single();
 
