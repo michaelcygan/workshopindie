@@ -215,7 +215,15 @@ function RolesAndApply({ ws }: { ws: Workshop }) {
       workshop_id: ws.id, user_id: user.id, role_id: roleId, note: note || null, status: "applied",
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = error.message || "";
+      if (/ages? \d+/i.test(msg) || /date of birth/i.test(msg)) {
+        return toast.error(msg.replace(/^.*?:\s*/, ""), {
+          description: "Update your date of birth in Settings if this is incorrect.",
+        });
+      }
+      return toast.error(msg);
+    }
     toast.success("Application sent");
     setOpenRoleId(null); setNote("");
     qc.invalidateQueries({ queryKey: ["ws-my-app", ws.id, user.id] });
