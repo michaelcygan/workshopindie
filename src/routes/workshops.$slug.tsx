@@ -57,6 +57,7 @@ type Workshop = {
   venue_name: string | null; venue_address: string | null; venue_lat: number | null; venue_lng: number | null;
   participant_cap: number | null; confirmed_count: number; application_count: number;
   status: string; host_user_id: string; visibility: string;
+  min_age: number | null; max_age: number | null;
   check_in_opens_at: string | null; check_in_closes_at: string | null;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
