@@ -67,6 +67,13 @@ function EditProfile() {
   const [initial, setInitial] = useState<FormState>(EMPTY);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
+  const [birthdate, setBirthdate] = useState<string>("");      // YYYY-MM-DD
+  const [birthdateLocked, setBirthdateLocked] = useState(false);
+  const [savingBirthdate, setSavingBirthdate] = useState(false);
+
+  const fetchAge = useServerFn(getMyAgeFields);
+  const saveBirthdateFn = useServerFn(setMyBirthdate);
+  const saveAgeFilterFn = useServerFn(setMyAgeFilter);
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
 
