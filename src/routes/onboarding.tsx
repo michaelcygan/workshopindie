@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,8 @@ import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
+import { deriveDisplayName } from "@/lib/display-name";
+import { setMyBirthdate } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/onboarding")({
   component: () => <RequireAuth><Onboarding /></RequireAuth>,
@@ -19,7 +22,11 @@ export const Route = createFileRoute("/onboarding")({
 function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [name, setName] = useState("");
+  const saveBirthdate = useServerFn(setMyBirthdate);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [birthdate, setBirthdate] = useState(""); // YYYY-MM-DD
   const [bio, setBio] = useState("");
   const [cats, setCats] = useState<Category[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
@@ -37,21 +44,44 @@ function Onboarding() {
   }, []);
 
   useEffect(() => {
-    if (user) setName((user.user_metadata?.display_name as string) ?? "");
+    if (!user) return;
+    const meta = user.user_metadata ?? {};
+    if (meta.first_name) setFirstName(String(meta.first_name));
+    if (meta.last_name) setLastName(String(meta.last_name));
   }, [user]);
 
   const toggleCat = (c: Category) =>
     setCats((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
 
+  // Max date = today minus 13 years (used as the date input max)
+  const maxBirthdate = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 13);
+    return d.toISOString().slice(0, 10);
+  })();
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (!firstName.trim() || !lastName.trim()) return toast.error("Please enter your first and last name.");
+    if (!birthdate) return toast.error("Please enter your date of birth.");
     if (!cityId) return toast.error("Please pick your home city — it powers your feed.");
     setSaving(true);
+
+    try {
+      await saveBirthdate({ data: { birthdate } });
+    } catch (err) {
+      setSaving(false);
+      return toast.error(err instanceof Error ? err.message : "Couldn't save date of birth.");
+    }
+
+    const display = deriveDisplayName(firstName, lastName);
     const { error } = await supabase
       .from("profiles")
       .update({
-        display_name: name,
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        display_name: display,
         bio: bio || null,
         categories: cats,
         city_id: cityId,
@@ -72,10 +102,29 @@ function Onboarding() {
         <p className="mt-1 text-sm text-ink-muted">Tell us how to credit you. You can change all of this later.</p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="first">First name</Label>
+              <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="last">Last name</Label>
+              <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            </div>
+          </div>
+          <p className="-mt-3 text-xs text-ink-muted">Shown as "{firstName ? firstName : "First"} {lastName ? `${lastName[0].toUpperCase()}.` : "L."}" on your work. You can claim your public @handle later.</p>
+
           <div className="space-y-1.5">
-            <Label htmlFor="name">Display name</Label>
-            <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
-            <p className="text-xs text-ink-muted">You can claim your public @handle later from your profile.</p>
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              required
+              max={maxBirthdate}
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+            />
+            <p className="text-xs text-ink-muted">Private. Used only for age filters you choose to apply. Never shown on your profile.</p>
           </div>
 
           <div className="space-y-1.5">

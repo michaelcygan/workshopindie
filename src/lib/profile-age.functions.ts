@@ -14,10 +14,20 @@ export const getMyAgeFields = createServerFn({ method: "GET" })
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
+    const birthdate = (data?.birthdate as string | null) ?? null;
+    let age: number | null = null;
+    if (birthdate) {
+      const b = new Date(birthdate);
+      const now = new Date();
+      age = now.getFullYear() - b.getFullYear();
+      const m = now.getMonth() - b.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age -= 1;
+    }
     return {
-      birthdate: (data?.birthdate as string | null) ?? null,
+      birthdate,
       ageFilterMin: (data?.age_filter_min as number | null) ?? null,
-      locked: !!data?.birthdate,
+      locked: !!birthdate,
+      age,
     };
   });
 

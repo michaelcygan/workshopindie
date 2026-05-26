@@ -57,6 +57,7 @@ type Workshop = {
   venue_name: string | null; venue_address: string | null; venue_lat: number | null; venue_lng: number | null;
   participant_cap: number | null; confirmed_count: number; application_count: number;
   status: string; host_user_id: string; visibility: string;
+  min_age: number | null; max_age: number | null;
   check_in_opens_at: string | null; check_in_closes_at: string | null;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
@@ -126,6 +127,11 @@ function WorkshopDetail() {
           <CategoryChip category={ws.category} />
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status}</span>
           {isHost && <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-medium text-violet">You're hosting</span>}
+          {(ws.min_age != null || ws.max_age != null) && (
+            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-ink-soft">
+              {ws.min_age != null && ws.max_age != null ? `Ages ${ws.min_age}–${ws.max_age}` : ws.min_age != null ? `${ws.min_age}+` : `Up to ${ws.max_age}`}
+            </span>
+          )}
           {!isHost && user && <div className="ml-auto"><ReportDialog entityType="workshop" entityId={ws.id} /></div>}
         </div>
         <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">{ws.title}</h1>
@@ -209,7 +215,15 @@ function RolesAndApply({ ws }: { ws: Workshop }) {
       workshop_id: ws.id, user_id: user.id, role_id: roleId, note: note || null, status: "applied",
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      const msg = error.message || "";
+      if (/ages? \d+/i.test(msg) || /date of birth/i.test(msg)) {
+        return toast.error(msg.replace(/^.*?:\s*/, ""), {
+          description: "Update your date of birth in Settings if this is incorrect.",
+        });
+      }
+      return toast.error(msg);
+    }
     toast.success("Application sent");
     setOpenRoleId(null); setNote("");
     qc.invalidateQueries({ queryKey: ["ws-my-app", ws.id, user.id] });

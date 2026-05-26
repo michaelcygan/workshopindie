@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,7 +10,9 @@ import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card"
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { useAuth } from "@/hooks/use-auth";
 import { ComingSoon } from "@/components/coming-soon";
+import { getMyAgeFields } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
@@ -28,7 +31,7 @@ type Filter = "upcoming" | "happening" | "all";
 async function fetchWorkshops(category: Category | "all", filter: Filter) {
   let q = supabase
     .from("workshops")
-    .select("id,title,slug,category,prompt,starts_at,ends_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
+    .select("id,title,slug,category,prompt,starts_at,ends_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,min_age,max_age,hide_from_ineligible,host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
     .eq("visibility", "public")
     .in("status", ["open", "check_in", "active", "finalizing", "shipped"])
     .limit(40);
@@ -41,11 +44,12 @@ async function fetchWorkshops(category: Category | "all", filter: Filter) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as unknown as WorkshopCardData[];
+  return (data ?? []) as unknown as (WorkshopCardData & { min_age: number | null; max_age: number | null; hide_from_ineligible: boolean })[];
 }
 
 function WorkshopsPage() {
   const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { user } = useAuth();
   const [category, setCategory] = useState<Category | "all">("all");
   const [filter, setFilter] = useState<Filter>("upcoming");
 
@@ -61,9 +65,29 @@ function WorkshopsPage() {
       />
     );
   }
-  const { data: workshops, isLoading } = useQuery({
+  const getAge = useServerFn(getMyAgeFields);
+  const { data: ageCtx } = useQuery({
+    queryKey: ["my-age-ctx", user?.id],
+    queryFn: () => getAge(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const { data: rawWorkshops, isLoading } = useQuery({
     queryKey: ["workshops", category, filter],
     queryFn: () => fetchWorkshops(category, filter),
+  });
+
+  const ageFilterMin = ageCtx?.ageFilterMin ?? null;
+  const myAge = ageCtx?.age ?? null;
+  const workshops = (rawWorkshops ?? []).filter((w) => {
+    // User opted into 18+/21+ only → hide teen-capped workshops
+    if (ageFilterMin != null && w.max_age != null && w.max_age < ageFilterMin) return false;
+    // Host opted to hide from ineligible → respect when we know the viewer's age
+    if (w.hide_from_ineligible && myAge != null) {
+      if (w.min_age != null && myAge < w.min_age) return false;
+      if (w.max_age != null && myAge > w.max_age) return false;
+    }
+    return true;
   });
 
   const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];

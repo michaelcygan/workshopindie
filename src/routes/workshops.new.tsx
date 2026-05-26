@@ -20,6 +20,7 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/workshops/new")({ component: NewWorkshop });
 
 type LocationType = "online" | "in_person" | "hybrid";
+type AgeScope = "all" | "18" | "21" | "custom";
 
 type RoleDraft = { role_name: string; quantity: number };
 
@@ -51,6 +52,11 @@ function NewWorkshop() {
     { role_name: "Director / Lead", quantity: 1 },
     { role_name: "Collaborator", quantity: 3 },
   ]);
+
+  const [ageScope, setAgeScope] = useState<AgeScope>("all");
+  const [customMin, setCustomMin] = useState<number | "">("");
+  const [customMax, setCustomMax] = useState<number | "">("");
+  const [hideFromIneligible, setHideFromIneligible] = useState(false);
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -131,6 +137,18 @@ function NewWorkshop() {
       }
     }
 
+    let minAge: number | null = null;
+    let maxAge: number | null = null;
+    if (ageScope === "18") minAge = 18;
+    else if (ageScope === "21") minAge = 21;
+    else if (ageScope === "custom") {
+      minAge = customMin === "" ? null : Number(customMin);
+      maxAge = customMax === "" ? null : Number(customMax);
+      if (minAge !== null && (minAge < 13 || minAge > 120)) { setSubmitting(false); return toast.error("Min age must be 13–120"); }
+      if (maxAge !== null && (maxAge < 13 || maxAge > 120)) { setSubmitting(false); return toast.error("Max age must be 13–120"); }
+      if (minAge !== null && maxAge !== null && minAge > maxAge) { setSubmitting(false); return toast.error("Min age can't exceed max age"); }
+    }
+
     const { data: ws, error } = await supabase.from("workshops").insert({
       title: title.trim(),
       slug: "",
@@ -148,6 +166,9 @@ function NewWorkshop() {
       finalization_deadline_at: finalize.toISOString(),
       participant_cap: cap === "" ? null : Number(cap),
       status: "open",
+      min_age: minAge,
+      max_age: maxAge,
+      hide_from_ineligible: hideFromIneligible,
       ...venueFields,
     }).select("id,slug").single();
 
@@ -238,6 +259,42 @@ function NewWorkshop() {
           <Input id="cap" type="number" min={1} max={50} value={cap}
             onChange={(e) => setCap(e.target.value === "" ? "" : Math.max(1, Number(e.target.value)))} />
         </section>
+
+        <section className="space-y-2">
+          <Label>Age scope</Label>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { id: "all", label: "All ages" },
+              { id: "18", label: "18+" },
+              { id: "21", label: "21+" },
+              { id: "custom", label: "Custom" },
+            ] as { id: AgeScope; label: string }[]).map((opt) => (
+              <button key={opt.id} type="button" onClick={() => setAgeScope(opt.id)}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  ageScope === opt.id ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          {ageScope === "custom" && (
+            <div className="mt-2 flex items-center gap-2">
+              <Input type="number" min={13} max={120} placeholder="Min" className="w-24"
+                value={customMin} onChange={(e) => setCustomMin(e.target.value === "" ? "" : Number(e.target.value))} />
+              <span className="text-ink-muted">to</span>
+              <Input type="number" min={13} max={120} placeholder="Max" className="w-24"
+                value={customMax} onChange={(e) => setCustomMax(e.target.value === "" ? "" : Number(e.target.value))} />
+            </div>
+          )}
+          {ageScope !== "all" && (
+            <label className="mt-2 flex items-center gap-2 text-sm text-ink-soft">
+              <input type="checkbox" checked={hideFromIneligible} onChange={(e) => setHideFromIneligible(e.target.checked)} />
+              Hide this Workshop from people outside the age range
+            </label>
+          )}
+          <p className="text-xs text-ink-muted">Applicants get a friendly message if they don't qualify. Their age stays private.</p>
+        </section>
+
+
 
         <section className="space-y-2">
           <div className="flex items-center justify-between">
