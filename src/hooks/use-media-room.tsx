@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { mintTurnCreds } from "@/lib/turn.functions";
 
-const ICE_CONFIG: RTCConfiguration = {
-  iceServers: [
-    { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
-  ],
-};
+const STUN_ONLY: RTCIceServer[] = [
+  { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
+];
+
+const ICE_CONFIG: RTCConfiguration = { iceServers: STUN_ONLY };
+
+// How long to wait for ICE to reach "connected" before assuming the direct
+// peer-to-peer path won't work and upgrading this pair to TURN relay.
+const ICE_CHECKING_TIMEOUT_MS = 8000;
 
 export const ROOM_CAP = 5;
 export const VIDEO_CAP = 5;
@@ -51,6 +56,36 @@ export function useMediaRoom(roomId: string | undefined) {
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
 
+  // ---- TURN fallback (session-cached) ---------------------------------------
+  // STUN-only is tried first for every pair (free). We only fetch TURN
+  // credentials when at least one pair has actually failed to connect.
+  const turnIceServersRef = useRef<RTCIceServer[] | null>(null);
+  const turnFetchPromiseRef = useRef<Promise<RTCIceServer[]> | null>(null);
+  const turnExpiresAtRef = useRef<number>(0);
+  const pairUsedTurnRef = useRef<Set<string>>(new Set());
+  const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
+
+  async function getTurnIceServers(): Promise<RTCIceServer[]> {
+    const now = Date.now();
+    if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
+      return turnIceServersRef.current;
+    }
+    if (turnFetchPromiseRef.current) return turnFetchPromiseRef.current;
+
+    turnFetchPromiseRef.current = (async () => {
+      const res = await mintTurnCreds({ data: { roomId, ttlSeconds: 600 } });
+      turnIceServersRef.current = res.iceServers;
+      turnExpiresAtRef.current = new Date(res.expiresAt).getTime();
+      return res.iceServers;
+    })();
+
+    try {
+      return await turnFetchPromiseRef.current;
+    } finally {
+      turnFetchPromiseRef.current = null;
+    }
+  }
+
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
       ...prev,
@@ -59,6 +94,8 @@ export function useMediaRoom(roomId: string | undefined) {
   }
 
   function closePeer(peerId: string) {
+    const t = pairCheckTimersRef.current.get(peerId);
+    if (t) { clearTimeout(t); pairCheckTimersRef.current.delete(peerId); }
     const pc = pcsRef.current.get(peerId);
     if (pc) {
       try { pc.close(); } catch { /* noop */ }
@@ -72,10 +109,43 @@ export function useMediaRoom(roomId: string | undefined) {
     });
   }
 
-  function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
-    const existing = pcsRef.current.get(peerId);
-    if (existing) return existing;
-    const pc = new RTCPeerConnection(ICE_CONFIG);
+  function clearCheckTimer(peerId: string) {
+    const t = pairCheckTimersRef.current.get(peerId);
+    if (t) {
+      clearTimeout(t);
+      pairCheckTimersRef.current.delete(peerId);
+    }
+  }
+
+  async function upgradePeerToTurn(peerId: string, peerMode: MediaMode) {
+    if (pairUsedTurnRef.current.has(peerId)) return; // one retry per pair
+    pairUsedTurnRef.current.add(peerId);
+    clearCheckTimer(peerId);
+
+    let turnServers: RTCIceServer[];
+    try {
+      turnServers = await getTurnIceServers();
+    } catch (e) {
+      console.warn("TURN mint failed", e);
+      closePeer(peerId);
+      return;
+    }
+
+    // Tear down the failed pc and recreate with TURN servers.
+    closePeer(peerId);
+    const pc = createPeer(peerId, peerMode, [...STUN_ONLY, ...turnServers]);
+    // Only the lex-greater side re-offers (matches normal join handshake).
+    if (myId && myId > peerId) {
+      try { await makeOfferOn(pc, peerId); } catch (e) { console.warn("TURN re-offer failed", e); }
+    }
+  }
+
+  function createPeer(
+    peerId: string,
+    peerMode: MediaMode,
+    iceServers: RTCIceServer[] = STUN_ONLY,
+  ): RTCPeerConnection {
+    const pc = new RTCPeerConnection({ iceServers });
     pcsRef.current.set(peerId, pc);
     setPeers((prev) => ({
       ...prev,
@@ -98,14 +168,45 @@ export function useMediaRoom(roomId: string | undefined) {
         });
       }
     };
+    pc.oniceconnectionstatechange = () => {
+      const s = pc.iceConnectionState;
+      if (s === "connected" || s === "completed") {
+        clearCheckTimer(peerId);
+      } else if (s === "checking") {
+        // Arm 8s upgrade timer (only once per pair lifecycle).
+        if (!pairCheckTimersRef.current.has(peerId) && !pairUsedTurnRef.current.has(peerId)) {
+          const t = window.setTimeout(() => {
+            pairCheckTimersRef.current.delete(peerId);
+            if (pcsRef.current.get(peerId) === pc &&
+                (pc.iceConnectionState === "checking" || pc.iceConnectionState === "new")) {
+              upgradePeerToTurn(peerId, peerMode);
+            }
+          }, ICE_CHECKING_TIMEOUT_MS);
+          pairCheckTimersRef.current.set(peerId, t);
+        }
+      } else if (s === "failed" || s === "disconnected") {
+        if (!pairUsedTurnRef.current.has(peerId)) {
+          upgradePeerToTurn(peerId, peerMode);
+        } else if (s === "failed") {
+          closePeer(peerId);
+        }
+      }
+    };
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") closePeer(peerId);
+      if (pc.connectionState === "failed" && pairUsedTurnRef.current.has(peerId)) {
+        closePeer(peerId);
+      }
     };
     return pc;
   }
 
-  async function makeOffer(peerId: string) {
-    const pc = ensurePeer(peerId);
+  function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
+    const existing = pcsRef.current.get(peerId);
+    if (existing) return existing;
+    return createPeer(peerId, peerMode, STUN_ONLY);
+  }
+
+  async function makeOfferOn(pc: RTCPeerConnection, peerId: string) {
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
     if (myId && channelRef.current && pc.localDescription) {
@@ -115,6 +216,11 @@ export function useMediaRoom(roomId: string | undefined) {
         payload: { type: "offer", from: myId, to: peerId, sdp: pc.localDescription.toJSON() } satisfies SignalEvent,
       });
     }
+  }
+
+  async function makeOffer(peerId: string) {
+    const pc = ensurePeer(peerId);
+    await makeOfferOn(pc, peerId);
   }
 
   async function handleSignal(ev: SignalEvent) {
@@ -233,6 +339,11 @@ export function useMediaRoom(roomId: string | undefined) {
 
   function teardownMedia() {
     for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
+    for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
+    pairCheckTimersRef.current.clear();
+    pairUsedTurnRef.current.clear();
+    turnIceServersRef.current = null;
+    turnExpiresAtRef.current = 0;
     if (localStreamRef.current) {
       for (const t of localStreamRef.current.getTracks()) t.stop();
       localStreamRef.current = null;

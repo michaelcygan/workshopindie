@@ -1345,6 +1345,30 @@ export type Database = {
         }
         Relationships: []
       }
+      turn_credential_grants: {
+        Row: {
+          granted_at: string
+          id: string
+          room_id: string | null
+          ttl_seconds: number
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          id?: string
+          room_id?: string | null
+          ttl_seconds: number
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          id?: string
+          room_id?: string | null
+          ttl_seconds?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_blocks: {
         Row: {
           blocked_user_id: string

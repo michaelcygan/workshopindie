@@ -23,6 +23,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
+import { RoomPreJoin } from "@/components/room-pre-join";
 const RoomBoard = lazy(() => import("@/components/room-board"));
 import {
   AlertDialog,
@@ -89,24 +90,22 @@ export function ChannelView({
 
   const media = useMediaRoom(roomId);
 
-  // Auto-join on mount with the chosen mode (user already pre-flighted permission).
-  const autoJoinedRef = useRef(false);
-  useEffect(() => {
-    if (autoJoinedRef.current) return;
-    if (!user || !roomId) return;
-    if (media.joined || media.busy) return;
-    autoJoinedRef.current = true;
-    media.setMode(initialMode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, roomId, media.joined, media.busy, initialMode]);
+  // Pre-join gate: require an explicit click before requesting mic/cam,
+  // subscribing to signaling, or minting any TURN credentials. This blocks
+  // bots and previews from triggering any of the room's machinery.
+  const [hasConnected, setHasConnected] = useState(false);
+  const handleConnect = (mode: MediaMode) => {
+    setHasConnected(true);
+    media.setMode(mode);
+  };
 
   // If join fails, route back to /instant.
   useEffect(() => {
-    if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
+    if (hasConnected && media.error && !media.joined && !media.busy) {
       toast.error(media.error);
       router.navigate({ to: "/instant" });
     }
-  }, [media.error, media.joined, media.busy, router]);
+  }, [hasConnected, media.error, media.joined, media.busy, router]);
 
   function handleExit() {
     // If I'm the last one here, purge the ephemeral whiteboard for this room.
@@ -247,6 +246,7 @@ export function ChannelView({
 
   useEffect(() => {
     if (!user) return;
+    if (!hasConnected) return;
     let cancelled = false;
 
     async function join() {
@@ -350,7 +350,7 @@ export function ChannelView({
       window.removeEventListener("beforeunload", leave);
       leave();
     };
-  }, [roomId, user]);
+  }, [roomId, user, hasConnected]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -469,6 +469,10 @@ export function ChannelView({
     viewMode === "whiteboard" ? "board" : viewMode === "gallery" ? "gallery" : "chat";
   const fsLabel =
     fsTarget === "board" ? "Expand board" : fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
+
+  if (!hasConnected) {
+    return <RoomPreJoin title={title} initialMode={initialMode} onConnect={handleConnect} />;
+  }
 
   return (
     <>
