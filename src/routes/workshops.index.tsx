@@ -65,9 +65,29 @@ function WorkshopsPage() {
       />
     );
   }
-  const { data: workshops, isLoading } = useQuery({
+  const getAge = useServerFn(getMyAgeFields);
+  const { data: ageCtx } = useQuery({
+    queryKey: ["my-age-ctx", user?.id],
+    queryFn: () => getAge(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const { data: rawWorkshops, isLoading } = useQuery({
     queryKey: ["workshops", category, filter],
     queryFn: () => fetchWorkshops(category, filter),
+  });
+
+  const ageFilterMin = ageCtx?.ageFilterMin ?? null;
+  const myAge = ageCtx?.age ?? null;
+  const workshops = (rawWorkshops ?? []).filter((w) => {
+    // User opted into 18+/21+ only → hide teen-capped workshops
+    if (ageFilterMin != null && w.max_age != null && w.max_age < ageFilterMin) return false;
+    // Host opted to hide from ineligible → respect when we know the viewer's age
+    if (w.hide_from_ineligible && myAge != null) {
+      if (w.min_age != null && myAge < w.min_age) return false;
+      if (w.max_age != null && myAge > w.max_age) return false;
+    }
+    return true;
   });
 
   const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];
