@@ -398,10 +398,28 @@ export function useMediaRoom(roomId: string | undefined) {
             : false,
         });
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Mic blocked";
-        setError(`Couldn't access ${effectiveMode === "video" ? "camera/mic" : "mic"}: ${msg}`);
-        setBusy(false);
-        return;
+        // If we asked for video and it failed (no cam, denied, in use), retry
+        // with audio-only so the user still joins the room.
+        if (effectiveMode === "video") {
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+              video: false,
+            });
+            effectiveMode = "voice";
+            setError("Camera unavailable — joined with mic only.");
+          } catch (e2) {
+            const msg = e2 instanceof Error ? e2.message : "Mic blocked";
+            setError(`Couldn't access mic: ${msg}`);
+            setBusy(false);
+            return;
+          }
+        } else {
+          const msg = e instanceof Error ? e.message : "Mic blocked";
+          setError(`Couldn't access mic: ${msg}`);
+          setBusy(false);
+          return;
+        }
       }
       localStreamRef.current = stream;
       setCameraOnState(effectiveMode === "video");
