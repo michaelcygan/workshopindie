@@ -20,6 +20,7 @@ import { getFrequentCollaborators, type Collaborator } from "@/lib/network.funct
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { extraMediumLabel } from "@/lib/mediums";
 
 const TAB_VALUES = ["works", "credits", "collabs", "workshops", "groups", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
