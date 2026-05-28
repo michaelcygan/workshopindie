@@ -431,9 +431,9 @@ function EditProfile() {
           {/* MEDIUMS & BIO */}
           <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Instant Workshops you see." refMap={sectionRefs}>
             <div className="space-y-2">
-              <Label>What you make</Label>
+              <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIES.map((c) => {
+                {WORK_MEDIUMS.map((c) => {
                   const on = form.cats.includes(c.id);
                   return (
                     <button type="button" key={c.id}
@@ -444,9 +444,25 @@ function EditProfile() {
                     </button>
                   );
                 })}
+                {EXTRA_MEDIUMS.map((m) => {
+                  const on = form.mediums.includes(m.id);
+                  return (
+                    <button type="button" key={m.id}
+                      onClick={() => set("mediums", on ? form.mediums.filter((x) => x !== m.id) : [...form.mediums, m.id])}
+                      className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                        on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                      {m.label}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-xs text-ink-muted">Multimedia artists: pick all that apply — your portfolio tabs by medium.</p>
+              <p className="text-xs text-ink-muted">Pick all that apply. Your Works tabs come from Film, Music, Writing, Build, and Visual — the rest just describe your practice.</p>
             </div>
+
+            <ToolsField
+              tools={form.tools}
+              onChange={(next) => set("tools", next)}
+            />
 
             <div className="space-y-1.5">
               <Label htmlFor="hl">Headline</Label>
@@ -459,6 +475,7 @@ function EditProfile() {
               <p className="text-right text-xs text-ink-muted">{form.bio.length}/500</p>
             </div>
           </Section>
+
 
           {/* LOCATION */}
           <Section id="location" title="Location" subtitle="Helps us surface nearby Workshops and Meetups." refMap={sectionRefs}>
