@@ -129,6 +129,8 @@ function EditProfile() {
         avatar: data.avatar_url ?? null,
         cover: data.cover_url ?? null,
         cats: (data.categories ?? []) as Category[],
+        mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
+        tools: ((data.tools as string[] | null) ?? []),
         links: ((data.external_links as ExtLink[] | null) ?? []),
         cityId: data.city_id ?? "",
         pinnedIds: (data.pinned_work_ids ?? []) as string[],
