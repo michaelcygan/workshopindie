@@ -212,6 +212,8 @@ function EditProfile() {
       avatar_url: form.avatar,
       cover_url: form.cover,
       categories: form.cats,
+      mediums: form.mediums,
+      tools: form.tools,
       external_links: form.links.filter((l) => l.url),
       city_id: form.cityId || null,
       pinned_work_ids: cleanPinned,
