@@ -70,6 +70,8 @@ type Profile = {
   bio: string | null;
   headline: string | null;
   categories: Category[];
+  mediums: string[] | null;
+  tools: string[] | null;
   external_links: { label: string; url: string }[] | null;
   instagram_handle: string | null;
   follower_count: number;
