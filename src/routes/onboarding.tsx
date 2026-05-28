@@ -30,6 +30,7 @@ function Onboarding() {
   const [birthdate, setBirthdate] = useState(""); // YYYY-MM-DD
   const [bio, setBio] = useState("");
   const [cats, setCats] = useState<Category[]>([]);
+  const [mediums, setMediums] = useState<ExtraMedium[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
   const [cityId, setCityId] = useState<string>("");
   const [saving, setSaving] = useState(false);
