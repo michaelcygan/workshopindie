@@ -13,7 +13,7 @@ import { type Category, categoryClass } from "@/lib/categories";
 import {
   WORK_MEDIUMS,
   EXTRA_MEDIUMS,
-  extraMediumLabel,
+  
   isExtraMedium,
   MAX_TOOLS,
   MAX_TOOL_LEN,
