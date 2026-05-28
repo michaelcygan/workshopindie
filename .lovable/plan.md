@@ -1,43 +1,59 @@
 ## Goal
 
-Simplify identity on `/me/edit` and signup to **First name + Last name only** (no custom display name field). Add an optional **Artist aliases** list (e.g. music name, DJ name, real name) that shows on the public profile.
+In the profile flow, drop Critique / Business of Art / Co-working from the medium selector (they remain in the wider Category enum for workshops/gallery/instant-rooms), expand the medium options with a curated set, and add a free-text "What you use" tools list.
 
 ## 1. Database (migration)
 
-- Add `profiles.aliases text[] not null default '{}'` with a length cap (max 5 aliases, each 1–40 chars) enforced via a CHECK constraint.
-- Keep `display_name` column as-is — it stays the canonical "name" used across the app, but is now always derived from `first_name + last_name` on write. No UI override anymore.
+Add two new array columns to `profiles`:
+- `mediums text[] not null default '{}'` — broader medium tags beyond the 5 publishable categories (e.g. `photography`, `printmaking`, `textiles`). Capped to 20 entries; each token validated against the curated id list via a trigger (drop unknown ids silently on insert/update so the list can evolve without breaking writes).
+- `tools text[] not null default '{}'` — free-text. Cap 15 entries, 1–40 chars each, dedup case-insensitively via trigger.
 
-## 2. `/me/edit` (`src/routes/me.edit.tsx`)
+Existing `categories` (Category enum array) stays as-is. It continues to drive Works tabs / gallery filters / Instant Workshops. The profile UI just narrows what it shows.
 
-- Remove the entire "Display name" card (label, "Use a different name" checkbox, custom override input, derived preview input).
-- Remove `displayNameOverride` and `useDisplayOverride` from `FormState` and `EMPTY`.
-- On save: always write `display_name = `${first} ${last}`.trim()` (drop the `deriveDisplayName(..., override)` path).
-- Add a new **"Artist aliases (optional)"** subsection inside the Identity section, just below the name row. UI: vertical list of pill rows with an `Input` per alias + remove (X) button, plus a small "+ Add alias" button. Cap at 5. Helper copy: "Other names you go by — stage name, DJ name, real name. Shown as small chips on your profile."
-- Hydrate `aliases` from the loaded profile; persist on submit (trim, dedupe case-insensitively, drop empties).
+## 2. New curated medium list
 
-## 3. `/signup` (`src/routes/signup.tsx`)
+Create `src/lib/mediums.ts`:
 
-- Already collects First/Last and sets `display_name` from them via user metadata — leave as-is. No alias UI at signup (keep it minimal).
+- `WORK_MEDIUMS` (these mirror the 5 publishable categories so editing them edits `categories` too):
+  `film, music, writing, build, visual`
+- `EXTRA_MEDIUMS` (new, stored in `mediums` text[]):
+  `photography, printmaking, textiles, ceramics, sculpture, painting, illustration, design, fashion, jewelry, animation, comics, poetry, journalism, songwriting, production, dj, performance, dance, theater, sound-design, podcasting, game-design, code, photography-analog`
+- Helper `mediumLabel(id)` and `ALL_PROFILE_MEDIUMS` (work + extra) for rendering.
+
+Critique / Business of Art / Co-working are intentionally excluded — they stay in `src/lib/categories.ts` for workshop/instant contexts only.
+
+## 3. `/me/edit` — Mediums & bio section (`src/routes/me.edit.tsx`)
+
+Replace the current "What you make" chip row (which renders all 8 `CATEGORIES`) with a two-part picker:
+
+- **Mediums** — single chip cloud combining `WORK_MEDIUMS` + `EXTRA_MEDIUMS`. Selecting a `WORK_MEDIUMS` chip toggles it in `form.cats` (Category enum, drives Works tabs). Selecting an `EXTRA_MEDIUMS` chip toggles it in `form.mediums` (new text[]). Visually identical — users don't need to know the split. Use the category color for the 5 work chips; neutral chip styling for extras.
+  Helper copy: "Pick all that apply. Your work tabs come from Film, Music, Writing, Build, and Visual; the rest just describe your practice."
+- **What you use (optional)** — free-text tag input below mediums. UI: existing chip list + an inline input that adds a chip on Enter or comma, X to remove. Cap 15. Helper copy: "Cameras, instruments, software, looms, kilns — whatever you work with."
+
+Form state additions:
+- `mediums: string[]` and `tools: string[]` in `FormState` and `EMPTY`.
+- Hydrate from profile on load; persist trimmed + deduped on save.
 
 ## 4. Onboarding (`src/routes/onboarding.tsx`)
 
-- Already uses `deriveDisplayName(first, last)` (no override) — no changes needed.
+Mirror the same picker on the mediums step (work + extra chips combined; categories vs mediums written to their respective columns). Skip the tools picker in onboarding to keep that step short — users add tools later from `/me/edit`.
 
 ## 5. Public profile (`src/routes/u.$username.tsx`)
 
-- Add `aliases` to the profile select.
-- Render aliases as small muted chips directly under the name / headline area in the profile header (`also known as: <chip> <chip>`). Skip the row when empty.
-- No changes to credits/cards.
+Select `mediums` and `tools` alongside `categories`. Render:
+- Existing category chips remain on top.
+- A muted "also works in" row of extra-medium chips when `mediums` is non-empty.
+- A "Tools" line of small pill chips when `tools` is non-empty, below the bio.
 
-## 6. `display-name.ts` helper
+## 6. Out of scope
 
-- Keep `deriveDisplayName` for the rare onboarding path but stop using its `override` arg in `/me/edit`. No deletion to avoid touching unrelated call sites.
-
-## Out of scope
-
-- Searching by alias, alias verification, alias-as-handle, showing aliases anywhere outside the public profile header, or migrating existing custom `display_name` values (users with a previously-customized display name will see it overwritten to `${first} ${last}` next time they save — acceptable for this cleanup).
+- No changes to gallery filters, Workshop creation, Instant rooms, or the Category enum.
+- No alias-style verification or search-by-medium.
+- No tool standardization yet — free-text now, normalize later when we have data.
+- No migration of existing `categories` values; users who had Critique/Business/Co-working selected keep them in `categories` (no longer exposed in the profile picker, but harmless).
 
 ## Technical notes
 
-- One migration, one server-trivial change (profile update payload). All other changes are presentational.
-- No RLS changes; `aliases` is part of the public profile read.
+- One migration: add columns + a small `tg_profiles_mediums_tools_guard` trigger that trims, dedupes, caps, drops unknown medium ids, and enforces length on tools. No new RLS — both columns are part of the existing public profile read.
+- `src/integrations/supabase/types.ts` will regenerate after the migration.
+- All UI work stays in `src/lib/mediums.ts`, `src/routes/me.edit.tsx`, `src/routes/onboarding.tsx`, and `src/routes/u.$username.tsx`.
