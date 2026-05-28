@@ -701,11 +701,29 @@ function GroupsTab({ home, city }: { home: { name: string; country: string; slug
 function AboutTab({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-8">
-      {profile.categories?.length > 0 && (
+      {(profile.categories?.length > 0 || (profile.mediums?.length ?? 0) > 0) && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Mediums</h2>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {profile.categories.map((c) => <CategoryChip key={c} category={c} />)}
+            {(profile.mediums ?? []).map((m) => (
+              <span key={m} className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink-soft">
+                {extraMediumLabel(m)}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {(profile.tools?.length ?? 0) > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Tools</h2>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(profile.tools ?? []).map((t, i) => (
+              <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink">
+                {t}
+              </span>
+            ))}
           </div>
         </section>
       )}
