@@ -149,7 +149,7 @@ function Onboarding() {
           <div className="space-y-2">
             <Label>What do you make?</Label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
+              {WORK_MEDIUMS.map((c) => (
                 <button
                   type="button"
                   key={c.id}
@@ -164,8 +164,26 @@ function Onboarding() {
                   {c.label}
                 </button>
               ))}
+              {EXTRA_MEDIUMS.map((m) => {
+                const on = mediums.includes(m.id);
+                return (
+                  <button
+                    type="button"
+                    key={m.id}
+                    onClick={() => setMediums((cur) => (on ? cur.filter((x) => x !== m.id) : [...cur, m.id]))}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm transition",
+                      on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted",
+                    )}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-xs text-ink-muted">Pick all that apply. You can refine later.</p>
           </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="bio">Short bio (optional)</Label>
