@@ -15,7 +15,6 @@ import {
   EXTRA_MEDIUMS,
   extraMediumLabel,
   isExtraMedium,
-  isWorkMedium,
   MAX_TOOLS,
   MAX_TOOL_LEN,
   type ExtraMedium,
