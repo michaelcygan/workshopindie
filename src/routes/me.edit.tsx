@@ -609,3 +609,72 @@ function Section({
     </section>
   );
 }
+
+function ToolsField({
+  tools,
+  onChange,
+}: {
+  tools: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const commit = (raw: string) => {
+    const next = [...tools];
+    const seen = new Set(next.map((t) => t.toLowerCase()));
+    for (const piece of raw.split(",")) {
+      const v = piece.trim().slice(0, MAX_TOOL_LEN);
+      if (!v) continue;
+      if (seen.has(v.toLowerCase())) continue;
+      if (next.length >= MAX_TOOLS) break;
+      next.push(v);
+      seen.add(v.toLowerCase());
+    }
+    onChange(next);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="tools">What you use <span className="text-ink-muted">(optional)</span></Label>
+      <div className="flex flex-wrap gap-1.5">
+        {tools.map((t, i) => (
+          <span key={`${t}-${i}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+            {t}
+            <button
+              type="button"
+              aria-label={`Remove ${t}`}
+              onClick={() => onChange(tools.filter((_, j) => j !== i))}
+              className="text-ink-muted hover:text-ink"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <Input
+        id="tools"
+        value={draft}
+        maxLength={MAX_TOOL_LEN}
+        placeholder={tools.length >= MAX_TOOLS ? "Max reached" : "Camera, Telecaster, Loom, Kiln, Figma…"}
+        disabled={tools.length >= MAX_TOOLS}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v.includes(",")) commit(v);
+          else setDraft(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (draft.trim()) commit(draft);
+          } else if (e.key === "Backspace" && !draft && tools.length > 0) {
+            onChange(tools.slice(0, -1));
+          }
+        }}
+        onBlur={() => { if (draft.trim()) commit(draft); }}
+      />
+      <p className="text-xs text-ink-muted">Cameras, instruments, software, looms, kilns — whatever you work with. Press Enter or comma to add. {tools.length}/{MAX_TOOLS}</p>
+    </div>
+  );
+}
+
