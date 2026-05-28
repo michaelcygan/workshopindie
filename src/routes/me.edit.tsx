@@ -55,6 +55,8 @@ type FormState = {
   avatar: string | null;
   cover: string | null;
   cats: Category[];
+  mediums: ExtraMedium[];
+  tools: string[];
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
@@ -64,7 +66,7 @@ type FormState = {
 const EMPTY: FormState = {
   username: "",
   firstName: "", lastName: "", aliases: [], instagram: "",
-  headline: "", bio: "", avatar: null, cover: null, cats: [], links: [],
+  headline: "", bio: "", avatar: null, cover: null, cats: [], mediums: [], tools: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
