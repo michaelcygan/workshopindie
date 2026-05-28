@@ -86,6 +86,7 @@ function Onboarding() {
         display_name: display,
         bio: bio || null,
         categories: cats,
+        mediums: mediums,
         city_id: cityId,
         home_city_id: cityId,
         onboarded: true,
