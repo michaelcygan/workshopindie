@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { type Category, categoryClass } from "@/lib/categories";
+import { WORK_MEDIUMS, EXTRA_MEDIUMS, type ExtraMedium } from "@/lib/mediums";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
@@ -29,6 +30,7 @@ function Onboarding() {
   const [birthdate, setBirthdate] = useState(""); // YYYY-MM-DD
   const [bio, setBio] = useState("");
   const [cats, setCats] = useState<Category[]>([]);
+  const [mediums, setMediums] = useState<ExtraMedium[]>([]);
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
   const [cityId, setCityId] = useState<string>("");
   const [saving, setSaving] = useState(false);
@@ -84,6 +86,7 @@ function Onboarding() {
         display_name: display,
         bio: bio || null,
         categories: cats,
+        mediums: mediums,
         city_id: cityId,
         home_city_id: cityId,
         onboarded: true,
@@ -146,7 +149,7 @@ function Onboarding() {
           <div className="space-y-2">
             <Label>What do you make?</Label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
+              {WORK_MEDIUMS.map((c) => (
                 <button
                   type="button"
                   key={c.id}
@@ -161,8 +164,26 @@ function Onboarding() {
                   {c.label}
                 </button>
               ))}
+              {EXTRA_MEDIUMS.map((m) => {
+                const on = mediums.includes(m.id);
+                return (
+                  <button
+                    type="button"
+                    key={m.id}
+                    onClick={() => setMediums((cur) => (on ? cur.filter((x) => x !== m.id) : [...cur, m.id]))}
+                    className={cn(
+                      "rounded-full border px-3 py-1.5 text-sm transition",
+                      on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted",
+                    )}
+                  >
+                    {m.label}
+                  </button>
+                );
+              })}
             </div>
+            <p className="text-xs text-ink-muted">Pick all that apply. You can refine later.</p>
           </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="bio">Short bio (optional)</Label>

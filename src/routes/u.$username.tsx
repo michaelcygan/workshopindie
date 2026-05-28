@@ -20,6 +20,7 @@ import { getFrequentCollaborators, type Collaborator } from "@/lib/network.funct
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { extraMediumLabel } from "@/lib/mediums";
 
 const TAB_VALUES = ["works", "credits", "collabs", "workshops", "groups", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
@@ -70,6 +71,8 @@ type Profile = {
   bio: string | null;
   headline: string | null;
   categories: Category[];
+  mediums: string[] | null;
+  tools: string[] | null;
   external_links: { label: string; url: string }[] | null;
   instagram_handle: string | null;
   follower_count: number;
@@ -86,7 +89,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -698,11 +701,29 @@ function GroupsTab({ home, city }: { home: { name: string; country: string; slug
 function AboutTab({ profile }: { profile: Profile }) {
   return (
     <div className="space-y-8">
-      {profile.categories?.length > 0 && (
+      {(profile.categories?.length > 0 || (profile.mediums?.length ?? 0) > 0) && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Mediums</h2>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {profile.categories.map((c) => <CategoryChip key={c} category={c} />)}
+            {(profile.mediums ?? []).map((m) => (
+              <span key={m} className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink-soft">
+                {extraMediumLabel(m)}
+              </span>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {(profile.tools?.length ?? 0) > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Tools</h2>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(profile.tools ?? []).map((t, i) => (
+              <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink">
+                {t}
+              </span>
+            ))}
           </div>
         </section>
       )}

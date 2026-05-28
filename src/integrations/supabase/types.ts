@@ -1053,8 +1053,10 @@ export type Database = {
           id: string
           instagram_handle: string | null
           last_name: string | null
+          mediums: string[]
           onboarded: boolean
           pinned_work_ids: string[]
+          tools: string[]
           tour_completed_at: string | null
           updated_at: string
           username: string | null
@@ -1083,8 +1085,10 @@ export type Database = {
           id: string
           instagram_handle?: string | null
           last_name?: string | null
+          mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
           username?: string | null
@@ -1113,8 +1117,10 @@ export type Database = {
           id?: string
           instagram_handle?: string | null
           last_name?: string | null
+          mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
           username?: string | null
