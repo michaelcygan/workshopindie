@@ -9,9 +9,7 @@ import { Button } from "@/components/ui/button";
 import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
-import { useUserRoles } from "@/hooks/use-user-role";
 import { useAuth } from "@/hooks/use-auth";
-import { ComingSoon } from "@/components/coming-soon";
 import { getMyAgeFields } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/workshops/")({
@@ -48,23 +46,10 @@ async function fetchWorkshops(category: Category | "all", filter: Filter) {
 }
 
 function WorkshopsPage() {
-  const { isAdmin, loading: rolesLoading } = useUserRoles();
   const { user } = useAuth();
   const [category, setCategory] = useState<Category | "all">("all");
   const [filter, setFilter] = useState<Filter>("upcoming");
 
-  if (rolesLoading) {
-    return <main className="mx-auto max-w-2xl p-10"><div className="h-40 animate-pulse rounded-3xl bg-surface-2" /></main>;
-  }
-  if (!isAdmin) {
-    return (
-      <ComingSoon
-        title="Scheduled Workshops"
-        blurb="Coming soon — for now, drop into a live Workshop or post a Collab to find people."
-        ctaLabel="Back to home"
-      />
-    );
-  }
   const getAge = useServerFn(getMyAgeFields);
   const { data: ageCtx } = useQuery({
     queryKey: ["my-age-ctx", user?.id],

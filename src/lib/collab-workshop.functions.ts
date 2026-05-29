@@ -135,3 +135,121 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
 
     return { workshopId: ws.id, roomId: room.id, slug: ws.slug };
   });
+
+/**
+ * RSVP to a scheduled Workshop — one-tap. Creates a confirmed participant row.
+ * Idempotent: returns silently if already RSVP'd.
+ */
+export const rsvpToWorkshop = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: ws } = await supabaseAdmin
+      .from("workshops")
+      .select("id,status,participant_cap,confirmed_count")
+      .eq("id", data.workshopId)
+      .maybeSingle();
+    if (!ws) throw new Error("Workshop not found.");
+    if (ws.status === "archived" || ws.status === "canceled") throw new Error("This Workshop is closed.");
+    if (ws.participant_cap && ws.confirmed_count >= ws.participant_cap) {
+      throw new Error("This Workshop is full.");
+    }
+    const { error } = await supabaseAdmin
+      .from("workshop_participants")
+      .insert({ workshop_id: data.workshopId, user_id: userId, participant_status: "confirmed" });
+    if (error && !/duplicate key/i.test(error.message)) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const cancelRsvp = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    await supabaseAdmin
+      .from("workshop_participants")
+      .delete()
+      .eq("workshop_id", data.workshopId)
+      .eq("user_id", context.userId);
+    return { ok: true };
+  });
+
+/**
+ * Convert an unattended scheduled Workshop into a live drop-in lounge of the
+ * same medium. Idempotent. Called by pg_cron sweep and safe to call on demand.
+ * Rules: must be past starts_at + 15min, no participants ever checked in.
+ */
+export const convertScheduledToLive = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const { data: ws } = await supabaseAdmin
+      .from("workshops")
+      .select("id,status,mode,category,title,starts_at,auto_converted_at,host_user_id")
+      .eq("id", data.workshopId)
+      .maybeSingle();
+    if (!ws) return { converted: false, reason: "not_found" };
+    if (ws.auto_converted_at) return { converted: false, reason: "already_converted" };
+    if (ws.mode !== "scheduled") return { converted: false, reason: "wrong_mode" };
+    if (!ws.starts_at) return { converted: false, reason: "no_start_time" };
+    const startedAgoMs = Date.now() - new Date(ws.starts_at).getTime();
+    if (startedAgoMs < 15 * 60 * 1000) return { converted: false, reason: "too_early" };
+
+    // Check if anyone actually showed up via paired room presence.
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id")
+      .eq("workshop_id", ws.id)
+      .maybeSingle();
+    if (room) {
+      const { count } = await supabaseAdmin
+        .from("instant_presence")
+        .select("user_id", { count: "exact", head: true })
+        .eq("room_id", room.id);
+      if ((count ?? 0) > 0) return { converted: false, reason: "people_present" };
+    }
+
+    // Flip to a live spawned room of the same medium.
+    await supabaseAdmin
+      .from("workshops")
+      .update({
+        mode: "instant_spawned",
+        status: "active",
+        auto_converted_at: new Date().toISOString(),
+        ends_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      })
+      .eq("id", ws.id);
+
+    if (!room) {
+      await supabaseAdmin.from("instant_rooms").insert({
+        kind: "workshop",
+        title: ws.title,
+        status: "active",
+        participant_cap: 5,
+        creator_id: ws.host_user_id,
+        category: ws.category,
+        workshop_id: ws.id,
+      });
+    }
+
+    // Notify everyone who RSVP'd + the host.
+    const { data: rsvps } = await supabaseAdmin
+      .from("workshop_participants")
+      .select("user_id")
+      .eq("workshop_id", ws.id);
+    const recipients = Array.from(new Set((rsvps ?? []).map((r) => r.user_id)));
+    if (recipients.length > 0) {
+      await supabaseAdmin
+        .from("notifications")
+        .insert(
+          recipients.map((uid) => ({
+            user_id: uid,
+            kind: uid === ws.host_user_id ? "workshop_ran_without_you" : "workshop_now_live",
+            entity_type: "workshop",
+            entity_id: ws.id,
+            payload: { title: ws.title, auto_converted: true },
+          })),
+        )
+        .then(() => null, () => null);
+    }
+    return { converted: true };
+  });

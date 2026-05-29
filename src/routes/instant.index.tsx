@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
-import { InstantActivityTicker } from "@/components/instant-activity-ticker";
+import { WorkshopStrip } from "@/components/workshop-strip";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 
@@ -175,7 +175,7 @@ function InstantPreflight() {
           Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.
         </p>
 
-        <InstantActivityTicker />
+        <WorkshopStrip />
       </div>
     </main>
   );

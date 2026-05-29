@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2 } from "lucide-react";
+import { Plus, X, Globe2, CalendarClock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -53,6 +54,8 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "Collaborator", quantity: 1, description: "" },
   ]);
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
@@ -128,8 +131,43 @@ function NewCollab() {
     );
     if (rolesErr) toast.error(rolesErr.message);
 
+    // Optional: spin up a linked Scheduled Workshop tied to this Collab.
+    if (scheduleOn && scheduledAt) {
+      const startsAt = new Date(scheduledAt);
+      if (isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
+        toast.error("Pick a future date & time for the session — Collab posted without it.");
+      } else {
+        const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
+        const { data: ws, error: wsErr } = await supabase
+          .from("workshops")
+          .insert({
+            title: title.trim(),
+            slug: "",
+            category,
+            host_user_id: user.id,
+            mode: "scheduled",
+            status: "open",
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            location_type: locationMode === "in_person" ? "in_person" : "online",
+            city_id: city?.id ?? null,
+            participant_cap: 5,
+            topic_collab_post_id: post.id,
+            visibility: "public",
+            prompt: `Working session for: ${title.trim()}`,
+          })
+          .select("id")
+          .single();
+        if (wsErr) {
+          toast.error(`Collab posted, but couldn't schedule the Workshop: ${wsErr.message}`);
+        } else if (ws) {
+          await supabase.from("collab_posts").update({ live_workshop_id: ws.id }).eq("id", post.id);
+        }
+      }
+    }
+
     setSubmitting(false);
-    toast.success("Posted to the Collab Board");
+    toast.success(scheduleOn ? "Posted — your Workshop is scheduled." : "Posted to the Collab Board");
     navigate({ to: "/collab/$slug", params: { slug: post.slug } });
   }
 
@@ -299,6 +337,35 @@ function NewCollab() {
             ))}
           </div>
         </section>
+
+        <section className="space-y-2 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <CalendarClock className="mt-0.5 h-4 w-4 text-ink-muted" />
+              <div>
+                <Label htmlFor="schedule-on" className="cursor-pointer">Set a time for a live Workshop on this</Label>
+                <p className="text-xs text-ink-muted">Optional. Posts a scheduled Workshop tied to this Collab. People can RSVP and drop into the room when it starts.</p>
+              </div>
+            </div>
+            <Switch id="schedule-on" checked={scheduleOn} onCheckedChange={setScheduleOn} />
+          </div>
+          {scheduleOn && (
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
+              <Input
+                id="starts-at"
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
+                required
+              />
+              <p className="text-[11px] text-ink-muted">If no one shows up within 15 minutes of the start time, the Workshop auto-converts to a live drop-in so the room never dies silently.</p>
+            </div>
+          )}
+        </section>
+
+
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
