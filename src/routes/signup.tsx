@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
+import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { toast } from "sonner";
+
+const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
@@ -17,6 +21,7 @@ export const Route = createFileRoute("/signup")({
     last: typeof s.last === "string" ? s.last : undefined,
     ig: typeof s.ig === "string" ? s.ig : undefined,
     from: typeof s.from === "string" ? s.from : undefined,
+    ref: typeof s.ref === "string" ? s.ref : undefined,
   }),
 });
 
