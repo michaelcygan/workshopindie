@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Link2, Users, Calendar, Layers } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Link2, Users, Calendar, Layers, ImagePlus } from "lucide-react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -282,25 +282,47 @@ function ProfilePage() {
 
   const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
 
-  const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
-    if (t === "works" || t === "about") return true;
-    if (t === "credits") return counts.credits > 0;
-    if (t === "collabs") return counts.collabs > 0 || isOwn;
-    if (t === "workshops") return counts.workshops > 0;
-    if (t === "groups") return counts.groups > 0;
-    return true;
-  });
+  const visibleTabs: ProfileTab[] = isOwn
+    ? [...TAB_VALUES]
+    : TAB_VALUES.filter((t) => {
+      if (t === "works" || t === "about") return true;
+      if (t === "credits") return counts.credits > 0;
+      if (t === "collabs") return counts.collabs > 0;
+      if (t === "workshops") return counts.workshops > 0;
+      if (t === "groups") return counts.groups > 0;
+      return true;
+    });
 
   return (
     <main>
       {/* Cover */}
-      <div className="relative h-56 overflow-hidden bg-surface-2 md:h-80">
+      <div className="group relative h-56 overflow-hidden bg-surface-2 md:h-80">
         {profile.cover_url ? (
           <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full gradient-warm opacity-70" />
         )}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background/60" />
+        {isOwn && !profile.cover_url && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Button
+              variant="outline"
+              className="rounded-full gap-1.5 bg-background/80 backdrop-blur"
+              onClick={() => navigate({ to: "/me/edit" })}
+            >
+              <ImagePlus className="h-4 w-4" /> Add cover photo
+            </Button>
+          </div>
+        )}
+        {isOwn && profile.cover_url && (
+          <button
+            type="button"
+            onClick={() => navigate({ to: "/me/edit" })}
+            className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs text-ink shadow-soft backdrop-blur opacity-0 transition group-hover:opacity-100"
+          >
+            <ImagePlus className="h-3.5 w-3.5" /> Change cover
+          </button>
+        )}
       </div>
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
@@ -448,7 +470,7 @@ function ProfilePage() {
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
           {defaultTab === "workshops" && (
-            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} />
+            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} isOwn={isOwn} />
           )}
           {defaultTab === "groups" && (
             <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
@@ -502,8 +524,13 @@ function WorksTab({
   if (works.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${ownerName} hasn't shipped a Work yet.`}</p>
-        {isOwn && <Link to="/works/new" className="mt-4 inline-block"><Button className="rounded-full">Publish a Work</Button></Link>}
+        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
+        {isOwn && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Link to="/works/new"><Button className="rounded-full">Publish a Work</Button></Link>
+            <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -587,8 +614,13 @@ function CreditsTab({ works, isLoading, ownerName, isOwn }: { works: CreditWork[
 
   if (works.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
-        {isOwn ? "When someone credits you on their Work, it shows up here." : `${ownerName} hasn't been credited on anyone's Work yet.`}
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">{isOwn ? "Get credited by collaborating. Post a Collab to start." : `${ownerName} hasn't been credited on anyone's Work yet.`}</p>
+        {isOwn && (
+          <Link to="/collab/new" className="mt-4 inline-block">
+            <Button className="rounded-full">Post a Collab</Button>
+          </Link>
+        )}
       </div>
     );
   }
@@ -675,10 +707,20 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
 
 /* ---------------- WORKSHOPS TAB ---------------- */
 
-function WorkshopsTab({ items, isLoading, ownerName }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string }) {
+function WorkshopsTab({ items, isLoading, ownerName, isOwn }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
   if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
   if (items.length === 0) {
-    return <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">{ownerName} hasn't hosted or joined a Workshop yet.</div>;
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">{isOwn ? "No Workshops yet. Drop into a live one or schedule your own." : `${ownerName} hasn't hosted or joined a Workshop yet.`}</p>
+        {isOwn && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Link to="/instant"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+            <Link to="/workshops/new"><Button variant="outline" className="rounded-full">Schedule a Workshop</Button></Link>
+          </div>
+        )}
+      </div>
+    );
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
