@@ -187,7 +187,7 @@ function NewWorkshop() {
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Schedule a Workshop</h1>
-        <p className="mt-1 text-ink-muted">Pick a category, set a clock, define roles. People will apply, you'll make the thing together, then ship it.</p>
+        <p className="mt-1 text-ink-muted">A room with a start time. People RSVP. They show up.</p>
       </motion.div>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-7">
