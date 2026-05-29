@@ -21,9 +21,11 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
     const { collabPostId } = data;
 
     // 1. Verify caller owns the collab post.
+    // NOTE: Only the Collab owner can open a Workshop on this post, and the owner
+    // is always the Workshop host (host_user_id = userId below). Do not relax.
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,title,user_id,category,live_workshop_id")
+      .select("id,title,user_id,category,live_workshop_id,location_mode,city_id,also_cities")
       .eq("id", collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
@@ -49,6 +51,13 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
       }
     }
 
+    // City-scope: if the Collab is in_person with a city, restrict the Workshop's
+    // discovery audience to that city (+ any "also open to" cities).
+    const isInPerson = post.location_mode === "in_person" && !!post.city_id;
+    const audienceCityIds = isInPerson
+      ? Array.from(new Set<string>([post.city_id as string, ...((post.also_cities as string[] | null) ?? [])]))
+      : [];
+
     // 3. Create the live Workshop. The DB trigger will fill in `slug`.
     const now = new Date();
     const endsAt = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2h default
@@ -63,7 +72,9 @@ export const openWorkshopOnCollab = createServerFn({ method: "POST" })
         status: "active",
         starts_at: now.toISOString(),
         ends_at: endsAt.toISOString(),
-        location_type: "online",
+        location_type: isInPerson ? "in_person" : "online",
+        city_id: isInPerson ? post.city_id : null,
+        audience_city_ids: audienceCityIds,
         participant_cap: 5,
         topic_collab_post_id: post.id,
         prompt: `Live working session on Collab: ${post.title}`,
