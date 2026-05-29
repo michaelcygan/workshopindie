@@ -131,8 +131,43 @@ function NewCollab() {
     );
     if (rolesErr) toast.error(rolesErr.message);
 
+    // Optional: spin up a linked Scheduled Workshop tied to this Collab.
+    if (scheduleOn && scheduledAt) {
+      const startsAt = new Date(scheduledAt);
+      if (isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
+        toast.error("Pick a future date & time for the session — Collab posted without it.");
+      } else {
+        const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
+        const { data: ws, error: wsErr } = await supabase
+          .from("workshops")
+          .insert({
+            title: title.trim(),
+            slug: "",
+            category,
+            host_user_id: user.id,
+            mode: "scheduled",
+            status: "open",
+            starts_at: startsAt.toISOString(),
+            ends_at: endsAt.toISOString(),
+            location_type: locationMode === "in_person" ? "in_person" : "online",
+            city_id: city?.id ?? null,
+            participant_cap: 5,
+            topic_collab_post_id: post.id,
+            visibility: "public",
+            prompt: `Working session for: ${title.trim()}`,
+          })
+          .select("id")
+          .single();
+        if (wsErr) {
+          toast.error(`Collab posted, but couldn't schedule the Workshop: ${wsErr.message}`);
+        } else if (ws) {
+          await supabase.from("collab_posts").update({ live_workshop_id: ws.id }).eq("id", post.id);
+        }
+      }
+    }
+
     setSubmitting(false);
-    toast.success("Posted to the Collab Board");
+    toast.success(scheduleOn ? "Posted — your Workshop is scheduled." : "Posted to the Collab Board");
     navigate({ to: "/collab/$slug", params: { slug: post.slug } });
   }
 
