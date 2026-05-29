@@ -94,3 +94,57 @@ export const deleteMyAccount = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * Export the signed-in user's data as a JSON snapshot.
+ * Includes profile, privacy, notification prefs, works, collab posts,
+ * workshops hosted, applications, comments, follows, blocks, and reports filed.
+ */
+export const exportMyData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const db = supabaseAdmin;
+
+    const [
+      profile,
+      notifPrefs,
+      works,
+      collabPosts,
+      workshopsHosted,
+      applications,
+      comments,
+      following,
+      followers,
+      blocks,
+      reportsFiled,
+    ] = await Promise.all([
+      db.from("profiles").select("*").eq("id", userId).maybeSingle(),
+      db.from("notification_preferences").select("*").eq("user_id", userId).maybeSingle(),
+      db.from("works").select("*").eq("created_by", userId),
+      db.from("collab_posts").select("*").eq("creator_user_id", userId),
+      db.from("workshops").select("*").eq("host_user_id", userId),
+      db.from("workshop_applications").select("*").eq("applicant_user_id", userId),
+      db.from("comments").select("*").eq("author_user_id", userId),
+      db.from("follows").select("*").eq("follower_user_id", userId),
+      db.from("follows").select("*").eq("followed_user_id", userId),
+      db.from("user_blocks").select("*").eq("blocker_user_id", userId),
+      db.from("reports").select("*").eq("reporter_user_id", userId),
+    ]);
+
+    return {
+      exported_at: new Date().toISOString(),
+      user_id: userId,
+      profile: profile.data ?? null,
+      notification_preferences: notifPrefs.data ?? null,
+      works: works.data ?? [],
+      collab_posts: collabPosts.data ?? [],
+      workshops_hosted: workshopsHosted.data ?? [],
+      workshop_applications: applications.data ?? [],
+      comments: comments.data ?? [],
+      following: following.data ?? [],
+      followers: followers.data ?? [],
+      blocked_users: blocks.data ?? [],
+      reports_filed: reportsFiled.data ?? [],
+    };
+  });
