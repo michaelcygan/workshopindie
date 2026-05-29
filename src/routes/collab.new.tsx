@@ -543,6 +543,62 @@ function NewCollab() {
         title="You've hit 2 active Collabs"
         description="Free can run 2 open Collabs at a time. Go Plus for unlimited."
       />
+      <Dialog open={!!postedDialog} onOpenChange={(o) => { if (!o) setPostedDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Your Collab is live.</DialogTitle>
+            <DialogDescription>
+              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account.
+              {postedDialog?.scheduledAt && (
+                <span className="mt-2 block text-xs text-ink-muted">
+                  Workshop scheduled for {new Date(postedDialog.scheduledAt).toLocaleString()}.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-1 space-y-1.5">
+            <Label htmlFor="share-url" className="text-xs text-ink-muted">Shareable link</Label>
+            <div className="flex items-center gap-2">
+              <Input id="share-url" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} className="flex-1 text-xs" />
+              <Button type="button" size="sm" variant="secondary" className="gap-1.5 rounded-full" onClick={copyShareLink}>
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <p className="text-[11px] text-ink-muted">Drop it in IG stories, a group chat, or anywhere your people live.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
+              Stay here
+            </Button>
+            {postedDialog?.workshopRoomId ? (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const id = postedDialog.workshopRoomId!;
+                  setPostedDialog(null);
+                  navigate({ to: "/instant/$id", params: { id } });
+                }}
+              >
+                Join your Workshop
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const slug = postedDialog!.slug;
+                  setPostedDialog(null);
+                  navigate({ to: "/collab/$slug", params: { slug } });
+                }}
+              >
+                Open Collab page
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
