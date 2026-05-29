@@ -14,6 +14,8 @@ import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareSheet } from "@/components/share-sheet";
+import { ProfileCompletionChip } from "@/components/profile-completion-chip";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { ProfilePeek } from "@/components/profile-peek";
