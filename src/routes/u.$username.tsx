@@ -743,8 +743,22 @@ function GroupsTab({ home, city, isOwn }: { home: { name: string; country: strin
 /* ---------------- ABOUT TAB ---------------- */
 
 function AboutTab({ profile }: { profile: Profile }) {
+  const based = profile.home_city ?? profile.city;
   return (
     <div className="space-y-8">
+      {based && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Based in</h2>
+          <Link to="/cities/$slug" params={{ slug: based.slug }} className="mt-2 inline-flex items-center gap-1.5 text-ink-soft hover:text-ink">
+            <MapPin className="h-4 w-4" />{based.name}{based.country ? `, ${based.country}` : ""}
+          </Link>
+          {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+            <p className="mt-1 text-xs text-ink-muted">
+              Currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="underline-offset-2 hover:underline">{profile.city.name}</Link>
+            </p>
+          )}
+        </section>
+      )}
       {(profile.categories?.length > 0 || (profile.mediums?.length ?? 0) > 0) && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Mediums</h2>
