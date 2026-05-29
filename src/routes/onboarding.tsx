@@ -194,8 +194,9 @@ function Onboarding() {
           </div>
 
           <Button type="submit" className="w-full rounded-full" disabled={saving}>
-            {saving ? "Saving…" : "Enter Workshop"}
+            {saving ? "Saving…" : "Continue"}
           </Button>
+
         </form>
       </motion.div>
     </div>
