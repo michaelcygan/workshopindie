@@ -50,13 +50,13 @@ const LOCATION_LABELS: Record<LocationMode, string> = {
 };
 
 const ROLE_PRESETS: Record<Category, string[]> = {
-  film: ["Director", "DP", "Editor", "Actor", "Sound"],
-  music: ["Vocalist", "Producer", "Mixer", "Instrumentalist", "Lyricist"],
-  writing: ["Co-writer", "Editor", "Illustrator", "Reader"],
-  build: ["Designer", "Engineer", "PM", "Researcher"],
-  visual: ["Photographer", "Model", "Stylist", "Retoucher", "MUA"],
-  critique: [],
-  business: [],
+  film: ["Actor", "Director", "Cinematographer", "Editor", "Sound", "Producer", "Writer"],
+  music: ["Vocalist", "Producer", "Instrumentalist", "Songwriter", "Mixer", "Featured artist"],
+  writing: ["Co-writer", "Editor", "Beta reader", "Illustrator", "Researcher"],
+  build: ["Designer", "Engineer", "Product", "Researcher", "Co-founder"],
+  visual: ["Photographer", "Model", "Stylist", "MUA", "Hair", "Art director", "Retoucher"],
+  critique: ["Reader", "Reviewer", "Listener"],
+  business: ["Co-founder", "Advisor", "Designer", "Engineer", "Marketer"],
   coworking: [],
 };
 
