@@ -80,7 +80,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Make something with other artists. Find them, create it, ship it.
+          Walk into a room of artists. Or post the thing you want to make and pull a room together.
         </motion.p>
 
         <motion.div
@@ -97,7 +97,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
               <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work.
+                Five seats. Voice or video. Whoever's around, right now.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -115,7 +115,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                Got an idea sitting in your drafts? Post it. List the roles you need. People show up.
+                The thing you keep meaning to make. Post it. Open a room on it when you're ready.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
@@ -192,7 +192,7 @@ function Index() {
             <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
               <h3 className="font-display text-2xl text-ink">Nothing here yet — go make something.</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                Drop into a Workshop. Meet people. Build something worth showing.
+                First one's on you. Drop in, or post what you want to make.
               </p>
               <Link to="/instant" className="mt-5 inline-block">
                 <Button className="rounded-full">Drop into a Workshop</Button>
@@ -228,7 +228,7 @@ function Index() {
             <Megaphone className="h-5 w-5" />
           </span>
           <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
-          <p className="mt-1 text-sm text-ink-muted">Real projects, real roles. Jump on one.</p>
+          <p className="mt-1 text-sm text-ink-muted">People actually building stuff. Help out — or post your own.</p>
           <div className="mt-3 text-sm text-gradient-motion group-hover:underline">Browse the board →</div>
         </Link>
       </section>

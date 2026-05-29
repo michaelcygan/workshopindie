@@ -15,10 +15,10 @@ import { getMyAgeFields } from "@/lib/profile-age.functions";
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
     meta: [
-      { title: "Workshops — Find people. Make the thing. — Workshop" },
-      { name: "description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+      { title: "Workshops — what's on, what's next" },
+      { name: "description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
       { property: "og:title", content: "Workshops — Workshop" },
-      { property: "og:description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+      { property: "og:description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
     ],
   }),
   component: WorkshopsPage,
@@ -82,7 +82,7 @@ function WorkshopsPage() {
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Workshops</h1>
-          <p className="mt-1 text-ink-muted">Time-boxed creative sessions. Apply, show up, make the thing.</p>
+          <p className="mt-1 text-ink-muted">Scheduled rooms you can RSVP to. Or skip the wait — <Link to="/instant" className="underline hover:text-ink">drop in</Link>.</p>
         </div>
         <Link to="/workshops/new">
           <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
@@ -119,9 +119,9 @@ function WorkshopsPage() {
           </div>
         ) : !workshops || workshops.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">No Workshops yet — schedule the first one.</h3>
+            <h3 className="font-display text-2xl text-ink">Nothing on the books.</h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-              Pick a category, set a clock, define roles. People will apply.
+              Post a Collab, pick a time — the room schedules itself.
             </p>
             <Link to="/workshops/new" className="mt-5 inline-block">
               <Button className="rounded-full">Schedule a Workshop</Button>

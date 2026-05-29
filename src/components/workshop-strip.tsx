@@ -63,7 +63,7 @@ function ScheduledList({ cityId }: { cityId?: string | null }) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
         Nothing scheduled {cityId ? "in your city" : "yet"}.{" "}
-        <Link to="/collab/new" className="underline hover:text-ink">Post a Collab</Link> and set a time.
+        <Link to="/collab/new" className="underline hover:text-ink">Post a Collab</Link> and pick a time — or just drop in.
       </div>
     );
   }

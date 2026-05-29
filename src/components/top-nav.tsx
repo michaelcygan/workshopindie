@@ -74,7 +74,7 @@ export function TopNav() {
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/instant" })}>
-                  <Radio className="mr-2 h-4 w-4" /> Drop into Workshop
+                  <Radio className="mr-2 h-4 w-4" /> Drop in
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab

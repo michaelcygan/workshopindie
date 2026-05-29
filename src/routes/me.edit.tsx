@@ -428,7 +428,7 @@ function EditProfile() {
 
 
           {/* MEDIUMS & BIO */}
-          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Instant Workshops you see." refMap={sectionRefs}>
+          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Workshops show up for you." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">

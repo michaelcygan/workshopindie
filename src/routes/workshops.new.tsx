@@ -5,7 +5,6 @@ import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
-import { ComingSoon } from "@/components/coming-soon";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +30,7 @@ function toLocalInput(d: Date) {
 
 function NewWorkshop() {
   const { user, loading } = useAuth();
-  const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
@@ -65,15 +64,8 @@ function NewWorkshop() {
   if (rolesLoading || loading) {
     return <main className="mx-auto max-w-2xl p-10"><div className="h-40 animate-pulse rounded-3xl bg-surface-2" /></main>;
   }
-  if (user && !isAdmin) {
-    return (
-      <ComingSoon
-        title="Scheduled Workshops"
-        blurb="Coming soon — for now, drop into a live Workshop or post a Collab to find people."
-        ctaLabel="Back to home"
-      />
-    );
-  }
+
+
 
 
   function updateRole(i: number, patch: Partial<RoleDraft>) {
@@ -194,7 +186,7 @@ function NewWorkshop() {
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Schedule a Workshop</h1>
-        <p className="mt-1 text-ink-muted">Pick a category, set a clock, define roles. People will apply, you'll make the thing together, then ship it.</p>
+        <p className="mt-1 text-ink-muted">A room with a start time. People RSVP. They show up.</p>
       </motion.div>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-7">
