@@ -12,7 +12,7 @@ import { CategoryScroller } from "@/components/category-scroller";
 import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
-import { GeoDefaultBanner } from "@/components/geo-default-banner";
+
 
 const searchSchema = z.object({
   cat: fallback(z.enum(["all", "film", "music", "writing", "build", "visual"]), "all").default("all"),
@@ -244,43 +244,58 @@ function CollabPage() {
         </Link>
       </motion.div>
 
-      {/* Category scroller — one line, infinite on mobile */}
-      <div className="mt-8">
+      {/* Unified filter cluster — medium bar + location row share the same width */}
+      <div className="mx-auto mt-8 max-w-3xl space-y-2.5">
         <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="justify-center" />
-      </div>
 
-      {/* Location filter row — city search + online-only chip */}
-      <div className="mx-auto mt-3 flex max-w-2xl items-center gap-2">
-        <CityCombobox
-          value={filters.city}
-          valueLabel={search.cityName}
-          onChange={setCity}
-          disabled={filters.online}
-        />
-        <button
-          type="button"
-          onClick={toggleOnline}
-          className={cn(
-            "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
-            filters.online
-              ? "border-transparent bg-ink text-background"
-              : "border-border bg-surface text-ink-soft hover:bg-muted",
+        <div className="flex items-center gap-2">
+          <CityCombobox
+            value={filters.city}
+            valueLabel={search.cityName}
+            onChange={setCity}
+            disabled={filters.online}
+          />
+          <button
+            type="button"
+            onClick={toggleOnline}
+            className={cn(
+              "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
+              filters.online
+                ? "border-transparent bg-ink text-background"
+                : "border-border bg-surface text-ink-soft hover:bg-muted",
+            )}
+            aria-pressed={filters.online}
+          >
+            Online only
+          </button>
+          {filters.city && !filters.online && (
+            <button
+              type="button"
+              onClick={() => setCity({ id: undefined, name: undefined })}
+              className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+            >
+              Worldwide
+            </button>
           )}
-          aria-pressed={filters.online}
-        >
-          Online only
-        </button>
+        </div>
+
+        {defaultCity && filters.city === defaultCity.id && defaultCity.source === "ip" && (
+          <p className="px-1 text-xs text-ink-muted">Based on your location · <button type="button" onClick={() => setCity({ id: undefined, name: undefined })} className="underline underline-offset-2 hover:text-ink">see worldwide</button></p>
+        )}
+        {!filters.city && !filters.online && defaultCity && (
+          <p className="px-1 text-xs text-ink-muted">
+            Near you:{" "}
+            <button
+              type="button"
+              onClick={() => setCity({ id: defaultCity.id, name: defaultCity.name })}
+              className="text-ink underline underline-offset-2 hover:text-primary"
+            >
+              {defaultCity.name}
+            </button>
+          </p>
+        )}
       </div>
 
-      <div className="mx-auto mt-3 max-w-2xl">
-        <GeoDefaultBanner
-          defaultCity={defaultCity}
-          isOnDefault={!!defaultCity && filters.city === defaultCity.id}
-          isWorldwide={!filters.city && !filters.online}
-          onApply={(city) => setCity({ id: city.id, name: city.name })}
-          onWorldwide={() => setCity({ id: undefined, name: undefined })}
-        />
-      </div>
 
 
       <div className="mt-8">
