@@ -317,7 +317,23 @@ function ProfilePage() {
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
-              {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.city.name}</span>}
+              {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
+                <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
+                </Link>
+              )}
+              {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
+                  , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
+                </span>
+              )}
+              {!profile.home_city && profile.city && (
+                <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <MapPin className="h-3.5 w-3.5" />{profile.city.name}
+                </Link>
+              )}
               {profile.instagram_handle && (
                 <a
                   href={`https://instagram.com/${profile.instagram_handle}`}
@@ -338,6 +354,24 @@ function ProfilePage() {
                     {a}
                   </span>
                 ))}
+              </div>
+            )}
+            {(profile.tools?.length ?? 0) > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {(profile.tools ?? []).slice(0, 6).map((t, i) => (
+                  <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">
+                    {t}
+                  </span>
+                ))}
+                {(profile.tools?.length ?? 0) > 6 && (
+                  <button
+                    type="button"
+                    onClick={() => setTab("about")}
+                    className="text-[11px] text-ink-muted hover:text-ink"
+                  >
+                    +{(profile.tools?.length ?? 0) - 6} more
+                  </button>
+                )}
               </div>
             )}
           </div>
