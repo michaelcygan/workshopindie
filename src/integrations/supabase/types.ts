@@ -1938,6 +1938,7 @@ export type Database = {
           hide_from_ineligible: boolean
           host_user_id: string
           id: string
+          is_pinned: boolean
           license_type: Database["public"]["Enums"]["work_license"]
           location_text: string | null
           location_type: Database["public"]["Enums"]["location_type"]
@@ -1945,6 +1946,7 @@ export type Database = {
           min_age: number | null
           mode: Database["public"]["Enums"]["workshop_mode"]
           participant_cap: number | null
+          pinned_at: string | null
           prompt: string | null
           slug: string
           starts_at: string | null
@@ -1977,6 +1979,7 @@ export type Database = {
           hide_from_ineligible?: boolean
           host_user_id: string
           id?: string
+          is_pinned?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
@@ -1984,6 +1987,7 @@ export type Database = {
           min_age?: number | null
           mode?: Database["public"]["Enums"]["workshop_mode"]
           participant_cap?: number | null
+          pinned_at?: string | null
           prompt?: string | null
           slug: string
           starts_at?: string | null
@@ -2016,6 +2020,7 @@ export type Database = {
           hide_from_ineligible?: boolean
           host_user_id?: string
           id?: string
+          is_pinned?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
@@ -2023,6 +2028,7 @@ export type Database = {
           min_age?: number | null
           mode?: Database["public"]["Enums"]["workshop_mode"]
           participant_cap?: number | null
+          pinned_at?: string | null
           prompt?: string | null
           slug?: string
           starts_at?: string | null
