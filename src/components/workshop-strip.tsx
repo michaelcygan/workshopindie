@@ -36,7 +36,7 @@ function fmtWhen(iso: string | null) {
 
 function ScheduledList({ cityId, mineUserId, collabOnly }: { cityId?: string | null; mineUserId?: string | null; collabOnly?: boolean }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["scheduled-workshops", mineUserId ? `mine:${mineUserId}` : (cityId ?? "all")],
+    queryKey: ["scheduled-workshops", mineUserId ? `mine:${mineUserId}` : collabOnly ? "collab" : (cityId ?? "all")],
     queryFn: async () => {
       if (mineUserId) {
         // User's own RSVPs (incl. workshops they host) — upcoming only.
