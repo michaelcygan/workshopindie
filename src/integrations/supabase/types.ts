@@ -1069,6 +1069,7 @@ export type Database = {
           mediums: string[]
           onboarded: boolean
           pinned_work_ids: string[]
+          referred_by: string | null
           tools: string[]
           tour_completed_at: string | null
           updated_at: string
@@ -1101,6 +1102,7 @@ export type Database = {
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          referred_by?: string | null
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
@@ -1133,6 +1135,7 @@ export type Database = {
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          referred_by?: string | null
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
@@ -1270,6 +1273,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      share_events: {
+        Row: {
+          channel: string
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       standing_meetups: {
         Row: {

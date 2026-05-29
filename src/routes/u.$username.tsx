@@ -14,6 +14,8 @@ import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareSheet } from "@/components/share-sheet";
+import { ProfileCompletionChip } from "@/components/profile-completion-chip";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { ProfilePeek } from "@/components/profile-peek";
@@ -400,12 +402,32 @@ function ProfilePage() {
           </Avatar>
           <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
             {isOwn ? (
-              <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                <Pencil className="h-4 w-4" /> Edit profile
-              </Button>
+              <>
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
+                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                  <Pencil className="h-4 w-4" /> Edit profile
+                </Button>
+              </>
             ) : (
               <>
                 <FollowButton targetUserId={profile.id} />
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
                 <ReportDialog entityType="profile" entityId={profile.id} />
                 <BlockButton targetUserId={profile.id} />
               </>
@@ -479,6 +501,17 @@ function ProfilePage() {
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
             <Link to="/instant"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
           </div>
+        )}
+
+        {/* Owner-only: profile completion chip */}
+        {isOwn && (
+          <ProfileCompletionChip
+            className="mt-4"
+            hasAvatar={!!profile.avatar_url}
+            hasHomeCity={!!profile.home_city}
+            hasBio={!!(profile.bio && profile.bio.trim().length > 0)}
+            hasWork={(ownedWorks?.length ?? 0) > 0}
+          />
         )}
 
         {/* Owner-only: wrap-up nudges for closed collabs without a published Work */}

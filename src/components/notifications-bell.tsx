@@ -29,10 +29,15 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_starting: Radio,
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
+  referral_joined: UserPlus,
+  first_work_shipped: Sparkles,
+  work_published: Sparkles,
+  collab_first_ship: Sparkles,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
+  const actorUsername = (n.payload?.actor_username as string) || undefined;
   const wsSlug = (n.payload?.slug as string) || undefined;
   const wsTitle = (n.payload?.title as string) || "A Workshop";
   switch (n.kind) {
@@ -42,14 +47,36 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         subtitle: (n.payload?.preview as string) ?? "",
         href: n.payload?.conversation_id ? `/dms/${n.payload.conversation_id}` : "/dms",
       };
-    case "follow": {
-      const username = (n.payload?.actor_username as string) || undefined;
+    case "follow":
       return {
         title: `${actor} followed you`,
         subtitle: "",
-        href: username ? `/u/${username}` : "/me",
+        href: actorUsername ? `/u/${actorUsername}` : "/me",
       };
-    }
+    case "referral_joined":
+      return {
+        title: `${actor} joined via your link`,
+        subtitle: "Say hi — they came from your invite.",
+        href: actorUsername ? `/u/${actorUsername}` : "/me",
+      };
+    case "first_work_shipped":
+      return {
+        title: `${actor} just shipped their first Work`,
+        subtitle: (n.payload?.title as string) ?? "",
+        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+      };
+    case "work_published":
+      return {
+        title: `${actor} published a Work`,
+        subtitle: (n.payload?.title as string) ?? "",
+        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+      };
+    case "collab_first_ship":
+      return {
+        title: `${actor} shipped — you're credited`,
+        subtitle: (n.payload?.title as string) ?? "",
+        href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
+      };
     case "workshop_starting":
       return { title: `${wsTitle} is starting`, subtitle: "Join now — your seat's open.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
     case "workshop_now_live":

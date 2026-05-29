@@ -1,13 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
+import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { toast } from "sonner";
+
+const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
@@ -17,6 +21,7 @@ export const Route = createFileRoute("/signup")({
     last: typeof s.last === "string" ? s.last : undefined,
     ig: typeof s.ig === "string" ? s.ig : undefined,
     from: typeof s.from === "string" ? s.from : undefined,
+    ref: typeof s.ref === "string" ? s.ref : undefined,
   }),
 });
 
@@ -30,6 +35,30 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
+  const lookupRef = useServerFn(attributeReferral);
+  const writeRef = useServerFn(setReferredBy);
+
+  // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it
+  useEffect(() => {
+    if (search.ref && typeof window !== "undefined") {
+      sessionStorage.setItem(REF_KEY, search.ref.toLowerCase());
+    }
+  }, [search.ref]);
+
+  async function applyReferral(newUserId: string) {
+    const ref = (typeof window !== "undefined" && sessionStorage.getItem(REF_KEY)) || null;
+    if (!ref) return;
+    try {
+      const r = await lookupRef({ data: { referrerUsername: ref } });
+      if (r.ok && r.referrerId) {
+        await writeRef({ data: { userId: newUserId, referrerId: r.referrerId } });
+      }
+    } catch {
+      /* non-fatal */
+    } finally {
+      sessionStorage.removeItem(REF_KEY);
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,7 +69,7 @@ function Signup() {
     }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -55,6 +84,7 @@ function Signup() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (data.user?.id) await applyReferral(data.user.id);
     toast.success("Check your inbox to confirm your email.");
     navigate({ to: "/onboarding" });
   };

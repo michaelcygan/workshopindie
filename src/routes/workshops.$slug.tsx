@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { ImageUpload } from "@/components/image-upload";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareSheet } from "@/components/share-sheet";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -132,7 +133,18 @@ function WorkshopDetail() {
               {ws.min_age != null && ws.max_age != null ? `Ages ${ws.min_age}–${ws.max_age}` : ws.min_age != null ? `${ws.min_age}+` : `Up to ${ws.max_age}`}
             </span>
           )}
-          {!isHost && user && <div className="ml-auto"><ReportDialog entityType="workshop" entityId={ws.id} /></div>}
+          <div className="ml-auto flex items-center gap-1">
+            <ShareSheet
+              entity={{
+                type: "workshop",
+                id: ws.id,
+                url: `https://workshopindie.com/workshops/${ws.slug}`,
+                title: ws.title,
+                subtitle: ws.prompt ?? undefined,
+              }}
+            />
+            {!isHost && user && <ReportDialog entityType="workshop" entityId={ws.id} />}
+          </div>
         </div>
         <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">{ws.title}</h1>
         {ws.prompt && <p className="mt-3 max-w-2xl text-ink-soft">{ws.prompt}</p>}

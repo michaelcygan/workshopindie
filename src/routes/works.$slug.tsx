@@ -9,6 +9,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareSheet } from "@/components/share-sheet";
 import { CreditStrip, type CreditChip } from "@/components/credit-strip";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
@@ -172,6 +173,15 @@ function WorkDetail() {
           </div>
           <div className="flex items-center gap-1">
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+            <ShareSheet
+              entity={{
+                type: "work",
+                id: work.id,
+                url: `https://workshopindie.com/works/${work.slug}`,
+                title: work.title,
+                subtitle: work.excerpt ?? undefined,
+              }}
+            />
             <ReportDialog entityType="work" entityId={work.id} />
           </div>
         </div>
