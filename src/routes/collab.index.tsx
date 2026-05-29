@@ -27,7 +27,7 @@ export const Route = createFileRoute("/collab/")({
   head: () => ({
     meta: [
       { title: "Collab Board — Workshop" },
-      { name: "description", content: "Things people are trying to make. Help out, or post your own and open a room on it." },
+      { name: "description", content: "Things people are trying to make. Help out, or post your own and open a Workshop on it." },
     ],
   }),
 });
@@ -234,11 +234,11 @@ function CollabPage() {
       >
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Collab Board</h1>
-          <p className="mt-1 text-ink-muted">What people are trying to make. Help out — or open a room on yours.</p>
+          <p className="mt-1 text-ink-muted">What people are trying to make. Help out — or open a Workshop on yours.</p>
         </div>
         <Link to="/collab/new">
           <Button className="rounded-full gap-2">
-            <Megaphone className="h-4 w-4" /> Post a call
+            <Megaphone className="h-4 w-4" /> Post a Collab
           </Button>
         </Link>
       </motion.div>
@@ -296,7 +296,7 @@ function CollabPage() {
               Be the first to post — list the roles, the people show up.
             </p>
             <Link to="/collab/new" className="mt-5 inline-block">
-              <Button className="rounded-full">Post a call</Button>
+              <Button className="rounded-full">Post a Collab</Button>
             </Link>
           </div>
         ) : (

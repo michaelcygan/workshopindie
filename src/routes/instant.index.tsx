@@ -16,7 +16,7 @@ export const Route = createFileRoute("/instant/")({
   head: () => ({
     meta: [
       { title: "Workshop — Drop in" },
-      { name: "description", content: "Drop into a live Workshop. Voice or video, up to 5 per room." },
+      { name: "description", content: "Drop into a live Workshop. Voice or video, up to 5 per Workshop." },
     ],
   }),
 });
@@ -99,7 +99,7 @@ function InstantPreflight() {
       const { roomId } = await dropMedium({ data: { medium } });
       router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't open that room");
+      toast.error(e instanceof Error ? e.message : "Couldn't open that Workshop");
       setBusy(false);
     }
   }
@@ -172,7 +172,7 @@ function InstantPreflight() {
           </p>
         )}
         <p className="mt-3 text-center text-xs text-ink-muted">
-          Rooms cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a room on one of your Collabs.
+          Workshops cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a Workshop on one of your Collabs.
         </p>
 
         <WorkshopStrip />

@@ -80,7 +80,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Walk into a room of artists. Or post the thing you want to make and pull a room together.
+          Walk into a live Workshop of artists. Or post a Collab and pull a Workshop together around it.
         </motion.p>
 
         <motion.div
@@ -115,11 +115,11 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                The thing you keep meaning to make. Post it. Open a room on it when you're ready.
+                The thing you keep meaning to make. Post it. Open a Workshop on it when you're ready.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
-              Post a call <ArrowRight className="h-4 w-4" />
+              Post a Collab <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
         </motion.div>

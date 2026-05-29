@@ -11,9 +11,9 @@ export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — Workshop" },
-      { name: "description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited lounge time, all cities, and more." },
+      { name: "description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Workshop time, all cities, and more." },
       { property: "og:title", content: "Pricing — Workshop" },
-      { property: "og:description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited lounge time, all cities, and more." },
+      { property: "og:description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Workshop time, all cities, and more." },
     ],
   }),
 });
@@ -34,7 +34,7 @@ function PricingPage() {
       <div className="text-center">
         <h1 className="font-display text-4xl text-ink md:text-6xl">Pricing</h1>
         <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-          Free is generous and built for real artists. Plus unlocks every city, unlimited lounge time, and your full portfolio.
+          Free is generous and built for real artists. Plus unlocks every city, unlimited Workshop time, and your full portfolio.
         </p>
       </div>
 
@@ -49,7 +49,7 @@ function PricingPage() {
             "2 active open Collabs at a time",
             "Apply to unlimited Collabs",
             "Your home city — join, post, browse",
-            "30 minutes / day in the Instant Lounge",
+            "30 minutes / day in the Workshop",
             "DMs, comments, credits — never gated",
           ]}
         />
@@ -73,7 +73,7 @@ function PricingPage() {
             "Unlimited published works",
             "Unlimited active open Collabs + boosted placement",
             "All cities — join, post, filter gallery",
-            "Unlimited Instant Lounge time + priority seat",
+            "Unlimited Workshop time + priority seat",
             "Plus badge on your profile + Credits strip",
             "Work analytics (views, saves, origin cities)",
             "Early access to new features as they ship",

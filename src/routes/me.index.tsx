@@ -269,7 +269,7 @@ function AppliedList({ items }: { items: { id: string; status: string; submitted
 }
 
 function ParticipatingList({ items }: { items: { id: string; participant_status: string; workshop: WSRow & { ends_at: string | null; check_in_opens_at: string | null; check_in_closes_at: string | null } }[] }) {
-  if (items.length === 0) return <EmptyState title="No active rooms." body="Drop into a live Workshop — when you're in one, it shows up here." ctaLabel="Drop into a Workshop" ctaTo="/instant" />;
+  if (items.length === 0) return <EmptyState title="No active Workshops." body="Drop into a live Workshop — when you're in one, it shows up here." ctaLabel="Drop into a Workshop" ctaTo="/instant" />;
   const now = Date.now();
   return (
     <div className="space-y-2">

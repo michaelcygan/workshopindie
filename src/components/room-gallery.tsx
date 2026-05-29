@@ -197,7 +197,7 @@ function Grid({
             <p>
               You haven't published anything yet.
               <br />
-              Share a piece — your room can see it here.
+              Share a piece — your Workshop can see it here.
             </p>
           ) : (
             <p>
@@ -208,7 +208,7 @@ function Grid({
             </p>
           )
         ) : (
-          <p>No works in this room yet.</p>
+          <p>No works in this Workshop yet.</p>
         )}
       </div>
     );
