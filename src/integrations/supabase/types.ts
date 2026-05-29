@@ -1082,7 +1082,10 @@ export type Database = {
           cover_url: string | null
           created_at: string
           creator_status: Database["public"]["Enums"]["creator_status"]
+          deleted_at: string | null
+          discoverable: boolean
           display_name: string | null
+          dm_policy: string
           external_links: Json
           first_name: string | null
           follower_count: number
@@ -1091,6 +1094,7 @@ export type Database = {
           home_city_changed_at: string | null
           home_city_id: string | null
           id: string
+          indexable: boolean
           instagram_handle: string | null
           last_name: string | null
           mediums: string[]
@@ -1115,7 +1119,10 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
+          deleted_at?: string | null
+          discoverable?: boolean
           display_name?: string | null
+          dm_policy?: string
           external_links?: Json
           first_name?: string | null
           follower_count?: number
@@ -1124,6 +1131,7 @@ export type Database = {
           home_city_changed_at?: string | null
           home_city_id?: string | null
           id: string
+          indexable?: boolean
           instagram_handle?: string | null
           last_name?: string | null
           mediums?: string[]
@@ -1148,7 +1156,10 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
+          deleted_at?: string | null
+          discoverable?: boolean
           display_name?: string | null
+          dm_policy?: string
           external_links?: Json
           first_name?: string | null
           follower_count?: number
@@ -1157,6 +1168,7 @@ export type Database = {
           home_city_changed_at?: string | null
           home_city_id?: string | null
           id?: string
+          indexable?: boolean
           instagram_handle?: string | null
           last_name?: string | null
           mediums?: string[]

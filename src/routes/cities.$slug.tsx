@@ -160,7 +160,7 @@ function CityPage() {
     queryFn: async () => {
       const { data } = await supabase.from("profiles")
         .select("id,username,display_name,avatar_url,headline,creator_status,work_count,categories")
-        .eq("city_id", city!.id).order("work_count", { ascending: false }).limit(48);
+        .eq("city_id", city!.id).eq("discoverable", true).order("work_count", { ascending: false }).limit(48);
       return data ?? [];
     },
   });

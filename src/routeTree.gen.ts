@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -62,6 +63,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -259,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/refer'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/sitemap.xml'
     | '/workshops'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/refer'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/sitemap.xml'
     | '/admin/badges'
@@ -457,6 +468,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/refer'
     | '/reset-password'
+    | '/settings'
     | '/signup'
     | '/sitemap.xml'
     | '/workshops'
@@ -499,6 +511,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ReferRoute: typeof ReferRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
@@ -537,6 +550,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -876,6 +896,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ReferRoute: ReferRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,

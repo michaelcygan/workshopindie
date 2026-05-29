@@ -21,7 +21,7 @@ import {
 } from "@/lib/mediums";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Lock } from "lucide-react";
+import { Plus, X, User, Sparkles, MapPin, Link2, Pin } from "lucide-react";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
@@ -33,14 +33,13 @@ export const Route = createFileRoute("/me/edit")({
 
 type ExtLink = { label: string; url: string };
 
-type SectionId = "identity" | "mediums" | "location" | "links" | "pinned" | "privacy";
+type SectionId = "identity" | "mediums" | "location" | "links" | "pinned";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "mediums", label: "Mediums & bio", icon: Sparkles },
   { id: "location", label: "Location", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned works", icon: Pin },
-  { id: "privacy", label: "Privacy", icon: Lock },
 ];
 
 type FormState = {
@@ -523,40 +522,13 @@ function EditProfile() {
             />
           </Section>
 
-          {/* PRIVACY */}
-          <Section id="privacy" title="Privacy" subtitle="Control who sees what — and who you see." refMap={sectionRefs}>
-            <div className="space-y-2 rounded-2xl border border-border bg-surface p-4">
-              <Label>Workshops age filter</Label>
-              <p className="text-xs text-ink-muted">Only show Workshops scoped to a minimum age. Private — only you see this setting.</p>
-              <div className="flex flex-wrap gap-2 pt-1">
-                {[
-                  { v: null, label: "All ages" },
-                  { v: 18, label: "18+" },
-                  { v: 21, label: "21+" },
-                ].map((opt) => {
-                  const on = form.ageFilterMin === opt.v;
-                  return (
-                    <button
-                      key={String(opt.v)}
-                      type="button"
-                      onClick={() => set("ageFilterMin", opt.v as number | null)}
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-sm transition",
-                        on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted",
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {form.ageFilterMin !== null && !birthdateLocked && (
-                <p className="text-xs text-amber-700">Add your date of birth above to take effect.</p>
-              )}
-            </div>
-          </Section>
+          <p className="px-1 pt-2 text-xs text-ink-muted">
+            Looking for privacy, DMs, notifications, or blocked users? Those live in{" "}
+            <a href="/settings" className="underline underline-offset-2 hover:text-ink">Settings</a>.
+          </p>
         </form>
       </div>
+
 
       {/* Sticky save bar */}
       <div
