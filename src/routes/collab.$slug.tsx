@@ -15,7 +15,7 @@ import { ShareCollabSheet } from "@/components/share-collab-sheet";
 import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { closeCollab, reopenCollab } from "@/lib/collab-publish.functions";
+import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
