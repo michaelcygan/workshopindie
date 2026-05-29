@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listFollowingWorks } from "@/lib/gallery.functions";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
 
 const searchSchema = z.object({
@@ -82,11 +83,12 @@ async function fetchForYouPage(params: {
   sort: "recent" | "trending";
   q: string;
   cursor: string | null;
+  blockedIds: string[];
 }): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -120,9 +122,12 @@ async function fetchForYouPage(params: {
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
     published_at: string | null;
+    created_by: string;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
-  const works = (data as Row[]).map<WorkCardData>((r) => ({
+  const blocked = new Set(params.blockedIds);
+  const rows = (data as Row[]).filter((r) => !blocked.has(r.created_by));
+  const works = rows.map<WorkCardData>((r) => ({
     id: r.id, title: r.title, slug: r.slug, category: r.category,
     cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
@@ -132,7 +137,7 @@ async function fetchForYouPage(params: {
   }));
   const last = (data as Row[])[(data as Row[]).length - 1];
   const nextCursor =
-    params.sort === "recent" && works.length === PAGE_SIZE && last?.published_at
+    params.sort === "recent" && (data as Row[]).length === PAGE_SIZE && last?.published_at
       ? last.published_at
       : null;
   return { works, nextCursor };
@@ -142,6 +147,8 @@ function GalleryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/gallery" });
   const { user } = useAuth();
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const [qInput, setQInput] = useState(search.q);
   const qDebounced = useDebounced(qInput, 250);
 
@@ -173,8 +180,8 @@ function GalleryPage() {
   
 
   const queryKey = useMemo(
-    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null],
-    [tab, category, citySlug, sort, q, user?.id],
+    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null, blockedKey],
+    [tab, category, citySlug, sort, q, user?.id, blockedKey],
   );
 
   const queryResult = useInfiniteQuery({
@@ -194,7 +201,7 @@ function GalleryPage() {
           },
         });
       }
-      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam });
+      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam, blockedIds: Array.from(blockedIds) });
     },
     getNextPageParam: (last) => last.nextCursor,
   });

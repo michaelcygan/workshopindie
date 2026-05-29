@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Megaphone, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
 import { getNetworkFeed } from "@/lib/network.functions";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
@@ -19,10 +20,10 @@ export const Route = createFileRoute("/")({ component: Index });
 
 type SortKey = "newest" | "trending";
 
-async function fetchWorks(category: Category | "all", sort: SortKey) {
+async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds: string[]) {
   let q = supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name, username))")
+    .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .limit(12);
@@ -37,16 +38,20 @@ async function fetchWorks(category: Category | "all", sort: SortKey) {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
+    created_by: string;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
-  return (data as Row[]).map<WorkCardData>((r) => ({
-    id: r.id, title: r.title, slug: r.slug, category: r.category,
-    cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
-    like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-    credits: (r.work_credits ?? [])
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
-  }));
+  const blocked = new Set(blockedIds);
+  return (data as Row[])
+    .filter((r) => !blocked.has(r.created_by))
+    .map<WorkCardData>((r) => ({
+      id: r.id, title: r.title, slug: r.slug, category: r.category,
+      cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
+      like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+      credits: (r.work_credits ?? [])
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+    }));
 }
 
 function Hero() {
@@ -161,9 +166,11 @@ function GalleryControls({
 function Index() {
   const [category, setCategory] = useState<Category | "all">("all");
   const [sort, setSort] = useState<SortKey>("newest");
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const { data: works, isLoading } = useQuery({
-    queryKey: ["works", category, sort],
-    queryFn: () => fetchWorks(category, sort),
+    queryKey: ["works", category, sort, blockedKey],
+    queryFn: () => fetchWorks(category, sort, Array.from(blockedIds)),
   });
 
   return (
@@ -226,13 +233,15 @@ function Index() {
 }
 
 function CollabsRail() {
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const { data: posts, isLoading } = useQuery({
-    queryKey: ["home-open-collabs"],
+    queryKey: ["home-open-collabs", blockedKey],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
         .select(
-          "id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
+          "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
             "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
             "city:cities!collab_posts_city_id_fkey(name)," +
             "roles:collab_roles(id,role_name,sort_order)",
@@ -240,9 +249,10 @@ function CollabsRail() {
         .eq("status", "open")
         .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(12);
       if (error) throw error;
-      return (data ?? []) as unknown as CollabCardData[];
+      const rows = (data ?? []) as unknown as (CollabCardData & { user_id: string })[];
+      return rows.filter((r) => !blockedIds.has(r.user_id)).slice(0, 6) as CollabCardData[];
     },
   });
 
