@@ -324,16 +324,19 @@ function ProfilePage() {
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
 
+  const activityCount = (applied?.length ?? 0) + (participating?.length ?? 0);
   const counts: Record<ProfileTab, number> = {
     works: ownedWorks?.length ?? 0,
+    drafts: drafts?.length ?? 0,
     credits: creditedWorks?.length ?? 0,
     collabs: openCollabs?.length ?? 0,
     workshops: workshops?.length ?? 0,
+    activity: activityCount,
     groups: (profile.home_city ? 1 : 0) + (profile.city && profile.city.slug !== profile.home_city?.slug ? 1 : 0),
     about: 1,
   };
 
-  // Default tab: own → works; other → first non-empty tab (works > credits > collabs > workshops > groups > about)
+  // Default tab: own → works; other → first non-empty visitor tab
   const defaultTab: ProfileTab = (() => {
     if (search.tab) return search.tab;
     if (isOwn) return "works";
@@ -346,6 +349,7 @@ function ProfilePage() {
   const visibleTabs: ProfileTab[] = isOwn
     ? [...TAB_VALUES]
     : TAB_VALUES.filter((t) => {
+      if (t === "drafts" || t === "activity") return false; // owner-only
       if (t === "works" || t === "about") return true;
       if (t === "credits") return counts.credits > 0;
       if (t === "collabs") return counts.collabs > 0;
@@ -353,6 +357,7 @@ function ProfilePage() {
       if (t === "groups") return counts.groups > 0;
       return true;
     });
+
 
   return (
     <main>
