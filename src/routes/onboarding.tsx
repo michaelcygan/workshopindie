@@ -101,9 +101,21 @@ function Onboarding() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
+    // Apply referral attribution (covers Google OAuth users — /signup also tries)
+    try {
+      const ref = sessionStorage.getItem(REF_KEY);
+      if (ref) {
+        const r = await lookupRef({ data: { referrerUsername: ref } });
+        if (r.ok && r.referrerId) {
+          await writeRef({ data: { userId: user.id, referrerId: r.referrerId } });
+        }
+        sessionStorage.removeItem(REF_KEY);
+      }
+    } catch { /* non-fatal */ }
     toast.success("Profile created");
     try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
     navigate({ to: "/" });
+
 
   };
 
