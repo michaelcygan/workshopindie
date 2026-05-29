@@ -64,6 +64,7 @@ function WorkshopsPage() {
 
   const ageFilterMin = ageCtx?.ageFilterMin ?? null;
   const myAge = ageCtx?.age ?? null;
+  const myHomeCityId = ageCtx?.homeCityId ?? null;
   const workshops = (rawWorkshops ?? []).filter((w) => {
     // User opted into 18+/21+ only → hide teen-capped workshops
     if (ageFilterMin != null && w.max_age != null && w.max_age < ageFilterMin) return false;
@@ -71,6 +72,13 @@ function WorkshopsPage() {
     if (w.hide_from_ineligible && myAge != null) {
       if (w.min_age != null && myAge < w.min_age) return false;
       if (w.max_age != null && myAge > w.max_age) return false;
+    }
+    // City-scoped workshops: only visible to viewers in one of the audience cities,
+    // or to the host themselves. Anonymous viewers don't see city-scoped workshops.
+    if (w.audience_city_ids && w.audience_city_ids.length > 0) {
+      const isHost = !!user && w.host_user_id === user.id;
+      const inCity = !!myHomeCityId && w.audience_city_ids.includes(myHomeCityId);
+      if (!isHost && !inCity) return false;
     }
     return true;
   });
