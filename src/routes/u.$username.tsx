@@ -503,6 +503,17 @@ function ProfilePage() {
           </div>
         )}
 
+        {/* Owner-only: profile completion chip */}
+        {isOwn && (
+          <ProfileCompletionChip
+            className="mt-4"
+            hasAvatar={!!profile.avatar_url}
+            hasHomeCity={!!profile.home_city}
+            hasBio={!!(profile.bio && profile.bio.trim().length > 0)}
+            hasWork={(ownedWorks?.length ?? 0) > 0}
+          />
+        )}
+
         {/* Owner-only: wrap-up nudges for closed collabs without a published Work */}
         {isOwn && closedNudges.length > 0 && (
           <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
