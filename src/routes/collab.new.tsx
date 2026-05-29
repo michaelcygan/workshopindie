@@ -125,10 +125,12 @@ function NewCollab() {
     e.preventDefault();
     if (!user) return;
     if (!title.trim()) return toast.error("Give your Collab a title");
+    if (!description.trim() || description.trim().length < 20) return toast.error("Describe the idea — at least a sentence or two");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
+    if (!rights) return toast.error("Pick a rights arrangement");
 
     if (workshopMode === "scheduled" && !scheduledAt) {
       return toast.error("Pick a date and time for the Workshop");
