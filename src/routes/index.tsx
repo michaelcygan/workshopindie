@@ -11,6 +11,7 @@ import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
 import { getNetworkFeed } from "@/lib/network.functions";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
