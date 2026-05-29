@@ -95,7 +95,9 @@ function Onboarding() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success("Profile created");
-    navigate({ to: "/", search: { start: 1 } as never });
+    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
+    navigate({ to: "/" });
+
   };
 
   return (
