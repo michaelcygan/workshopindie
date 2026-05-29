@@ -35,7 +35,11 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      dm_policy?: "everyone" | "nobody";
+      discoverable?: boolean;
+      indexable?: boolean;
+    } = {};
     if (data.dmPolicy !== undefined) patch.dm_policy = data.dmPolicy;
     if (data.discoverable !== undefined) patch.discoverable = data.discoverable;
     if (data.indexable !== undefined) patch.indexable = data.indexable;
