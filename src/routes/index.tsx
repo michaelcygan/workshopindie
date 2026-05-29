@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
+import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { CategoryScroller } from "@/components/category-scroller";
 import { getNetworkFeed } from "@/lib/network.functions";
@@ -219,20 +220,78 @@ function Index() {
 
       <CityMeetupsStrip />
 
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <Link
-          to="/collab"
-          className="group block rounded-2xl border border-border bg-surface p-5 transition hover:shadow-lift"
-        >
-          <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground">
-            <Megaphone className="h-5 w-5" />
-          </span>
-          <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
-          <p className="mt-1 text-sm text-ink-muted">People building stuff now. Help out — or post your own.</p>
-          <div className="mt-3 text-sm text-gradient-motion group-hover:underline">Browse the board →</div>
-        </Link>
-      </section>
+      <CollabsRail />
     </main>
+  );
+}
+
+function CollabsRail() {
+  const { data: posts, isLoading } = useQuery({
+    queryKey: ["home-open-collabs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("collab_posts")
+        .select(
+          "id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
+            "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
+            "city:cities!collab_posts_city_id_fkey(name)," +
+            "roles:collab_roles(id,role_name,sort_order)",
+        )
+        .eq("status", "open")
+        .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      return (data ?? []) as unknown as CollabCardData[];
+    },
+  });
+
+  return (
+    <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+      <div className="mb-6 flex items-end justify-between gap-3">
+        <div>
+          <h2 className="font-display text-3xl text-ink md:text-4xl">Open Collab calls</h2>
+          <p className="mt-1 text-sm text-ink-muted">People building stuff now. Help out — or post your own.</p>
+        </div>
+        <Link to="/collab/new" className="hidden sm:block">
+          <Button variant="outline" className="rounded-full gap-2">
+            <Megaphone className="h-4 w-4" /> Post a Collab
+          </Button>
+        </Link>
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
+          ))}
+        </div>
+      ) : !posts || posts.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+          <h3 className="font-display text-2xl text-ink">No open Collabs right now.</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
+            Be the first to post — list the roles, the people show up.
+          </p>
+          <Link to="/collab/new" className="mt-5 inline-block">
+            <Button className="rounded-full">Post a Collab</Button>
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((p) => <CollabCard key={p.id} post={p} />)}
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              to="/collab"
+              className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft hover:bg-muted transition"
+            >
+              Browse the Collab Board <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </>
+      )}
+    </section>
   );
 }
 
