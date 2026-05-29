@@ -119,7 +119,12 @@ function InstantPreflight() {
       </Link>
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
         <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <LoungeForkDropdown onJoinMedium={handleJoinMedium} onLiveCountChange={setLiveCount} />
+          <LoungeForkDropdown
+            selectedMedium={selectedMedium}
+            onSelectMedium={setSelectedMedium}
+            onJoinNow={handleJoinNow}
+            onLiveCountChange={setLiveCount}
+          />
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <span className="relative inline-flex h-2 w-2">
               <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
