@@ -269,6 +269,8 @@ export function WorkshopStrip() {
               <InstantActivityTicker />
             ) : active === "mine" ? (
               <ScheduledList mineUserId={user?.id ?? null} />
+            ) : active === "collab" ? (
+              <ScheduledList collabOnly />
             ) : active === "upcoming" ? (
               <ScheduledList />
             ) : (
