@@ -2,13 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft, Radio } from "lucide-react";
+import { Mic, Video, Loader2, ArrowLeft, Radio, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
-import type { Category } from "@/lib/categories";
+import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/instant/")({
