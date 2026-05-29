@@ -27,7 +27,7 @@ export const Route = createFileRoute("/collab/")({
   head: () => ({
     meta: [
       { title: "Collab Board — Workshop" },
-      { name: "description", content: "Open calls for collaborators. Post your idea or jump on someone else's." },
+      { name: "description", content: "Things people are trying to make. Help out, or post your own and open a room on it." },
     ],
   }),
 });
