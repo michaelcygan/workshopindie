@@ -229,6 +229,7 @@ export function WorkshopStrip() {
   const pills: { id: Pill; label: string; count: number; icon: React.ReactNode; show: boolean }[] = [
     { id: "live", label: "Live now", count: counts?.live ?? 0, icon: <Radio className="h-3.5 w-3.5" />, show: true },
     { id: "mine", label: "My upcoming", count: mineCount ?? 0, icon: <Sparkles className="h-3.5 w-3.5" />, show: !!user },
+    { id: "collab", label: "Collab-led", count: counts?.collab ?? 0, icon: <Target className="h-3.5 w-3.5" />, show: true },
     { id: "upcoming", label: "Upcoming", count: counts?.upcoming ?? 0, icon: <CalendarClock className="h-3.5 w-3.5" />, show: true },
     { id: "city", label: cityName ? `In ${cityName}` : "In your city", count: counts?.city ?? 0, icon: <MapPin className="h-3.5 w-3.5" />, show: !!cityId },
   ];
