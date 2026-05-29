@@ -243,6 +243,7 @@ export type Database = {
           live_workshop_id: string | null
           location_mode: Database["public"]["Enums"]["location_type"]
           resulting_work_id: string | null
+          rights_arrangement: string | null
           slug: string
           starts_on: string | null
           status: Database["public"]["Enums"]["collab_post_status"]
@@ -270,6 +271,7 @@ export type Database = {
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
+          rights_arrangement?: string | null
           slug: string
           starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
@@ -297,6 +299,7 @@ export type Database = {
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
+          rights_arrangement?: string | null
           slug?: string
           starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
@@ -1921,6 +1924,7 @@ export type Database = {
         Row: {
           acting_leader_user_id: string | null
           application_count: number
+          audience_city_ids: string[]
           auto_converted_at: string | null
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at: string | null
@@ -1959,6 +1963,7 @@ export type Database = {
         Insert: {
           acting_leader_user_id?: string | null
           application_count?: number
+          audience_city_ids?: string[]
           auto_converted_at?: string | null
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
@@ -1997,6 +2002,7 @@ export type Database = {
         Update: {
           acting_leader_user_id?: string | null
           application_count?: number
+          audience_city_ids?: string[]
           auto_converted_at?: string | null
           category?: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
