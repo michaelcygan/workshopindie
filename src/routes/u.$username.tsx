@@ -392,91 +392,17 @@ function ProfilePage() {
       </div>
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
-        <div className="-mt-12 flex flex-col gap-5 md:-mt-16 md:flex-row md:items-end md:gap-6">
+        {/* Avatar + action buttons row — only the avatar overlaps the cover */}
+        <div className="-mt-12 flex items-end justify-between gap-4 md:-mt-16">
           <Avatar className="h-24 w-24 ring-4 ring-background md:h-32 md:w-32">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
-
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
-              <CreatorBadge status={profile.creator_status} />
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
-              {profile.username && <span>@{profile.username}</span>}
-              {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
-                <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
-                  <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
-                </Link>
-              )}
-              {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
-                <span className="inline-flex items-center gap-1">
-                  <MapPin className="h-3.5 w-3.5" />
-                  Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
-                  , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
-                </span>
-              )}
-              {!profile.home_city && profile.city && (
-                <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
-                  <MapPin className="h-3.5 w-3.5" />{profile.city.name}
-                </Link>
-              )}
-              {profile.instagram_handle && (
-                <a
-                  href={`https://instagram.com/${profile.instagram_handle}`}
-                  target="_blank"
-                  rel="noreferrer noopener"
-                  className="inline-flex items-center gap-1 text-gradient-motion hover:underline"
-                >
-                  IG @{profile.instagram_handle}
-                </a>
-              )}
-            </div>
-            {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
-            {profile.aliases && profile.aliases.length > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
-                <span>also known as</span>
-                {profile.aliases.map((a, i) => (
-                  <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">
-                    {a}
-                  </span>
-                ))}
-              </div>
-            )}
-            {(profile.tools?.length ?? 0) > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {(profile.tools ?? []).slice(0, 6).map((t, i) => (
-                  <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">
-                    {t}
-                  </span>
-                ))}
-                {(profile.tools?.length ?? 0) > 6 && (
-                  <button
-                    type="button"
-                    onClick={() => setTab("about")}
-                    className="text-[11px] text-ink-muted hover:text-ink"
-                  >
-                    +{(profile.tools?.length ?? 0) - 6} more
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
             {isOwn ? (
-              <>
-                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                  <Pencil className="h-4 w-4" /> Edit profile
-                </Button>
-                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new" })}>
-                  <Link2 className="h-4 w-4" /> Drop a link
-                </Button>
-                <Button className="rounded-full gap-1.5" onClick={() => navigate({ to: "/works/new", search: { manual: true } })}>
-                  <Plus className="h-4 w-4" /> Publish a Work
-                </Button>
-              </>
+              <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                <Pencil className="h-4 w-4" /> Edit profile
+              </Button>
             ) : (
               <>
                 <FollowButton targetUserId={profile.id} />
@@ -487,6 +413,79 @@ function ProfilePage() {
           </div>
         </div>
 
+        {/* Identity block — sits below the cover, never clipped */}
+        <div className="mt-4">
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
+            <CreatorBadge status={profile.creator_status} />
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+            {profile.username && <span>@{profile.username}</span>}
+            {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
+              <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
+              </Link>
+            )}
+            {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" />
+                Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
+                , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
+              </span>
+            )}
+            {!profile.home_city && profile.city && (
+              <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                <MapPin className="h-3.5 w-3.5" />{profile.city.name}
+              </Link>
+            )}
+            {profile.instagram_handle && (
+              <a
+                href={`https://instagram.com/${profile.instagram_handle}`}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1 text-gradient-motion hover:underline"
+              >
+                IG @{profile.instagram_handle}
+              </a>
+            )}
+          </div>
+          {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
+          {profile.aliases && profile.aliases.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+              <span>also known as</span>
+              {profile.aliases.map((a, i) => (
+                <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
+              ))}
+            </div>
+          )}
+          {(profile.tools?.length ?? 0) > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              {(profile.tools ?? []).slice(0, 6).map((t, i) => (
+                <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">{t}</span>
+              ))}
+              {(profile.tools?.length ?? 0) > 6 && (
+                <button type="button" onClick={() => setTab("about")} className="text-[11px] text-ink-muted hover:text-ink">
+                  +{(profile.tools?.length ?? 0) - 6} more
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Owner-only primary CTAs */}
+        {isOwn && (
+          <div className="mt-5 flex flex-wrap gap-2">
+            <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
+            <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
+            <Link to="/instant"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
+          </div>
+        )}
+
+        {/* Owner-only: wrap-up nudges for closed collabs without a published Work */}
+        {isOwn && closedNudges.length > 0 && (
+          <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
+        )}
+
         {/* Stats strip */}
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
           <Stat label="Works" value={counts.works} />
@@ -495,6 +494,7 @@ function ProfilePage() {
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
         </div>
+
 
         {/* Tab bar */}
         <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:px-6">
