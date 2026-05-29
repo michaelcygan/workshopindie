@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles } from "lucide-react";
+import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -26,10 +26,15 @@ const ICONS: Record<string, typeof Bell> = {
   work_credit: Sparkles,
   payment_failed: CreditCard,
   comp_redeemed: Sparkles,
+  workshop_starting: Radio,
+  workshop_now_live: Radio,
+  workshop_ran_without_you: Radio,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
+  const wsSlug = (n.payload?.slug as string) || undefined;
+  const wsTitle = (n.payload?.title as string) || "A Workshop";
   switch (n.kind) {
     case "dm":
       return {
@@ -37,8 +42,20 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         subtitle: (n.payload?.preview as string) ?? "",
         href: n.payload?.conversation_id ? `/dms/${n.payload.conversation_id}` : "/dms",
       };
-    case "follow":
-      return { title: `${actor} followed you`, subtitle: "", href: "/me" };
+    case "follow": {
+      const username = (n.payload?.actor_username as string) || undefined;
+      return {
+        title: `${actor} followed you`,
+        subtitle: "",
+        href: username ? `/u/${username}` : "/me",
+      };
+    }
+    case "workshop_starting":
+      return { title: `${wsTitle} is starting`, subtitle: "Join now — your seat's open.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+    case "workshop_now_live":
+      return { title: `${wsTitle} is live`, subtitle: "Drop in before it fills.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+    case "workshop_ran_without_you":
+      return { title: `${wsTitle} ran without you`, subtitle: "It auto-converted to a live drop-in.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
     case "payment_failed":
       return { title: "Payment failed", subtitle: "Update your card to keep Plus active.", href: "/me" };
     case "comp_redeemed":
@@ -113,7 +130,13 @@ export function NotificationsBell() {
         </div>
         <ul className="max-h-96 divide-y divide-border overflow-y-auto">
           {items.length === 0 ? (
-            <li className="px-4 py-10 text-center text-sm text-ink-muted">All caught up.</li>
+            <li className="px-4 py-10 text-center text-sm text-ink-muted">
+              Quiet for now.{" "}
+              <Link to="/collab" onClick={() => setOpen(false)} className="text-ink underline underline-offset-2 hover:text-primary">
+                Post a collab
+              </Link>{" "}
+              or follow someone to start the loop.
+            </li>
           ) : items.map((n) => {
             const { title, subtitle, href } = labelFor(n);
             const Icon = ICONS[n.kind] ?? Bell;

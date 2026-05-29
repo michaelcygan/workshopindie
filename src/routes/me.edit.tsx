@@ -554,10 +554,6 @@ function EditProfile() {
                 <p className="text-xs text-amber-700">Add your date of birth above to take effect.</p>
               )}
             </div>
-            <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-sm text-ink-muted">
-              <p className="text-ink">More granular privacy controls coming soon.</p>
-              <p className="mt-1">You can already hide individual credits from your profile by opening that Work and toggling visibility per credit.</p>
-            </div>
           </Section>
         </form>
       </div>

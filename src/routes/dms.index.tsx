@@ -81,7 +81,10 @@ function DmsIndex() {
       ) : rows.length === 0 ? (
         <div className="mt-12 rounded-2xl border border-border bg-surface p-8 text-center">
           <MessageCircle className="mx-auto h-8 w-8 text-ink-muted" />
-          <p className="mt-3 text-sm text-ink-muted">No messages yet. Follow people you've collabed with — when they follow back, you can DM.</p>
+          <p className="mt-3 text-sm text-ink-muted">No conversations yet. Find people on the Collab Board and message them — once you follow each other, you can DM.</p>
+          <Link to="/collab" className="mt-4 inline-flex items-center justify-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-background hover:opacity-90">
+            Browse the Collab Board
+          </Link>
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-border rounded-2xl border border-border bg-surface">
