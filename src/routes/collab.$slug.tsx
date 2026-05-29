@@ -49,6 +49,12 @@ const COMP_LABEL: Record<string, string> = {
   paid: "Paid", unpaid: "Unpaid", credit: "Credit", negotiable: "Negotiable", unspecified: "Comp TBD",
 };
 
+const RIGHTS_LABEL: Record<string, string> = {
+  owner_retains: "Owner keeps rights",
+  equal_split: "Equal split",
+  creative_commons: "Creative Commons",
+};
+
 function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
