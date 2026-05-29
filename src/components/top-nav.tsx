@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon } from "lucide-react";
+import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
@@ -77,6 +77,9 @@ export function TopNav() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/instant" })}>
                   <Radio className="mr-2 h-4 w-4" /> Drop in
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
+                  <Users className="mr-2 h-4 w-4" /> My Collabs
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab

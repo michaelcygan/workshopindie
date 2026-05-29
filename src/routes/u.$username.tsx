@@ -514,9 +514,16 @@ function ProfilePage() {
           />
         )}
 
-        {/* Owner-only: wrap-up nudges for closed collabs without a published Work */}
+        {/* Wrap-up nudges now live in /me/collabs to keep the public profile clean. */}
         {isOwn && closedNudges.length > 0 && (
-          <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
+          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
+              <p className="text-xs text-ink-muted">Publish the Work that came out of them.</p>
+            </div>
+            <Link to="/me/collabs"><Button size="sm" className="rounded-full">Wrap up</Button></Link>
+          </div>
         )}
 
         {/* Stats strip */}
@@ -1135,47 +1142,4 @@ function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRo
   );
 }
 
-/* ---------------- OWNER-ONLY: CLOSED COLLAB NUDGES ---------------- */
-
-function ClosedCollabNudges({ items }: { items: { id: string; title: string; slug: string; description: string | null }[] }) {
-  const qc = useQueryClient();
-  const dismissFn = useServerFn(dismissPublishNudge);
-  const [active, setActive] = useState<{ id: string; title: string; description: string | null } | null>(null);
-
-  async function dismiss(id: string) {
-    try {
-      await dismissFn({ data: { collabPostId: id } });
-      qc.invalidateQueries({ queryKey: ["profile-closed-collabs"] });
-    } catch { /* silent */ }
-  }
-
-  return (
-    <section className="mt-6 space-y-2">
-      {items.map((c) => (
-        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-ink">Wrap up: {c.title}</p>
-            <p className="text-xs text-ink-muted">Publish the Work that came out of this Collab — 3 taps.</p>
-          </div>
-          <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => dismiss(c.id)}>
-            <X className="h-4 w-4" />
-          </Button>
-          <Button size="sm" className="rounded-full gap-1" onClick={() => setActive({ id: c.id, title: c.title, description: c.description })}>
-            <Sparkles className="h-3.5 w-3.5" /> Publish Work
-          </Button>
-        </div>
-      ))}
-      {active && (
-        <PublishFromCollabSheet
-          open={!!active}
-          onOpenChange={(o) => { if (!o) { setActive(null); qc.invalidateQueries({ queryKey: ["profile-closed-collabs"] }); } }}
-          postId={active.id}
-          postTitle={active.title}
-          postDescription={active.description}
-        />
-      )}
-    </section>
-  );
-}
 

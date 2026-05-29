@@ -39,6 +39,7 @@ import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeEditRouteImport } from './routes/me.edit'
+import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
@@ -200,6 +201,11 @@ const MeEditRoute = MeEditRouteImport.update({
   path: '/me/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeCollabsRoute = MeCollabsRouteImport.update({
+  id: '/me/collabs',
+  path: '/me/collabs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeBlockedRoute = MeBlockedRouteImport.update({
   id: '/me/blocked',
   path: '/me/blocked',
@@ -277,6 +283,7 @@ export interface FileRoutesByFullPath {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
+  '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -314,6 +321,7 @@ export interface FileRoutesByTo {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
+  '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -357,6 +365,7 @@ export interface FileRoutesById {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
+  '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -401,6 +410,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/blocked'
+    | '/me/collabs'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -438,6 +448,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/blocked'
+    | '/me/collabs'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -480,6 +491,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/instant/$id'
     | '/me/blocked'
+    | '/me/collabs'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -518,6 +530,7 @@ export interface RootRouteChildren {
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   MeBlockedRoute: typeof MeBlockedRoute
+  MeCollabsRoute: typeof MeCollabsRoute
   MeEditRoute: typeof MeEditRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -741,6 +754,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/collabs': {
+      id: '/me/collabs'
+      path: '/me/collabs'
+      fullPath: '/me/collabs'
+      preLoaderRoute: typeof MeCollabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/me/blocked': {
       id: '/me/blocked'
       path: '/me/blocked'
@@ -903,6 +923,7 @@ const rootRouteChildren: RootRouteChildren = {
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   MeBlockedRoute: MeBlockedRoute,
+  MeCollabsRoute: MeCollabsRoute,
   MeEditRoute: MeEditRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
@@ -916,13 +937,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

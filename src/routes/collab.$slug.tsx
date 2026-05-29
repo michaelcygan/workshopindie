@@ -15,7 +15,7 @@ import { ShareCollabSheet } from "@/components/share-collab-sheet";
 import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { closeCollab, reopenCollab } from "@/lib/collab-publish.functions";
+import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
@@ -62,6 +62,7 @@ function CollabDetail() {
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
   const reopenFn = useServerFn(reopenCollab);
+  const extendFn = useServerFn(extendCollabDeadline);
   const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
@@ -76,7 +77,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -159,6 +160,11 @@ function CollabDetail() {
     onSuccess: () => { toast.success("Reopened"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const extendMut = useMutation({
+    mutationFn: (endsOn: string) => extendFn({ data: { collabPostId: post!.id, endsOn } }),
+    onSuccess: () => { toast.success("Deadline extended"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
@@ -167,6 +173,9 @@ function CollabDetail() {
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
   const cityName = post.city?.name;
+  const today = new Date().toISOString().slice(0, 10);
+  const deadlinePassed = !!post.ends_on && post.ends_on < today && post.status === "open";
+  const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
   function openContact(roleId: string | null) {
     if (!post) return;
@@ -240,6 +249,31 @@ function CollabDetail() {
             )}
           </div>
         </div>
+
+        {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
+        {isOwner && deadlinePassed && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <Clock className="h-5 w-5 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">
+                Your deadline passed {daysPast === 0 ? "today" : `${daysPast} day${daysPast === 1 ? "" : "s"} ago`}.
+              </p>
+              <p className="text-xs text-ink-muted">It's hidden from the public board but still live for you. What's next?</p>
+            </div>
+            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => {
+              const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+              if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate(next);
+            }}>
+              <Clock className="h-3.5 w-3.5" /> Extend
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Close this collab without publishing?")) closeMut.mutate(); }}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Close
+            </Button>
+            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
+            </Button>
+          </div>
+        )}
 
         {/* Owner-only nudge once closed but no Work published yet */}
         {isOwner && post.status === "closed" && !post.resulting_work_id && (

@@ -1,70 +1,69 @@
-## Goal
+# Collab → Work flow audit + simplification
 
-Make `/instant` reflect what Workshop actually is in v1: one primitive with three flavors. Today the page reads as "drop-in only" — selecting a medium silently teleports you into a room, and Collab-led workshops aren't even mentioned. Audit + streamline (no new features, no new complexity).
+## What I found
 
-## The three flavors (and how the page should signal each)
+**Good news — there is no auto-publish anywhere.**
+Publishing always requires the owner to open the `PublishFromCollabSheet` and confirm. `publishWorkFromCollab` (server fn) is only ever called from that sheet. Consent is intact.
 
-1. **Drop-in Workshop** — casual, leaderless, any topic. The default "Drop in" CTA.
-2. **Medium-specific Workshop** — leaderless but focused (Film, Music, Writing, Build, Visual, Critique, Business of Art, Co-working). Same drop-in matchmaker, scoped to a medium.
-3. **Collab-led Workshop** — scheduled, has a host, attached to a Collab. Lives in `workshops` table with `mode='scheduled'` and a `host_user_id` + `topic_collab_post_id`.
+**The real gaps:**
 
-(No "anything else" — these three cover the primitive. City-scoped is a filter, not a fourth type.)
+1. **Deadlines are silent.** `ends_on` is only used to *hide* expired posts from the public Collab Board (`collab.index.tsx:52`). When a deadline passes, the post stays `status='open'` in the DB, the owner is never told, and nothing prompts them to close, extend, or publish.
+2. **The "Publish Work" nudge only appears after manual close.** `ClosedCollabNudges` (on `/u/$username`) filters `status='closed' AND resulting_work_id IS NULL AND close_nudge_dismissed_at IS NULL`. Owners who never close a post never see the nudge — so the wrap-up flow is invisible to most users.
+3. **There is no Collab menu.** A user's collabs are scattered:
+   - Hosting (open only) → buried in the `collabs` tab on their own profile
+   - Hosting (closed, needs wrap-up) → mixed into the public profile as a banner
+   - Hosting (closed, already published) → nowhere
+   - Applied to → nowhere (members can only retrace via DMs; guests get nothing)
+   - Live workshop attached → only visible on the collab detail page
+4. **Top-nav dropdown** has "Post a Collab" but no "My Collabs."
 
-## Changes to `src/routes/instant.index.tsx`
+## Plan
 
-### A. Stateful headline + CTA
+### 1. New route: `/me/collabs` — single hub for everything collab
 
-Track a `selectedMedium: Category | null` state on the page (lifted from the dropdown).
+One page, three tabs, no new tables.
 
-- **Title**: `Workshop` when null → `Workshop: Film` (or chosen label) when a medium is picked. Small "Clear" affordance ("× Any topic") appears next to the title when scoped.
-- **Subhead**: swap copy based on state.
-  - null → "A seat just opened. Take it."
-  - medium → "Drop into a Film workshop. Leaderless, focused."
-- **Primary button**: text + action follow state.
-  - null → "Drop in" → `joinLounge()`
-  - medium → "Drop into Film" → `joinMediumLounge({ medium })`
-- The medium dropdown stops auto-navigating on click; it just *selects* the medium and the user confirms with the primary button. (Power move: a small "Drop in now" link inside the dropdown row preserves the current one-click path for users who want it.)
+```text
+/me/collabs
+ ├── Hosting          status='open'  (with deadline state badges)
+ ├── Wrap up          status='closed' AND resulting_work_id IS NULL
+ └── Published        resulting_work_id IS NOT NULL  → link to the Work
+        + Applied     collabs you've contacted (joined from collab_contact_events)
+```
 
-### B. Add the missing third flavor above the fold
+- Each row shows: title, category chip, deadline state, applicant count (hosting), live-workshop indicator, primary action.
+- Primary actions per state:
+  - **Open, deadline future** → "View / Manage"
+  - **Open, deadline today/past** → "Wrap up" (opens a small dialog: *Extend deadline* · *Close without publishing* · *Publish a Work*)
+  - **Closed, no work** → "Publish Work" (opens existing `PublishFromCollabSheet`) or "Dismiss"
+  - **Published** → "Open Work"
+  - **Applied** → "Open collab" (+ small status: open / closed / published)
 
-Under the CTA, add a single-line "Or" divider and a secondary action:
+### 2. Deadline-reached nudge (consent-only, no auto anything)
 
-> **Host a focused session** — Open a Workshop on one of your Collabs → links to `/collab` (or `/collab/new` if user has none).
+- On `/collab/$slug`: when viewer is the owner and `ends_on < today` and `status='open'`, show an inline banner above the post: *"Your deadline passed N days ago. What's next?"* with three buttons — **Extend** (date picker), **Close** (existing `closeCollab`), **Publish Work** (existing sheet). Nothing happens automatically.
+- On `/me/collabs` Hosting tab: same row badge ("Deadline passed") with the same three actions inline. Surface a small count chip next to "Hosting" so it's discoverable.
+- **No cron sweep, no auto-close, no auto-publish.** All transitions stay user-initiated.
 
-Replaces the buried sentence in the helper text. Makes Collab-led workshops a visible path, not a footnote.
+### 3. Surface the hub
 
-### C. Helper microcopy
+- Add **"My Collabs"** to the avatar dropdown in `src/components/top-nav.tsx`, between "My profile" and "Post a Collab," with a small count badge when there's a deadline-passed or wrap-up item waiting.
+- Add the same entry to `src/components/mobile-nav.tsx`.
 
-Shorten current paragraph to one line: "Cap 5. Voice or video, your call once you're in." Move the Collab pitch into action (B).
+### 4. Clean up the public profile
 
-## Changes to `src/components/lounge-fork-dropdown.tsx`
-
-- `onJoinMedium` callback semantics change from "navigate me now" → "select this medium" (parent owns navigation).
-- Selected medium gets a checkmark / filled state in the pill list.
-- Keep the "Live mediums" section as-is (live counts are great signal).
-- Rename section header "Start a medium-specific Workshop" → "Focus on a medium" (less verbose, matches new flow where it's a scope toggle not an immediate launch).
-
-## Changes to `src/components/workshop-strip.tsx`
-
-The directory below the CTA is solid; minor tightening:
-
-- Add a 5th pill **"Collab-led"** that filters `ScheduledList` to workshops with `topic_collab_post_id IS NOT NULL`. (Surfaces flavor #3 in the directory.)
-- Pill order: Live now · My upcoming · Collab-led · Upcoming · In {City}
-- For each row in `ScheduledList`, add a tiny leading badge:
-  - 🎯 if `topic_collab_post_id` (Collab-led)
-  - 📍 if `city_id` and not already filtered by city
-  - host avatar initial when host is not the current user
-  Keeps the list scannable and shows *why* each workshop exists.
+- Remove `ClosedCollabNudges` from `/u/$username` (it's owner-only chrome leaking into a public page). The wrap-up flow lives in `/me/collabs` now.
+- Keep the public `collabs` tab on the profile — it's a portfolio signal ("here's what they're trying to make"), unchanged.
 
 ## Technical notes
 
-- No DB changes. All filters use existing columns (`mode`, `status`, `topic_collab_post_id`, `city_id`, `host_user_id`).
-- `joinMediumLounge` / `joinLounge` server fns unchanged.
-- Selected-medium state is local to `/instant` — no URL param needed for v1 (can add `?m=film` later if we want shareable scoped links).
-- Keep all existing animations / live-count ticker.
+- **No DB migration.** Everything reads existing columns: `collab_posts.status`, `ends_on`, `closed_at`, `resulting_work_id`, `close_nudge_dismissed_at`, `live_workshop_id`, plus `collab_contact_events.sender_user_id` for the Applied list.
+- **One new server fn** in `src/lib/collab-publish.functions.ts`: `extendCollabDeadline({ collabPostId, endsOn })` — validates the user owns the post, future date, updates `ends_on`. (We could also let users edit in the existing post editor, but a one-tap extend from the nudge keeps the loop tight.)
+- **One new file:** `src/routes/me.collabs.tsx`. Reuses `CollabCard` for some rows and a compact row component for the tabbed lists. Reuses `PublishFromCollabSheet` and `closeCollab` / `reopenCollab` / `dismissPublishNudge` as-is.
+- **No changes** to: the publish flow itself, the public Collab Board, RLS, or notification schema.
 
 ## Out of scope
 
-- New workshop creation flow on this page (collab-led creation stays on the Collab detail page).
-- New filters beyond Collab-led.
-- Visual redesign — typography, spacing, colors all stay.
+- Email/in-app reminders before deadline (can layer on later via the existing `notification_preferences` table).
+- Auto-archiving long-stale collabs.
+- Changes to how applicants are managed (`ApplicantsPanel` stays where it is on `/collab/$slug`).

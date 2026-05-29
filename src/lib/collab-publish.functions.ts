@@ -174,3 +174,28 @@ export const dismissPublishNudge = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
+const extendSchema = z.object({
+  collabPostId: z.string().uuid(),
+  endsOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+});
+
+/**
+ * Owner-only: push the deadline on an open collab. Used by the
+ * deadline-reached nudge so users can extend without leaving the page.
+ */
+export const extendCollabDeadline = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => extendSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const today = new Date().toISOString().slice(0, 10);
+    if (data.endsOn < today) throw new Error("Pick a future date.");
+    const { error } = await context.supabase
+      .from("collab_posts")
+      .update({ ends_on: data.endsOn })
+      .eq("id", data.collabPostId)
+      .eq("user_id", context.userId)
+      .eq("status", "open");
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
