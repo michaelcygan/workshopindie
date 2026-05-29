@@ -64,7 +64,7 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof UserIcon }[] = [
 
 function SettingsPage() {
   const [active, setActive] = useState<SectionId>("account");
-  const sectionRefs = useRef<Record<SectionId, HTMLDivElement | null>>({
+  const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({
     account: null,
     plus: null,
     privacy: null,
@@ -168,7 +168,7 @@ function Section({
   title: string;
   subtitle?: string;
   children: React.ReactNode;
-  refMap: React.MutableRefObject<Record<SectionId, HTMLDivElement | null>>;
+  refMap: React.MutableRefObject<Record<SectionId, HTMLElement | null>>;
 }) {
   return (
     <section
@@ -385,7 +385,7 @@ function PrivacySection() {
     queryFn: () => getAgeFn(),
   });
 
-  async function update(patch: Parameters<typeof updateMyPrivacy>[0]["data"]) {
+  async function update(patch: { dmPolicy?: "everyone" | "nobody"; discoverable?: boolean; indexable?: boolean }) {
     try {
       await updatePrivacyFn({ data: patch });
       qc.invalidateQueries({ queryKey: ["my-privacy"] });
