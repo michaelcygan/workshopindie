@@ -1,106 +1,140 @@
+## Goal
 
-# Unify Workshop without complicating the UI
+Rewrite the words on screen so the site sounds like a person who actually uses it — not a product spec. Workshop is the room. Collab is the idea. The site should feel like a friend telling you what to do next.
 
-Goal: keep the homepage's two-card simplicity and the one-tap **Drop in** flow. Layer scheduling and Collab-linked Workshops underneath the same primitive so nothing new appears on the surface, but the connective tissue is there from day one.
+## Voice
 
-## Mental model (unchanged from last plan, refined)
+- Short. Specific. A little wry.
+- No "time-boxed creative sessions." No "seamlessly." No "engage." No "creators."
+- Verbs over nouns. "Open one" > "Initialize a session."
+- Say what happens, not what it is.
 
-A **Workshop** is a small group sitting down to make something. Four ways in — same primitive each time:
+## File-by-file rewrites
 
-1. **Drop in** — a live Workshop with an open seat right now (today's lounge experience)
-2. **Open one on a Collab** — owner one-taps "Open a Workshop on this" → becomes leader of a live Workshop with the Collab as topic
-3. **RSVP to a scheduled one** — a Workshop at a set time
-4. **Show up IRL** — a scheduled Workshop at a venue, surfaced on city pages
+### `src/routes/index.tsx` — homepage
 
-The user sees the word "Workshop" everywhere. Live / Scheduled / IRL are filter chips, not separate products.
+- Hero subtitle (line 83):
+  - was: *Make something with other artists. Find them, create it, ship it.*
+  - new: **Walk into a room of artists. Or post the thing you want to make and pull a room together.**
 
-## UI guardrails (the part you flagged)
+- Left card body (line 100):
+  - was: *A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work.*
+  - new: **Five seats. Voice or video. Whoever's around, right now.**
 
-- Homepage two-card layout **does not change**. Still: **Drop into a Workshop** | **Post a Collab**.
-- `/workshops` (renamed from `/instant` as the canonical entrypoint) stays the current screen: giant **Drop in** button, mic/cam check, "Live now" ticker. **2 clicks: home → Drop in → in a room.**
-- A small **secondary strip** sits below the Drop In button (not above, not in the way): three quiet pills — **Live now (N)** · **Upcoming (N)** · **In {your city} (N)**. Tapping a pill swaps the panel below; the giant Drop In button stays put. This is the only new surface area on the Workshop tab.
-- Nav stays four items: Workshop · Collab · Gallery · Cities. No "Scheduled" tab, no "Instant" tab.
+- Right card body (line 118):
+  - was: *Got an idea sitting in your drafts? Post it. List the roles you need. People show up.*
+  - new: **The thing you keep meaning to make. Post it. Open a room on it when you're ready.**
 
-## The Collab ↔ Workshop bridge (the viral loop)
+- Empty gallery state (lines 193–198):
+  - was body: *Drop into a Workshop. Meet people. Build something worth showing.*
+  - new: **First one's on you. Drop in, or post what you want to make.**
 
-On a Collab detail page, the owner gets **one new button**: **"Open a Workshop on this"**.
+- "Open Collab calls" card (line 231):
+  - was: *Real projects, real roles. Jump on one.*
+  - new: **People actually building stuff. Help out — or post your own.**
 
-- One tap → creates a live Workshop, owner is leader, Collab is the topic (shown in the room header), paired room opens, confirmed applicants get a notification with a join link.
-- Collab card on the Board gets a **"🔴 Live now — join"** chip whenever `live_workshop_id` is set. Anyone browsing Collabs can drop straight into the working session. This is the virality unlock: a Collab post becomes a live room you can walk into.
-- When the leader ends the session, the Workshop closes back to the Collab; if they ship a Work from inside the room, the Collab auto-closes with `resulting_work_id` and credits the people who were present.
+### `src/routes/instant.index.tsx` — Drop in
 
-## Scheduled Workshops — the tricky one, solved simply
+- Subhead (~line 132):
+  - was: *Walk into a live room with up to 5 artists. A seat opens up — take it.*
+  - new: **A seat just opened. Take it.**
 
-Scheduled = a Workshop with `starts_at` in the future and `mode = 'scheduled'`. From the user's POV:
+- Bottom helper (~line 175):
+  - was: *Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.*
+  - new: **Rooms cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a room on one of your Collabs.**
 
-- **Creating one** lives behind the existing **Post a Collab** flow, with a small toggle at the bottom: *"Set a time for this? (optional)"* — off by default. If on, the Collab auto-generates a Scheduled Workshop tied to it. No separate "create a workshop" page surfaced in nav. (The existing `/workshops/new` route stays for power users / admins.)
-- **Discovering one** is the "Upcoming" pill on the Workshop tab — a quiet list of cards with time, host, topic, **RSVP** button.
-- **RSVP** is one tap. T-minus 10 min, RSVPs get a notification; the card shows **"Starts in 8m — open room"** which navigates straight into the paired live room.
+### `src/routes/workshops.index.tsx`
 
-### What happens if the organizer doesn't show
+- `head` title:
+  - was: *Workshops — Find people. Make the thing. — Workshop*
+  - new: **Workshops — what's on, what's next**
 
-This is the bulletproofing you asked for. Rules (server-enforced):
+- `head` description + og:
+  - was: *Time-boxed creative sessions. Apply for a role, show up, ship work together.*
+  - new: **What's running right now, what's coming up, and what's near you. RSVP, or just drop in.**
 
-1. At `starts_at`, the paired room flips to `active` and **any RSVP'd participant can enter** — leadership is not required to start.
-2. If the host hasn't joined by `starts_at + 10min`, the first RSVP'd participant to enter is promoted to **acting leader** (silent — no modal, just a small "You're hosting" chip in the room header).
-3. If by `starts_at + 15min` **nobody** has entered, the Workshop is auto-converted to a **live drop-in Workshop of that medium**: it disappears from "Upcoming," appears in "Live now" with the original topic, and anyone browsing that medium can drop in. The RSVP'd participants get a one-time "Your Workshop turned into a drop-in — join now" push.
-4. The original host gets a soft notification ("Your Workshop ran without you — it's still live, jump in") so they don't feel punished.
+- H1 + sub (around line 85):
+  - was: *Workshops* / *Time-boxed creative sessions. Apply, show up, make the thing.*
+  - new: **Workshops** / **Scheduled rooms you can RSVP to. Or skip the wait — drop in.**
 
-This means a scheduled Workshop **never dies silently** — it always becomes a useful live room. No empty rooms, no broken promises.
+- Empty state (lines 122–128):
+  - was: *No Workshops yet — schedule the first one.* / *Pick a category, set a clock, define roles. People will apply.*
+  - new: **Nothing on the books.** / **Post a Collab, pick a time — the room schedules itself.**
 
-## Solo-user viability (1 user case)
+### `src/routes/workshops.new.tsx`
 
-Already mostly there via `GuestApplyDialog`. Two small reinforcements:
+- Remove the ComingSoon gate (lines 71–72) entirely.
+- H1 stays: *Schedule a Workshop*.
+- Above the form, add one line of intro: **A room with a start time. People RSVP. They show up.**
+- Submit button stays: *Publish Workshop*.
 
-- The "Post a Collab" success screen gets a **"Share your call"** sheet (already exists via `ShareCollabSheet`) auto-opened, with copy emphasizing *"Logged-out friends can apply in one tap — send this link."*
-- Empty-state on `/workshops` (no one live) shows: *"No one's live right now. **Post a Collab** — anyone with the link can apply, no account needed."* — turns dead air into a path to action.
+### `src/routes/collab.new.tsx`
 
-## Schema delta (one migration)
+- Helper under schedule toggle (line 347):
+  - was: *Optional. Posts a scheduled Workshop tied to this Collab. People can RSVP and drop into the room when it starts.*
+  - new: **Pick a time and we'll schedule a room on this Collab. People RSVP, then drop in when it starts.**
 
-```sql
-ALTER TABLE workshops
-  ADD COLUMN topic_collab_post_id uuid REFERENCES collab_posts(id) ON DELETE SET NULL,
-  ADD COLUMN auto_converted_at timestamptz,
-  ADD COLUMN acting_leader_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+- No-show note (line 363):
+  - was: *If no one shows up within 15 minutes of the start time, the Workshop auto-converts to a live drop-in so the room never dies silently.*
+  - new: **If nobody shows in the first 15 minutes, the room flips to drop-in mode. Nothing dies quietly.**
 
-ALTER TABLE collab_posts
-  ADD COLUMN live_workshop_id uuid REFERENCES workshops(id) ON DELETE SET NULL;
+### `src/routes/collab.index.tsx`
 
-CREATE INDEX idx_workshops_topic_collab ON workshops(topic_collab_post_id);
-CREATE INDEX idx_collab_posts_live_workshop ON collab_posts(live_workshop_id);
-```
+- meta description (line 30):
+  - was: *Open calls for collaborators. Post your idea or jump on someone else's.*
+  - new: **Things people are trying to make. Help out, or post your own and open a room on it.**
 
-`mode` (existing text col) gains `'live'` alongside `'scheduled'`.
+- H1 sub (verify around line 237):
+  - new: **What people are trying to make. Help out — or open a room on yours.**
 
-## Server functions (new)
+### `src/routes/collab.$slug.tsx`
 
-- `openWorkshopOnCollab({ collabPostId })` — owner-only; creates live workshop, pairs room, notifies confirmed applicants, returns `{ workshopId, roomId }`.
-- `convertScheduledToLive({ workshopId })` — idempotent; called by a 15-min grace job (pg_cron hitting `/api/public/workshops/sweep`) and by the room itself on first-entry checks.
-- `claimActingLeader({ workshopId })` — first-RSVP-to-enter after host grace window.
-- `rsvpToWorkshop({ workshopId })` / `cancelRsvp` — reuses existing `workshop_participants` with status `confirmed`.
+- Owner button label stays: *Open a Workshop on this*.
+- Public "Live now — join" pill stays.
+- Microcopy near the owner button (if any helper text):
+  - new: **One tap. Five seats. Your applicants get pinged.**
 
-## Build order (small, shippable steps)
+### `src/components/workshop-strip.tsx`
 
-1. **Schema migration** + index updates.
-2. **Collab → Workshop bridge**: `openWorkshopOnCollab` server fn + button on `collab.$slug.tsx` (owner only) + "Live now" chip on `CollabCard`.
-3. **Workshop tab secondary strip**: Live · Upcoming · In {city} pills on `/instant` (rename route alias `/workshops` → same screen, keep `/instant` redirect). The giant Drop In button stays.
-4. **Scheduling toggle on Post a Collab**: optional `starts_at` field; on submit, creates linked scheduled Workshop.
-5. **No-show safety net**: pg_cron + `/api/public/workshops/sweep` endpoint that runs `convertScheduledToLive` for any scheduled Workshop past `starts_at + 15min` with 0 entries. `claimActingLeader` wired into room-join.
-6. **Solo-user polish**: auto-open `ShareCollabSheet` on collab create; empty-state copy on Workshop tab.
+- Empty state (line 66):
+  - was: *...Post a Collab and set a time.*
+  - new: **Nothing scheduled. Post a Collab and pick a time — or just drop in.**
 
-## What does NOT change
+- Pill labels stay: *Live now*, *Upcoming*, *In {city}*.
 
-- Homepage hero, the two cards, nav, the Drop In screen, the `ChannelView` room UI, all auth/RLS/payment/age/gallery code.
-- `/workshops/new` (full scheduling form) stays for admins; not surfaced in nav.
-- Mediums work from the last batch.
+### `src/components/welcome-tour.tsx`
 
-## Acceptance checks
+- Step 2 title (line 25): stays *Drop into a live room*.
+- Step 2 body (line 26):
+  - was: *Instant Workshops let you create with other artists in real time — no scheduling.*
+  - new: **A live room of up to 5. Walk in, meet whoever's around, get to work.**
+- Step 2 CTA (line 27): *Open Instant* → **Drop in**.
 
-- Homepage → Drop in → in a room = 2 clicks. ✓
-- Collab detail (as owner) → "Open a Workshop on this" → in a room = 2 clicks. ✓
-- Scheduled Workshop with no host at T+15 → automatically becomes a live drop-in (verify via cron sweep). ✓
-- Solo user with no other users online → can post a Collab and share a link where logged-out friends apply. ✓ (already works; we just surface it)
+- Step 3 title (line 31): *Post a collab call* → **Post a Collab**.
+- Step 3 body (line 32):
+  - was: *Looking for a vocalist, dancer, or DP? Post a collab and we'll route the right people.*
+  - new: **Need a vocalist, a dancer, a DP? Post it. Open a room on it whenever you're ready.**
+- Step 3 CTA (line 33): *Browse collabs* → **Browse Collabs**.
 
----
+### `src/components/top-nav.tsx`
 
-Want me to start with steps 1 + 2 (migration + Collab → Workshop button + Live chip), then come back for the Workshop-tab pills and the no-show sweep?
+- Dropdown item (line 77): *Drop into Workshop* → **Drop in**.
+- Everything else stays.
+
+### `src/components/mobile-nav.tsx`
+
+- No copy changes needed (nav labels already right).
+
+### `src/components/workshop-card.tsx`
+
+- Where mode is shown, label as: **Live now**, **Scheduled**, **On a Collab**. Copy-only; no new logic. Skip if the card doesn't already surface mode.
+
+## Out of scope
+
+- Route paths and URLs.
+- Server functions, schema, RLS, notification payloads.
+- Any new components or logic. This is words only.
+
+## Final pass
+
+After edits: `rg "Instant Workshop|Open Instant|Coming soon|time-boxed|creators"` → expect zero user-facing hits.
