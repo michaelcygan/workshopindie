@@ -250,6 +250,31 @@ function CollabDetail() {
           </div>
         </div>
 
+        {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
+        {isOwner && deadlinePassed && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+            <Clock className="h-5 w-5 text-amber-600" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">
+                Your deadline passed {daysPast === 0 ? "today" : `${daysPast} day${daysPast === 1 ? "" : "s"} ago`}.
+              </p>
+              <p className="text-xs text-ink-muted">It's hidden from the public board but still live for you. What's next?</p>
+            </div>
+            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => {
+              const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+              if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate(next);
+            }}>
+              <Clock className="h-3.5 w-3.5" /> Extend
+            </Button>
+            <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Close this collab without publishing?")) closeMut.mutate(); }}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Close
+            </Button>
+            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
+            </Button>
+          </div>
+        )}
+
         {/* Owner-only nudge once closed but no Work published yet */}
         {isOwner && post.status === "closed" && !post.resulting_work_id && (
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
