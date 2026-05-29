@@ -245,7 +245,7 @@ function CollabPage() {
 
       {/* Category scroller — one line, infinite on mobile */}
       <div className="mt-8">
-        <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />
+        <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="justify-center" />
       </div>
 
       {/* Location filter row — city search + online-only chip */}
