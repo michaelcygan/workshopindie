@@ -1,61 +1,84 @@
-# In-person Collabs → city-scoped Workshops + simple rights field
+# City page → Workshop hub
 
-## 1. City-scoped Workshops for in-person Collabs
+Make the City page the connection layer for each scene: one primitive (Workshop), one button ("Post a Workshop"), city-scoped audience, with a clean Live / Scheduled / Standing view. Admins can pin a Workshop to turn it into a standing one for that city.
 
-When a Collab is in-person and tied to a city, the Workshop spawned from it should only surface to people in that city (host always sees it).
+## 1. Header CTA + entry point
 
-**Schema (one migration):**
-- Add `audience_city_ids uuid[] not null default '{}'` to `workshops`.
-- Empty array = public to everyone (today's behavior).
-- Non-empty array = only visible in listings to viewers whose `profiles.home_city_id` is in the array, or who are the host.
+In `src/routes/cities.$slug.tsx`:
 
-**Populate it at creation time:**
-- `src/lib/collab-workshop.functions.ts` (`openWorkshopOnCollab`): read the source Collab's `location_mode`, `city_id`, `also_cities`. If `location_mode === 'in_person'` and `city_id` is set, set the new workshop's `audience_city_ids = [city_id, ...also_cities]` and `location_type = 'in_person'`, `city_id = post.city_id`. Hybrid stays public (it's hybrid).
-- `src/routes/collab.new.tsx` (scheduled-workshop branch): same logic on the inline `workshops.insert(...)`.
+- Replace **"Start a standing meetup"** button with **"Post a Workshop"** (`Plus` icon). Always visible (auth-gated via redirect on click for logged-out users).
+- Keep "Post a collab" outline button next to it.
+- Remove the inline `NewMeetupForm` and `showMeetupForm` toggle. Clicking "Post a Workshop" opens a **city-scoped Workshop sheet** (`Dialog` from `@/components/ui/dialog`) anchored to this city.
+- Remove the "Scheduled workshops are coming soon" footer line — it's no longer true.
 
-**Filter in listings:**
-- `src/routes/workshops.index.tsx`: include `audience_city_ids,host_user_id` in the select. After fetch, in the same JS filter chain as the age filter, drop rows where `audience_city_ids.length > 0` AND viewer's `home_city_id` is not in it AND viewer is not the host. Anonymous viewers see only unrestricted workshops.
-- Fetch the viewer's `home_city_id` once via a small query alongside `getMyAgeFields` (or extend that server fn — see Technical notes).
-- `src/components/workshop-card.tsx`: when `audience_city_ids.length > 0`, render a small "City-only" chip near the existing location pill so it's obvious to host/admins why visibility is narrower. No new layout.
+## 2. New `<PostWorkshopFromCitySheet>` (single new component)
 
-**Out of scope:** hiding the workshop *detail* page from non-locals (deep-linked URL still works). This is a listing/discovery scope change, not access control. We can lock the detail page later if abuse appears.
+Lives in `src/components/post-workshop-from-city-sheet.tsx`. Self-contained — does not navigate away. Props: `{ city: { id, name, slug }, isAdmin: boolean, open, onOpenChange }`.
 
-## 2. Owner-only Workshop creation + leadership (verification only)
+Form is intentionally tight (1 screen, no scroll on desktop):
 
-Already enforced — no code change. The server fn `openWorkshopOnCollab` rejects any caller that isn't `post.user_id` and sets `host_user_id = userId`. The collab detail UI hides the "Open a Workshop on this" button behind `isOwner`. I'll add a one-line code comment near both spots so this guarantee doesn't get accidentally relaxed.
+1. **From a Collab? (optional)** — at top. Combobox loading `collab_posts where user_id = me order by created_at desc limit 20`. Selecting one pre-fills title / category / prompt and stores `topic_collab_post_id`. Clear button to go back to blank.
+2. **Title*** + **Category** chips (existing `CATEGORIES`).
+3. **When*** — segmented toggle: **Right now** | **Schedule**. If "Schedule", reveal start + end datetime inputs (default tomorrow 6–8pm). If "Right now": `mode='instant_spawned'`, `status='active'`, `starts_at = now`, `ends_at = now+2h`.
+4. **Where*** — segmented toggle: **Online** | **IRL**. If "IRL", show `VenueSearch` (already exists, resolves to `city_id` via `resolveVenueAndCity`). If "Online", optional Zoom/Meet URL input.
+5. **Seat cap** — number, default 6.
+6. **Admin only**: a checkbox **"Pin as a standing Workshop for {city.name}"** (sets `is_pinned=true`). Hidden for non-admins.
+7. Submit → "Post Workshop".
 
-## 3. Optional rights field on Collab
+### City-scope enforcement (the core of the request)
 
-Light-touch, collapsible. No required input.
+Every Workshop posted via this sheet is **locked to this city's audience**:
 
-**Schema:**
-- Add `rights_arrangement text` to `collab_posts`, nullable, CHECK constraint limiting to: `owner_retains`, `equal_split`, `creative_commons`, or NULL.
+- `city_id = city.id` (even for online — used for discovery scoping).
+- `audience_city_ids = [city.id]` (already exists on the table; powers "only users of that city can see/join").
+- For **IRL**: also fill venue fields from `VenueSearch`; if venue resolves to a different city, show inline error "Venue is outside {city.name} — pick a venue in {city.name} or switch to Online".
+- `location_type = 'online' | 'in_person'` (drop "hybrid" from this entry point — keep it on the generic `/workshops/new` if needed).
 
-**UI on `src/routes/collab.new.tsx`:**
-- New collapsible section right above the Workshop block, labeled **"Rights (optional)"** with a one-line helper: "Set expectations now to avoid friction later."
-- Closed by default — a single text link "Add a rights note" expands a small radio group with three plain-language options:
-  - **Owner keeps publishing rights** — "You retain the final say on how the work is released. Collaborators are credited."
-  - **Equal split among all participants** — "Everyone who ships on this owns an equal share."
-  - **Creative Commons** — "Free for anyone to use with attribution (CC BY 4.0)."
-- A small "Clear" link beside the group sets it back to null and collapses.
-- No new validation; field is fully optional.
+Submit path: direct `supabase.from('workshops').insert(...)` for "Schedule" mode (same shape as `workshops.new.tsx`), and for "Right now" reuse the same insert with `mode='instant_spawned'` + immediately call `ensureWorkshopRoom` (existing) to spawn the paired `instant_rooms` row, then navigate to `/instant/$id`. The host is inserted as a confirmed participant either way.
 
-**UI on `src/routes/collab.$slug.tsx`:**
-- When `rights_arrangement` is set, render a single line in the metadata strip next to comp/timeline: an icon (Scale from lucide) + the human label. No new section, no modal.
+If a Collab was selected, also UPDATE `collab_posts.live_workshop_id = ws.id` so the Collab page's existing "live workshop" wiring lights up. Owner check: we only list the user's own Collabs in step 1, so this is safe.
 
-**Out of scope:** legal text, downloadable agreements, per-role rights overrides, percentage splits beyond "equal", any enforcement.
+After insert, close the sheet and toast "Workshop posted in {city.name}". Stay on the City page (with the new row appearing in the Workshops section below). For "Right now", instead navigate straight into the room.
 
-## Files touched
+## 3. "Workshops" section (replaces "Standing meetups")
 
-- New migration: `audience_city_ids` on workshops + `rights_arrangement` on collab_posts (single migration, both columns).
-- `src/lib/collab-workshop.functions.ts` — populate `audience_city_ids` and `location_type`/`city_id` from source Collab.
-- `src/routes/collab.new.tsx` — same population in scheduled-workshop insert; add Rights collapsible UI + state + insert.
-- `src/routes/collab.$slug.tsx` — render rights label in metadata strip; verify-comment near owner-gating.
-- `src/routes/workshops.index.tsx` — add fields to select, fetch viewer home_city_id, filter in JS, anon = unrestricted only.
-- `src/components/workshop-card.tsx` — optional "City-only" chip when `audience_city_ids.length > 0`.
+Section heading: **Workshops in {city.name}**.
 
-## Technical notes
+Tabs (CategoryScroller pattern): **All · Live · Scheduled · Standing**.
 
-- The viewer's `home_city_id` is on `profiles` and the workshops index already runs a per-user server fn (`getMyAgeFields`). To avoid a separate round-trip, extend that fn to also return `home_city_id` (rename target keys backward-compatibly: keep `age`, `ageFilterMin`, add `homeCityId`). Update both call sites.
-- No RLS change needed — `workshops` already has `visibility = 'public'` filtering; `audience_city_ids` is a soft discovery filter applied client-side. Direct DB reads still work for the detail page.
-- Migration includes `GRANT` review only — both target tables already have correct grants; we're adding columns, not new tables.
+- **All**: union of below, ordered: Live first, then Standing (pinned), then upcoming Scheduled by `starts_at asc`.
+- **Live**: `mode in ('instant_spawned','scheduled') AND status='active'`.
+- **Scheduled**: `mode='scheduled' AND status in ('open','check_in') AND starts_at >= now`.
+- **Standing**: `is_pinned = true` (admin-curated).
+
+Query: `workshops` filtered by `city_id = city.id OR city.id = ANY(audience_city_ids)`, `visibility='public'`. Use existing `WorkshopCard` component (`src/components/workshop-card.tsx`).
+
+Each card shows a small chip row delineating **🟢 Live now** / **📅 {when}** / **📌 Standing**, and **🌐 Online** / **📍 {venue or "IRL"}** so online vs IRL is instantly readable in the city feed.
+
+Empty state per tab is honest ("No live Workshops right now — post one") with a button that opens the same sheet.
+
+The legacy `standing_meetups` table and its rendering block are **dropped from this page**. They keep existing in the DB (no migration to remove rows) but the City page no longer reads or writes them. The old hosts can be migrated later; this is intentional to consolidate around one primitive.
+
+## 4. Admin pin (the only DB change)
+
+Add `workshops.is_pinned boolean default false` and `workshops.pinned_at timestamptz`. RLS update so only admins can flip `is_pinned`:
+
+- New policy `admins pin workshops` (UPDATE, USING/WITH CHECK = `has_role(auth.uid(),'admin')`) is already covered by the existing `admins manage workshops` ALL policy → no new policy required, just verify it exists. If it doesn't, add it.
+- A small column-level guard via trigger: prevent non-admins from setting `is_pinned=true` even on their own workshops.
+
+The City page renders a small "📌 Pin" / "Unpin" button on each Workshop card **only when `useUserRoles().isAdmin`** — toggles `is_pinned` + `pinned_at`. This is the entire "create standing Workshops in the city flow for now" surface — no separate flow needed.
+
+## 5. Files touched
+
+- `src/routes/cities.$slug.tsx` — swap header CTA, remove inline meetup form, replace meetups section with Workshops section + tabs + pin button, add Workshop queries by `city_id`/`audience_city_ids`, drop "coming soon" line.
+- `src/components/post-workshop-from-city-sheet.tsx` — new component (all of section 2).
+- `src/components/workshop-card.tsx` — add small `chips` slot for Live/Scheduled/Standing + Online/IRL pills if not already present (light tweak only).
+- One migration: `alter table workshops add column is_pinned boolean not null default false, add column pinned_at timestamptz; create index on workshops (city_id, is_pinned) where is_pinned;` + trigger blocking non-admin pin writes.
+- No changes to `src/routes/workshops.new.tsx` (kept as the power-user scheduler) or the global "Post a Collab" button in the top nav.
+
+## Out of scope (intentional)
+
+- Migrating existing `standing_meetups` rows into pinned Workshops — can be a follow-up.
+- Recurring/repeating Workshops (RRULE) — pin is a lighter primitive that gets us standing-Workshop behavior today.
+- Cross-city Workshops — this flow is intentionally single-city. The generic `/workshops/new` still supports `audience_city_ids` with multiple cities for power users.
+- Touching the global top-nav "Post a Collab" button or the Collab page Workshop spawn (already covered by `openWorkshopOnCollab`).
