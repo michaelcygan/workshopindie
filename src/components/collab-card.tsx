@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Clock } from "lucide-react";
+import { Clock, Radio } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
@@ -20,6 +20,7 @@ export type CollabCardData = {
   compensation_type: "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
   status: string;
   created_at: string;
+  live_workshop_id?: string | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
@@ -88,6 +89,15 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
 
       <div className="flex items-center gap-2 px-5 pt-5">
         <CategoryChip category={post.category} />
+        {post.live_workshop_id && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
+            </span>
+            <Radio className="h-3 w-3" /> Live
+          </span>
+        )}
         <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
       </div>
 

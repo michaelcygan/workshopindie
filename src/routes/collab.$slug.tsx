@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw, Radio } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab } from "@/lib/collab-publish.functions";
+import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 
@@ -55,6 +56,7 @@ function CollabDetail() {
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
   const reopenFn = useServerFn(reopenCollab);
+  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
@@ -68,7 +70,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,live_workshop_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -87,6 +89,30 @@ function CollabDetail() {
         .maybeSingle();
       return data;
     },
+  });
+
+  const { data: liveWorkshop } = useQuery({
+    queryKey: ["collab-live-workshop", post?.live_workshop_id],
+    enabled: !!post?.live_workshop_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workshops")
+        .select("id,slug,status")
+        .eq("id", post!.live_workshop_id!)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const isLive = !!liveWorkshop && (liveWorkshop.status === "active" || liveWorkshop.status === "check_in");
+
+  const openWorkshopMut = useMutation({
+    mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
+    onSuccess: ({ slug: wsSlug }) => {
+      toast.success("Workshop is live — heading in");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+      router.navigate({ to: "/workshops/$slug", params: { slug: wsSlug } });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const sendContact = useMutation({
@@ -176,6 +202,17 @@ function CollabDetail() {
             {isOwner ? (
               <>
                 {post.status === "open" && (
+                  isLive ? (
+                    <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                      <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                      <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open a Workshop on this"}
+                    </Button>
+                  )
+                )}
+                {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
                   </Button>
@@ -185,7 +222,15 @@ function CollabDetail() {
                 </Button>
               </>
             ) : (
-              user && <ReportDialog entityType="collab_post" entityId={post.id} />
+              <>
+                {isLive && (
+                  <Button size="sm" className="rounded-full gap-1 bg-primary" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
+                    Live now — join
+                  </Button>
+                )}
+                {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
+              </>
             )}
           </div>
         </div>

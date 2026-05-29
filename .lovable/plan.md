@@ -1,59 +1,106 @@
-## Goal
 
-In the profile flow, drop Critique / Business of Art / Co-working from the medium selector (they remain in the wider Category enum for workshops/gallery/instant-rooms), expand the medium options with a curated set, and add a free-text "What you use" tools list.
+# Unify Workshop without complicating the UI
 
-## 1. Database (migration)
+Goal: keep the homepage's two-card simplicity and the one-tap **Drop in** flow. Layer scheduling and Collab-linked Workshops underneath the same primitive so nothing new appears on the surface, but the connective tissue is there from day one.
 
-Add two new array columns to `profiles`:
-- `mediums text[] not null default '{}'` — broader medium tags beyond the 5 publishable categories (e.g. `photography`, `printmaking`, `textiles`). Capped to 20 entries; each token validated against the curated id list via a trigger (drop unknown ids silently on insert/update so the list can evolve without breaking writes).
-- `tools text[] not null default '{}'` — free-text. Cap 15 entries, 1–40 chars each, dedup case-insensitively via trigger.
+## Mental model (unchanged from last plan, refined)
 
-Existing `categories` (Category enum array) stays as-is. It continues to drive Works tabs / gallery filters / Instant Workshops. The profile UI just narrows what it shows.
+A **Workshop** is a small group sitting down to make something. Four ways in — same primitive each time:
 
-## 2. New curated medium list
+1. **Drop in** — a live Workshop with an open seat right now (today's lounge experience)
+2. **Open one on a Collab** — owner one-taps "Open a Workshop on this" → becomes leader of a live Workshop with the Collab as topic
+3. **RSVP to a scheduled one** — a Workshop at a set time
+4. **Show up IRL** — a scheduled Workshop at a venue, surfaced on city pages
 
-Create `src/lib/mediums.ts`:
+The user sees the word "Workshop" everywhere. Live / Scheduled / IRL are filter chips, not separate products.
 
-- `WORK_MEDIUMS` (these mirror the 5 publishable categories so editing them edits `categories` too):
-  `film, music, writing, build, visual`
-- `EXTRA_MEDIUMS` (new, stored in `mediums` text[]):
-  `photography, printmaking, textiles, ceramics, sculpture, painting, illustration, design, fashion, jewelry, animation, comics, poetry, journalism, songwriting, production, dj, performance, dance, theater, sound-design, podcasting, game-design, code, photography-analog`
-- Helper `mediumLabel(id)` and `ALL_PROFILE_MEDIUMS` (work + extra) for rendering.
+## UI guardrails (the part you flagged)
 
-Critique / Business of Art / Co-working are intentionally excluded — they stay in `src/lib/categories.ts` for workshop/instant contexts only.
+- Homepage two-card layout **does not change**. Still: **Drop into a Workshop** | **Post a Collab**.
+- `/workshops` (renamed from `/instant` as the canonical entrypoint) stays the current screen: giant **Drop in** button, mic/cam check, "Live now" ticker. **2 clicks: home → Drop in → in a room.**
+- A small **secondary strip** sits below the Drop In button (not above, not in the way): three quiet pills — **Live now (N)** · **Upcoming (N)** · **In {your city} (N)**. Tapping a pill swaps the panel below; the giant Drop In button stays put. This is the only new surface area on the Workshop tab.
+- Nav stays four items: Workshop · Collab · Gallery · Cities. No "Scheduled" tab, no "Instant" tab.
 
-## 3. `/me/edit` — Mediums & bio section (`src/routes/me.edit.tsx`)
+## The Collab ↔ Workshop bridge (the viral loop)
 
-Replace the current "What you make" chip row (which renders all 8 `CATEGORIES`) with a two-part picker:
+On a Collab detail page, the owner gets **one new button**: **"Open a Workshop on this"**.
 
-- **Mediums** — single chip cloud combining `WORK_MEDIUMS` + `EXTRA_MEDIUMS`. Selecting a `WORK_MEDIUMS` chip toggles it in `form.cats` (Category enum, drives Works tabs). Selecting an `EXTRA_MEDIUMS` chip toggles it in `form.mediums` (new text[]). Visually identical — users don't need to know the split. Use the category color for the 5 work chips; neutral chip styling for extras.
-  Helper copy: "Pick all that apply. Your work tabs come from Film, Music, Writing, Build, and Visual; the rest just describe your practice."
-- **What you use (optional)** — free-text tag input below mediums. UI: existing chip list + an inline input that adds a chip on Enter or comma, X to remove. Cap 15. Helper copy: "Cameras, instruments, software, looms, kilns — whatever you work with."
+- One tap → creates a live Workshop, owner is leader, Collab is the topic (shown in the room header), paired room opens, confirmed applicants get a notification with a join link.
+- Collab card on the Board gets a **"🔴 Live now — join"** chip whenever `live_workshop_id` is set. Anyone browsing Collabs can drop straight into the working session. This is the virality unlock: a Collab post becomes a live room you can walk into.
+- When the leader ends the session, the Workshop closes back to the Collab; if they ship a Work from inside the room, the Collab auto-closes with `resulting_work_id` and credits the people who were present.
 
-Form state additions:
-- `mediums: string[]` and `tools: string[]` in `FormState` and `EMPTY`.
-- Hydrate from profile on load; persist trimmed + deduped on save.
+## Scheduled Workshops — the tricky one, solved simply
 
-## 4. Onboarding (`src/routes/onboarding.tsx`)
+Scheduled = a Workshop with `starts_at` in the future and `mode = 'scheduled'`. From the user's POV:
 
-Mirror the same picker on the mediums step (work + extra chips combined; categories vs mediums written to their respective columns). Skip the tools picker in onboarding to keep that step short — users add tools later from `/me/edit`.
+- **Creating one** lives behind the existing **Post a Collab** flow, with a small toggle at the bottom: *"Set a time for this? (optional)"* — off by default. If on, the Collab auto-generates a Scheduled Workshop tied to it. No separate "create a workshop" page surfaced in nav. (The existing `/workshops/new` route stays for power users / admins.)
+- **Discovering one** is the "Upcoming" pill on the Workshop tab — a quiet list of cards with time, host, topic, **RSVP** button.
+- **RSVP** is one tap. T-minus 10 min, RSVPs get a notification; the card shows **"Starts in 8m — open room"** which navigates straight into the paired live room.
 
-## 5. Public profile (`src/routes/u.$username.tsx`)
+### What happens if the organizer doesn't show
 
-Select `mediums` and `tools` alongside `categories`. Render:
-- Existing category chips remain on top.
-- A muted "also works in" row of extra-medium chips when `mediums` is non-empty.
-- A "Tools" line of small pill chips when `tools` is non-empty, below the bio.
+This is the bulletproofing you asked for. Rules (server-enforced):
 
-## 6. Out of scope
+1. At `starts_at`, the paired room flips to `active` and **any RSVP'd participant can enter** — leadership is not required to start.
+2. If the host hasn't joined by `starts_at + 10min`, the first RSVP'd participant to enter is promoted to **acting leader** (silent — no modal, just a small "You're hosting" chip in the room header).
+3. If by `starts_at + 15min` **nobody** has entered, the Workshop is auto-converted to a **live drop-in Workshop of that medium**: it disappears from "Upcoming," appears in "Live now" with the original topic, and anyone browsing that medium can drop in. The RSVP'd participants get a one-time "Your Workshop turned into a drop-in — join now" push.
+4. The original host gets a soft notification ("Your Workshop ran without you — it's still live, jump in") so they don't feel punished.
 
-- No changes to gallery filters, Workshop creation, Instant rooms, or the Category enum.
-- No alias-style verification or search-by-medium.
-- No tool standardization yet — free-text now, normalize later when we have data.
-- No migration of existing `categories` values; users who had Critique/Business/Co-working selected keep them in `categories` (no longer exposed in the profile picker, but harmless).
+This means a scheduled Workshop **never dies silently** — it always becomes a useful live room. No empty rooms, no broken promises.
 
-## Technical notes
+## Solo-user viability (1 user case)
 
-- One migration: add columns + a small `tg_profiles_mediums_tools_guard` trigger that trims, dedupes, caps, drops unknown medium ids, and enforces length on tools. No new RLS — both columns are part of the existing public profile read.
-- `src/integrations/supabase/types.ts` will regenerate after the migration.
-- All UI work stays in `src/lib/mediums.ts`, `src/routes/me.edit.tsx`, `src/routes/onboarding.tsx`, and `src/routes/u.$username.tsx`.
+Already mostly there via `GuestApplyDialog`. Two small reinforcements:
+
+- The "Post a Collab" success screen gets a **"Share your call"** sheet (already exists via `ShareCollabSheet`) auto-opened, with copy emphasizing *"Logged-out friends can apply in one tap — send this link."*
+- Empty-state on `/workshops` (no one live) shows: *"No one's live right now. **Post a Collab** — anyone with the link can apply, no account needed."* — turns dead air into a path to action.
+
+## Schema delta (one migration)
+
+```sql
+ALTER TABLE workshops
+  ADD COLUMN topic_collab_post_id uuid REFERENCES collab_posts(id) ON DELETE SET NULL,
+  ADD COLUMN auto_converted_at timestamptz,
+  ADD COLUMN acting_leader_user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+
+ALTER TABLE collab_posts
+  ADD COLUMN live_workshop_id uuid REFERENCES workshops(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_workshops_topic_collab ON workshops(topic_collab_post_id);
+CREATE INDEX idx_collab_posts_live_workshop ON collab_posts(live_workshop_id);
+```
+
+`mode` (existing text col) gains `'live'` alongside `'scheduled'`.
+
+## Server functions (new)
+
+- `openWorkshopOnCollab({ collabPostId })` — owner-only; creates live workshop, pairs room, notifies confirmed applicants, returns `{ workshopId, roomId }`.
+- `convertScheduledToLive({ workshopId })` — idempotent; called by a 15-min grace job (pg_cron hitting `/api/public/workshops/sweep`) and by the room itself on first-entry checks.
+- `claimActingLeader({ workshopId })` — first-RSVP-to-enter after host grace window.
+- `rsvpToWorkshop({ workshopId })` / `cancelRsvp` — reuses existing `workshop_participants` with status `confirmed`.
+
+## Build order (small, shippable steps)
+
+1. **Schema migration** + index updates.
+2. **Collab → Workshop bridge**: `openWorkshopOnCollab` server fn + button on `collab.$slug.tsx` (owner only) + "Live now" chip on `CollabCard`.
+3. **Workshop tab secondary strip**: Live · Upcoming · In {city} pills on `/instant` (rename route alias `/workshops` → same screen, keep `/instant` redirect). The giant Drop In button stays.
+4. **Scheduling toggle on Post a Collab**: optional `starts_at` field; on submit, creates linked scheduled Workshop.
+5. **No-show safety net**: pg_cron + `/api/public/workshops/sweep` endpoint that runs `convertScheduledToLive` for any scheduled Workshop past `starts_at + 15min` with 0 entries. `claimActingLeader` wired into room-join.
+6. **Solo-user polish**: auto-open `ShareCollabSheet` on collab create; empty-state copy on Workshop tab.
+
+## What does NOT change
+
+- Homepage hero, the two cards, nav, the Drop In screen, the `ChannelView` room UI, all auth/RLS/payment/age/gallery code.
+- `/workshops/new` (full scheduling form) stays for admins; not surfaced in nav.
+- Mediums work from the last batch.
+
+## Acceptance checks
+
+- Homepage → Drop in → in a room = 2 clicks. ✓
+- Collab detail (as owner) → "Open a Workshop on this" → in a room = 2 clicks. ✓
+- Scheduled Workshop with no host at T+15 → automatically becomes a live drop-in (verify via cron sweep). ✓
+- Solo user with no other users online → can post a Collab and share a link where logged-out friends apply. ✓ (already works; we just surface it)
+
+---
+
+Want me to start with steps 1 + 2 (migration + Collab → Workshop button + Live chip), then come back for the Workshop-tab pills and the no-show sweep?
