@@ -294,12 +294,13 @@ function ProfilePage() {
   return (
     <main>
       {/* Cover */}
-      <div className="relative h-48 overflow-hidden bg-surface-2 md:h-64">
+      <div className="relative h-56 overflow-hidden bg-surface-2 md:h-80">
         {profile.cover_url ? (
           <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full gradient-warm opacity-70" />
         )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background/60" />
       </div>
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
