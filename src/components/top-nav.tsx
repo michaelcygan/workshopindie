@@ -54,10 +54,11 @@ export function TopNav() {
             </span>
           )}
           <Link to="/collab/new" className="hidden md:inline-flex">
-            <Button size="sm" className="rounded-full gap-1.5">
+            <Button data-firstrun="collab" size="sm" className="rounded-full gap-1.5">
               <Megaphone className="h-4 w-4" /> Post a Collab
             </Button>
           </Link>
+
 
           {loading ? null : user ? (
             <>
