@@ -79,8 +79,11 @@ function SettingsPage() {
   const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({
     account: null,
     plus: null,
+    notifications: null,
     privacy: null,
     blocked: null,
+    reports: null,
+    data: null,
     danger: null,
   });
 
