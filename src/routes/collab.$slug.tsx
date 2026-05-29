@@ -160,6 +160,11 @@ function CollabDetail() {
     onSuccess: () => { toast.success("Reopened"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
     onError: (e: Error) => toast.error(e.message),
   });
+  const extendMut = useMutation({
+    mutationFn: (endsOn: string) => extendFn({ data: { collabPostId: post!.id, endsOn } }),
+    onSuccess: () => { toast.success("Deadline extended"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
