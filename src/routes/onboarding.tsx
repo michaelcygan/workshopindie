@@ -94,15 +94,18 @@ function Onboarding() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Welcome to Workshop");
-    navigate({ to: "/" });
+    toast.success("Profile created");
+    navigate({ to: "/", search: { start: 1 } as never });
   };
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
-        <h1 className="font-display text-3xl text-ink">Set up your studio</h1>
-        <p className="mt-1 text-sm text-ink-muted">Tell us how to credit you. You can change all of this later.</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 1 of 2 — Profile basics</p>
+        <h1 className="mt-1 font-display text-3xl text-ink">Create your profile</h1>
+        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your first move. You can change anything later.</p>
+
+
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
           <div className="grid grid-cols-2 gap-3">
