@@ -219,8 +219,7 @@ function NewCollab() {
         }
       }
       setSubmitting(false);
-      toast.success("Collab posted. Your Workshop is on the calendar.");
-      navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+      setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
       return;
     }
 
@@ -228,20 +227,35 @@ function NewCollab() {
       try {
         const res = await openWorkshopFn({ data: { collabPostId: post.id } });
         setSubmitting(false);
-        toast.success("Your Workshop is live — say hi.");
-        navigate({ to: "/instant/$id", params: { id: res.roomId } });
+        setPostedDialog({ slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
         return;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Couldn't open the Workshop — your Collab is posted.");
         setSubmitting(false);
-        navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+        setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: null });
         return;
       }
     }
 
     setSubmitting(false);
-    toast.success("Your Collab is live.");
-    navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+    setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: null });
+  }
+
+  const shareUrl = postedDialog
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collab/${postedDialog.slug}`
+    : "";
+
+  async function copyShareLink() {
+    if (!postedDialog) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      toast.success("Link copied — share away.");
+      logShareEvent({ data: { collabPostId: postedDialog.slug, channel: "copy" } }).catch(() => {});
+    } catch {
+      toast.error("Couldn't copy — long-press the link to copy it manually.");
+    }
   }
 
   return (
