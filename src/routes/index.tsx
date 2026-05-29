@@ -190,12 +190,12 @@ function Index() {
             </div>
           ) : !works || works.length === 0 ? (
             <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-              <h3 className="font-display text-2xl text-ink">Nothing here yet — go make something.</h3>
+              <h3 className="font-display text-2xl text-ink">Nothing here yet — post your work.</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                First one's on you. Drop in, or post what you want to make.
+                Be the first to post your work and start your portfolio.
               </p>
-              <Link to="/instant" className="mt-5 inline-block">
-                <Button className="rounded-full">Drop into a Workshop</Button>
+              <Link to="/works/new" className="mt-5 inline-block">
+                <Button className="rounded-full">Post a Work</Button>
               </Link>
             </div>
           ) : (
