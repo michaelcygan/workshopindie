@@ -94,15 +94,20 @@ function Onboarding() {
       .eq("id", user.id);
     setSaving(false);
     if (error) return toast.error(error.message);
-    toast.success("Welcome to Workshop");
+    toast.success("Profile created");
+    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
     navigate({ to: "/" });
+
   };
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
-        <h1 className="font-display text-3xl text-ink">Set up your studio</h1>
-        <p className="mt-1 text-sm text-ink-muted">Tell us how to credit you. You can change all of this later.</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 1 of 2 — Profile basics</p>
+        <h1 className="mt-1 font-display text-3xl text-ink">Create your profile</h1>
+        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your first move. You can change anything later.</p>
+
+
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
           <div className="grid grid-cols-2 gap-3">
@@ -115,7 +120,7 @@ function Onboarding() {
               <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
           </div>
-          <p className="-mt-3 text-xs text-ink-muted">Shown as "{firstName ? firstName : "First"} {lastName ? `${lastName[0].toUpperCase()}.` : "L."}" on your work. You can claim your public @handle later.</p>
+          <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
 
           <div className="space-y-1.5">
             <Label htmlFor="dob">Date of birth</Label>
@@ -191,8 +196,9 @@ function Onboarding() {
           </div>
 
           <Button type="submit" className="w-full rounded-full" disabled={saving}>
-            {saving ? "Saving…" : "Enter Workshop"}
+            {saving ? "Saving…" : "Continue"}
           </Button>
+
         </form>
       </motion.div>
     </div>

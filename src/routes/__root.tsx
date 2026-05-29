@@ -8,6 +8,8 @@ import { TopNav } from "@/components/top-nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { WelcomeTour } from "@/components/welcome-tour";
+import { FirstRunHint } from "@/components/first-run-hint";
+
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -104,6 +106,8 @@ function RootComponent() {
           <Outlet />
           <MobileNav />
           <WelcomeTour />
+          <FirstRunHint />
+
         </div>
         <Toaster />
       </AuthProvider>

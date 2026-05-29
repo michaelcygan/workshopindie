@@ -31,7 +31,7 @@ export function TopNav() {
         </Link>
 
         <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
-          <Link to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
+          <Link data-firstrun="instant" to="/instant" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
           <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
           <Link to="/gallery" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Gallery</Link>
           <Link to="/cities" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Cities</Link>
@@ -54,22 +54,24 @@ export function TopNav() {
             </span>
           )}
           <Link to="/collab/new" className="hidden md:inline-flex">
-            <Button size="sm" className="rounded-full gap-1.5">
+            <Button data-firstrun="collab" size="sm" className="rounded-full gap-1.5">
               <Megaphone className="h-4 w-4" /> Post a Collab
             </Button>
           </Link>
+
 
           {loading ? null : user ? (
             <>
             <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition">
+                <button data-firstrun="publish" className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">{initial}</AvatarFallback>
                   </Avatar>
                 </button>
+
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-52">
                 <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
