@@ -2,13 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale } from "lucide-react";
+import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale, Check, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
+import { logShareEvent } from "@/lib/collab.functions";
 
 export const Route = createFileRoute("/collab/new")({ component: NewCollab });
 
