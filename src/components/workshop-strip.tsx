@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Radio, CalendarClock, MapPin, Sparkles } from "lucide-react";
+import { Radio, CalendarClock, MapPin, Sparkles, Target } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity } from "@/hooks/use-default-city";
 import { InstantActivityTicker } from "@/components/instant-activity-ticker";
 import { cn } from "@/lib/utils";
 
-type Pill = "live" | "upcoming" | "city" | "mine";
+type Pill = "live" | "upcoming" | "city" | "mine" | "collab";
 
 type ScheduledRow = {
   id: string;
