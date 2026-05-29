@@ -228,7 +228,7 @@ function Index() {
             <Megaphone className="h-5 w-5" />
           </span>
           <h3 className="mt-3 font-display text-xl text-ink">Open Collab calls</h3>
-          <p className="mt-1 text-sm text-ink-muted">Real projects, real roles. Jump on one.</p>
+          <p className="mt-1 text-sm text-ink-muted">People actually building stuff. Help out — or post your own.</p>
           <div className="mt-3 text-sm text-gradient-motion group-hover:underline">Browse the board →</div>
         </Link>
       </section>
