@@ -472,33 +472,6 @@ function NewCollab() {
           </div>
         </section>
 
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-1.5"><Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-xs font-normal text-ink-muted">(optional)</span></Label>
-            {rights ? (
-              <button type="button" onClick={() => { setRights(null); setRightsOpen(false); }} className="text-xs text-ink-muted hover:text-ink">Clear</button>
-            ) : !rightsOpen ? (
-              <button type="button" onClick={() => setRightsOpen(true)} className="text-xs text-ink-muted hover:text-ink">+ Add a rights note</button>
-            ) : (
-              <button type="button" onClick={() => setRightsOpen(false)} className="text-xs text-ink-muted hover:text-ink">Hide</button>
-            )}
-          </div>
-          {(rightsOpen || rights) && (
-            <div className="space-y-2 rounded-2xl border border-dashed border-border bg-surface/40 p-3">
-              <p className="text-xs text-ink-muted">Set expectations now to avoid friction later.</p>
-              {RIGHTS_OPTIONS.map((o) => (
-                <label key={o.id} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition", rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40")}>
-                  <input type="radio" name="rights" className="mt-1 accent-ink" checked={rights === o.id} onChange={() => setRights(o.id)} />
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-ink">{o.label}</span>
-                    <span className="block text-xs text-ink-muted">{o.body}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
-        </section>
-
         <section className="space-y-3 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
           <div>
             <Label>Workshop on this Collab</Label>
