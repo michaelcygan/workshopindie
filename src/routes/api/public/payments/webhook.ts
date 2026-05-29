@@ -160,6 +160,15 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: 
     },
     { onConflict: "stripe_subscription_id" },
   );
+
+  // Referral reward: only on paying Plus (active or trialing with a real sub).
+  const mappedStatus = mapSubStatus(subscription.status);
+  if (
+    tierFromPrice(priceId) === "plus" &&
+    (mappedStatus === "active" || mappedStatus === "trialing")
+  ) {
+    await maybeGrantReferralReward(userId, env);
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env: StripeEnv) {
