@@ -18,6 +18,9 @@ type ScheduledRow = {
   starts_at: string | null;
   city_id: string | null;
   topic_collab_post_id: string | null;
+  status?: string | null;
+  mode?: string | null;
+  host_user_id?: string | null;
 };
 
 function fmtWhen(iso: string | null) {
