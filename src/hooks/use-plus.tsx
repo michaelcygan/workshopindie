@@ -5,7 +5,7 @@ import { getStripeEnvironment } from "@/lib/stripe";
 
 export const FREE_PORTFOLIO_CAP = 10;
 export const FREE_OPEN_COLLAB_CAP = 2;
-export const FREE_LOUNGE_MINUTES_PER_DAY = 60;
+export const FREE_LOUNGE_MINUTES_PER_DAY = 30;
 
 export type PlusState = {
   isPlus: boolean;
