@@ -160,6 +160,7 @@ function NewCollab() {
       contact_mode: contactMode,
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
+      rights_arrangement: rights,
       status: "open",
     }).select("id,slug").single();
 
