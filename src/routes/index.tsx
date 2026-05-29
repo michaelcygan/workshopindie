@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Megaphone, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
