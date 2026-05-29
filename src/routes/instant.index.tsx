@@ -2,13 +2,13 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft, Radio } from "lucide-react";
+import { Mic, Video, Loader2, ArrowLeft, Radio, Megaphone } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
-import type { Category } from "@/lib/categories";
+import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/instant/")({
@@ -29,6 +29,8 @@ function InstantPreflight() {
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
+  const [selectedMedium, setSelectedMedium] = useState<Category | null>(null);
+  const selectedLabel = selectedMedium ? CATEGORIES.find((c) => c.id === selectedMedium)?.label ?? null : null;
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
@@ -82,16 +84,22 @@ function InstantPreflight() {
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(false); return; }
-      const { roomId } = await drop();
-      router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      if (selectedMedium) {
+        const { roomId } = await dropMedium({ data: { medium: selectedMedium } });
+        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      } else {
+        const { roomId } = await drop();
+        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't drop in");
       setBusy(false);
     }
   }
 
-  async function handleJoinMedium(medium: Category) {
+  async function handleJoinNow(medium: Category) {
     if (busy || !canDrop) return;
+    setSelectedMedium(medium);
     setBusy(true);
     try {
       const mode = await preGrantMedia();
@@ -111,7 +119,12 @@ function InstantPreflight() {
       </Link>
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
         <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <LoungeForkDropdown onJoinMedium={handleJoinMedium} onLiveCountChange={setLiveCount} />
+          <LoungeForkDropdown
+            selectedMedium={selectedMedium}
+            onSelectMedium={setSelectedMedium}
+            onJoinNow={handleJoinNow}
+            onLiveCountChange={setLiveCount}
+          />
           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <span className="relative inline-flex h-2 w-2">
               <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
@@ -133,7 +146,9 @@ function InstantPreflight() {
           </span>
         </h1>
         <p className="mt-3 text-lg text-ink-muted">
-          A seat just opened. Take it.
+          {selectedLabel
+            ? `Drop into a ${selectedLabel} workshop. Leaderless, focused.`
+            : "A seat just opened. Take it."}
         </p>
       </motion.div>
 
@@ -146,7 +161,9 @@ function InstantPreflight() {
             className="w-full rounded-2xl h-auto py-6 flex-col gap-2"
           >
             {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Radio className="h-6 w-6" />}
-            <span className="text-base font-medium">{busy ? "Finding you a seat…" : "Drop in"}</span>
+            <span className="text-base font-medium">
+              {busy ? "Finding you a seat…" : selectedLabel ? `Drop into ${selectedLabel}` : "Drop in"}
+            </span>
           </Button>
         </motion.div>
 
@@ -172,8 +189,18 @@ function InstantPreflight() {
           </p>
         )}
         <p className="mt-3 text-center text-xs text-ink-muted">
-          Workshops cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a Workshop on one of your Collabs.
+          Cap 5. Voice or video, your call once you're in.
         </p>
+
+        <div className="mt-6 flex items-center justify-center">
+          <Link
+            to="/collab"
+            className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm text-ink-soft hover:border-ink/40 hover:text-ink transition-colors"
+          >
+            <Megaphone className="h-4 w-4" />
+            <span>Host a focused session — open a Workshop on a Collab</span>
+          </Link>
+        </div>
 
         <WorkshopStrip />
       </div>
