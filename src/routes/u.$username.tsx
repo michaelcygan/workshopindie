@@ -969,3 +969,180 @@ function FrequentCollaborators({ userId }: { userId: string }) {
     </section>
   );
 }
+
+/* ---------------- OWNER-ONLY: DRAFTS TAB ---------------- */
+
+type DraftRow = { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; updated_at: string };
+
+function DraftsTab({ items, isLoading }: { items: DraftRow[]; isLoading: boolean }) {
+  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
+  if (items.length === 0) {
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">No drafts. Unfinished Works land here while you're still cooking.</p>
+        <Link to="/works/new" className="mt-4 inline-block">
+          <Button className="rounded-full">Publish a Work</Button>
+        </Link>
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {items.map((w) => (
+        <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+          {w.cover_url ? (
+            <img src={w.cover_url} className="h-16 w-16 rounded-xl object-cover" alt="" />
+          ) : (
+            <div className="h-16 w-16 rounded-xl bg-surface-2" />
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <CategoryChip category={w.category} />
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.status.replace("_", " ")}</span>
+            </div>
+            <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
+          </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+/* ---------------- OWNER-ONLY: ACTIVITY TAB ---------------- */
+
+type AppliedRow = {
+  id: string;
+  status: string;
+  submitted_at: string;
+  role: { role_name: string } | null;
+  workshop: { id: string; title: string; slug: string; category: Category; starts_at: string | null };
+};
+
+type ParticipatingRow = {
+  id: string;
+  participant_status: string;
+  joined_at: string;
+  workshop: {
+    id: string;
+    title: string;
+    slug: string;
+    category: Category;
+    status: string;
+    starts_at: string | null;
+    check_in_opens_at: string | null;
+    check_in_closes_at: string | null;
+  };
+};
+
+function whenText(starts: string | null) {
+  if (!starts) return "Time TBD";
+  const d = new Date(starts);
+  return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
+    + " · " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRow[]; participating: ParticipatingRow[]; isLoading: boolean }) {
+  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
+  if (applied.length === 0 && participating.length === 0) {
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">No Workshop activity yet. Apply to a Collab or drop into a live Workshop.</p>
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+          <Link to="/collab"><Button variant="outline" className="rounded-full">Browse Collabs</Button></Link>
+          <Link to="/instant"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+        </div>
+      </div>
+    );
+  }
+  const now = Date.now();
+  return (
+    <div className="space-y-6">
+      {participating.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Participating</h2>
+          <div className="mt-2 space-y-2">
+            {participating.map((p) => {
+              const w = p.workshop;
+              const ciOpen = w.check_in_opens_at && w.check_in_closes_at
+                && now >= new Date(w.check_in_opens_at).getTime()
+                && now <= new Date(w.check_in_closes_at).getTime();
+              return (
+                <Link key={p.id} to="/workshops/$slug" params={{ slug: w.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+                  <CategoryChip category={w.category} />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate font-medium text-ink">{w.title}</h3>
+                    <p className="text-xs text-ink-muted">{whenText(w.starts_at)}</p>
+                  </div>
+                  {ciOpen && <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Check in now</span>}
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{p.participant_status.replace("_", " ")}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+      {applied.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Applied</h2>
+          <div className="mt-2 space-y-2">
+            {applied.map((a) => (
+              <Link key={a.id} to="/workshops/$slug" params={{ slug: a.workshop.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+                <CategoryChip category={a.workshop.category} />
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate font-medium text-ink">{a.workshop.title}</h3>
+                  <p className="text-xs text-ink-muted">{a.role?.role_name ? `for ${a.role.role_name} · ` : ""}{whenText(a.workshop.starts_at)}</p>
+                </div>
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{a.status.replace("_", " ")}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- OWNER-ONLY: CLOSED COLLAB NUDGES ---------------- */
+
+function ClosedCollabNudges({ items }: { items: { id: string; title: string; slug: string; description: string | null }[] }) {
+  const qc = useQueryClient();
+  const dismissFn = useServerFn(dismissPublishNudge);
+  const [active, setActive] = useState<{ id: string; title: string; description: string | null } | null>(null);
+
+  async function dismiss(id: string) {
+    try {
+      await dismissFn({ data: { collabPostId: id } });
+      qc.invalidateQueries({ queryKey: ["profile-closed-collabs"] });
+    } catch { /* silent */ }
+  }
+
+  return (
+    <section className="mt-6 space-y-2">
+      {items.map((c) => (
+        <div key={c.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-medium text-ink">Wrap up: {c.title}</p>
+            <p className="text-xs text-ink-muted">Publish the Work that came out of this Collab — 3 taps.</p>
+          </div>
+          <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => dismiss(c.id)}>
+            <X className="h-4 w-4" />
+          </Button>
+          <Button size="sm" className="rounded-full gap-1" onClick={() => setActive({ id: c.id, title: c.title, description: c.description })}>
+            <Sparkles className="h-3.5 w-3.5" /> Publish Work
+          </Button>
+        </div>
+      ))}
+      {active && (
+        <PublishFromCollabSheet
+          open={!!active}
+          onOpenChange={(o) => { if (!o) { setActive(null); qc.invalidateQueries({ queryKey: ["profile-closed-collabs"] }); } }}
+          postId={active.id}
+          postTitle={active.title}
+          postDescription={active.description}
+        />
+      )}
+    </section>
+  );
+}
+
