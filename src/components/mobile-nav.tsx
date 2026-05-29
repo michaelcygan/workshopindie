@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, MapPin, Megaphone } from "lucide-react";
+import { Radio, Users, LayoutGrid, MapPin, Megaphone, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
