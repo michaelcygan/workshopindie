@@ -192,7 +192,7 @@ function Index() {
             <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
               <h3 className="font-display text-2xl text-ink">Nothing here yet — go make something.</h3>
               <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                Drop into a Workshop. Meet people. Build something worth showing.
+                First one's on you. Drop in, or post what you want to make.
               </p>
               <Link to="/instant" className="mt-5 inline-block">
                 <Button className="rounded-full">Drop into a Workshop</Button>
