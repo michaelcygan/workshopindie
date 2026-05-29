@@ -161,7 +161,9 @@ function InstantPreflight() {
             className="w-full rounded-2xl h-auto py-6 flex-col gap-2"
           >
             {busy ? <Loader2 className="h-6 w-6 animate-spin" /> : <Radio className="h-6 w-6" />}
-            <span className="text-base font-medium">{busy ? "Finding you a seat…" : "Drop in"}</span>
+            <span className="text-base font-medium">
+              {busy ? "Finding you a seat…" : selectedLabel ? `Drop into ${selectedLabel}` : "Drop in"}
+            </span>
           </Button>
         </motion.div>
 
