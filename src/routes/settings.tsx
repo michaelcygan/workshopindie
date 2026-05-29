@@ -62,12 +62,15 @@ export const Route = createFileRoute("/settings")({
   }),
 });
 
-type SectionId = "account" | "plus" | "privacy" | "blocked" | "danger";
+type SectionId = "account" | "plus" | "notifications" | "privacy" | "blocked" | "reports" | "data" | "danger";
 const SECTIONS: { id: SectionId; label: string; icon: typeof UserIcon }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "plus", label: "Plus membership", icon: Sparkles },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Lock },
   { id: "blocked", label: "Blocked users", icon: Ban },
+  { id: "reports", label: "My reports", icon: Flag },
+  { id: "data", label: "Your data", icon: Download },
   { id: "danger", label: "Delete account", icon: ShieldAlert },
 ];
 
