@@ -1,140 +1,88 @@
 ## Goal
 
-Rewrite the words on screen so the site sounds like a person who actually uses it — not a product spec. Workshop is the room. Collab is the idea. The site should feel like a friend telling you what to do next.
+Tighten the "Post a Collab" flow so it's branded, scoped to creative mediums, and offers an instant "drop into a Workshop now" path in addition to (or instead of) scheduling.
 
-## Voice
+---
 
-- Short. Specific. A little wry.
-- No "time-boxed creative sessions." No "seamlessly." No "engage." No "creators."
-- Verbs over nouns. "Open one" > "Initialize a session."
-- Say what happens, not what it is.
+## 1. Category — drop non-medium options
 
-## File-by-file rewrites
+A Collab becomes a Work, so only WORK_CATEGORY mediums apply.
 
-### `src/routes/index.tsx` — homepage
+- In `src/routes/collab.new.tsx`, replace `CATEGORIES` with `WORK_CATEGORIES` from `src/lib/categories.ts` (Film, Music, Writing, Build, Visual).
+- Remove Critique, Business of Art, Co-working from the chip row.
+- Default `category` stays `"visual"` (already a Work category).
 
-- Hero subtitle (line 83):
-  - was: *Make something with other artists. Find them, create it, ship it.*
-  - new: **Walk into a room of artists. Or post the thing you want to make and pull a room together.**
+## 2. Branded copy
 
-- Left card body (line 100):
-  - was: *A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work.*
-  - new: **Five seats. Voice or video. Whoever's around, right now.**
+- H1 "Post a call" → **"Post a Collab"**.
+- Subtitle: **"Share what you're making and the roles you need. People reach out — you pick your team."**
+- Submit button "Post call" → **"Post Collab"**.
+- "Cancel" stays.
+- Toast "Posted to the Collab Board" → **"Your Collab is live."**
+- Toast "Posted — your Workshop is scheduled." → **"Collab posted. Your Workshop is on the calendar."**
 
-- Right card body (line 118):
-  - was: *Got an idea sitting in your drafts? Post it. List the roles you need. People show up.*
-  - new: **The thing you keep meaning to make. Post it. Open a room on it when you're ready.**
+## 3. Replace the "Set a time" block with a three-mode Workshop chooser
 
-- Empty gallery state (lines 193–198):
-  - was body: *Drop into a Workshop. Meet people. Build something worth showing.*
-  - new: **First one's on you. Drop in, or post what you want to make.**
+Today the block only offers Schedule. Make it a clearer set of three options the user picks after the rest of the form:
 
-- "Open Collab calls" card (line 231):
-  - was: *Real projects, real roles. Jump on one.*
-  - new: **People actually building stuff. Help out — or post your own.**
+```text
+Pair this Collab with a Workshop
+( ) Not yet — just post it
+( ) Open a Workshop right now — meet people, brainstorm, start casting
+( ) Schedule a Workshop — pick a time and let people RSVP
+```
 
-### `src/routes/instant.index.tsx` — Drop in
+Render as three stacked radio-style cards inside the existing dashed section. Replace icon + title + helper text per option:
 
-- Subhead (~line 132):
-  - was: *Walk into a live room with up to 5 artists. A seat opens up — take it.*
-  - new: **A seat just opened. Take it.**
+- **Not yet** — "Post the Collab on its own. You can open a Workshop on it any time."
+- **Open one now** — "Spin up a live Workshop on this Collab the moment you post. Up to 5 seats. Meet collaborators, brainstorm the idea, audition roles on the spot."
+- **Schedule one** — "Pick a date and time. People who apply get the invite and can RSVP. They drop in when it starts."
 
-- Bottom helper (~line 175):
-  - was: *Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.*
-  - new: **Rooms cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a room on one of your Collabs.**
+When **Schedule** is selected, show the existing `datetime-local` input plus the no-show helper.
+When **Open one now** is selected, show a small reassuring line: *"After you post, we'll drop you straight into the Workshop."*
 
-### `src/routes/workshops.index.tsx`
+Replace the section heading "Set a time for a live Workshop on this" with **"Workshop on this Collab"**.
 
-- `head` title:
-  - was: *Workshops — Find people. Make the thing. — Workshop*
-  - new: **Workshops — what's on, what's next**
+Replace existing description "Pick a time and we'll schedule a room on this Collab. People RSVP, then drop in when it starts." — it's only shown under the Schedule option now (see above).
 
-- `head` description + og:
-  - was: *Time-boxed creative sessions. Apply for a role, show up, ship work together.*
-  - new: **What's running right now, what's coming up, and what's near you. RSVP, or just drop in.**
+## 4. Submit-handler changes
 
-- H1 + sub (around line 85):
-  - was: *Workshops* / *Time-boxed creative sessions. Apply, show up, make the thing.*
-  - new: **Workshops** / **Scheduled rooms you can RSVP to. Or skip the wait — drop in.**
+State shape: replace `scheduleOn: boolean` + `scheduledAt: string` with:
 
-- Empty state (lines 122–128):
-  - was: *No Workshops yet — schedule the first one.* / *Pick a category, set a clock, define roles. People will apply.*
-  - new: **Nothing on the books.** / **Post a Collab, pick a time — the room schedules itself.**
+```ts
+type WorkshopMode = "none" | "now" | "scheduled";
+const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
+const [scheduledAt, setScheduledAt] = useState<string>("");
+```
 
-### `src/routes/workshops.new.tsx`
+In `onSubmit`, after the Collab + roles insert:
 
-- Remove the ComingSoon gate (lines 71–72) entirely.
-- H1 stays: *Schedule a Workshop*.
-- Above the form, add one line of intro: **A room with a start time. People RSVP. They show up.**
-- Submit button stays: *Publish Workshop*.
+- `workshopMode === "scheduled"` — existing scheduled-Workshop insert (unchanged).
+- `workshopMode === "now"` — call the existing `openWorkshopOnCollab` server fn with the new Collab's id. On success navigate to `/instant/$id` (the paired room id) instead of the Collab detail page. Toast: **"Your Workshop is live — say hi."**
+- `workshopMode === "none"` — current behavior; navigate to `/collab/$slug`.
 
-### `src/routes/collab.new.tsx`
+`openWorkshopOnCollab` already does all the work (creates Workshop, paired room, host participant, applicant notifications, idempotent). No server-side changes needed.
 
-- Helper under schedule toggle (line 347):
-  - was: *Optional. Posts a scheduled Workshop tied to this Collab. People can RSVP and drop into the room when it starts.*
-  - new: **Pick a time and we'll schedule a room on this Collab. People RSVP, then drop in when it starts.**
+## 5. Small additional optimizations (same flow, low risk)
 
-- No-show note (line 363):
-  - was: *If no one shows up within 15 minutes of the start time, the Workshop auto-converts to a live drop-in so the room never dies silently.*
-  - new: **If nobody shows in the first 15 minutes, the room flips to drop-in mode. Nothing dies quietly.**
+1. **Roles UX** — current default `"Collaborator"` is generic. Change the initial role placeholder to `""` with placeholder text only, AND add a quick chip strip above the roles list with one-tap presets per selected category (e.g. Music → Vocalist, Producer, Mixer; Film → DP, Editor, Actor; Writing → Co-writer, Editor; Build → Designer, Engineer; Visual → Photographer, Model, Stylist). Tapping a chip appends a role row pre-filled with that name. Keeps the form fast for first-time posters.
+2. **Description placeholder** — keep but trim to: *"What you're making, the vibe, what's already done, and what 'great' looks like."*
+3. **"How should people reach you"** — rename to **"How people contact you"** and reorder so "In-app message" is recommended (already default). No logic change.
+4. **Compensation** label → **"Pay"** with helper text under it: *"Set expectations up front — it makes better matches."* (small, `text-xs text-ink-muted`).
+5. **Where** — leave logic, but rename "Online / In person / Hybrid" copy to **"Remote / In person / Either"** (matches how people actually talk).
 
-### `src/routes/collab.index.tsx`
+These are copy/UX-only and don't touch the schema or server functions.
 
-- meta description (line 30):
-  - was: *Open calls for collaborators. Post your idea or jump on someone else's.*
-  - new: **Things people are trying to make. Help out, or post your own and open a room on it.**
+## Files touched
 
-- H1 sub (verify around line 237):
-  - new: **What people are trying to make. Help out — or open a room on yours.**
+- `src/routes/collab.new.tsx` — all of the above.
 
-### `src/routes/collab.$slug.tsx`
+No DB migration, no server function changes, no RLS changes.
 
-- Owner button label stays: *Open a Workshop on this*.
-- Public "Live now — join" pill stays.
-- Microcopy near the owner button (if any helper text):
-  - new: **One tap. Five seats. Your applicants get pinged.**
+## Acceptance
 
-### `src/components/workshop-strip.tsx`
-
-- Empty state (line 66):
-  - was: *...Post a Collab and set a time.*
-  - new: **Nothing scheduled. Post a Collab and pick a time — or just drop in.**
-
-- Pill labels stay: *Live now*, *Upcoming*, *In {city}*.
-
-### `src/components/welcome-tour.tsx`
-
-- Step 2 title (line 25): stays *Drop into a live room*.
-- Step 2 body (line 26):
-  - was: *Instant Workshops let you create with other artists in real time — no scheduling.*
-  - new: **A live room of up to 5. Walk in, meet whoever's around, get to work.**
-- Step 2 CTA (line 27): *Open Instant* → **Drop in**.
-
-- Step 3 title (line 31): *Post a collab call* → **Post a Collab**.
-- Step 3 body (line 32):
-  - was: *Looking for a vocalist, dancer, or DP? Post a collab and we'll route the right people.*
-  - new: **Need a vocalist, a dancer, a DP? Post it. Open a room on it whenever you're ready.**
-- Step 3 CTA (line 33): *Browse collabs* → **Browse Collabs**.
-
-### `src/components/top-nav.tsx`
-
-- Dropdown item (line 77): *Drop into Workshop* → **Drop in**.
-- Everything else stays.
-
-### `src/components/mobile-nav.tsx`
-
-- No copy changes needed (nav labels already right).
-
-### `src/components/workshop-card.tsx`
-
-- Where mode is shown, label as: **Live now**, **Scheduled**, **On a Collab**. Copy-only; no new logic. Skip if the card doesn't already surface mode.
-
-## Out of scope
-
-- Route paths and URLs.
-- Server functions, schema, RLS, notification payloads.
-- Any new components or logic. This is words only.
-
-## Final pass
-
-After edits: `rg "Instant Workshop|Open Instant|Coming soon|time-boxed|creators"` → expect zero user-facing hits.
+- Category row shows only Film, Music, Writing, Build, Visual.
+- Header reads "Post a Collab".
+- Workshop section offers three explicit options; "Open one now" posts the Collab and drops the user into the live Workshop room.
+- Scheduling still works exactly as before when picked.
+- Role presets appear contextually under the selected category.
