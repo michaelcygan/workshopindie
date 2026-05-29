@@ -139,12 +139,23 @@ function MyCollabsPage() {
     queryFn: async (): Promise<PublishedRow[]> => {
       const { data } = await supabase
         .from("collab_posts")
-        .select("id,title,category,closed_at,resulting_work_id,work:works!collab_posts_resulting_work_id_fkey(slug,title,cover_url)")
+        .select("id,title,category,closed_at,resulting_work_id")
         .eq("user_id", user!.id)
         .not("resulting_work_id", "is", null)
         .order("closed_at", { ascending: false })
         .limit(50);
-      return ((data ?? []) as unknown as PublishedRow[]);
+      const rows = (data ?? []) as { id: string; title: string; category: Category; closed_at: string | null; resulting_work_id: string | null }[];
+      const workIds = rows.map((r) => r.resulting_work_id).filter(Boolean) as string[];
+      if (workIds.length === 0) return rows.map((r) => ({ ...r, work: null }));
+      const { data: works } = await supabase
+        .from("works")
+        .select("id,slug,title,cover_url")
+        .in("id", workIds);
+      const map = new Map((works ?? []).map((w) => [w.id, w]));
+      return rows.map((r) => {
+        const w = r.resulting_work_id ? map.get(r.resulting_work_id) : undefined;
+        return { ...r, work: w ? { slug: w.slug, title: w.title, cover_url: w.cover_url } : null };
+      });
     },
   });
 
