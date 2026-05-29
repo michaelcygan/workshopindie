@@ -7,7 +7,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
-import { InstantActivityTicker } from "@/components/instant-activity-ticker";
 import { WorkshopStrip } from "@/components/workshop-strip";
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
