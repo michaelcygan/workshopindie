@@ -147,6 +147,8 @@ function GalleryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/gallery" });
   const { user } = useAuth();
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const [qInput, setQInput] = useState(search.q);
   const qDebounced = useDebounced(qInput, 250);
 
