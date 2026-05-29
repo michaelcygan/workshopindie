@@ -219,7 +219,7 @@ function NewCollab() {
         }
       }
       setSubmitting(false);
-      setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
+      setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
       return;
     }
 
@@ -227,18 +227,18 @@ function NewCollab() {
       try {
         const res = await openWorkshopFn({ data: { collabPostId: post.id } });
         setSubmitting(false);
-        setPostedDialog({ slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
+        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
         return;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Couldn't open the Workshop — your Collab is posted.");
         setSubmitting(false);
-        setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: null });
+        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
         return;
       }
     }
 
     setSubmitting(false);
-    setPostedDialog({ slug: post.slug, workshopRoomId: null, scheduledAt: null });
+    setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
   }
 
   const shareUrl = postedDialog
