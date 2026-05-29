@@ -514,9 +514,16 @@ function ProfilePage() {
           />
         )}
 
-        {/* Owner-only: wrap-up nudges for closed collabs without a published Work */}
+        {/* Wrap-up nudges now live in /me/collabs to keep the public profile clean. */}
         {isOwn && closedNudges.length > 0 && (
-          <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
+          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+            <Sparkles className="h-5 w-5 text-primary" />
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
+              <p className="text-xs text-ink-muted">Publish the Work that came out of them.</p>
+            </div>
+            <Link to="/me/collabs"><Button size="sm" className="rounded-full">Wrap up</Button></Link>
+          </div>
         )}
 
         {/* Stats strip */}
