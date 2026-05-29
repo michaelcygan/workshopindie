@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle } from "lucide-react";
+import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,14 @@ type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
 type ContactMode = "email_relay" | "external_link";
 type WorkshopMode = "none" | "now" | "scheduled";
+type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons";
 type RoleDraft = { role_name: string; quantity: number; description: string };
+
+const RIGHTS_OPTIONS: { id: RightsArrangement; label: string; body: string }[] = [
+  { id: "owner_retains", label: "Owner keeps publishing rights", body: "You retain the final say on how the work is released. Collaborators are credited." },
+  { id: "equal_split", label: "Equal split among all participants", body: "Everyone who ships on this owns an equal share." },
+  { id: "creative_commons", label: "Creative Commons", body: "Free for anyone to use with attribution (CC BY 4.0)." },
+];
 
 const COMP_OPTIONS: { id: CompType; label: string }[] = [
   { id: "paid", label: "Paid" },
@@ -76,6 +83,8 @@ function NewCollab() {
   ]);
   const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
   const [scheduledAt, setScheduledAt] = useState<string>("");
+  const [rights, setRights] = useState<RightsArrangement | null>(null);
+  const [rightsOpen, setRightsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
@@ -151,6 +160,7 @@ function NewCollab() {
       contact_mode: contactMode,
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
+      rights_arrangement: rights,
       status: "open",
     }).select("id,slug").single();
 
@@ -187,6 +197,9 @@ function NewCollab() {
             ends_at: endsAt.toISOString(),
             location_type: locationMode === "in_person" ? "in_person" : "online",
             city_id: city?.id ?? null,
+            audience_city_ids: locationMode === "in_person" && city?.id
+              ? [city.id, ...alsoCities.map((c) => c.id)]
+              : [],
             participant_cap: 5,
             topic_collab_post_id: post.id,
             visibility: "public",
@@ -407,6 +420,33 @@ function NewCollab() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label className="flex items-center gap-1.5"><Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-xs font-normal text-ink-muted">(optional)</span></Label>
+            {rights ? (
+              <button type="button" onClick={() => { setRights(null); setRightsOpen(false); }} className="text-xs text-ink-muted hover:text-ink">Clear</button>
+            ) : !rightsOpen ? (
+              <button type="button" onClick={() => setRightsOpen(true)} className="text-xs text-ink-muted hover:text-ink">+ Add a rights note</button>
+            ) : (
+              <button type="button" onClick={() => setRightsOpen(false)} className="text-xs text-ink-muted hover:text-ink">Hide</button>
+            )}
+          </div>
+          {(rightsOpen || rights) && (
+            <div className="space-y-2 rounded-2xl border border-dashed border-border bg-surface/40 p-3">
+              <p className="text-xs text-ink-muted">Set expectations now to avoid friction later.</p>
+              {RIGHTS_OPTIONS.map((o) => (
+                <label key={o.id} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition", rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40")}>
+                  <input type="radio" name="rights" className="mt-1 accent-ink" checked={rights === o.id} onChange={() => setRights(o.id)} />
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-ink">{o.label}</span>
+                    <span className="block text-xs text-ink-muted">{o.body}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="space-y-3 rounded-2xl border border-dashed border-border bg-surface/40 p-4">

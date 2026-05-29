@@ -10,7 +10,7 @@ export const getMyAgeFields = createServerFn({ method: "GET" })
     const { userId } = context;
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("birthdate, age_filter_min")
+      .select("birthdate, age_filter_min, home_city_id")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -26,6 +26,7 @@ export const getMyAgeFields = createServerFn({ method: "GET" })
     return {
       birthdate,
       ageFilterMin: (data?.age_filter_min as number | null) ?? null,
+      homeCityId: (data?.home_city_id as string | null) ?? null,
       locked: !!birthdate,
       age,
     };

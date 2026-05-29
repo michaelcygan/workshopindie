@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw, Radio } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw, Radio, Scale } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -49,6 +49,12 @@ const COMP_LABEL: Record<string, string> = {
   paid: "Paid", unpaid: "Unpaid", credit: "Credit", negotiable: "Negotiable", unspecified: "Comp TBD",
 };
 
+const RIGHTS_LABEL: Record<string, string> = {
+  owner_retains: "Owner keeps rights",
+  equal_split: "Equal split",
+  creative_commons: "Creative Commons",
+};
+
 function CollabDetail() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
@@ -70,7 +76,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,live_workshop_id,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -272,6 +278,9 @@ function CollabDetail() {
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
           <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" /> {post.location_mode === "online" ? "Online" : (cityName || post.location_mode)}</span>
           {post.timeline_text && <span className="inline-flex items-center gap-1"><Clock className="h-4 w-4" /> {post.timeline_text}</span>}
+          {post.rights_arrangement && RIGHTS_LABEL[post.rights_arrangement] && (
+            <span className="inline-flex items-center gap-1"><Scale className="h-4 w-4" /> {RIGHTS_LABEL[post.rights_arrangement]}</span>
+          )}
         </div>
 
         {hostUser && (

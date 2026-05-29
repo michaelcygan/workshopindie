@@ -18,6 +18,7 @@ export type WorkshopCardData = {
   confirmed_count: number;
   application_count: number;
   status: string;
+  audience_city_ids?: string[] | null;
   host?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
@@ -56,6 +57,9 @@ export function WorkshopCard({ ws, className }: { ws: WorkshopCardData; classNam
         <div className="mt-auto flex flex-wrap items-center gap-3 pt-3 text-xs text-ink-soft">
           <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {whenText(ws.starts_at)}</span>
           <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {ws.location_type === "online" ? "Online" : ws.location_text || ws.location_type}</span>
+          {ws.audience_city_ids && ws.audience_city_ids.length > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-ink-soft">City-only</span>
+          )}
           <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {seats}</span>
         </div>
         {ws.host && (

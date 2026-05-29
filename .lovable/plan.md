@@ -1,48 +1,61 @@
-# Onboarding language + guided first-start
+# In-person Collabs → city-scoped Workshops + simple rights field
 
-## 1. Rename + reframe the form (`src/routes/onboarding.tsx`)
+## 1. City-scoped Workshops for in-person Collabs
 
-- Title: **"Create your profile"** (was "Set up your studio")
-- Subtitle: **"A few quick details so people can credit you and your feed knows where you are. You can change anything later."**
-- Add a small progress hint above the title: **"Step 1 of 2 — Profile basics"** so the user knows there's a guided second step (the quick start) coming after submit.
-- Submit button: **"Continue"** (was "Enter Workshop") — it doesn't drop them in, it hands off to the quick start.
-- Field copy nits: change "Shown as …on your work" helper to plain "This is how you'll be credited on works and collabs."
-- On success, navigate to `/?start=1` (instead of `/`) so the quick start opens deterministically on the first arrival rather than relying solely on the DB flag.
+When a Collab is in-person and tied to a city, the Workshop spawned from it should only surface to people in that city (host always sees it).
 
-## 2. Rebuild `WelcomeTour` into an animated Quick Start (`src/components/welcome-tour.tsx`)
+**Schema (one migration):**
+- Add `audience_city_ids uuid[] not null default '{}'` to `workshops`.
+- Empty array = public to everyone (today's behavior).
+- Non-empty array = only visible in listings to viewers whose `profiles.home_city_id` is in the array, or who are the host.
 
-Keep the same trigger contract (`onboarded && !tour_completed_at`, plus open if `?start=1`) and the same DB write on finish. Replace the content + visuals:
+**Populate it at creation time:**
+- `src/lib/collab-workshop.functions.ts` (`openWorkshopOnCollab`): read the source Collab's `location_mode`, `city_id`, `also_cities`. If `location_mode === 'in_person'` and `city_id` is set, set the new workshop's `audience_city_ids = [city_id, ...also_cities]` and `location_type = 'in_person'`, `city_id = post.city_id`. Hybrid stays public (it's hybrid).
+- `src/routes/collab.new.tsx` (scheduled-workshop branch): same logic on the inline `workshops.insert(...)`.
 
-**Framing:** "Step 2 of 2 — Pick your first move." Three concrete, mutually exclusive paths instead of a 4-step lecture. Each card is the actual next action, not a description of the app.
+**Filter in listings:**
+- `src/routes/workshops.index.tsx`: include `audience_city_ids,host_user_id` in the select. After fetch, in the same JS filter chain as the age filter, drop rows where `audience_city_ids.length > 0` AND viewer's `home_city_id` is not in it AND viewer is not the host. Anonymous viewers see only unrestricted workshops.
+- Fetch the viewer's `home_city_id` once via a small query alongside `getMyAgeFields` (or extend that server fn — see Technical notes).
+- `src/components/workshop-card.tsx`: when `audience_city_ids.length > 0`, render a small "City-only" chip near the existing location pill so it's obvious to host/admins why visibility is narrower. No new layout.
 
-**Three choice cards (vertical stack on mobile, single column with hover lift):**
-1. **Publish your first work** → `/works/new` — "Drop a track, a clip, a photo set. Lives on your profile forever." (icon: Upload)
-2. **Post a Collab** → `/collab/new` — "Need a vocalist, a DP, a dancer? Put the call out." (icon: Users)
-3. **Drop into a live Workshop** → `/instant` — "Walk into a room of up to 5 and just start making something." (icon: Sparkles)
+**Out of scope:** hiding the workshop *detail* page from non-locals (deep-linked URL still works). This is a listing/discovery scope change, not access control. We can lock the detail page later if abuse appears.
 
-Each card animates in with a 60ms stagger (Framer Motion). On hover the icon nudges right; on click it routes AND marks `tour_completed_at` so it never reopens.
+## 2. Owner-only Workshop creation + leadership (verification only)
 
-**Footer:** "I'll explore on my own" → marks tour complete and closes (no route change).
+Already enforced — no code change. The server fn `openWorkshopOnCollab` rejects any caller that isn't `post.user_id` and sets `host_user_id = userId`. The collab detail UI hides the "Open a Workshop on this" button behind `isOwner`. I'll add a one-line code comment near both spots so this guarantee doesn't get accidentally relaxed.
 
-**Visual:** keeps current modal shell (centered card, bottom sheet on mobile, backdrop blur). Replace the stepper dots with a single headline + the three action cards. No Back/Next buttons — it's one screen, three doors.
+## 3. Optional rights field on Collab
 
-## 3. Light in-app pointer after the modal closes (same file)
+Light-touch, collapsible. No required input.
 
-After the user picks a path OR skips, set a session flag (`sessionStorage["ws.first_run_hint"]`). On the next render of the global header, show a small pulsing dot (~10px) on the matching top-nav item (`+ New`, `Collab`, or `Instant`) for ~12s or until clicked, then clear the flag. This is the "where to click" cue without a full coachmark library.
+**Schema:**
+- Add `rights_arrangement text` to `collab_posts`, nullable, CHECK constraint limiting to: `owner_retains`, `equal_split`, `creative_commons`, or NULL.
 
-- New tiny component `src/components/first-run-hint.tsx` that reads the flag and renders the dot via a portal anchored to a target by `data-firstrun="publish|collab|instant"`.
-- Add the `data-firstrun` attributes to the existing header buttons. No layout change.
+**UI on `src/routes/collab.new.tsx`:**
+- New collapsible section right above the Workshop block, labeled **"Rights (optional)"** with a one-line helper: "Set expectations now to avoid friction later."
+- Closed by default — a single text link "Add a rights note" expands a small radio group with three plain-language options:
+  - **Owner keeps publishing rights** — "You retain the final say on how the work is released. Collaborators are credited."
+  - **Equal split among all participants** — "Everyone who ships on this owns an equal share."
+  - **Creative Commons** — "Free for anyone to use with attribution (CC BY 4.0)."
+- A small "Clear" link beside the group sets it back to null and collapses.
+- No new validation; field is fully optional.
 
-## Files
+**UI on `src/routes/collab.$slug.tsx`:**
+- When `rights_arrangement` is set, render a single line in the metadata strip next to comp/timeline: an icon (Scale from lucide) + the human label. No new section, no modal.
 
-- `src/routes/onboarding.tsx` — copy + redirect change only
-- `src/components/welcome-tour.tsx` — content + layout rewrite, same trigger/finish logic
-- `src/components/first-run-hint.tsx` — new, small (~50 lines)
-- `src/routes/__root.tsx` — mount `<FirstRunHint />` next to `<WelcomeTour />`
-- Header component (whichever currently renders the top-nav buttons) — add 3 `data-firstrun` attrs
+**Out of scope:** legal text, downloadable agreements, per-role rights overrides, percentage splits beyond "equal", any enforcement.
 
-## Out of scope
+## Files touched
 
-- No new DB columns (reusing `tour_completed_at`)
-- No changes to the actual `/works/new`, `/collab/new`, `/instant` flows
-- No multi-step product tour, no coachmark library
+- New migration: `audience_city_ids` on workshops + `rights_arrangement` on collab_posts (single migration, both columns).
+- `src/lib/collab-workshop.functions.ts` — populate `audience_city_ids` and `location_type`/`city_id` from source Collab.
+- `src/routes/collab.new.tsx` — same population in scheduled-workshop insert; add Rights collapsible UI + state + insert.
+- `src/routes/collab.$slug.tsx` — render rights label in metadata strip; verify-comment near owner-gating.
+- `src/routes/workshops.index.tsx` — add fields to select, fetch viewer home_city_id, filter in JS, anon = unrestricted only.
+- `src/components/workshop-card.tsx` — optional "City-only" chip when `audience_city_ids.length > 0`.
+
+## Technical notes
+
+- The viewer's `home_city_id` is on `profiles` and the workshops index already runs a per-user server fn (`getMyAgeFields`). To avoid a separate round-trip, extend that fn to also return `home_city_id` (rename target keys backward-compatibly: keep `age`, `ageFilterMin`, add `homeCityId`). Update both call sites.
+- No RLS change needed — `workshops` already has `visibility = 'public'` filtering; `audience_city_ids` is a soft discovery filter applied client-side. Direct DB reads still work for the detail page.
+- Migration includes `GRANT` review only — both target tables already have correct grants; we're adding columns, not new tables.
