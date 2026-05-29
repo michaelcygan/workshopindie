@@ -285,8 +285,8 @@ function NewCollab() {
         </section>
 
         <section className="space-y-1.5">
-          <Label htmlFor="desc">What's the idea</Label>
-          <Textarea id="desc" rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+          <Label htmlFor="desc">What's the idea <span className="text-destructive">*</span></Label>
+          <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
             placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
         </section>
 
