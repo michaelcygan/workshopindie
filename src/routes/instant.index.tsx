@@ -176,7 +176,7 @@ function InstantPreflight() {
           Rooms cap at 5 — when one fills, the next person opens a fresh one. You can switch between voice and video once inside.
         </p>
 
-        <InstantActivityTicker />
+        <WorkshopStrip />
       </div>
     </main>
   );
