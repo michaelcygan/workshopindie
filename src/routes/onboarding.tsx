@@ -118,7 +118,7 @@ function Onboarding() {
               <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
           </div>
-          <p className="-mt-3 text-xs text-ink-muted">Shown as "{firstName ? firstName : "First"} {lastName ? `${lastName[0].toUpperCase()}.` : "L."}" on your work. You can claim your public @handle later.</p>
+          <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
 
           <div className="space-y-1.5">
             <Label htmlFor="dob">Date of birth</Label>
