@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone, Sparkles } from "lucide-react";
+import { Radio, Shield, Megaphone, Sparkles, Gift } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
@@ -83,6 +83,9 @@ export function TopNav() {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
                   <Sparkles className="mr-2 h-4 w-4" /> {isPlus ? "Manage Plus" : "Go Plus"}
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                  <Gift className="mr-2 h-4 w-4" /> Refer & Earn
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (

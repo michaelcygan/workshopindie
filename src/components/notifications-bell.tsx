@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio } from "lucide-react";
+import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -30,6 +30,7 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
   referral_joined: UserPlus,
+  referral_reward_earned: Gift,
   first_work_shipped: Sparkles,
   work_published: Sparkles,
   collab_first_ship: Sparkles,
@@ -59,6 +60,16 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         subtitle: "Say hi — they came from your invite.",
         href: actorUsername ? `/u/${actorUsername}` : "/me",
       };
+    case "referral_reward_earned": {
+      const applied = n.payload?.status === "applied";
+      return {
+        title: applied ? "You earned a free month of Plus 🎁" : "Free month banked",
+        subtitle: applied
+          ? `Thanks for referring ${actor}. We added 30 days to your next bill.`
+          : `${actor} went Plus — we'll apply your free month when you upgrade.`,
+        href: "/refer",
+      };
+    }
     case "first_work_shipped":
       return {
         title: `${actor} just shipped their first Work`,

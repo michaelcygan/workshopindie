@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, MapPin, Megaphone } from "lucide-react";
+import { Radio, Users, LayoutGrid, MapPin, Megaphone, Gift } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -56,6 +56,9 @@ export function MobileNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                <Gift className="mr-2 h-4 w-4" /> Refer & Earn
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

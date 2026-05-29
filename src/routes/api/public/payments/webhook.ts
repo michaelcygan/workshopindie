@@ -1,7 +1,101 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { type StripeEnv, verifyWebhook } from "@/lib/stripe.server";
+import { type StripeEnv, createStripeClient, verifyWebhook } from "@/lib/stripe.server";
 import type Stripe from "stripe";
+
+/**
+ * Referral reward: when a user becomes a paying Plus subscriber for the first
+ * time, grant the referrer (if any) 1 free month of Plus by extending their
+ * Stripe subscription's trial_end by 30 days. If the referrer isn't currently
+ * on Plus, store the credit as 'pending' and apply when they next subscribe.
+ */
+async function maybeGrantReferralReward(
+  subscriberUserId: string,
+  env: StripeEnv,
+): Promise<void> {
+  // Look up referrer
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("referred_by, display_name, username")
+    .eq("id", subscriberUserId)
+    .maybeSingle();
+  const referrerId = (profile?.referred_by as string | null) ?? null;
+  if (!referrerId || referrerId === subscriberUserId) return;
+
+  // Idempotency: skip if already credited for this referrer/referred pair
+  const { data: existing } = await supabaseAdmin
+    .from("referral_credits")
+    .select("id")
+    .eq("user_id", referrerId)
+    .eq("referred_user_id", subscriberUserId)
+    .maybeSingle();
+  if (existing) return;
+
+  // Find referrer's most recent active Plus subscription in this env
+  const { data: refSub } = await supabaseAdmin
+    .from("subscriptions")
+    .select("stripe_subscription_id, status, current_period_end")
+    .eq("user_id", referrerId)
+    .eq("environment", env)
+    .eq("tier", "plus")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const refSubId = refSub?.stripe_subscription_id as string | null | undefined;
+  const refStatus = refSub?.status as string | null | undefined;
+  const refEnd = refSub?.current_period_end as string | null | undefined;
+
+  const canApplyNow =
+    !!refSubId &&
+    (refStatus === "active" || refStatus === "trialing" || refStatus === "past_due") &&
+    !!refEnd &&
+    new Date(refEnd) > new Date();
+
+  let status: "applied" | "pending" = "pending";
+
+  if (canApplyNow && refSubId) {
+    try {
+      const stripe = createStripeClient(env);
+      const baseSec = Math.floor(new Date(refEnd!).getTime() / 1000);
+      const extendedSec = baseSec + 30 * 24 * 60 * 60;
+      await stripe.subscriptions.update(refSubId, {
+        trial_end: extendedSec,
+        proration_behavior: "none",
+      });
+      status = "applied";
+    } catch (e) {
+      console.error("Failed to extend referrer subscription:", e);
+      status = "pending";
+    }
+  }
+
+  await supabaseAdmin.from("referral_credits").insert({
+    user_id: referrerId,
+    referred_user_id: subscriberUserId,
+    months_granted: 1,
+    status,
+    stripe_subscription_id: status === "applied" ? refSubId : null,
+  });
+
+  // Notify the referrer
+  const actorName =
+    (profile?.display_name as string | null) ||
+    (profile?.username as string | null) ||
+    "A friend";
+  await supabaseAdmin.from("notifications").insert({
+    user_id: referrerId,
+    kind: "referral_reward_earned",
+    actor_user_id: subscriberUserId,
+    entity_type: "profile",
+    entity_id: subscriberUserId,
+    payload: {
+      actor_name: actorName,
+      actor_username: (profile?.username as string | null) ?? null,
+      status,
+    },
+  });
+}
 
 function priceLookupKey(item: Stripe.SubscriptionItem | undefined): string | null {
   if (!item) return null;
@@ -66,6 +160,63 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: 
     },
     { onConflict: "stripe_subscription_id" },
   );
+
+  // Referral reward: only on paying Plus (active or trialing with a real sub).
+  const mappedStatus = mapSubStatus(subscription.status);
+  if (
+    tierFromPrice(priceId) === "plus" &&
+    (mappedStatus === "active" || mappedStatus === "trialing")
+  ) {
+    await maybeGrantReferralReward(userId, env);
+    // Also apply any banked (pending) credits this user has earned previously.
+    await applyPendingReferralCredits(userId, subscription, env);
+  }
+}
+
+async function applyPendingReferralCredits(
+  referrerUserId: string,
+  subscription: Stripe.Subscription,
+  env: StripeEnv,
+): Promise<void> {
+  const { data: pending } = await supabaseAdmin
+    .from("referral_credits")
+    .select("id, months_granted")
+    .eq("user_id", referrerUserId)
+    .eq("status", "pending");
+  if (!pending || pending.length === 0) return;
+
+  const totalMonths = pending.reduce(
+    (acc: number, row: { months_granted: number }) => acc + (row.months_granted || 0),
+    0,
+  );
+  if (totalMonths <= 0) return;
+
+  const item = subscription.items?.data?.[0] as
+    | (Stripe.SubscriptionItem & { current_period_end?: number })
+    | undefined;
+  const subAny = subscription as Stripe.Subscription & { current_period_end?: number };
+  const baseSec = item?.current_period_end ?? subAny.current_period_end;
+  if (!baseSec) return;
+
+  try {
+    const stripe = createStripeClient(env);
+    const extendedSec = baseSec + totalMonths * 30 * 24 * 60 * 60;
+    await stripe.subscriptions.update(subscription.id, {
+      trial_end: extendedSec,
+      proration_behavior: "none",
+    });
+    await supabaseAdmin
+      .from("referral_credits")
+      .update({
+        status: "applied",
+        stripe_subscription_id: subscription.id,
+        applied_at: new Date().toISOString(),
+      })
+      .eq("user_id", referrerUserId)
+      .eq("status", "pending");
+  } catch (e) {
+    console.error("Failed to apply pending referral credits:", e);
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env: StripeEnv) {
