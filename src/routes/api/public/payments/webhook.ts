@@ -168,6 +168,54 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription, env: 
     (mappedStatus === "active" || mappedStatus === "trialing")
   ) {
     await maybeGrantReferralReward(userId, env);
+    // Also apply any banked (pending) credits this user has earned previously.
+    await applyPendingReferralCredits(userId, subscription, env);
+  }
+}
+
+async function applyPendingReferralCredits(
+  referrerUserId: string,
+  subscription: Stripe.Subscription,
+  env: StripeEnv,
+): Promise<void> {
+  const { data: pending } = await supabaseAdmin
+    .from("referral_credits")
+    .select("id, months_granted")
+    .eq("user_id", referrerUserId)
+    .eq("status", "pending");
+  if (!pending || pending.length === 0) return;
+
+  const totalMonths = pending.reduce(
+    (acc: number, row: { months_granted: number }) => acc + (row.months_granted || 0),
+    0,
+  );
+  if (totalMonths <= 0) return;
+
+  const item = subscription.items?.data?.[0] as
+    | (Stripe.SubscriptionItem & { current_period_end?: number })
+    | undefined;
+  const subAny = subscription as Stripe.Subscription & { current_period_end?: number };
+  const baseSec = item?.current_period_end ?? subAny.current_period_end;
+  if (!baseSec) return;
+
+  try {
+    const stripe = createStripeClient(env);
+    const extendedSec = baseSec + totalMonths * 30 * 24 * 60 * 60;
+    await stripe.subscriptions.update(subscription.id, {
+      trial_end: extendedSec,
+      proration_behavior: "none",
+    });
+    await supabaseAdmin
+      .from("referral_credits")
+      .update({
+        status: "applied",
+        stripe_subscription_id: subscription.id,
+        applied_at: new Date().toISOString(),
+      })
+      .eq("user_id", referrerUserId)
+      .eq("status", "pending");
+  } catch (e) {
+    console.error("Failed to apply pending referral credits:", e);
   }
 }
 
