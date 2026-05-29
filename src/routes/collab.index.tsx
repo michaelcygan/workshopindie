@@ -188,9 +188,12 @@ function CollabPage() {
     [search.cat, search.city, search.online],
   );
 
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
+
   const { data: posts, isLoading } = useQuery({
-    queryKey: ["collab", filters],
-    queryFn: () => fetchPosts(filters),
+    queryKey: ["collab", filters, blockedKey],
+    queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
   });
 
   const tabs = useMemo(
