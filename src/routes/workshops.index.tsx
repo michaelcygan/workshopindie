@@ -29,7 +29,7 @@ type Filter = "upcoming" | "happening" | "all";
 async function fetchWorkshops(category: Category | "all", filter: Filter) {
   let q = supabase
     .from("workshops")
-    .select("id,title,slug,category,prompt,starts_at,ends_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,min_age,max_age,hide_from_ineligible,host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
+    .select("id,title,slug,category,prompt,starts_at,ends_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,min_age,max_age,hide_from_ineligible,audience_city_ids,host_user_id,host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
     .eq("visibility", "public")
     .in("status", ["open", "check_in", "active", "finalizing", "shipped"])
     .limit(40);
@@ -42,7 +42,7 @@ async function fetchWorkshops(category: Category | "all", filter: Filter) {
 
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as unknown as (WorkshopCardData & { min_age: number | null; max_age: number | null; hide_from_ineligible: boolean })[];
+  return (data ?? []) as unknown as (WorkshopCardData & { min_age: number | null; max_age: number | null; hide_from_ineligible: boolean; audience_city_ids: string[]; host_user_id: string })[];
 }
 
 function WorkshopsPage() {
