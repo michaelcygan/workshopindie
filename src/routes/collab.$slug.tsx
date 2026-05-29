@@ -56,6 +56,7 @@ function CollabDetail() {
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
   const reopenFn = useServerFn(reopenCollab);
+  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
