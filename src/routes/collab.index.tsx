@@ -39,11 +39,11 @@ type Filters = {
   online: boolean;
 };
 
-async function fetchPosts({ cat, city, online }: Filters) {
+async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
     .select(
-      "id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
+      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
         "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
@@ -63,7 +63,9 @@ async function fetchPosts({ cat, city, online }: Filters) {
 
   const { data, error } = await q;
   if (error) throw error;
-  const rows = (data ?? []) as unknown as CollabCardData[];
+  const blocked = new Set(blockedIds);
+  const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[])
+    .filter((r) => !blocked.has(r.user_id)) as CollabCardData[];
 
   // Light blended sort: newest first, gentle boost for posts with more roles.
   return rows
