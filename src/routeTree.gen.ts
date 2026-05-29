@@ -38,6 +38,7 @@ import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeEditRouteImport } from './routes/me.edit'
+import { Route as MeBlockedRouteImport } from './routes/me.blocked'
 import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
@@ -193,6 +194,11 @@ const MeEditRoute = MeEditRouteImport.update({
   path: '/me/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeBlockedRoute = MeBlockedRouteImport.update({
+  id: '/me/blocked',
+  path: '/me/blocked',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const InstantIdRoute = InstantIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
+  '/me/blocked': typeof MeBlockedRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
+  '/me/blocked': typeof MeBlockedRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -339,6 +347,7 @@ export interface FileRoutesById {
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/instant/$id': typeof InstantIdRoute
+  '/me/blocked': typeof MeBlockedRoute
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -381,6 +390,7 @@ export interface FileRouteTypes {
     | '/collab/new'
     | '/dms/$conversationId'
     | '/instant/$id'
+    | '/me/blocked'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/collab/new'
     | '/dms/$conversationId'
     | '/instant/$id'
+    | '/me/blocked'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/collab/new'
     | '/dms/$conversationId'
     | '/instant/$id'
+    | '/me/blocked'
     | '/me/edit'
     | '/redeem/$code'
     | '/u/$username'
@@ -492,6 +504,7 @@ export interface RootRouteChildren {
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
+  MeBlockedRoute: typeof MeBlockedRoute
   MeEditRoute: typeof MeEditRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -708,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/blocked': {
+      id: '/me/blocked'
+      path: '/me/blocked'
+      fullPath: '/me/blocked'
+      preLoaderRoute: typeof MeBlockedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/instant/$id': {
       id: '/instant/$id'
       path: '/$id'
@@ -861,6 +881,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
+  MeBlockedRoute: MeBlockedRoute,
   MeEditRoute: MeEditRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,

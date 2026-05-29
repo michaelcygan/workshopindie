@@ -977,6 +977,33 @@ export type Database = {
           },
         ]
       }
+      moderation_terms: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          notes: string | null
+          severity: string
+          term: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          severity?: string
+          term: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          severity?: string
+          term?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           actor_user_id: string | null
@@ -2142,11 +2169,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
       }
+      contains_blocked_term: { Args: { _text: string }; Returns: string }
       get_referral_stats: {
         Args: { _user_id: string }
         Returns: {
@@ -2172,6 +2201,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
