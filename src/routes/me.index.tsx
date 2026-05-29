@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X } from "lucide-react";
+import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X, ImagePlus, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
-import { useUserRoles } from "@/hooks/use-user-role";
+
 import type { Category } from "@/lib/categories";
 import { RequireAuth } from "@/components/require-auth";
 
@@ -25,7 +25,7 @@ type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
-  const { isAdmin } = useUserRoles();
+  
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("drafts");
 
@@ -44,8 +44,10 @@ function MeDashboard() {
     queryKey: ["me-profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("display_name,username,avatar_url,headline").eq("id", user!.id).maybeSingle();
-      return data;
+      const { data } = await supabase.from("profiles")
+        .select("display_name,username,avatar_url,cover_url,headline,city:cities!profiles_city_id_fkey(name,slug)")
+        .eq("id", user!.id).maybeSingle();
+      return data as { display_name: string | null; username: string | null; avatar_url: string | null; cover_url: string | null; headline: string | null; city: { name: string; slug: string } | null } | null;
     },
   });
 
@@ -142,65 +144,104 @@ function MeDashboard() {
   };
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 md:py-12">
-      <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-        className="flex flex-wrap items-center gap-4 rounded-3xl border border-border bg-surface p-5 shadow-soft md:gap-5 md:p-6">
-        <Avatar className="h-14 w-14 md:h-16 md:w-16">
-          <AvatarImage src={profile?.avatar_url ?? undefined} />
-          <AvatarFallback className="text-lg">{name[0]}</AvatarFallback>
-        </Avatar>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl text-ink md:text-3xl">Welcome back, {name.split(" ")[0]}</h1>
-          </div>
-          {profile?.headline && <p className="text-sm text-ink-muted">{profile.headline}</p>}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {profile?.username && (
-            <Link to="/u/$username" params={{ username: profile.username }}>
-              <Button variant="outline" className="rounded-full gap-1.5"><ExternalLink className="h-4 w-4" /> Public profile</Button>
+    <main className="pb-20">
+      {/* Cover */}
+      <div className="group relative h-40 overflow-hidden bg-surface-2 md:h-56">
+        {profile?.cover_url ? (
+          <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
+        ) : (
+          <div className="h-full w-full gradient-warm opacity-70" />
+        )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-b from-transparent to-background/70" />
+        {!profile?.cover_url ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Link to="/me/edit">
+              <Button variant="outline" className="rounded-full gap-1.5 bg-background/80 backdrop-blur">
+                <ImagePlus className="h-4 w-4" /> Add cover photo
+              </Button>
             </Link>
-          )}
-          <Link to="/me/edit"><Button variant="ghost" className="rounded-full gap-1.5"><Pencil className="h-4 w-4" /> Edit</Button></Link>
-        </div>
-      </motion.header>
-
-      {closedNudges.length > 0 && (
-        <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
-      )}
-
-      {(() => {
-        const hasWorkshopHistory = counts.hosting + counts.applied + counts.participating > 0;
-        const tabs: Tab[] = (isAdmin || hasWorkshopHistory)
-          ? ["hosting", "applied", "participating", "drafts", "credits"]
-          : ["drafts", "credits"];
-        return (
-          <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
-            {tabs.map((t) => (
-              <button key={t} onClick={() => setTab(t)}
-                className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
-                  tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
-                {t} <span className="ml-1 text-[11px] opacity-70">{counts[t]}</span>
-              </button>
-            ))}
           </div>
-        );
-      })()}
-
-      <div className="mt-6">
-        {tab === "hosting" && <HostingList items={hosting as any} />}
-        {tab === "applied" && <AppliedList items={applied as any} />}
-        {tab === "participating" && <ParticipatingList items={participating as any} />}
-        {tab === "drafts" && <DraftsList items={drafts as any} />}
-        {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
+        ) : (
+          <Link
+            to="/me/edit"
+            className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs text-ink shadow-soft backdrop-blur opacity-0 transition group-hover:opacity-100"
+          >
+            <ImagePlus className="h-3.5 w-3.5" /> Change cover
+          </Link>
+        )}
       </div>
 
-      <p className="mt-10 text-center text-xs text-ink-muted">
-        Your portfolio, credits, collabs, workshops, and groups live on your public profile.
-        {profile?.username && (
-          <> <Link to="/u/$username" params={{ username: profile.username }} className="underline">View it →</Link></>
+      <div className="mx-auto max-w-5xl px-4 md:px-6">
+        <motion.header initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+          className="-mt-10 flex flex-col gap-4 md:-mt-12 md:flex-row md:items-end md:gap-5">
+          <Avatar className="h-20 w-20 ring-4 ring-background md:h-24 md:w-24">
+            <AvatarImage src={profile?.avatar_url ?? undefined} />
+            <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-display text-3xl text-ink md:text-4xl">Welcome back, {name.split(" ")[0]}</h1>
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+              {profile?.username && <span>@{profile.username}</span>}
+              {profile?.city && (
+                <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <MapPin className="h-3.5 w-3.5" />{profile.city.name}
+                </Link>
+              )}
+            </div>
+            {profile?.headline && <p className="mt-1 text-sm text-ink-soft">{profile.headline}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {profile?.username && (
+              <Link to="/u/$username" params={{ username: profile.username }}>
+                <Button variant="outline" className="rounded-full gap-1.5"><ExternalLink className="h-4 w-4" /> Public profile</Button>
+              </Link>
+            )}
+            <Link to="/me/edit"><Button variant="ghost" className="rounded-full gap-1.5"><Pencil className="h-4 w-4" /> Edit</Button></Link>
+          </div>
+        </motion.header>
+
+        {/* Primary CTAs — always visible to push core flows */}
+        <div className="mt-6 flex flex-wrap gap-2">
+          <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
+          <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
+          <Link to="/instant"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
+        </div>
+
+        {closedNudges.length > 0 && (
+          <ClosedCollabNudges items={closedNudges as { id: string; title: string; slug: string; description: string | null }[]} />
         )}
-      </p>
+
+        {/* Tabs — show all, always, so the full skeleton is visible from day one */}
+        {(() => {
+          const tabs: Tab[] = ["drafts", "credits", "hosting", "applied", "participating"];
+          return (
+            <div className="mt-8 flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft w-fit">
+              {tabs.map((t) => (
+                <button key={t} onClick={() => setTab(t)}
+                  className={cn("rounded-full px-3.5 py-1.5 text-sm capitalize transition",
+                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
+                  {t} <span className="ml-1 text-[11px] opacity-70">{counts[t]}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })()}
+
+        <div className="mt-6">
+          {tab === "hosting" && <HostingList items={hosting as any} />}
+          {tab === "applied" && <AppliedList items={applied as any} />}
+          {tab === "participating" && <ParticipatingList items={participating as any} />}
+          {tab === "drafts" && <DraftsList items={drafts as any} />}
+          {tab === "credits" && <CreditsList items={credits as any} onChange={() => refetchCredits()} />}
+        </div>
+
+        <p className="mt-10 text-center text-xs text-ink-muted">
+          Your portfolio, credits, collabs, workshops, and groups live on your public profile.
+          {profile?.username && (
+            <> <Link to="/u/$username" params={{ username: profile.username }} className="underline">View it →</Link></>
+          )}
+        </p>
+      </div>
     </main>
   );
 }
