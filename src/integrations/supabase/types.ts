@@ -1181,6 +1181,42 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_credits: {
+        Row: {
+          applied_at: string
+          created_at: string
+          id: string
+          months_granted: number
+          referred_user_id: string
+          source: string
+          status: string
+          stripe_subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          created_at?: string
+          id?: string
+          months_granted?: number
+          referred_user_id: string
+          source?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          created_at?: string
+          id?: string
+          months_granted?: number
+          referred_user_id?: string
+          source?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       relationship_edges: {
         Row: {
           expires_at: string | null
@@ -2110,6 +2146,15 @@ export type Database = {
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
+      }
+      get_referral_stats: {
+        Args: { _user_id: string }
+        Returns: {
+          months_earned: number
+          paid_count: number
+          pending_months: number
+          signed_up_count: number
+        }[]
       }
       has_max_age: {
         Args: { _max: number; _user_id: string }
