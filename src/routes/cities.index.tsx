@@ -24,7 +24,7 @@ function CitiesIndex() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cities")
-        .select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles(count)")
+        .select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles!profiles_city_id_fkey(count)")
         .order("name");
       return (data ?? []) as unknown as CityRow[];
     },
