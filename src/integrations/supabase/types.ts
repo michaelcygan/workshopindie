@@ -1004,6 +1004,65 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_collab_activity: boolean
+          email_credits: boolean
+          email_follows: boolean
+          email_messages: boolean
+          email_product_news: boolean
+          email_workshop_updates: boolean
+          inapp_collab_activity: boolean
+          inapp_credits: boolean
+          inapp_follows: boolean
+          inapp_messages: boolean
+          inapp_workshop_updates: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_collab_activity?: boolean
+          email_credits?: boolean
+          email_follows?: boolean
+          email_messages?: boolean
+          email_product_news?: boolean
+          email_workshop_updates?: boolean
+          inapp_collab_activity?: boolean
+          inapp_credits?: boolean
+          inapp_follows?: boolean
+          inapp_messages?: boolean
+          inapp_workshop_updates?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_collab_activity?: boolean
+          email_credits?: boolean
+          email_follows?: boolean
+          email_messages?: boolean
+          email_product_news?: boolean
+          email_workshop_updates?: boolean
+          inapp_collab_activity?: boolean
+          inapp_credits?: boolean
+          inapp_follows?: boolean
+          inapp_messages?: boolean
+          inapp_workshop_updates?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           actor_user_id: string | null

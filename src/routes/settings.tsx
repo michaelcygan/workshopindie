@@ -12,6 +12,9 @@ import {
   KeyRound,
   ExternalLink,
   ArrowLeft,
+  Bell,
+  Flag,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +24,13 @@ import { usePlus } from "@/hooks/use-plus";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { createPortalSession } from "@/lib/payments.functions";
 import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
-import { getMyPrivacy, updateMyPrivacy, deleteMyAccount } from "@/lib/account.functions";
+import { getMyPrivacy, updateMyPrivacy, deleteMyAccount, exportMyData } from "@/lib/account.functions";
+import {
+  getMyNotifPrefs,
+  updateMyNotifPrefs,
+  type NotifPrefKey,
+  type NotifPrefs,
+} from "@/lib/notifications-prefs.functions";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -53,12 +62,15 @@ export const Route = createFileRoute("/settings")({
   }),
 });
 
-type SectionId = "account" | "plus" | "privacy" | "blocked" | "danger";
+type SectionId = "account" | "plus" | "notifications" | "privacy" | "blocked" | "reports" | "data" | "danger";
 const SECTIONS: { id: SectionId; label: string; icon: typeof UserIcon }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "plus", label: "Plus membership", icon: Sparkles },
+  { id: "notifications", label: "Notifications", icon: Bell },
   { id: "privacy", label: "Privacy", icon: Lock },
   { id: "blocked", label: "Blocked users", icon: Ban },
+  { id: "reports", label: "My reports", icon: Flag },
+  { id: "data", label: "Your data", icon: Download },
   { id: "danger", label: "Delete account", icon: ShieldAlert },
 ];
 
@@ -67,8 +79,11 @@ function SettingsPage() {
   const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({
     account: null,
     plus: null,
+    notifications: null,
     privacy: null,
     blocked: null,
+    reports: null,
+    data: null,
     danger: null,
   });
 
@@ -140,12 +155,24 @@ function SettingsPage() {
             <PlusSection />
           </Section>
 
+          <Section id="notifications" title="Notifications" subtitle="Pick what reaches your inbox and what stays in the bell." refMap={sectionRefs}>
+            <NotificationsSection />
+          </Section>
+
           <Section id="privacy" title="Privacy" subtitle="Control who can reach you and how you appear." refMap={sectionRefs}>
             <PrivacySection />
           </Section>
 
           <Section id="blocked" title="Blocked users" subtitle="People you've blocked don't see your content and can't contact you." refMap={sectionRefs}>
             <BlockedSection />
+          </Section>
+
+          <Section id="reports" title="My reports" subtitle="Reports you've filed and where they stand." refMap={sectionRefs}>
+            <ReportsSection />
+          </Section>
+
+          <Section id="data" title="Your data" subtitle="Download a JSON snapshot of everything tied to your account." refMap={sectionRefs}>
+            <DataSection />
           </Section>
 
           <Section id="danger" title="Delete account" subtitle="Permanent and immediate. This can't be undone." refMap={sectionRefs}>
@@ -700,3 +727,204 @@ function DangerSection() {
     </div>
   );
 }
+
+/* ----------------- Notifications ----------------- */
+
+const NOTIF_GROUPS: { key: string; label: string; description: string; email: NotifPrefKey; inapp: NotifPrefKey }[] = [
+  { key: "messages", label: "Direct messages", description: "When someone sends you a DM.", email: "email_messages", inapp: "inapp_messages" },
+  { key: "collab", label: "Collab activity", description: "Applications, replies, and updates on your collab posts.", email: "email_collab_activity", inapp: "inapp_collab_activity" },
+  { key: "workshop", label: "Workshop updates", description: "Check-in reminders, status changes, and host announcements.", email: "email_workshop_updates", inapp: "inapp_workshop_updates" },
+  { key: "follows", label: "New followers", description: "When someone follows your profile.", email: "email_follows", inapp: "inapp_follows" },
+  { key: "credits", label: "Credit requests", description: "When someone credits you on a work, or asks you to confirm one.", email: "email_credits", inapp: "inapp_credits" },
+];
+
+function NotificationsSection() {
+  const qc = useQueryClient();
+  const getFn = useServerFn(getMyNotifPrefs);
+  const setFn = useServerFn(updateMyNotifPrefs);
+  const { data: prefs, isLoading } = useQuery({
+    queryKey: ["my-notif-prefs"],
+    queryFn: () => getFn(),
+  });
+
+  async function toggle(key: NotifPrefKey, value: boolean) {
+    try {
+      await setFn({ data: { [key]: value } as Partial<NotifPrefs> });
+      qc.invalidateQueries({ queryKey: ["my-notif-prefs"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save.");
+    }
+  }
+
+  if (isLoading || !prefs) {
+    return <div className="h-48 animate-pulse rounded-2xl bg-surface-2" />;
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="grid grid-cols-[1fr_72px_72px] items-center gap-3 border-b border-border px-4 py-2 text-xs uppercase tracking-wide text-ink-muted">
+        <div>Activity</div>
+        <div className="text-center">Email</div>
+        <div className="text-center">In-app</div>
+      </div>
+      {NOTIF_GROUPS.map((g) => (
+        <div
+          key={g.key}
+          className="grid grid-cols-[1fr_72px_72px] items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0"
+        >
+          <div>
+            <div className="text-sm font-medium text-ink">{g.label}</div>
+            <div className="text-xs text-ink-muted">{g.description}</div>
+          </div>
+          <div className="flex justify-center">
+            <Switch checked={prefs[g.email]} onCheckedChange={(v) => toggle(g.email, !!v)} />
+          </div>
+          <div className="flex justify-center">
+            <Switch checked={prefs[g.inapp]} onCheckedChange={(v) => toggle(g.inapp, !!v)} />
+          </div>
+        </div>
+      ))}
+      <div className="grid grid-cols-[1fr_72px_72px] items-center gap-3 px-4 py-3">
+        <div>
+          <div className="text-sm font-medium text-ink">Product news</div>
+          <div className="text-xs text-ink-muted">
+            Occasional updates about new features and Workshop happenings.
+          </div>
+        </div>
+        <div className="flex justify-center">
+          <Switch checked={prefs.email_product_news} onCheckedChange={(v) => toggle("email_product_news", !!v)} />
+        </div>
+        <div />
+      </div>
+    </div>
+  );
+}
+
+/* ----------------- Reports ----------------- */
+
+type ReportRow = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  reason: string;
+  description: string | null;
+  status: "open" | "reviewed" | "dismissed" | "action_taken";
+  created_at: string;
+};
+
+function ReportsSection() {
+  const { user } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ["my-reports", user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<ReportRow[]> => {
+      if (!user) return [];
+      const { data: rows, error } = await supabase
+        .from("reports")
+        .select("id,entity_type,entity_id,reason,description,status,created_at")
+        .eq("reporter_user_id", user.id)
+        .order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      return (rows ?? []) as ReportRow[];
+    },
+  });
+
+  if (isLoading) {
+    return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+        <p className="font-medium text-ink">No reports filed.</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          If you ever need to flag something, use Report from any profile, work, or collab post.
+        </p>
+      </div>
+    );
+  }
+
+  const statusLabel: Record<ReportRow["status"], string> = {
+    open: "Under review",
+    reviewed: "Reviewed",
+    dismissed: "Dismissed",
+    action_taken: "Action taken",
+  };
+  const statusTone: Record<ReportRow["status"], string> = {
+    open: "bg-muted text-ink-soft",
+    reviewed: "bg-muted text-ink-soft",
+    dismissed: "bg-muted text-ink-muted",
+    action_taken: "bg-emerald-100 text-emerald-900",
+  };
+
+  return (
+    <ul className="divide-y divide-border rounded-2xl border border-border bg-surface">
+      {data.map((r) => (
+        <li key={r.id} className="p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-ink">
+                {r.reason} <span className="text-ink-muted">· {r.entity_type}</span>
+              </div>
+              {r.description && (
+                <div className="mt-0.5 line-clamp-2 text-xs text-ink-muted">{r.description}</div>
+              )}
+              <div className="mt-1 text-xs text-ink-muted">
+                Filed {new Date(r.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}
+              </div>
+            </div>
+            <span className={cn("shrink-0 rounded-full px-2.5 py-1 text-xs font-medium", statusTone[r.status])}>
+              {statusLabel[r.status]}
+            </span>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/* ----------------- Data export ----------------- */
+
+function DataSection() {
+  const exportFn = useServerFn(exportMyData);
+  const [busy, setBusy] = useState(false);
+
+  async function download() {
+    setBusy(true);
+    try {
+      const payload = await exportFn();
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.download = `workshop-data-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Your data is downloading.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not export data.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5">
+      <p className="text-sm text-ink">
+        Download a JSON snapshot of your profile, works, collab posts, workshops, applications,
+        comments, follows, blocks, and reports filed. Useful for keeping a personal backup or
+        moving your portfolio elsewhere.
+      </p>
+      <Button size="sm" variant="outline" className="mt-3 rounded-full gap-1.5" onClick={download} disabled={busy}>
+        <Download className="h-3.5 w-3.5" /> {busy ? "Preparing…" : "Download my data"}
+      </Button>
+      <p className="mt-3 text-xs text-ink-muted">
+        Media files (images, video) are referenced by URL, not embedded.
+      </p>
+    </div>
+  );
+}
+
