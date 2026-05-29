@@ -234,7 +234,7 @@ function CollabPage() {
       >
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Collab Board</h1>
-          <p className="mt-1 text-ink-muted">Projects looking for people. Find one. Pitch yourself.</p>
+          <p className="mt-1 text-ink-muted">What people are trying to make. Help out — or open a room on yours.</p>
         </div>
         <Link to="/collab/new">
           <Button className="rounded-full gap-2">
