@@ -12,6 +12,7 @@ import { CategoryScroller } from "@/components/category-scroller";
 import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { useBlockedIds } from "@/hooks/use-blocked-ids";
 
 
 const searchSchema = z.object({
