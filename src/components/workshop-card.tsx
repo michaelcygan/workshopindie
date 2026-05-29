@@ -18,6 +18,7 @@ export type WorkshopCardData = {
   confirmed_count: number;
   application_count: number;
   status: string;
+  audience_city_ids?: string[] | null;
   host?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
