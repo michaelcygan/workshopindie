@@ -1,20 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { MapPin, Megaphone, Plus, X, Sparkles } from "lucide-react";
+import { MapPin, Megaphone, Plus, Sparkles, Pin, PinOff, Radio, CalendarClock, Globe2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { CategoryChip } from "@/components/category-chip";
 import { CreatorBadge } from "@/components/creator-badge";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CollabCard, type CollabCardData } from "@/components/collab-card";
+import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card";
 import { CategoryScroller } from "@/components/category-scroller";
-import { CATEGORIES, WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { PostWorkshopFromCitySheet } from "@/components/post-workshop-from-city-sheet";
+import { WORK_CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
 import { toast } from "sonner";
@@ -32,7 +31,7 @@ export const Route = createFileRoute("/cities/$slug")({
     const name = c?.name ?? params.slug;
     const title = `${name} — Workshop`;
     const description = c
-      ? `Open collabs, standing meetups, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
+      ? `Live and scheduled Workshops, open collabs, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
       : "Creators on Workshop.";
     return {
       meta: [
@@ -51,12 +50,21 @@ export const Route = createFileRoute("/cities/$slug")({
   },
 });
 
+type WorkshopRow = WorkshopCardData & {
+  mode: "scheduled" | "instant_spawned" | string;
+  is_pinned: boolean;
+  city_id: string | null;
+};
+type WorkshopTab = "all" | "live" | "scheduled" | "standing";
+
 function CityPage() {
   const { slug } = Route.useParams();
   const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
   const qc = useQueryClient();
-  const [showMeetupForm, setShowMeetupForm] = useState(false);
+  const [postWorkshopOpen, setPostWorkshopOpen] = useState(false);
   const [creatorFilter, setCreatorFilter] = useState<Category | "all">("all");
+  const [wsTab, setWsTab] = useState<WorkshopTab>("all");
 
   const { data: city, isLoading } = useQuery({
     queryKey: ["city", slug],
@@ -68,19 +76,44 @@ function CityPage() {
 
   useDocumentMeta({
     title: city?.name,
-    description: city ? `Open collabs, standing meetups, and creators in ${city.name}.` : undefined,
+    description: city ? `Live and scheduled Workshops, open collabs, and creators in ${city.name}.` : undefined,
   });
 
-  const { data: meetups = [] } = useQuery({
-    queryKey: ["city-meetups", city?.id],
+  const { data: workshops = [] } = useQuery({
+    queryKey: ["city-workshops", city?.id],
     enabled: !!city?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("standing_meetups")
-        .select("id,title,description,default_category,default_location_text,recurrence_rule,status, host:profiles!standing_meetups_host_user_id_fkey(display_name,username,avatar_url)")
-        .eq("city_id", city!.id).eq("status", "active").order("created_at", { ascending: false });
-      return data ?? [];
+      const { data } = await supabase.from("workshops")
+        .select("id,title,slug,category,prompt,starts_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,mode,is_pinned,city_id,audience_city_ids, host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
+        .or(`city_id.eq.${city!.id},audience_city_ids.cs.{${city!.id}}`)
+        .eq("visibility", "public")
+        .not("status", "in", "(archived,canceled)")
+        .order("starts_at", { ascending: true, nullsFirst: false })
+        .limit(48);
+      return (data ?? []) as unknown as WorkshopRow[];
     },
   });
+
+  const filteredWorkshops = useMemo(() => {
+    const now = Date.now();
+    const live = workshops.filter((w) => w.status === "active" || w.status === "check_in");
+    const standing = workshops.filter((w) => w.is_pinned);
+    const scheduled = workshops.filter((w) =>
+      w.mode === "scheduled" && (w.status === "open" || w.status === "check_in") &&
+      w.starts_at && new Date(w.starts_at).getTime() >= now - 60 * 60 * 1000
+    );
+
+    if (wsTab === "live") return live;
+    if (wsTab === "scheduled") return scheduled;
+    if (wsTab === "standing") return standing;
+    // All: live first, then standing not already shown, then upcoming scheduled
+    const seen = new Set<string>();
+    const out: WorkshopRow[] = [];
+    for (const w of live) { if (!seen.has(w.id)) { seen.add(w.id); out.push(w); } }
+    for (const w of standing) { if (!seen.has(w.id)) { seen.add(w.id); out.push(w); } }
+    for (const w of scheduled) { if (!seen.has(w.id)) { seen.add(w.id); out.push(w); } }
+    return out;
+  }, [workshops, wsTab]);
 
   const { data: works = [] } = useQuery({
     queryKey: ["city-works", city?.id],
@@ -112,7 +145,6 @@ function CityPage() {
     queryKey: ["city-collabs", city?.id],
     enabled: !!city?.id,
     queryFn: async () => {
-      // city_id match OR also_cities array contains this city
       const { data } = await supabase.from("collab_posts")
         .select("id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at, user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)")
         .or(`city_id.eq.${city!.id},also_cities.cs.{${city!.id}}`)
@@ -143,6 +175,25 @@ function CityPage() {
     []
   );
 
+  const workshopTabs = useMemo(
+    () => [
+      { id: "all" as const, label: "All" },
+      { id: "live" as const, label: "Live" },
+      { id: "scheduled" as const, label: "Scheduled" },
+      { id: "standing" as const, label: "Standing" },
+    ],
+    []
+  );
+
+  async function togglePin(ws: WorkshopRow) {
+    const { error } = await supabase.from("workshops")
+      .update({ is_pinned: !ws.is_pinned })
+      .eq("id", ws.id);
+    if (error) return toast.error(error.message);
+    toast.success(ws.is_pinned ? "Unpinned" : "Pinned as standing Workshop");
+    qc.invalidateQueries({ queryKey: ["city-workshops", city?.id] });
+  }
+
   if (isLoading) return <main className="mx-auto max-w-5xl px-4 py-14"><div className="h-32 animate-pulse rounded-3xl bg-surface-2" /></main>;
   if (!city) return (
     <main className="mx-auto max-w-3xl px-4 py-20 text-center">
@@ -164,24 +215,25 @@ function CityPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" className="rounded-full gap-1.5">
             <Link to="/collab/new">
-              <Megaphone className="h-4 w-4" /> Post a collab
+              <Megaphone className="h-4 w-4" /> Post a Collab
             </Link>
           </Button>
-          {user && (
-            <Button className="rounded-full gap-1.5" onClick={() => setShowMeetupForm((v) => !v)}>
-              {showMeetupForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-              {showMeetupForm ? "Cancel" : "Start a standing meetup"}
-            </Button>
-          )}
+          <Button
+            className="rounded-full gap-1.5"
+            onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Workshop")}
+          >
+            <Plus className="h-4 w-4" /> Post a Workshop
+          </Button>
         </div>
       </div>
 
-      {showMeetupForm && user && (
-        <NewMeetupForm cityId={city.id} onDone={() => {
-          setShowMeetupForm(false);
-          qc.invalidateQueries({ queryKey: ["city-meetups", city.id] });
-        }} />
-      )}
+      <PostWorkshopFromCitySheet
+        open={postWorkshopOpen}
+        onOpenChange={setPostWorkshopOpen}
+        city={city}
+        isAdmin={isAdmin}
+        onPosted={() => qc.invalidateQueries({ queryKey: ["city-workshops", city.id] })}
+      />
 
       {/* Open to collaborate — hero block */}
       <section className="mt-10">
@@ -210,30 +262,68 @@ function CityPage() {
         )}
       </section>
 
-      {/* Standing meetups */}
-      <section className="mt-10">
-        <h2 className="font-display text-2xl text-ink">Standing meetups</h2>
-        {meetups.length === 0 ? (
-          <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
-            No standing meetups yet. {user ? "Start the first one above." : <Link to="/login" className="text-gradient-motion underline">Sign in</Link>} to host one.
+      {/* Workshops */}
+      <section className="mt-12">
+        <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+          <div>
+            <h2 className="font-display text-2xl text-ink">Workshops in {city.name}</h2>
+            <p className="mt-1 text-sm text-ink-muted">Live now, scheduled, and standing. City-only audience.</p>
+          </div>
+          <CategoryScroller tabs={workshopTabs} value={wsTab} onChange={(v) => setWsTab(v)} className="md:w-fit" />
+        </div>
+
+        {filteredWorkshops.length === 0 ? (
+          <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
+            <p className="text-sm text-ink-muted">
+              {wsTab === "live" && `No live Workshops in ${city.name} right now.`}
+              {wsTab === "scheduled" && `Nothing on the calendar yet.`}
+              {wsTab === "standing" && `No standing Workshops here yet.`}
+              {wsTab === "all" && `No Workshops in ${city.name} yet — start one.`}
+            </p>
+            <Button className="mt-4 rounded-full gap-1.5" onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Workshop")}>
+              <Plus className="h-4 w-4" /> Post a Workshop
+            </Button>
           </div>
         ) : (
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            {meetups.map((m: any) => (
-              <div key={m.id} className="rounded-2xl border border-border bg-surface p-4">
-                <div className="flex items-center gap-2">
-                  {m.default_category && <CategoryChip category={m.default_category as Category} />}
-                  {m.recurrence_rule && <span className="text-xs text-ink-muted">{m.recurrence_rule}</span>}
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filteredWorkshops.map((w) => (
+              <div key={w.id} className="relative">
+                {/* Status delineation pills */}
+                <div className="pointer-events-none absolute left-3 top-3 z-20 flex flex-wrap gap-1">
+                  {(w.status === "active" || w.status === "check_in") && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+                      <Radio className="h-2.5 w-2.5" /> Live
+                    </span>
+                  )}
+                  {w.mode === "scheduled" && w.status === "open" && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink shadow">
+                      <CalendarClock className="h-2.5 w-2.5" /> Scheduled
+                    </span>
+                  )}
+                  {w.is_pinned && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow">
+                      <Pin className="h-2.5 w-2.5" /> Standing
+                    </span>
+                  )}
+                  <span className="inline-flex items-center gap-1 rounded-full bg-background/95 px-2 py-0.5 text-[10px] font-medium text-ink-soft shadow">
+                    {w.location_type === "online"
+                      ? <><Globe2 className="h-2.5 w-2.5" /> Online</>
+                      : <><MapPin className="h-2.5 w-2.5" /> IRL</>}
+                  </span>
                 </div>
-                <h3 className="mt-2 font-display text-lg text-ink">{m.title}</h3>
-                {m.description && <p className="mt-1 text-sm text-ink-soft line-clamp-2">{m.description}</p>}
-                {m.default_location_text && <p className="mt-2 inline-flex items-center gap-1 text-xs text-ink-muted"><MapPin className="h-3 w-3" /> {m.default_location_text}</p>}
-                {m.host && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-ink-muted">
-                    <Avatar className="h-5 w-5"><AvatarImage src={m.host.avatar_url ?? undefined} /><AvatarFallback className="text-[9px]">{(m.host.display_name || m.host.username || "·")[0]}</AvatarFallback></Avatar>
-                    Hosted by {m.host.display_name || m.host.username}
-                  </div>
+
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => togglePin(w)}
+                    title={w.is_pinned ? "Unpin" : "Pin as standing"}
+                    className="absolute right-3 top-3 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-background/95 text-ink-soft shadow hover:text-ink"
+                  >
+                    {w.is_pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                  </button>
                 )}
+
+                <WorkshopCard ws={w} />
               </div>
             ))}
           </div>
@@ -242,7 +332,7 @@ function CityPage() {
 
       {/* Recently made here */}
       {works.length > 0 && (
-        <section className="mt-10">
+        <section className="mt-12">
           <div className="flex items-end justify-between gap-3">
             <h2 className="font-display text-2xl text-ink">Recently made here</h2>
             <Link to="/gallery" search={{ city: city.slug }} className="text-sm text-ink-muted hover:text-ink">See all in {city.name} →</Link>
@@ -255,7 +345,7 @@ function CityPage() {
 
       {/* Creators */}
       {creators.length > 0 && (
-        <section className="mt-10 pb-16">
+        <section className="mt-12 pb-16">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <h2 className="font-display text-2xl text-ink">Local creators</h2>
             <CategoryScroller
@@ -298,75 +388,6 @@ function CityPage() {
           )}
         </section>
       )}
-
-      {/* Workshops coming soon footer */}
-      <p className="pb-16 text-center text-xs text-ink-muted">
-        Scheduled workshops are coming soon. In the meantime, start a standing meetup or post a collab to spark something in {city.name}.
-      </p>
     </main>
-  );
-}
-
-function NewMeetupForm({ cityId, onDone }: { cityId: string; onDone: () => void }) {
-  const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState<Category | "">("");
-  const [recurrence, setRecurrence] = useState("");
-  const [location, setLocation] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!user || !title.trim()) return;
-    setSubmitting(true);
-    const { error } = await supabase.from("standing_meetups").insert({
-      city_id: cityId, host_user_id: user.id,
-      title: title.trim(), description: description || null,
-      default_category: category || null, recurrence_rule: recurrence || null,
-      default_location_text: location || null, status: "active",
-    });
-    setSubmitting(false);
-    if (error) return toast.error(error.message);
-    toast.success("Meetup created");
-    onDone();
-  }
-
-  return (
-    <form onSubmit={submit} className="mt-5 space-y-3 rounded-2xl border border-border bg-surface p-5">
-      <div>
-        <Label htmlFor="m-title">Title</Label>
-        <Input id="m-title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Thursday Workshop Night" />
-      </div>
-      <div>
-        <Label>Category (optional)</Label>
-        <div className="mt-1 flex flex-wrap gap-2">
-          {CATEGORIES.map((c) => (
-            <button key={c.id} type="button" onClick={() => setCategory(category === c.id ? "" : c.id)}
-              className={cn("rounded-full border px-3 py-1 text-xs transition",
-                category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-              {c.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="m-rec">Recurrence</Label>
-          <Input id="m-rec" maxLength={120} value={recurrence} onChange={(e) => setRecurrence(e.target.value)} placeholder="Every Thursday, 6–9pm" />
-        </div>
-        <div>
-          <Label htmlFor="m-loc">Default location</Label>
-          <Input id="m-loc" maxLength={200} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Coffee shop, library, art space…" />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="m-desc">Description</Label>
-        <Textarea id="m-desc" rows={3} maxLength={1000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What happens at this meetup?" />
-      </div>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={submitting} className="rounded-full">{submitting ? "Creating…" : "Create meetup"}</Button>
-      </div>
-    </form>
   );
 }
