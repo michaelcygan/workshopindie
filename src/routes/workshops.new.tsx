@@ -30,7 +30,7 @@ function toLocalInput(d: Date) {
 
 function NewWorkshop() {
   const { user, loading } = useAuth();
-  const { isAdmin, loading: rolesLoading } = useUserRoles();
+  const { loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
