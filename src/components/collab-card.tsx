@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
-import { Clock } from "lucide-react";
+import { Clock, Radio } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
@@ -20,6 +20,7 @@ export type CollabCardData = {
   compensation_type: "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
   status: string;
   created_at: string;
+  live_workshop_id?: string | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
