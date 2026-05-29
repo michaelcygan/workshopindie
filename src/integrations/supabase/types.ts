@@ -240,6 +240,7 @@ export type Database = {
           ends_on: string | null
           external_contact_url: string | null
           id: string
+          live_workshop_id: string | null
           location_mode: Database["public"]["Enums"]["location_type"]
           resulting_work_id: string | null
           slug: string
@@ -266,6 +267,7 @@ export type Database = {
           ends_on?: string | null
           external_contact_url?: string | null
           id?: string
+          live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
           slug: string
@@ -292,6 +294,7 @@ export type Database = {
           ends_on?: string | null
           external_contact_url?: string | null
           id?: string
+          live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           resulting_work_id?: string | null
           slug?: string
@@ -310,6 +313,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_posts_live_workshop_id_fkey"
+            columns: ["live_workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
           {
@@ -1909,7 +1919,9 @@ export type Database = {
       }
       workshops: {
         Row: {
+          acting_leader_user_id: string | null
           application_count: number
+          auto_converted_at: string | null
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at: string | null
           check_in_opens_at: string | null
@@ -1935,6 +1947,7 @@ export type Database = {
           status: Database["public"]["Enums"]["workshop_status"]
           subcategories: string[]
           title: string
+          topic_collab_post_id: string | null
           updated_at: string
           venue_address: string | null
           venue_lat: number | null
@@ -1944,7 +1957,9 @@ export type Database = {
           visibility: Database["public"]["Enums"]["visibility"]
         }
         Insert: {
+          acting_leader_user_id?: string | null
           application_count?: number
+          auto_converted_at?: string | null
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
@@ -1970,6 +1985,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["workshop_status"]
           subcategories?: string[]
           title: string
+          topic_collab_post_id?: string | null
           updated_at?: string
           venue_address?: string | null
           venue_lat?: number | null
@@ -1979,7 +1995,9 @@ export type Database = {
           visibility?: Database["public"]["Enums"]["visibility"]
         }
         Update: {
+          acting_leader_user_id?: string | null
           application_count?: number
+          auto_converted_at?: string | null
           category?: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
@@ -2005,6 +2023,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["workshop_status"]
           subcategories?: string[]
           title?: string
+          topic_collab_post_id?: string | null
           updated_at?: string
           venue_address?: string | null
           venue_lat?: number | null
@@ -2026,6 +2045,13 @@ export type Database = {
             columns: ["host_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshops_topic_collab_post_id_fkey"
+            columns: ["topic_collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
             referencedColumns: ["id"]
           },
         ]
