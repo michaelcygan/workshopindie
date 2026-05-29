@@ -231,6 +231,63 @@ function ProfilePage() {
     enabled: !!profile?.id,
   });
 
+  // Owner-only data (drafts, applied + participating workshops, closed-collab nudges)
+  const isOwnEarly = !!user && !!profile && user.id === profile.id;
+
+  const { data: drafts } = useQuery({
+    queryKey: ["profile-drafts", profile?.id],
+    enabled: isOwnEarly,
+    queryFn: async () => {
+      const { data } = await supabase.from("works")
+        .select("id,title,slug,category,cover_url,status,updated_at")
+        .eq("created_by", profile!.id)
+        .neq("status", "published")
+        .order("updated_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const { data: applied } = useQuery({
+    queryKey: ["profile-applied", profile?.id],
+    enabled: isOwnEarly,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_applications")
+        .select("id,status,submitted_at,role:workshop_roles(role_name), workshop:workshops!inner(id,title,slug,category,starts_at)")
+        .eq("user_id", profile!.id)
+        .order("submitted_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const { data: participating } = useQuery({
+    queryKey: ["profile-participating", profile?.id],
+    enabled: isOwnEarly,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_participants")
+        .select("id,participant_status,joined_at,workshop:workshops!inner(id,title,slug,category,status,starts_at,check_in_opens_at,check_in_closes_at)")
+        .eq("user_id", profile!.id)
+        .order("joined_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  const { data: closedNudges = [] } = useQuery({
+    queryKey: ["profile-closed-collabs", profile?.id],
+    enabled: isOwnEarly,
+    queryFn: async () => {
+      const { data } = await supabase.from("collab_posts")
+        .select("id,title,slug,description")
+        .eq("user_id", profile!.id)
+        .eq("status", "closed")
+        .is("resulting_work_id", null)
+        .is("close_nudge_dismissed_at", null)
+        .order("closed_at", { ascending: false })
+        .limit(5);
+      return data ?? [];
+    },
+  });
+
+
   useDocumentMeta({
     title: profile ? (profile.display_name || profile.username || "Creator") : undefined,
     description: profile?.headline ?? profile?.bio?.slice(0, 160) ?? undefined,
