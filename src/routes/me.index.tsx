@@ -13,7 +13,7 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { useDocumentMeta } from "@/lib/seo";
-import { useUserRoles } from "@/hooks/use-user-role";
+
 import type { Category } from "@/lib/categories";
 import { RequireAuth } from "@/components/require-auth";
 
@@ -25,7 +25,7 @@ type Tab = "hosting" | "applied" | "participating" | "drafts" | "credits";
 
 function MeDashboard() {
   const { user, loading } = useAuth();
-  const { isAdmin } = useUserRoles();
+  
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("drafts");
 
