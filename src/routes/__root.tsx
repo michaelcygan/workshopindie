@@ -109,6 +109,8 @@ function RootComponent() {
           <WelcomeTour />
           <FirstRunHint />
           <WorkshopLiveToast />
+          <RefCapture />
+
 
 
 
