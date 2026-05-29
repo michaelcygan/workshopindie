@@ -30,6 +30,7 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
   referral_joined: UserPlus,
+  referral_reward_earned: Gift,
   first_work_shipped: Sparkles,
   work_published: Sparkles,
   collab_first_ship: Sparkles,
