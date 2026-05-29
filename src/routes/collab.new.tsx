@@ -267,12 +267,12 @@ function NewCollab() {
 
       <form onSubmit={onSubmit} className="mt-8 space-y-7">
         <section className="space-y-1.5">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
           <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
         </section>
 
         <section className="space-y-2">
-          <Label>Medium</Label>
+          <Label>Medium <span className="text-destructive">*</span></Label>
           <div className="flex flex-wrap gap-2">
             {WORK_CATEGORIES.map((c) => (
               <button type="button" key={c.id} onClick={() => setCategory(c.id)}
@@ -291,7 +291,7 @@ function NewCollab() {
         </section>
 
         <section className="space-y-2">
-          <Label>Timeline</Label>
+          <Label>Timeline <span className="text-destructive">*</span></Label>
           <TimelinePicker value={timeline} onChange={setTimeline} />
           <div className="space-y-1.5 pt-1">
             <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
@@ -300,7 +300,7 @@ function NewCollab() {
         </section>
 
         <section className="space-y-2">
-          <Label>Where</Label>
+          <Label>Where <span className="text-destructive">*</span></Label>
           <div className="flex flex-wrap gap-2">
             {(["online", "in_person", "hybrid"] as LocationMode[]).map((t) => (
               <button key={t} type="button" onClick={() => setLocationMode(t)}
@@ -370,7 +370,7 @@ function NewCollab() {
         </section>
 
         <section className="space-y-2">
-          <Label>Pay</Label>
+          <Label>Pay <span className="text-destructive">*</span></Label>
           <div className="flex flex-wrap gap-2">
             {COMP_OPTIONS.map((c) => (
               <button key={c.id} type="button" onClick={() => setComp(c.id)}
@@ -415,7 +415,7 @@ function NewCollab() {
 
 
         <section className="space-y-2">
-          <Label>How people contact you</Label>
+          <Label>How people contact you <span className="text-destructive">*</span></Label>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setContactMode("email_relay")}
               className={cn("rounded-full border px-3 py-1.5 text-sm transition",
@@ -436,7 +436,7 @@ function NewCollab() {
 
         <section className="space-y-2">
           <div className="flex items-center justify-between">
-            <Label>Roles you need</Label>
+            <Label>Roles you need <span className="text-destructive">*</span></Label>
             <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={() => addRole()}>
               <Plus className="h-3.5 w-3.5" /> Add role
             </Button>
