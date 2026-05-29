@@ -1,13 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2 } from "lucide-react";
+import { Plus, X, Globe2, CalendarClock } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
