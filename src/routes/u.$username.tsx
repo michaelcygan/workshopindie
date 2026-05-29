@@ -402,12 +402,32 @@ function ProfilePage() {
           </Avatar>
           <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
             {isOwn ? (
-              <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                <Pencil className="h-4 w-4" /> Edit profile
-              </Button>
+              <>
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
+                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                  <Pencil className="h-4 w-4" /> Edit profile
+                </Button>
+              </>
             ) : (
               <>
                 <FollowButton targetUserId={profile.id} />
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
                 <ReportDialog entityType="profile" entityId={profile.id} />
                 <BlockButton targetUserId={profile.id} />
               </>
