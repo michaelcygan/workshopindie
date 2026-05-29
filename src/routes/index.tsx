@@ -97,7 +97,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
               <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                A live room. Up to 5 artists, voice or video. Walk in, meet people, get to work.
+                Five seats. Voice or video. Whoever's around, right now.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
