@@ -87,6 +87,9 @@ export function TopNav() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
                   <Gift className="mr-2 h-4 w-4" /> Refer & Earn
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/me/blocked" })}>
+                  <Ban className="mr-2 h-4 w-4" /> Blocked users
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
