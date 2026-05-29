@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Radio, CalendarClock, MapPin } from "lucide-react";
+import { Radio, CalendarClock, MapPin, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity } from "@/hooks/use-default-city";
 import { InstantActivityTicker } from "@/components/instant-activity-ticker";
 import { cn } from "@/lib/utils";
 
-type Pill = "live" | "upcoming" | "city";
+type Pill = "live" | "upcoming" | "city" | "mine";
 
 type ScheduledRow = {
   id: string;
@@ -30,13 +31,44 @@ function fmtWhen(iso: string | null) {
   return d.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
 }
 
-function ScheduledList({ cityId }: { cityId?: string | null }) {
+function ScheduledList({ cityId, mineUserId }: { cityId?: string | null; mineUserId?: string | null }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["scheduled-workshops", cityId ?? "all"],
+    queryKey: ["scheduled-workshops", mineUserId ? `mine:${mineUserId}` : (cityId ?? "all")],
     queryFn: async () => {
+      if (mineUserId) {
+        // User's own RSVPs (incl. workshops they host) — upcoming only.
+        const [partRes, hostRes] = await Promise.all([
+          supabase
+            .from("workshop_participants")
+            .select("workshop:workshops!workshop_participants_workshop_id_fkey(id,slug,title,starts_at,city_id,topic_collab_post_id,status,mode,host_user_id)")
+            .eq("user_id", mineUserId)
+            .in("participant_status", ["confirmed", "checked_in"]),
+          supabase
+            .from("workshops")
+            .select("id,slug,title,starts_at,city_id,topic_collab_post_id,status,mode,host_user_id")
+            .eq("host_user_id", mineUserId)
+            .eq("mode", "scheduled")
+            .in("status", ["open", "check_in", "active"])
+            .gte("starts_at", new Date().toISOString()),
+        ]);
+        const merged = new Map<string, ScheduledRow>();
+        for (const r of (partRes.data ?? []) as Array<{ workshop: ScheduledRow | null }>) {
+          const w = r.workshop;
+          if (!w || !w.starts_at) continue;
+          if (new Date(w.starts_at).getTime() < Date.now()) continue;
+          if (!["open", "check_in", "active"].includes(w.status ?? "")) continue;
+          merged.set(w.id, w);
+        }
+        for (const w of (hostRes.data ?? []) as ScheduledRow[]) {
+          merged.set(w.id, w);
+        }
+        return Array.from(merged.values()).sort(
+          (a, b) => new Date(a.starts_at ?? 0).getTime() - new Date(b.starts_at ?? 0).getTime(),
+        );
+      }
       let q = supabase
         .from("workshops")
-        .select("id,slug,title,starts_at,city_id,topic_collab_post_id")
+        .select("id,slug,title,starts_at,city_id,topic_collab_post_id,status,mode,host_user_id")
         .eq("mode", "scheduled")
         .eq("visibility", "public")
         .in("status", ["open", "check_in", "active"])
@@ -60,6 +92,13 @@ function ScheduledList({ cityId }: { cityId?: string | null }) {
     );
   }
   if (!data || data.length === 0) {
+    if (mineUserId) {
+      return (
+        <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
+          No RSVPs yet. Browse workshops from a profile or city page — they'll show up here.
+        </div>
+      );
+    }
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
         Nothing scheduled {cityId ? "in your city" : "yet"}.{" "}
