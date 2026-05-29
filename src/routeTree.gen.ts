@@ -44,6 +44,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
@@ -221,6 +222,11 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
+  id: '/api/public/workshops/sweep',
+  path: '/api/public/workshops/sweep',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicPaymentsWebhookRoute =
   ApiPublicPaymentsWebhookRouteImport.update({
     id: '/api/public/payments/webhook',
@@ -265,6 +271,7 @@ export interface FileRoutesByFullPath {
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -298,6 +305,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
+  '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -377,6 +386,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshops/'
     | '/api/public/payments/webhook'
+    | '/api/public/workshops/sweep'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -410,6 +420,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/workshops'
     | '/api/public/payments/webhook'
+    | '/api/public/workshops/sweep'
   id:
     | '__root__'
     | '/'
@@ -448,6 +459,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshops/'
     | '/api/public/payments/webhook'
+    | '/api/public/workshops/sweep'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -475,6 +487,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
+  ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -724,6 +737,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/api/public/workshops/sweep': {
+      id: '/api/public/workshops/sweep'
+      path: '/api/public/workshops/sweep'
+      fullPath: '/api/public/workshops/sweep'
+      preLoaderRoute: typeof ApiPublicWorkshopsSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/payments/webhook': {
       id: '/api/public/payments/webhook'
       path: '/api/public/payments/webhook'
@@ -828,7 +848,18 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   MeIndexRoute: MeIndexRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
+  ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
