@@ -180,8 +180,8 @@ function GalleryPage() {
   
 
   const queryKey = useMemo(
-    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null],
-    [tab, category, citySlug, sort, q, user?.id],
+    () => ["gallery", tab, category, citySlug, sort, q, user?.id ?? null, blockedKey],
+    [tab, category, citySlug, sort, q, user?.id, blockedKey],
   );
 
   const queryResult = useInfiniteQuery({
@@ -201,7 +201,7 @@ function GalleryPage() {
           },
         });
       }
-      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam });
+      return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam, blockedIds: Array.from(blockedIds) });
     },
     getNextPageParam: (last) => last.nextCursor,
   });
