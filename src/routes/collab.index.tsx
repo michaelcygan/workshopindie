@@ -12,7 +12,7 @@ import { CategoryScroller } from "@/components/category-scroller";
 import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
-import { GeoDefaultBanner } from "@/components/geo-default-banner";
+
 
 const searchSchema = z.object({
   cat: fallback(z.enum(["all", "film", "music", "writing", "build", "visual"]), "all").default("all"),
