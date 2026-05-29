@@ -451,7 +451,7 @@ function ProfilePage() {
             <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} />
           )}
           {defaultTab === "groups" && (
-            <GroupsTab home={profile.home_city} city={profile.city} />
+            <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
           )}
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
