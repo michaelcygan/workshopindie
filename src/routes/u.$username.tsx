@@ -470,7 +470,7 @@ function ProfilePage() {
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
           {defaultTab === "workshops" && (
-            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} />
+            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} isOwn={isOwn} />
           )}
           {defaultTab === "groups" && (
             <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
@@ -524,8 +524,13 @@ function WorksTab({
   if (works.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work." : `${ownerName} hasn't shipped a Work yet.`}</p>
-        {isOwn && <Link to="/works/new" className="mt-4 inline-block"><Button className="rounded-full">Publish a Work</Button></Link>}
+        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
+        {isOwn && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Link to="/works/new"><Button className="rounded-full">Publish a Work</Button></Link>
+            <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
+          </div>
+        )}
       </div>
     );
   }
@@ -609,8 +614,13 @@ function CreditsTab({ works, isLoading, ownerName, isOwn }: { works: CreditWork[
 
   if (works.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
-        {isOwn ? "When someone credits you on their Work, it shows up here." : `${ownerName} hasn't been credited on anyone's Work yet.`}
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">{isOwn ? "Get credited by collaborating. Post a Collab to start." : `${ownerName} hasn't been credited on anyone's Work yet.`}</p>
+        {isOwn && (
+          <Link to="/collab/new" className="mt-4 inline-block">
+            <Button className="rounded-full">Post a Collab</Button>
+          </Link>
+        )}
       </div>
     );
   }
@@ -697,10 +707,20 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
 
 /* ---------------- WORKSHOPS TAB ---------------- */
 
-function WorkshopsTab({ items, isLoading, ownerName }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string }) {
+function WorkshopsTab({ items, isLoading, ownerName, isOwn }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
   if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
   if (items.length === 0) {
-    return <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">{ownerName} hasn't hosted or joined a Workshop yet.</div>;
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-ink-muted">{isOwn ? "No Workshops yet. Drop into a live one or schedule your own." : `${ownerName} hasn't hosted or joined a Workshop yet.`}</p>
+        {isOwn && (
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            <Link to="/instant"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+            <Link to="/workshops/new"><Button variant="outline" className="rounded-full">Schedule a Workshop</Button></Link>
+          </div>
+        )}
+      </div>
+    );
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
