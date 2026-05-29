@@ -48,6 +48,7 @@ async function fetchPosts({ cat, city, online }: Filters) {
         "roles:collab_roles(id,role_name,sort_order)",
     )
     .eq("status", "open")
+    .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);
 
@@ -249,7 +250,7 @@ function CollabPage() {
       </div>
 
       {/* Location filter row — city search + online-only chip */}
-      <div className="mt-3 flex items-center gap-2">
+      <div className="mx-auto mt-3 flex max-w-2xl items-center gap-2">
         <CityCombobox
           value={filters.city}
           valueLabel={search.cityName}
@@ -271,7 +272,7 @@ function CollabPage() {
         </button>
       </div>
 
-      <div className="mt-3">
+      <div className="mx-auto mt-3 max-w-2xl">
         <GeoDefaultBanner
           defaultCity={defaultCity}
           isOnDefault={!!defaultCity && filters.city === defaultCity.id}
