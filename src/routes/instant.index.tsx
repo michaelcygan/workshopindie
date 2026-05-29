@@ -133,7 +133,7 @@ function InstantPreflight() {
           </span>
         </h1>
         <p className="mt-3 text-lg text-ink-muted">
-          Walk into a live room with up to 5 artists. A seat opens up — take it.
+          A seat just opened. Take it.
         </p>
       </motion.div>
 
