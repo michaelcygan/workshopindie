@@ -2,7 +2,8 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Search, X, MapPin } from "lucide-react";
+import { Megaphone, Search, X, MapPin, Briefcase } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -223,6 +224,7 @@ function CollabPage() {
     });
   }
 
+  const { user } = useAuth();
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
   useApplyDefaultCity({
@@ -243,11 +245,20 @@ function CollabPage() {
           <h1 className="font-display text-4xl text-ink md:text-5xl">Collab Board</h1>
           <p className="mt-1 text-ink-muted">What people are trying to make. Help out — or open a Workshop on yours.</p>
         </div>
-        <Link to="/collab/new">
-          <Button className="rounded-full gap-2">
-            <Megaphone className="h-4 w-4" /> Post a Collab
-          </Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {user && (
+            <Link to="/me/collabs">
+              <Button variant="outline" className="rounded-full gap-2">
+                <Briefcase className="h-4 w-4" /> My Collabs
+              </Button>
+            </Link>
+          )}
+          <Link to="/collab/new">
+            <Button className="rounded-full gap-2">
+              <Megaphone className="h-4 w-4" /> Post a Collab
+            </Button>
+          </Link>
+        </div>
       </motion.div>
 
       {/* Unified filter cluster — medium bar + location row share the same width */}
