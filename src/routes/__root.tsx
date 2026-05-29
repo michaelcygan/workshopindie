@@ -106,6 +106,8 @@ function RootComponent() {
           <Outlet />
           <MobileNav />
           <WelcomeTour />
+          <FirstRunHint />
+
         </div>
         <Toaster />
       </AuthProvider>
