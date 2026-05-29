@@ -1,8 +1,9 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Link2, Users, Calendar, Layers, ImagePlus } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Link2, Users, Calendar, Layers, ImagePlus, Sparkles, X } from "lucide-react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,14 +17,17 @@ import { ReportDialog } from "@/components/report-dialog";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { ProfilePeek } from "@/components/profile-peek";
+import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
+import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
-const TAB_VALUES = ["works", "credits", "collabs", "workshops", "groups", "about"] as const;
+const TAB_VALUES = ["works", "drafts", "credits", "collabs", "workshops", "activity", "groups", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
+
 
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
