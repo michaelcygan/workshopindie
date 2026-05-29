@@ -1,53 +1,63 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Sparkles, Users, Image as ImageIcon, MessageSquare, X } from "lucide-react";
+import { Upload, Users, Sparkles, ArrowRight, X } from "lucide-react";
 
-type Step = {
+type Choice = {
+  id: "publish" | "collab" | "instant";
   icon: React.ReactNode;
   title: string;
   body: string;
-  cta: { label: string; to: string };
+  to: string;
+  accent: string;
 };
 
-const STEPS: Step[] = [
+const CHOICES: Choice[] = [
   {
-    icon: <Sparkles className="h-5 w-5" />,
-    title: "Welcome to Workshop",
-    body: "Find people. Make things. Build a portfolio that gets you hired.",
-    cta: { label: "See the gallery", to: "/" },
+    id: "publish",
+    icon: <Upload className="h-5 w-5" />,
+    title: "Publish your first work",
+    body: "Drop a track, a clip, a photo set. It lives on your profile forever.",
+    to: "/works/new",
+    accent: "from-pink-500/15 to-orange-400/10",
   },
   {
+    id: "collab",
     icon: <Users className="h-5 w-5" />,
-    title: "Drop into a live Workshop",
-    body: "A live Workshop of up to 5. Walk in, meet whoever's around, get to work.",
-    cta: { label: "Drop in", to: "/instant" },
-  },
-  {
-    icon: <ImageIcon className="h-5 w-5" />,
     title: "Post a Collab",
-    body: "Need a vocalist, a dancer, a DP? Post it. Open a Workshop on it whenever you're ready.",
-    cta: { label: "Browse Collabs", to: "/collab" },
+    body: "Need a vocalist, a DP, a dancer? Put the call out and see who shows up.",
+    to: "/collab/new",
+    accent: "from-violet-500/15 to-sky-400/10",
   },
   {
-    icon: <MessageSquare className="h-5 w-5" />,
-    title: "Build your circle",
-    body: "Follow artists. Once you follow each other, you can DM and credit each other on works.",
-    cta: { label: "Finish tour", to: "/" },
+    id: "instant",
+    icon: <Sparkles className="h-5 w-5" />,
+    title: "Drop into a live Workshop",
+    body: "Walk into a room of up to 5 and just start making something, right now.",
+    to: "/instant",
+    accent: "from-emerald-500/15 to-teal-400/10",
   },
 ];
 
 export function WelcomeTour() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [step, setStep] = useState(0);
 
   useEffect(() => {
     if (loading || !user) return;
     let cancelled = false;
+    // Open immediately if we just came from onboarding
+    let forcedOpen = false;
+    try {
+      if (sessionStorage.getItem("ws.welcome_open") === "1") {
+        sessionStorage.removeItem("ws.welcome_open");
+        forcedOpen = true;
+      }
+    } catch { /* ignore */ }
+
     supabase
       .from("profiles")
       .select("tour_completed_at,onboarded")
@@ -55,13 +65,13 @@ export function WelcomeTour() {
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
+        if (forcedOpen && data?.onboarded) { setOpen(true); return; }
         if (data?.onboarded && !data?.tour_completed_at) setOpen(true);
       });
     return () => { cancelled = true; };
   }, [user, loading]);
 
-  const finish = async () => {
-    setOpen(false);
+  const markFinished = async () => {
     if (user) {
       await supabase
         .from("profiles")
@@ -70,75 +80,83 @@ export function WelcomeTour() {
     }
   };
 
-  if (!open) return null;
-  const s = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+  const pick = async (c: Choice) => {
+    setOpen(false);
+    try { sessionStorage.setItem("ws.first_run_hint", c.id); } catch { /* ignore */ }
+    await markFinished();
+    navigate({ to: c.to });
+  };
+
+  const skip = async () => {
+    setOpen(false);
+    await markFinished();
+  };
 
   return (
     <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-sm sm:items-center"
-        onClick={finish}
-      >
+      {open && (
         <motion.div
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 40, opacity: 0 }}
-          className="relative w-full max-w-md rounded-t-3xl border border-border bg-surface p-6 shadow-soft sm:rounded-3xl"
-          onClick={(e) => e.stopPropagation()}
+          key="welcome-overlay"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm sm:items-center"
+          onClick={skip}
         >
-          <button
-            onClick={finish}
-            className="absolute right-4 top-4 rounded-full p-1.5 text-ink-muted hover:bg-muted"
-            aria-label="Skip tour"
+          <motion.div
+            initial={{ y: 40, opacity: 0, scale: 0.98 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 40, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 280, damping: 28 }}
+            className="relative w-full max-w-lg rounded-t-3xl border border-border bg-surface p-6 shadow-soft sm:rounded-3xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            <X className="h-4 w-4" />
-          </button>
+            <button
+              onClick={skip}
+              className="absolute right-4 top-4 rounded-full p-1.5 text-ink-muted hover:bg-muted"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
 
-          <div className="flex items-center gap-3">
-            <div className="rounded-full bg-primary/10 p-2 text-primary">{s.icon}</div>
-            <div className="flex gap-1">
-              {STEPS.map((_, i) => (
-                <span
-                  key={i}
-                  className={`h-1.5 w-6 rounded-full transition ${i === step ? "bg-primary" : "bg-muted"}`}
-                />
+            <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 2 of 2 — Pick your first move</p>
+            <h2 className="mt-1 font-display text-2xl text-ink">You're in. What do you want to do first?</h2>
+            <p className="mt-1 text-sm text-ink-muted">Pick one — we'll point you there. You can do the others anytime.</p>
+
+            <div className="mt-5 space-y-2.5">
+              {CHOICES.map((c, i) => (
+                <motion.button
+                  key={c.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.08 + i * 0.07, type: "spring", stiffness: 240, damping: 22 }}
+                  whileHover={{ y: -2 }}
+                  onClick={() => pick(c)}
+                  className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-border bg-gradient-to-br ${c.accent} p-4 text-left transition hover:border-ink/20 hover:shadow-soft`}
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface text-ink ring-1 ring-border">
+                    {c.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">{c.title}</p>
+                    <p className="mt-0.5 text-xs text-ink-muted">{c.body}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition-transform group-hover:translate-x-1 group-hover:text-ink" />
+                </motion.button>
               ))}
             </div>
-          </div>
 
-          <h2 className="mt-4 font-display text-2xl text-ink">{s.title}</h2>
-          <p className="mt-2 text-sm text-ink-muted">{s.body}</p>
-
-          <div className="mt-6 flex items-center justify-between gap-2">
-            <button
-              onClick={finish}
-              className="text-sm text-ink-muted hover:text-ink"
-            >
-              Skip
-            </button>
-            <div className="flex gap-2">
-              {step > 0 && (
-                <Button variant="outline" className="rounded-full" onClick={() => setStep((s) => s - 1)}>
-                  Back
-                </Button>
-              )}
-              {isLast ? (
-                <Button asChild className="rounded-full" onClick={finish}>
-                  <Link to={s.cta.to}>{s.cta.label}</Link>
-                </Button>
-              ) : (
-                <Button className="rounded-full" onClick={() => setStep((s) => s + 1)}>
-                  Next
-                </Button>
-              )}
+            <div className="mt-5 flex justify-center">
+              <button
+                onClick={skip}
+                className="text-xs text-ink-muted hover:text-ink"
+              >
+                I'll explore on my own
+              </button>
             </div>
-          </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }
