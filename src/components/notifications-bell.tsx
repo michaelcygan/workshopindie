@@ -60,6 +60,16 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         subtitle: "Say hi — they came from your invite.",
         href: actorUsername ? `/u/${actorUsername}` : "/me",
       };
+    case "referral_reward_earned": {
+      const applied = n.payload?.status === "applied";
+      return {
+        title: applied ? "You earned a free month of Plus 🎁" : "Free month banked",
+        subtitle: applied
+          ? `Thanks for referring ${actor}. We added 30 days to your next bill.`
+          : `${actor} went Plus — we'll apply your free month when you upgrade.`,
+        href: "/refer",
+      };
+    }
     case "first_work_shipped":
       return {
         title: `${actor} just shipped their first Work`,
