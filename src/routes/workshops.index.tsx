@@ -15,10 +15,10 @@ import { getMyAgeFields } from "@/lib/profile-age.functions";
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
     meta: [
-      { title: "Workshops — Find people. Make the thing. — Workshop" },
-      { name: "description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+      { title: "Workshops — what's on, what's next" },
+      { name: "description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
       { property: "og:title", content: "Workshops — Workshop" },
-      { property: "og:description", content: "Time-boxed creative sessions. Apply for a role, show up, ship work together." },
+      { property: "og:description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
     ],
   }),
   component: WorkshopsPage,
