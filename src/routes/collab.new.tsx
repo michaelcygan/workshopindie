@@ -197,6 +197,9 @@ function NewCollab() {
             ends_at: endsAt.toISOString(),
             location_type: locationMode === "in_person" ? "in_person" : "online",
             city_id: city?.id ?? null,
+            audience_city_ids: locationMode === "in_person" && city?.id
+              ? [city.id, ...alsoCities.map((c) => c.id)]
+              : [],
             participant_cap: 5,
             topic_collab_post_id: post.id,
             visibility: "public",
