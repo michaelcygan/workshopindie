@@ -360,24 +360,33 @@ function CityPage() {
           ) : (
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {filteredCreators.map((p: any) => {
+                const parts = String(p.display_name || "").trim().split(/\s+/).filter(Boolean);
+                const first = parts[0] || p.username || "Anon";
+                const lastInitial = parts.length > 1 ? parts[parts.length - 1][0].toUpperCase() : "";
+                const displayName = lastInitial ? `${first} ${lastInitial}.` : first;
+                const initials = (parts[0]?.[0] || p.username?.[0] || "·").toUpperCase() + (lastInitial || "");
                 const inner = (
                   <>
-                    <Avatar className="h-10 w-10"><AvatarImage src={p.avatar_url ?? undefined} /><AvatarFallback>{(p.display_name || p.username || "·")[0]}</AvatarFallback></Avatar>
+                    <Avatar className="h-10 w-10"><AvatarImage src={p.avatar_url ?? undefined} /><AvatarFallback>{initials}</AvatarFallback></Avatar>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5">
-                        <h3 className="truncate font-medium text-ink">{p.display_name || p.username || "Anon"}</h3>
+                        <h3 className="truncate font-medium text-ink">{displayName}</h3>
                         <CreatorBadge status={p.creator_status} />
                       </div>
-                      {p.headline && <p className="truncate text-xs text-ink-muted">{p.headline}</p>}
+                      {p.username ? (
+                        <p className="truncate text-xs text-ink-muted">@{p.username}{p.headline ? ` · ${p.headline}` : ""}</p>
+                      ) : p.headline ? (
+                        <p className="truncate text-xs text-ink-muted">{p.headline}</p>
+                      ) : null}
                     </div>
-                    <span className="text-xs text-ink-muted">{p.work_count} work{p.work_count === 1 ? "" : "s"}</span>
+                    <span className="shrink-0 text-xs text-ink-muted">{p.work_count} work{p.work_count === 1 ? "" : "s"}</span>
                   </>
                 );
                 const base = "flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition";
                 if (p.username) {
                   return (
                     <Link key={p.id} to="/u/$username" params={{ username: p.username }}
-                      className={cn(base, "hover:shadow-soft")}>
+                      className={cn(base, "hover:shadow-soft hover:bg-muted/40")}>
                       {inner}
                     </Link>
                   );
