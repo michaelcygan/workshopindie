@@ -1949,6 +1949,7 @@ export type Database = {
           pinned_at: string | null
           prompt: string | null
           slug: string
+          starting_notified_at: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["workshop_status"]
           subcategories: string[]
@@ -1990,6 +1991,7 @@ export type Database = {
           pinned_at?: string | null
           prompt?: string | null
           slug: string
+          starting_notified_at?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
           subcategories?: string[]
@@ -2031,6 +2033,7 @@ export type Database = {
           pinned_at?: string | null
           prompt?: string | null
           slug?: string
+          starting_notified_at?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
           subcategories?: string[]
