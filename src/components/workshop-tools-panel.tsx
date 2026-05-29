@@ -65,7 +65,7 @@ export function WorkshopToolsPanel({ workshopId, hostUserId, category }: Props) 
     const suggested = CATEGORY_DEFAULTS[category];
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-center">
-        <p className="text-sm text-ink-muted">Enable a shared tool so the room can collect ideas, shots, links, and references.</p>
+        <p className="text-sm text-ink-muted">Enable a shared tool so the Workshop can collect ideas, shots, links, and references.</p>
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           <Button size="sm" className="rounded-full gap-1.5" onClick={() => enableTool(suggested)}>
             <Plus className="h-3.5 w-3.5" /> {PRESETS[suggested].label} <span className="text-[11px] opacity-70">· suggested</span>

@@ -378,7 +378,7 @@ function Room({ ws }: { ws: Workshop }) {
     return (
       <section className="mt-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
         <span className="gradient-motion mx-auto inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
-        <p className="mt-2 text-sm text-ink-muted">The live room opens for confirmed participants.</p>
+        <p className="mt-2 text-sm text-ink-muted">The live Workshop opens for confirmed participants.</p>
       </section>
     );
   }
@@ -394,7 +394,7 @@ function Room({ ws }: { ws: Workshop }) {
   if (roomError) {
     return (
       <section className="mt-10 rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center text-sm text-ink-soft">
-        Couldn't open the live room: {(roomError as Error).message}
+        Couldn't open the live Workshop: {(roomError as Error).message}
       </section>
     );
   }
@@ -611,7 +611,7 @@ function CheckInPanel({ ws }: { ws: Workshop }) {
       .update({ checked_in_at: new Date().toISOString(), participant_status: "checked_in" })
       .eq("id", myPart!.id);
     if (error) return toast.error(error.message);
-    toast.success("Checked in. See you in The Room.");
+    toast.success("Checked in. See you in the Workshop.");
     qc.invalidateQueries({ queryKey: ["ws-mypart", ws.id, user!.id] });
   }
 

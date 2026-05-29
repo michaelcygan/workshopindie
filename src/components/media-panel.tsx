@@ -81,7 +81,7 @@ export function MediaPanel({
 
       {!m.joined ? (
         <p className="mt-3 text-xs text-ink-muted">
-          {m.busy ? "Connecting…" : "Joining the room…"}
+          {m.busy ? "Connecting…" : "Joining the Workshop…"}
           {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
         </p>
       ) : (
@@ -113,12 +113,12 @@ export function MediaPanel({
             onClick={onExit}
             className="w-full rounded-full gap-1.5 text-destructive hover:text-destructive"
           >
-            <LogOut className="h-3.5 w-3.5" /> Exit Lounge
+            <LogOut className="h-3.5 w-3.5" /> Exit Workshop
           </Button>
 
           <div className="border-t border-border pt-3">
             <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
-              In the room · {totalHere}
+              In the Workshop · {totalHere}
             </h4>
             <ul className="space-y-2">
               <SpeakerRow

@@ -42,7 +42,7 @@ function CheckoutReturn() {
       <h1 className="mt-4 font-display text-3xl text-ink">You're Plus ✨</h1>
       <p className="mt-2 text-sm text-ink-muted">
         {session_id
-          ? "Thanks for supporting Workshop. Every city, the full Lounge, and your unlimited portfolio are unlocked."
+          ? "Thanks for supporting Workshop. Every city, the full Workshop, and your unlimited portfolio are unlocked."
           : "No checkout session found. If you just paid, give it a few seconds and refresh."}
       </p>
       <div className="mt-6 flex gap-2">

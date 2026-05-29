@@ -412,7 +412,7 @@ function NewCollab() {
         <section className="space-y-3 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
           <div>
             <Label>Workshop on this Collab</Label>
-            <p className="text-xs text-ink-muted">A Workshop is a live room of up to 5 — voice or video — for meeting collaborators, brainstorming the idea, and casting roles.</p>
+            <p className="text-xs text-ink-muted">A Workshop is a live space of up to 5 — voice or video — for meeting collaborators, brainstorming the idea, and casting roles.</p>
           </div>
 
           <div className="space-y-2">

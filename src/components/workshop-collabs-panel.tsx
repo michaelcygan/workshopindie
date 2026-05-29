@@ -151,7 +151,7 @@ export function WorkshopCollabsPanel({ presenceUsers }: { presenceUsers: Presenc
                             <DropdownMenuLabel className="text-xs">Invite someone here</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {otherUsers.length === 0 ? (
-                              <DropdownMenuItem disabled>Only you in this room</DropdownMenuItem>
+                              <DropdownMenuItem disabled>Only you in this Workshop</DropdownMenuItem>
                             ) : otherUsers.map((p) => (
                               <DropdownMenuItem
                                 key={p.user_id}
