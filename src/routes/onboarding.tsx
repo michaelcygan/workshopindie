@@ -15,6 +15,10 @@ import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
 import { setMyBirthdate } from "@/lib/profile-age.functions";
+import { attributeReferral, setReferredBy } from "@/lib/share.functions";
+
+const REF_KEY = "signup-ref";
+
 
 export const Route = createFileRoute("/onboarding")({
   component: () => <RequireAuth><Onboarding /></RequireAuth>,
