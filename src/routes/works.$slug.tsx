@@ -9,6 +9,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
+import { ShareSheet } from "@/components/share-sheet";
 import { CreditStrip, type CreditChip } from "@/components/credit-strip";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
