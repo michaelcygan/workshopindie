@@ -35,6 +35,30 @@ function Signup() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
+  const lookupRef = useServerFn(attributeReferral);
+  const writeRef = useServerFn(setReferredBy);
+
+  // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it
+  useEffect(() => {
+    if (search.ref && typeof window !== "undefined") {
+      sessionStorage.setItem(REF_KEY, search.ref.toLowerCase());
+    }
+  }, [search.ref]);
+
+  async function applyReferral(newUserId: string) {
+    const ref = (typeof window !== "undefined" && sessionStorage.getItem(REF_KEY)) || null;
+    if (!ref) return;
+    try {
+      const r = await lookupRef({ data: { referrerUsername: ref } });
+      if (r.ok && r.referrerId) {
+        await writeRef({ data: { userId: newUserId, referrerId: r.referrerId } });
+      }
+    } catch {
+      /* non-fatal */
+    } finally {
+      sessionStorage.removeItem(REF_KEY);
+    }
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,7 +69,7 @@ function Signup() {
     }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -60,6 +84,7 @@ function Signup() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (data.user?.id) await applyReferral(data.user.id);
     toast.success("Check your inbox to confirm your email.");
     navigate({ to: "/onboarding" });
   };
