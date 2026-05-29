@@ -49,7 +49,7 @@ function PricingPage() {
             "2 active open Collabs at a time",
             "Apply to unlimited Collabs",
             "Your home city — join, post, browse",
-            "60 minutes / day in the Instant Lounge",
+            "30 minutes / day in the Instant Lounge",
             "DMs, comments, credits — never gated",
           ]}
         />
