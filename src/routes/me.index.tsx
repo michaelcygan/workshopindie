@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X } from "lucide-react";
+import { Calendar, Users, Sparkles, Pencil, Plus, ExternalLink, X, ImagePlus, MapPin } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,8 +44,10 @@ function MeDashboard() {
     queryKey: ["me-profile", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("display_name,username,avatar_url,headline").eq("id", user!.id).maybeSingle();
-      return data;
+      const { data } = await supabase.from("profiles")
+        .select("display_name,username,avatar_url,cover_url,headline,city:cities!profiles_city_id_fkey(name,slug)")
+        .eq("id", user!.id).maybeSingle();
+      return data as { display_name: string | null; username: string | null; avatar_url: string | null; cover_url: string | null; headline: string | null; city: { name: string; slug: string } | null } | null;
     },
   });
 
