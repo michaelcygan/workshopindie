@@ -166,9 +166,11 @@ function GalleryControls({
 function Index() {
   const [category, setCategory] = useState<Category | "all">("all");
   const [sort, setSort] = useState<SortKey>("newest");
+  const { ids: blockedIds } = useBlockedIds();
+  const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const { data: works, isLoading } = useQuery({
-    queryKey: ["works", category, sort],
-    queryFn: () => fetchWorks(category, sort),
+    queryKey: ["works", category, sort, blockedKey],
+    queryFn: () => fetchWorks(category, sort, Array.from(blockedIds)),
   });
 
   return (
