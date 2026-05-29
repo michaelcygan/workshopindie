@@ -54,6 +54,8 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "Collaborator", quantity: 1, description: "" },
   ]);
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduledAt, setScheduledAt] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
