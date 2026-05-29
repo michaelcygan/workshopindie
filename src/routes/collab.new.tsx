@@ -344,7 +344,7 @@ function NewCollab() {
               <CalendarClock className="mt-0.5 h-4 w-4 text-ink-muted" />
               <div>
                 <Label htmlFor="schedule-on" className="cursor-pointer">Set a time for a live Workshop on this</Label>
-                <p className="text-xs text-ink-muted">Optional. Posts a scheduled Workshop tied to this Collab. People can RSVP and drop into the room when it starts.</p>
+                <p className="text-xs text-ink-muted">Pick a time and we'll schedule a room on this Collab. People RSVP, then drop in when it starts.</p>
               </div>
             </div>
             <Switch id="schedule-on" checked={scheduleOn} onCheckedChange={setScheduleOn} />
