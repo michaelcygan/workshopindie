@@ -2,13 +2,14 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale } from "lucide-react";
+import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale, Check, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -17,6 +18,7 @@ import { toast } from "sonner";
 import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
+import { logShareEvent } from "@/lib/collab.functions";
 
 export const Route = createFileRoute("/collab/new")({ component: NewCollab });
 
@@ -84,8 +86,9 @@ function NewCollab() {
   const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [rights, setRights] = useState<RightsArrangement | null>(null);
-  const [rightsOpen, setRightsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string; workshopRoomId: string | null; scheduledAt: string | null } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
 
@@ -122,10 +125,12 @@ function NewCollab() {
     e.preventDefault();
     if (!user) return;
     if (!title.trim()) return toast.error("Give your Collab a title");
+    if (!description.trim() || description.trim().length < 20) return toast.error("Describe the idea — at least a sentence or two");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
+    if (!rights) return toast.error("Pick a rights arrangement");
 
     if (workshopMode === "scheduled" && !scheduledAt) {
       return toast.error("Pick a date and time for the Workshop");
@@ -214,8 +219,7 @@ function NewCollab() {
         }
       }
       setSubmitting(false);
-      toast.success("Collab posted. Your Workshop is on the calendar.");
-      navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+      setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
       return;
     }
 
@@ -223,20 +227,35 @@ function NewCollab() {
       try {
         const res = await openWorkshopFn({ data: { collabPostId: post.id } });
         setSubmitting(false);
-        toast.success("Your Workshop is live — say hi.");
-        navigate({ to: "/instant/$id", params: { id: res.roomId } });
+        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
         return;
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Couldn't open the Workshop — your Collab is posted.");
         setSubmitting(false);
-        navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
         return;
       }
     }
 
     setSubmitting(false);
-    toast.success("Your Collab is live.");
-    navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+    setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
+  }
+
+  const shareUrl = postedDialog
+    ? `${typeof window !== "undefined" ? window.location.origin : ""}/collab/${postedDialog.slug}`
+    : "";
+
+  async function copyShareLink() {
+    if (!postedDialog) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+      toast.success("Link copied — share away.");
+      logShareEvent({ data: { collabPostId: postedDialog.id, channel: "copy" } }).catch(() => {});
+    } catch {
+      toast.error("Couldn't copy — long-press the link to copy it manually.");
+    }
   }
 
   return (
@@ -266,8 +285,8 @@ function NewCollab() {
         </section>
 
         <section className="space-y-1.5">
-          <Label htmlFor="desc">What's the idea</Label>
-          <Textarea id="desc" rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+          <Label htmlFor="desc">What's the idea <span className="text-destructive">*</span></Label>
+          <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
             placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
         </section>
 
@@ -365,6 +384,37 @@ function NewCollab() {
         </section>
 
         <section className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-destructive">*</span>
+          </Label>
+          <div className="space-y-2">
+            {RIGHTS_OPTIONS.map((o) => (
+              <label
+                key={o.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition",
+                  rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="rights"
+                  className="mt-1 accent-ink"
+                  checked={rights === o.id}
+                  onChange={() => setRights(o.id)}
+                />
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-ink">{o.label}</span>
+                  <span className="block text-xs text-ink-muted">{o.body}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-ink-muted">Sets expectations now to avoid friction later. You can change this while the post is open.</p>
+        </section>
+
+
+        <section className="space-y-2">
           <Label>How people contact you</Label>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setContactMode("email_relay")}
@@ -420,33 +470,6 @@ function NewCollab() {
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label className="flex items-center gap-1.5"><Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-xs font-normal text-ink-muted">(optional)</span></Label>
-            {rights ? (
-              <button type="button" onClick={() => { setRights(null); setRightsOpen(false); }} className="text-xs text-ink-muted hover:text-ink">Clear</button>
-            ) : !rightsOpen ? (
-              <button type="button" onClick={() => setRightsOpen(true)} className="text-xs text-ink-muted hover:text-ink">+ Add a rights note</button>
-            ) : (
-              <button type="button" onClick={() => setRightsOpen(false)} className="text-xs text-ink-muted hover:text-ink">Hide</button>
-            )}
-          </div>
-          {(rightsOpen || rights) && (
-            <div className="space-y-2 rounded-2xl border border-dashed border-border bg-surface/40 p-3">
-              <p className="text-xs text-ink-muted">Set expectations now to avoid friction later.</p>
-              {RIGHTS_OPTIONS.map((o) => (
-                <label key={o.id} className={cn("flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition", rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40")}>
-                  <input type="radio" name="rights" className="mt-1 accent-ink" checked={rights === o.id} onChange={() => setRights(o.id)} />
-                  <span className="flex-1">
-                    <span className="block text-sm font-medium text-ink">{o.label}</span>
-                    <span className="block text-xs text-ink-muted">{o.body}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          )}
         </section>
 
         <section className="space-y-3 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
@@ -520,6 +543,62 @@ function NewCollab() {
         title="You've hit 2 active Collabs"
         description="Free can run 2 open Collabs at a time. Go Plus for unlimited."
       />
+      <Dialog open={!!postedDialog} onOpenChange={(o) => { if (!o) setPostedDialog(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Your Collab is live.</DialogTitle>
+            <DialogDescription>
+              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account.
+              {postedDialog?.scheduledAt && (
+                <span className="mt-2 block text-xs text-ink-muted">
+                  Workshop scheduled for {new Date(postedDialog.scheduledAt).toLocaleString()}.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-1 space-y-1.5">
+            <Label htmlFor="share-url" className="text-xs text-ink-muted">Shareable link</Label>
+            <div className="flex items-center gap-2">
+              <Input id="share-url" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} className="flex-1 text-xs" />
+              <Button type="button" size="sm" variant="secondary" className="gap-1.5 rounded-full" onClick={copyShareLink}>
+                {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                {copied ? "Copied" : "Copy"}
+              </Button>
+            </div>
+            <p className="text-[11px] text-ink-muted">Drop it in IG stories, a group chat, or anywhere your people live.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
+              Stay here
+            </Button>
+            {postedDialog?.workshopRoomId ? (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const id = postedDialog.workshopRoomId!;
+                  setPostedDialog(null);
+                  navigate({ to: "/instant/$id", params: { id } });
+                }}
+              >
+                Join your Workshop
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const slug = postedDialog!.slug;
+                  setPostedDialog(null);
+                  navigate({ to: "/collab/$slug", params: { slug } });
+                }}
+              >
+                Open Collab page
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
