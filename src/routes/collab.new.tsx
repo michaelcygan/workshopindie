@@ -252,7 +252,7 @@ function NewCollab() {
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
       toast.success("Link copied — share away.");
-      logShareEvent({ data: { collabPostId: postedDialog.slug, channel: "copy" } }).catch(() => {});
+      logShareEvent({ data: { collabPostId: postedDialog.id, channel: "copy" } }).catch(() => {});
     } catch {
       toast.error("Couldn't copy — long-press the link to copy it manually.");
     }
