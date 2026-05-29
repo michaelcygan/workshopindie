@@ -841,7 +841,7 @@ function GroupsTab({ home, city, isOwn }: { home: { name: string; country: strin
 
   return (
     <>
-      <p className="mb-4 text-sm text-ink-muted">Cities they're part of. More group types coming soon.</p>
+      <p className="mb-4 text-sm text-ink-muted">Cities they're part of.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         {groups.map((g) => (
           <Link key={g.slug} to="/cities/$slug" params={{ slug: g.slug }} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
