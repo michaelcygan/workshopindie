@@ -84,6 +84,9 @@ export function TopNav() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
                   <Sparkles className="mr-2 h-4 w-4" /> {isPlus ? "Manage Plus" : "Go Plus"}
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                  <Gift className="mr-2 h-4 w-4" /> Refer & Earn
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
