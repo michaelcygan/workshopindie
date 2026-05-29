@@ -173,6 +173,9 @@ function CollabDetail() {
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
   const cityName = post.city?.name;
+  const today = new Date().toISOString().slice(0, 10);
+  const deadlinePassed = !!post.ends_on && post.ends_on < today && post.status === "open";
+  const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
   function openContact(roleId: string | null) {
     if (!post) return;
