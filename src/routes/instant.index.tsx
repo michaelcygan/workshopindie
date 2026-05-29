@@ -146,7 +146,9 @@ function InstantPreflight() {
           </span>
         </h1>
         <p className="mt-3 text-lg text-ink-muted">
-          A seat just opened. Take it.
+          {selectedLabel
+            ? `Drop into a ${selectedLabel} workshop. Leaderless, focused.`
+            : "A seat just opened. Take it."}
         </p>
       </motion.div>
 
