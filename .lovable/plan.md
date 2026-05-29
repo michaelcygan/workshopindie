@@ -1,88 +1,88 @@
-## Goal
+# Branded language audit — replace "lounge" / "room" / "call" with Workshop / Collab / Work
 
-Tighten the "Post a Collab" flow so it's branded, scoped to creative mediums, and offers an instant "drop into a Workshop now" path in addition to (or instead of) scheduling.
+Goal: align every user-facing string with the brand vocabulary. "Workshop" is the live space (never "lounge" or "room"). "Collab" is the post (never "call"). "Work" stays for the finished piece. Internal code (variable names, query keys, component/file names like `RoomGallery`, `LoungeForkDropdown`, `use-media-room`, DB tables `instant_rooms`) is left alone — code-only refactors aren't part of this pass.
 
----
+## Copy changes (user-visible only)
 
-## 1. Category — drop non-medium options
+**`src/routes/pricing.tsx`**
+- Meta description + og:description: "unlimited lounge time" → "unlimited Workshop time"
+- Hero subtitle: "unlimited lounge time, and your full portfolio" → "unlimited Workshop time, and your full portfolio"
+- Free plan bullet: "30 minutes / day in the Instant Lounge" → "30 minutes / day in the Workshop"
+- Plus plan bullet: "Unlimited Instant Lounge time + priority seat" → "Unlimited Workshop time + priority seat"
 
-A Collab becomes a Work, so only WORK_CATEGORY mediums apply.
+**`src/components/plus-gate.tsx`**
+- "Unlimited Workshop lounge time (Free is 30 min/day)" → "Unlimited Workshop time (Free is 30 min/day)"
 
-- In `src/routes/collab.new.tsx`, replace `CATEGORIES` with `WORK_CATEGORIES` from `src/lib/categories.ts` (Film, Music, Writing, Build, Visual).
-- Remove Critique, Business of Art, Co-working from the chip row.
-- Default `category` stays `"visual"` (already a Work category).
+**`src/routes/checkout.return.tsx`**
+- "the full Lounge, and your unlimited portfolio" → "the full Workshop, and your unlimited portfolio"
 
-## 2. Branded copy
+**`src/components/welcome-tour.tsx`**
+- "Drop into a live room" → "Drop into a live Workshop"
+- "A live room of up to 5…" → "A live Workshop of up to 5. Walk in, meet whoever's around, get to work."
+- "Open a room on it whenever you're ready." → "Open a Workshop on it whenever you're ready."
 
-- H1 "Post a call" → **"Post a Collab"**.
-- Subtitle: **"Share what you're making and the roles you need. People reach out — you pick your team."**
-- Submit button "Post call" → **"Post Collab"**.
-- "Cancel" stays.
-- Toast "Posted to the Collab Board" → **"Your Collab is live."**
-- Toast "Posted — your Workshop is scheduled." → **"Collab posted. Your Workshop is on the calendar."**
+**`src/routes/index.tsx`**
+- "Walk into a room of artists. Or post the thing you want to make and pull a room together." → "Walk into a live Workshop of artists. Or post a Collab and pull a Workshop together around it."
+- "Open a room on it when you're ready." → "Open a Workshop on it when you're ready."
 
-## 3. Replace the "Set a time" block with a three-mode Workshop chooser
+**`src/routes/instant.index.tsx`**
+- Meta desc: "Voice or video, up to 5 per room." → "Voice or video, up to 5 per Workshop."
+- Toast: "Couldn't open that room" → "Couldn't open that Workshop"
+- Body copy: "Rooms cap at 5. When one fills, a new one opens… Open a room on one of your Collabs." → "Workshops cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a Workshop on one of your Collabs."
 
-Today the block only offers Schedule. Make it a clearer set of three options the user picks after the rest of the form:
+**`src/routes/instant.$id.tsx`**
+- "Live room · up to 5 artists." → "Live Workshop · up to 5 artists."
 
-```text
-Pair this Collab with a Workshop
-( ) Not yet — just post it
-( ) Open a Workshop right now — meet people, brainstorm, start casting
-( ) Schedule a Workshop — pick a time and let people RSVP
-```
+**`src/routes/workshops.index.tsx`**
+- "Scheduled rooms you can RSVP to…" → "Scheduled Workshops you can RSVP to. Or skip the wait — drop in."
+- "Post a Collab, pick a time — the room schedules itself." → "Post a Collab, pick a time — the Workshop schedules itself."
 
-Render as three stacked radio-style cards inside the existing dashed section. Replace icon + title + helper text per option:
+**`src/routes/workshops.new.tsx`**
+- "A room with a start time. People RSVP. They show up." → "A Workshop with a start time. People RSVP. They show up."
 
-- **Not yet** — "Post the Collab on its own. You can open a Workshop on it any time."
-- **Open one now** — "Spin up a live Workshop on this Collab the moment you post. Up to 5 seats. Meet collaborators, brainstorm the idea, audition roles on the spot."
-- **Schedule one** — "Pick a date and time. People who apply get the invite and can RSVP. They drop in when it starts."
+**`src/routes/workshops.$slug.tsx`**
+- "The live room opens for confirmed participants." → "The live Workshop opens for confirmed participants."
+- "Couldn't open the live room: …" → "Couldn't open the live Workshop: …"
+- Toast "Checked in. See you in The Room." → "Checked in. See you in the Workshop."
 
-When **Schedule** is selected, show the existing `datetime-local` input plus the no-show helper.
-When **Open one now** is selected, show a small reassuring line: *"After you post, we'll drop you straight into the Workshop."*
+**`src/routes/collab.index.tsx`**
+- Meta desc: "post your own and open a room on it" → "post your own and open a Workshop on it"
+- Subtitle: "open a room on yours" → "open a Workshop on yours"
+- Button "Post a call" (both occurrences) → "Post a Collab"
 
-Replace the section heading "Set a time for a live Workshop on this" with **"Workshop on this Collab"**.
+**`src/routes/collab.new.tsx`**
+- "A Workshop is a live room of up to 5…" → "A Workshop is a live space of up to 5…" (drops the redundant "room")
 
-Replace existing description "Pick a time and we'll schedule a room on this Collab. People RSVP, then drop in when it starts." — it's only shown under the Schedule option now (see above).
+**`src/routes/me.index.tsx`**
+- Empty state: "No active rooms." → "No active Workshops."
 
-## 4. Submit-handler changes
+**`src/components/workshop-tools-panel.tsx`**
+- "so the room can collect ideas, shots, links, and references." → "so the Workshop can collect ideas, shots, links, and references."
 
-State shape: replace `scheduleOn: boolean` + `scheduledAt: string` with:
+**`src/components/workshop-collabs-panel.tsx`**
+- "Only you in this room" → "Only you in this Workshop"
 
-```ts
-type WorkshopMode = "none" | "now" | "scheduled";
-const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
-const [scheduledAt, setScheduledAt] = useState<string>("");
-```
+**`src/components/media-panel.tsx`**
+- Button "Exit Lounge" → "Exit Workshop"
+- "Joining the room…" → "Joining the Workshop…"
+- "In the room · {totalHere}" → "In the Workshop · {totalHere}"
 
-In `onSubmit`, after the Collab + roles insert:
+**`src/components/channel-view.tsx`**
+- Toast "Dropped from the Lounge — you went quiet." → "Dropped from the Workshop — you went quiet."
 
-- `workshopMode === "scheduled"` — existing scheduled-Workshop insert (unchanged).
-- `workshopMode === "now"` — call the existing `openWorkshopOnCollab` server fn with the new Collab's id. On success navigate to `/instant/$id` (the paired room id) instead of the Collab detail page. Toast: **"Your Workshop is live — say hi."**
-- `workshopMode === "none"` — current behavior; navigate to `/collab/$slug`.
+**`src/components/room-gallery.tsx`**
+- "Share a piece — your room can see it here." → "Share a piece — your Workshop can see it here."
+- "No works in this room yet." → "No works in this Workshop yet."
 
-`openWorkshopOnCollab` already does all the work (creates Workshop, paired room, host participant, applicant notifications, idempotent). No server-side changes needed.
+**`src/components/lounge-fork-dropdown.tsx`**
+- Section labels stay structural ("Live mediums", "Start a medium-specific Workshop"). No copy changes needed here — already uses "Workshop".
 
-## 5. Small additional optimizations (same flow, low risk)
-
-1. **Roles UX** — current default `"Collaborator"` is generic. Change the initial role placeholder to `""` with placeholder text only, AND add a quick chip strip above the roles list with one-tap presets per selected category (e.g. Music → Vocalist, Producer, Mixer; Film → DP, Editor, Actor; Writing → Co-writer, Editor; Build → Designer, Engineer; Visual → Photographer, Model, Stylist). Tapping a chip appends a role row pre-filled with that name. Keeps the form fast for first-time posters.
-2. **Description placeholder** — keep but trim to: *"What you're making, the vibe, what's already done, and what 'great' looks like."*
-3. **"How should people reach you"** — rename to **"How people contact you"** and reorder so "In-app message" is recommended (already default). No logic change.
-4. **Compensation** label → **"Pay"** with helper text under it: *"Set expectations up front — it makes better matches."* (small, `text-xs text-ink-muted`).
-5. **Where** — leave logic, but rename "Online / In person / Hybrid" copy to **"Remote / In person / Either"** (matches how people actually talk).
-
-These are copy/UX-only and don't touch the schema or server functions.
-
-## Files touched
-
-- `src/routes/collab.new.tsx` — all of the above.
-
-No DB migration, no server function changes, no RLS changes.
+## Out of scope (intentionally not touched)
+- File names, component names, imports (`RoomGallery`, `LoungeForkDropdown`, `use-media-room`), query keys, DB tables (`instant_rooms`), and server-side log/throw strings inside `*.functions.ts` / `*.server.ts`. These are internal identifiers — renaming them is a refactor, not a copy fix, and risks breaking the build.
+- Comments in source code.
 
 ## Acceptance
-
-- Category row shows only Film, Music, Writing, Build, Visual.
-- Header reads "Post a Collab".
-- Workshop section offers three explicit options; "Open one now" posts the Collab and drops the user into the live Workshop room.
-- Scheduling still works exactly as before when picked.
-- Role presets appear contextually under the selected category.
+- A grep of user-facing `.tsx` for `\blounge\b` returns zero matches outside identifiers/query keys.
+- A grep for `\broom\b` in JSX text and toast/meta strings returns zero matches.
+- "Post a call" no longer appears in any button or heading.
+- Pricing page hero, free/plus bullets, plus-gate, welcome tour, home page, instant pages, and workshop pages all consistently say "Workshop".
