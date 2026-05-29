@@ -12,6 +12,9 @@ import {
   KeyRound,
   ExternalLink,
   ArrowLeft,
+  Bell,
+  Flag,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,7 +24,13 @@ import { usePlus } from "@/hooks/use-plus";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { createPortalSession } from "@/lib/payments.functions";
 import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
-import { getMyPrivacy, updateMyPrivacy, deleteMyAccount } from "@/lib/account.functions";
+import { getMyPrivacy, updateMyPrivacy, deleteMyAccount, exportMyData } from "@/lib/account.functions";
+import {
+  getMyNotifPrefs,
+  updateMyNotifPrefs,
+  type NotifPrefKey,
+  type NotifPrefs,
+} from "@/lib/notifications-prefs.functions";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
