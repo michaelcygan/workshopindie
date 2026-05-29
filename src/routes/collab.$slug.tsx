@@ -76,7 +76,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
