@@ -338,6 +338,35 @@ function NewCollab() {
           </div>
         </section>
 
+        <section className="space-y-2 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <CalendarClock className="mt-0.5 h-4 w-4 text-ink-muted" />
+              <div>
+                <Label htmlFor="schedule-on" className="cursor-pointer">Set a time for a live Workshop on this</Label>
+                <p className="text-xs text-ink-muted">Optional. Posts a scheduled Workshop tied to this Collab. People can RSVP and drop into the room when it starts.</p>
+              </div>
+            </div>
+            <Switch id="schedule-on" checked={scheduleOn} onCheckedChange={setScheduleOn} />
+          </div>
+          {scheduleOn && (
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
+              <Input
+                id="starts-at"
+                type="datetime-local"
+                value={scheduledAt}
+                onChange={(e) => setScheduledAt(e.target.value)}
+                min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
+                required
+              />
+              <p className="text-[11px] text-ink-muted">If no one shows up within 15 minutes of the start time, the Workshop auto-converts to a live drop-in so the room never dies silently.</p>
+            </div>
+          )}
+        </section>
+
+
+
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
           <Button type="submit" disabled={submitting} className="rounded-full">
