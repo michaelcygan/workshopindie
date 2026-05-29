@@ -24,7 +24,14 @@ type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
 type ContactMode = "email_relay" | "external_link";
 type WorkshopMode = "none" | "now" | "scheduled";
+type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons";
 type RoleDraft = { role_name: string; quantity: number; description: string };
+
+const RIGHTS_OPTIONS: { id: RightsArrangement; label: string; body: string }[] = [
+  { id: "owner_retains", label: "Owner keeps publishing rights", body: "You retain the final say on how the work is released. Collaborators are credited." },
+  { id: "equal_split", label: "Equal split among all participants", body: "Everyone who ships on this owns an equal share." },
+  { id: "creative_commons", label: "Creative Commons", body: "Free for anyone to use with attribution (CC BY 4.0)." },
+];
 
 const COMP_OPTIONS: { id: CompType; label: string }[] = [
   { id: "paid", label: "Paid" },
