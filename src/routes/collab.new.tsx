@@ -87,7 +87,7 @@ function NewCollab() {
   const [scheduledAt, setScheduledAt] = useState<string>("");
   const [rights, setRights] = useState<RightsArrangement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [postedDialog, setPostedDialog] = useState<{ slug: string; workshopRoomId: string | null; scheduledAt: string | null } | null>(null);
+  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string; workshopRoomId: string | null; scheduledAt: string | null } | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
