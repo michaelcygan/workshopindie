@@ -202,6 +202,17 @@ function CollabDetail() {
             {isOwner ? (
               <>
                 {post.status === "open" && (
+                  isLive ? (
+                    <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                      <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                      <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open a Workshop on this"}
+                    </Button>
+                  )
+                )}
+                {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
                   </Button>
@@ -211,7 +222,15 @@ function CollabDetail() {
                 </Button>
               </>
             ) : (
-              user && <ReportDialog entityType="collab_post" entityId={post.id} />
+              <>
+                {isLive && (
+                  <Button size="sm" className="rounded-full gap-1 bg-primary" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
+                    Live now — join
+                  </Button>
+                )}
+                {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
+              </>
             )}
           </div>
         </div>
