@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Link2, Users, Calendar, Layers, ImagePlus, Sparkles, X } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X } from "lucide-react";
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
