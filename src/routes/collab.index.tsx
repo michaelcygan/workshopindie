@@ -224,6 +224,7 @@ function CollabPage() {
     });
   }
 
+  const { user } = useAuth();
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
   useApplyDefaultCity({
