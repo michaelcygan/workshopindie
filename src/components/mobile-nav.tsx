@@ -57,6 +57,9 @@ export function MobileNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                <Gift className="mr-2 h-4 w-4" /> Refer & Earn
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={async () => {
