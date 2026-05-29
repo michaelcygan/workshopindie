@@ -34,7 +34,7 @@ function fmtWhen(iso: string | null) {
   return d.toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
 }
 
-function ScheduledList({ cityId, mineUserId }: { cityId?: string | null; mineUserId?: string | null }) {
+function ScheduledList({ cityId, mineUserId, collabOnly }: { cityId?: string | null; mineUserId?: string | null; collabOnly?: boolean }) {
   const { data, isLoading } = useQuery({
     queryKey: ["scheduled-workshops", mineUserId ? `mine:${mineUserId}` : (cityId ?? "all")],
     queryFn: async () => {
