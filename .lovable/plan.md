@@ -1,45 +1,52 @@
 ## Goal
 
-Finish `/u/$username` so it always renders the full profile structure — even on a brand-new account — with clear owner CTAs that push the user toward the two core flows: **Publish a Work** and **Post a Collab**.
+One unified profile (Instagram-style). `/u/$username` is the single source of truth. `/me` redirects there. Owner-only flourishes are toggled on by `isOwn`. Fix the title-clipping issue while restructuring the header.
 
-## Scope
+## 1. Unify `/me` → `/u/$username`
 
-Single file: `src/routes/u.$username.tsx`. No backend, schema, or other route changes.
+- `src/routes/me.index.tsx` becomes a thin redirect: look up the signed-in user's `username`, then redirect to `/u/{username}`. If no username yet → `/onboarding`.
+- All owner-only dashboard content (drafts, applied/participating, closed-collab nudges, primary CTAs) moves onto `/u/$username`, gated by `isOwn`.
+- `/me/edit` stays as-is.
+- Header/menu links can still point to `/me`; the redirect resolves to the public URL on landing.
 
-## Changes
+## 2. Fix title clipping
 
-### 1. Cover photo: owner empty state
+Restructure the header so only the avatar overlaps the cover. Name, handle, city, headline, and CTAs all sit cleanly below the cover edge.
 
-Currently when `!profile.cover_url` we render a warm gradient with no affordance. Add an owner-only overlay:
+```text
+[ cover photo                                          ]
+[ avatar (overlaps) ]                  [ Edit / Follow ]
+       Name + badge
+       @handle · 📍 City · IG
+       Headline
+       [Owner CTAs row]
+       [Stats strip]
+       [Tabs]
+```
 
-- Keep the gradient as the empty background.
-- When `isOwn && !profile.cover_url`, overlay a centered ghost button **"Add cover photo"** (with `ImagePlus` icon) that navigates to `/me/edit` (the edit form already has the cover uploader at line 310).
-- When `isOwn && profile.cover_url`, show a small "Change cover" pill in the top-right corner on hover (subtle, doesn't break the cover image).
+## 3. Owner-only flourishes on the unified profile
 
-### 2. Always show all tabs for the profile owner
+Visible only when `isOwn`:
 
-Today `visibleTabs` hides Credits / Workshops / Groups when empty. On a fresh account this collapses the profile to just **Works / Collabs / About**, hiding the structure the user is meant to grow into.
+- Cover empty state ("Add cover photo") — already in place ✓
+- Primary CTA row under headline: **Publish a Work**, **Post a Collab**, **Drop into a Workshop**
+- Closed-collab "wrap up" nudges (moved from `/me`) — above the tab bar
+- Two new owner-only tabs added to the existing set:
+  - `Drafts` — unpublished works
+  - `Activity` — applied + participating Workshops, combined chronologically
+- `Hosting` is NOT a separate tab — hosted Workshops already appear in the public `Workshops` tab (with a host/participant chip).
 
-- When `isOwn`: show all 6 tabs unconditionally so the owner sees the full skeleton.
-- When viewing someone else: keep current behavior (hide empty tabs to avoid dead ends for visitors).
+Owner tab order: `Works · Drafts · Credits · Collabs · Workshops · Activity · Groups · About`
+Visitor tab order (unchanged): `Works · Credits · Collabs · Workshops · Groups · About` (empty ones still hidden for visitors)
 
-### 3. Owner-facing empty states with dual CTAs
+## 4. Files touched
 
-The point: every empty tab on an owner's profile should nudge toward Publish a Work **or** Post a Collab.
-
-- **Works tab** (currently has only "Publish a Work"): add a secondary "Post a Collab" outline button alongside, so a new user sees both core actions at once.
-- **Credits tab** (owner empty): change copy to "Get credited by collaborating. Post a Collab to start." + "Post a Collab" button.
-- **Workshops tab** (owner empty): currently flat text — add CTAs "Drop into a Workshop" (primary → `/instant`) and "Schedule a Workshop" (outline → `/workshops/new`).
-- **Collabs tab** (owner empty): already has "Post a Collab" ✓ — no change.
-- **Groups tab** (owner empty): already has "Add your city in Edit profile" ✓ — no change.
-
-### 4. Minor polish
-
-- The stats strip already renders zeros gracefully — leave it. Confirms the skeleton reads as "ready to fill" rather than broken.
-- Header action row: no change. "Edit profile / Drop a link / Publish a Work" already covers the top-of-page CTAs for owners.
+- `src/routes/me.index.tsx` — replace with redirect; remove now-unused list components.
+- `src/routes/u.$username.tsx` — restructure header (fix clipping), add owner CTA row, closed-collab nudges, Drafts + Activity tabs + their data queries (only fetched when `isOwn`).
+- No DB, schema, or other route changes.
 
 ## Out of scope
 
-- Editing the `/me/edit` form, the cover uploader, or DB columns.
-- Changing the `/me` dashboard (the screenshot is from `/me`, but the request is about the public profile).
-- New tabs or new data sources.
+- `/me/edit` form changes
+- Credits hide/show management (stays as-is inside Credits tab when owner)
+- Notifications, settings
