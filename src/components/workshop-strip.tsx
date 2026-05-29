@@ -105,8 +105,11 @@ function ScheduledList({ cityId, mineUserId, collabOnly }: { cityId?: string | n
     }
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
-        Nothing scheduled {cityId ? "in your city" : "yet"}.{" "}
-        <Link to="/collab/new" className="underline hover:text-ink">Post a Collab</Link> and pick a time — or just drop in.
+        {collabOnly ? (
+          <>No collab-led sessions scheduled. <Link to="/collab" className="underline hover:text-ink">Browse collabs</Link> to host one.</>
+        ) : (
+          <>Nothing scheduled {cityId ? "in your city" : "yet"}. <Link to="/collab/new" className="underline hover:text-ink">Post a Collab</Link> and pick a time — or just drop in.</>
+        )}
       </div>
     );
   }
@@ -117,10 +120,22 @@ function ScheduledList({ cityId, mineUserId, collabOnly }: { cityId?: string | n
           <Link
             to="/workshops/$slug"
             params={{ slug: w.slug }}
-            className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3 transition hover:bg-muted"
+            className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3 transition hover:bg-muted"
           >
-            <span className="truncate text-sm text-ink">{w.title}</span>
-            <span className="ml-3 shrink-0 text-xs text-ink-muted">{fmtWhen(w.starts_at)}</span>
+            <span className="flex min-w-0 items-center gap-2">
+              {w.topic_collab_post_id && (
+                <span className="inline-flex shrink-0 items-center" title="Collab-led">
+                  <Target className="h-3.5 w-3.5 text-primary" />
+                </span>
+              )}
+              {!cityId && w.city_id && (
+                <span className="inline-flex shrink-0 items-center" title="City workshop">
+                  <MapPin className="h-3.5 w-3.5 text-ink-muted" />
+                </span>
+              )}
+              <span className="truncate text-sm text-ink">{w.title}</span>
+            </span>
+            <span className="shrink-0 text-xs text-ink-muted">{fmtWhen(w.starts_at)}</span>
           </Link>
         </li>
       ))}
