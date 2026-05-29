@@ -189,8 +189,18 @@ function InstantPreflight() {
           </p>
         )}
         <p className="mt-3 text-center text-xs text-ink-muted">
-          Workshops cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a Workshop on one of your Collabs.
+          Cap 5. Voice or video, your call once you're in.
         </p>
+
+        <div className="mt-6 flex items-center justify-center">
+          <Link
+            to="/collab"
+            className="inline-flex items-center gap-2 rounded-full border border-ink/15 bg-surface px-4 py-2 text-sm text-ink-soft hover:border-ink/40 hover:text-ink transition-colors"
+          >
+            <Megaphone className="h-4 w-4" />
+            <span>Host a focused session — open a Workshop on a Collab</span>
+          </Link>
+        </div>
 
         <WorkshopStrip />
       </div>
