@@ -703,13 +703,22 @@ function WorkshopsTab({ items, isLoading, ownerName }: { items: WorkshopRow[]; i
 
 /* ---------------- GROUPS TAB ---------------- */
 
-function GroupsTab({ home, city }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null }) {
+function GroupsTab({ home, city, isOwn }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null; isOwn: boolean }) {
   const groups: { kind: "home" | "current"; name: string; country: string; slug: string }[] = [];
   if (home) groups.push({ kind: "home", ...home });
   if (city && city.slug !== home?.slug) groups.push({ kind: "current", ...city });
 
   if (groups.length === 0) {
-    return <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">Not in any groups yet.</div>;
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
+        <p>Not in any city groups yet.</p>
+        {isOwn && (
+          <Link to="/me/edit" className="mt-3 inline-block">
+            <Button variant="outline" className="rounded-full">Add your city in Edit profile →</Button>
+          </Link>
+        )}
+      </div>
+    );
   }
 
   return (
