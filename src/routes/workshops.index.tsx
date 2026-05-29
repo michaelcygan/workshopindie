@@ -119,9 +119,9 @@ function WorkshopsPage() {
           </div>
         ) : !workshops || workshops.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">No Workshops yet — schedule the first one.</h3>
+            <h3 className="font-display text-2xl text-ink">Nothing on the books.</h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-              Pick a category, set a clock, define roles. People will apply.
+              Post a Collab, pick a time — the room schedules itself.
             </p>
             <Link to="/workshops/new" className="mt-5 inline-block">
               <Button className="rounded-full">Schedule a Workshop</Button>
