@@ -9,9 +9,7 @@ import { Button } from "@/components/ui/button";
 import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
-import { useUserRoles } from "@/hooks/use-user-role";
 import { useAuth } from "@/hooks/use-auth";
-import { ComingSoon } from "@/components/coming-soon";
 import { getMyAgeFields } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/workshops/")({
