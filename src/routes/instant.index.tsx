@@ -29,6 +29,8 @@ function InstantPreflight() {
   const [busy, setBusy] = useState(false);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
+  const [selectedMedium, setSelectedMedium] = useState<Category | null>(null);
+  const selectedLabel = selectedMedium ? CATEGORIES.find((c) => c.id === selectedMedium)?.label ?? null : null;
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
