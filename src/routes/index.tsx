@@ -115,7 +115,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                Got an idea sitting in your drafts? Post it. List the roles you need. People show up.
+                The thing you keep meaning to make. Post it. Open a room on it when you're ready.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
