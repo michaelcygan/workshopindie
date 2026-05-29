@@ -148,7 +148,7 @@ function useCounts(cityId?: string | null) {
     queryKey: ["workshop-strip-counts", cityId ?? "all"],
     queryFn: async () => {
       const nowIso = new Date().toISOString();
-      const [live, upcoming, city] = await Promise.all([
+      const [live, upcoming, collab, city] = await Promise.all([
         supabase
           .from("instant_rooms")
           .select("id", { count: "exact", head: true })
@@ -160,6 +160,14 @@ function useCounts(cityId?: string | null) {
           .eq("visibility", "public")
           .in("status", ["open", "check_in", "active"])
           .gte("starts_at", nowIso),
+        supabase
+          .from("workshops")
+          .select("id", { count: "exact", head: true })
+          .eq("mode", "scheduled")
+          .eq("visibility", "public")
+          .in("status", ["open", "check_in", "active"])
+          .gte("starts_at", nowIso)
+          .not("topic_collab_post_id", "is", null),
         cityId
           ? supabase
               .from("workshops")
@@ -171,7 +179,12 @@ function useCounts(cityId?: string | null) {
               .eq("city_id", cityId)
           : Promise.resolve({ count: 0 }),
       ]);
-      return { live: live.count ?? 0, upcoming: upcoming.count ?? 0, city: city.count ?? 0 };
+      return {
+        live: live.count ?? 0,
+        upcoming: upcoming.count ?? 0,
+        collab: collab.count ?? 0,
+        city: city.count ?? 0,
+      };
     },
     refetchInterval: 30_000,
   });
