@@ -79,6 +79,7 @@ function ScheduledList({ cityId, mineUserId, collabOnly }: { cityId?: string | n
         .order("starts_at", { ascending: true })
         .limit(12);
       if (cityId) q = q.eq("city_id", cityId);
+      if (collabOnly) q = q.not("topic_collab_post_id", "is", null);
       const { data, error } = await q;
       if (error) throw error;
       return data as ScheduledRow[];
