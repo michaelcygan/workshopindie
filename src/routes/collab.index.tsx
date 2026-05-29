@@ -261,39 +261,42 @@ function CollabPage() {
         </div>
       </motion.div>
 
-      {/* Unified filter cluster — medium bar + location row share the same width */}
-      <div className="mx-auto mt-8 max-w-3xl space-y-2.5">
-        <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} className="justify-center" />
-
-        <div className="flex items-center gap-2">
-          <CityCombobox
-            value={filters.city}
-            valueLabel={search.cityName}
-            onChange={setCity}
-            disabled={filters.online}
-          />
-          <button
-            type="button"
-            onClick={toggleOnline}
-            className={cn(
-              "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
-              filters.online
-                ? "border-transparent bg-ink text-background"
-                : "border-border bg-surface text-ink-soft hover:bg-muted",
-            )}
-            aria-pressed={filters.online}
-          >
-            Online only
-          </button>
-          {filters.city && !filters.online && (
+      {/* Unified filter cluster — medium + location on one line */}
+      <div className="mx-auto mt-8 max-w-5xl space-y-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="shrink-0">
+            <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />
+          </div>
+          <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+            <CityCombobox
+              value={filters.city}
+              valueLabel={search.cityName}
+              onChange={setCity}
+              disabled={filters.online}
+            />
             <button
               type="button"
-              onClick={() => setCity({ id: undefined, name: undefined })}
-              className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+              onClick={toggleOnline}
+              className={cn(
+                "h-11 shrink-0 rounded-full border px-4 text-sm font-medium transition shadow-soft",
+                filters.online
+                  ? "border-transparent bg-ink text-background"
+                  : "border-border bg-surface text-ink-soft hover:bg-muted",
+              )}
+              aria-pressed={filters.online}
             >
-              Worldwide
+              Online only
             </button>
-          )}
+            {filters.city && !filters.online && (
+              <button
+                type="button"
+                onClick={() => setCity({ id: undefined, name: undefined })}
+                className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+              >
+                Worldwide
+              </button>
+            )}
+          </div>
         </div>
 
         {defaultCity && filters.city === defaultCity.id && defaultCity.source === "ip" && (
