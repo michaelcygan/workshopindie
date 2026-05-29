@@ -84,16 +84,22 @@ function InstantPreflight() {
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(false); return; }
-      const { roomId } = await drop();
-      router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      if (selectedMedium) {
+        const { roomId } = await dropMedium({ data: { medium: selectedMedium } });
+        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      } else {
+        const { roomId } = await drop();
+        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't drop in");
       setBusy(false);
     }
   }
 
-  async function handleJoinMedium(medium: Category) {
+  async function handleJoinNow(medium: Category) {
     if (busy || !canDrop) return;
+    setSelectedMedium(medium);
     setBusy(true);
     try {
       const mode = await preGrantMedia();
