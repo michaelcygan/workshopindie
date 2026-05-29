@@ -360,7 +360,7 @@ function NewCollab() {
                 min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
                 required
               />
-              <p className="text-[11px] text-ink-muted">If no one shows up within 15 minutes of the start time, the Workshop auto-converts to a live drop-in so the room never dies silently.</p>
+              <p className="text-[11px] text-ink-muted">If nobody shows in the first 15 minutes, the room flips to drop-in mode. Nothing dies quietly.</p>
             </div>
           )}
         </section>
