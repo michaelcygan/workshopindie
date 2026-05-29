@@ -122,11 +122,11 @@ function useCounts(cityId?: string | null) {
 export function WorkshopStrip() {
   const [active, setActive] = useState<Pill>("live");
   const { data: defaultCity } = useDefaultCity();
-  const cityId = defaultCity?.id ?? null;
-  const cityName = defaultCity?.name ?? null;
+  const cityId = defaultCity?.city?.id ?? null;
+  const cityName = defaultCity?.city?.name ?? null;
   const { data: counts } = useCounts(cityId);
 
-  const pills: { id: Pill; label: string; count: number; icon: JSX.Element; show: boolean }[] = [
+  const pills: { id: Pill; label: string; count: number; icon: React.ReactNode; show: boolean }[] = [
     { id: "live", label: "Live now", count: counts?.live ?? 0, icon: <Radio className="h-3.5 w-3.5" />, show: true },
     { id: "upcoming", label: "Upcoming", count: counts?.upcoming ?? 0, icon: <CalendarClock className="h-3.5 w-3.5" />, show: true },
     { id: "city", label: cityName ? `In ${cityName}` : "In your city", count: counts?.city ?? 0, icon: <MapPin className="h-3.5 w-3.5" />, show: !!cityId },
