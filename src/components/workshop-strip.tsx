@@ -162,14 +162,44 @@ function useCounts(cityId?: string | null) {
 }
 
 export function WorkshopStrip() {
+  const { user } = useAuth();
   const [active, setActive] = useState<Pill>("live");
   const { data: defaultCity } = useDefaultCity();
   const cityId = defaultCity?.city?.id ?? null;
   const cityName = defaultCity?.city?.name ?? null;
   const { data: counts } = useCounts(cityId);
 
+  const { data: mineCount } = useQuery({
+    queryKey: ["my-upcoming-workshops-count", user?.id ?? "anon"],
+    queryFn: async () => {
+      if (!user) return 0;
+      const nowIso = new Date().toISOString();
+      const [part, host] = await Promise.all([
+        supabase
+          .from("workshop_participants")
+          .select("workshop:workshops!workshop_participants_workshop_id_fkey(id,starts_at,status,mode)")
+          .eq("user_id", user.id)
+          .in("participant_status", ["confirmed", "checked_in"]),
+        supabase
+          .from("workshops")
+          .select("id", { count: "exact", head: true })
+          .eq("host_user_id", user.id)
+          .eq("mode", "scheduled")
+          .in("status", ["open", "check_in", "active"])
+          .gte("starts_at", nowIso),
+      ]);
+      const partCount = ((part.data ?? []) as Array<{ workshop: { starts_at: string | null; status: string | null; mode: string | null } | null }>).filter(
+        (r) => r.workshop && r.workshop.starts_at && new Date(r.workshop.starts_at).getTime() >= Date.now() && ["open", "check_in", "active"].includes(r.workshop.status ?? "") && r.workshop.mode === "scheduled",
+      ).length;
+      return partCount + (host.count ?? 0);
+    },
+    enabled: !!user,
+    refetchInterval: 60_000,
+  });
+
   const pills: { id: Pill; label: string; count: number; icon: React.ReactNode; show: boolean }[] = [
     { id: "live", label: "Live now", count: counts?.live ?? 0, icon: <Radio className="h-3.5 w-3.5" />, show: true },
+    { id: "mine", label: "My upcoming", count: mineCount ?? 0, icon: <Sparkles className="h-3.5 w-3.5" />, show: !!user },
     { id: "upcoming", label: "Upcoming", count: counts?.upcoming ?? 0, icon: <CalendarClock className="h-3.5 w-3.5" />, show: true },
     { id: "city", label: cityName ? `In ${cityName}` : "In your city", count: counts?.city ?? 0, icon: <MapPin className="h-3.5 w-3.5" />, show: !!cityId },
   ];
@@ -207,6 +237,8 @@ export function WorkshopStrip() {
           >
             {active === "live" ? (
               <InstantActivityTicker />
+            ) : active === "mine" ? (
+              <ScheduledList mineUserId={user?.id ?? null} />
             ) : active === "upcoming" ? (
               <ScheduledList />
             ) : (
