@@ -23,14 +23,14 @@ const STEPS: Step[] = [
   {
     icon: <Users className="h-5 w-5" />,
     title: "Drop into a live room",
-    body: "Instant Workshops let you create with other artists in real time — no scheduling.",
-    cta: { label: "Open Instant", to: "/instant" },
+    body: "A live room of up to 5. Walk in, meet whoever's around, get to work.",
+    cta: { label: "Drop in", to: "/instant" },
   },
   {
     icon: <ImageIcon className="h-5 w-5" />,
-    title: "Post a collab call",
-    body: "Looking for a vocalist, dancer, or DP? Post a collab and we'll route the right people.",
-    cta: { label: "Browse collabs", to: "/collab" },
+    title: "Post a Collab",
+    body: "Need a vocalist, a dancer, a DP? Post it. Open a room on it whenever you're ready.",
+    cta: { label: "Browse Collabs", to: "/collab" },
   },
   {
     icon: <MessageSquare className="h-5 w-5" />,
