@@ -384,6 +384,37 @@ function NewCollab() {
         </section>
 
         <section className="space-y-2">
+          <Label className="flex items-center gap-1.5">
+            <Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-destructive">*</span>
+          </Label>
+          <div className="space-y-2">
+            {RIGHTS_OPTIONS.map((o) => (
+              <label
+                key={o.id}
+                className={cn(
+                  "flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition",
+                  rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
+                )}
+              >
+                <input
+                  type="radio"
+                  name="rights"
+                  className="mt-1 accent-ink"
+                  checked={rights === o.id}
+                  onChange={() => setRights(o.id)}
+                />
+                <span className="flex-1">
+                  <span className="block text-sm font-medium text-ink">{o.label}</span>
+                  <span className="block text-xs text-ink-muted">{o.body}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+          <p className="text-xs text-ink-muted">Sets expectations now to avoid friction later. You can change this while the post is open.</p>
+        </section>
+
+
+        <section className="space-y-2">
           <Label>How people contact you</Label>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setContactMode("email_relay")}
