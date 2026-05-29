@@ -28,6 +28,9 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const saveBirthdate = useServerFn(setMyBirthdate);
+  const lookupRef = useServerFn(attributeReferral);
+  const writeRef = useServerFn(setReferredBy);
+
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
