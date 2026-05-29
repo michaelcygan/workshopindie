@@ -112,18 +112,19 @@ function Onboarding() {
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="first">First name</Label>
+              <Label htmlFor="first">First name <span className="text-destructive">*</span></Label>
               <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="last">Last name</Label>
+              <Label htmlFor="last">Last name <span className="text-destructive">*</span></Label>
               <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
             </div>
           </div>
           <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
 
           <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth</Label>
+            <Label htmlFor="dob">Date of birth <span className="text-destructive">*</span></Label>
+
             <Input
               id="dob"
               type="date"
