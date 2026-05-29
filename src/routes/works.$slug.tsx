@@ -173,6 +173,15 @@ function WorkDetail() {
           </div>
           <div className="flex items-center gap-1">
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
+            <ShareSheet
+              entity={{
+                type: "work",
+                id: work.id,
+                url: `https://workshopindie.com/works/${work.slug}`,
+                title: work.title,
+                subtitle: work.excerpt ?? undefined,
+              }}
+            />
             <ReportDialog entityType="work" entityId={work.id} />
           </div>
         </div>
