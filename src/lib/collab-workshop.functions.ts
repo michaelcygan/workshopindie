@@ -195,7 +195,7 @@ export const convertScheduledToLive = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { data: ws } = await supabaseAdmin
       .from("workshops")
-      .select("id,status,mode,category,title,starts_at,auto_converted_at,host_user_id")
+      .select("id,slug,status,mode,category,title,starts_at,auto_converted_at,host_user_id")
       .eq("id", data.workshopId)
       .maybeSingle();
     if (!ws) return { converted: false, reason: "not_found" };
@@ -257,7 +257,7 @@ export const convertScheduledToLive = createServerFn({ method: "POST" })
             kind: uid === ws.host_user_id ? "workshop_ran_without_you" : "workshop_now_live",
             entity_type: "workshop",
             entity_id: ws.id,
-            payload: { title: ws.title, auto_converted: true },
+            payload: { title: ws.title, slug: ws.slug, auto_converted: true },
           })),
         )
         .then(() => null, () => null);
