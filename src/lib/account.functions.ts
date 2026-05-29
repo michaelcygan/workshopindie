@@ -36,7 +36,7 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const patch: {
-      dm_policy?: "everyone" | "nobody";
+      dm_policy?: string;
       discoverable?: boolean;
       indexable?: boolean;
     } = {};
