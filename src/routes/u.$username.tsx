@@ -538,6 +538,16 @@ function ProfilePage() {
           {defaultTab === "workshops" && (
             <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} isOwn={isOwn} />
           )}
+          {defaultTab === "drafts" && isOwn && (
+            <DraftsTab items={(drafts ?? []) as DraftRow[]} isLoading={!drafts} />
+          )}
+          {defaultTab === "activity" && isOwn && (
+            <ActivityTab
+              applied={(applied ?? []) as AppliedRow[]}
+              participating={(participating ?? []) as ParticipatingRow[]}
+              isLoading={!applied || !participating}
+            />
+          )}
           {defaultTab === "groups" && (
             <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
           )}
