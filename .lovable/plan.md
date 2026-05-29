@@ -1,88 +1,55 @@
-# Branded language audit — replace "lounge" / "room" / "call" with Workshop / Collab / Work
+# Fix Cities visibility + bring the public profile up to spec with the edit flow
 
-Goal: align every user-facing string with the brand vocabulary. "Workshop" is the live space (never "lounge" or "room"). "Collab" is the post (never "call"). "Work" stays for the finished piece. Internal code (variable names, query keys, component/file names like `RoomGallery`, `LoungeForkDropdown`, `use-media-room`, DB tables `instant_rooms`) is left alone — code-only refactors aren't part of this pass.
+Two unrelated problems surfaced under the same audit.
 
-## Copy changes (user-visible only)
+## 1. Bug: Cities page silently empty when any city has creators
 
-**`src/routes/pricing.tsx`**
-- Meta description + og:description: "unlimited lounge time" → "unlimited Workshop time"
-- Hero subtitle: "unlimited lounge time, and your full portfolio" → "unlimited Workshop time, and your full portfolio"
-- Free plan bullet: "30 minutes / day in the Instant Lounge" → "30 minutes / day in the Workshop"
-- Plus plan bullet: "Unlimited Instant Lounge time + priority seat" → "Unlimited Workshop time + priority seat"
+### Root cause
+`src/routes/cities.index.tsx` line 27 embeds creator counts with:
+```ts
+.select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles(count)")
+```
+`profiles` has **two** FKs to `cities` (`profiles_city_id_fkey` and `profiles_home_city_id_fkey`). PostgREST cannot resolve `profiles(count)` and returns an embedding-ambiguity error. The query's `data` comes back null, the component renders the empty state, and Chicago (which does have a creator pointed at it via `city_id` — confirmed in the DB) never appears.
 
-**`src/components/plus-gate.tsx`**
-- "Unlimited Workshop lounge time (Free is 30 min/day)" → "Unlimited Workshop time (Free is 30 min/day)"
+### Fix
+Pin the embed to the same FK the city detail page already uses for the "Local creators" list (`profiles.city_id`):
+```ts
+creators:profiles!profiles_city_id_fkey(count)
+```
+That makes the counts consistent across `/cities` and `/cities/$slug` and unblocks the list.
 
-**`src/routes/checkout.return.tsx`**
-- "the full Lounge, and your unlimited portfolio" → "the full Workshop, and your unlimited portfolio"
+## 2. Public profile (`/u/$username`) is missing several things the edit flow now collects
 
-**`src/components/welcome-tour.tsx`**
-- "Drop into a live room" → "Drop into a live Workshop"
-- "A live room of up to 5…" → "A live Workshop of up to 5. Walk in, meet whoever's around, get to work."
-- "Open a room on it whenever you're ready." → "Open a Workshop on it whenever you're ready."
+The edit page (`src/routes/me.edit.tsx`) writes: cover, first/last name, aliases, IG, headline, bio, mediums (Work + extra), tools, external links, **city**, pinned works. The public profile renders most of these — but a few touch‑points feel undersold or stale compared to the new edit vision.
 
-**`src/routes/index.tsx`**
-- "Walk into a room of artists. Or post the thing you want to make and pull a room together." → "Walk into a live Workshop of artists. Or post a Collab and pull a Workshop together around it."
-- "Open a room on it when you're ready." → "Open a Workshop on it when you're ready."
+### a. City in the header is text-only and ignores the home/current split
+- Header shows `profile.city.name` as plain text. Make it a link to `/cities/$slug` so the city pill actually leads to the group page (which is the whole point of having Cities).
+- If `home_city` is set and differs from `city`, show "Based in {home}, currently in {city}" in the secondary line, both linked. If they match (the common case), just show the one city link.
 
-**`src/routes/instant.index.tsx`**
-- Meta desc: "Voice or video, up to 5 per room." → "Voice or video, up to 5 per Workshop."
-- Toast: "Couldn't open that room" → "Couldn't open that Workshop"
-- Body copy: "Rooms cap at 5. When one fills, a new one opens… Open a room on one of your Collabs." → "Workshops cap at 5. When one fills, a new one opens. Voice or video, your call once you're in. Want to talk about a specific thing? Open a Workshop on one of your Collabs."
+### b. Tools never surface above the fold
+Tools are only visible if a viewer clicks the About tab. Add a compact tools chip row right under the headline/aliases block when `profile.tools` is non-empty. Cap at ~6 with "+N more" overflow that scrolls to the About tab. This mirrors how Mediums already feel in the header.
 
-**`src/routes/instant.$id.tsx`**
-- "Live room · up to 5 artists." → "Live Workshop · up to 5 artists."
+### c. Cover height inconsistent with the "vision" feel
+Bump the cover from `h-48 md:h-64` to `h-56 md:h-80` and add a soft bottom fade so the avatar overlap reads as designed when a real cover image is uploaded. Keep the `gradient-warm` fallback. Pure CSS, no logic change.
 
-**`src/routes/workshops.index.tsx`**
-- "Scheduled rooms you can RSVP to…" → "Scheduled Workshops you can RSVP to. Or skip the wait — drop in."
-- "Post a Collab, pick a time — the room schedules itself." → "Post a Collab, pick a time — the Workshop schedules itself."
+### d. About tab doesn't pull City through
+About tab currently shows Mediums / Tools / Bio / Links / Frequent collaborators. Add a "Based in" row linking to the city group, matching what the Groups tab surfaces.
 
-**`src/routes/workshops.new.tsx`**
-- "A room with a start time. People RSVP. They show up." → "A Workshop with a start time. People RSVP. They show up."
+### e. Groups tab empty-state is hostile when the viewer is the profile owner
+Right now if no city is set the user sees a dead "Not in any groups yet." When `isOwn`, add a CTA: "Add your city in Edit profile →" linking to `/me/edit#location`. Trivial copy + link change.
 
-**`src/routes/workshops.$slug.tsx`**
-- "The live room opens for confirmed participants." → "The live Workshop opens for confirmed participants."
-- "Couldn't open the live room: …" → "Couldn't open the live Workshop: …"
-- Toast "Checked in. See you in The Room." → "Checked in. See you in the Workshop."
+## Files touched
 
-**`src/routes/collab.index.tsx`**
-- Meta desc: "post your own and open a room on it" → "post your own and open a Workshop on it"
-- Subtitle: "open a room on yours" → "open a Workshop on yours"
-- Button "Post a call" (both occurrences) → "Post a Collab"
+- `src/routes/cities.index.tsx` — FK-pinned creators embed.
+- `src/routes/u.$username.tsx` — link city in header, optional home-vs-current line, tools chip row, About "Based in" row, owner-aware Groups empty state, cover height.
 
-**`src/routes/collab.new.tsx`**
-- "A Workshop is a live room of up to 5…" → "A Workshop is a live space of up to 5…" (drops the redundant "room")
-
-**`src/routes/me.index.tsx`**
-- Empty state: "No active rooms." → "No active Workshops."
-
-**`src/components/workshop-tools-panel.tsx`**
-- "so the room can collect ideas, shots, links, and references." → "so the Workshop can collect ideas, shots, links, and references."
-
-**`src/components/workshop-collabs-panel.tsx`**
-- "Only you in this room" → "Only you in this Workshop"
-
-**`src/components/media-panel.tsx`**
-- Button "Exit Lounge" → "Exit Workshop"
-- "Joining the room…" → "Joining the Workshop…"
-- "In the room · {totalHere}" → "In the Workshop · {totalHere}"
-
-**`src/components/channel-view.tsx`**
-- Toast "Dropped from the Lounge — you went quiet." → "Dropped from the Workshop — you went quiet."
-
-**`src/components/room-gallery.tsx`**
-- "Share a piece — your room can see it here." → "Share a piece — your Workshop can see it here."
-- "No works in this room yet." → "No works in this Workshop yet."
-
-**`src/components/lounge-fork-dropdown.tsx`**
-- Section labels stay structural ("Live mediums", "Start a medium-specific Workshop"). No copy changes needed here — already uses "Workshop".
-
-## Out of scope (intentionally not touched)
-- File names, component names, imports (`RoomGallery`, `LoungeForkDropdown`, `use-media-room`), query keys, DB tables (`instant_rooms`), and server-side log/throw strings inside `*.functions.ts` / `*.server.ts`. These are internal identifiers — renaming them is a refactor, not a copy fix, and risks breaking the build.
-- Comments in source code.
+## Out of scope
+- Renaming the `city_id` / `home_city_id` columns or migrating data.
+- Adding a "home city" field to the edit form (it already exists in the DB and on the profile; the edit form deliberately edits only `city_id` today — flag for a follow-up if you want both editable).
+- The `/me` dashboard hero (separate concern; can do in a follow-up if you confirm you want the dashboard to mirror more of the profile vision).
 
 ## Acceptance
-- A grep of user-facing `.tsx` for `\blounge\b` returns zero matches outside identifiers/query keys.
-- A grep for `\broom\b` in JSX text and toast/meta strings returns zero matches.
-- "Post a call" no longer appears in any button or heading.
-- Pricing page hero, free/plus bullets, plus-gate, welcome tour, home page, instant pages, and workshop pages all consistently say "Workshop".
+- `/cities` shows Chicago (and any other city with creators) with the right creator count.
+- On a profile with a city set, the city in the header is clickable and lands on `/cities/$slug`.
+- Tools you saved on `/me/edit` are visible without opening the About tab.
+- A profile owner with no city sees a "Add your city" prompt in Groups instead of a flat empty state.

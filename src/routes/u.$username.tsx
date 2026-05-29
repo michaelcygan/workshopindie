@@ -294,12 +294,13 @@ function ProfilePage() {
   return (
     <main>
       {/* Cover */}
-      <div className="relative h-48 overflow-hidden bg-surface-2 md:h-64">
+      <div className="relative h-56 overflow-hidden bg-surface-2 md:h-80">
         {profile.cover_url ? (
           <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
         ) : (
           <div className="h-full w-full gradient-warm opacity-70" />
         )}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background/60" />
       </div>
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
@@ -316,7 +317,23 @@ function ProfilePage() {
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
               {profile.username && <span>@{profile.username}</span>}
-              {profile.city && <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" />{profile.city.name}</span>}
+              {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
+                <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
+                </Link>
+              )}
+              {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+                <span className="inline-flex items-center gap-1">
+                  <MapPin className="h-3.5 w-3.5" />
+                  Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
+                  , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
+                </span>
+              )}
+              {!profile.home_city && profile.city && (
+                <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <MapPin className="h-3.5 w-3.5" />{profile.city.name}
+                </Link>
+              )}
               {profile.instagram_handle && (
                 <a
                   href={`https://instagram.com/${profile.instagram_handle}`}
@@ -337,6 +354,24 @@ function ProfilePage() {
                     {a}
                   </span>
                 ))}
+              </div>
+            )}
+            {(profile.tools?.length ?? 0) > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                {(profile.tools ?? []).slice(0, 6).map((t, i) => (
+                  <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">
+                    {t}
+                  </span>
+                ))}
+                {(profile.tools?.length ?? 0) > 6 && (
+                  <button
+                    type="button"
+                    onClick={() => setTab("about")}
+                    className="text-[11px] text-ink-muted hover:text-ink"
+                  >
+                    +{(profile.tools?.length ?? 0) - 6} more
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -416,7 +451,7 @@ function ProfilePage() {
             <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} />
           )}
           {defaultTab === "groups" && (
-            <GroupsTab home={profile.home_city} city={profile.city} />
+            <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
           )}
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
@@ -668,13 +703,22 @@ function WorkshopsTab({ items, isLoading, ownerName }: { items: WorkshopRow[]; i
 
 /* ---------------- GROUPS TAB ---------------- */
 
-function GroupsTab({ home, city }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null }) {
+function GroupsTab({ home, city, isOwn }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null; isOwn: boolean }) {
   const groups: { kind: "home" | "current"; name: string; country: string; slug: string }[] = [];
   if (home) groups.push({ kind: "home", ...home });
   if (city && city.slug !== home?.slug) groups.push({ kind: "current", ...city });
 
   if (groups.length === 0) {
-    return <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">Not in any groups yet.</div>;
+    return (
+      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
+        <p>Not in any city groups yet.</p>
+        {isOwn && (
+          <Link to="/me/edit" className="mt-3 inline-block">
+            <Button variant="outline" className="rounded-full">Add your city in Edit profile →</Button>
+          </Link>
+        )}
+      </div>
+    );
   }
 
   return (
@@ -699,8 +743,22 @@ function GroupsTab({ home, city }: { home: { name: string; country: string; slug
 /* ---------------- ABOUT TAB ---------------- */
 
 function AboutTab({ profile }: { profile: Profile }) {
+  const based = profile.home_city ?? profile.city;
   return (
     <div className="space-y-8">
+      {based && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Based in</h2>
+          <Link to="/cities/$slug" params={{ slug: based.slug }} className="mt-2 inline-flex items-center gap-1.5 text-ink-soft hover:text-ink">
+            <MapPin className="h-4 w-4" />{based.name}{based.country ? `, ${based.country}` : ""}
+          </Link>
+          {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+            <p className="mt-1 text-xs text-ink-muted">
+              Currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="underline-offset-2 hover:underline">{profile.city.name}</Link>
+            </p>
+          )}
+        </section>
+      )}
       {(profile.categories?.length > 0 || (profile.mediums?.length ?? 0) > 0) && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Mediums</h2>
