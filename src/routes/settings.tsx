@@ -155,12 +155,24 @@ function SettingsPage() {
             <PlusSection />
           </Section>
 
+          <Section id="notifications" title="Notifications" subtitle="Pick what reaches your inbox and what stays in the bell." refMap={sectionRefs}>
+            <NotificationsSection />
+          </Section>
+
           <Section id="privacy" title="Privacy" subtitle="Control who can reach you and how you appear." refMap={sectionRefs}>
             <PrivacySection />
           </Section>
 
           <Section id="blocked" title="Blocked users" subtitle="People you've blocked don't see your content and can't contact you." refMap={sectionRefs}>
             <BlockedSection />
+          </Section>
+
+          <Section id="reports" title="My reports" subtitle="Reports you've filed and where they stand." refMap={sectionRefs}>
+            <ReportsSection />
+          </Section>
+
+          <Section id="data" title="Your data" subtitle="Download a JSON snapshot of everything tied to your account." refMap={sectionRefs}>
+            <DataSection />
           </Section>
 
           <Section id="danger" title="Delete account" subtitle="Permanent and immediate. This can't be undone." refMap={sectionRefs}>
