@@ -70,7 +70,7 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
-  const [fsView, setFsView] = useState<null | "chat" | "board" | "gallery">(null);
+  const [fsView, setFsView] = useState<null | "chat" | "gallery">(null);
   const [endedOpen, setEndedOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
@@ -647,26 +647,7 @@ export function ChannelView({
             roomId={roomId}
           />
 
-          {user && (
-            <div className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
-              <WorkshopCollabsPanel
-                presenceUsers={[
-                  {
-                    user_id: user.id,
-                    display_name: meDisplay,
-                    username: me?.username ?? null,
-                    avatar_url: meAvatar,
-                  },
-                  ...others.map((o) => ({
-                    user_id: o.user_id,
-                    display_name: o.profile?.display_name ?? null,
-                    username: o.profile?.username ?? null,
-                    avatar_url: o.profile?.avatar_url ?? null,
-                  })),
-                ]}
-              />
-            </div>
-          )}
+          {/* Collabs moved into the main view toggle — sidebar is media-only now. */}
         </div>
 
         <WorkPeek workId={peekWorkId} open={workPeekOpen} onOpenChange={setWorkPeekOpen} />
