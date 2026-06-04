@@ -209,22 +209,18 @@ export const listApplicants = createServerFn({ method: "POST" })
     }
 
     // Resolve conversation IDs for each member-applicant so the owner can Reply in one tap.
-    let convoMap: Record<string, string> = {};
+    const convoMap: Record<string, string> = {};
     if (senderIds.length > 0) {
-      const pairs = senderIds.map((sid) => {
-        const [a, b] = userId < sid ? [userId, sid] : [sid, userId];
-        return { a, b, sid };
-      });
       const { data: convos } = await supabase
         .from("conversations")
         .select("id,user_a,user_b")
-        .in("user_a", pairs.map((p) => p.a))
-        .in("user_b", pairs.map((p) => p.b));
+        .or(`user_a.eq.${userId},user_b.eq.${userId}`);
       for (const c of convos ?? []) {
         const other = c.user_a === userId ? c.user_b : c.user_a;
-        convoMap[other] = c.id;
+        if (senderIds.includes(other)) convoMap[other] = c.id;
       }
     }
+
 
     const members = events.map((e) => ({
       id: e.id,
