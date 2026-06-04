@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { redeemWorkInviteToken } from "@/lib/work-tools.functions";
+import { redeemWorkInviteToken } from "@/lib/works.functions";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,15 +25,15 @@ function AcceptWorkInvite() {
     if (status !== "idle") return;
     setStatus("working");
     redeemFn({ data: { token } })
-      .then((res) => {
+      .then((res: { slug: string | null }) => {
         if (res.slug) {
-          navigate({ to: "/works/$slug/tools/$tool", params: { slug: res.slug, tool: "files" } });
+          navigate({ to: "/works/$slug", params: { slug: res.slug } });
         } else {
           setStatus("error");
           setError("Couldn't find that Work.");
         }
       })
-      .catch((e) => {
+      .catch((e: unknown) => {
         setStatus("error");
         setError(e instanceof Error ? e.message : "Invite couldn't be redeemed");
       });
