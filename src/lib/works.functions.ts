@@ -38,6 +38,7 @@ export const createCollaborativeWork = createServerFn({ method: "POST" })
       .from("works")
       .insert({
         title: data.title,
+        slug: "", // tg_works_autoslug trigger fills this from title
         description: data.description,
         category: data.category as never,
         visibility: data.visibility as never,
