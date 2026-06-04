@@ -19,10 +19,12 @@ export const Route = createFileRoute("/api/public/workshops/sweep")({
       POST: async () => {
         const startingResults = await runStartingPass();
         const sweepResults = await runNoShowPass();
+        const retentionResults = await runRetentionPass();
         return Response.json({
           ok: true,
           starting: startingResults,
           sweep: sweepResults,
+          retention: retentionResults,
         });
       },
     },
