@@ -1,8 +1,8 @@
-import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Loader2, UserPlus, X, Maximize2 } from "lucide-react";
+import { Send, UserPlus, X, Maximize2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
@@ -24,7 +24,7 @@ import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 
-const RoomBoard = lazy(() => import("@/components/room-board"));
+// Board moved to Workshop Tools; live room no longer mounts RoomBoard.
 import {
   AlertDialog,
   AlertDialogAction,
@@ -70,7 +70,7 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
-  const [fsView, setFsView] = useState<null | "chat" | "board" | "gallery">(null);
+  const [fsView, setFsView] = useState<null | "chat" | "gallery">(null);
   const [endedOpen, setEndedOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
@@ -466,10 +466,10 @@ export function ChannelView({
   ) : null;
 
   // The persistent top-right expand button maps to whichever surface is active.
-  const fsTarget: "chat" | "board" | "gallery" =
-    viewMode === "whiteboard" ? "board" : viewMode === "gallery" ? "gallery" : "chat";
+  const fsTarget: "chat" | "gallery" =
+    viewMode === "gallery" ? "gallery" : "chat";
   const fsLabel =
-    fsTarget === "board" ? "Expand board" : fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
+    fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
 
 
   return (
@@ -492,23 +492,7 @@ export function ChannelView({
           onMinimize={() => setFsView(null)}
         />
       )}
-      {fsView === "board" && user && (
-        <FullscreenShell
-          title={`${title} · Board`}
-          presence={presenceStrip}
-          onMinimize={() => setFsView(null)}
-        >
-          <Suspense
-            fallback={
-              <div className="flex h-full items-center justify-center text-background/60">
-                <Loader2 className="h-4 w-4 animate-spin" />
-              </div>
-            }
-          >
-            <RoomBoard roomId={roomId} userId={user.id} className="h-full" fullscreen />
-          </Suspense>
-        </FullscreenShell>
-      )}
+      {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
         <FullscreenShell
           title={`${title} · Gallery`}
@@ -540,23 +524,24 @@ export function ChannelView({
             <Maximize2 className="h-3.5 w-3.5" />
           </button>
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
-          {viewMode === "whiteboard" && user ? (
-            <div className="h-[60vh] p-3 md:p-4">
-              {fsView === "board" ? (
-                <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
-                  Board open in fullscreen…
-                </div>
-              ) : (
-                <Suspense
-                  fallback={
-                    <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    </div>
-                  }
-                >
-                  <RoomBoard roomId={roomId} userId={user.id} className="h-full" />
-                </Suspense>
-              )}
+          {viewMode === "collabs" && user ? (
+            <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
+              <WorkshopCollabsPanel
+                presenceUsers={[
+                  {
+                    user_id: user.id,
+                    display_name: meDisplay,
+                    username: me?.username ?? null,
+                    avatar_url: meAvatar,
+                  },
+                  ...others.map((o) => ({
+                    user_id: o.user_id,
+                    display_name: o.profile?.display_name ?? null,
+                    username: o.profile?.username ?? null,
+                    avatar_url: o.profile?.avatar_url ?? null,
+                  })),
+                ]}
+              />
             </div>
           ) : viewMode === "gallery" && user ? (
             <div className="h-[60vh] p-3 md:p-4">
@@ -662,26 +647,7 @@ export function ChannelView({
             roomId={roomId}
           />
 
-          {user && (
-            <div className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
-              <WorkshopCollabsPanel
-                presenceUsers={[
-                  {
-                    user_id: user.id,
-                    display_name: meDisplay,
-                    username: me?.username ?? null,
-                    avatar_url: meAvatar,
-                  },
-                  ...others.map((o) => ({
-                    user_id: o.user_id,
-                    display_name: o.profile?.display_name ?? null,
-                    username: o.profile?.username ?? null,
-                    avatar_url: o.profile?.avatar_url ?? null,
-                  })),
-                ]}
-              />
-            </div>
-          )}
+          {/* Collabs moved into the main view toggle — sidebar is media-only now. */}
         </div>
 
         <WorkPeek workId={peekWorkId} open={workPeekOpen} onOpenChange={setWorkPeekOpen} />

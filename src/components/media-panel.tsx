@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, PenLine } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
-export type RoomViewMode = "chat" | "gallery" | "whiteboard";
+export type RoomViewMode = "chat" | "gallery" | "collabs";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
@@ -75,7 +75,7 @@ export function MediaPanel({
         <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
           <ViewPill active={viewMode === "chat"} onClick={() => onViewModeChange("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
           <ViewPill active={viewMode === "gallery"} onClick={() => onViewModeChange("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" />
-          <ViewPill active={viewMode === "whiteboard"} onClick={() => onViewModeChange("whiteboard")} icon={<PenLine className="h-3.5 w-3.5" />} label="Board" />
+          <ViewPill active={viewMode === "collabs"} onClick={() => onViewModeChange("collabs")} icon={<Users className="h-3.5 w-3.5" />} label="Collabs" />
         </div>
       )}
 
