@@ -22,8 +22,10 @@ export const Route = createFileRoute("/signup")({
     ig: typeof s.ig === "string" ? s.ig : undefined,
     from: typeof s.from === "string" ? s.from : undefined,
     ref: typeof s.ref === "string" ? s.ref : undefined,
+    claim: typeof s.claim === "string" ? s.claim : undefined,
   }),
 });
+
 
 function Signup() {
   const navigate = useNavigate();
