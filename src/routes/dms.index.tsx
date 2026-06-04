@@ -11,7 +11,11 @@ type ConversationRow = {
   user_b: string;
   last_message_at: string | null;
   last_message_preview: string | null;
+  context_collab_post_id: string | null;
 };
+
+type CollabLite = { id: string; title: string; slug: string };
+
 
 type ProfileLite = {
   id: string;
