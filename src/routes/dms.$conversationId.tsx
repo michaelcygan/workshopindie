@@ -37,11 +37,13 @@ function DmsThread() {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<ProfileLite | null>(null);
+  const [collab, setCollab] = useState<{ title: string; slug: string } | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const send = useServerFn(sendMessage);
   const markRead = useServerFn(markConversationRead);
   const endRef = useRef<HTMLDivElement | null>(null);
+
 
   useEffect(() => {
     if (!user) return;
