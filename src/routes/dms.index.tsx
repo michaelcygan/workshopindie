@@ -101,7 +101,7 @@ function DmsIndex() {
         </div>
       ) : (
         <ul className="mt-6 divide-y divide-border rounded-2xl border border-border bg-surface">
-          {rows.map(({ conv, other, unread }) => (
+          {rows.map(({ conv, other, unread, collab }) => (
             <li key={conv.id}>
               <Link
                 to="/dms/$conversationId"
@@ -124,6 +124,11 @@ function DmsIndex() {
                       </span>
                     )}
                   </div>
+                  {collab && (
+                    <span className="mt-0.5 inline-block max-w-full truncate rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
+                      Re: {collab.title}
+                    </span>
+                  )}
                   <p className="truncate text-xs text-ink-muted">{conv.last_message_preview ?? "No messages yet"}</p>
                 </div>
                 {unread > 0 && (
@@ -134,6 +139,7 @@ function DmsIndex() {
               </Link>
             </li>
           ))}
+
         </ul>
       )}
     </main>
