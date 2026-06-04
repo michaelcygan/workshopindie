@@ -17,6 +17,8 @@ import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
+import { applyToCollab } from "@/lib/collab.functions";
+
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
 
