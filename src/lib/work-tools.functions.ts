@@ -142,7 +142,7 @@ export const createCollaborativeWork = createServerFn({ method: "POST" })
       .insert({
         work_id: work.id,
         version: 1,
-        license: data.license === "custom" ? "cc_by" : data.license,
+        license: data.license,
         license_custom: data.license_custom ?? null,
         credit_template: data.credit_template ?? null,
         splits: data.splits,
