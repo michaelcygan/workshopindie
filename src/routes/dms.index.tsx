@@ -31,7 +31,7 @@ export const Route = createFileRoute("/dms/")({
 
 function DmsIndex() {
   const { user, loading } = useAuth();
-  const [rows, setRows] = useState<Array<{ conv: ConversationRow; other: ProfileLite | null; unread: number }>>([]);
+  const [rows, setRows] = useState<Array<{ conv: ConversationRow; other: ProfileLite | null; unread: number; collab: CollabLite | null }>>([]);
   const [busy, setBusy] = useState(true);
 
   useEffect(() => {
@@ -41,15 +41,22 @@ function DmsIndex() {
       setBusy(true);
       const { data: convs } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, last_message_at, last_message_preview")
+        .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id")
         .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
         .order("last_message_at", { ascending: false, nullsFirst: false });
       const list = (convs ?? []) as ConversationRow[];
       const otherIds = list.map((c) => (c.user_a === user.id ? c.user_b : c.user_a));
-      const { data: profs } = otherIds.length
-        ? await supabase.from("profiles").select("id, username, display_name, avatar_url").in("id", otherIds)
-        : { data: [] };
+      const collabIds = Array.from(new Set(list.map((c) => c.context_collab_post_id).filter(Boolean) as string[]));
+      const [{ data: profs }, { data: collabs }] = await Promise.all([
+        otherIds.length
+          ? supabase.from("profiles").select("id, username, display_name, avatar_url").in("id", otherIds)
+          : Promise.resolve({ data: [] as ProfileLite[] }),
+        collabIds.length
+          ? supabase.from("collab_posts").select("id, title, slug").in("id", collabIds)
+          : Promise.resolve({ data: [] as CollabLite[] }),
+      ]);
       const byId = new Map<string, ProfileLite>((profs ?? []).map((p) => [p.id, p as ProfileLite]));
+      const collabById = new Map<string, CollabLite>((collabs ?? []).map((c) => [c.id, c as CollabLite]));
       const unreadCounts = new Map<string, number>();
       if (list.length) {
         const { data: unread } = await supabase
@@ -67,11 +74,13 @@ function DmsIndex() {
         conv: c,
         other: byId.get(c.user_a === user.id ? c.user_b : c.user_a) ?? null,
         unread: unreadCounts.get(c.id) ?? 0,
+        collab: c.context_collab_post_id ? collabById.get(c.context_collab_post_id) ?? null : null,
       })));
       setBusy(false);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
+
 
   if (loading || !user) return null;
 
