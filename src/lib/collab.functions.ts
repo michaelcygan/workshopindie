@@ -241,3 +241,156 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
+// Helper: ensure allowance row exists, create+seed conversation if new, insert opening message.
+// Uses supabaseAdmin where RLS would otherwise reject (allowance row, notifications).
+async function openCollabDmThread(args: {
+  collabPostId: string;
+  ownerUserId: string;
+  applicantUserId: string;
+  message: string;
+}): Promise<{ conversationId: string }> {
+  const { collabPostId, ownerUserId, applicantUserId, message } = args;
+  if (ownerUserId === applicantUserId) throw new Error("Cannot apply to your own collab.");
+
+  // 1. Block guard
+  const { data: blocked } = await supabaseAdmin.rpc("is_blocked_pair", {
+    _a: ownerUserId,
+    _b: applicantUserId,
+  });
+  if (blocked === true) throw new Error("This conversation is not available.");
+
+  // 2. Upsert allowance (idempotent)
+  await supabaseAdmin
+    .from("collab_dm_allowances")
+    .upsert(
+      { collab_post_id: collabPostId, owner_user_id: ownerUserId, applicant_user_id: applicantUserId },
+      { onConflict: "collab_post_id,owner_user_id,applicant_user_id" },
+    );
+
+  // 3. Find or create conversation (ordered pair). Set collab context only on creation.
+  const [a, b] = applicantUserId < ownerUserId ? [applicantUserId, ownerUserId] : [ownerUserId, applicantUserId];
+  const { data: existing } = await supabaseAdmin
+    .from("conversations")
+    .select("id")
+    .eq("user_a", a)
+    .eq("user_b", b)
+    .maybeSingle();
+
+  let conversationId: string;
+  if (existing?.id) {
+    conversationId = existing.id;
+  } else {
+    const { data: created, error: convErr } = await supabaseAdmin
+      .from("conversations")
+      .insert({ user_a: a, user_b: b, context_collab_post_id: collabPostId })
+      .select("id")
+      .single();
+    if (convErr) throw new Error(convErr.message);
+    conversationId = created.id;
+  }
+
+  // 4. Insert opening message from applicant.
+  const { error: msgErr } = await supabaseAdmin
+    .from("messages")
+    .insert({ conversation_id: conversationId, sender_id: applicantUserId, body: message });
+  if (msgErr) throw new Error(msgErr.message);
+
+  return { conversationId };
+}
+
+const applySchema = z.object({
+  collabPostId: z.string().uuid(),
+  collabRoleId: z.string().uuid().nullable().optional(),
+  message: z.string().trim().min(10).max(2000),
+});
+
+export const applyToCollab = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => applySchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const hit = findHateSlur(data.message);
+    if (hit) throw new Error("Your message contains language that isn't allowed. Please revise and try again.");
+
+    const { data: post, error: postErr } = await supabaseAdmin
+      .from("collab_posts")
+      .select("id,status,user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (postErr) throw new Error(postErr.message);
+    if (!post) throw new Error("This collab post no longer exists.");
+    if (post.status !== "open") throw new Error("This collab is no longer accepting applications.");
+    if (post.user_id === userId) throw new Error("You can't apply to your own collab.");
+
+    // Log contact event (also feeds the applicants panel).
+    await supabaseAdmin.from("collab_contact_events").insert({
+      collab_post_id: data.collabPostId,
+      collab_role_id: data.collabRoleId ?? null,
+      sender_user_id: userId,
+      message_preview: data.message.slice(0, 280),
+    });
+
+    const { conversationId } = await openCollabDmThread({
+      collabPostId: data.collabPostId,
+      ownerUserId: post.user_id,
+      applicantUserId: userId,
+      message: data.message,
+    });
+
+    return { ok: true as const, conversationId };
+  });
+
+export const claimGuestApplication = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ token: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: app, error: appErr } = await supabaseAdmin
+      .from("collab_guest_applications")
+      .select("id,collab_post_id,collab_role_id,message,matched_user_id,claim_token_expires_at")
+      .eq("claim_token", data.token)
+      .maybeSingle();
+    if (appErr) throw new Error(appErr.message);
+    if (!app) throw new Error("This claim link isn't valid anymore.");
+    if (app.claim_token_expires_at && new Date(app.claim_token_expires_at).getTime() < Date.now()) {
+      throw new Error("This claim link has expired. Ask the host to resend or reapply.");
+    }
+
+    const { data: post } = await supabaseAdmin
+      .from("collab_posts")
+      .select("id,user_id")
+      .eq("id", app.collab_post_id)
+      .maybeSingle();
+    if (!post) throw new Error("This collab no longer exists.");
+    if (post.user_id === userId) throw new Error("You can't claim an application on your own collab.");
+
+    // Mark claimed + clear token. The on-signup backfill also fires this for guest rows whose
+    // email matches the new user; this branch covers the explicit /collab/claim/$token flow.
+    if (!app.matched_user_id) {
+      await supabaseAdmin
+        .from("collab_guest_applications")
+        .update({ matched_user_id: userId, matched_at: new Date().toISOString(), claim_token: null, claim_token_expires_at: null })
+        .eq("id", app.id);
+
+      // Mirror into native contact_events feed (the auto-backfill trigger only fires on
+      // brand-new signups; this handles the case where an already-signed-in user claims).
+      await supabaseAdmin.from("collab_contact_events").insert({
+        collab_post_id: app.collab_post_id,
+        collab_role_id: app.collab_role_id,
+        sender_user_id: userId,
+        message_preview: app.message.slice(0, 280),
+      });
+    }
+
+    const { conversationId } = await openCollabDmThread({
+      collabPostId: app.collab_post_id,
+      ownerUserId: post.user_id,
+      applicantUserId: userId,
+      message: app.message,
+    });
+
+    return { ok: true as const, conversationId };
+  });
