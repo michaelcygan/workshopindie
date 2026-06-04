@@ -26,6 +26,20 @@ export function ApplicantsPanel({ postId }: Props) {
   const fetchApplicants = useServerFn(listApplicants);
   const updateStatus = useServerFn(updateGuestApplicationStatus);
   const qc = useQueryClient();
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  async function copyClaimLink(token: string) {
+    const url = `${window.location.origin}/collab/claim/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 1800);
+      toast.success("Claim link copied — paste it to the applicant.");
+    } catch {
+      toast.error("Couldn't copy the link.");
+    }
+  }
+
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["collab-applicants", postId],
