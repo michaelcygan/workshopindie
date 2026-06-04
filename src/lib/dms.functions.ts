@@ -20,7 +20,10 @@ export const checkCanDm = createServerFn({ method: "POST" })
 
 export const openOrCreateConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { otherUserId: string }) => ({ otherUserId: uuidSchema.parse(d.otherUserId) }))
+  .inputValidator((d: { otherUserId: string; contextCollabPostId?: string | null }) => ({
+    otherUserId: uuidSchema.parse(d.otherUserId),
+    contextCollabPostId: d.contextCollabPostId ? uuidSchema.parse(d.contextCollabPostId) : null,
+  }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     if (userId === data.otherUserId) throw new Error("Cannot message yourself");
@@ -36,14 +39,18 @@ export const openOrCreateConversation = createServerFn({ method: "POST" })
 
     if (existing?.id) return { conversationId: existing.id };
 
+    const insertRow: { user_a: string; user_b: string; context_collab_post_id?: string } = { user_a: a, user_b: b };
+    if (data.contextCollabPostId) insertRow.context_collab_post_id = data.contextCollabPostId;
+
     const { data: created, error } = await supabase
       .from("conversations")
-      .insert({ user_a: a, user_b: b })
+      .insert(insertRow)
       .select("id")
       .single();
     if (error) throw new Error(error.message);
     return { conversationId: created.id };
   });
+
 
 export const sendMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
