@@ -67,7 +67,12 @@ const createWorkSchema = z.object({
     "critique", "business", "mentorship", "coworking",
   ]),
   visibility: z.enum(["private", "public", "invite_only"]).default("private"),
-  license: z.enum(["cc_by", "cc_by_sa", "cc_by_nc", "all_rights_reserved", "custom"]).default("cc_by"),
+  license: z.enum([
+    "cc_by",
+    "rights_managed_externally",
+    "portfolio_credit_only",
+    "private",
+  ]).default("cc_by"),
   license_custom: z.string().trim().max(2000).optional().nullable(),
   credit_template: z.string().trim().max(500).optional().nullable(),
   commercial_use: z.enum(["yes", "no", "negotiable"]).default("negotiable"),
