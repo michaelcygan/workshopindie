@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
+import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
@@ -55,6 +56,7 @@ type WorkRow = {
   description: string | null; excerpt: string | null;
   cover_url: string | null; primary_url: string | null; embed_url: string | null;
   source_type: string; license_type: string; published_at: string | null; created_at: string;
+  source_workshop_id: string | null;
   like_count: number; save_count: number; view_count: number; comment_count: number;
   created_by: string;
   work_credits: { id: string; role_label: string; sort_order: number;
@@ -65,7 +67,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by, work_credits(id,role_label,sort_order, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id, work_credits(id,role_label,sort_order, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -222,6 +224,13 @@ function WorkDetail() {
 
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
+
+        {/* Members-only: re-enter the studio while the Workshop is still alive */}
+        {work.source_workshop_id && (
+          <div className="mt-10 flex items-center justify-end">
+            <EnterWorkshopButton workshopId={work.source_workshop_id} />
+          </div>
+        )}
 
         {/* Comments */}
         <section className="mt-14">
