@@ -99,8 +99,39 @@ export type Database = {
           },
         ]
       }
+      collab_dm_allowances: {
+        Row: {
+          applicant_user_id: string
+          collab_post_id: string
+          created_at: string
+          owner_user_id: string
+        }
+        Insert: {
+          applicant_user_id: string
+          collab_post_id: string
+          created_at?: string
+          owner_user_id: string
+        }
+        Update: {
+          applicant_user_id?: string
+          collab_post_id?: string
+          created_at?: string
+          owner_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_dm_allowances_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_guest_applications: {
         Row: {
+          claim_token: string | null
+          claim_token_expires_at: string | null
           collab_post_id: string
           collab_role_id: string | null
           contacted_at: string | null
@@ -120,6 +151,8 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
+          claim_token?: string | null
+          claim_token_expires_at?: string | null
           collab_post_id: string
           collab_role_id?: string | null
           contacted_at?: string | null
@@ -139,6 +172,8 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
+          claim_token?: string | null
+          claim_token_expires_at?: string | null
           collab_post_id?: string
           collab_role_id?: string | null
           contacted_at?: string | null
@@ -502,6 +537,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          context_collab_post_id: string | null
           created_at: string
           id: string
           last_message_at: string | null
@@ -510,6 +546,7 @@ export type Database = {
           user_b: string
         }
         Insert: {
+          context_collab_post_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -518,6 +555,7 @@ export type Database = {
           user_b: string
         }
         Update: {
+          context_collab_post_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -526,6 +564,13 @@ export type Database = {
           user_b?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_context_collab_post_id_fkey"
+            columns: ["context_collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversations_user_a_fkey"
             columns: ["user_a"]
