@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Loader2, Plus, Trash2, Info } from "lucide-react";
-import { createCollaborativeWork } from "@/lib/work-tools.functions";
+import { createCollaborativeWork } from "@/lib/works.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +94,7 @@ function NewCollaborativeWork() {
         },
       });
       toast.success("Work created");
-      navigate({ to: "/works/$slug/tools/$tool", params: { slug: res.slug, tool: "files" } });
+      navigate({ to: "/works/$slug", params: { slug: res.slug } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create");
     } finally {
