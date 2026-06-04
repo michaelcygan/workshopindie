@@ -48,6 +48,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
@@ -246,6 +247,11 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
+  getParentRoute: () => CollabRoute,
+} as any)
 const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
   id: '/api/public/workshops/sweep',
   path: '/api/public/workshops/sweep',
@@ -298,6 +304,7 @@ export interface FileRoutesByFullPath {
   '/instant/': typeof InstantIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -336,6 +343,7 @@ export interface FileRoutesByTo {
   '/instant': typeof InstantIndexRoute
   '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/instant/': typeof InstantIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/instant/'
     | '/me/'
     | '/workshops/'
+    | '/collab/claim/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   fileRoutesByTo: FileRoutesByTo
@@ -463,6 +473,7 @@ export interface FileRouteTypes {
     | '/instant'
     | '/me'
     | '/workshops'
+    | '/collab/claim/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   id:
@@ -506,6 +517,7 @@ export interface FileRouteTypes {
     | '/instant/'
     | '/me/'
     | '/workshops/'
+    | '/collab/claim/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   fileRoutesById: FileRoutesById
@@ -817,6 +829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/collab/claim/$token': {
+      id: '/collab/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/collab/claim/$token'
+      preLoaderRoute: typeof CollabClaimTokenRouteImport
+      parentRoute: typeof CollabRoute
+    }
     '/api/public/workshops/sweep': {
       id: '/api/public/workshops/sweep'
       path: '/api/public/workshops/sweep'
@@ -863,12 +882,14 @@ interface CollabRouteChildren {
   CollabSlugRoute: typeof CollabSlugRoute
   CollabNewRoute: typeof CollabNewRoute
   CollabIndexRoute: typeof CollabIndexRoute
+  CollabClaimTokenRoute: typeof CollabClaimTokenRoute
 }
 
 const CollabRouteChildren: CollabRouteChildren = {
   CollabSlugRoute: CollabSlugRoute,
   CollabNewRoute: CollabNewRoute,
   CollabIndexRoute: CollabIndexRoute,
+  CollabClaimTokenRoute: CollabClaimTokenRoute,
 }
 
 const CollabRouteWithChildren =
@@ -937,13 +958,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -1,69 +1,130 @@
-# Collab → Work flow audit + simplification
 
-## What I found
+# Collab flow v1 — bulletproof, simple, no new surface area
 
-**Good news — there is no auto-publish anywhere.**
-Publishing always requires the owner to open the `PublishFromCollabSheet` and confirm. `publishWorkFromCollab` (server fn) is only ever called from that sheet. Consent is intact.
+## What's broken today
 
-**The real gaps:**
+1. **Logged-in apply is a dead end.** Submitting writes one `collab_contact_events` row with a 280-char preview and nothing else. No DM opens, no app-layer notification, no inline reply for the owner.
+2. **Guests are stranded.** `submitGuestApplication` inserts the row and the success screen promises auto-linking on signup — but no app-layer code performs the link.
+3. **DMs have no collab context.** `conversations`/`messages` have no `collab_post_id`. Even if the owner could DM, the thread has no anchor.
+4. **`can_dm` requires mutual follow** — it blocks the very conversation that applying is supposed to start.
 
-1. **Deadlines are silent.** `ends_on` is only used to *hide* expired posts from the public Collab Board (`collab.index.tsx:52`). When a deadline passes, the post stays `status='open'` in the DB, the owner is never told, and nothing prompts them to close, extend, or publish.
-2. **The "Publish Work" nudge only appears after manual close.** `ClosedCollabNudges` (on `/u/$username`) filters `status='closed' AND resulting_work_id IS NULL AND close_nudge_dismissed_at IS NULL`. Owners who never close a post never see the nudge — so the wrap-up flow is invisible to most users.
-3. **There is no Collab menu.** A user's collabs are scattered:
-   - Hosting (open only) → buried in the `collabs` tab on their own profile
-   - Hosting (closed, needs wrap-up) → mixed into the public profile as a banner
-   - Hosting (closed, already published) → nowhere
-   - Applied to → nowhere (members can only retrace via DMs; guests get nothing)
-   - Live workshop attached → only visible on the collab detail page
-4. **Top-nav dropdown** has "Post a Collab" but no "My Collabs."
+## The fix
 
-## Plan
+One principle: **applying is consent.** It opens a DM thread for that pair, tagged with the collab. The thread lives in the existing inbox — no second messaging surface. No email in v1; the guest claim link is shown on the success screen and copied to clipboard.
 
-### 1. New route: `/me/collabs` — single hub for everything collab
-
-One page, three tabs, no new tables.
+### 1. Schema
 
 ```text
-/me/collabs
- ├── Hosting          status='open'  (with deadline state badges)
- ├── Wrap up          status='closed' AND resulting_work_id IS NULL
- └── Published        resulting_work_id IS NOT NULL  → link to the Work
-        + Applied     collabs you've contacted (joined from collab_contact_events)
+conversations
+  + context_collab_post_id  uuid  null
+
+collab_dm_allowances        new table
+  collab_post_id   uuid
+  owner_user_id    uuid
+  applicant_user_id uuid
+  created_at       timestamptz default now()
+  primary key (collab_post_id, owner_user_id, applicant_user_id)
+
+collab_guest_applications
+  + claim_token             uuid    null  unique
+  + claim_token_expires_at  timestamptz null
 ```
 
-- Each row shows: title, category chip, deadline state, applicant count (hosting), live-workshop indicator, primary action.
-- Primary actions per state:
-  - **Open, deadline future** → "View / Manage"
-  - **Open, deadline today/past** → "Wrap up" (opens a small dialog: *Extend deadline* · *Close without publishing* · *Publish a Work*)
-  - **Closed, no work** → "Publish Work" (opens existing `PublishFromCollabSheet`) or "Dismiss"
-  - **Published** → "Open Work"
-  - **Applied** → "Open collab" (+ small status: open / closed / published)
+Update `can_dm(_a, _b)` to also return true when a `collab_dm_allowances` row exists for the pair in either direction. Scoped, auditable, reversible.
 
-### 2. Deadline-reached nudge (consent-only, no auto anything)
+GRANTs + RLS on `collab_dm_allowances`: select for either party; insert/delete only via security-definer functions.
 
-- On `/collab/$slug`: when viewer is the owner and `ends_on < today` and `status='open'`, show an inline banner above the post: *"Your deadline passed N days ago. What's next?"* with three buttons — **Extend** (date picker), **Close** (existing `closeCollab`), **Publish Work** (existing sheet). Nothing happens automatically.
-- On `/me/collabs` Hosting tab: same row badge ("Deadline passed") with the same three actions inline. Surface a small count chip next to "Hosting" so it's discoverable.
-- **No cron sweep, no auto-close, no auto-publish.** All transitions stay user-initiated.
+### 2. Logged-in apply opens a DM (atomic, server-side)
 
-### 3. Surface the hub
+New server fn `applyToCollab` replaces the current client insert in `collab.$slug.tsx`:
 
-- Add **"My Collabs"** to the avatar dropdown in `src/components/top-nav.tsx`, between "My profile" and "Post a Collab," with a small count badge when there's a deadline-passed or wrap-up item waiting.
-- Add the same entry to `src/components/mobile-nav.tsx`.
+```text
+applyToCollab({ collabPostId, collabRoleId, message })
+  - validate post is open, not own post, not blocked
+  - insert collab_contact_events (preview = message.slice(0, 280))
+  - upsert collab_dm_allowances(post, owner, applicant)
+  - openOrCreateConversation(owner, applicant)
+      - if newly created → set context_collab_post_id = post.id
+      - if existing → leave context alone
+  - insert messages row with the full message body (sender = applicant)
+  - insert notifications { kind:'collab_application', actor=applicant,
+      entity_type:'collab_post', entity_id:post.id,
+      payload:{ conversation_id, collab_title, collab_slug } }
+  - return { conversationId }
+```
 
-### 4. Clean up the public profile
+Success toast becomes *"Sent. Continue the conversation →"* linking to `/dms/{conversationId}`.
 
-- Remove `ClosedCollabNudges` from `/u/$username` (it's owner-only chrome leaking into a public page). The wrap-up flow lives in `/me/collabs` now.
-- Keep the public `collabs` tab on the profile — it's a portfolio signal ("here's what they're trying to make"), unchanged.
+### 3. Guest apply → claim link (no email in v1)
 
-## Technical notes
+`submitGuestApplication` gets two additions at the end:
+- Generate `claim_token` (uuid) + `claim_token_expires_at` (now + 14d), store on the row.
+- Insert one `notifications` row for the **owner** (kind `collab_application`, payload includes guest name + collab) so the owner sees activity immediately.
 
-- **No DB migration.** Everything reads existing columns: `collab_posts.status`, `ends_on`, `closed_at`, `resulting_work_id`, `close_nudge_dismissed_at`, `live_workshop_id`, plus `collab_contact_events.sender_user_id` for the Applied list.
-- **One new server fn** in `src/lib/collab-publish.functions.ts`: `extendCollabDeadline({ collabPostId, endsOn })` — validates the user owns the post, future date, updates `ends_on`. (We could also let users edit in the existing post editor, but a one-tap extend from the nudge keeps the loop tight.)
-- **One new file:** `src/routes/me.collabs.tsx`. Reuses `CollabCard` for some rows and a compact row component for the tabbed lists. Reuses `PublishFromCollabSheet` and `closeCollab` / `reopenCollab` / `dismissPublishNudge` as-is.
-- **No changes** to: the publish flow itself, the public Collab Board, RLS, or notification schema.
+`GuestApplyDialog` success screen now shows:
+- The existing "We'll link your application when you sign up" copy
+- **A "Save your claim link" block** with the URL `/collab/claim/{token}`, a copy button, and a "Sign up to claim now →" button that takes them to `/signup?claim={token}`
 
-## Out of scope
+New route `src/routes/collab.claim.$token.tsx`:
+- Logged out → redirect to `/signup?claim={token}` (or `/login?claim={token}`); on the way back, the auth pages preserve `?claim` and bounce back here.
+- Logged in → call server fn `claimGuestApplication({ token })`:
+  - Validate token + expiry.
+  - Set `collab_guest_applications.matched_user_id = auth.uid()`, `matched_at = now()`, clear the token.
+  - Run the same atomic block as `applyToCollab` (allowance + conversation + first message seeded from the guest's original message + notification — skip the duplicate notification if the owner already got one at submit time).
+  - Redirect to `/dms/{conversationId}`.
 
-- Email/in-app reminders before deadline (can layer on later via the existing `notification_preferences` table).
-- Auto-archiving long-stale collabs.
-- Changes to how applicants are managed (`ApplicantsPanel` stays where it is on `/collab/$slug`).
+Email layered on later — token + route are already in place when that ships.
+
+### 4. Owner inline reply from the applicants panel
+
+In `applicants-panel.tsx`, add a primary **"Reply"** button per applicant:
+- **Member**: links to `/dms/{conversationId}` — the conversation exists from step 2, so direct jump.
+- **Guest with `matched_user_id`**: same.
+- **Guest without `matched_user_id`**: shows `mailto:` button + small "Waiting to claim" pill, plus a "Copy claim link" action that copies `/collab/claim/{token}` for the owner to paste however they want.
+
+Profile link stays as a secondary avatar/name click.
+
+### 5. "Re: Collab title" context chip in the inbox
+
+In `dms.index.tsx` and `dms.$conversationId.tsx`:
+- If `conversation.context_collab_post_id` is set, fetch the post title + slug once and render a small pill: *"Re: **{title}**"* linking to `/collab/{slug}`.
+- Same pill under the preview line in the inbox list.
+
+No other DM UI changes.
+
+### 6. Notification label
+
+`notifications-bell.tsx` `labelFor` — add:
+```text
+case "collab_application":
+  return { title: `${actor} applied to ${payload.collab_title}`,
+           href: `/dms/${payload.conversation_id}` }
+```
+
+## Out of scope (v1)
+
+- Transactional email for guest claim (token + route stay; email layered on later).
+- Inline thread on the collab page — DMs live in the inbox only.
+- Per-message collab tagging — only the conversation gets first-touch context.
+- Revocation UI for allowances — block/report already covers abuse.
+- Bulk owner→multiple-applicants messaging.
+
+## Files touched
+
+```text
+new   migration: conversations.context_collab_post_id,
+                 collab_dm_allowances + RLS + grants,
+                 collab_guest_applications.claim_token(_expires_at),
+                 updated can_dm()
+edit  src/lib/collab.functions.ts        — applyToCollab, claimGuestApplication
+edit  src/lib/dms.functions.ts           — openOrCreateConversation accepts
+                                           optional contextCollabPostId
+edit  src/routes/collab.$slug.tsx        — swap client insert for applyToCollab
+edit  src/components/guest-apply-dialog.tsx — claim-link block on success
+new   src/routes/collab.claim.$token.tsx — claim landing
+edit  src/routes/signup.tsx, login.tsx   — preserve ?claim through auth
+edit  src/components/applicants-panel.tsx — Reply button, copy-claim-link
+edit  src/routes/dms.index.tsx           — Re: pill
+edit  src/routes/dms.$conversationId.tsx — Re: pill in header
+edit  src/components/notifications-bell.tsx — labelFor case
+```

@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -11,10 +12,13 @@ import {
   Inbox,
   UserCircle2,
   MessageCircle,
+  Send,
+  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { listApplicants, updateGuestApplicationStatus } from "@/lib/collab.functions";
 import { toast } from "sonner";
+
 
 type Props = { postId: string };
 
@@ -22,6 +26,20 @@ export function ApplicantsPanel({ postId }: Props) {
   const fetchApplicants = useServerFn(listApplicants);
   const updateStatus = useServerFn(updateGuestApplicationStatus);
   const qc = useQueryClient();
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  async function copyClaimLink(token: string) {
+    const url = `${window.location.origin}/collab/claim/${token}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedToken(token);
+      setTimeout(() => setCopiedToken(null), 1800);
+      toast.success("Claim link copied — paste it to the applicant.");
+    } catch {
+      toast.error("Couldn't copy the link.");
+    }
+  }
+
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["collab-applicants", postId],
@@ -93,19 +111,29 @@ export function ApplicantsPanel({ postId }: Props) {
                     {m.message_preview && <p className="mt-2 text-sm text-ink-soft">{m.message_preview}</p>}
                   </div>
                 </div>
-                {sender?.instagram_handle && (
-                  <a
-                    href={`https://instagram.com/${sender.instagram_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink"
-                  >
-                    <Instagram className="h-3.5 w-3.5" /> @{sender.instagram_handle}
-                  </a>
-                )}
+                <div className="flex shrink-0 flex-col items-stretch gap-1.5 md:items-end">
+                  {m.conversation_id && (
+                    <Button asChild size="sm" className="rounded-full gap-1">
+                      <Link to="/dms/$conversationId" params={{ conversationId: m.conversation_id }}>
+                        <Send className="h-3.5 w-3.5" /> Reply
+                      </Link>
+                    </Button>
+                  )}
+                  {sender?.instagram_handle && (
+                    <a
+                      href={`https://instagram.com/${sender.instagram_handle}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink"
+                    >
+                      <Instagram className="h-3.5 w-3.5" /> @{sender.instagram_handle}
+                    </a>
+                  )}
+                </div>
               </div>
             );
           })}
+
 
           {/* Guest applicants — show full contact, status toggles */}
           {guests.map((g) => (
@@ -148,6 +176,16 @@ export function ApplicantsPanel({ postId }: Props) {
                 </div>
 
                 <div className="flex shrink-0 flex-col gap-1">
+                  {g.claim_token && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full gap-1"
+                      onClick={() => copyClaimLink(g.claim_token!)}
+                    >
+                      <Copy className="h-3.5 w-3.5" /> {copiedToken === g.claim_token ? "Copied" : "Copy claim link"}
+                    </Button>
+                  )}
                   <Button
                     size="sm"
                     variant={g.status === "contacted" ? "secondary" : "outline"}
@@ -165,6 +203,7 @@ export function ApplicantsPanel({ postId }: Props) {
                     <Trash2 className="h-3.5 w-3.5" /> {g.status === "spam" ? "Unspam" : "Spam"}
                   </Button>
                 </div>
+
               </div>
             </div>
           ))}

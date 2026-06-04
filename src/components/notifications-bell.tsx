@@ -48,12 +48,23 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         subtitle: (n.payload?.preview as string) ?? "",
         href: n.payload?.conversation_id ? `/dms/${n.payload.conversation_id}` : "/dms",
       };
+    case "collab_application": {
+      const collabTitle = (n.payload?.collab_title as string) || "your collab";
+      const collabSlug = (n.payload?.collab_slug as string) || undefined;
+      const convId = (n.payload?.conversation_id as string) || undefined;
+      return {
+        title: `${actor} applied to ${collabTitle}`,
+        subtitle: (n.payload?.preview as string) ?? "",
+        href: convId ? `/dms/${convId}` : collabSlug ? `/collab/${collabSlug}` : "/collab",
+      };
+    }
     case "follow":
       return {
         title: `${actor} followed you`,
         subtitle: "",
         href: actorUsername ? `/u/${actorUsername}` : "/me",
       };
+
     case "referral_joined":
       return {
         title: `${actor} joined via your link`,

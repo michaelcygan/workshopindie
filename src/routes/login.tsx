@@ -8,10 +8,16 @@ import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/login")({ component: Login });
+export const Route = createFileRoute("/login")({
+  component: Login,
+  validateSearch: (s: Record<string, unknown>) => ({
+    claim: typeof s.claim === "string" ? s.claim : undefined,
+  }),
+});
 
 function Login() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,8 +28,13 @@ function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    navigate({ to: "/" });
+    if (search.claim) {
+      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
+    } else {
+      navigate({ to: "/" });
+    }
   };
+
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">

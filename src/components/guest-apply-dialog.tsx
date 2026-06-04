@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { Sparkles, ExternalLink } from "lucide-react";
+import { Sparkles, ExternalLink, Copy, Check } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -34,6 +35,9 @@ export function GuestApplyDialog(props: Props) {
 
   const [step, setStep] = useState<Step>("form");
   const [submitting, setSubmitting] = useState(false);
+  const [claimToken, setClaimToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -51,6 +55,8 @@ export function GuestApplyDialog(props: Props) {
   function reset() {
     setForm({ name: "", email: "", phone: "", message: "", portfolioUrl: "", reelUrl: "", instagramHandle: "" });
     setStep("form");
+    setClaimToken(null);
+    setCopied(false);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -59,7 +65,7 @@ export function GuestApplyDialog(props: Props) {
     if (form.message.trim().length < 10) return toast.error("Tell the host a bit more (at least 10 characters).");
     setSubmitting(true);
     try {
-      await submit({
+      const res = await submit({
         data: {
           collabPostId: props.collabPostId,
           collabRoleId: props.collabRoleId,
@@ -72,6 +78,7 @@ export function GuestApplyDialog(props: Props) {
           instagramHandle: form.instagramHandle.trim(),
         },
       });
+      if (res?.claimToken) setClaimToken(res.claimToken);
       setStep("success");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
@@ -81,19 +88,35 @@ export function GuestApplyDialog(props: Props) {
     }
   }
 
+  const claimUrl =
+    claimToken && typeof window !== "undefined" ? `${window.location.origin}/collab/claim/${claimToken}` : null;
+
+  async function copyClaim() {
+    if (!claimUrl) return;
+    try {
+      await navigator.clipboard.writeText(claimUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("Couldn't copy — long-press the link instead.");
+    }
+  }
+
   function goToSignup() {
     const [first, ...rest] = form.name.trim().split(/\s+/);
     const last = rest.join(" ");
-    const params = new URLSearchParams({
+    const params: Record<string, string> = {
       email: form.email,
       first: first ?? "",
       last: last ?? "",
       ig: form.instagramHandle.replace(/^@/, ""),
       from: "guest_apply",
-    });
+    };
+    if (claimToken) params.claim = claimToken;
     props.onOpenChange(false);
-    navigate({ to: "/signup", search: Object.fromEntries(params) as never });
+    navigate({ to: "/signup", search: params as never });
   }
+
 
   return (
     <Dialog
@@ -192,11 +215,10 @@ export function GuestApplyDialog(props: Props) {
             <div className="mt-2 rounded-2xl border border-border bg-gradient-to-br from-surface-2 to-surface p-5">
               <h3 className="font-display text-xl text-ink">Want a real shot at it?</h3>
               <p className="mt-1.5 text-sm text-ink-muted">
-                Posts on Workshop get reviewed faster when applicants have a profile — a face, a few past works,
-                and one tap to reach back. Takes 30 seconds.
+                Claim your application to unlock direct messaging with {props.hostFirstName || "the host"} — and get a profile, a face, and a few past works in front of them. Takes 30 seconds.
               </p>
               <Button onClick={goToSignup} className="mt-4 w-full rounded-full gap-2">
-                <Sparkles className="h-4 w-4" /> Boost my application
+                <Sparkles className="h-4 w-4" /> Sign up to claim & DM
               </Button>
               <button
                 type="button"
@@ -207,9 +229,25 @@ export function GuestApplyDialog(props: Props) {
               </button>
             </div>
 
+            {claimUrl && (
+              <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface p-3">
+                <p className="text-[11px] uppercase tracking-wide text-ink-muted">Save your claim link</p>
+                <div className="mt-1 flex items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-[11px] text-ink-soft">{claimUrl}</code>
+                  <Button type="button" size="sm" variant="outline" className="shrink-0 rounded-full gap-1" onClick={copyClaim}>
+                    {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
+                  </Button>
+                </div>
+                <p className="mt-1.5 text-[11px] text-ink-muted">
+                  Bookmark this — open it any time to claim your application and DM {props.hostFirstName || "the host"} (expires in 14 days).
+                </p>
+              </div>
+            )}
+
             <p className="mt-3 inline-flex items-center gap-1 text-[11px] text-ink-muted">
-              <ExternalLink className="h-3 w-3" /> If you sign up with this email, we'll link your application to your profile automatically.
+              <ExternalLink className="h-3 w-3" /> If you sign up with this email, we'll also link your application automatically.
             </p>
+
           </>
         )}
       </DialogContent>
