@@ -3206,6 +3206,10 @@ export type Database = {
     Functions: {
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
+      cast_workshop_poll_vote: {
+        Args: { _choice_index: number; _poll_id: string }
+        Returns: undefined
+      }
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
