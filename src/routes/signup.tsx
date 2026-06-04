@@ -88,8 +88,13 @@ function Signup() {
     if (error) return toast.error(error.message);
     if (data.user?.id) await applyReferral(data.user.id);
     toast.success("Check your inbox to confirm your email.");
-    navigate({ to: "/onboarding" });
+    if (search.claim) {
+      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
+    } else {
+      navigate({ to: "/onboarding" });
+    }
   };
+
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
