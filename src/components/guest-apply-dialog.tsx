@@ -55,6 +55,8 @@ export function GuestApplyDialog(props: Props) {
   function reset() {
     setForm({ name: "", email: "", phone: "", message: "", portfolioUrl: "", reelUrl: "", instagramHandle: "" });
     setStep("form");
+    setClaimToken(null);
+    setCopied(false);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -63,7 +65,7 @@ export function GuestApplyDialog(props: Props) {
     if (form.message.trim().length < 10) return toast.error("Tell the host a bit more (at least 10 characters).");
     setSubmitting(true);
     try {
-      await submit({
+      const res = await submit({
         data: {
           collabPostId: props.collabPostId,
           collabRoleId: props.collabRoleId,
@@ -76,6 +78,7 @@ export function GuestApplyDialog(props: Props) {
           instagramHandle: form.instagramHandle.trim(),
         },
       });
+      if (res?.claimToken) setClaimToken(res.claimToken);
       setStep("success");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong";
@@ -85,19 +88,35 @@ export function GuestApplyDialog(props: Props) {
     }
   }
 
+  const claimUrl =
+    claimToken && typeof window !== "undefined" ? `${window.location.origin}/collab/claim/${claimToken}` : null;
+
+  async function copyClaim() {
+    if (!claimUrl) return;
+    try {
+      await navigator.clipboard.writeText(claimUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      toast.error("Couldn't copy — long-press the link instead.");
+    }
+  }
+
   function goToSignup() {
     const [first, ...rest] = form.name.trim().split(/\s+/);
     const last = rest.join(" ");
-    const params = new URLSearchParams({
+    const params: Record<string, string> = {
       email: form.email,
       first: first ?? "",
       last: last ?? "",
       ig: form.instagramHandle.replace(/^@/, ""),
       from: "guest_apply",
-    });
+    };
+    if (claimToken) params.claim = claimToken;
     props.onOpenChange(false);
-    navigate({ to: "/signup", search: Object.fromEntries(params) as never });
+    navigate({ to: "/signup", search: params as never });
   }
+
 
   return (
     <Dialog
