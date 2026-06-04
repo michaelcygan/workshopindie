@@ -95,15 +95,16 @@ export const createCollaborativeWork = createServerFn({ method: "POST" })
       throw new Error("Splits must total 100%");
     }
 
-    // 1. Insert the work as a collaborative draft
+    // 1. Insert the work as a collaborative draft (trigger autogenerates slug)
     const { data: work, error: wErr } = await supabase
       .from("works")
       .insert({
         title: data.title,
+        slug: "",
         description: data.description ?? null,
         category: data.category,
         visibility: data.visibility,
-        license_type: data.license === "custom" ? "cc_by" : data.license,
+        license_type: data.license,
         status: "draft",
         is_collaborative: true,
         credit_template: data.credit_template ?? null,
