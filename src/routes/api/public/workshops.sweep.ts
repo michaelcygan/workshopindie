@@ -279,7 +279,7 @@ async function notifyMembers(
         kind,
         entity_type: "workshop",
         entity_id: workshopId,
-        payload,
+        payload: payload as any,
       })),
     )
     .then(() => null, () => null);
