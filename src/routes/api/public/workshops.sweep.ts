@@ -311,7 +311,6 @@ async function clearStudio(workshopId: string) {
     "workshop_poll_votes",
     "workshop_polls",
     "workshop_messages",
-    "workshop_session_tracks",
   ] as const;
   for (const t of tables) {
     await supabaseAdmin.from(t).delete().eq("workshop_id", workshopId).then(
