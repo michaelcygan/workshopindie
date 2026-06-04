@@ -7,11 +7,9 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 // Helpers
 // ============================================================================
 
-async function assertOwner(
-  supabase: ReturnType<typeof requireSupabaseAuth> extends never ? never : any,
-  workId: string,
-  userId: string,
-) {
+// Supabase client comes from requireSupabaseAuth context; loose-typed here
+// because helper boundaries don't need the full Database generic.
+async function assertOwner(supabase: any, workId: string, userId: string) {
   const { data, error } = await supabase
     .from("works")
     .select("id, created_by")
