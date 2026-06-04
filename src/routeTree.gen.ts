@@ -48,6 +48,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as WorksSlugToolsRouteImport } from './routes/works.$slug.tools'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
@@ -250,6 +251,11 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const WorksInviteTokenRoute = WorksInviteTokenRouteImport.update({
+  id: '/works/invite/$token',
+  path: '/works/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorksCollabNewRoute = WorksCollabNewRouteImport.update({
   id: '/works/collab/new',
   path: '/works/collab/new',
@@ -325,6 +331,7 @@ export interface FileRoutesByFullPath {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/$slug/tools': typeof WorksSlugToolsRouteWithChildren
   '/works/collab/new': typeof WorksCollabNewRoute
+  '/works/invite/$token': typeof WorksInviteTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/works/$slug/tools/$tool': typeof WorksSlugToolsToolRoute
@@ -367,6 +374,7 @@ export interface FileRoutesByTo {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/$slug/tools': typeof WorksSlugToolsRouteWithChildren
   '/works/collab/new': typeof WorksCollabNewRoute
+  '/works/invite/$token': typeof WorksInviteTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/works/$slug/tools/$tool': typeof WorksSlugToolsToolRoute
@@ -415,6 +423,7 @@ export interface FileRoutesById {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/$slug/tools': typeof WorksSlugToolsRouteWithChildren
   '/works/collab/new': typeof WorksCollabNewRoute
+  '/works/invite/$token': typeof WorksInviteTokenRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/works/$slug/tools/$tool': typeof WorksSlugToolsToolRoute
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/$slug/tools'
     | '/works/collab/new'
+    | '/works/invite/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/works/$slug/tools/$tool'
@@ -506,6 +516,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/$slug/tools'
     | '/works/collab/new'
+    | '/works/invite/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/works/$slug/tools/$tool'
@@ -553,6 +564,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/$slug/tools'
     | '/works/collab/new'
+    | '/works/invite/$token'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/works/$slug/tools/$tool'
@@ -587,6 +599,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
+  WorksInviteTokenRoute: typeof WorksInviteTokenRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
 }
@@ -866,6 +879,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/works/invite/$token': {
+      id: '/works/invite/$token'
+      path: '/works/invite/$token'
+      fullPath: '/works/invite/$token'
+      preLoaderRoute: typeof WorksInviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/works/collab/new': {
       id: '/works/collab/new'
       path: '/works/collab/new'
@@ -1035,6 +1055,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   MeIndexRoute: MeIndexRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
+  WorksInviteTokenRoute: WorksInviteTokenRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
 }
