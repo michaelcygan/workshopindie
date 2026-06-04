@@ -1648,48 +1648,6 @@ export type Database = {
         }
         Relationships: []
       }
-      work_activity: {
-        Row: {
-          actor_id: string | null
-          created_at: string
-          id: string
-          kind: string
-          payload: Json
-          work_id: string
-        }
-        Insert: {
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          kind: string
-          payload?: Json
-          work_id: string
-        }
-        Update: {
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          payload?: Json
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_activity_actor_id_fkey"
-            columns: ["actor_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_activity_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       work_agreement_signatures: {
         Row: {
           agreement_id: string
@@ -1928,172 +1886,6 @@ export type Database = {
           },
         ]
       }
-      work_docs: {
-        Row: {
-          content: Json
-          created_at: string
-          id: string
-          kind: string
-          title: string
-          updated_at: string
-          updated_by: string | null
-          work_id: string
-        }
-        Insert: {
-          content?: Json
-          created_at?: string
-          id?: string
-          kind?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          work_id: string
-        }
-        Update: {
-          content?: Json
-          created_at?: string
-          id?: string
-          kind?: string
-          title?: string
-          updated_at?: string
-          updated_by?: string | null
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_docs_updated_by_fkey"
-            columns: ["updated_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_docs_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      work_file_comments: {
-        Row: {
-          body: string
-          created_at: string
-          file_id: string
-          id: string
-          resolved: boolean
-          timecode_ms: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          body: string
-          created_at?: string
-          file_id: string
-          id?: string
-          resolved?: boolean
-          timecode_ms?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          body?: string
-          created_at?: string
-          file_id?: string
-          id?: string
-          resolved?: boolean
-          timecode_ms?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_file_comments_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "work_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_file_comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      work_files: {
-        Row: {
-          created_at: string
-          id: string
-          kind: string
-          locked: boolean
-          metadata: Json
-          mime: string | null
-          name: string
-          path: string
-          size_bytes: number
-          updated_at: string
-          uploaded_by: string
-          version_of: string | null
-          work_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          kind?: string
-          locked?: boolean
-          metadata?: Json
-          mime?: string | null
-          name: string
-          path: string
-          size_bytes?: number
-          updated_at?: string
-          uploaded_by: string
-          version_of?: string | null
-          work_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          kind?: string
-          locked?: boolean
-          metadata?: Json
-          mime?: string | null
-          name?: string
-          path?: string
-          size_bytes?: number
-          updated_at?: string
-          uploaded_by?: string
-          version_of?: string | null
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_files_uploaded_by_fkey"
-            columns: ["uploaded_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_files_version_of_fkey"
-            columns: ["version_of"]
-            isOneToOne: false
-            referencedRelation: "work_files"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_files_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       work_invite_tokens: {
         Row: {
           created_at: string
@@ -2197,51 +1989,6 @@ export type Database = {
           },
         ]
       }
-      work_links: {
-        Row: {
-          category: string
-          created_at: string
-          created_by: string
-          id: string
-          label: string | null
-          url: string
-          work_id: string
-        }
-        Insert: {
-          category?: string
-          created_at?: string
-          created_by: string
-          id?: string
-          label?: string | null
-          url: string
-          work_id: string
-        }
-        Update: {
-          category?: string
-          created_at?: string
-          created_by?: string
-          id?: string
-          label?: string | null
-          url?: string
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_links_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_links_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       work_reactions: {
         Row: {
           created_at: string
@@ -2274,67 +2021,6 @@ export type Database = {
           },
           {
             foreignKeyName: "work_reactions_work_id_fkey"
-            columns: ["work_id"]
-            isOneToOne: false
-            referencedRelation: "works"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      work_tasks: {
-        Row: {
-          assignee: string | null
-          created_at: string
-          created_by: string
-          done: boolean
-          due_at: string | null
-          id: string
-          sort_order: number
-          title: string
-          updated_at: string
-          work_id: string
-        }
-        Insert: {
-          assignee?: string | null
-          created_at?: string
-          created_by: string
-          done?: boolean
-          due_at?: string | null
-          id?: string
-          sort_order?: number
-          title: string
-          updated_at?: string
-          work_id: string
-        }
-        Update: {
-          assignee?: string | null
-          created_at?: string
-          created_by?: string
-          done?: boolean
-          due_at?: string | null
-          id?: string
-          sort_order?: number
-          title?: string
-          updated_at?: string
-          work_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "work_tasks_assignee_fkey"
-            columns: ["assignee"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_tasks_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "work_tasks_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
             referencedRelation: "works"
@@ -2527,6 +2213,300 @@ export type Database = {
           },
         ]
       }
+      workshop_board_assets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          kind: string
+          payload: Json
+          position: Json
+          updated_at: string
+          workshop_id: string
+          z_index: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind: string
+          payload?: Json
+          position?: Json
+          updated_at?: string
+          workshop_id: string
+          z_index?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          kind?: string
+          payload?: Json
+          position?: Json
+          updated_at?: string
+          workshop_id?: string
+          z_index?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_board_assets_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_doc_comments: {
+        Row: {
+          anchor: Json | null
+          author_id: string | null
+          body: string
+          created_at: string
+          doc_id: string
+          id: string
+          parent_id: string | null
+          resolved_at: string | null
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          anchor?: Json | null
+          author_id?: string | null
+          body: string
+          created_at?: string
+          doc_id: string
+          id?: string
+          parent_id?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          anchor?: Json | null
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          doc_id?: string
+          id?: string
+          parent_id?: string | null
+          resolved_at?: string | null
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_doc_comments_doc_id_fkey"
+            columns: ["doc_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_docs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_doc_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_doc_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_doc_comments_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_docs: {
+        Row: {
+          content_md: string
+          created_at: string
+          created_by: string | null
+          id: string
+          sort_order: number
+          template: string | null
+          title: string
+          updated_at: string
+          workshop_id: string
+          ydoc: string | null
+        }
+        Insert: {
+          content_md?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          template?: string | null
+          title?: string
+          updated_at?: string
+          workshop_id: string
+          ydoc?: string | null
+        }
+        Update: {
+          content_md?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          sort_order?: number
+          template?: string | null
+          title?: string
+          updated_at?: string
+          workshop_id?: string
+          ydoc?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_docs_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_drive_file_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          file_id: string
+          id: string
+          timecode_ms: number | null
+          workshop_id: string
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          file_id: string
+          id?: string
+          timecode_ms?: number | null
+          workshop_id: string
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          timecode_ms?: number | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_drive_file_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_drive_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_drive_file_comments_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_drive_files: {
+        Row: {
+          byte_size: number | null
+          created_at: string
+          duration_ms: number | null
+          filename: string
+          height: number | null
+          id: string
+          mime_type: string | null
+          note: string | null
+          storage_path: string
+          updated_at: string
+          uploader_id: string | null
+          width: number | null
+          workshop_id: string
+        }
+        Insert: {
+          byte_size?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          filename: string
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          storage_path: string
+          updated_at?: string
+          uploader_id?: string | null
+          width?: number | null
+          workshop_id: string
+        }
+        Update: {
+          byte_size?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          filename?: string
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          storage_path?: string
+          updated_at?: string
+          uploader_id?: string | null
+          width?: number | null
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_drive_files_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_drive_links: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          provider: string
+          title: string | null
+          url: string
+          workshop_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: string
+          title?: string | null
+          url: string
+          workshop_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: string
+          title?: string | null
+          url?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_drive_links_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_messages: {
         Row: {
           body: string
@@ -2618,6 +2598,88 @@ export type Database = {
           },
         ]
       }
+      workshop_poll_votes: {
+        Row: {
+          choice_index: number
+          created_at: string
+          poll_id: string
+          voter_hash: string
+        }
+        Insert: {
+          choice_index: number
+          created_at?: string
+          poll_id: string
+          voter_hash: string
+        }
+        Update: {
+          choice_index?: number
+          created_at?: string
+          poll_id?: string
+          voter_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_polls: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          last_vote_at: string
+          message_id: string | null
+          mode: string
+          options: Json
+          question: string
+          status: string
+          vote_salt: string
+          workshop_id: string
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_vote_at?: string
+          message_id?: string | null
+          mode?: string
+          options: Json
+          question: string
+          status?: string
+          vote_salt?: string
+          workshop_id: string
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          last_vote_at?: string
+          message_id?: string | null
+          mode?: string
+          options?: Json
+          question?: string
+          status?: string
+          vote_salt?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_polls_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_roles: {
         Row: {
           allows_alternates: boolean
@@ -2689,13 +2751,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workshop_session_demos_clip_file_id_fkey"
-            columns: ["clip_file_id"]
-            isOneToOne: false
-            referencedRelation: "work_files"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "workshop_session_demos_session_id_fkey"
             columns: ["session_id"]
             isOneToOne: false
@@ -2755,13 +2810,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "workshop_session_tracks_file_id_fkey"
-            columns: ["file_id"]
-            isOneToOne: false
-            referencedRelation: "work_files"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "workshop_session_tracks_session_id_fkey"
             columns: ["session_id"]
@@ -2832,6 +2880,59 @@ export type Database = {
           },
           {
             foreignKeyName: "workshop_sessions_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_tasks: {
+        Row: {
+          assignee_id: string | null
+          body: string | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          due_by: string | null
+          id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_by?: string | null
+          id?: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          assignee_id?: string | null
+          body?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_by?: string | null
+          id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_tasks_workshop_id_fkey"
             columns: ["workshop_id"]
             isOneToOne: false
             referencedRelation: "workshops"
@@ -2932,6 +3033,9 @@ export type Database = {
         Row: {
           acting_leader_user_id: string | null
           application_count: number
+          archive_at: string | null
+          archive_zip_url: string | null
+          archived_at: string | null
           audience_city_ids: string[]
           auto_converted_at: string | null
           category: Database["public"]["Enums"]["category"]
@@ -2956,6 +3060,7 @@ export type Database = {
           participant_cap: number | null
           pinned_at: string | null
           prompt: string | null
+          published_work_id: string | null
           slug: string
           starting_notified_at: string | null
           starts_at: string | null
@@ -2974,6 +3079,9 @@ export type Database = {
         Insert: {
           acting_leader_user_id?: string | null
           application_count?: number
+          archive_at?: string | null
+          archive_zip_url?: string | null
+          archived_at?: string | null
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           category: Database["public"]["Enums"]["category"]
@@ -2998,6 +3106,7 @@ export type Database = {
           participant_cap?: number | null
           pinned_at?: string | null
           prompt?: string | null
+          published_work_id?: string | null
           slug: string
           starting_notified_at?: string | null
           starts_at?: string | null
@@ -3016,6 +3125,9 @@ export type Database = {
         Update: {
           acting_leader_user_id?: string | null
           application_count?: number
+          archive_at?: string | null
+          archive_zip_url?: string | null
+          archived_at?: string | null
           audience_city_ids?: string[]
           auto_converted_at?: string | null
           category?: Database["public"]["Enums"]["category"]
@@ -3040,6 +3152,7 @@ export type Database = {
           participant_cap?: number | null
           pinned_at?: string | null
           prompt?: string | null
+          published_work_id?: string | null
           slug?: string
           starting_notified_at?: string | null
           starts_at?: string | null
@@ -3068,6 +3181,13 @@ export type Database = {
             columns: ["host_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshops_published_work_id_fkey"
+            columns: ["published_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
             referencedColumns: ["id"]
           },
           {
@@ -3127,6 +3247,10 @@ export type Database = {
       }
       is_work_owner: {
         Args: { _user_id: string; _work_id: string }
+        Returns: boolean
+      }
+      is_workshop_member: {
+        Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
       }
       is_workshop_room_member: {
