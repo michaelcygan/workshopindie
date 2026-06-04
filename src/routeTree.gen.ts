@@ -49,6 +49,7 @@ import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
+import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
@@ -256,6 +257,11 @@ const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
   path: '/tools',
   getParentRoute: () => WorkshopsSlugRoute,
 } as any)
+const WorkshopsSlugArchiveRoute = WorkshopsSlugArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => WorkshopsSlugRoute,
+} as any)
 const WorksInviteTokenRoute = WorksInviteTokenRouteImport.update({
   id: '/works/invite/$token',
   path: '/works/invite/$token',
@@ -331,6 +337,7 @@ export interface FileRoutesByFullPath {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
+  '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
+  '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
@@ -423,6 +431,7 @@ export interface FileRoutesById {
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
+  '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
@@ -473,6 +482,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
+    | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
@@ -516,6 +526,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
+    | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
@@ -564,6 +575,7 @@ export interface FileRouteTypes {
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
+    | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
@@ -886,6 +898,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsSlugToolsRouteImport
       parentRoute: typeof WorkshopsSlugRoute
     }
+    '/workshops/$slug/archive': {
+      id: '/workshops/$slug/archive'
+      path: '/archive'
+      fullPath: '/workshops/$slug/archive'
+      preLoaderRoute: typeof WorkshopsSlugArchiveRouteImport
+      parentRoute: typeof WorkshopsSlugRoute
+    }
     '/works/invite/$token': {
       id: '/works/invite/$token'
       path: '/works/invite/$token'
@@ -998,10 +1017,12 @@ const WorkshopsSlugToolsRouteWithChildren =
   WorkshopsSlugToolsRoute._addFileChildren(WorkshopsSlugToolsRouteChildren)
 
 interface WorkshopsSlugRouteChildren {
+  WorkshopsSlugArchiveRoute: typeof WorkshopsSlugArchiveRoute
   WorkshopsSlugToolsRoute: typeof WorkshopsSlugToolsRouteWithChildren
 }
 
 const WorkshopsSlugRouteChildren: WorkshopsSlugRouteChildren = {
+  WorkshopsSlugArchiveRoute: WorkshopsSlugArchiveRoute,
   WorkshopsSlugToolsRoute: WorkshopsSlugToolsRouteWithChildren,
 }
 

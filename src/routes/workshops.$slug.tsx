@@ -494,7 +494,11 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
     }
     if (credits.length > 0) await supabase.from("work_credits").insert(credits);
 
-    await supabase.from("workshops").update({ status: "shipped" }).eq("id", ws.id);
+    await supabase.from("workshops").update({
+      status: "shipped",
+      published_work_id: work.id,
+      archive_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    }).eq("id", ws.id);
 
     setSubmitting(false);
     toast.success("Shipped to the Gallery");
@@ -525,6 +529,7 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
 }
 
 function ShippedBanner({ workshopId }: { workshopId: string }) {
+  const { slug: wsSlug } = Route.useParams();
   const { data: work } = useQuery({
     queryKey: ["ws-shipped-work", workshopId],
     queryFn: async () => {
@@ -537,9 +542,15 @@ function ShippedBanner({ workshopId }: { workshopId: string }) {
     <section className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-6 text-center">
       <span className="gradient-motion mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-6 w-6" /></span>
       <h2 className="mt-2 font-display text-2xl text-ink">Shipped: {work.title}</h2>
-      <Link to="/works/$slug" params={{ slug: work.slug }} className="mt-3 inline-block">
-        <Button className="rounded-full">View the Work</Button>
-      </Link>
+      <p className="mt-1 text-xs text-ink-muted">The studio will clear 30 days after publish. Grab an archive any time.</p>
+      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+        <Link to="/works/$slug" params={{ slug: work.slug }}>
+          <Button className="rounded-full">View the Work</Button>
+        </Link>
+        <Link to="/workshops/$slug/archive" params={{ slug: wsSlug }}>
+          <Button variant="outline" className="rounded-full">Download archive</Button>
+        </Link>
+      </div>
     </section>
   );
 }
