@@ -221,7 +221,7 @@ async function runRetentionPass() {
     });
     await supabaseAdmin
       .from("workshops")
-      .update({ archive_notified_0d_at: nowIso })
+      .update({ archive_notified_0d_at: nowIso } as any)
       .eq("id", ws.id);
   }
 
