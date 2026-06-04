@@ -188,7 +188,7 @@ export const listApplicants = createServerFn({ method: "POST" })
       supabase
         .from("collab_guest_applications")
         .select(
-          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id",
+          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id,claim_token,claim_token_expires_at",
         )
         .eq("collab_post_id", data.collabPostId)
         .order("created_at", { ascending: false }),
@@ -208,16 +208,36 @@ export const listApplicants = createServerFn({ method: "POST" })
       profileMap = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
     }
 
+    // Resolve conversation IDs for each member-applicant so the owner can Reply in one tap.
+    let convoMap: Record<string, string> = {};
+    if (senderIds.length > 0) {
+      const pairs = senderIds.map((sid) => {
+        const [a, b] = userId < sid ? [userId, sid] : [sid, userId];
+        return { a, b, sid };
+      });
+      const { data: convos } = await supabase
+        .from("conversations")
+        .select("id,user_a,user_b")
+        .in("user_a", pairs.map((p) => p.a))
+        .in("user_b", pairs.map((p) => p.b));
+      for (const c of convos ?? []) {
+        const other = c.user_a === userId ? c.user_b : c.user_a;
+        convoMap[other] = c.id;
+      }
+    }
+
     const members = events.map((e) => ({
       id: e.id,
       sent_at: e.sent_at,
       message_preview: e.message_preview,
       collab_role_id: e.collab_role_id,
       sender: profileMap[e.sender_user_id] ?? null,
+      conversation_id: convoMap[e.sender_user_id] ?? null,
     }));
 
     return { members, guests: guestRows };
   });
+
 
 export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
