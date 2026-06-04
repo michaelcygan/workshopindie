@@ -23,6 +23,7 @@ import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
+import { ChatPolls } from "@/components/chat-polls";
 
 // Board moved to Workshop Tools; live room no longer mounts RoomBoard.
 import {
@@ -56,11 +57,13 @@ export function ChannelView({
   title,
   pinned,
   initialMode = "voice",
+  workshopId,
 }: {
   roomId: string;
   title: string;
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
+  workshopId?: string;
 }) {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
@@ -560,6 +563,7 @@ export function ChannelView({
             </div>
           ) : (
             <>
+              {workshopId && <ChatPolls workshopId={workshopId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-center">

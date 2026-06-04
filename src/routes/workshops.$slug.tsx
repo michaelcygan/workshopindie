@@ -436,6 +436,7 @@ function Room({ ws }: { ws: Workshop }) {
         title={ws.title}
         initialMode="voice"
         pinned={pinned}
+        workshopId={ws.id}
       />
       <WorkshopToolsPanel workshopId={ws.id} hostUserId={ws.host_user_id} category={ws.category} />
     </section>
