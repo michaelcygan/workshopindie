@@ -232,7 +232,7 @@ async function runRetentionPass() {
     .not("archive_at", "is", null)
     .is("archived_at", null)
     .lte("archive_at", nowIso)
-    .limit: 25 as any;
+    .limit(25);
 
   const cleared: string[] = [];
   for (const ws of due ?? []) {
