@@ -231,7 +231,14 @@ function NewWork() {
         <p className="mt-1 text-ink-muted">
           Drop a link to something you've made — we'll fill in the rest.
         </p>
+        <a
+          href="/works/collab/new"
+          className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+        >
+          Or start a collaborative Work — invite people to ship it with you →
+        </a>
       </motion.div>
+
 
       {step === "drop" && (
         <DropStep
