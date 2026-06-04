@@ -563,6 +563,7 @@ export function ChannelView({
             </div>
           ) : (
             <>
+              {workshopId && <ChatPolls workshopId={workshopId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-center">
