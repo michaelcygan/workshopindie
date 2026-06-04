@@ -48,6 +48,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as WorksSlugToolsRouteImport } from './routes/works.$slug.tools'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
@@ -247,6 +248,11 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const WorksSlugToolsRoute = WorksSlugToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => WorksSlugRoute,
+} as any)
 const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
@@ -293,7 +299,7 @@ export interface FileRoutesByFullPath {
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
@@ -305,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/tools': typeof WorksSlugToolsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -332,7 +339,7 @@ export interface FileRoutesByTo {
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
@@ -344,6 +351,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/tools': typeof WorksSlugToolsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -377,7 +385,7 @@ export interface FileRoutesById {
   '/me/edit': typeof MeEditRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRoute
   '/workshops/new': typeof WorkshopsNewRoute
@@ -389,6 +397,7 @@ export interface FileRoutesById {
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/tools': typeof WorksSlugToolsRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
 }
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshops/'
     | '/collab/claim/$token'
+    | '/works/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   fileRoutesByTo: FileRoutesByTo
@@ -474,6 +484,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/workshops'
     | '/collab/claim/$token'
+    | '/works/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   id:
@@ -518,6 +529,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshops/'
     | '/collab/claim/$token'
+    | '/works/$slug/tools'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
   fileRoutesById: FileRoutesById
@@ -546,7 +558,7 @@ export interface RootRouteChildren {
   MeEditRoute: typeof MeEditRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
-  WorksSlugRoute: typeof WorksSlugRoute
+  WorksSlugRoute: typeof WorksSlugRouteWithChildren
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
@@ -829,6 +841,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/works/$slug/tools': {
+      id: '/works/$slug/tools'
+      path: '/tools'
+      fullPath: '/works/$slug/tools'
+      preLoaderRoute: typeof WorksSlugToolsRouteImport
+      parentRoute: typeof WorksSlugRoute
+    }
     '/collab/claim/$token': {
       id: '/collab/claim/$token'
       path: '/claim/$token'
@@ -924,6 +943,18 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
   WorkshopsRouteChildren,
 )
 
+interface WorksSlugRouteChildren {
+  WorksSlugToolsRoute: typeof WorksSlugToolsRoute
+}
+
+const WorksSlugRouteChildren: WorksSlugRouteChildren = {
+  WorksSlugToolsRoute: WorksSlugToolsRoute,
+}
+
+const WorksSlugRouteWithChildren = WorksSlugRoute._addFileChildren(
+  WorksSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -948,7 +979,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeEditRoute: MeEditRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
-  WorksSlugRoute: WorksSlugRoute,
+  WorksSlugRoute: WorksSlugRouteWithChildren,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
   MeIndexRoute: MeIndexRoute,
