@@ -1648,6 +1648,241 @@ export type Database = {
         }
         Relationships: []
       }
+      work_activity: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          payload: Json
+          work_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          work_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_activity_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_activity_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_agreement_signatures: {
+        Row: {
+          agreement_id: string
+          id: string
+          signed_at: string
+          user_id: string
+        }
+        Insert: {
+          agreement_id: string
+          id?: string
+          signed_at?: string
+          user_id: string
+        }
+        Update: {
+          agreement_id?: string
+          id?: string
+          signed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_agreement_signatures_agreement_id_fkey"
+            columns: ["agreement_id"]
+            isOneToOne: false
+            referencedRelation: "work_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_agreement_signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_agreements: {
+        Row: {
+          commercial_use: string
+          content_hash: string
+          created_at: string
+          created_by: string
+          credit_template: string | null
+          id: string
+          license: Database["public"]["Enums"]["work_license"]
+          license_custom: string | null
+          splits: Json
+          version: number
+          work_id: string
+        }
+        Insert: {
+          commercial_use?: string
+          content_hash: string
+          created_at?: string
+          created_by: string
+          credit_template?: string | null
+          id?: string
+          license?: Database["public"]["Enums"]["work_license"]
+          license_custom?: string | null
+          splits?: Json
+          version?: number
+          work_id: string
+        }
+        Update: {
+          commercial_use?: string
+          content_hash?: string
+          created_at?: string
+          created_by?: string
+          credit_template?: string | null
+          id?: string
+          license?: Database["public"]["Enums"]["work_license"]
+          license_custom?: string | null
+          splits?: Json
+          version?: number
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_agreements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_agreements_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_applications: {
+        Row: {
+          applicant_user_id: string
+          created_at: string
+          id: string
+          pitch: string | null
+          status: string
+          updated_at: string
+          work_id: string
+        }
+        Insert: {
+          applicant_user_id: string
+          created_at?: string
+          id?: string
+          pitch?: string | null
+          status?: string
+          updated_at?: string
+          work_id: string
+        }
+        Update: {
+          applicant_user_id?: string
+          created_at?: string
+          id?: string
+          pitch?: string | null
+          status?: string
+          updated_at?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_applications_applicant_user_id_fkey"
+            columns: ["applicant_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_applications_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_collaborators: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          role: string
+          signed_agreement_id: string | null
+          splits_pct: number
+          user_id: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          signed_agreement_id?: string | null
+          splits_pct?: number
+          user_id: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          signed_agreement_id?: string | null
+          splits_pct?: number
+          user_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_collaborators_signed_agreement_fk"
+            columns: ["signed_agreement_id"]
+            isOneToOne: false
+            referencedRelation: "work_agreements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_collaborators_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_credits: {
         Row: {
           created_at: string
@@ -1686,6 +1921,320 @@ export type Database = {
           },
           {
             foreignKeyName: "work_credits_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_docs: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          kind: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          work_id: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          work_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          kind?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_docs_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_docs_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_file_comments: {
+        Row: {
+          body: string
+          created_at: string
+          file_id: string
+          id: string
+          resolved: boolean
+          timecode_ms: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          file_id: string
+          id?: string
+          resolved?: boolean
+          timecode_ms?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          resolved?: boolean
+          timecode_ms?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_file_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "work_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_file_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_files: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          locked: boolean
+          metadata: Json
+          mime: string | null
+          name: string
+          path: string
+          size_bytes: number
+          updated_at: string
+          uploaded_by: string
+          version_of: string | null
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind?: string
+          locked?: boolean
+          metadata?: Json
+          mime?: string | null
+          name: string
+          path: string
+          size_bytes?: number
+          updated_at?: string
+          uploaded_by: string
+          version_of?: string | null
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          locked?: boolean
+          metadata?: Json
+          mime?: string | null
+          name?: string
+          path?: string
+          size_bytes?: number
+          updated_at?: string
+          uploaded_by?: string
+          version_of?: string | null
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_files_version_of_fkey"
+            columns: ["version_of"]
+            isOneToOne: false
+            referencedRelation: "work_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_files_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_invite_tokens: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          token: string
+          uses_remaining: number | null
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          token: string
+          uses_remaining?: number | null
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          token?: string
+          uses_remaining?: number | null
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_invite_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invite_tokens_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invited_by: string
+          invitee_handle: string | null
+          invitee_user_id: string | null
+          role: string
+          status: string
+          updated_at: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invited_by: string
+          invitee_handle?: string | null
+          invitee_user_id?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invited_by?: string
+          invitee_handle?: string | null
+          invitee_user_id?: string | null
+          role?: string
+          status?: string
+          updated_at?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_invitee_user_id_fkey"
+            columns: ["invitee_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      work_links: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          id: string
+          label: string | null
+          url: string
+          work_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          created_by: string
+          id?: string
+          label?: string | null
+          url: string
+          work_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          label?: string | null
+          url?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_links_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
             referencedRelation: "works"
@@ -1732,19 +2281,83 @@ export type Database = {
           },
         ]
       }
+      work_tasks: {
+        Row: {
+          assignee: string | null
+          created_at: string
+          created_by: string
+          done: boolean
+          due_at: string | null
+          id: string
+          sort_order: number
+          title: string
+          updated_at: string
+          work_id: string
+        }
+        Insert: {
+          assignee?: string | null
+          created_at?: string
+          created_by: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          sort_order?: number
+          title: string
+          updated_at?: string
+          work_id: string
+        }
+        Update: {
+          assignee?: string | null
+          created_at?: string
+          created_by?: string
+          done?: boolean
+          due_at?: string | null
+          id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_tasks_assignee_fkey"
+            columns: ["assignee"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_tasks_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       works: {
         Row: {
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           comment_count: number
+          commercial_use: string
           cover_url: string | null
           created_at: string
           created_by: string
+          credit_template: string | null
           description: string | null
           embed_url: string | null
           excerpt: string | null
           featured: boolean
           id: string
+          is_collaborative: boolean
           license_type: Database["public"]["Enums"]["work_license"]
           like_count: number
           popularity_score: number
@@ -1767,14 +2380,17 @@ export type Database = {
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
+          commercial_use?: string
           cover_url?: string | null
           created_at?: string
           created_by: string
+          credit_template?: string | null
           description?: string | null
           embed_url?: string | null
           excerpt?: string | null
           featured?: boolean
           id?: string
+          is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
           popularity_score?: number
@@ -1797,14 +2413,17 @@ export type Database = {
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
+          commercial_use?: string
           cover_url?: string | null
           created_at?: string
           created_by?: string
+          credit_template?: string | null
           description?: string | null
           embed_url?: string | null
           excerpt?: string | null
           featured?: boolean
           id?: string
+          is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
           popularity_score?: number
@@ -2033,6 +2652,186 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "workshop_roles_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_session_demos: {
+        Row: {
+          clip_file_id: string | null
+          created_at: string
+          id: string
+          label: string | null
+          session_id: string
+          t_ms: number
+          user_id: string
+        }
+        Insert: {
+          clip_file_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          session_id: string
+          t_ms: number
+          user_id: string
+        }
+        Update: {
+          clip_file_id?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          session_id?: string
+          t_ms?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_session_demos_clip_file_id_fkey"
+            columns: ["clip_file_id"]
+            isOneToOne: false
+            referencedRelation: "work_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_demos_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_demos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_session_tracks: {
+        Row: {
+          bytes: number
+          created_at: string
+          duration_ms: number
+          file_id: string | null
+          id: string
+          kind: string
+          session_id: string
+          status: string
+          storage_path: string | null
+          t0_ms: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bytes?: number
+          created_at?: string
+          duration_ms?: number
+          file_id?: string | null
+          id?: string
+          kind: string
+          session_id: string
+          status?: string
+          storage_path?: string | null
+          t0_ms?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bytes?: number
+          created_at?: string
+          duration_ms?: number
+          file_id?: string | null
+          id?: string
+          kind?: string
+          session_id?: string
+          status?: string
+          storage_path?: string | null
+          t0_ms?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_session_tracks_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "work_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_tracks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "workshop_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_session_tracks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workshop_sessions: {
+        Row: {
+          consent: Json
+          created_at: string
+          ended_at: string | null
+          id: string
+          promoted_to_work_id: string | null
+          started_at: string
+          started_by: string
+          status: string
+          updated_at: string
+          workshop_id: string
+        }
+        Insert: {
+          consent?: Json
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          promoted_to_work_id?: string | null
+          started_at?: string
+          started_by: string
+          status?: string
+          updated_at?: string
+          workshop_id: string
+        }
+        Update: {
+          consent?: Json
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          promoted_to_work_id?: string | null
+          started_at?: string
+          started_by?: string
+          status?: string
+          updated_at?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_sessions_promoted_to_work_id_fkey"
+            columns: ["promoted_to_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_sessions_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_sessions_workshop_id_fkey"
             columns: ["workshop_id"]
             isOneToOne: false
             referencedRelation: "workshops"
@@ -2320,6 +3119,14 @@ export type Database = {
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_work_member: {
+        Args: { _user_id: string; _work_id: string }
+        Returns: boolean
+      }
+      is_work_owner: {
+        Args: { _user_id: string; _work_id: string }
         Returns: boolean
       }
       is_workshop_room_member: {
