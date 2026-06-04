@@ -93,11 +93,13 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
       throw new Error("You've already applied to this post — give the host a day to reply.");
     }
 
-    // 5. Insert.
+    // 5. Insert guest app + claim token.
     const userAgent = getRequestHeader("user-agent")?.slice(0, 255) ?? null;
     const ig = data.instagramHandle ? data.instagramHandle.replace(/^@/, "") : null;
+    const claimToken = crypto.randomUUID();
+    const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { error: insertErr } = await supabaseAdmin
+    const { data: inserted, error: insertErr } = await supabaseAdmin
       .from("collab_guest_applications")
       .insert({
         collab_post_id: data.collabPostId,
@@ -111,11 +113,37 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
         instagram_handle: ig,
         ip_hash: ipHash,
         user_agent: userAgent,
-      });
+        claim_token: claimToken,
+        claim_token_expires_at: expiresAt,
+      })
+      .select("id")
+      .single();
     if (insertErr) throw new Error(insertErr.message);
 
-    return { ok: true as const };
+    // 6. Get collab title and notify the post owner so they see activity immediately.
+    const { data: postFull } = await supabaseAdmin
+      .from("collab_posts")
+      .select("title,slug")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    await supabaseAdmin.from("notifications").insert({
+      user_id: post.user_id,
+      kind: "collab_application",
+      actor_user_id: null,
+      entity_type: "collab_post",
+      entity_id: data.collabPostId,
+      payload: {
+        actor_name: data.name,
+        is_guest: true,
+        collab_title: postFull?.title ?? "your collab",
+        collab_slug: postFull?.slug ?? null,
+        preview: data.message.slice(0, 140),
+      },
+    });
+
+    return { ok: true as const, claimToken, applicationId: inserted.id };
   });
+
 
 const shareSchema = z.object({
   collabPostId: z.string().uuid(),
