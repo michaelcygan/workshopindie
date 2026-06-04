@@ -35,6 +35,9 @@ export function GuestApplyDialog(props: Props) {
 
   const [step, setStep] = useState<Step>("form");
   const [submitting, setSubmitting] = useState(false);
+  const [claimToken, setClaimToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
   const [form, setForm] = useState({
     name: "",
     email: "",
