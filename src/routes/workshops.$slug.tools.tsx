@@ -176,24 +176,24 @@ function WorkshopToolsHub() {
       title: "Docs",
       blurb: "Collaborative scripts, lyrics, treatments.",
       icon: <FileText className="h-5 w-5" />,
-      action: () => toast.info("Docs is shipping next."),
-      soon: true,
+      action: () =>
+        router.navigate({ to: "/workshops/$slug/tools/$tool", params: { slug, tool: "docs" } }),
     },
     {
       key: "drive",
       title: "Drive",
       blurb: "Pass files back and forth + paste cloud links.",
       icon: <FolderOpen className="h-5 w-5" />,
-      action: () => toast.info("Drive is shipping next."),
-      soon: true,
+      action: () =>
+        router.navigate({ to: "/workshops/$slug/tools/$tool", params: { slug, tool: "drive" } }),
     },
     {
       key: "tasks",
       title: "Tasks",
       blurb: "Lightweight checklist to actually ship.",
       icon: <ListChecks className="h-5 w-5" />,
-      action: () => toast.info("Tasks is shipping next."),
-      soon: true,
+      action: () =>
+        router.navigate({ to: "/workshops/$slug/tools/$tool", params: { slug, tool: "tasks" } }),
     },
   ];
 
