@@ -308,14 +308,13 @@ async function clearStudio(workshopId: string) {
     "workshop_drive_links",
     "workshop_tasks",
     "workshop_board_assets",
-    "workshop_poll_votes",
-    "workshop_polls",
+    "workshop_polls", // cascades to workshop_poll_votes
     "workshop_messages",
-  ] as const;
+  ];
   for (const t of tables) {
-    await supabaseAdmin.from(t).delete().eq("workshop_id", workshopId).then(
-      () => null,
-      () => null,
-    );
+    await (supabaseAdmin.from(t as any) as any)
+      .delete()
+      .eq("workshop_id", workshopId)
+      .then(() => null, () => null);
   }
 }
