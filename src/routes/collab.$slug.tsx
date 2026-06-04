@@ -124,23 +124,22 @@ function CollabDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const applyFn = useServerFn(applyToCollab);
   const sendContact = useMutation({
     mutationFn: async () => {
       if (!user || !post) throw new Error("Sign in to contact");
-      const { error } = await supabase.from("collab_contact_events").insert({
-        collab_post_id: post.id,
-        collab_role_id: contactRoleId,
-        sender_user_id: user.id,
-        message_preview: message.slice(0, 280),
-      });
-      if (error) throw error;
+      if (message.trim().length < 10) throw new Error("Please add at least a short note (10+ chars).");
+      return applyFn({ data: { collabPostId: post.id, collabRoleId: contactRoleId, message: message.trim() } });
     },
-    onSuccess: () => {
-      toast.success("Interest sent — the host will see this");
+    onSuccess: ({ conversationId }) => {
+      toast.success("Sent — continue the conversation", {
+        action: { label: "Open DM", onClick: () => router.navigate({ to: "/dms/$conversationId", params: { conversationId } }) },
+      });
       setContactOpen(false); setMessage(""); setContactRoleId(null);
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const deletePost = useMutation({
     mutationFn: async () => {
