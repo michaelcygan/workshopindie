@@ -189,7 +189,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
         onOpenChange(false);
         onPosted?.();
         toast.success("Workshop is live");
-        navigate({ to: "/instant/$id", params: { id: roomId } });
+        navigate({ to: "/workshop/$id", params: { id: roomId } });
         return;
       } catch (err) {
         setSubmitting(false);

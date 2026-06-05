@@ -90,7 +90,7 @@ function WorkshopsPage() {
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Workshops</h1>
-          <p className="mt-1 text-ink-muted">Scheduled Workshops you can RSVP to. Or skip the wait — <Link to="/instant" className="underline hover:text-ink">drop in</Link>.</p>
+          <p className="mt-1 text-ink-muted">Scheduled Workshops you can RSVP to. Or skip the wait — <Link to="/workshop" className="underline hover:text-ink">drop in</Link>.</p>
         </div>
         <Link to="/workshops/new">
           <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>

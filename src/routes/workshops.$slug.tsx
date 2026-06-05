@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { WorkshopProgressBar } from "@/components/workshop-progress-bar";
 import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
@@ -60,6 +61,7 @@ type Workshop = {
   status: string; host_user_id: string; visibility: string;
   min_age: number | null; max_age: number | null;
   check_in_opens_at: string | null; check_in_closes_at: string | null;
+  topic_collab_post_id: string | null; published_work_id: string | null;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
@@ -164,6 +166,15 @@ function WorkshopDetail() {
           </Link>
         )}
       </motion.div>
+
+      <WorkshopProgressBar
+        workshopId={ws.id}
+        workshopSlug={ws.slug}
+        topicCollabPostId={ws.topic_collab_post_id}
+        publishedWorkId={ws.published_work_id}
+        isHost={isHost}
+      />
+
 
       {ws.venue_lat != null && ws.venue_lng != null && (
         <section className="mt-8 max-w-md">

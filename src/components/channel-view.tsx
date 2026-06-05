@@ -107,7 +107,7 @@ export function ChannelView({
   useEffect(() => {
     if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
       toast.error(media.error);
-      router.navigate({ to: "/instant" });
+      router.navigate({ to: "/workshop" });
     }
   }, [media.error, media.joined, media.busy, router]);
 
@@ -148,7 +148,7 @@ export function ChannelView({
       if (inactive) {
         toast.error("Dropped from the Workshop — you went quiet.");
         media.leave();
-        router.navigate({ to: "/instant" });
+        router.navigate({ to: "/workshop" });
       }
     }, QUIET_KICK_MS);
     return () => clearTimeout(kickT);
@@ -240,11 +240,11 @@ export function ChannelView({
       media.leave();
       const { roomId: newId } = await dropNew();
       setEndedOpen(false);
-      router.navigate({ to: "/instant/$id", params: { id: newId }, search: { mode: nextMode } });
+      router.navigate({ to: "/workshop/$id", params: { id: newId }, search: { mode: nextMode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't find a new Workshop");
       setJoiningNew(false);
-      router.navigate({ to: "/instant" });
+      router.navigate({ to: "/workshop" });
     }
   }
 
