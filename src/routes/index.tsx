@@ -94,7 +94,7 @@ function Hero() {
           className="mx-auto mt-10 grid max-w-3xl gap-4 md:grid-cols-2"
         >
           <Link
-            to="/instant"
+            to="/workshop"
             className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">

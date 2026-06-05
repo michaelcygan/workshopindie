@@ -578,7 +578,7 @@ function NewCollab() {
                 onClick={() => {
                   const id = postedDialog.workshopRoomId!;
                   setPostedDialog(null);
-                  navigate({ to: "/instant/$id", params: { id } });
+                  navigate({ to: "/workshop/$id", params: { id } });
                 }}
               >
                 Join your Workshop

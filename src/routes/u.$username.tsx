@@ -499,7 +499,7 @@ function ProfilePage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
-            <Link to="/instant"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
+            <Link to="/workshop"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
           </div>
         )}
 
@@ -831,7 +831,7 @@ function WorkshopsTab({ items, isLoading, ownerName, isOwn }: { items: WorkshopR
         <p className="text-ink-muted">{isOwn ? "No Workshops yet. Drop into a live one or schedule your own." : `${ownerName} hasn't hosted or joined a Workshop yet.`}</p>
         {isOwn && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Link to="/instant"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+            <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
             <Link to="/workshops/new"><Button variant="outline" className="rounded-full">Schedule a Workshop</Button></Link>
           </div>
         )}
@@ -1089,7 +1089,7 @@ function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRo
         <p className="text-ink-muted">No Workshop activity yet. Apply to a Collab or drop into a live Workshop.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <Link to="/collab"><Button variant="outline" className="rounded-full">Browse Collabs</Button></Link>
-          <Link to="/instant"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
         </div>
       </div>
     );

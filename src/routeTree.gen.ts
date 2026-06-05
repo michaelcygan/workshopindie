@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
+import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -18,7 +19,6 @@ import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as InstantRouteImport } from './routes/instant'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollabRouteImport } from './routes/collab'
@@ -26,14 +26,15 @@ import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
-import { Route as InstantIndexRouteImport } from './routes/instant.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
+import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
@@ -41,7 +42,6 @@ import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
-import { Route as InstantIdRouteImport } from './routes/instant.$id'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
@@ -60,6 +60,11 @@ import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/publi
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
   path: '/workshops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopRoute = WorkshopRouteImport.update({
+  id: '/workshop',
+  path: '/workshop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -102,11 +107,6 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InstantRoute = InstantRouteImport.update({
-  id: '/instant',
-  path: '/instant',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
@@ -142,15 +142,15 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkshopsRoute,
 } as any)
+const WorkshopIndexRoute = WorkshopIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkshopRoute,
+} as any)
 const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const InstantIndexRoute = InstantIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => InstantRoute,
 } as any)
 const DmsIndexRoute = DmsIndexRouteImport.update({
   id: '/dms/',
@@ -181,6 +181,11 @@ const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => WorkshopsRoute,
+} as any)
+const WorkshopIdRoute = WorkshopIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => WorkshopRoute,
 } as any)
 const WorksNewRoute = WorksNewRouteImport.update({
   id: '/works/new',
@@ -216,11 +221,6 @@ const MeBlockedRoute = MeBlockedRouteImport.update({
   id: '/me/blocked',
   path: '/me/blocked',
   getParentRoute: () => rootRouteImport,
-} as any)
-const InstantIdRoute = InstantIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => InstantRoute,
 } as any)
 const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
   id: '/dms/$conversationId',
@@ -301,7 +301,6 @@ export interface FileRoutesByFullPath {
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
-  '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -310,6 +309,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
   '/checkout/return': typeof CheckoutReturnRoute
@@ -317,7 +317,6 @@ export interface FileRoutesByFullPath {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -325,14 +324,15 @@ export interface FileRoutesByFullPath {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
-  '/instant/': typeof InstantIndexRoute
   '/me/': typeof MeIndexRoute
+  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -361,7 +361,6 @@ export interface FileRoutesByTo {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -369,14 +368,15 @@ export interface FileRoutesByTo {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
-  '/instant': typeof InstantIndexRoute
   '/me': typeof MeIndexRoute
+  '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -395,7 +395,6 @@ export interface FileRoutesById {
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
-  '/instant': typeof InstantRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -404,6 +403,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
   '/checkout/return': typeof CheckoutReturnRoute
@@ -411,7 +411,6 @@ export interface FileRoutesById {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/instant/$id': typeof InstantIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -419,14 +418,15 @@ export interface FileRoutesById {
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
-  '/instant/': typeof InstantIndexRoute
   '/me/': typeof MeIndexRoute
+  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
@@ -446,7 +446,6 @@ export interface FileRouteTypes {
     | '/collab'
     | '/forgot-password'
     | '/gallery'
-    | '/instant'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -455,6 +454,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/workshop'
     | '/workshops'
     | '/admin/badges'
     | '/checkout/return'
@@ -462,7 +462,6 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
-    | '/instant/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -470,14 +469,15 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
-    | '/instant/'
     | '/me/'
+    | '/workshop/'
     | '/workshops/'
     | '/collab/claim/$token'
     | '/works/collab/new'
@@ -506,7 +506,6 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
-    | '/instant/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -514,14 +513,15 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
     | '/cities'
     | '/collab'
     | '/dms'
-    | '/instant'
     | '/me'
+    | '/workshop'
     | '/workshops'
     | '/collab/claim/$token'
     | '/works/collab/new'
@@ -539,7 +539,6 @@ export interface FileRouteTypes {
     | '/collab'
     | '/forgot-password'
     | '/gallery'
-    | '/instant'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -548,6 +547,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/workshop'
     | '/workshops'
     | '/admin/badges'
     | '/checkout/return'
@@ -555,7 +555,6 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
-    | '/instant/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -563,14 +562,15 @@ export interface FileRouteTypes {
     | '/u/$username'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
-    | '/instant/'
     | '/me/'
+    | '/workshop/'
     | '/workshops/'
     | '/collab/claim/$token'
     | '/works/collab/new'
@@ -589,7 +589,6 @@ export interface RootRouteChildren {
   CollabRoute: typeof CollabRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GalleryRoute: typeof GalleryRoute
-  InstantRoute: typeof InstantRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
@@ -598,6 +597,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  WorkshopRoute: typeof WorkshopRouteWithChildren
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -623,6 +623,13 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof WorkshopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workshop': {
+      id: '/workshop'
+      path: '/workshop'
+      fullPath: '/workshop'
+      preLoaderRoute: typeof WorkshopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -681,13 +688,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/instant': {
-      id: '/instant'
-      path: '/instant'
-      fullPath: '/instant'
-      preLoaderRoute: typeof InstantRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/gallery': {
       id: '/gallery'
       path: '/gallery'
@@ -737,19 +737,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
     }
+    '/workshop/': {
+      id: '/workshop/'
+      path: '/'
+      fullPath: '/workshop/'
+      preLoaderRoute: typeof WorkshopIndexRouteImport
+      parentRoute: typeof WorkshopRoute
+    }
     '/me/': {
       id: '/me/'
       path: '/me'
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/instant/': {
-      id: '/instant/'
-      path: '/'
-      fullPath: '/instant/'
-      preLoaderRoute: typeof InstantIndexRouteImport
-      parentRoute: typeof InstantRoute
     }
     '/dms/': {
       id: '/dms/'
@@ -792,6 +792,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/$slug'
       preLoaderRoute: typeof WorkshopsSlugRouteImport
       parentRoute: typeof WorkshopsRoute
+    }
+    '/workshop/$id': {
+      id: '/workshop/$id'
+      path: '/$id'
+      fullPath: '/workshop/$id'
+      preLoaderRoute: typeof WorkshopIdRouteImport
+      parentRoute: typeof WorkshopRoute
     }
     '/works/new': {
       id: '/works/new'
@@ -841,13 +848,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/blocked'
       preLoaderRoute: typeof MeBlockedRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/instant/$id': {
-      id: '/instant/$id'
-      path: '/$id'
-      fullPath: '/instant/$id'
-      preLoaderRoute: typeof InstantIdRouteImport
-      parentRoute: typeof InstantRoute
     }
     '/dms/$conversationId': {
       id: '/dms/$conversationId'
@@ -992,18 +992,19 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
-interface InstantRouteChildren {
-  InstantIdRoute: typeof InstantIdRoute
-  InstantIndexRoute: typeof InstantIndexRoute
+interface WorkshopRouteChildren {
+  WorkshopIdRoute: typeof WorkshopIdRoute
+  WorkshopIndexRoute: typeof WorkshopIndexRoute
 }
 
-const InstantRouteChildren: InstantRouteChildren = {
-  InstantIdRoute: InstantIdRoute,
-  InstantIndexRoute: InstantIndexRoute,
+const WorkshopRouteChildren: WorkshopRouteChildren = {
+  WorkshopIdRoute: WorkshopIdRoute,
+  WorkshopIndexRoute: WorkshopIndexRoute,
 }
 
-const InstantRouteWithChildren =
-  InstantRoute._addFileChildren(InstantRouteChildren)
+const WorkshopRouteWithChildren = WorkshopRoute._addFileChildren(
+  WorkshopRouteChildren,
+)
 
 interface WorkshopsSlugToolsRouteChildren {
   WorkshopsSlugToolsToolRoute: typeof WorkshopsSlugToolsToolRoute
@@ -1053,7 +1054,6 @@ const rootRouteChildren: RootRouteChildren = {
   CollabRoute: CollabRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   GalleryRoute: GalleryRoute,
-  InstantRoute: InstantRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
@@ -1062,6 +1062,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  WorkshopRoute: WorkshopRouteWithChildren,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
@@ -1082,3 +1083,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

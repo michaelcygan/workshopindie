@@ -86,10 +86,10 @@ function InstantPreflight() {
       if (!mode) { setBusy(false); return; }
       if (selectedMedium) {
         const { roomId } = await dropMedium({ data: { medium: selectedMedium } });
-        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+        router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
       } else {
         const { roomId } = await drop();
-        router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+        router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
       }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't drop in");
@@ -105,7 +105,7 @@ function InstantPreflight() {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(false); return; }
       const { roomId } = await dropMedium({ data: { medium } });
-      router.navigate({ to: "/instant/$id", params: { id: roomId }, search: { mode } });
+      router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open that Workshop");
       setBusy(false);

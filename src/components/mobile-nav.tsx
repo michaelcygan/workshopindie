@@ -24,7 +24,7 @@ export function MobileNav() {
   return (
     <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3 md:hidden">
       <div className="flex w-full max-w-md items-stretch gap-0.5 rounded-full border border-border/70 bg-background/90 px-2 py-1.5 shadow-lg backdrop-blur-md">
-        <Link to="/instant" className={tabBase} activeProps={{ className: tabActive }}>
+        <Link to="/workshop" className={tabBase} activeProps={{ className: tabActive }}>
           <Radio className="h-[18px] w-[18px]" />
           <span>Workshop</span>
         </Link>
