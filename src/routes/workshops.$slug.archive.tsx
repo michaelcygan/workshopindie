@@ -57,9 +57,31 @@ function ArchivePage() {
 
   const archived = !!data?.archived_at;
   const archiveAt = data?.archive_at ? new Date(data.archive_at) : null;
-  const daysLeft = archiveAt
-    ? Math.max(0, Math.ceil((archiveAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+  const lastActivity = (data as any)?.last_activity_at
+    ? new Date((data as any).last_activity_at)
     : null;
+  const msLeft = archiveAt ? Math.max(0, archiveAt.getTime() - Date.now()) : null;
+  const hoursLeft = msLeft !== null ? Math.ceil(msLeft / (60 * 60 * 1000)) : null;
+  const daysLeft = msLeft !== null ? Math.ceil(msLeft / (24 * 60 * 60 * 1000)) : null;
+  const urgent = msLeft !== null && msLeft <= 24 * 60 * 60 * 1000;
+  const countdown =
+    msLeft === null
+      ? null
+      : hoursLeft! <= 48
+      ? `${hoursLeft} hour${hoursLeft === 1 ? "" : "s"}`
+      : `${daysLeft} day${daysLeft === 1 ? "" : "s"}`;
+  const fmtDate = (d: Date) =>
+    d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const fmtRelative = (d: Date) => {
+    const diff = Date.now() - d.getTime();
+    const mins = Math.round(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} min ago`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+    const days = Math.round(hrs / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  };
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
@@ -101,11 +123,31 @@ function ArchivePage() {
           </div>
         ) : (
           <div className="mt-6 space-y-4">
-            {daysLeft !== null && (
-              <div className="flex items-center gap-2 rounded-2xl border border-border bg-surface-2 p-4 text-sm text-ink">
-                <Clock className="h-4 w-4 text-ink-muted" />
-                Studio clears in <span className="font-medium">{daysLeft}</span> day
-                {daysLeft === 1 ? "" : "s"}. Generate an archive now to keep everything.
+            {archiveAt && (
+              <div
+                className={
+                  "rounded-2xl border p-4 text-sm " +
+                  (urgent
+                    ? "border-destructive/40 bg-destructive/5 text-ink"
+                    : "border-border bg-surface-2 text-ink")
+                }
+              >
+                <div className="flex items-center gap-2">
+                  <Clock className={"h-4 w-4 " + (urgent ? "text-destructive" : "text-ink-muted")} />
+                  <span>
+                    Auto-clears in <span className="font-medium">{countdown}</span>
+                    <span className="text-ink-muted"> ({fmtDate(archiveAt)})</span>
+                  </span>
+                </div>
+                {lastActivity && (
+                  <p className="mt-1.5 pl-6 text-xs text-ink-muted">
+                    Last activity {fmtRelative(lastActivity)}. Any new doc, task,
+                    file, poll, or chat message resets the 30-day clock.
+                  </p>
+                )}
+                <p className="mt-1 pl-6 text-[11px] text-ink-muted">
+                  Reminders go out 7 days, 3 days, 24 hours, and 6 hours before clearing.
+                </p>
               </div>
             )}
             <div className="flex flex-wrap gap-3">

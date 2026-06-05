@@ -3034,6 +3034,10 @@ export type Database = {
           acting_leader_user_id: string | null
           application_count: number
           archive_at: string | null
+          archive_notified_24h_at: string | null
+          archive_notified_3d_at: string | null
+          archive_notified_6h_at: string | null
+          archive_notified_7d_at: string | null
           archive_zip_url: string | null
           archived_at: string | null
           audience_city_ids: string[]
@@ -3051,6 +3055,7 @@ export type Database = {
           host_user_id: string
           id: string
           is_pinned: boolean
+          last_activity_at: string
           license_type: Database["public"]["Enums"]["work_license"]
           location_text: string | null
           location_type: Database["public"]["Enums"]["location_type"]
@@ -3080,6 +3085,10 @@ export type Database = {
           acting_leader_user_id?: string | null
           application_count?: number
           archive_at?: string | null
+          archive_notified_24h_at?: string | null
+          archive_notified_3d_at?: string | null
+          archive_notified_6h_at?: string | null
+          archive_notified_7d_at?: string | null
           archive_zip_url?: string | null
           archived_at?: string | null
           audience_city_ids?: string[]
@@ -3097,6 +3106,7 @@ export type Database = {
           host_user_id: string
           id?: string
           is_pinned?: boolean
+          last_activity_at?: string
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
@@ -3126,6 +3136,10 @@ export type Database = {
           acting_leader_user_id?: string | null
           application_count?: number
           archive_at?: string | null
+          archive_notified_24h_at?: string | null
+          archive_notified_3d_at?: string | null
+          archive_notified_6h_at?: string | null
+          archive_notified_7d_at?: string | null
           archive_zip_url?: string | null
           archived_at?: string | null
           audience_city_ids?: string[]
@@ -3143,6 +3157,7 @@ export type Database = {
           host_user_id?: string
           id?: string
           is_pinned?: boolean
+          last_activity_at?: string
           license_type?: Database["public"]["Enums"]["work_license"]
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
