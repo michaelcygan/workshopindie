@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Workshop";
 
-export const Route = createFileRoute("/instant/$id")({
+export const Route = createFileRoute("/workshop/$id")({
   component: LoungeRoomPage,
   validateSearch: searchSchema,
   head: () => ({

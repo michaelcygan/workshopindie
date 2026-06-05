@@ -11,7 +11,7 @@ import { WorkshopStrip } from "@/components/workshop-strip";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/instant/")({
+export const Route = createFileRoute("/workshop/")({
   component: InstantPreflight,
   head: () => ({
     meta: [
