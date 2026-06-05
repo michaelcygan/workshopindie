@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { WorkshopProgressBar } from "@/components/workshop-progress-bar";
 import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
