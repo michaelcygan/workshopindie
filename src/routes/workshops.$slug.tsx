@@ -497,7 +497,6 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
     await supabase.from("workshops").update({
       status: "shipped",
       published_work_id: work.id,
-      archive_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     }).eq("id", ws.id);
 
     setSubmitting(false);
