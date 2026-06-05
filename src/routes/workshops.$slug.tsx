@@ -60,6 +60,7 @@ type Workshop = {
   status: string; host_user_id: string; visibility: string;
   min_age: number | null; max_age: number | null;
   check_in_opens_at: string | null; check_in_closes_at: string | null;
+  topic_collab_post_id: string | null; published_work_id: string | null;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
