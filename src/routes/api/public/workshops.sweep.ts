@@ -168,61 +168,64 @@ async function runNoShowPass() {
 }
 
 /**
- * Retention pass — after a Work is published from a Workshop, archive_at is
- * set to publish + 30 days. We send members a heads-up 7 days out, another
- * on the day of, then hard-delete studio data once archive_at passes.
+ * Retention pass — Workshop studios auto-clear after 30 days of inactivity.
+ * `last_activity_at` and `archive_at` are maintained by triggers on every
+ * studio write. We send heads-ups at 7d, 3d, 24h, and 6h before archive_at,
+ * then hard-delete the studio once archive_at passes.
+ *
+ * If members come back and write something, the trigger resets archive_at
+ * AND clears the four notified flags, so the reminder ladder fires again
+ * next time the studio goes quiet.
  */
 async function runRetentionPass() {
   const now = new Date();
   const nowMs = now.getTime();
-  const in7d = new Date(nowMs + 7 * 24 * 60 * 60 * 1000).toISOString();
-  const in1d = new Date(nowMs + 1 * 24 * 60 * 60 * 1000).toISOString();
   const nowIso = now.toISOString();
 
-  // 7-day warning
-  const { data: warn7 } = await supabaseAdmin
-    .from("workshops")
-    .select("id,slug,title,archive_at")
-    .not("archive_at", "is", null)
-    .is("archived_at", null)
-    .is("archive_notified_7d_at", null)
-    .lte("archive_at", in7d)
-    .gt("archive_at", nowIso)
-    .limit(50);
+  // Order matters: fire shortest window LAST so a workshop crossing multiple
+  // thresholds in one sweep still ends with the closest reminder stamped.
+  const windows: Array<{
+    flag:
+      | "archive_notified_7d_at"
+      | "archive_notified_3d_at"
+      | "archive_notified_24h_at"
+      | "archive_notified_6h_at";
+    kind: string;
+    untilMs: number;
+  }> = [
+    { flag: "archive_notified_7d_at", kind: "workshop_archive_7d", untilMs: 7 * 24 * 60 * 60 * 1000 },
+    { flag: "archive_notified_3d_at", kind: "workshop_archive_3d", untilMs: 3 * 24 * 60 * 60 * 1000 },
+    { flag: "archive_notified_24h_at", kind: "workshop_archive_24h", untilMs: 24 * 60 * 60 * 1000 },
+    { flag: "archive_notified_6h_at", kind: "workshop_archive_6h", untilMs: 6 * 60 * 60 * 1000 },
+  ];
 
-  for (const ws of warn7 ?? []) {
-    await notifyMembers(ws.id, "workshop_archive_7d", {
-      title: ws.title,
-      slug: ws.slug,
-      archive_at: ws.archive_at,
-    });
-    await supabaseAdmin
+  const warned: Record<string, number> = {};
+
+  for (const w of windows) {
+    const upper = new Date(nowMs + w.untilMs).toISOString();
+    const { data: rows } = await supabaseAdmin
       .from("workshops")
-      .update({ archive_notified_7d_at: nowIso } as any)
-      .eq("id", ws.id);
-  }
+      .select("id,slug,title,archive_at,last_activity_at")
+      .not("archive_at", "is", null)
+      .is("archived_at", null)
+      .is(w.flag, null)
+      .lte("archive_at", upper)
+      .gt("archive_at", nowIso)
+      .limit(50);
 
-  // Day-of warning
-  const { data: warn0 } = await supabaseAdmin
-    .from("workshops")
-    .select("id,slug,title,archive_at")
-    .not("archive_at", "is", null)
-    .is("archived_at", null)
-    .is("archive_notified_0d_at", null)
-    .lte("archive_at", in1d)
-    .gt("archive_at", nowIso)
-    .limit(50);
-
-  for (const ws of warn0 ?? []) {
-    await notifyMembers(ws.id, "workshop_archive_today", {
-      title: ws.title,
-      slug: ws.slug,
-      archive_at: ws.archive_at,
-    });
-    await supabaseAdmin
-      .from("workshops")
-      .update({ archive_notified_0d_at: nowIso } as any)
-      .eq("id", ws.id);
+    for (const ws of rows ?? []) {
+      await notifyMembers(ws.id, w.kind, {
+        title: ws.title,
+        slug: ws.slug,
+        archive_at: (ws as any).archive_at,
+        last_activity_at: (ws as any).last_activity_at,
+      });
+      await supabaseAdmin
+        .from("workshops")
+        .update({ [w.flag]: nowIso } as any)
+        .eq("id", ws.id);
+    }
+    warned[w.flag] = (rows ?? []).length;
   }
 
   // Time to clear the studio
@@ -246,8 +249,10 @@ async function runRetentionPass() {
   }
 
   return {
-    warned_7d: (warn7 ?? []).length,
-    warned_0d: (warn0 ?? []).length,
+    warned_7d: warned.archive_notified_7d_at ?? 0,
+    warned_3d: warned.archive_notified_3d_at ?? 0,
+    warned_24h: warned.archive_notified_24h_at ?? 0,
+    warned_6h: warned.archive_notified_6h_at ?? 0,
     cleared: cleared.length,
   };
 }
