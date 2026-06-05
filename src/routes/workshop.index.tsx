@@ -30,9 +30,9 @@ function WorkshopPreflight() {
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
-  const [dropMedium_, setDropMedium] = useState<Category | null>(null);
+  const [selectedDropMedium, setDropMedium] = useState<Category | null>(null);
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
-  const dropLabel = dropMedium_ ? CATEGORIES.find((c) => c.id === dropMedium_)?.label ?? null : null;
+  const dropLabel = selectedDropMedium ? CATEGORIES.find((c) => c.id === selectedDropMedium)?.label ?? null : null;
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
   useEffect(() => {
@@ -87,8 +87,8 @@ function WorkshopPreflight() {
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(null); return; }
-      const { roomId } = dropMedium_
-        ? await dropMedium({ data: { medium: dropMedium_ } })
+      const { roomId } = selectedDropMedium
+        ? await dropMedium({ data: { medium: selectedDropMedium } })
         : await drop();
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
@@ -113,7 +113,7 @@ function WorkshopPreflight() {
 
   async function handleJoinNow(medium: Category) {
     if (busy || !canDrop) return;
-    setDropMedium(medium);
+    setSelectedDropMedium(medium);
     setBusy("drop");
     try {
       const mode = await preGrantMedia();
@@ -184,7 +184,7 @@ function WorkshopPreflight() {
           <p className="mt-2 text-sm text-ink-soft">Matchmaker drops you into the fullest Workshop with a seat open. Leaderless, focused.</p>
           <div className="mt-4">
             <LoungeForkDropdown
-              selectedMedium={dropMedium_}
+              selectedMedium={selectedDropMedium}
               onSelectMedium={setDropMedium}
               onJoinNow={handleJoinNow}
               onLiveCountChange={setLiveCount}
