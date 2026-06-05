@@ -167,6 +167,15 @@ function WorkshopDetail() {
         )}
       </motion.div>
 
+      <WorkshopProgressBar
+        workshopId={ws.id}
+        workshopSlug={ws.slug}
+        topicCollabPostId={ws.topic_collab_post_id}
+        publishedWorkId={ws.published_work_id}
+        isHost={isHost}
+      />
+
+
       {ws.venue_lat != null && ws.venue_lng != null && (
         <section className="mt-8 max-w-md">
           <h2 className="font-display text-lg text-ink">Where</h2>
