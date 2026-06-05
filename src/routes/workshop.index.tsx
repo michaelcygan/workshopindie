@@ -30,7 +30,7 @@ function WorkshopPreflight() {
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
-  const [selectedDropMedium, setDropMedium] = useState<Category | null>(null);
+  const [selectedDropMedium, setSelectedDropMedium] = useState<Category | null>(null);
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
   const dropLabel = selectedDropMedium ? CATEGORIES.find((c) => c.id === selectedDropMedium)?.label ?? null : null;
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
