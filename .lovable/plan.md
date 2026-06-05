@@ -1,56 +1,112 @@
-## Goal
 
-Replace the fixed "publish + 30 days" archival timer with a **rolling 30-day inactivity** window so long-running Workshops never get auto-archived as long as the team is still moving.
+# Workshop flow audit & unify
 
-## Behavior
+One Workshop primitive. Two ways in (drop into a seat, or host your own). One studio (chat + tools). One promotion path (Create a Collab → publish a Work → Gallery), available to whoever takes initiative.
 
-- `archive_at` always = `last_activity_at + 30 days`.
-- **Activity** (resets the clock) = any studio write (docs, tasks, drive files/links, board assets, polls, votes) **or** a new chat message in the Workshop.
-- Clock is **always rolling** — applies whether or not the Workshop has been published.
-- Members are reminded **7 days, 3 days, 24 hours, and 6 hours** before archival, plus a final "archived" notice. Reminders reset if activity resumes.
-- The Workshop UI surfaces the rule clearly so it never feels like a surprise countdown.
+## 1. Route rename — hard cutover `/instant` → `/workshop`
 
-## Database
+- Rename: `src/routes/instant.tsx` → `workshop.tsx`, `instant.index.tsx` → `workshop.index.tsx`, `instant.$id.tsx` → `workshop.$id.tsx`.
+- Update every internal reference: `top-nav`, `mobile-nav`, `instant.functions.ts` callers, `instant-activity-ticker`, `workshop-strip`, `lounge-fork-dropdown`, `welcome-tour`, home CTAs, etc. (full grep at implementation time).
+- No redirects, no shims. Old `/instant/*` URLs 404 by design.
+- `/workshops/$slug` (plural, slug) stays as-is for persistent workshops. New singular `/workshop/$id` is the ephemeral live-room surface.
 
-New migration:
+## 2. `/workshop` index — clean Drop in vs Host split
 
-- Add `workshops.last_activity_at timestamptz` (default `now()`, backfill = `greatest(created_at, updated_at)`).
-- Replace `archive_notified_7d_at` / `archive_notified_0d_at` with four nullable timestamps: `archive_notified_7d_at`, `archive_notified_3d_at`, `archive_notified_24h_at`, `archive_notified_6h_at`. Keep old columns if present, just stop using them.
-- Drop the publish-time `archive_at = publish + 30d` write (we'll compute it from activity instead). Keep `archive_at` as a stored column so existing queries still work — it's just maintained by a trigger now.
-- Trigger `tg_touch_workshop_activity()` on insert/update of:
-  `workshop_docs`, `workshop_tasks`, `workshop_drive_files`, `workshop_drive_links`, `workshop_board_assets`, `workshop_polls`, `workshop_poll_votes`, `workshop_messages`.
-  Sets `workshops.last_activity_at = now()`, recomputes `archive_at = now() + interval '30 days'`, and **clears all four `archive_notified_*_at` flags** so reminders re-fire if the studio later goes quiet again.
-- Skip the trigger when `archived_at IS NOT NULL` (don't resurrect cleared studios).
-
-## Sweep route (`src/routes/api/public/workshops.sweep.ts`)
-
-Rewrite `runRetentionPass()` to handle four reminder windows instead of two:
+Replace the current page with two equally-weighted entry cards at the top:
 
 ```text
-window      threshold                   kind
-7d          archive_at ≤ now + 7d       workshop_archive_7d
-3d          archive_at ≤ now + 3d       workshop_archive_3d
-24h         archive_at ≤ now + 24h      workshop_archive_24h
-6h          archive_at ≤ now + 6h       workshop_archive_6h
-due         archive_at ≤ now            workshop_archived  (then clearStudio)
+┌──────────────────────────┐  ┌──────────────────────────┐
+│  Drop in                 │  │  Host a Workshop         │
+│  Take a seat in a live   │  │  Spin up your own room.  │
+│  one. (3 live now)       │  │  You hold host controls. │
+│  [medium picker]         │  │  [medium picker]         │
+│  [Drop in →]             │  │  [Open my room →]        │
+└──────────────────────────┘  └──────────────────────────┘
 ```
 
-For each window: select workshops where the matching `archive_notified_*_at` is null and `archive_at` is inside that window, notify members, stamp the flag. Order matters — fire shorter windows last so a workshop crossing multiple thresholds in one sweep still gets the closer warning.
+- **Drop in** card: existing matchmaker (`joinLounge` / `joinMediumLounge` + `LoungeForkDropdown`).
+- **Host** card: new server fn `hostInstantWorkshop({ medium?, title? })` in `src/lib/instant.functions.ts`. Creates an `instant_rooms` row with `host_user_id = caller`, default title "{Display Name}'s Workshop", cap 5. Returns `{ roomId }`.
+- Remove the broken "Host a focused session — open a Workshop on a Collab" pill.
+- Shared mic/camera ready row above both cards.
+- `WorkshopStrip` (upcoming scheduled context) stays below.
 
-## App changes
+## 3. `/workshop/$id` — make it a real studio
 
-- `src/routes/workshops.$slug.tsx`: drop the "set archive_at on publish" logic. Update the Shipped banner copy from "auto-cleans in 30 days" to "auto-cleans after 30 days of inactivity — any new doc, task, file, or chat resets the clock."
-- `src/routes/workshops.$slug.archive.tsx`:
-  - Replace the "Studio clears in N days" line with a clearer panel:
-    - **Last activity:** {relative time}
-    - **Auto-clears:** {date} ({N days/hours} from now) unless someone writes in the studio or sends a message
-    - Reminder schedule (7d / 3d / 24h / 6h) listed as small print
-  - When `< 24h` left, switch the chip styling to a warning tone.
-- `src/lib/workshop-archive.functions.ts`: extend `getWorkshopArchiveUrl` to also return `last_activity_at` so the archive page can render it.
-- Notification rendering: add display strings for the new `workshop_archive_3d`, `workshop_archive_24h`, `workshop_archive_6h` kinds wherever workshop notification kinds are formatted (search `workshop_archive_7d` for the existing site).
+The drop-in room currently only shows `ChannelView`. Bring the studio in:
+
+- Migration: add `instant_rooms.host_user_id uuid null`, `promoted_at timestamptz null`, `source_collab_id uuid null`, `source_workshop_id uuid null`. Add `workshops.source_instant_room_id uuid null`. Hostless lounges keep `host_user_id = null`.
+- New tables (mirrors of `workshop_tools` / `workshop_tool_items`, scoped to `instant_rooms`): `instant_tools`, `instant_tool_items`. Full GRANTs + RLS scoped via `is_room_member(room_id, auth.uid())` (function already exists).
+- Surface in the room page:
+  - `ChannelView` at top (video + chat).
+  - Below it, a `RoomStudio` panel with the existing tool components, reused, pointed at `instant_*` tables: `WorkshopToolsPanel` (generalized), `ChatPolls` (already lounge-aware), `room-board`.
+- Header: title + "Host" badge if `user.id === room.host_user_id`. Otherwise "Leaderless lounge".
+
+### Ephemerality rule
+
+Everything in `/workshop/$id` is wiped 24h after last presence — extend `src/routes/api/public/workshops.sweep.ts` to also wipe `instant_tool_items`, `instant_whiteboard_assets`, `instant_board_items` for expired rooms. Triggers on writes to any of these reset `instant_rooms.last_activity_at`.
+
+**Exception**: once `promoted_at` is set (step 4), the room is persistent — ephemerality stops, and it now mirrors `/workshops/$slug` retention (rolling 30d inactivity).
+
+## 4. "Create a Collab" — available to anyone with initiative
+
+Visible to:
+- The host (if hosted), OR
+- **any present participant of a hostless lounge** (any current `instant_presence` row).
+
+Same button in both cases. Placement: top-right of the studio header next to share/exit. Label: **"Create a Collab"** with a `Rocket` icon.
+
+Click → confirm sheet with:
+- Title (defaults to room title, editable).
+- Short pitch textarea.
+- Roster preview = everyone currently present in the room. Caller is the "initiator". For hostless lounges, a short line: "You'll host this Collab. Everyone currently in the lounge will get a one-tap invite to join the persistent Workshop."
+
+Confirm → new server fn `createCollabFromRoom({ roomId, title, pitch })` in `src/lib/collab-workshop.functions.ts` (file already exists, extend):
+
+1. Authorize: caller is the host OR has a current `instant_presence` row for the room.
+2. Insert a `workshops` row (persistent, `mode='instant_spawned'`, `host_user_id = caller`, `source_instant_room_id = roomId`). DB trigger fills `slug`.
+3. Insert a `collab_posts` row (caller is owner), `live_workshop_id = workshop.id`. The existing `openWorkshopOnCollab` shape is the reference.
+4. Copy ephemeral content forward: `instant_tools` → `workshop_tools`, `instant_tool_items` → `workshop_tool_items`, `instant_board_items` → `workshop_board_assets`, `instant_messages` → `workshop_messages` (last 24h, optional — gives the persistent room a starting backlog).
+5. **Stamp the source room** `promoted_at = now()` and `source_workshop_id = workshop.id`. This stops the 24h sweep from clearing it and signals the UI to switch into "Promoted — opt in" mode.
+6. **Opt-in invites for the lounge crowd** (key piece): for every user with current `instant_presence` in the source room (excluding the initiator), insert a row into a new `workshop_join_invites` table (workshop_id, invitee_user_id, source_room_id, status='pending', created_at). Also fire a `workshop_invite_from_room` notification so they see it immediately.
+7. The initiator is auto-added as host + confirmed participant. **No one else is auto-added** — that's the "opt-in" guarantee.
+8. Return `{ workshopSlug, collabSlug }`. Client navigates to `/workshops/$slug` and toasts a link to the Collab.
+
+### Source-room UX after promotion
+
+When `promoted_at IS NOT NULL` on the room you're sitting in:
+- Banner replaces the "Create a Collab" button: **"This Workshop became a Collab → [Open persistent room]"**.
+- If you have a pending `workshop_join_invites` row: a one-tap **"Join the persistent Workshop"** button. Accepting inserts a `workshop_participants` row (`confirmed`) and navigates you there.
+- The 24h sweep still clears the old ephemeral room normally — the persistent Workshop is the canonical artifact going forward.
+
+This is the "save as" you described: the lounge keeps existing, ephemeral, until presence drops to zero; meanwhile a persistent fork lives at `/workshops/$slug` with everyone invited but no one forced in.
+
+## 5. Workshop → Collab → Work → Gallery breadcrumb
+
+Small `WorkshopProgressBar` component at the top of `/workshops/$slug`:
+
+```text
+Workshop  ──▶  Collab  ──▶  Work  ──▶  Gallery
+   ●           ●            ○           ○
+```
+
+Lit dots show what's been reached; the next dot is the current-stage CTA inline ("Publish the Work" → "View in Gallery"). Reuses existing `collab-publish` and `works.new` flows — no new logic, just visibility.
+
+## 6. Nav copy
+
+- Top-nav and mobile-nav: existing "Workshop" entry now points to `/workshop`.
+- Home page CTAs that pointed at `/instant` now point at `/workshop`.
+
+## Technical notes
+
+- Migration includes: new `instant_rooms` columns, new `workshops.source_instant_room_id`, new `instant_tools` + `instant_tool_items` tables (with GRANTs + RLS), new `workshop_join_invites` table (RLS: invitee can SELECT/UPDATE own row; initiator/host can SELECT all rows for their workshop).
+- New server fns in `src/lib/instant.functions.ts`: `hostInstantWorkshop`.
+- New / extended fns in `src/lib/collab-workshop.functions.ts`: `createCollabFromRoom`, `acceptWorkshopJoinInvite`.
+- Sweep extension lives in the existing `workshops.sweep.ts`.
+- No changes to chat, polls, rolling-30d inactivity semantics for persistent workshops, auth, or RLS on the `workshops` table itself.
 
 ## Out of scope
 
-- No change to chat, polls, or tools themselves — only the retention semantics.
-- No change to the actual studio cleanup logic (`clearStudio`) — only when it fires.
-- No change to the archive manifest format.
+- Recorder / screen-share polish.
+- Persistent Board (already on followup list).
+- Notification template overhaul beyond the new `workshop_invite_from_room` kind.
+- Changes to `/workshops/new` form — still works for fully scheduled planned sessions; Host on `/workshop` is the recommended path going forward.
