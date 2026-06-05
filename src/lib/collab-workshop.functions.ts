@@ -357,7 +357,7 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
         title,
         slug: "",
         category,
-        pitch: pitch || `Forked from a live Workshop: ${room.title}`,
+        description: pitch || `Forked from a live Workshop: ${room.title}`,
         live_workshop_id: ws.id,
         location_mode: "online",
         status: "open",
