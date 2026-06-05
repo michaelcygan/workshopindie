@@ -7,6 +7,60 @@ const MEDIUMS = ["film", "music", "writing", "build", "visual", "critique", "bus
 const mediumSchema = z.enum(MEDIUMS);
 
 /**
+ * Spin up a brand-new live Workshop room owned by the caller as host.
+ * Distinct from `joinLounge` (matchmaker) — this room always belongs to
+ * the caller, gets a "Host" badge, and the caller can later "Create a Collab"
+ * from it to turn it into a persistent Workshop.
+ */
+export const hostInstantWorkshop = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { medium?: (typeof MEDIUMS)[number] | null; title?: string | null } | undefined) =>
+    z.object({
+      medium: mediumSchema.nullish(),
+      title: z.string().trim().min(1).max(120).nullish(),
+    }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", userId)
+      .maybeSingle();
+    const name = profile?.display_name || profile?.username || "Host";
+    const title = data.title?.trim() || `${name}'s Workshop`;
+    const { data: room, error } = await supabaseAdmin
+      .from("instant_rooms")
+      .insert({
+        kind: "lounge",
+        title,
+        status: "active",
+        participant_cap: 5,
+        creator_id: userId,
+        host_user_id: userId,
+        medium: data.medium ?? null,
+      })
+      .select("id")
+      .single();
+    if (error || !room) throw new Error(error?.message ?? "Couldn't open your Workshop");
+    return { roomId: room.id };
+  });
+
+/** Public: fetch a single instant room's metadata (for headers, banners, etc). */
+export const getInstantRoom = createServerFn({ method: "GET" })
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id, status")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    return { room };
+  });
+
+/**
  * Matchmaker: drop the user into the fullest active Lounge that still has
  * room (cap 5), or spin up a brand-new Lounge if none has space.
  */
