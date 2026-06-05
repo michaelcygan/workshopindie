@@ -781,12 +781,15 @@ export type Database = {
           creator_id: string | null
           description: string | null
           ends_at: string | null
+          host_user_id: string | null
           id: string
           kind: string
           medium: Database["public"]["Enums"]["category"] | null
           participant_cap: number
+          promoted_at: string | null
           prompt: string | null
           slug: string | null
+          source_workshop_id: string | null
           status: Database["public"]["Enums"]["instant_status"]
           title: string
           workshop_id: string | null
@@ -798,12 +801,15 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           ends_at?: string | null
+          host_user_id?: string | null
           id?: string
           kind?: string
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
+          promoted_at?: string | null
           prompt?: string | null
           slug?: string | null
+          source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title: string
           workshop_id?: string | null
@@ -815,12 +821,15 @@ export type Database = {
           creator_id?: string | null
           description?: string | null
           ends_at?: string | null
+          host_user_id?: string | null
           id?: string
           kind?: string
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
+          promoted_at?: string | null
           prompt?: string | null
           slug?: string | null
+          source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title?: string
           workshop_id?: string | null
@@ -831,6 +840,13 @@ export type Database = {
             columns: ["city_id"]
             isOneToOne: false
             referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_source_workshop_id_fkey"
+            columns: ["source_workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
           {
@@ -2507,6 +2523,54 @@ export type Database = {
           },
         ]
       }
+      workshop_join_invites: {
+        Row: {
+          created_at: string
+          id: string
+          invitee_user_id: string
+          inviter_user_id: string | null
+          responded_at: string | null
+          source_room_id: string | null
+          status: string
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          invitee_user_id: string
+          inviter_user_id?: string | null
+          responded_at?: string | null
+          source_room_id?: string | null
+          status?: string
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          invitee_user_id?: string
+          inviter_user_id?: string | null
+          responded_at?: string | null
+          source_room_id?: string | null
+          status?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_join_invites_source_room_id_fkey"
+            columns: ["source_room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_join_invites_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workshop_messages: {
         Row: {
           body: string
@@ -3067,6 +3131,7 @@ export type Database = {
           prompt: string | null
           published_work_id: string | null
           slug: string
+          source_instant_room_id: string | null
           starting_notified_at: string | null
           starts_at: string | null
           status: Database["public"]["Enums"]["workshop_status"]
@@ -3118,6 +3183,7 @@ export type Database = {
           prompt?: string | null
           published_work_id?: string | null
           slug: string
+          source_instant_room_id?: string | null
           starting_notified_at?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
@@ -3169,6 +3235,7 @@ export type Database = {
           prompt?: string | null
           published_work_id?: string | null
           slug?: string
+          source_instant_room_id?: string | null
           starting_notified_at?: string | null
           starts_at?: string | null
           status?: Database["public"]["Enums"]["workshop_status"]
@@ -3203,6 +3270,13 @@ export type Database = {
             columns: ["published_work_id"]
             isOneToOne: false
             referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshops_source_instant_room_id_fkey"
+            columns: ["source_instant_room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
             referencedColumns: ["id"]
           },
           {
