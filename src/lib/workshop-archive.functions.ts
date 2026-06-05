@@ -111,7 +111,7 @@ export const getWorkshopArchiveUrl = createServerFn({ method: "POST" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: ws } = await supabaseAdmin
       .from("workshops")
-      .select("archive_zip_url,archived_at,archive_at,title,slug")
+      .select("archive_zip_url,archived_at,archive_at,last_activity_at,title,slug")
       .eq("id", data.workshopId)
       .maybeSingle();
     if (!ws) throw new Error("Workshop not found");
@@ -129,6 +129,7 @@ export const getWorkshopArchiveUrl = createServerFn({ method: "POST" })
       slug: (ws as any).slug,
       archive_at: (ws as any).archive_at,
       archived_at: (ws as any).archived_at,
+      last_activity_at: (ws as any).last_activity_at,
       signed_url: signedUrl,
       has_archive: !!path,
     };
