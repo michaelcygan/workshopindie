@@ -185,7 +185,7 @@ function WorkshopPreflight() {
           <div className="mt-4">
             <LoungeForkDropdown
               selectedMedium={selectedDropMedium}
-              onSelectMedium={setDropMedium}
+              onSelectMedium={setSelectedDropMedium}
               onJoinNow={handleJoinNow}
               onLiveCountChange={setLiveCount}
             />
