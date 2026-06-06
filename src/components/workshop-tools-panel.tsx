@@ -197,7 +197,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
     const ti = title.trim(); const b = body.trim(); const u = url.trim();
     if (!ti && !b && !u) return;
     setSubmitting(true);
-    const { error } = await supabase.from(t.itemsTable).insert({
+    const { error } = await (supabase.from(t.itemsTable) as any).insert({
       tool_id: tool.id, created_by_user_id: user.id,
       title: ti || null, body: b || null, url: u || null,
     });
@@ -208,7 +208,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from(t.itemsTable).delete().eq("id", id);
+    const { error } = await (supabase.from(t.itemsTable) as any).delete().eq("id", id);
     if (error) return toast.error(error.message);
     qc.invalidateQueries({ queryKey: ["ws-tool-items", scope.kind, tool.id] });
   }
