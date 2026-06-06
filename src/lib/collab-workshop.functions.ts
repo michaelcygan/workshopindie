@@ -387,6 +387,44 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       .insert({ workshop_id: ws.id, user_id: userId, participant_status: "confirmed" })
       .then(() => null, () => null);
 
+    // 6b. Copy ephemeral tools forward into the persistent Workshop.
+    const { data: srcTools } = await supabaseAdmin
+      .from("instant_tools")
+      .select("id, tool_type, enabled, created_by_user_id, created_at")
+      .eq("room_id", roomId);
+    for (const st of srcTools ?? []) {
+      const { data: newTool } = await supabaseAdmin
+        .from("workshop_tools")
+        .insert({
+          workshop_id: ws.id,
+          tool_type: st.tool_type,
+          enabled: st.enabled,
+        })
+        .select("id")
+        .single();
+      if (!newTool) continue;
+      const { data: srcItems } = await supabaseAdmin
+        .from("instant_tool_items")
+        .select("title, body, url, created_by_user_id, created_at")
+        .eq("tool_id", st.id);
+      if (srcItems && srcItems.length > 0) {
+        await supabaseAdmin
+          .from("workshop_tool_items")
+          .insert(
+            srcItems.map((it) => ({
+              tool_id: newTool.id,
+              created_by_user_id: it.created_by_user_id,
+              title: it.title,
+              body: it.body,
+              url: it.url,
+              created_at: it.created_at,
+            })),
+          )
+          .then(() => null, () => null);
+      }
+    }
+
+
     // 7. Opt-in invites for everyone else currently present.
     const { data: presentList } = await supabaseAdmin
       .from("instant_presence")
