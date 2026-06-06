@@ -70,7 +70,7 @@ export function WorkshopToolsPanel(props: Props) {
     queryKey: ["ws-tools", scope.kind, t.parentId],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from(t.toolsTable)
+      const { data } = await (supabase.from(t.toolsTable) as any)
         .select("id,tool_type,enabled").eq(t.parentCol, t.parentId);
       return (data ?? []) as { id: string; tool_type: ToolType; enabled: boolean }[];
     },
