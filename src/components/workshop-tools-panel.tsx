@@ -29,40 +29,82 @@ const CATEGORY_DEFAULTS: Record<Category, ToolType> = {
   critique: "outline", business: "outline", coworking: "outline",
 };
 
-type Props = { workshopId: string; hostUserId: string; category: Category };
+export type ToolsScope =
+  | { kind: "persistent"; workshopId: string; hostUserId: string; category: Category }
+  | { kind: "instant"; roomId: string; hostUserId: string | null; category?: Category | null };
 
-export function WorkshopToolsPanel({ workshopId, hostUserId, category }: Props) {
+// Table/column shim so the rest of the component stays scope-agnostic.
+function tables(scope: ToolsScope) {
+  if (scope.kind === "persistent") {
+    return {
+      toolsTable: "workshop_tools" as const,
+      itemsTable: "workshop_tool_items" as const,
+      parentCol: "workshop_id" as const,
+      parentId: scope.workshopId,
+      profileFk: "workshop_tool_items_created_by_user_id_fkey" as const,
+    };
+  }
+  return {
+    toolsTable: "instant_tools" as const,
+    itemsTable: "instant_tool_items" as const,
+    parentCol: "room_id" as const,
+    parentId: scope.roomId,
+    profileFk: "instant_tool_items_created_by_user_id_fkey" as const,
+  };
+}
+
+type LegacyProps = { workshopId: string; hostUserId: string; category: Category };
+type NewProps = { scope: ToolsScope };
+type Props = NewProps | LegacyProps;
+
+export function WorkshopToolsPanel(props: Props) {
+  const scope: ToolsScope = "scope" in props
+    ? props.scope
+    : { kind: "persistent", workshopId: props.workshopId, hostUserId: props.hostUserId, category: props.category };
   const { user } = useAuth();
   const qc = useQueryClient();
   const [active, setActive] = useState<ToolType | null>(null);
+  const t = tables(scope);
 
   const { data: tools = [] } = useQuery({
-    queryKey: ["ws-tools", workshopId],
+    queryKey: ["ws-tools", scope.kind, t.parentId],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("workshop_tools")
-        .select("id,tool_type,enabled").eq("workshop_id", workshopId);
+      const { data } = await (supabase.from(t.toolsTable) as any)
+        .select("id,tool_type,enabled").eq(t.parentCol, t.parentId);
       return (data ?? []) as { id: string; tool_type: ToolType; enabled: boolean }[];
     },
   });
 
   if (!user) return null;
-  const isHost = user.id === hostUserId;
+  const isHost = scope.hostUserId !== null && user.id === scope.hostUserId;
+  // Leaderless instant rooms: anyone present can enable tools.
+  const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
   const enabledTools = tools.filter((t) => t.enabled);
   const currentType: ToolType | null = active ?? enabledTools[0]?.tool_type ?? null;
-  const currentTool = enabledTools.find((t) => t.tool_type === currentType);
+  const currentTool = enabledTools.find((tool) => tool.tool_type === currentType);
 
   async function enableTool(type: ToolType) {
-    const { error } = await supabase.from("workshop_tools")
-      .insert({ workshop_id: workshopId, tool_type: type, enabled: true });
+    const payload: any = { [t.parentCol]: t.parentId, tool_type: type, enabled: true };
+    if (scope.kind === "instant") payload.created_by_user_id = user!.id;
+    const { error } = await (supabase.from(t.toolsTable) as any).insert(payload);
     if (error) return toast.error(error.message);
     setActive(type);
-    qc.invalidateQueries({ queryKey: ["ws-tools", workshopId] });
+    qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
   }
 
+  const category: Category =
+    scope.kind === "persistent" ? scope.category : (scope.category ?? "coworking");
+  const suggested = CATEGORY_DEFAULTS[category];
+
   if (enabledTools.length === 0) {
-    if (!isHost) return null;
-    const suggested = CATEGORY_DEFAULTS[category];
+    if (!canEnable) {
+      return (
+        <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-center text-sm text-ink-muted">
+          No tools yet. The host can spin one up.
+        </div>
+      );
+    }
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-center">
         <p className="text-sm text-ink-muted">Enable a shared tool so the Workshop can collect ideas, shots, links, and references.</p>
@@ -81,23 +123,23 @@ export function WorkshopToolsPanel({ workshopId, hostUserId, category }: Props) 
   return (
     <div className="mt-4 rounded-2xl border border-border">
       <div className="flex flex-wrap items-center gap-1 border-b border-border bg-surface-2 px-2 py-1.5">
-        {enabledTools.map((t) => {
-          const P = PRESETS[t.tool_type];
+        {enabledTools.map((tool) => {
+          const P = PRESETS[tool.tool_type];
           const Icon = P.icon;
-          const isActive = currentType === t.tool_type;
+          const isActive = currentType === tool.tool_type;
           return (
-            <button key={t.id} onClick={() => setActive(t.tool_type)}
+            <button key={tool.id} onClick={() => setActive(tool.tool_type)}
               className={"inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs transition " +
                 (isActive ? "bg-ink text-background" : "text-ink-soft hover:bg-muted")}>
               <Icon className="h-3.5 w-3.5" /> {P.label}
             </button>
           );
         })}
-        {isHost && enabledTools.length < 6 && (
-          <AddToolMenu enabled={enabledTools.map((t) => t.tool_type)} onAdd={enableTool} />
+        {canEnable && enabledTools.length < 6 && (
+          <AddToolMenu enabled={enabledTools.map((tool) => tool.tool_type)} onAdd={enableTool} />
         )}
       </div>
-      {currentTool && <ToolItems tool={currentTool} hostUserId={hostUserId} />}
+      {currentTool && <ToolItems scope={scope} tool={currentTool} />}
     </div>
   );
 }
@@ -129,9 +171,10 @@ function AddToolMenu({ enabled, onAdd }: { enabled: ToolType[]; onAdd: (t: ToolT
   );
 }
 
-function ToolItems({ tool, hostUserId }: { tool: { id: string; tool_type: ToolType }; hostUserId: string }) {
+function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: ToolType } }) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const t = tables(scope);
   const preset = PRESETS[tool.tool_type];
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -139,10 +182,10 @@ function ToolItems({ tool, hostUserId }: { tool: { id: string; tool_type: ToolTy
   const [submitting, setSubmitting] = useState(false);
 
   const { data: items = [] } = useQuery({
-    queryKey: ["ws-tool-items", tool.id],
+    queryKey: ["ws-tool-items", scope.kind, tool.id],
     queryFn: async () => {
-      const { data } = await supabase.from("workshop_tool_items")
-        .select("id,title,body,url,created_at,created_by_user_id, profile:profiles!workshop_tool_items_created_by_user_id_fkey(display_name,username,avatar_url)")
+      const { data } = await (supabase.from(t.itemsTable) as any)
+        .select(`id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`)
         .eq("tool_id", tool.id).order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -151,27 +194,27 @@ function ToolItems({ tool, hostUserId }: { tool: { id: string; tool_type: ToolTy
   async function add(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    const t = title.trim(); const b = body.trim(); const u = url.trim();
-    if (!t && !b && !u) return;
+    const ti = title.trim(); const b = body.trim(); const u = url.trim();
+    if (!ti && !b && !u) return;
     setSubmitting(true);
-    const { error } = await supabase.from("workshop_tool_items").insert({
+    const { error } = await (supabase.from(t.itemsTable) as any).insert({
       tool_id: tool.id, created_by_user_id: user.id,
-      title: t || null, body: b || null, url: u || null,
+      title: ti || null, body: b || null, url: u || null,
     });
     setSubmitting(false);
     if (error) return toast.error(error.message);
     setTitle(""); setBody(""); setUrl("");
-    qc.invalidateQueries({ queryKey: ["ws-tool-items", tool.id] });
+    qc.invalidateQueries({ queryKey: ["ws-tool-items", scope.kind, tool.id] });
   }
 
   async function remove(id: string) {
-    const { error } = await supabase.from("workshop_tool_items").delete().eq("id", id);
+    const { error } = await (supabase.from(t.itemsTable) as any).delete().eq("id", id);
     if (error) return toast.error(error.message);
-    qc.invalidateQueries({ queryKey: ["ws-tool-items", tool.id] });
+    qc.invalidateQueries({ queryKey: ["ws-tool-items", scope.kind, tool.id] });
   }
 
   const isMoodboard = tool.tool_type === "moodboard";
-  const isHost = user?.id === hostUserId;
+  const isHost = scope.hostUserId !== null && user?.id === scope.hostUserId;
 
   return (
     <div className="p-4">

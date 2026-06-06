@@ -858,6 +858,79 @@ export type Database = {
           },
         ]
       }
+      instant_tool_items: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by_user_id: string | null
+          id: string
+          title: string | null
+          tool_id: string
+          url: string | null
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          title?: string | null
+          tool_id: string
+          url?: string | null
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by_user_id?: string | null
+          id?: string
+          title?: string | null
+          tool_id?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_tool_items_tool_id_fkey"
+            columns: ["tool_id"]
+            isOneToOne: false
+            referencedRelation: "instant_tools"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_tools: {
+        Row: {
+          created_at: string
+          created_by_user_id: string | null
+          enabled: boolean
+          id: string
+          room_id: string
+          tool_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_user_id?: string | null
+          enabled?: boolean
+          id?: string
+          room_id: string
+          tool_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by_user_id?: string | null
+          enabled?: boolean
+          id?: string
+          room_id?: string
+          tool_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_tools_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_whiteboard_assets: {
         Row: {
           created_at: string

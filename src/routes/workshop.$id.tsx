@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvite } from "@/lib/collab-workshop.functions";
+import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { toast } from "sonner";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
@@ -33,6 +34,7 @@ type Room = {
   title: string;
   kind: string;
   medium: string | null;
+  category: string | null;
   host_user_id: string | null;
   promoted_at: string | null;
   source_workshop_id: string | null;
@@ -55,7 +57,7 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -176,6 +178,17 @@ function LiveRoomPage() {
       )}
 
       <ChannelView key={id} roomId={id} title={title} initialMode={mode ?? "video"} />
+
+      {room && (
+        <WorkshopToolsPanel
+          scope={{
+            kind: "instant",
+            roomId: id,
+            hostUserId: room.host_user_id,
+            category: (room.category as any) ?? (room.medium as any) ?? null,
+          }}
+        />
+      )}
 
       <CreateCollabSheet
         open={collabOpen}
