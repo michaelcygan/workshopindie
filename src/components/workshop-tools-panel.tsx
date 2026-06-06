@@ -87,7 +87,7 @@ export function WorkshopToolsPanel(props: Props) {
   async function enableTool(type: ToolType) {
     const payload: any = { [t.parentCol]: t.parentId, tool_type: type, enabled: true };
     if (scope.kind === "instant") payload.created_by_user_id = user!.id;
-    const { error } = await supabase.from(t.toolsTable).insert(payload);
+    const { error } = await (supabase.from(t.toolsTable) as any).insert(payload);
     if (error) return toast.error(error.message);
     setActive(type);
     qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
