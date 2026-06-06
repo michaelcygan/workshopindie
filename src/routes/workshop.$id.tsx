@@ -57,7 +57,7 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
