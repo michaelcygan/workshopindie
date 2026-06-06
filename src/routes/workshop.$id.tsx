@@ -34,6 +34,7 @@ type Room = {
   title: string;
   kind: string;
   medium: string | null;
+  category: string | null;
   host_user_id: string | null;
   promoted_at: string | null;
   source_workshop_id: string | null;
