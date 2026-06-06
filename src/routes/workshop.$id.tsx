@@ -179,6 +179,17 @@ function LiveRoomPage() {
 
       <ChannelView key={id} roomId={id} title={title} initialMode={mode ?? "video"} />
 
+      {room && (
+        <WorkshopToolsPanel
+          scope={{
+            kind: "instant",
+            roomId: id,
+            hostUserId: room.host_user_id,
+            category: (room.category as any) ?? (room.medium as any) ?? null,
+          }}
+        />
+      )}
+
       <CreateCollabSheet
         open={collabOpen}
         onOpenChange={setCollabOpen}
