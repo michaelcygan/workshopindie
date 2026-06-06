@@ -184,7 +184,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
   const { data: items = [] } = useQuery({
     queryKey: ["ws-tool-items", scope.kind, tool.id],
     queryFn: async () => {
-      const { data } = await supabase.from(t.itemsTable)
+      const { data } = await (supabase.from(t.itemsTable) as any)
         .select(`id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`)
         .eq("tool_id", tool.id).order("created_at", { ascending: false });
       return data ?? [];
