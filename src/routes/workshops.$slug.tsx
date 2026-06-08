@@ -448,8 +448,10 @@ function Room({ ws }: { ws: Workshop }) {
         initialMode="voice"
         pinned={pinned}
         workshopId={ws.id}
+        toolsSlot={
+          <WorkshopToolsPanel workshopId={ws.id} hostUserId={ws.host_user_id} category={ws.category} />
+        }
       />
-      <WorkshopToolsPanel workshopId={ws.id} hostUserId={ws.host_user_id} category={ws.category} />
     </section>
   );
 }

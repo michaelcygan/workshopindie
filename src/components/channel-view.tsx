@@ -58,12 +58,14 @@ export function ChannelView({
   pinned,
   initialMode = "voice",
   workshopId,
+  toolsSlot,
 }: {
   roomId: string;
   title: string;
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
+  toolsSlot?: React.ReactNode;
 }) {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
@@ -511,7 +513,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className="mt-6 grid gap-4 md:grid-cols-[1fr_260px]">
+      <div className="mt-4 grid gap-4 md:grid-cols-[1fr_260px]">
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
@@ -527,7 +529,15 @@ export function ChannelView({
             <Maximize2 className="h-3.5 w-3.5" />
           </button>
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
-          {viewMode === "collabs" && user ? (
+          {viewMode === "tools" ? (
+            <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
+              {toolsSlot ?? (
+                <div className="flex h-full items-center justify-center text-sm text-ink-muted">
+                  No tools available in this room.
+                </div>
+              )}
+            </div>
+          ) : viewMode === "collabs" && user ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
                 presenceUsers={[
