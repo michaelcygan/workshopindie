@@ -529,7 +529,15 @@ export function ChannelView({
             <Maximize2 className="h-3.5 w-3.5" />
           </button>
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
-          {viewMode === "collabs" && user ? (
+          {viewMode === "tools" ? (
+            <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
+              {toolsSlot ?? (
+                <div className="flex h-full items-center justify-center text-sm text-ink-muted">
+                  No tools available in this room.
+                </div>
+              )}
+            </div>
+          ) : viewMode === "collabs" && user ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
                 presenceUsers={[
