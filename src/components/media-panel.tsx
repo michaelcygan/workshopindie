@@ -72,8 +72,9 @@ export function MediaPanel({
       </header>
 
       {viewMode && onViewModeChange && (
-        <div className="mt-3 grid grid-cols-3 gap-1 rounded-full bg-muted p-1">
+        <div className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
           <ViewPill active={viewMode === "chat"} onClick={() => onViewModeChange("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
+          <ViewPill active={viewMode === "tools"} onClick={() => onViewModeChange("tools")} icon={<Wrench className="h-3.5 w-3.5" />} label="Tools" />
           <ViewPill active={viewMode === "gallery"} onClick={() => onViewModeChange("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" />
           <ViewPill active={viewMode === "collabs"} onClick={() => onViewModeChange("collabs")} icon={<Users className="h-3.5 w-3.5" />} label="Collabs" />
         </div>
