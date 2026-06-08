@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
-export type RoomViewMode = "chat" | "gallery" | "collabs";
+export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
