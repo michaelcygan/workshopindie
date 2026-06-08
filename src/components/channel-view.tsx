@@ -58,12 +58,14 @@ export function ChannelView({
   pinned,
   initialMode = "voice",
   workshopId,
+  toolsSlot,
 }: {
   roomId: string;
   title: string;
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
+  toolsSlot?: React.ReactNode;
 }) {
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
