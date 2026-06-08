@@ -118,77 +118,78 @@ function LiveRoomPage() {
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-10">
-      <Link to="/workshop" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Workshop
-      </Link>
+    <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <Link to="/workshop" className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink">
+          <ArrowLeft className="h-3.5 w-3.5" /> Workshop
+        </Link>
 
-      <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
-        <div className="min-w-0">
-          <h1 className="font-display text-3xl md:text-4xl text-ink flex items-center gap-2">
-            <span className="gradient-motion inline-flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground">
-              <Coffee className="h-5 w-5" />
+        <h1 className="font-display text-xl md:text-2xl text-ink flex items-center gap-2 min-w-0">
+          <span className="gradient-motion inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-foreground shrink-0">
+            <Coffee className="h-3.5 w-3.5" />
+          </span>
+          <span className="truncate">{title}</span>
+        </h1>
+
+        <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
+          <span>Live · up to 5</span>
+          {isHost && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 px-1.5 py-0.5 font-medium text-violet">
+              <Crown className="h-3 w-3" /> Hosting
             </span>
-            <span className="truncate">{title}</span>
-          </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-ink-muted">
-            <span>Live Workshop · up to 5 artists.</span>
-            {isHost && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 px-2 py-0.5 text-[11px] font-medium text-violet">
-                <Crown className="h-3 w-3" /> You're hosting
-              </span>
-            )}
-            {isLeaderless && !isPromoted && (
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">Leaderless lounge</span>
-            )}
-          </div>
+          )}
+          {isLeaderless && !isPromoted && (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-ink-soft">Leaderless</span>
+          )}
         </div>
 
         {!isPromoted && user && (
-          <Button onClick={() => setCollabOpen(true)} className="rounded-full gap-2">
-            <Rocket className="h-4 w-4" /> Create a Collab
+          <Button onClick={() => setCollabOpen(true)} size="sm" className="ml-auto rounded-full gap-1.5">
+            <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
           </Button>
         )}
       </div>
 
-      {/* Promoted banner */}
+      {/* Promoted banner — slim */}
       {isPromoted && forkedWs && (
-        <div className="mt-5 rounded-2xl border border-violet/30 bg-violet/5 p-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <Sparkles className="h-4 w-4 text-violet shrink-0" />
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-ink">This Workshop became a Collab.</div>
-              <div className="text-sm text-ink-soft truncate">The persistent room is "{forkedWs.title}". This live room will clear when everyone leaves.</div>
-            </div>
-            <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }}>
-              <Button size="sm" className="rounded-full gap-1">
-                Open persistent room <ArrowRight className="h-3.5 w-3.5" />
+        <div className="mt-3 rounded-xl border border-violet/30 bg-violet/5 px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Sparkles className="h-3.5 w-3.5 text-violet shrink-0" />
+            <span className="text-ink truncate">This Workshop became a Collab: "{forkedWs.title}".</span>
+            <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }} className="ml-auto">
+              <Button size="sm" variant="outline" className="rounded-full gap-1 h-7">
+                Open <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
           </div>
-
           {invite && invite.status === "pending" && (
-            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-3">
-              <span className="text-sm text-ink-soft">You've been invited to join the persistent Workshop.</span>
-              <Button size="sm" onClick={onAcceptInvite} className="rounded-full">Join</Button>
-              <Button size="sm" variant="ghost" onClick={onDeclineInvite} className="rounded-full">No thanks</Button>
+            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-2">
+              <span className="text-xs text-ink-soft">You've been invited to join the persistent Workshop.</span>
+              <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">Join</Button>
+              <Button size="sm" variant="ghost" onClick={onDeclineInvite} className="rounded-full h-7">No thanks</Button>
             </div>
           )}
         </div>
       )}
 
-      <ChannelView key={id} roomId={id} title={title} initialMode={mode ?? "video"} />
-
-      {room && (
-        <WorkshopToolsPanel
-          scope={{
-            kind: "instant",
-            roomId: id,
-            hostUserId: room.host_user_id,
-            category: (room.category as any) ?? (room.medium as any) ?? null,
-          }}
-        />
-      )}
+      <ChannelView
+        key={id}
+        roomId={id}
+        title={title}
+        initialMode={mode ?? "video"}
+        toolsSlot={
+          room ? (
+            <WorkshopToolsPanel
+              scope={{
+                kind: "instant",
+                roomId: id,
+                hostUserId: room.host_user_id,
+                category: (room.category as any) ?? (room.medium as any) ?? null,
+              }}
+            />
+          ) : null
+        }
+      />
 
       <CreateCollabSheet
         open={collabOpen}
