@@ -1,122 +1,83 @@
-## Audit summary
+## Goal
 
-In the live room (`/workshop/$id`), the tools panel only shows two quick-enable buttons (suggested + Pinboard) in its empty state — the full "+ Tool" picker is hidden until *after* the first tool is enabled. That is why the screenshot shows just Outline + Pinboard.
+Make **Board** a fully shipped tool alongside Docs / Drive / List / Pinboard / Moodboard / Repo & Demo / Screen Share / Recorder, then push the entire Tools flow over the finish line for launch.
 
-Beyond the picker bug, the live room and the persistent Workshop are running two different tool sets:
+`src/components/room-board.tsx` already exists (4000×3000 realtime whiteboard with images, stickies, links, text, zoom, drag, storage upload) but is **not mounted anywhere** — `channel-view.tsx` explicitly notes "Board moved to Workshop Tools" and never imports it. So Board is 90% built; we just need to wire it.
 
-| Tool | Live room (`instant_tools`) | Persistent Workshop |
-|---|---|---|
-| Pinboard | yes (primitive) | yes (primitive) |
-| Outline / Docs | "Outline" = sectioned title+body list | **real rich editor** (`workshop_docs`) with realtime + comments |
-| Drive (files + links) | missing | yes (`workshop_drive_files`, `workshop_drive_links`) |
-| Tasks / List | missing | yes (`workshop_tasks`) |
-| Shot List, Track List, Moodboard, Repo & Demo | yes (primitives) | not present as separate tools |
-| Screen Share | not built (button just opens the room) | not built |
-| Board (whiteboard) | `room-board.tsx` exists but unused; marked "soon" | not built |
-| Recorder | not built | not built |
+---
 
-Promotion (`createCollabFromRoom`) copies `instant_tools` → `workshop_tools` 1:1, so it does NOT migrate live-room data into the richer persistent tables (Docs/Drive/Tasks). That gap gets larger once Docs becomes a real editor.
+## 1. Board — promote from "Coming soon" to shipped
 
-## Goals
+### 1a. Make RoomBoard polymorphic (instant + persistent)
 
-1. Every tool that exists is reachable from the live room at creation — no hidden picker.
-2. Replace "Outline" with **Docs** (the real collaborative editor), wired into the live room.
-3. Bring **Drive** and a generalized **List** tool into the live room.
-4. Surface Screen Share, Board, and Recorder as **Coming soon** tiles everywhere tools appear — visible, disabled, with a clear label — so users know they're on the roadmap.
-5. Preserve user data through promotion to a persistent Collab.
+Today RoomBoard takes `roomId` and writes to `instant_board_items` + `instant-whiteboard` storage. Mirror the Docs / Drive scope pattern:
 
-## Plan
+```ts
+export type BoardScope =
+  | { kind: "persistent"; workshopId: string }
+  | { kind: "instant"; roomId: string };
+```
 
-### 1. Fix the picker (small, high-impact)
+Add a `workshop_board_items` table that mirrors `instant_board_items` 1:1 (kind, content jsonb, x/y/w/h/z/rotation) plus `workshop-whiteboard` private storage bucket, with RLS scoped to `is_workshop_member`. Leave the existing unused `workshop_board_assets` table alone (it's referenced by sweep + types but nothing reads/writes it).
 
-`WorkshopToolsPanel` empty state currently renders only "suggested + Pinboard". Replace it with the full set of available tools as chips — each enable-able in one click — with the category-suggested one visually highlighted. Coming-soon tools render alongside, disabled, with a "Coming soon" pill.
+Refactor `room-board.tsx` to switch table/bucket/realtime-channel/parent-col based on scope. No UX changes.
 
-### 2. Rename Outline → Docs, upgrade to the real editor
+### 1b. Wire Board into both Tools surfaces
 
-- Rename the `outline` preset label to **Docs** in `workshop-tools-panel.tsx` (icon stays `FileText`). Keep the underlying `tool_type` value `outline` in the DB to avoid a destructive enum migration; just relabel in the UI.
-- In the live room, when the active tool is Docs, replace the tiny title+body form with the existing rich Docs editor currently in `src/routes/workshops.$slug.tools.$tool.tsx` (`<Docs />` component, backed by `workshop_docs`).
-- New tables for the live-room Docs: `instant_docs` and `instant_doc_comments` mirroring `workshop_docs` / `workshop_doc_comments`, scoped to `room_id`. RLS: anyone in the room (via `is_room_member`) can read/write; only the author or host can delete.
-- Extract the existing `<Docs />` component out of the route file into `src/components/workshop-docs-editor.tsx` and make it polymorphic via the same `ToolsScope` shim (`workshop_docs` vs `instant_docs`).
+- **Live room (`workshop-tools-panel.tsx`)**: drop `board` from `ComingSoonToolType`, remove `comingSoon: true`. When a board tool is enabled, render `<RoomBoard scope={{kind:'instant', roomId}} fullscreen />` inline (same expand affordance as Drive panel).
+- **Persistent workshop (`workshops.$slug.tools.tsx`)**: remove the `soon: true` flag on the Board card, point its `action` at a new route `/workshops/$slug/tools/board` that renders RoomBoard with `{kind:'persistent', workshopId}`.
 
-### 3. Add Drive to the live room
+### 1c. Promotion
 
-- New tables `instant_drive_files`, `instant_drive_links`, `instant_drive_file_comments` mirroring the `workshop_drive_*` set, scoped to `room_id`.
-- Add a new private `instant-drive` storage bucket gated by RLS on the row.
-- Extract the existing Drive component out of `workshops.$slug.tools.$tool.tsx` into `src/components/workshop-drive-panel.tsx`, made polymorphic via `ToolsScope`.
-- Add a `drive` preset to `PRESETS` in `workshop-tools-panel.tsx`.
+In `createCollabFromRoom` (`src/lib/collab-workshop.functions.ts`), copy `instant_board_items` rows → `workshop_board_items` and re-upload referenced storage objects from `instant-whiteboard` → `workshop-whiteboard` (keys rewritten in the content payload). Same pattern already used for docs / drive / list.
 
-### 4. Generalize Tasks → List
+---
 
-- Rename UI label "Tasks" → **List**; description "A list — to-dos, tracks, shots, whatever you need."
-- Replace the existing `shot_list` and `track_list` presets with a single `list` primitive that accepts title + optional body + optional URL, plus a `done` checkbox.
-- Extend `instant_tool_items` with a nullable `done boolean` and a `position int` for ordering, then render a checkbox when `tool_type = 'list'`.
-- Promotion path: copy `list` items into `workshop_tasks`.
+## 2. Tools flow — launch-readiness pass
 
-### 5. Coming-soon tools (Screen Share, Board, Recorder)
+A focused pass to fix the rough edges before launch. No new tools beyond Board.
 
-These three are not yet built but are on the roadmap, so they get first-class placeholders rather than being hidden:
+### Functional fixes
+- **Tool tray consistency**: live-room tool chips and persistent tool cards currently list tools in different orders and with slightly different copy ("Tasks" card vs "List" chip). Unify on the live-room labels (Docs, Pinboard, List, Drive, Moodboard, Repo & Demo, Screen Share, Recorder, Board) and the same icon set across both surfaces.
+- **Empty states**: every tool gets a one-line empty state + a single "Add your first…" CTA (Docs already has this; Pinboard / List / Moodboard / Repo & Demo / Drive / Board need it).
+- **Realtime presence**: surface "N people viewing" on each tool panel using `instant_presence` (live room) and a lightweight workshop presence channel (persistent).
+- **Delete confirmation**: tools currently delete on single click. Add a confirm step on Tool deletion (items can stay one-click + undo toast).
+- **Mobile**: tool tray collapses to a bottom sheet under 640px; Board enters single-finger pan / two-finger zoom mode; Screen Share gracefully degrades with a "Desktop only on iOS Safari" notice.
 
-- Add `screen_share`, `board`, and `recorder` entries to `PRESETS` with their icons and one-line blurbs.
-- In every tool picker (live-room empty state, "+ Tool" menu, persistent Tools hub), render them as **disabled chips/tiles with a "Coming soon" pill**. No enable action. Tooltip explains "Available in an upcoming release."
-- Order them after the shipped tools so they don't distract from what works today.
-- `room-board.tsx` is already built but unused. Recommendation: still mark Board as "Coming soon" in this pass (the existing component needs auth/RLS hookup, undo/redo, and persistence into a new `instant_board_*` schema before it ships). Tracked as the first follow-up.
+### Polish
+- **Keyboard shortcuts**: `⌘K` opens tool picker, `1–9` switch active tool, `⌘S` saves Docs (already wired), `Esc` closes Board fullscreen.
+- **Promotion preview**: before `createCollabFromRoom` runs, show a modal that lists exactly what will be copied (X docs, Y drive links, Z list items, N board items) so hosts know what survives.
+- **Toast hygiene**: replace ad-hoc `toast.info("Coming soon")` strings — there should be zero "coming soon" strings left after this pass.
+- **A11y**: every tool chip / card gets a proper `aria-label`; Board canvas items get `role="button"` + keyboard nudge (arrow keys move selected item by 8px).
 
-### 6. Empty state copy + suggested mapping
+### QA checklist (run before declaring launch-ready)
+1. Create instant room → enable each of the 9 tools → add content → reload → content persists per tool.
+2. Promote room to Collab → verify docs, drive links, list items, **and board items** survived.
+3. Two-browser test: realtime sync on every tool including Board.
+4. Mobile Safari + Chrome: tool tray, Board pan/zoom, Screen Share fallback, Recorder consent dialog.
+5. RLS smoke: non-member cannot read any `workshop_board_items` row via direct query.
 
-Update `CATEGORY_DEFAULTS` so the suggested tool per category points at the new primitives:
+---
 
-- film → list (was shot_list)
-- music → list (was track_list)
-- writing → outline (Docs)
-- build → repo_links
-- visual → moodboard
-- critique / business / coworking → outline (Docs)
+## Technical details
 
-Empty-state copy: "Spin up a shared tool — Docs, Pinboard, Drive, List, Moodboard, Repo & Demo. Add as many as you need."
+**New migration** (`20260609_board_persistent.sql`):
+- `CREATE TABLE public.workshop_board_items` mirroring `instant_board_items` with `workshop_id` FK + `is_workshop_member` policies + GRANTs to authenticated/service_role + add to `supabase_realtime` publication + `tg_set_updated_at` trigger.
+- `storage.create_bucket('workshop-whiteboard', private)` with member-only RLS on `storage.objects`.
 
-### 7. Promotion (createCollabFromRoom)
+**Files changed**:
+- `supabase/migrations/20260609_board_persistent.sql` (new)
+- `src/components/room-board.tsx` (scope refactor)
+- `src/components/workshop-tools-panel.tsx` (board chip live, tray order, empty states, presence, delete confirm, mobile)
+- `src/routes/workshops.$slug.tools.tsx` (board card live, copy unification)
+- `src/routes/workshops.$slug.tools.board.tsx` (new route)
+- `src/lib/collab-workshop.functions.ts` (board promotion)
+- `src/integrations/supabase/types.ts` (regenerated after migration)
 
-Extend `src/lib/collab-workshop.functions.ts` so when a room promotes:
+---
 
-- `instant_docs` → `workshop_docs` (+ comments)
-- `instant_drive_files` / `_links` → `workshop_drive_files` / `_links`
-- `instant_tool_items` where `tool_type='list'` → `workshop_tasks`
-- Existing `instant_tools` → `workshop_tools` flow stays for the lighter primitives (Pinboard, Moodboard, Repo & Demo).
-
-### 8. Polish pass on existing flow
-
-- Tooltip on each picker chip explaining the tool.
-- After enabling a tool, auto-focus the first input.
-- Realtime: add new `instant_*` tables to `supabase_realtime` publication and subscribe in the live room so multiple participants see updates without manual refetch.
-- Mobile: collapse the tool tab strip into a horizontal scroll when > 4 tools are enabled.
-
-## Out of scope (this turn — Coming soon in UI, follow-up implementation)
-
-- Real Screen Share via `getDisplayMedia` wired into the existing WebRTC track set.
-- Real-time Board built on top of the existing `room-board.tsx` with persistence + RLS.
-- Recorder via `MediaRecorder` writing into the `instant-drive` bucket.
-
-Tracked as the first three follow-up tasks after this lands.
-
-## Technical notes
-
-- **DB enum**: `tool_type` is `text`, so adding `'list'`, `'drive'`, `'screen_share'`, `'board'`, `'recorder'` is a one-line change with no enum migration. We keep `outline` as the stored value behind the Docs label.
-- **Component extraction**: the Docs and Drive sub-components live inline inside `src/routes/workshops.$slug.tools.$tool.tsx` (~700 LOC). Extracting them with a `scope: ToolsScope` prop unblocks both surfaces.
-- **Migrations** (one combined file):
-  - `instant_docs`, `instant_doc_comments`
-  - `instant_drive_files`, `instant_drive_links`, `instant_drive_file_comments`
-  - `instant-drive` storage bucket
-  - Add `done boolean`, `position int` to `instant_tool_items`
-  - GRANTs + RLS scoped through `is_room_member(room_id, auth.uid())`
-  - New tables added to `supabase_realtime` publication
-- **`createCollabFromRoom`**: extend the copy step in one server function, wrapped in a single transaction.
-
-## Files touched
-
-- `src/components/workshop-tools-panel.tsx` — picker fix, new presets including Coming soon entries, List checkbox rendering, Docs/Drive slot rendering
-- `src/components/workshop-docs-editor.tsx` (new, extracted)
-- `src/components/workshop-drive-panel.tsx` (new, extracted)
-- `src/routes/workshops.$slug.tools.$tool.tsx` — swap inline impls for the extracted components
-- `src/routes/workshops.$slug.tools.tsx` — Screen Share / Board / Recorder rendered as Coming soon tiles
-- `src/lib/collab-workshop.functions.ts` — extend promotion copy
-- `supabase/migrations/<new>.sql` — tables, RLS, GRANTs, storage bucket, realtime publication
+## Out of scope (intentionally deferred)
+- Multi-user cursors on Board (the realtime data sync is enough for v1).
+- Board export to PNG.
+- Recorder multi-party mixing via Cloudflare Stream.
+- Screen-share annotation overlay.
