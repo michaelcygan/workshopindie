@@ -211,9 +211,9 @@ export default function RoomBoard({
       const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
       const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
       const row = { [cfg.parentCol]: cfg.parentId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(cfg.table)
-        .insert(row as never)
+        .insert(row)
         .select()
         .single();
       if (error) {
@@ -221,7 +221,7 @@ export default function RoomBoard({
         return;
       }
       setItems((prev) =>
-        prev.some((x) => x.id === data.id) ? prev : [...prev, data as unknown as Item],
+        prev.some((x) => x.id === (data as Item).id) ? prev : [...prev, data as unknown as Item],
       );
     },
     [cfg.table, cfg.parentCol, cfg.parentId, userId, maxZ],
@@ -229,13 +229,13 @@ export default function RoomBoard({
 
   const updateItem = useCallback(async (id: string, patch: Partial<Item>) => {
     setItems((prev) => prev.map((x) => (x.id === id ? ({ ...x, ...patch } as Item) : x)));
-    const { error } = await supabase.from(cfg.table).update(patch).eq("id", id);
+    const { error } = await (supabase as any).from(cfg.table).update(patch).eq("id", id);
     if (error) toast.error(error.message);
   }, [cfg.table]);
 
   const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((x) => x.id !== id));
-    const { error } = await supabase.from(cfg.table).delete().eq("id", id);
+    const { error } = await (supabase as any).from(cfg.table).delete().eq("id", id);
     if (error) toast.error(error.message);
   }, [cfg.table]);
 
