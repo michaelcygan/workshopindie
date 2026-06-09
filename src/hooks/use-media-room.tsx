@@ -204,8 +204,17 @@ export function useMediaRoom(roomId: string | undefined) {
         closePeer(peerId);
       }
     };
+    // Triggered when addTrack/removeTrack mutates the sender set after connection.
+    // Only the lex-greater side should re-offer to avoid glare; the other side
+    // gets the offer via the existing handleSignal path.
+    pc.onnegotiationneeded = async () => {
+      if (!myId || myId <= peerId) return;
+      if (pc.signalingState !== "stable") return;
+      try { await makeOfferOn(pc, peerId); } catch { /* noop */ }
+    };
     return pc;
   }
+
 
   function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
     const existing = pcsRef.current.get(peerId);
