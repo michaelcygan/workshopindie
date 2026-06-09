@@ -14,12 +14,15 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
+import { WorkshopRecorder } from "@/components/workshop-recorder";
+import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "screen_share" | "board" | "recorder";
+type ComingSoonToolType = "board";
 type ToolType = ShippedToolType | ComingSoonToolType;
+
 
 type Preset = {
   label: string;
