@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic,
+  FolderOpen, MonitorPlay, PenLine, Mic, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -122,9 +122,12 @@ export function WorkshopToolsPanel(props: Props) {
     queryKey: ["ws-tools", scope.kind, t.parentId],
     enabled: !!user,
     queryFn: async () => {
+      const selectCols = scope.kind === "instant"
+        ? "id,tool_type,enabled,created_by_user_id"
+        : "id,tool_type,enabled";
       const { data } = await (supabase.from(t.toolsTable) as any)
-        .select("id,tool_type,enabled").eq(t.parentCol, t.parentId);
-      return (data ?? []) as { id: string; tool_type: StoredToolType; enabled: boolean }[];
+        .select(selectCols).eq(t.parentCol, t.parentId);
+      return (data ?? []) as { id: string; tool_type: StoredToolType; enabled: boolean; created_by_user_id?: string | null }[];
     },
   });
 
@@ -142,6 +145,17 @@ export function WorkshopToolsPanel(props: Props) {
     if (error) return toast.error(error.message);
     setActive(type);
     qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
+  }
+
+  async function removeTool(toolId: string, toolType: StoredToolType) {
+    const label = presetFor(toolType).label;
+    const ok = typeof window === "undefined" ? true : window.confirm(`Remove ${label}? This deletes any items in it.`);
+    if (!ok) return;
+    const { error } = await (supabase.from(t.toolsTable) as any).delete().eq("id", toolId);
+    if (error) return toast.error(error.message);
+    if (active === toolType) setActive(null);
+    qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
+    toast.success(`${label} removed`);
   }
 
   const category: Category =
