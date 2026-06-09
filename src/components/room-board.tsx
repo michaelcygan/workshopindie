@@ -307,10 +307,10 @@ export default function RoomBoard({
       >
         <div className="flex items-center gap-2">
           <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
-            {fullscreen ? "Fullscreen Board" : "Board · ephemeral"}
+            {fullscreen ? "Fullscreen Board" : scope.kind === "persistent" ? "Board" : "Board · ephemeral"}
           </div>
         </div>
-        <Toolbar onAdd={addItem} roomId={roomId} userId={userId} />
+        <Toolbar onAdd={addItem} cfg={cfg} userId={userId} />
       </div>
 
       <div ref={scrollRef} className="relative flex-1 min-h-0 overflow-auto bg-muted/20">
