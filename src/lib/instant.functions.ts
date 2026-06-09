@@ -161,8 +161,10 @@ export const getInstantRoom = createServerFn({ method: "GET" })
   });
 
 /**
- * Matchmaker: drop the user into the fullest active Lounge that still has
- * room (cap 5), or spin up a brand-new Lounge if none has space.
+ * Matchmaker: drop the user into the fullest active OPEN-visibility Lounge
+ * with a seat, preferring rooms hosted by people the viewer follows. Skips
+ * rooms that contain anyone the viewer has blocked (or who blocked them).
+ * Spins up a brand-new Lounge if none qualify.
  */
 export const joinLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -171,6 +173,47 @@ export const joinLounge = createServerFn({ method: "POST" })
     const { data, error } = await supabaseAdmin.rpc("join_lounge", { _user_id: userId });
     if (error) throw new Error(error.message);
     return { roomId: data as string };
+  });
+
+/**
+ * Host-only: notify the host's mutual followers that this room is live.
+ * Rate-limited (one batch per 30 min) via the same helper as auto-notify on host.
+ */
+export const pingMutualsForRoom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, kind, status, host_user_id, medium, title, visibility")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (!room) throw new Error("Room not found");
+    if ((room as any).host_user_id !== userId) throw new Error("Only the host can ping mutuals");
+    if (room.kind !== "lounge" || room.status !== "active") throw new Error("Room isn't live");
+    const visibility = ((room as any).visibility ?? "open") as RoomVisibility;
+    if (visibility === "invite") return { notified: 0 };
+
+    const before = Date.now();
+    await notifyMutualsOnHost({
+      hostUserId: userId,
+      roomId: room.id as string,
+      visibility,
+      medium: ((room as any).medium ?? null) as (typeof MEDIUMS)[number] | null,
+      title: (room as any).title ?? "Workshop",
+    });
+    const sinceIso = new Date(before - 1000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("actor_user_id", userId)
+      .eq("kind", "workshop_live")
+      .eq("entity_id", room.id as string)
+      .gte("created_at", sinceIso);
+    return { notified: count ?? 0 };
   });
 
 /** Join a specific live room by id. Rejects if the room is full or no longer active. */
