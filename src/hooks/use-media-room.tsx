@@ -50,6 +50,8 @@ export function useMediaRoom(roomId: string | undefined) {
   const [peers, setPeers] = useState<Record<string, MediaPeer>>({});
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [screenSharerId, setScreenSharerId] = useState<string | null>(null);
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
@@ -57,6 +59,9 @@ export function useMediaRoom(roomId: string | undefined) {
   const speakingStopRef = useRef<(() => void) | null>(null);
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
+  const screenStreamRef = useRef<MediaStream | null>(null);
+  const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
+
 
   // ---- TURN fallback (session-cached) ---------------------------------------
   // STUN-only is tried first for every pair (free). We only fetch TURN
