@@ -29,7 +29,9 @@ type SignalEvent =
   | { type: "offer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
   | { type: "answer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
   | { type: "ice"; from: string; to: string; candidate: RTCIceCandidateInit }
-  | { type: "speaking"; from: string; speaking: boolean };
+  | { type: "speaking"; from: string; speaking: boolean }
+  | { type: "screen"; from: string; active: boolean };
+
 
 type PresenceMeta = { mode: MediaMode; joined_at: string };
 
