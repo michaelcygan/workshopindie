@@ -317,6 +317,22 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
+  if (tool.tool_type === "board") {
+    const { user } = useAuth();
+    if (!user) return null;
+    return (
+      <div className="p-2 h-[560px]">
+        <RoomBoard
+          scope={scope.kind === "instant"
+            ? { kind: "instant", roomId: scope.roomId }
+            : { kind: "persistent", workshopId: scope.workshopId }}
+          userId={user.id}
+          fullscreen
+          className="h-full"
+        />
+      </div>
+    );
+  }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
 }
