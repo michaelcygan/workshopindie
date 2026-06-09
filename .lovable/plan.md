@@ -1,46 +1,80 @@
-## Audit findings
+## Goal
 
-After tracing `workshop.index.tsx` → `LiveWorkshopsRail` → `LoungeForkDropdown` → `instant.functions.ts` → SQL (`list_active_instant_rooms`, `join_lounge`, `join_medium_lounge`), three real bugs stand out. Everything else (presence enrichment, cap, archival, activity feed) checks out.
+Close the loop on the host-from-empty-state flow so a new room (1) shows up in **Live now** immediately, (2) tells the host who can see it, (3) reminds the host of their utilities, and (4) pings mutuals so something actually happens after the click.
 
-### Bug 1 — Live now ignores the selected medium (the one you reported)
-`LiveWorkshopsRail` lists every active room. When you pick "Film" at the top, the rail still shows the open-topic "Artist's Lounge" (medium = null). Discovery and filter disagree.
+## 1. Make brand-new rooms appear in "Live now"
 
-### Bug 2 — "Take an open seat" doesn't join the room you clicked
-The card's CTA calls the matchmaker (`joinMediumLounge` / `joinLounge`), which picks the *fullest* room of that medium. If two Film rooms are live, clicking the one with 1/5 can land you in the one with 4/5. The displayed room and the joined room can differ.
+**Problem:** `list_active_instant_rooms` filters `live_count > 0`. A room created from the empty state has no presence row yet, so the rail keeps saying "No one's live right now" until the host's `instant_presence` heartbeat lands a few seconds later. From the empty state, that's the exact moment the user wants the signal.
 
-### Bug 3 — "Any topic" matchmaker can drop you into a Film room
-`join_lounge` selects `kind='lounge' AND status='active'` with no `medium IS NULL` filter. So picking "Any topic" can route you into a medium-specific lounge, which is the inverse of the user's intent (and the inverse of `join_medium_lounge`, which correctly filters by medium).
+**Fix (SQL migration):** include rooms that are either currently live OR were created within the last 90 seconds by a host who is presumed present (`host_user_id IS NOT NULL`). Belt-and-suspenders on the client by also invalidating the `instant-active-rooms` query right after `hostInstantWorkshop` resolves on the workshop preflight page.
 
-### Not bugs (verified)
-- Hero "N live" counter sums all rooms — intended (it's the global pulse).
-- `list_active_instant_rooms` already excludes 0-live rooms.
-- Presence join + 60s cutoff is consistent across rail, dropdown, and SQL.
-- Archival of ghost lounges runs in both join paths.
+## 2. Privacy popup on every Workshop create (user picked "every time")
 
-## Fix plan
+**New column** on `instant_rooms`: `visibility text NOT NULL DEFAULT 'open'` constrained to `'open' | 'mutuals' | 'invite'`.
 
-### 1. Filter the Live now rail by selected medium
-`workshop.index.tsx`: pass `selectedDropMedium` into `<LiveWorkshopsRail medium={selectedDropMedium} />`.
-`live-workshops-rail.tsx`: when `medium` is set, filter `rooms` to `r.medium === medium`; when null, show all. Update the subtitle ("3 Film rooms live" vs "3 rooms live now") and the empty-state copy ("No Film rooms live — be the first").
+**New component** `src/components/host-privacy-dialog.tsx`:
+- Opens from both Host card on `/workshop` and the "+ Create → Start a Draft Workshop" path
+- Three options with one-line explanations: Open (anyone can drop in), Mutuals only (people you mutually follow can see + join), Invite link only (hidden from Live now; share link to fill seats)
+- Also shows the medium chip and a single editable title field so the user confirms what's about to spin up
+- Confirms by calling `hostInstantWorkshop({ medium, title, visibility })`
 
-### 2. Join the specific clicked room
-Add a new server fn `joinSpecificInstantRoom({ roomId })` in `src/lib/instant.functions.ts` that:
-- Verifies the room is `kind='lounge' AND status='active'`.
-- Counts live presence in the last 60s; rejects if `>= 5`.
-- Returns `{ roomId }` (presence row is created by the room page on mount, same as today).
+**Server changes** (`src/lib/instant.functions.ts`):
+- `hostInstantWorkshop` accepts `visibility`, writes to the new column.
+- `listActiveInstantRooms` (and the `list_active_instant_rooms` SQL function) filter out `visibility = 'invite'` and, for `visibility = 'mutuals'`, only return rooms where the viewer is mutual-followed with the host. Switch the SQL fn to take the caller `_viewer uuid` and pass `auth.uid()` from the server fn.
 
-`LiveWorkshopsRail.takeSeat` calls this fn instead of the matchmakers. On `Room is full` error, toast and refetch the list.
+`workshop.index.tsx` and `live-workshops-rail.tsx` already pass medium; only the dialog flow needs wiring.
 
-### 3. Scope `join_lounge` to open-topic rooms
-Migration: edit `public.join_lounge` to add `AND r.medium IS NULL` in both the archival `UPDATE` and the `SELECT` for fullest room. New rooms it creates already have `medium = null` implicitly — make that explicit in the `INSERT` for clarity.
+## 3. First-time host quick tour inside the room
 
-### Out of scope
-- No UI changes to host card, hero, or workshop strip.
-- No schema changes beyond the `join_lounge` function body.
-- No realtime channel rewrite — the existing 5s poll is fine for this rail.
+**New component** `src/components/host-first-run-tour.tsx`:
+- Renders only on `/workshop/$id` when `isHost === true` AND `localStorage` key `wf:host-tour-v1` is not set
+- Lightweight 3-step inline coach (popovers anchored to the tools panel, "Create", and the share link), not a modal — dismiss + "Don't show again"
+- Steps: (a) "These are your host utilities — docs, drive, polls" (b) "Tap Create → Collab once there's something worth shipping" (c) "Share this link to fill the remaining seats" with a one-tap copy button
+- After dismiss/finish, sets the localStorage key and emits a tiny toast: "You're hosting. Have fun."
 
-### Files touched
-- `supabase/migrations/<new>.sql` — replace `public.join_lounge` body
-- `src/lib/instant.functions.ts` — add `joinSpecificInstantRoom`
-- `src/components/live-workshops-rail.tsx` — accept `medium` prop, filter list, call new fn
-- `src/routes/workshop.index.tsx` — pass `medium={selectedDropMedium}` to the rail
+Wire into `src/routes/workshop.$id.tsx` next to `<WorkshopToolsPanel />`.
+
+## 4. Notify mutual follows when someone goes live (user picked: notify)
+
+**New server fn** `notifyMutualsOnHost({ roomId })` in `src/lib/instant.functions.ts`, called from `hostInstantWorkshop` after insert:
+- Pull mutual followers via existing `is_mutual_follow` pattern (single SQL: intersect `follows` both directions).
+- Insert into `notifications` (kind `workshop_live`, entity_type `instant_room`, entity_id = roomId, payload `{ actor_name, room_title, medium }`). Respect `notification_preferences` (gate by a new prefs flag `workshop_live_from_mutuals`, default ON).
+- Cap volume: skip if the host already opened a room in the last 30 minutes (rate-limit via `check_and_bump` action `workshop_live_notify:<userId>`).
+- Hidden when `visibility = 'invite'` (no notification at all); for `mutuals` and `open` it fires.
+
+Notification renderer in `src/components/notifications-bell.tsx`: add a new case linking to `/workshop/$roomId` with copy "X just opened a live Workshop — drop in".
+
+## 5. Audit fixes found along the way
+
+- `hostInstantWorkshop` returns `{ roomId }` but the preflight page never invalidates the rail query → add `qc.invalidateQueries(["instant-active-rooms"])` right before `router.navigate`.
+- `workshop.$id.tsx` reads `room.category ?? room.medium` but `hostInstantWorkshop` only sets `medium` — confirm the tools panel scope falls back correctly (it does today; no change needed, just noting).
+- `list_active_instant_rooms` deletes from `instant_activity` inside the function — leave as-is, but switch to `SECURITY DEFINER` parameter signature `(_viewer uuid)` and update callers.
+
+## Technical details
+
+**SQL migration:**
+```sql
+ALTER TABLE public.instant_rooms
+  ADD COLUMN visibility text NOT NULL DEFAULT 'open'
+    CHECK (visibility IN ('open','mutuals','invite'));
+
+CREATE OR REPLACE FUNCTION public.list_active_instant_rooms(_viewer uuid)
+RETURNS TABLE (...) ...
+-- include rooms with live_count > 0 OR (created_at > now()-interval '90 seconds' AND host_user_id IS NOT NULL)
+-- filter visibility = 'invite'
+-- for visibility = 'mutuals', require is_mutual_follow(_viewer, host_user_id)
+```
+
+**Files touched:**
+- `supabase/migrations/<ts>_workshop_visibility_and_freshness.sql` (new)
+- `src/lib/instant.functions.ts` (visibility param, `notifyMutualsOnHost`, pass viewer to RPC)
+- `src/components/host-privacy-dialog.tsx` (new)
+- `src/components/host-first-run-tour.tsx` (new)
+- `src/routes/workshop.index.tsx` (open dialog instead of direct host call; invalidate rail)
+- `src/routes/workshop.$id.tsx` (mount tour for host)
+- `src/components/notifications-bell.tsx` (render new notification kind)
+
+## Out of scope
+
+- Changing the matchmaker behavior for "Drop in" — already audited last turn.
+- Privacy enforcement on `/workshop/$id` itself (anyone with the link can still join; this only affects discovery). Happy to add a follow-up plan for hard gating if you want it.
