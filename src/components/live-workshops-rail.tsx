@@ -82,19 +82,22 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
   if (rooms.length === 0 && fullRooms.length === 0) {
     return (
       <section className="mt-10">
-        <RailHeader subtitle="No one's live right now." />
+        <RailHeader subtitle={mediumLabel ? `No ${mediumLabel} rooms live` : "No one's live right now."} />
         <div className="mt-3 rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
           <p className="text-sm text-ink-soft">
-            Be the first — drop in and others will see you live within seconds.
+            {mediumLabel
+              ? `Be the first ${mediumLabel} room — open one and others will see you live within seconds.`
+              : "Be the first — drop in and others will see you live within seconds."}
           </p>
         </div>
       </section>
     );
   }
 
+  const total = rooms.length + fullRooms.length;
   return (
     <section className="mt-10">
-      <RailHeader subtitle={`${rooms.length + fullRooms.length} room${rooms.length + fullRooms.length === 1 ? "" : "s"} live now`} />
+      <RailHeader subtitle={`${total} ${mediumLabel ? `${mediumLabel} ` : ""}room${total === 1 ? "" : "s"} live now`} />
       <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {rooms.map((r) => (
           <article
