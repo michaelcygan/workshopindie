@@ -695,6 +695,250 @@ export type Database = {
         }
         Relationships: []
       }
+      instant_doc_comments: {
+        Row: {
+          anchor: Json | null
+          author_id: string | null
+          body: string
+          created_at: string
+          doc_id: string
+          id: string
+          parent_id: string | null
+          resolved_at: string | null
+          room_id: string
+          updated_at: string
+        }
+        Insert: {
+          anchor?: Json | null
+          author_id?: string | null
+          body: string
+          created_at?: string
+          doc_id: string
+          id?: string
+          parent_id?: string | null
+          resolved_at?: string | null
+          room_id: string
+          updated_at?: string
+        }
+        Update: {
+          anchor?: Json | null
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          doc_id?: string
+          id?: string
+          parent_id?: string | null
+          resolved_at?: string | null
+          room_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_doc_comments_doc_id_fkey"
+            columns: ["doc_id"]
+            isOneToOne: false
+            referencedRelation: "instant_docs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_doc_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "instant_doc_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_doc_comments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_docs: {
+        Row: {
+          content_md: string
+          created_at: string
+          created_by: string | null
+          id: string
+          room_id: string
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_md?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          room_id: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          content_md?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          room_id?: string
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_docs_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_drive_file_comments: {
+        Row: {
+          author_id: string | null
+          body: string
+          created_at: string
+          file_id: string
+          id: string
+          room_id: string
+          timecode_ms: number | null
+        }
+        Insert: {
+          author_id?: string | null
+          body: string
+          created_at?: string
+          file_id: string
+          id?: string
+          room_id: string
+          timecode_ms?: number | null
+        }
+        Update: {
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          file_id?: string
+          id?: string
+          room_id?: string
+          timecode_ms?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_drive_file_comments_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "instant_drive_files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_drive_file_comments_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_drive_files: {
+        Row: {
+          byte_size: number | null
+          created_at: string
+          duration_ms: number | null
+          filename: string
+          height: number | null
+          id: string
+          mime_type: string | null
+          note: string | null
+          room_id: string
+          storage_path: string
+          updated_at: string
+          uploader_id: string | null
+          width: number | null
+        }
+        Insert: {
+          byte_size?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          filename: string
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          room_id: string
+          storage_path: string
+          updated_at?: string
+          uploader_id?: string | null
+          width?: number | null
+        }
+        Update: {
+          byte_size?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          filename?: string
+          height?: number | null
+          id?: string
+          mime_type?: string | null
+          note?: string | null
+          room_id?: string
+          storage_path?: string
+          updated_at?: string
+          uploader_id?: string | null
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_drive_files_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_drive_links: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          provider: string
+          room_id: string
+          title: string | null
+          url: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: string
+          room_id: string
+          title?: string | null
+          url: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          provider?: string
+          room_id?: string
+          title?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_drive_links_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_messages: {
         Row: {
           body: string
@@ -863,7 +1107,9 @@ export type Database = {
           body: string | null
           created_at: string
           created_by_user_id: string | null
+          done: boolean
           id: string
+          position: number
           title: string | null
           tool_id: string
           url: string | null
@@ -872,7 +1118,9 @@ export type Database = {
           body?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          done?: boolean
           id?: string
+          position?: number
           title?: string | null
           tool_id: string
           url?: string | null
@@ -881,7 +1129,9 @@ export type Database = {
           body?: string | null
           created_at?: string
           created_by_user_id?: string | null
+          done?: boolean
           id?: string
+          position?: number
           title?: string | null
           tool_id?: string
           url?: string | null

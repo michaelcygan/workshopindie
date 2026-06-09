@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink,
-  FolderOpen, MonitorPlay, PenLine, Mic, Sparkles,
+  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink, Check,
+  FolderOpen, MonitorPlay, PenLine, Mic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,11 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
+import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
+import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "repo_links" | "moodboard";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "docs_rich" | "drive" | "screen_share" | "board" | "recorder";
+type ComingSoonToolType = "screen_share" | "board" | "recorder";
 type ToolType = ShippedToolType | ComingSoonToolType;
 
 type Preset = {
@@ -32,19 +34,18 @@ type Preset = {
 
 // Order here drives chip order in the picker. Shipped tools first.
 const PRESETS: Record<ToolType, Preset> = {
-  outline:      { label: "Docs",         icon: FileText,    blurb: "Beats, notes, drafts.",          titlePlaceholder: "Section heading",   bodyPlaceholder: "Beats, ideas, draft text…", fields: ["title", "body"] },
+  outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
+  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links — files coming.", fields: [] },
   moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  docs_rich:    { label: "Docs (rich)",  icon: Sparkles,    blurb: "Multi-page collaborative editor with comments.", comingSoon: true, fields: [] },
-  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share files and cloud links in the room.",       comingSoon: true, fields: [] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.",   comingSoon: true, fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",                            comingSoon: true, fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes from inside the room.",             comingSoon: true, fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "moodboard", "repo_links", "docs_rich", "drive", "screen_share", "board", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "board", "recorder"];
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
@@ -138,7 +139,7 @@ export function WorkshopToolsPanel(props: Props) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border p-4">
         <p className="text-sm text-ink-muted text-center">
-          Spin up a shared tool — Docs, Pinboard, List, Moodboard, Repo & Demo. Add as many as you need.
+          Spin up a shared tool — Docs, Pinboard, List, Drive, Moodboard, Repo & Demo. Add as many as you need.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TOOL_ORDER.map((type) => {
@@ -206,7 +207,7 @@ export function WorkshopToolsPanel(props: Props) {
           <AddToolMenu enabled={enabledTools.map((tool) => tool.tool_type)} onAdd={enableTool} />
         )}
       </div>
-      {currentTool && <ToolItems scope={scope} tool={currentTool} />}
+      {currentTool && <ActiveToolBody scope={scope} tool={currentTool} />}
     </div>
   );
 }
@@ -248,6 +249,38 @@ function AddToolMenu({ enabled, onAdd }: { enabled: StoredToolType[]; onAdd: (t:
   );
 }
 
+function toDocsScope(scope: ToolsScope): DocsScope {
+  return scope.kind === "persistent"
+    ? { kind: "persistent", workshopId: scope.workshopId }
+    : { kind: "instant", roomId: scope.roomId };
+}
+
+function toDriveScope(scope: ToolsScope): DrivePanelScope {
+  return scope.kind === "persistent"
+    ? { kind: "persistent", workshopId: scope.workshopId }
+    : { kind: "instant", roomId: scope.roomId };
+}
+
+function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
+  // Dedicated full-featured components for the rich tools.
+  if (tool.tool_type === "outline") {
+    return (
+      <div className="p-4">
+        <WorkshopDocsEditor scope={toDocsScope(scope)} />
+      </div>
+    );
+  }
+  if (tool.tool_type === "drive") {
+    return (
+      <div className="p-4">
+        <WorkshopDrivePanel scope={toDriveScope(scope)} />
+      </div>
+    );
+  }
+  // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
+  return <ToolItems scope={scope} tool={tool} />;
+}
+
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -258,15 +291,29 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const isInstant = scope.kind === "instant";
+  const isList = tool.tool_type === "list" || tool.tool_type === "shot_list" || tool.tool_type === "track_list";
+  // `done` only exists on instant_tool_items; persistent workshop_tool_items uses workshop_tasks for completion.
+  const selectCols = isInstant
+    ? `id,title,body,url,done,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`
+    : `id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`;
+
   const { data: items = [] } = useQuery({
     queryKey: ["ws-tool-items", scope.kind, tool.id],
     queryFn: async () => {
       const { data } = await (supabase.from(t.itemsTable) as any)
-        .select(`id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`)
+        .select(selectCols)
         .eq("tool_id", tool.id).order("created_at", { ascending: false });
       return data ?? [];
     },
   });
+
+  async function toggleDone(it: any) {
+    if (!isInstant) return;
+    const { error } = await (supabase.from(t.itemsTable) as any).update({ done: !it.done }).eq("id", it.id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["ws-tool-items", scope.kind, tool.id] });
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
@@ -334,14 +381,34 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
             }
             return (
               <div key={it.id} className="rounded-xl border border-border bg-surface-2 p-3">
-                {it.title && <div className="text-sm font-medium text-ink">{it.title}</div>}
-                {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
-                {it.url && (
-                  <a href={it.url} target="_blank" rel="noreferrer noopener"
-                    className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
-                    {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+                <div className="flex items-start gap-2">
+                  {isList && isInstant && (
+                    <button
+                      onClick={() => toggleDone(it)}
+                      className={
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition " +
+                        (it.done ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary")
+                      }
+                      aria-label={it.done ? "Mark as open" : "Mark as done"}
+                    >
+                      {it.done && <Check className="h-2.5 w-2.5" />}
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {it.title && (
+                      <div className={"text-sm font-medium " + (isList && it.done ? "text-ink-muted line-through" : "text-ink")}>
+                        {it.title}
+                      </div>
+                    )}
+                    {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
+                    {it.url && (
+                      <a href={it.url} target="_blank" rel="noreferrer noopener"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
+                        {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
                   <Avatar className="h-4 w-4"><AvatarImage src={it.profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{name[0]}</AvatarFallback></Avatar>
                   <span>{name}</span>
