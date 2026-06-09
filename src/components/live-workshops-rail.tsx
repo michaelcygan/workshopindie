@@ -25,11 +25,11 @@ function labelFor(medium: Category | null) {
   return CATEGORIES.find((c) => c.id === medium)?.label ?? medium;
 }
 
-export function LiveWorkshopsRail({ canJoin, onTakeSeat }: Props) {
+export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
-  const drop = useServerFn(joinLounge);
-  const dropMedium = useServerFn(joinMediumLounge);
+  const joinRoom = useServerFn(joinSpecificInstantRoom);
   const router = useRouter();
+  const qc = useQueryClient();
   const [busyRoom, setBusyRoom] = useState<string | null>(null);
 
   const { data } = useQuery({
@@ -38,19 +38,21 @@ export function LiveWorkshopsRail({ canJoin, onTakeSeat }: Props) {
     refetchInterval: 5000,
   });
 
-  const rooms = (data?.rooms ?? []).filter((r) => r.live_count < 5);
-  const fullRooms = (data?.rooms ?? []).filter((r) => r.live_count >= 5);
+  const allRooms = data?.rooms ?? [];
+  const scoped = medium ? allRooms.filter((r) => r.medium === medium) : allRooms;
+  const rooms = scoped.filter((r) => r.live_count < 5);
+  const fullRooms = scoped.filter((r) => r.live_count >= 5);
+  const mediumLabel = medium ? CATEGORIES.find((c) => c.id === medium)?.label ?? medium : null;
 
   async function takeSeat(r: ActiveInstantRoom) {
     if (busyRoom || !canJoin) return;
     setBusyRoom(r.id);
     try {
-      const { roomId } = r.medium
-        ? await dropMedium({ data: { medium: r.medium } })
-        : await drop();
+      const { roomId } = await joinRoom({ data: { roomId: r.id } });
       await onTakeSeat(roomId);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't take that seat");
+      qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
       setBusyRoom(null);
     }
   }
