@@ -244,6 +244,7 @@ function WorkshopPreflight() {
 
       <LiveWorkshopsRail
         canJoin={canDrop && busy === null}
+        medium={selectedDropMedium}
         onTakeSeat={async (roomId) => {
           const mode = await preGrantMedia();
           router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });

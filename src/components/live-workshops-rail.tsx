@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useRouter } from "@tanstack/react-router";
+
 import { Radio, Share2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -28,7 +28,6 @@ function labelFor(medium: Category | null) {
 export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
   const joinRoom = useServerFn(joinSpecificInstantRoom);
-  const router = useRouter();
   const qc = useQueryClient();
   const [busyRoom, setBusyRoom] = useState<string | null>(null);
 
