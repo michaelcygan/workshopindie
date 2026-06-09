@@ -65,8 +65,9 @@ export function ChannelView({
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
-  toolsSlot?: React.ReactNode;
+  toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
+
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
   const router = useRouter();
