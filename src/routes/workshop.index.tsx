@@ -240,6 +240,14 @@ function WorkshopPreflight() {
         Cap 5 per room. Everything in a live room is ephemeral until someone creates a Collab from it.
       </p>
 
+      <LiveWorkshopsRail
+        canJoin={canDrop && busy === null}
+        onTakeSeat={async (roomId) => {
+          const mode = await preGrantMedia();
+          router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+        }}
+      />
+
       <WorkshopStrip />
     </main>
   );
