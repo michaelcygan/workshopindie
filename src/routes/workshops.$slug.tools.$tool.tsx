@@ -23,7 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const SUPPORTED = ["tasks", "drive", "docs"] as const;
+const SUPPORTED = ["tasks", "drive", "docs", "board"] as const;
 type Tool = (typeof SUPPORTED)[number];
 
 export const Route = createFileRoute("/workshops/$slug/tools/$tool")({
