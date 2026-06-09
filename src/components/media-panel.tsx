@@ -211,16 +211,45 @@ export function VideoStage({
 }) {
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
   const showLocalVideo = m.cameraOn && m.localStream;
-  const hasAny = showLocalVideo || videoPeers.length > 0;
+  const sharerName = m.screenSharerId
+    ? (profileLookup.get(m.screenSharerId)?.display_name
+       ?? profileLookup.get(m.screenSharerId)?.username
+       ?? (m.screenSharerId === (m as any).myId ? "You" : "Someone"))
+    : null;
+  const localScreen = m.isScreenSharing && m.screenStream;
+  // When a remote peer is sharing, their video tile is already showing the screen
+  // (we replaceTrack'd on their end). We just highlight it with a bigger frame.
+  const remoteSharingPeer = m.screenSharerId && !m.isScreenSharing
+    ? videoPeers.find((p) => p.userId === m.screenSharerId)
+    : null;
+  const hasAny = showLocalVideo || videoPeers.length > 0 || localScreen;
   if (!hasAny) return null;
 
   return (
     <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
+      {localScreen && (
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <MonitorPlay className="h-3 w-3 text-primary" />
+            <span>You're sharing your screen</span>
+          </div>
+          <VideoTile stream={m.screenStream!} label="Your screen" muted />
+        </div>
+      )}
+      {remoteSharingPeer && (
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <MonitorPlay className="h-3 w-3 text-primary" />
+            <span>{sharerName} is sharing their screen</span>
+          </div>
+          <VideoTile stream={remoteSharingPeer.stream!} label={`${sharerName}'s screen`} speaking={remoteSharingPeer.speaking} />
+        </div>
+      )}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-        {showLocalVideo && (
+        {showLocalVideo && !localScreen && (
           <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
         )}
-        {videoPeers.map((p) => {
+        {videoPeers.filter((p) => p.userId !== m.screenSharerId).map((p) => {
           const prof = profileLookup.get(p.userId);
           return (
             <VideoTile
@@ -235,6 +264,7 @@ export function VideoStage({
     </div>
   );
 }
+
 
 // ============================================================================
 // Fullscreen room — unified tile grid (video + audio-only avatars) + chat
