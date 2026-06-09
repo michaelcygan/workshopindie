@@ -26,11 +26,12 @@ function Card({ l, action }: { l: LobbyCard; action: React.ReactNode }) {
            l.invite_status === "pending" ? <Users className="h-3 w-3" /> :
            <Users className="h-3 w-3" />}
           {l.invite_status === "host" ? "You're hosting" :
-           l.invite_status === "discoverable" ? "Open lobby" :
+           l.invite_status === "discoverable" ? "Open draft" :
            l.invite_status === "pending" ? "Invited" : "Joined"}
         </span>
         <span className="inline-flex items-center gap-1 text-ink-muted">
           {l.lobby_discoverable ? <Eye className="h-3 w-3" /> : <Lock className="h-3 w-3" />}
+          <span className="rounded-full bg-surface-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wide">Draft</span>
           {l.member_count} {l.member_count === 1 ? "member" : "members"}
         </span>
       </div>
@@ -59,7 +60,7 @@ export function LobbiesSection() {
   const accept = useMutation({
     mutationFn: (workshopId: string) => acceptFn({ data: { workshopId } }),
     onSuccess: (res) => {
-      toast.success("Joined the lobby");
+      toast.success("Joined the draft");
       qc.invalidateQueries({ queryKey: ["my-lobbies"] });
       if (res?.workshopSlug) window.location.assign(`/workshops/${res.workshopSlug}`);
     },
@@ -86,10 +87,10 @@ export function LobbiesSection() {
     <section className="mt-10">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="font-display text-2xl text-ink">Lobbies</h2>
-          <p className="text-sm text-ink-muted">Invite-only Workshops with people you mutually follow.</p>
+          <h2 className="font-display text-2xl text-ink">Draft Workshops</h2>
+          <p className="text-sm text-ink-muted">Private Workshops you're brainstorming with people you mutually follow. Schedule one when you're ready.</p>
         </div>
-        <Link to="/workshops/lobby/new"><Button size="sm" variant="outline" className="rounded-full gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Start a Lobby</Button></Link>
+        <Link to="/workshops/lobby/new"><Button size="sm" variant="outline" className="rounded-full gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Start a Draft</Button></Link>
       </div>
 
       <div className={cn("mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3", loading && "opacity-60")}>

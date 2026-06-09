@@ -3,12 +3,14 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2 } from "lucide-react";
+import { Calendar, MapPin, Users, Check, X, Sparkles, ExternalLink, Clock, Rocket, Ban, Loader2, Play, Square, CalendarPlus } from "lucide-react";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { WorkshopProgressBar } from "@/components/workshop-progress-bar";
 import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
+import { scheduleDraft } from "@/lib/lobby.functions";
+import { rsvpToWorkshop, cancelRsvp } from "@/lib/collab-workshop.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,6 +64,7 @@ type Workshop = {
   min_age: number | null; max_age: number | null;
   check_in_opens_at: string | null; check_in_closes_at: string | null;
   topic_collab_post_id: string | null; published_work_id: string | null;
+  is_lobby: boolean; lobby_discoverable: boolean;
   host: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null;
 };
 
@@ -126,9 +129,18 @@ function WorkshopDetail() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 md:py-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CategoryChip category={ws.category} />
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status}</span>
+          {ws.is_lobby ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+              <Sparkles className="h-3 w-3" /> Draft
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              <Calendar className="h-3 w-3" /> Workshop
+            </span>
+          )}
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status.replace("_", " ")}</span>
           {isHost && <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-medium text-violet">You're hosting</span>}
           {(ws.min_age != null || ws.max_age != null) && (
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-ink-soft">
@@ -189,13 +201,17 @@ function WorkshopDetail() {
 
       {isHost && <HostStatusBar ws={ws} onChanged={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
+      {isHost && ws.is_lobby && <ScheduleDraftPanel ws={ws} onScheduled={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
+
       <CheckInPanel ws={ws} />
+
+      <RsvpButton ws={ws} />
 
       <RolesAndApply ws={ws} />
 
       {isHost && <HostApplications ws={ws} />}
 
-      {(isLive || isHost) && <Room ws={ws} />}
+      {(isLive || isHost || ws.is_lobby) && <Room ws={ws} />}
 
       {isHost && isOver && ws.status !== "shipped" && <FinalizePanel ws={ws} onShipped={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
@@ -583,8 +599,12 @@ function HostStatusBar({ ws, onChanged }: { ws: Workshop; onChanged: () => void 
 
   const isDraft = ws.status === "draft";
   const isOpen = ws.status === "open";
+  const isCheckIn = ws.status === "check_in";
+  const isActive = ws.status === "active";
   const canCancel = ["draft", "open", "check_in", "active"].includes(ws.status);
-  if (!isDraft && !isOpen && !canCancel) return null;
+  // Draft Workshops (is_lobby) use the dedicated ScheduleDraftPanel instead.
+  if (ws.is_lobby) return null;
+  if (!isDraft && !isOpen && !isCheckIn && !isActive && !canCancel) return null;
 
   return (
     <section className="mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3">
@@ -606,6 +626,17 @@ function HostStatusBar({ ws, onChanged }: { ws: Workshop; onChanged: () => void 
             <Clock className="h-3.5 w-3.5" /> Open check-in (30 min)
           </Button>
         )}
+        {(isCheckIn || isOpen) && (
+          <Button size="sm" disabled={busy} className="rounded-full gap-1.5" onClick={() => setStatus("active")}>
+            <Play className="h-3.5 w-3.5" /> Start Workshop
+          </Button>
+        )}
+        {isActive && (
+          <Button size="sm" disabled={busy} variant="outline" className="rounded-full gap-1.5"
+            onClick={() => { if (confirm("End & wrap this Workshop? Artifacts stay editable to the host.")) setStatus("finalizing"); }}>
+            <Square className="h-3.5 w-3.5" /> End & wrap
+          </Button>
+        )}
         {canCancel && (
           <Button size="sm" disabled={busy} variant="ghost" className="rounded-full gap-1.5 text-ink-muted hover:text-ink"
             onClick={() => { if (confirm("Cancel this Workshop?")) setStatus("canceled"); }}>
@@ -613,6 +644,152 @@ function HostStatusBar({ ws, onChanged }: { ws: Workshop; onChanged: () => void 
           </Button>
         )}
       </div>
+    </section>
+  );
+}
+
+/* ---------- Schedule Draft → Workshop ---------- */
+
+function ScheduleDraftPanel({ ws, onScheduled }: { ws: Workshop; onScheduled: () => void }) {
+  const scheduleFn = useServerFn(scheduleDraft);
+  const [open, setOpen] = useState(false);
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "invite_only">("public");
+  const [externalCallUrl, setExternalCallUrl] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (!startsAt || !endsAt) return toast.error("Pick a start and end time");
+    setBusy(true);
+    try {
+      await scheduleFn({
+        data: {
+          workshopId: ws.id,
+          startsAt: new Date(startsAt).toISOString(),
+          endsAt: new Date(endsAt).toISOString(),
+          visibility,
+          locationType: "online",
+          externalCallUrl: externalCallUrl.trim() || null,
+        },
+      });
+      toast.success("Scheduled — invitees notified");
+      setOpen(false);
+      onScheduled();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't schedule");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+          <Sparkles className="h-5 w-5" />
+        </span>
+        <div className="flex-1 min-w-[200px]">
+          <div className="text-sm font-medium text-ink">This is a Draft Workshop</div>
+          <div className="text-xs text-ink-muted">Brainstorm with invitees. Schedule it when you're ready to open RSVPs.</div>
+        </div>
+        <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setOpen((v) => !v)}>
+          <CalendarPlus className="h-3.5 w-3.5" /> {open ? "Cancel" : "Schedule this Draft"}
+        </Button>
+      </div>
+      <AnimatePresence>
+        {open && (
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs text-ink-muted">Starts<input type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-ink" /></label>
+              <label className="text-xs text-ink-muted">Ends<input type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-ink" /></label>
+            </div>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={() => setVisibility("public")}
+                className={cn("rounded-2xl border p-3 text-left text-sm transition", visibility === "public" ? "border-ink bg-surface" : "border-border bg-surface hover:bg-muted")}>
+                <div className="font-medium text-ink">Public</div>
+                <div className="text-xs text-ink-muted">Anyone can find and RSVP.</div>
+              </button>
+              <button type="button" onClick={() => setVisibility("invite_only")}
+                className={cn("rounded-2xl border p-3 text-left text-sm transition", visibility === "invite_only" ? "border-ink bg-surface" : "border-border bg-surface hover:bg-muted")}>
+                <div className="font-medium text-ink">Invite-only</div>
+                <div className="text-xs text-ink-muted">Only invitees see and can join.</div>
+              </button>
+            </div>
+            <Input type="url" placeholder="External call URL (optional)" className="mt-3" value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} />
+            <div className="mt-3 flex justify-end">
+              <Button size="sm" className="rounded-full" onClick={submit} disabled={busy}>{busy ? "Scheduling…" : "Schedule Workshop"}</Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </section>
+  );
+}
+
+/* ---------- RSVP (one-tap join) ---------- */
+
+function RsvpButton({ ws }: { ws: Workshop }) {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const rsvpFn = useServerFn(rsvpToWorkshop);
+  const cancelFn = useServerFn(cancelRsvp);
+  const [busy, setBusy] = useState(false);
+
+  const { data: roles = [] } = useQuery({
+    queryKey: ["ws-roles", ws.id],
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_roles").select("id").eq("workshop_id", ws.id);
+      return data ?? [];
+    },
+  });
+  const { data: myPart } = useQuery({
+    queryKey: ["ws-mypart", ws.id, user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("workshop_participants")
+        .select("id,participant_status").eq("workshop_id", ws.id).eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
+
+  if (ws.is_lobby) return null;
+  if (!user) return null;
+  if (user.id === ws.host_user_id) return null;
+  if (roles.length > 0) return null; // role-based workshops use Apply
+  if (!["open", "check_in"].includes(ws.status)) return null;
+  const isFull = !!ws.participant_cap && ws.confirmed_count >= ws.participant_cap && !myPart;
+
+  async function go() {
+    setBusy(true);
+    try {
+      if (myPart) {
+        await cancelFn({ data: { workshopId: ws.id } });
+        toast.success("RSVP canceled");
+      } else {
+        await rsvpFn({ data: { workshopId: ws.id } });
+        toast.success("You're in — see you there");
+      }
+      qc.invalidateQueries({ queryKey: ["ws-mypart", ws.id, user!.id] });
+      qc.invalidateQueries({ queryKey: ["workshop", ws.slug] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't update RSVP");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+      <Users className="h-5 w-5 text-primary" />
+      <div className="flex-1 min-w-[180px]">
+        <div className="text-sm font-medium text-ink">{myPart ? "You're RSVP'd" : "Open RSVP"}</div>
+        <div className="text-xs text-ink-muted">{isFull ? "This Workshop is full." : myPart ? "Cancel any time before check-in." : "No application required — one-tap to confirm a seat."}</div>
+      </div>
+      <Button size="sm" className="rounded-full" disabled={busy || isFull} variant={myPart ? "outline" : "default"} onClick={go}>
+        {busy ? "…" : myPart ? "Cancel RSVP" : "RSVP"}
+      </Button>
     </section>
   );
 }

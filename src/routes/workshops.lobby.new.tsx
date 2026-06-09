@@ -22,8 +22,8 @@ import {
 export const Route = createFileRoute("/workshops/lobby/new")({
   head: () => ({
     meta: [
-      { title: "Start a Lobby — invite the people you mutually follow" },
-      { name: "description", content: "Spin up a private Workshop lobby for an idea and pull in the people you mutually follow." },
+      { title: "Start a Draft Workshop — invite the people you mutually follow" },
+      { name: "description", content: "Spin up a private Draft Workshop for an idea and pull in the people you mutually follow." },
     ],
   }),
   component: NewLobbyPage,
@@ -82,7 +82,7 @@ function NewLobbyPage() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) return toast.error("Give the lobby a title");
+    if (!title.trim()) return toast.error("Give the draft a title");
     if (title.trim().length < 2) return toast.error("Title is too short");
     setSubmitting(true);
     try {
@@ -95,10 +95,10 @@ function NewLobbyPage() {
           inviteeIds: Array.from(selected.keys()),
         },
       });
-      toast.success(selected.size > 0 ? `Lobby started — ${selected.size} invited` : "Lobby started");
+      toast.success(selected.size > 0 ? `Draft started — ${selected.size} invited` : "Draft started");
       navigate({ to: "/workshops/$slug", params: { slug: res.slug } });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Couldn't start lobby");
+      toast.error(err instanceof Error ? err.message : "Couldn't start draft");
     } finally {
       setSubmitting(false);
     }
@@ -112,18 +112,18 @@ function NewLobbyPage() {
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
         <div className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs text-ink-soft">
-          <Sparkles className="h-3.5 w-3.5" /> New: invite-only lobby
+          <Sparkles className="h-3.5 w-3.5" /> New: invite-only Draft Workshop
         </div>
-        <h1 className="mt-3 font-display text-4xl text-ink">Start a Lobby</h1>
+        <h1 className="mt-3 font-display text-4xl text-ink">Start a Draft Workshop</h1>
         <p className="mt-2 text-ink-muted">
           A private Workshop for an idea. Pull in people you mutually follow —
-          brainstorm, then turn it into a real Workshop when you're ready.
+          brainstorm together, then schedule it when you're ready.
         </p>
       </motion.div>
 
       <form onSubmit={submit} className="mt-8 space-y-7">
         <section className="space-y-1.5">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title">Working title</Label>
           <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="A loose idea worth chewing on" />
         </section>
 
@@ -143,7 +143,7 @@ function NewLobbyPage() {
         <section className="space-y-1.5">
           <Label htmlFor="prompt">What's the idea? <span className="text-ink-muted">(optional)</span></Label>
           <Textarea id="prompt" rows={4} maxLength={2000} value={prompt} onChange={(e) => setPrompt(e.target.value)}
-            placeholder="A sentence or two. You can refine it together inside the lobby." />
+            placeholder="A sentence or two. You can refine it together inside the draft." />
         </section>
 
         <section className="space-y-2">
@@ -232,7 +232,7 @@ function NewLobbyPage() {
         <div className="flex justify-end gap-2">
           <Link to="/workshops"><Button type="button" variant="ghost" className="rounded-full">Cancel</Button></Link>
           <Button type="submit" disabled={submitting} className="rounded-full">
-            {submitting ? "Starting…" : selected.size > 0 ? `Start lobby + invite ${selected.size}` : "Start lobby"}
+            {submitting ? "Starting…" : selected.size > 0 ? `Start draft + invite ${selected.size}` : "Start draft"}
           </Button>
         </div>
       </form>

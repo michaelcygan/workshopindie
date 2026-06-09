@@ -391,3 +391,85 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
+/**
+ * Promote a Draft Workshop (is_lobby=true) into a real scheduled Workshop.
+ * Host-only. Sets starts_at/ends_at, flips is_lobby=false, status='open',
+ * visibility (defaults to 'public'), and notifies invitees.
+ */
+export const scheduleDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        workshopId: z.string().uuid(),
+        startsAt: z.string().datetime(),
+        endsAt: z.string().datetime(),
+        visibility: z.enum(["public", "invite_only"]).default("public"),
+        locationType: z.enum(["online", "in_person", "hybrid"]).default("online"),
+        externalCallUrl: z.string().url().optional().nullable(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: ws } = await supabaseAdmin
+      .from("workshops")
+      .select("id, slug, title, host_user_id, is_lobby, status")
+      .eq("id", data.workshopId)
+      .maybeSingle();
+    if (!ws) throw new Error("Workshop not found.");
+    if (ws.host_user_id !== userId) throw new Error("Only the host can schedule.");
+    if (!ws.is_lobby) throw new Error("This Workshop is already scheduled.");
+
+    if (new Date(data.endsAt).getTime() <= new Date(data.startsAt).getTime()) {
+      throw new Error("End time must be after start time.");
+    }
+
+    const { error } = await supabaseAdmin
+      .from("workshops")
+      .update({
+        is_lobby: false,
+        lobby_discoverable: false,
+        status: "open",
+        starts_at: data.startsAt,
+        ends_at: data.endsAt,
+        visibility: data.visibility,
+        location_type: data.locationType,
+        external_call_url: data.externalCallUrl || null,
+      })
+      .eq("id", ws.id);
+    if (error) throw new Error(error.message);
+
+    // Notify everyone invited / participating that it's now scheduled.
+    const [{ data: invites }, { data: parts }] = await Promise.all([
+      supabaseAdmin.from("workshop_join_invites").select("invitee_user_id").eq("workshop_id", ws.id),
+      supabaseAdmin.from("workshop_participants").select("user_id").eq("workshop_id", ws.id),
+    ]);
+    const targets = new Set<string>();
+    for (const r of invites ?? []) targets.add(r.invitee_user_id as string);
+    for (const r of parts ?? []) targets.add(r.user_id as string);
+    targets.delete(userId);
+    if (targets.size > 0) {
+      await supabaseAdmin
+        .from("notifications")
+        .insert(
+          Array.from(targets).map((uid) => ({
+            user_id: uid,
+            kind: "workshop_invite_from_room",
+            actor_user_id: userId,
+            entity_type: "workshop",
+            entity_id: ws.id,
+            payload: {
+              workshop_slug: ws.slug,
+              title: ws.title,
+              scheduled: true,
+              starts_at: data.startsAt,
+            },
+          })),
+        )
+        .then(() => null, () => null);
+    }
+
+    return { ok: true, slug: ws.slug };
+  });
