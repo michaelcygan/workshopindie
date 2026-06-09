@@ -3675,6 +3675,14 @@ export type Database = {
         Args: { _user_id: string; _work_id: string }
         Returns: boolean
       }
+      is_workshop_host: {
+        Args: { _user_id: string; _workshop_id: string }
+        Returns: boolean
+      }
+      is_workshop_lobby_invitee: {
+        Args: { _user_id: string; _workshop_id: string }
+        Returns: boolean
+      }
       is_workshop_member: {
         Args: { _user_id: string; _workshop_id: string }
         Returns: boolean
