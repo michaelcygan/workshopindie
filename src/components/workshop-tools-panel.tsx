@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink,
-  FolderOpen, MonitorPlay, PenLine, Mic, Sparkles,
+  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink, Check,
+  FolderOpen, MonitorPlay, PenLine, Mic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,11 +12,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
+import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
+import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "repo_links" | "moodboard";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "docs_rich" | "drive" | "screen_share" | "board" | "recorder";
+type ComingSoonToolType = "screen_share" | "board" | "recorder";
 type ToolType = ShippedToolType | ComingSoonToolType;
 
 type Preset = {
@@ -32,19 +34,18 @@ type Preset = {
 
 // Order here drives chip order in the picker. Shipped tools first.
 const PRESETS: Record<ToolType, Preset> = {
-  outline:      { label: "Docs",         icon: FileText,    blurb: "Beats, notes, drafts.",          titlePlaceholder: "Section heading",   bodyPlaceholder: "Beats, ideas, draft text…", fields: ["title", "body"] },
+  outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
+  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links — files coming.", fields: [] },
   moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  docs_rich:    { label: "Docs (rich)",  icon: Sparkles,    blurb: "Multi-page collaborative editor with comments.", comingSoon: true, fields: [] },
-  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share files and cloud links in the room.",       comingSoon: true, fields: [] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.",   comingSoon: true, fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",                            comingSoon: true, fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes from inside the room.",             comingSoon: true, fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "moodboard", "repo_links", "docs_rich", "drive", "screen_share", "board", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "board", "recorder"];
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
