@@ -102,6 +102,22 @@ function LiveRoomPage() {
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
 
+  // Live presence count for the "waiting for others" nudge.
+  const { data: liveCount = 0 } = useQuery({
+    queryKey: ["instant-room-live-count", id],
+    enabled: !!user && !isPromoted,
+    refetchInterval: 5000,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 60_000).toISOString();
+      const { count } = await supabase
+        .from("instant_presence")
+        .select("user_id", { count: "exact", head: true })
+        .eq("room_id", id)
+        .gt("last_seen_at", cutoff);
+      return count ?? 0;
+    },
+  });
+
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
 
@@ -207,6 +223,12 @@ function LiveRoomPage() {
           />
         )}
 
+      />
+
+      <WaitingForOthersCard
+        roomId={id}
+        visible={!isPromoted && liveCount <= 1}
+        canPingMutuals={isHost}
       />
 
       <CreateCollabSheet
