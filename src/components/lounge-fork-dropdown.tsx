@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, Check, Plus, Radio, X } from "lucide-react";
-import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
+import { listActiveInstantRooms } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
 
 type Props = {
