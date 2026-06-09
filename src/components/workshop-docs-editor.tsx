@@ -1,26 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import {
-  Plus, Save, Trash2, Loader2, Eye, Pencil, Bold, Italic, Heading1, Heading2,
-  List as ListIcon, Link2, Code, Quote, Maximize2, Minimize2, ArrowUp, ArrowDown,
+  Plus, Loader2, Maximize2, Minimize2, MoreHorizontal, Trash2,
+  ArrowUp, ArrowDown, Bold, Italic, Link2, Heading1, Heading2, List as ListIcon, Quote, Code,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 /**
- * Polymorphic collaborative Docs editor. Backs onto either:
- *  - `workshop_docs` (persistent Workshop, scoped by workshop_id), or
- *  - `instant_docs`  (live room, scoped by room_id).
+ * Collaborative Docs editor — single writing surface, no preview/split toggle.
+ * Backs onto `workshop_docs` (persistent) or `instant_docs` (live room).
  *
- * Features: formatting toolbar, live markdown preview, word count, reorder,
- * fullscreen, autosave with status indicator.
+ * Design: one canvas, paper feel, generous type. Markdown shortcuts still work
+ * (`# `, `## `, `- `, `> `, `**…**`, `_…_`, `[text](url)`) and a floating
+ * selection toolbar surfaces formatting on demand. Autosave runs in the
+ * background with a tiny status line.
  */
 export type DocsScope =
   | { kind: "persistent"; workshopId: string }
@@ -84,7 +84,7 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
     const payload: any = {
       [t.parentCol]: t.parentId,
       [t.createdByCol]: user.id,
-      title: "Untitled",
+      title: "",
       content_md: "",
       sort_order: nextOrder,
     };
@@ -113,7 +113,7 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
 
   if (isLoading) {
     return (
-      <div className="flex justify-center py-10">
+      <div className="flex justify-center py-16">
         <Loader2 className="h-4 w-4 animate-spin text-ink-muted" />
       </div>
     );
@@ -121,64 +121,64 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
 
   if (docs.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-sm text-ink-muted">No docs yet.</p>
-        <Button onClick={addDoc} className="mt-4 rounded-full gap-2">
-          <Plus className="h-4 w-4" /> Start a doc
+      <div className="rounded-3xl border border-dashed border-border bg-surface px-8 py-16 text-center">
+        <p className="font-display text-lg text-ink">A blank page for the room.</p>
+        <p className="mt-1 text-sm text-ink-muted">Notes, drafts, scripts — autosaves as you type.</p>
+        <Button onClick={addDoc} className="mt-6 rounded-full gap-2 px-5">
+          <Plus className="h-4 w-4" /> Start writing
         </Button>
       </div>
     );
   }
 
-  const container = fullscreen
-    ? "fixed inset-0 z-50 bg-background p-4 md:p-6 overflow-auto"
-    : "";
+  const docIdx = docs.findIndex((d) => d.id === (active?.id ?? ""));
 
   return (
-    <div className={container}>
-      <div className={cn("grid gap-4", fullscreen ? "md:grid-cols-[240px_1fr] h-full" : "md:grid-cols-[200px_1fr]")}>
-        <aside className="rounded-2xl border border-border bg-surface p-2">
-          <ul className="space-y-0.5">
-            {docs.map((d, idx) => (
-              <li key={d.id} className="group flex items-center gap-1">
+    <div className={cn(fullscreen && "fixed inset-0 z-50 bg-background overflow-auto")}>
+      <div className={cn(
+        "grid gap-6",
+        fullscreen ? "md:grid-cols-[220px_1fr] min-h-screen p-6" : "md:grid-cols-[200px_1fr]",
+      )}>
+        <aside className="space-y-0.5">
+          {docs.map((d, idx) => (
+            <div key={d.id} className="group flex items-center gap-0.5">
+              <button
+                onClick={() => setActiveId(d.id)}
+                className={cn(
+                  "flex-1 truncate rounded-lg px-2.5 py-1.5 text-left text-[13px] transition",
+                  (active?.id ?? "") === d.id
+                    ? "bg-ink text-background"
+                    : "text-ink-soft hover:bg-muted",
+                )}
+              >
+                {d.title?.trim() || "Untitled"}
+              </button>
+              <div className="opacity-0 transition group-hover:opacity-100 flex flex-col">
                 <button
-                  onClick={() => setActiveId(d.id)}
-                  className={cn(
-                    "flex-1 truncate rounded-xl px-3 py-2 text-left text-sm transition",
-                    (active?.id ?? "") === d.id ? "bg-muted text-ink" : "text-ink-soft hover:bg-muted/50",
-                  )}
+                  onClick={() => reorder(d, -1)}
+                  disabled={idx === 0}
+                  className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
+                  aria-label="Move up"
                 >
-                  {d.title || "Untitled"}
+                  <ArrowUp className="h-3 w-3" />
                 </button>
-                <div className="opacity-0 transition group-hover:opacity-100 flex flex-col">
-                  <button
-                    onClick={() => reorder(d, -1)}
-                    disabled={idx === 0}
-                    className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
-                    aria-label="Move up"
-                  >
-                    <ArrowUp className="h-3 w-3" />
-                  </button>
-                  <button
-                    onClick={() => reorder(d, 1)}
-                    disabled={idx === docs.length - 1}
-                    className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
-                    aria-label="Move down"
-                  >
-                    <ArrowDown className="h-3 w-3" />
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <Button
+                <button
+                  onClick={() => reorder(d, 1)}
+                  disabled={idx === docs.length - 1}
+                  className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
+                  aria-label="Move down"
+                >
+                  <ArrowDown className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+          ))}
+          <button
             onClick={addDoc}
-            variant="ghost"
-            size="sm"
-            className="mt-1 w-full justify-start rounded-xl text-ink-muted hover:text-ink"
+            className="mt-1 flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[13px] text-ink-muted hover:bg-muted hover:text-ink"
           >
-            <Plus className="h-4 w-4" /> New doc
-          </Button>
+            <Plus className="h-3.5 w-3.5" /> New
+          </button>
         </aside>
 
         {active && (
@@ -187,7 +187,11 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
             doc={active}
             tableName={t.name}
             fullscreen={fullscreen}
+            canMoveUp={docIdx > 0}
+            canMoveDown={docIdx < docs.length - 1}
             onToggleFullscreen={() => setFullscreen((v) => !v)}
+            onMoveUp={() => reorder(active, -1)}
+            onMoveDown={() => reorder(active, 1)}
             onDelete={() => removeDoc(active.id)}
           />
         )}
@@ -196,37 +200,46 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
   );
 }
 
-type ViewMode = "edit" | "preview" | "split";
-
 function DocEditor({
   doc,
   tableName,
   fullscreen,
+  canMoveUp,
+  canMoveDown,
   onToggleFullscreen,
+  onMoveUp,
+  onMoveDown,
   onDelete,
 }: {
   doc: Doc;
   tableName: "workshop_docs" | "instant_docs";
   fullscreen: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
   onToggleFullscreen: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
   onDelete: () => void;
 }) {
   const [title, setTitle] = useState(doc.title);
   const [body, setBody] = useState(doc.content_md);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
-  const [view, setView] = useState<ViewMode>("edit");
+  const [savedAt, setSavedAt] = useState<Date | null>(new Date(doc.updated_at));
+  const [bar, setBar] = useState<{ x: number; y: number } | null>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setTitle(doc.title);
     setBody(doc.content_md);
     setDirty(false);
-  }, [doc.id, doc.title, doc.content_md]);
+    setSavedAt(new Date(doc.updated_at));
+  }, [doc.id, doc.title, doc.content_md, doc.updated_at]);
 
   useEffect(() => {
     if (!dirty) return;
-    const tm = setTimeout(save, 800);
+    const tm = setTimeout(save, 700);
     return () => clearTimeout(tm);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [title, body, dirty]);
@@ -234,11 +247,12 @@ function DocEditor({
   async function save() {
     setSaving(true);
     const { error } = await (supabase.from(tableName) as any)
-      .update({ title: title.trim() || "Untitled", content_md: body })
+      .update({ title: title.trim(), content_md: body })
       .eq("id", doc.id);
     setSaving(false);
     if (error) return toast.error(error.message);
     setDirty(false);
+    setSavedAt(new Date());
   }
 
   function wrap(before: string, after: string = before) {
@@ -285,113 +299,128 @@ function DocEditor({
     }
   }
 
+  // Floating selection bar — appears above the current text selection.
+  function updateBarFromSelection() {
+    const ta = taRef.current;
+    const wrap = wrapRef.current;
+    if (!ta || !wrap) { setBar(null); return; }
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    if (start === end) { setBar(null); return; }
+    // Position bar just above the textarea, horizontally centered on selection.
+    const taRect = ta.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    // Approximate caret x by measuring offset in a mirror is heavy; center over the textarea instead.
+    setBar({
+      x: taRect.left - wrapRect.left + taRect.width / 2,
+      y: taRect.top - wrapRect.top - 6,
+    });
+  }
+
   const words = body.trim() ? body.trim().split(/\s+/).length : 0;
-  const chars = body.length;
+  const status = saving ? "Saving…" : dirty ? "Unsaved" : savedAt
+    ? `Saved · ${savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+    : "Saved";
 
   return (
-    <div className={cn("rounded-2xl border border-border bg-surface p-4 flex flex-col", fullscreen && "h-full")}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input
+    <div
+      ref={wrapRef}
+      className={cn(
+        "relative rounded-3xl border border-border bg-surface flex flex-col",
+        fullscreen ? "min-h-[calc(100vh-3rem)]" : "min-h-[520px]",
+      )}
+    >
+      {/* Header */}
+      <div className="flex items-start gap-3 px-8 pt-8 pb-2">
+        <input
           value={title}
           onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
-          className="flex-1 min-w-[160px] border-none bg-transparent px-0 text-lg font-display focus-visible:ring-0"
           placeholder="Untitled"
           maxLength={200}
+          className="flex-1 min-w-0 border-none bg-transparent p-0 font-display text-3xl md:text-4xl tracking-tight text-ink placeholder:text-ink-muted/50 focus:outline-none focus:ring-0"
         />
-        <span className="text-xs text-ink-muted">
-          {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
-        </span>
-        <div className="inline-flex rounded-full bg-muted p-0.5">
-          <button
-            onClick={() => setView("edit")}
-            className={cn("rounded-full px-2 py-1 text-xs", view === "edit" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
-            title="Edit"
+        <div className="mt-2 flex items-center gap-1 shrink-0">
+          <span className="hidden sm:inline text-[11px] text-ink-muted tabular-nums px-1">{status}</span>
+          <Button
+            onClick={onToggleFullscreen}
+            size="icon"
+            variant="ghost"
+            className="h-8 w-8 rounded-full text-ink-muted hover:text-ink"
+            title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
           >
-            <Pencil className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => setView("split")}
-            className={cn("rounded-full px-2 py-1 text-xs", view === "split" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
-            title="Split"
-          >
-            <span className="text-[10px] font-medium">Split</span>
-          </button>
-          <button
-            onClick={() => setView("preview")}
-            className={cn("rounded-full px-2 py-1 text-xs", view === "preview" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
-            title="Preview"
-          >
-            <Eye className="h-3 w-3" />
-          </button>
+            {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-ink-muted hover:text-ink" title="More">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem onClick={onMoveUp} disabled={!canMoveUp}>
+                <ArrowUp className="h-3.5 w-3.5 mr-2" /> Move up
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onMoveDown} disabled={!canMoveDown}>
+                <ArrowDown className="h-3.5 w-3.5 mr-2" /> Move down
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
+                <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete doc
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-        <Button onClick={save} size="sm" variant="ghost" className="rounded-full" disabled={!dirty || saving} title="Save (⌘S)">
-          <Save className="h-3.5 w-3.5" />
-        </Button>
-        <Button onClick={onToggleFullscreen} size="sm" variant="ghost" className="rounded-full" title="Fullscreen">
-          {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
-        </Button>
-        <Button
-          onClick={onDelete}
-          size="sm"
-          variant="ghost"
-          className="rounded-full text-ink-muted hover:text-destructive"
-          title="Delete"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
       </div>
 
-      {view !== "preview" && (
-        <div className="mt-2 flex flex-wrap items-center gap-0.5 border-b border-border pb-2">
-          <ToolbarBtn onClick={() => wrap("**")} title="Bold (⌘B)"><Bold className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => wrap("_")} title="Italic (⌘I)"><Italic className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => prefixLine("# ")} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => prefixLine("## ")} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => prefixLine("- ")} title="Bulleted list"><ListIcon className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => prefixLine("> ")} title="Quote"><Quote className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={() => wrap("`")} title="Inline code"><Code className="h-3.5 w-3.5" /></ToolbarBtn>
-          <ToolbarBtn onClick={insertLink} title="Link (⌘K)"><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
-        </div>
-      )}
-
-      <div className={cn("mt-3 flex-1 min-h-0", view === "split" ? "grid gap-3 md:grid-cols-2" : "")}>
-        {view !== "preview" && (
-          <Textarea
-            ref={taRef}
-            value={body}
-            onChange={(e) => { setBody(e.target.value); setDirty(true); }}
-            onKeyDown={onKeyDown}
-            rows={fullscreen ? 28 : 16}
-            placeholder="Start writing. Markdown is fine. ⌘B bold · ⌘I italic · ⌘K link · ⌘S save"
-            className={cn(
-              "resize-y border-none bg-transparent px-0 focus-visible:ring-0 font-mono text-sm",
-              fullscreen && "h-full",
-            )}
-          />
-        )}
-        {(view === "preview" || view === "split") && (
-          <div className={cn(
-            "prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-xl border border-border bg-surface-2/40 p-4",
-            fullscreen && "h-full",
-          )}>
-            {body.trim() ? (
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-            ) : (
-              <p className="text-sm text-ink-muted">Nothing to preview yet.</p>
-            )}
+      {/* Writing surface */}
+      <div className="relative flex-1 min-h-0 px-8 pb-6">
+        {bar && (
+          <div
+            style={{ left: bar.x, top: bar.y }}
+            className="absolute z-10 -translate-x-1/2 -translate-y-full rounded-full border border-border bg-background/95 backdrop-blur px-1 py-1 shadow-lift flex items-center gap-0.5"
+            onMouseDown={(e) => e.preventDefault()}
+          >
+            <BarBtn onClick={() => wrap("**")} title="Bold (⌘B)"><Bold className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={() => wrap("_")} title="Italic (⌘I)"><Italic className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={insertLink} title="Link (⌘K)"><Link2 className="h-3.5 w-3.5" /></BarBtn>
+            <span className="mx-1 h-4 w-px bg-border" />
+            <BarBtn onClick={() => prefixLine("# ")} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={() => prefixLine("## ")} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={() => prefixLine("- ")} title="List"><ListIcon className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={() => prefixLine("> ")} title="Quote"><Quote className="h-3.5 w-3.5" /></BarBtn>
+            <BarBtn onClick={() => wrap("`")} title="Code"><Code className="h-3.5 w-3.5" /></BarBtn>
           </div>
         )}
+
+        <textarea
+          ref={taRef}
+          value={body}
+          onChange={(e) => { setBody(e.target.value); setDirty(true); }}
+          onKeyDown={onKeyDown}
+          onSelect={updateBarFromSelection}
+          onMouseUp={updateBarFromSelection}
+          onBlur={() => setTimeout(() => setBar(null), 120)}
+          placeholder="Start writing. Markdown shortcuts work — try # for a heading, - for a list, or select text to format."
+          spellCheck
+          className={cn(
+            "w-full resize-none border-none bg-transparent p-0 text-[15px] leading-[1.75] text-ink",
+            "placeholder:text-ink-muted/60 focus:outline-none focus:ring-0",
+            fullscreen ? "min-h-[calc(100vh-12rem)]" : "min-h-[380px]",
+          )}
+          style={{ fontFamily: "var(--font-body, ui-sans-serif, system-ui)" }}
+        />
       </div>
 
-      <div className="mt-2 flex items-center justify-between text-[11px] text-ink-muted">
-        <span>{words} {words === 1 ? "word" : "words"} · {chars} chars</span>
-        <span>Last updated {new Date(doc.updated_at).toLocaleString()}</span>
+      <div className="px-8 pb-4 flex items-center justify-between text-[11px] text-ink-muted">
+        <span>{words} {words === 1 ? "word" : "words"}</span>
+        <span className="sm:hidden">{status}</span>
+        <span className="hidden sm:inline">Last edited {savedAt ? savedAt.toLocaleString() : "—"}</span>
       </div>
     </div>
   );
 }
 
-function ToolbarBtn({
+function BarBtn({
   onClick, title, children,
 }: { onClick: () => void; title: string; children: React.ReactNode }) {
   return (
@@ -399,7 +428,7 @@ function ToolbarBtn({
       type="button"
       onClick={onClick}
       title={title}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-soft hover:bg-muted hover:text-ink"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-muted hover:text-ink"
     >
       {children}
     </button>
