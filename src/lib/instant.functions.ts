@@ -89,19 +89,67 @@ export const joinMediumLounge = createServerFn({ method: "POST" })
     return { roomId: roomId as string, medium: data.medium };
   });
 
+export type RoomPresenceUser = {
+  user_id: string;
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+};
+
 export type ActiveInstantRoom = {
   id: string;
   medium: (typeof MEDIUMS)[number] | null;
   title: string;
   live_count: number;
   created_at: string;
+  participants: RoomPresenceUser[];
 };
 
-/** Public list of currently-active Instant rooms (lounges + medium-specific) with live counts. */
+/** Public list of currently-active Instant rooms (lounges + medium-specific) with live counts and top participants. */
 export const listActiveInstantRooms = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await supabaseAdmin.rpc("list_active_instant_rooms");
   if (error) throw new Error(error.message);
-  return { rooms: (data ?? []) as ActiveInstantRoom[] };
+  const rows = (data ?? []) as Omit<ActiveInstantRoom, "participants">[];
+  if (rows.length === 0) return { rooms: [] as ActiveInstantRoom[] };
+
+  const roomIds = rows.map((r) => r.id);
+  const cutoff = new Date(Date.now() - 60_000).toISOString();
+  const { data: presence } = await supabaseAdmin
+    .from("instant_presence")
+    .select("room_id, user_id, last_seen_at")
+    .in("room_id", roomIds)
+    .gt("last_seen_at", cutoff)
+    .order("last_seen_at", { ascending: false });
+
+  const userIds = Array.from(new Set((presence ?? []).map((p) => p.user_id)));
+  const profilesById = new Map<string, RoomPresenceUser>();
+  if (userIds.length > 0) {
+    const { data: profs } = await supabaseAdmin
+      .from("profiles")
+      .select("id, display_name, username, avatar_url")
+      .in("id", userIds);
+    for (const p of profs ?? []) {
+      profilesById.set(p.id as string, {
+        user_id: p.id as string,
+        display_name: (p as any).display_name ?? null,
+        username: (p as any).username ?? null,
+        avatar_url: (p as any).avatar_url ?? null,
+      });
+    }
+  }
+
+  const byRoom = new Map<string, RoomPresenceUser[]>();
+  for (const p of presence ?? []) {
+    const prof = profilesById.get(p.user_id as string);
+    if (!prof) continue;
+    const list = byRoom.get(p.room_id as string) ?? [];
+    if (list.length < 5) list.push(prof);
+    byRoom.set(p.room_id as string, list);
+  }
+
+  return {
+    rooms: rows.map((r) => ({ ...r, participants: byRoom.get(r.id) ?? [] })) as ActiveInstantRoom[],
+  };
 });
 
 export type InstantActivityEvent = {

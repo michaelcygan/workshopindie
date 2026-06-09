@@ -1,37 +1,72 @@
-# Fix Tools in live Workshop + unify "+ Create" menu
+# Workshop page v1 — finish the loop
 
-Two small changes to `src/routes/workshop.$id.tsx` (the `/workshop/$id` instant live room — what the user is on in the screenshot).
+Two fixes, framed as "make discovery obvious + make hosting honest."
 
-## 1. Tools tab renders "No tools available in this room."
+## 1. Be honest when there's no live one
 
-### Why it happens
-`toolsSlot` is gated on the `room` query:
-```tsx
-toolsSlot={(media) => room ? <WorkshopToolsPanel ... /> : null}
-```
-When `room` is `null`/loading, `toolsSlot` returns `null`, so `ChannelView` falls back to its "No tools available in this room." copy. For this room (`Artist's Lounge`, `host_user_id: null`, `kind: lounge`) the panel itself fully supports a leaderless instant scope (`canEnable` is `true` for any presence when `hostUserId === null`) — the panel just never gets a chance to mount until `room` resolves, and on a brief flash / cache miss the fallback is what the user sees.
+Today: clicking **Film** (or any medium chip) silently calls `join_medium_lounge`, which spawns a brand-new room if none exist and makes the clicker the host. No warning, no signal.
 
 ### Fix
-- Drop the `room ?` guard inside `toolsSlot`. Always render `<WorkshopToolsPanel scope={{ kind: "instant", roomId: id, hostUserId: room?.host_user_id ?? null, category: (room?.category as any) ?? (room?.medium as any) ?? null }} media={media} />`. The panel already handles `hostUserId: null` and an unknown category (defaults to `coworking`).
-- Result: the picker grid ("Spin up a shared tool — Docs, Pinboard, List, …") shows immediately, and the channel-view fallback string becomes effectively unreachable for signed-in users.
+Use the live counts we already fetch in `LoungeForkDropdown` (`mediumLiveMap`) and pipe them up to drive both label and behavior.
 
-## 2. "Create a Collab" → "+ Create" menu
+- **Inside the dropdown** (`src/components/lounge-fork-dropdown.tsx`):
+  - For each medium chip, render one of three states:
+    - **Live N** (live > 0, today's primary chip) — same look as now, `· N` count.
+    - **Empty — start one** (live === 0) — dashed, with a tiny `+` and the copy "Start the room".
+  - Hover/tap title attr: "You'll be the first one in — your seat opens it."
+- **In `WorkshopStrip`**: when `rooms.length === 0`, show a single nudge card "No live rooms right now. Drop in to start the first one — others will see you live."
+- **In `workshop.index.tsx`**:
+  - Pipe `mediumLiveMap` (or just `liveCount` for the selected medium) out of `LoungeForkDropdown` via a new `onMediumLiveMapChange` callback, OR re-use the existing query in the parent.
+  - Change the primary CTA copy dynamically:
+    - selected medium with live > 0 → "Drop into Film (3 live)"
+    - selected medium with live === 0 → "Open the first Film room"  ← clearer than "Drop into Film"
+    - no medium, liveCount > 0 → "Drop in (N live)"
+    - no medium, liveCount === 0 → "Open the first one"
+  - Same for the Host card — no copy change needed there since that one is already explicit.
+- Keep the existing matchmaker behavior server-side (one RPC, same flow) — only the framing changes.
 
-Right-rail CTA currently only opens the Collab sheet. Replace it with a single "+ Create" button that opens a small dropdown with two options:
+## 2. Make live discovery obvious — the viral loop
 
-1. **Create a Collab** — same `setCollabOpen(true)` behavior.
-2. **Start a Draft Workshop** — `router.navigate({ to: "/workshops/lobby/new" })` (existing route; renamed surface = Draft Workshop). Prefills nothing — the draft form already handles category/title.
+Today the only live signal is buried in a closed dropdown and a small activity ticker. Move it above the fold.
 
-### UI shape
-- Use the existing shadcn `DropdownMenu` (already in `components/ui`).
-- Trigger: `<Button size="sm" className="rounded-full gap-1.5"><Plus className="h-3.5 w-3.5" /> Create</Button>` (same visual weight as today's CTA).
-- Keep the same `!isPromoted && user` visibility rule so promoted lounges don't show it.
-- Drop the `Rocket` icon on the trigger (move it next to the "Create a Collab" menu item instead, with a `Coffee` icon next to "Start a Draft Workshop" to mirror the home entry point).
+### Add a "Live now" rail directly under the hero
+New component `src/components/live-workshops-rail.tsx` that renders one card per active room with an open seat (uses `listActiveInstantRooms`, refetch 5s — already implemented).
 
-### Out of scope
-- No changes to the lounges/workshops index pages or the draft-workshop form.
-- No copy or behavior change to the in-tools picker itself.
-- No backend / RLS changes (instant_rooms + instant_tools policies are correct).
+Each card:
+- Medium chip (Film / Music / …) or "Open topic"
+- Title (e.g., `Film Workshop`, `Artist's Lounge`)
+- Live ring + `N/5` seat indicator
+- Avatar stack of current participants (up to 3 + `+N`)
+- Primary button: **Take an open seat** (calls `joinMediumLounge` for that medium, or `joinLounge` if no medium) — routes straight into `/workshop/$id`
+- Disabled state when `live_count >= 5` with copy "Full — try another"
+- Auto-scrolls horizontally on overflow
 
-## Files touched
-- `src/routes/workshop.$id.tsx` — remove room-gate on `toolsSlot`; swap CTA for DropdownMenu with two items.
+Empty state: a single dashed card "No live rooms right now. Be the first." that triggers `handleDrop` with the current selected medium.
+
+### Where it goes
+Right under the Drop in / Host two-up grid, above `WorkshopStrip` (scheduled workshops). Order becomes:
+1. Hero + Drop in / Host (existing)
+2. **Live now rail** ← new
+3. Scheduled workshops strip (existing)
+
+### Surface presence on cards
+Avatar stack needs participant profiles. Add an RPC `list_active_instant_rooms_with_presence` (or a lightweight client-side join via `instant_presence` + `profiles`) returning `participants: { user_id, display_name, avatar_url }[]` per room. Cap at 3 for the avatar stack; backend caps the list at 5 max anyway.
+
+### Viral loop
+- Each live room card carries a **Share** icon → copies `/workshop/$id` to clipboard with a toast. (Anyone with the link who is signed in can drop in — current RLS already permits this.)
+- Mobile-nav notifications stay as-is; not extending scope here.
+
+## Out of scope
+- No new tables; reuse `instant_rooms`, `instant_presence`, `profiles`.
+- No changes to matchmaker SQL — UI does the framing.
+- No invite-by-name / discovery feed beyond what's surfaced here.
+- No recording or replay of past live rooms.
+- No notifications when a watched medium goes live (queue for next sweep).
+
+## Files
+- `src/routes/workshop.index.tsx` — dynamic CTA copy; insert `<LiveWorkshopsRail />`.
+- `src/components/lounge-fork-dropdown.tsx` — "Start the room" empty state on chips; expose live map.
+- `src/components/workshop-strip.tsx` — empty-state nudge.
+- `src/components/live-workshops-rail.tsx` — new.
+- `src/lib/instant.functions.ts` — extend `listActiveInstantRooms` to include presence (top 3 participants).
+- One SQL migration if we extend the RPC's return shape; otherwise client-side enrich via a follow-up `instant_presence` query.

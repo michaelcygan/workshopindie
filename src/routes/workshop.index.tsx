@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
+import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
@@ -30,6 +31,7 @@ function WorkshopPreflight() {
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
+  const [selectedMediumLive, setSelectedMediumLive] = useState(0);
   const [selectedDropMedium, setSelectedDropMedium] = useState<Category | null>(null);
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
   const dropLabel = selectedDropMedium ? CATEGORIES.find((c) => c.id === selectedDropMedium)?.label ?? null : null;
@@ -188,12 +190,21 @@ function WorkshopPreflight() {
               onSelectMedium={setSelectedDropMedium}
               onJoinNow={handleJoinNow}
               onLiveCountChange={setLiveCount}
+              onSelectedMediumLiveChange={setSelectedMediumLive}
             />
           </div>
           <div className="mt-auto pt-4">
             <Button onClick={handleDrop} disabled={!canDrop || busy !== null} className="w-full rounded-2xl h-12 gap-2">
               {busy === "drop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
-              {busy === "drop" ? "Finding you a seat…" : dropLabel ? `Drop into ${dropLabel}` : "Drop in"}
+              {busy === "drop"
+                ? "Finding you a seat…"
+                : selectedDropMedium
+                  ? (selectedMediumLive > 0
+                      ? `Drop into ${dropLabel} (${selectedMediumLive} live)`
+                      : `Open the first ${dropLabel} room`)
+                  : (liveCount > 0
+                      ? `Drop in (${liveCount} live)`
+                      : "Open the first room")}
             </Button>
           </div>
         </motion.div>
@@ -230,6 +241,14 @@ function WorkshopPreflight() {
       <p className="mt-4 text-center text-xs text-ink-muted">
         Cap 5 per room. Everything in a live room is ephemeral until someone creates a Collab from it.
       </p>
+
+      <LiveWorkshopsRail
+        canJoin={canDrop && busy === null}
+        onTakeSeat={async (roomId) => {
+          const mode = await preGrantMedia();
+          router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+        }}
+      />
 
       <WorkshopStrip />
     </main>

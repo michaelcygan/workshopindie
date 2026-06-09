@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ChevronDown, Check, Plus, Radio, X } from "lucide-react";
-import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
+import { listActiveInstantRooms } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
 
 type Props = {
@@ -11,9 +11,10 @@ type Props = {
   onSelectMedium: (medium: Category | null) => void;
   onJoinNow?: (medium: Category) => void;
   onLiveCountChange?: (n: number) => void;
+  onSelectedMediumLiveChange?: (n: number) => void;
 };
 
-export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, onLiveCountChange }: Props) {
+export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, onLiveCountChange, onSelectedMediumLiveChange }: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const fetchRooms = useServerFn(listActiveInstantRooms);
@@ -39,9 +40,14 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const mediumRooms = rooms.filter((r): r is ActiveInstantRoom & { medium: Category } => !!r.medium);
+  const mediumRooms = rooms.filter((r): r is typeof r & { medium: Category } => !!r.medium);
   const mediumLiveMap = new Map<Category, number>();
   for (const r of mediumRooms) mediumLiveMap.set(r.medium, (mediumLiveMap.get(r.medium) ?? 0) + r.live_count);
+
+  const selectedMediumLive = selectedMedium ? (mediumLiveMap.get(selectedMedium) ?? 0) : 0;
+  useEffect(() => {
+    onSelectedMediumLiveChange?.(selectedMediumLive);
+  }, [selectedMediumLive, onSelectedMediumLiveChange]);
 
   const selectedLabel = selectedMedium ? CATEGORIES.find((c) => c.id === selectedMedium)?.label ?? null : null;
 
@@ -137,6 +143,7 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
                     whileHover={{ y: -1, scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setOpen(false); onSelectMedium(c.id); }}
+                    title={active ? `${live} live in ${c.label}` : `No one's live in ${c.label} — you'll open the first room.`}
                     className={[
                       "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                       isSelected
@@ -148,7 +155,8 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
                   >
                     {isSelected ? <Check className="h-3 w-3" /> : !active && <Plus className="h-3 w-3" />}
                     {c.label}
-                    {active && !isSelected && <span className="text-ink-muted">· {live}</span>}
+                    {active && !isSelected && <span className="text-ink-muted">· {live} live</span>}
+                    {!active && !isSelected && <span className="text-ink-muted/70">· start it</span>}
                   </motion.button>
                 );
               })}
