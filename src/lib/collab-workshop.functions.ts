@@ -500,7 +500,7 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       .select("user_id, kind, content, x, y, w, h, z, rotation, created_at")
       .eq("room_id", roomId);
     if (srcBoardItems && srcBoardItems.length > 0) {
-      await (supabaseAdmin.from("workshop_board_items") as any)
+      await ((supabaseAdmin as any).from("workshop_board_items") as any)
         .insert(
           srcBoardItems
             .filter((b) => !!b.user_id)
