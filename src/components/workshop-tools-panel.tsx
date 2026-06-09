@@ -139,7 +139,7 @@ export function WorkshopToolsPanel(props: Props) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border p-4">
         <p className="text-sm text-ink-muted text-center">
-          Spin up a shared tool — Docs, Pinboard, List, Moodboard, Repo & Demo. Add as many as you need.
+          Spin up a shared tool — Docs, Pinboard, List, Drive, Moodboard, Repo & Demo. Add as many as you need.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TOOL_ORDER.map((type) => {
