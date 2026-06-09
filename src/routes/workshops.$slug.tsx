@@ -9,6 +9,8 @@ import { WorkshopProgressBar } from "@/components/workshop-progress-bar";
 import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
+import { scheduleDraft } from "@/lib/lobby.functions";
+import { rsvpToWorkshop, cancelRsvp } from "@/lib/collab-workshop.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
