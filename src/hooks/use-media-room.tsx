@@ -579,6 +579,84 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }, [joinWithMode]);
 
+  // --- Screen sharing -------------------------------------------------------
+  // Uses RTCRtpSender.replaceTrack to swap the outbound video track from cam
+  // to screen and back — no SDP renegotiation needed. Requires being on video
+  // mode; if on voice we transparently upgrade first.
+  const stopScreenShare = useCallback(async () => {
+    const screen = screenStreamRef.current;
+    const camTrack = originalCamTrackRef.current;
+    screenStreamRef.current = null;
+    originalCamTrackRef.current = null;
+    setScreenStream(null);
+    if (myId) {
+      setScreenSharerId((cur) => (cur === myId ? null : cur));
+      if (channelRef.current) {
+        channelRef.current.send({
+          type: "broadcast",
+          event: "signal",
+          payload: { type: "screen", from: myId, active: false } satisfies SignalEvent,
+        });
+      }
+    }
+    // Restore cam track on every pc.
+    for (const pc of pcsRef.current.values()) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.transport));
+      if (sender) {
+        try { await sender.replaceTrack(camTrack ?? null); } catch { /* noop */ }
+      }
+    }
+    if (screen) for (const t of screen.getTracks()) t.stop();
+  }, [myId]);
+
+  const startScreenShare = useCallback(async () => {
+    if (!myId || !channelRef.current) {
+      setError("Join the room first.");
+      return;
+    }
+    if (screenStreamRef.current) return; // already sharing
+    let captured: MediaStream;
+    try {
+      captured = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 15, max: 30 } },
+        audio: false,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Couldn't start screen share";
+      if (!/denied|cancel/i.test(msg)) setError(msg);
+      return;
+    }
+    const screenTrack = captured.getVideoTracks()[0];
+    if (!screenTrack) return;
+    screenTrack.addEventListener("ended", () => { stopScreenShare(); });
+
+    // Remember the current cam track so we can restore it on stop.
+    const cam = localStreamRef.current?.getVideoTracks()[0] ?? null;
+    originalCamTrackRef.current = cam;
+    screenStreamRef.current = captured;
+    setScreenStream(captured);
+    setScreenSharerId(myId);
+
+    // Swap outbound video for every existing peer.
+    for (const pc of pcsRef.current.values()) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (sender) {
+        try { await sender.replaceTrack(screenTrack); } catch { /* noop */ }
+      } else {
+        // No video sender (voice-only peer-to-peer pair). Add one so the
+        // screen track gets delivered. addTrack triggers renegotiation via
+        // onnegotiationneeded handlers in createPeer.
+        try { pc.addTrack(screenTrack, captured); } catch { /* noop */ }
+      }
+    }
+
+    channelRef.current.send({
+      type: "broadcast",
+      event: "signal",
+      payload: { type: "screen", from: myId, active: true } satisfies SignalEvent,
+    });
+  }, [myId, stopScreenShare]);
+
   useEffect(() => {
     return () => { leave(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -607,7 +685,13 @@ export function useMediaRoom(roomId: string | undefined) {
     leave,
     toggleMute,
     setCameraEnabled,
+    screenStream,
+    screenSharerId,
+    isScreenSharing: !!screenStream,
+    startScreenShare,
+    stopScreenShare,
     cap: ROOM_CAP,
     videoCap: VIDEO_CAP,
   };
 }
+
