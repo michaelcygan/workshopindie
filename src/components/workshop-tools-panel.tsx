@@ -46,7 +46,7 @@ const PRESETS: Record<ToolType, Preset> = {
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",            comingSoon: true, fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard — stickies, images, links.", fields: [] },
 };
 
 const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "recorder", "board"];
