@@ -15,6 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvite } from "@/lib/collab-workshop.functions";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
+import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { toast } from "sonner";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
