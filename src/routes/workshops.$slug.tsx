@@ -127,9 +127,18 @@ function WorkshopDetail() {
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 md:py-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <CategoryChip category={ws.category} />
-          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status}</span>
+          {ws.is_lobby ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+              <Sparkles className="h-3 w-3" /> Draft
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+              <Calendar className="h-3 w-3" /> Workshop
+            </span>
+          )}
+          <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium capitalize text-ink-soft">{ws.status.replace("_", " ")}</span>
           {isHost && <span className="rounded-full bg-violet/10 px-2.5 py-0.5 text-xs font-medium text-violet">You're hosting</span>}
           {(ws.min_age != null || ws.max_age != null) && (
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-ink-soft">
