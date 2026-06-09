@@ -29,6 +29,7 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_starting: Radio,
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
+  workshop_live: Radio,
   referral_joined: UserPlus,
   referral_reward_earned: Gift,
   first_work_shipped: Sparkles,
@@ -105,6 +106,15 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return { title: `${wsTitle} is live`, subtitle: "Drop in before it fills.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
     case "workshop_ran_without_you":
       return { title: `${wsTitle} ran without you`, subtitle: "It auto-converted to a live drop-in.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+    case "workshop_live": {
+      const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      const mediumLabel = (n.payload?.medium as string) || null;
+      return {
+        title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
+        subtitle: (n.payload?.title as string) || "Drop into their Workshop while there's a seat.",
+        href: roomId ? `/workshop/${roomId}` : "/workshop",
+      };
+    }
     case "payment_failed":
       return { title: "Payment failed", subtitle: "Update your card to keep Plus active.", href: "/me" };
     case "comp_redeemed":

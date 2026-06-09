@@ -218,6 +218,8 @@ function LiveRoomPage() {
           router.navigate({ to: "/workshops/$slug", params: { slug } });
         }}
       />
+
+      <HostFirstRunTour active={isHost && !isPromoted} />
     </main>
   );
 }
