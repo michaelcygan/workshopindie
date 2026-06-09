@@ -73,6 +73,33 @@ export const joinLounge = createServerFn({ method: "POST" })
     return { roomId: data as string };
   });
 
+/** Join a specific live room by id. Rejects if the room is full or no longer active. */
+export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data }) => {
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, kind, status, participant_cap")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (!room) throw new Error("That room no longer exists");
+    if (room.kind !== "lounge" || room.status !== "active") {
+      throw new Error("That room isn't live anymore");
+    }
+    const cap = (room as any).participant_cap ?? 5;
+    const cutoff = new Date(Date.now() - 60_000).toISOString();
+    const { count } = await supabaseAdmin
+      .from("instant_presence")
+      .select("user_id", { count: "exact", head: true })
+      .eq("room_id", data.roomId)
+      .gt("last_seen_at", cutoff);
+    if ((count ?? 0) >= cap) throw new Error("Room is full");
+    return { roomId: data.roomId };
+  });
+
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
 export const joinMediumLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])

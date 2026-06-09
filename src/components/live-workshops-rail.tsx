@@ -1,21 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useRouter } from "@tanstack/react-router";
+
 import { Radio, Share2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import {
   listActiveInstantRooms,
-  joinLounge,
-  joinMediumLounge,
+  joinSpecificInstantRoom,
   type ActiveInstantRoom,
 } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   canJoin: boolean;
+  medium?: Category | null;
   onTakeSeat: (roomId: string) => Promise<void> | void;
 };
 
@@ -24,11 +25,10 @@ function labelFor(medium: Category | null) {
   return CATEGORIES.find((c) => c.id === medium)?.label ?? medium;
 }
 
-export function LiveWorkshopsRail({ canJoin, onTakeSeat }: Props) {
+export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
-  const drop = useServerFn(joinLounge);
-  const dropMedium = useServerFn(joinMediumLounge);
-  const router = useRouter();
+  const joinRoom = useServerFn(joinSpecificInstantRoom);
+  const qc = useQueryClient();
   const [busyRoom, setBusyRoom] = useState<string | null>(null);
 
   const { data } = useQuery({
@@ -37,19 +37,21 @@ export function LiveWorkshopsRail({ canJoin, onTakeSeat }: Props) {
     refetchInterval: 5000,
   });
 
-  const rooms = (data?.rooms ?? []).filter((r) => r.live_count < 5);
-  const fullRooms = (data?.rooms ?? []).filter((r) => r.live_count >= 5);
+  const allRooms = data?.rooms ?? [];
+  const scoped = medium ? allRooms.filter((r) => r.medium === medium) : allRooms;
+  const rooms = scoped.filter((r) => r.live_count < 5);
+  const fullRooms = scoped.filter((r) => r.live_count >= 5);
+  const mediumLabel = medium ? CATEGORIES.find((c) => c.id === medium)?.label ?? medium : null;
 
   async function takeSeat(r: ActiveInstantRoom) {
     if (busyRoom || !canJoin) return;
     setBusyRoom(r.id);
     try {
-      const { roomId } = r.medium
-        ? await dropMedium({ data: { medium: r.medium } })
-        : await drop();
+      const { roomId } = await joinRoom({ data: { roomId: r.id } });
       await onTakeSeat(roomId);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't take that seat");
+      qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
       setBusyRoom(null);
     }
   }
@@ -79,19 +81,22 @@ export function LiveWorkshopsRail({ canJoin, onTakeSeat }: Props) {
   if (rooms.length === 0 && fullRooms.length === 0) {
     return (
       <section className="mt-10">
-        <RailHeader subtitle="No one's live right now." />
+        <RailHeader subtitle={mediumLabel ? `No ${mediumLabel} rooms live` : "No one's live right now."} />
         <div className="mt-3 rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
           <p className="text-sm text-ink-soft">
-            Be the first — drop in and others will see you live within seconds.
+            {mediumLabel
+              ? `Be the first ${mediumLabel} room — open one and others will see you live within seconds.`
+              : "Be the first — drop in and others will see you live within seconds."}
           </p>
         </div>
       </section>
     );
   }
 
+  const total = rooms.length + fullRooms.length;
   return (
     <section className="mt-10">
-      <RailHeader subtitle={`${rooms.length + fullRooms.length} room${rooms.length + fullRooms.length === 1 ? "" : "s"} live now`} />
+      <RailHeader subtitle={`${total} ${mediumLabel ? `${mediumLabel} ` : ""}room${total === 1 ? "" : "s"} live now`} />
       <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
         {rooms.map((r) => (
           <article

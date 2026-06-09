@@ -1,72 +1,46 @@
-# Workshop page v1 — finish the loop
+## Audit findings
 
-Two fixes, framed as "make discovery obvious + make hosting honest."
+After tracing `workshop.index.tsx` → `LiveWorkshopsRail` → `LoungeForkDropdown` → `instant.functions.ts` → SQL (`list_active_instant_rooms`, `join_lounge`, `join_medium_lounge`), three real bugs stand out. Everything else (presence enrichment, cap, archival, activity feed) checks out.
 
-## 1. Be honest when there's no live one
+### Bug 1 — Live now ignores the selected medium (the one you reported)
+`LiveWorkshopsRail` lists every active room. When you pick "Film" at the top, the rail still shows the open-topic "Artist's Lounge" (medium = null). Discovery and filter disagree.
 
-Today: clicking **Film** (or any medium chip) silently calls `join_medium_lounge`, which spawns a brand-new room if none exist and makes the clicker the host. No warning, no signal.
+### Bug 2 — "Take an open seat" doesn't join the room you clicked
+The card's CTA calls the matchmaker (`joinMediumLounge` / `joinLounge`), which picks the *fullest* room of that medium. If two Film rooms are live, clicking the one with 1/5 can land you in the one with 4/5. The displayed room and the joined room can differ.
 
-### Fix
-Use the live counts we already fetch in `LoungeForkDropdown` (`mediumLiveMap`) and pipe them up to drive both label and behavior.
+### Bug 3 — "Any topic" matchmaker can drop you into a Film room
+`join_lounge` selects `kind='lounge' AND status='active'` with no `medium IS NULL` filter. So picking "Any topic" can route you into a medium-specific lounge, which is the inverse of the user's intent (and the inverse of `join_medium_lounge`, which correctly filters by medium).
 
-- **Inside the dropdown** (`src/components/lounge-fork-dropdown.tsx`):
-  - For each medium chip, render one of three states:
-    - **Live N** (live > 0, today's primary chip) — same look as now, `· N` count.
-    - **Empty — start one** (live === 0) — dashed, with a tiny `+` and the copy "Start the room".
-  - Hover/tap title attr: "You'll be the first one in — your seat opens it."
-- **In `WorkshopStrip`**: when `rooms.length === 0`, show a single nudge card "No live rooms right now. Drop in to start the first one — others will see you live."
-- **In `workshop.index.tsx`**:
-  - Pipe `mediumLiveMap` (or just `liveCount` for the selected medium) out of `LoungeForkDropdown` via a new `onMediumLiveMapChange` callback, OR re-use the existing query in the parent.
-  - Change the primary CTA copy dynamically:
-    - selected medium with live > 0 → "Drop into Film (3 live)"
-    - selected medium with live === 0 → "Open the first Film room"  ← clearer than "Drop into Film"
-    - no medium, liveCount > 0 → "Drop in (N live)"
-    - no medium, liveCount === 0 → "Open the first one"
-  - Same for the Host card — no copy change needed there since that one is already explicit.
-- Keep the existing matchmaker behavior server-side (one RPC, same flow) — only the framing changes.
+### Not bugs (verified)
+- Hero "N live" counter sums all rooms — intended (it's the global pulse).
+- `list_active_instant_rooms` already excludes 0-live rooms.
+- Presence join + 60s cutoff is consistent across rail, dropdown, and SQL.
+- Archival of ghost lounges runs in both join paths.
 
-## 2. Make live discovery obvious — the viral loop
+## Fix plan
 
-Today the only live signal is buried in a closed dropdown and a small activity ticker. Move it above the fold.
+### 1. Filter the Live now rail by selected medium
+`workshop.index.tsx`: pass `selectedDropMedium` into `<LiveWorkshopsRail medium={selectedDropMedium} />`.
+`live-workshops-rail.tsx`: when `medium` is set, filter `rooms` to `r.medium === medium`; when null, show all. Update the subtitle ("3 Film rooms live" vs "3 rooms live now") and the empty-state copy ("No Film rooms live — be the first").
 
-### Add a "Live now" rail directly under the hero
-New component `src/components/live-workshops-rail.tsx` that renders one card per active room with an open seat (uses `listActiveInstantRooms`, refetch 5s — already implemented).
+### 2. Join the specific clicked room
+Add a new server fn `joinSpecificInstantRoom({ roomId })` in `src/lib/instant.functions.ts` that:
+- Verifies the room is `kind='lounge' AND status='active'`.
+- Counts live presence in the last 60s; rejects if `>= 5`.
+- Returns `{ roomId }` (presence row is created by the room page on mount, same as today).
 
-Each card:
-- Medium chip (Film / Music / …) or "Open topic"
-- Title (e.g., `Film Workshop`, `Artist's Lounge`)
-- Live ring + `N/5` seat indicator
-- Avatar stack of current participants (up to 3 + `+N`)
-- Primary button: **Take an open seat** (calls `joinMediumLounge` for that medium, or `joinLounge` if no medium) — routes straight into `/workshop/$id`
-- Disabled state when `live_count >= 5` with copy "Full — try another"
-- Auto-scrolls horizontally on overflow
+`LiveWorkshopsRail.takeSeat` calls this fn instead of the matchmakers. On `Room is full` error, toast and refetch the list.
 
-Empty state: a single dashed card "No live rooms right now. Be the first." that triggers `handleDrop` with the current selected medium.
+### 3. Scope `join_lounge` to open-topic rooms
+Migration: edit `public.join_lounge` to add `AND r.medium IS NULL` in both the archival `UPDATE` and the `SELECT` for fullest room. New rooms it creates already have `medium = null` implicitly — make that explicit in the `INSERT` for clarity.
 
-### Where it goes
-Right under the Drop in / Host two-up grid, above `WorkshopStrip` (scheduled workshops). Order becomes:
-1. Hero + Drop in / Host (existing)
-2. **Live now rail** ← new
-3. Scheduled workshops strip (existing)
+### Out of scope
+- No UI changes to host card, hero, or workshop strip.
+- No schema changes beyond the `join_lounge` function body.
+- No realtime channel rewrite — the existing 5s poll is fine for this rail.
 
-### Surface presence on cards
-Avatar stack needs participant profiles. Add an RPC `list_active_instant_rooms_with_presence` (or a lightweight client-side join via `instant_presence` + `profiles`) returning `participants: { user_id, display_name, avatar_url }[]` per room. Cap at 3 for the avatar stack; backend caps the list at 5 max anyway.
-
-### Viral loop
-- Each live room card carries a **Share** icon → copies `/workshop/$id` to clipboard with a toast. (Anyone with the link who is signed in can drop in — current RLS already permits this.)
-- Mobile-nav notifications stay as-is; not extending scope here.
-
-## Out of scope
-- No new tables; reuse `instant_rooms`, `instant_presence`, `profiles`.
-- No changes to matchmaker SQL — UI does the framing.
-- No invite-by-name / discovery feed beyond what's surfaced here.
-- No recording or replay of past live rooms.
-- No notifications when a watched medium goes live (queue for next sweep).
-
-## Files
-- `src/routes/workshop.index.tsx` — dynamic CTA copy; insert `<LiveWorkshopsRail />`.
-- `src/components/lounge-fork-dropdown.tsx` — "Start the room" empty state on chips; expose live map.
-- `src/components/workshop-strip.tsx` — empty-state nudge.
-- `src/components/live-workshops-rail.tsx` — new.
-- `src/lib/instant.functions.ts` — extend `listActiveInstantRooms` to include presence (top 3 participants).
-- One SQL migration if we extend the RPC's return shape; otherwise client-side enrich via a follow-up `instant_presence` query.
+### Files touched
+- `supabase/migrations/<new>.sql` — replace `public.join_lounge` body
+- `src/lib/instant.functions.ts` — add `joinSpecificInstantRoom`
+- `src/components/live-workshops-rail.tsx` — accept `medium` prop, filter list, call new fn
+- `src/routes/workshop.index.tsx` — pass `medium={selectedDropMedium}` to the rail
