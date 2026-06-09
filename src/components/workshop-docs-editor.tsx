@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, Save, Trash2, Loader2 } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import {
+  Plus, Save, Trash2, Loader2, Eye, Pencil, Bold, Italic, Heading1, Heading2,
+  List as ListIcon, Link2, Code, Quote, Maximize2, Minimize2, ArrowUp, ArrowDown,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +18,9 @@ import { toast } from "sonner";
  * Polymorphic collaborative Docs editor. Backs onto either:
  *  - `workshop_docs` (persistent Workshop, scoped by workshop_id), or
  *  - `instant_docs`  (live room, scoped by room_id).
+ *
+ * Features: formatting toolbar, live markdown preview, word count, reorder,
+ * fullscreen, autosave with status indicator.
  */
 export type DocsScope =
   | { kind: "persistent"; workshopId: string }
@@ -37,6 +45,7 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
   const qc = useQueryClient();
   const t = tableFor(scope);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
   const queryKey = ["docs", scope.kind, t.parentId] as const;
 
@@ -91,6 +100,17 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
     if (id === activeId) setActiveId(null);
   }
 
+  async function reorder(doc: Doc, dir: -1 | 1) {
+    const idx = docs.findIndex((d) => d.id === doc.id);
+    const swap = docs[idx + dir];
+    if (!swap) return;
+    await Promise.all([
+      (supabase.from(t.name) as any).update({ sort_order: swap.sort_order }).eq("id", doc.id),
+      (supabase.from(t.name) as any).update({ sort_order: doc.sort_order }).eq("id", swap.id),
+    ]);
+    qc.invalidateQueries({ queryKey });
+  }
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-10">
@@ -110,54 +130,93 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
     );
   }
 
-  return (
-    <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-      <aside className="rounded-2xl border border-border bg-surface p-2">
-        <ul className="space-y-0.5">
-          {docs.map((d) => (
-            <li key={d.id}>
-              <button
-                onClick={() => setActiveId(d.id)}
-                className={cn(
-                  "w-full truncate rounded-xl px-3 py-2 text-left text-sm transition",
-                  (active?.id ?? "") === d.id ? "bg-muted text-ink" : "text-ink-soft hover:bg-muted/50",
-                )}
-              >
-                {d.title || "Untitled"}
-              </button>
-            </li>
-          ))}
-        </ul>
-        <Button
-          onClick={addDoc}
-          variant="ghost"
-          size="sm"
-          className="mt-1 w-full justify-start rounded-xl text-ink-muted hover:text-ink"
-        >
-          <Plus className="h-4 w-4" /> New doc
-        </Button>
-      </aside>
+  const container = fullscreen
+    ? "fixed inset-0 z-50 bg-background p-4 md:p-6 overflow-auto"
+    : "";
 
-      {active && (
-        <DocEditor key={active.id} doc={active} tableName={t.name} onDelete={() => removeDoc(active.id)} />
-      )}
+  return (
+    <div className={container}>
+      <div className={cn("grid gap-4", fullscreen ? "md:grid-cols-[240px_1fr] h-full" : "md:grid-cols-[200px_1fr]")}>
+        <aside className="rounded-2xl border border-border bg-surface p-2">
+          <ul className="space-y-0.5">
+            {docs.map((d, idx) => (
+              <li key={d.id} className="group flex items-center gap-1">
+                <button
+                  onClick={() => setActiveId(d.id)}
+                  className={cn(
+                    "flex-1 truncate rounded-xl px-3 py-2 text-left text-sm transition",
+                    (active?.id ?? "") === d.id ? "bg-muted text-ink" : "text-ink-soft hover:bg-muted/50",
+                  )}
+                >
+                  {d.title || "Untitled"}
+                </button>
+                <div className="opacity-0 transition group-hover:opacity-100 flex flex-col">
+                  <button
+                    onClick={() => reorder(d, -1)}
+                    disabled={idx === 0}
+                    className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
+                    aria-label="Move up"
+                  >
+                    <ArrowUp className="h-3 w-3" />
+                  </button>
+                  <button
+                    onClick={() => reorder(d, 1)}
+                    disabled={idx === docs.length - 1}
+                    className="text-ink-muted hover:text-ink disabled:opacity-30 px-0.5"
+                    aria-label="Move down"
+                  >
+                    <ArrowDown className="h-3 w-3" />
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <Button
+            onClick={addDoc}
+            variant="ghost"
+            size="sm"
+            className="mt-1 w-full justify-start rounded-xl text-ink-muted hover:text-ink"
+          >
+            <Plus className="h-4 w-4" /> New doc
+          </Button>
+        </aside>
+
+        {active && (
+          <DocEditor
+            key={active.id}
+            doc={active}
+            tableName={t.name}
+            fullscreen={fullscreen}
+            onToggleFullscreen={() => setFullscreen((v) => !v)}
+            onDelete={() => removeDoc(active.id)}
+          />
+        )}
+      </div>
     </div>
   );
 }
 
+type ViewMode = "edit" | "preview" | "split";
+
 function DocEditor({
   doc,
   tableName,
+  fullscreen,
+  onToggleFullscreen,
   onDelete,
 }: {
   doc: Doc;
   tableName: "workshop_docs" | "instant_docs";
+  fullscreen: boolean;
+  onToggleFullscreen: () => void;
   onDelete: () => void;
 }) {
   const [title, setTitle] = useState(doc.title);
   const [body, setBody] = useState(doc.content_md);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [view, setView] = useState<ViewMode>("edit");
+  const taRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setTitle(doc.title);
@@ -182,36 +241,167 @@ function DocEditor({
     setDirty(false);
   }
 
+  function wrap(before: string, after: string = before) {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    const selected = body.slice(start, end);
+    const next = body.slice(0, start) + before + selected + after + body.slice(end);
+    setBody(next);
+    setDirty(true);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + before.length, end + before.length);
+    });
+  }
+
+  function prefixLine(prefix: string) {
+    const ta = taRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart;
+    const lineStart = body.lastIndexOf("\n", start - 1) + 1;
+    const next = body.slice(0, lineStart) + prefix + body.slice(lineStart);
+    setBody(next);
+    setDirty(true);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(start + prefix.length, start + prefix.length);
+    });
+  }
+
+  function insertLink() {
+    const url = window.prompt("Link URL");
+    if (!url) return;
+    wrap("[", `](${url})`);
+  }
+
+  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey) {
+      if (e.key === "s") { e.preventDefault(); save(); return; }
+      if (e.key === "b") { e.preventDefault(); wrap("**"); return; }
+      if (e.key === "i") { e.preventDefault(); wrap("_"); return; }
+      if (e.key === "k") { e.preventDefault(); insertLink(); return; }
+    }
+  }
+
+  const words = body.trim() ? body.trim().split(/\s+/).length : 0;
+  const chars = body.length;
+
   return (
-    <div className="rounded-2xl border border-border bg-surface p-4">
-      <div className="flex items-center gap-2">
+    <div className={cn("rounded-2xl border border-border bg-surface p-4 flex flex-col", fullscreen && "h-full")}>
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           value={title}
           onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
-          className="border-none bg-transparent px-0 text-lg font-display focus-visible:ring-0"
+          className="flex-1 min-w-[160px] border-none bg-transparent px-0 text-lg font-display focus-visible:ring-0"
           placeholder="Untitled"
           maxLength={200}
         />
-        <span className="text-xs text-ink-muted">{saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
-        <Button onClick={save} size="sm" variant="ghost" className="rounded-full" disabled={!dirty || saving}>
+        <span className="text-xs text-ink-muted">
+          {saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}
+        </span>
+        <div className="inline-flex rounded-full bg-muted p-0.5">
+          <button
+            onClick={() => setView("edit")}
+            className={cn("rounded-full px-2 py-1 text-xs", view === "edit" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
+            title="Edit"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            onClick={() => setView("split")}
+            className={cn("rounded-full px-2 py-1 text-xs", view === "split" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
+            title="Split"
+          >
+            <span className="text-[10px] font-medium">Split</span>
+          </button>
+          <button
+            onClick={() => setView("preview")}
+            className={cn("rounded-full px-2 py-1 text-xs", view === "preview" ? "bg-background text-ink" : "text-ink-muted hover:text-ink")}
+            title="Preview"
+          >
+            <Eye className="h-3 w-3" />
+          </button>
+        </div>
+        <Button onClick={save} size="sm" variant="ghost" className="rounded-full" disabled={!dirty || saving} title="Save (⌘S)">
           <Save className="h-3.5 w-3.5" />
+        </Button>
+        <Button onClick={onToggleFullscreen} size="sm" variant="ghost" className="rounded-full" title="Fullscreen">
+          {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </Button>
         <Button
           onClick={onDelete}
           size="sm"
           variant="ghost"
           className="rounded-full text-ink-muted hover:text-destructive"
+          title="Delete"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
-      <Textarea
-        value={body}
-        onChange={(e) => { setBody(e.target.value); setDirty(true); }}
-        rows={16}
-        placeholder="Start writing. Markdown is fine."
-        className="mt-3 resize-y border-none bg-transparent px-0 focus-visible:ring-0"
-      />
+
+      {view !== "preview" && (
+        <div className="mt-2 flex flex-wrap items-center gap-0.5 border-b border-border pb-2">
+          <ToolbarBtn onClick={() => wrap("**")} title="Bold (⌘B)"><Bold className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => wrap("_")} title="Italic (⌘I)"><Italic className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => prefixLine("# ")} title="Heading 1"><Heading1 className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => prefixLine("## ")} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => prefixLine("- ")} title="Bulleted list"><ListIcon className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => prefixLine("> ")} title="Quote"><Quote className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={() => wrap("`")} title="Inline code"><Code className="h-3.5 w-3.5" /></ToolbarBtn>
+          <ToolbarBtn onClick={insertLink} title="Link (⌘K)"><Link2 className="h-3.5 w-3.5" /></ToolbarBtn>
+        </div>
+      )}
+
+      <div className={cn("mt-3 flex-1 min-h-0", view === "split" ? "grid gap-3 md:grid-cols-2" : "")}>
+        {view !== "preview" && (
+          <Textarea
+            ref={taRef}
+            value={body}
+            onChange={(e) => { setBody(e.target.value); setDirty(true); }}
+            onKeyDown={onKeyDown}
+            rows={fullscreen ? 28 : 16}
+            placeholder="Start writing. Markdown is fine. ⌘B bold · ⌘I italic · ⌘K link · ⌘S save"
+            className={cn(
+              "resize-y border-none bg-transparent px-0 focus-visible:ring-0 font-mono text-sm",
+              fullscreen && "h-full",
+            )}
+          />
+        )}
+        {(view === "preview" || view === "split") && (
+          <div className={cn(
+            "prose prose-sm dark:prose-invert max-w-none overflow-auto rounded-xl border border-border bg-surface-2/40 p-4",
+            fullscreen && "h-full",
+          )}>
+            {body.trim() ? (
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+            ) : (
+              <p className="text-sm text-ink-muted">Nothing to preview yet.</p>
+            )}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-2 flex items-center justify-between text-[11px] text-ink-muted">
+        <span>{words} {words === 1 ? "word" : "words"} · {chars} chars</span>
+        <span>Last updated {new Date(doc.updated_at).toLocaleString()}</span>
+      </div>
     </div>
+  );
+}
+
+function ToolbarBtn({
+  onClick, title, children,
+}: { onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-ink-soft hover:bg-muted hover:text-ink"
+    >
+      {children}
+    </button>
   );
 }
