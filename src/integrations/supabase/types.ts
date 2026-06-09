@@ -3662,6 +3662,7 @@ export type Database = {
         Returns: boolean
       }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }

@@ -200,7 +200,7 @@ function WorkshopPreflight() {
             <Radio className="h-3.5 w-3.5" /> Drop in
           </div>
           <h2 className="mt-2 font-display text-2xl text-ink">Take a seat in a live one</h2>
-          <p className="mt-2 text-sm text-ink-soft">Matchmaker drops you into the fullest Workshop with a seat open. Leaderless, focused.</p>
+          <p className="mt-2 text-sm text-ink-soft">Matchmaker drops you into an open Workshop with a seat — and prefers rooms hosted by people you follow. Leaderless, focused.</p>
           <div className="mt-4">
             <LoungeForkDropdown
               selectedMedium={selectedDropMedium}
