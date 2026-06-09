@@ -40,15 +40,16 @@ const PRESETS: Record<ToolType, Preset> = {
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
-  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links — files coming.", fields: [] },
+  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.",   comingSoon: true, fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",                            comingSoon: true, fields: [] },
-  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes from inside the room.",             comingSoon: true, fields: [] },
+  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
+  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",            comingSoon: true, fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "board", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "recorder", "board"];
+
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
