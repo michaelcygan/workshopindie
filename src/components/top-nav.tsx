@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users } from "lucide-react";
+import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 
 export function TopNav() {
@@ -53,11 +53,21 @@ export function TopNav() {
               <span className="text-gradient-motion">Plus</span>
             </span>
           )}
-          <Link to="/collab/new" className="hidden md:inline-flex">
-            <Button data-firstrun="collab" size="sm" className="rounded-full gap-1.5">
-              <Megaphone className="h-4 w-4" /> Post a Collab
-            </Button>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button data-firstrun="collab" size="sm" className="hidden md:inline-flex rounded-full gap-1.5">
+                <Plus className="h-4 w-4" /> Create
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
+                <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/workshops/lobby/new" })}>
+                <Coffee className="mr-2 h-4 w-4" /> Start a Draft Workshop
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
 
           {loading ? null : user ? (
