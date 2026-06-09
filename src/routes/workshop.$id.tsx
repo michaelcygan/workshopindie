@@ -144,9 +144,24 @@ function LiveRoomPage() {
         </div>
 
         {!isPromoted && user && (
-          <Button onClick={() => setCollabOpen(true)} size="sm" className="ml-auto rounded-full gap-1.5">
-            <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" className="ml-auto rounded-full gap-1.5">
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onSelect={() => setCollabOpen(true)} className="gap-2">
+                <Rocket className="h-3.5 w-3.5" /> Create a Collab
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => router.navigate({ to: "/workshops/lobby/new" })}
+                className="gap-2"
+              >
+                <Coffee className="h-3.5 w-3.5" /> Start a Draft Workshop
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         )}
       </div>
 
