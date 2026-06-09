@@ -89,13 +89,29 @@ function tables(scope: ToolsScope) {
 }
 
 type LegacyProps = { workshopId: string; hostUserId: string; category: Category };
-type NewProps = { scope: ToolsScope };
+type NewProps = { scope: ToolsScope; media?: MediaForTools };
 type Props = NewProps | LegacyProps;
+
+// Subset of useMediaRoom return shape — passed in optionally so the
+// Screen Share + Recorder tools can drive the live media session.
+export type MediaForTools = {
+  joined: boolean;
+  muted: boolean;
+  cameraOn: boolean;
+  toggleMute: () => void;
+  setCameraEnabled: (on: boolean) => void;
+  isScreenSharing: boolean;
+  screenSharerId: string | null;
+  startScreenShare: () => Promise<void> | void;
+  stopScreenShare: () => Promise<void> | void;
+};
 
 export function WorkshopToolsPanel(props: Props) {
   const scope: ToolsScope = "scope" in props
     ? props.scope
     : { kind: "persistent", workshopId: props.workshopId, hostUserId: props.hostUserId, category: props.category };
+  const media = "scope" in props ? props.media : undefined;
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const [active, setActive] = useState<StoredToolType | null>(null);
