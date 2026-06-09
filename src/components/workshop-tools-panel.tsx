@@ -381,14 +381,34 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
             }
             return (
               <div key={it.id} className="rounded-xl border border-border bg-surface-2 p-3">
-                {it.title && <div className="text-sm font-medium text-ink">{it.title}</div>}
-                {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
-                {it.url && (
-                  <a href={it.url} target="_blank" rel="noreferrer noopener"
-                    className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
-                    {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
-                  </a>
-                )}
+                <div className="flex items-start gap-2">
+                  {isList && isInstant && (
+                    <button
+                      onClick={() => toggleDone(it)}
+                      className={
+                        "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition " +
+                        (it.done ? "border-primary bg-primary text-primary-foreground" : "border-border hover:border-primary")
+                      }
+                      aria-label={it.done ? "Mark as open" : "Mark as done"}
+                    >
+                      {it.done && <Check className="h-2.5 w-2.5" />}
+                    </button>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    {it.title && (
+                      <div className={"text-sm font-medium " + (isList && it.done ? "text-ink-muted line-through" : "text-ink")}>
+                        {it.title}
+                      </div>
+                    )}
+                    {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
+                    {it.url && (
+                      <a href={it.url} target="_blank" rel="noreferrer noopener"
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
+                        {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
                 <div className="mt-2 flex items-center gap-2 text-[11px] text-ink-muted">
                   <Avatar className="h-4 w-4"><AvatarImage src={it.profile?.avatar_url ?? undefined} /><AvatarFallback className="text-[8px]">{name[0]}</AvatarFallback></Avatar>
                   <span>{name}</span>
