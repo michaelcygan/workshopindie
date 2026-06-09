@@ -291,15 +291,29 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const isInstant = scope.kind === "instant";
+  const isList = tool.tool_type === "list" || tool.tool_type === "shot_list" || tool.tool_type === "track_list";
+  // `done` only exists on instant_tool_items; persistent workshop_tool_items uses workshop_tasks for completion.
+  const selectCols = isInstant
+    ? `id,title,body,url,done,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`
+    : `id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`;
+
   const { data: items = [] } = useQuery({
     queryKey: ["ws-tool-items", scope.kind, tool.id],
     queryFn: async () => {
       const { data } = await (supabase.from(t.itemsTable) as any)
-        .select(`id,title,body,url,created_at,created_by_user_id, profile:profiles!${t.profileFk}(display_name,username,avatar_url)`)
+        .select(selectCols)
         .eq("tool_id", tool.id).order("created_at", { ascending: false });
       return data ?? [];
     },
   });
+
+  async function toggleDone(it: any) {
+    if (!isInstant) return;
+    const { error } = await (supabase.from(t.itemsTable) as any).update({ done: !it.done }).eq("id", it.id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["ws-tool-items", scope.kind, tool.id] });
+  }
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
