@@ -168,9 +168,10 @@ function WorkshopToolsHub() {
       title: "Board",
       blurb: "Realtime whiteboard — survives between sessions.",
       icon: <PenLine className="h-5 w-5" />,
-      action: () => toast.info("Board is coming soon."),
-      soon: true,
+      action: () =>
+        router.navigate({ to: "/workshops/$slug/tools/$tool", params: { slug, tool: "board" } }),
     },
+
 
     {
       key: "docs",
