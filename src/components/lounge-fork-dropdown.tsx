@@ -137,6 +137,7 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
                     whileHover={{ y: -1, scale: 1.03 }}
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setOpen(false); onSelectMedium(c.id); }}
+                    title={active ? `${live} live in ${c.label}` : `No one's live in ${c.label} — you'll open the first room.`}
                     className={[
                       "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                       isSelected
@@ -148,7 +149,8 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
                   >
                     {isSelected ? <Check className="h-3 w-3" /> : !active && <Plus className="h-3 w-3" />}
                     {c.label}
-                    {active && !isSelected && <span className="text-ink-muted">· {live}</span>}
+                    {active && !isSelected && <span className="text-ink-muted">· {live} live</span>}
+                    {!active && !isSelected && <span className="text-ink-muted/70">· start it</span>}
                   </motion.button>
                 );
               })}
