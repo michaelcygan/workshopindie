@@ -6,6 +6,7 @@ import {
   ListChecks,
   FolderOpen,
   FileText,
+  PenLine,
   Plus,
   Trash2,
   Check,
@@ -15,6 +16,7 @@ import {
   Lock,
   Save,
 } from "lucide-react";
+import RoomBoard from "@/components/room-board";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
