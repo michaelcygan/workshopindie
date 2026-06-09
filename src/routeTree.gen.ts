@@ -48,6 +48,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
@@ -252,6 +253,11 @@ const AdminBadgesRoute = AdminBadgesRouteImport.update({
   path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
+const WorkshopsLobbyNewRoute = WorkshopsLobbyNewRouteImport.update({
+  id: '/lobby/new',
+  path: '/lobby/new',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
 const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
@@ -339,6 +345,7 @@ export interface FileRoutesByFullPath {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -383,6 +390,7 @@ export interface FileRoutesByTo {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -433,6 +441,7 @@ export interface FileRoutesById {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
@@ -484,6 +493,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/workshops/$slug/tools/$tool'
@@ -528,6 +538,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/workshops/$slug/tools/$tool'
@@ -577,6 +588,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/workshops/$slug/tools/$tool'
@@ -891,6 +903,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBadgesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/workshops/lobby/new': {
+      id: '/workshops/lobby/new'
+      path: '/lobby/new'
+      fullPath: '/workshops/lobby/new'
+      preLoaderRoute: typeof WorkshopsLobbyNewRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
     '/workshops/$slug/tools': {
       id: '/workshops/$slug/tools'
       path: '/tools'
@@ -1035,12 +1054,14 @@ interface WorkshopsRouteChildren {
   WorkshopsSlugRoute: typeof WorkshopsSlugRouteWithChildren
   WorkshopsNewRoute: typeof WorkshopsNewRoute
   WorkshopsIndexRoute: typeof WorkshopsIndexRoute
+  WorkshopsLobbyNewRoute: typeof WorkshopsLobbyNewRoute
 }
 
 const WorkshopsRouteChildren: WorkshopsRouteChildren = {
   WorkshopsSlugRoute: WorkshopsSlugRouteWithChildren,
   WorkshopsNewRoute: WorkshopsNewRoute,
   WorkshopsIndexRoute: WorkshopsIndexRoute,
+  WorkshopsLobbyNewRoute: WorkshopsLobbyNewRoute,
 }
 
 const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(

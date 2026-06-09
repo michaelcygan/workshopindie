@@ -3441,9 +3441,11 @@ export type Database = {
           hide_from_ineligible: boolean
           host_user_id: string
           id: string
+          is_lobby: boolean
           is_pinned: boolean
           last_activity_at: string
           license_type: Database["public"]["Enums"]["work_license"]
+          lobby_discoverable: boolean
           location_text: string | null
           location_type: Database["public"]["Enums"]["location_type"]
           max_age: number | null
@@ -3493,9 +3495,11 @@ export type Database = {
           hide_from_ineligible?: boolean
           host_user_id: string
           id?: string
+          is_lobby?: boolean
           is_pinned?: boolean
           last_activity_at?: string
           license_type?: Database["public"]["Enums"]["work_license"]
+          lobby_discoverable?: boolean
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
           max_age?: number | null
@@ -3545,9 +3549,11 @@ export type Database = {
           hide_from_ineligible?: boolean
           host_user_id?: string
           id?: string
+          is_lobby?: boolean
           is_pinned?: boolean
           last_activity_at?: string
           license_type?: Database["public"]["Enums"]["work_license"]
+          lobby_discoverable?: boolean
           location_text?: string | null
           location_type?: Database["public"]["Enums"]["location_type"]
           max_age?: number | null
@@ -3653,6 +3659,7 @@ export type Database = {
         Returns: boolean
       }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
