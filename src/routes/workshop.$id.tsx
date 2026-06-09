@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvite } from "@/lib/collab-workshop.functions";
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { toast } from "sonner";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
@@ -217,6 +218,8 @@ function LiveRoomPage() {
           router.navigate({ to: "/workshops/$slug", params: { slug } });
         }}
       />
+
+      <HostFirstRunTour active={isHost && !isPromoted} />
     </main>
   );
 }

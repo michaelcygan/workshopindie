@@ -1036,6 +1036,7 @@ export type Database = {
           source_workshop_id: string | null
           status: Database["public"]["Enums"]["instant_status"]
           title: string
+          visibility: string
           workshop_id: string | null
         }
         Insert: {
@@ -1056,6 +1057,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title: string
+          visibility?: string
           workshop_id?: string | null
         }
         Update: {
@@ -1076,6 +1078,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
           title?: string
+          visibility?: string
           workshop_id?: string | null
         }
         Relationships: [
@@ -3689,7 +3692,7 @@ export type Database = {
         Returns: string
       }
       list_active_instant_rooms: {
-        Args: never
+        Args: { _viewer: string }
         Returns: {
           created_at: string
           id: string

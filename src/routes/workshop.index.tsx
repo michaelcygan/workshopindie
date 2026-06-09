@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Video, Loader2, ArrowLeft, Radio, Crown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
+import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
+import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
@@ -25,6 +27,7 @@ export const Route = createFileRoute("/workshop/")({
 function WorkshopPreflight() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const qc = useQueryClient();
   const drop = useServerFn(joinLounge);
   const dropMedium = useServerFn(joinMediumLounge);
   const host = useServerFn(hostInstantWorkshop);
@@ -34,6 +37,7 @@ function WorkshopPreflight() {
   const [selectedMediumLive, setSelectedMediumLive] = useState(0);
   const [selectedDropMedium, setSelectedDropMedium] = useState<Category | null>(null);
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
   const dropLabel = selectedDropMedium ? CATEGORIES.find((c) => c.id === selectedDropMedium)?.label ?? null : null;
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
@@ -99,13 +103,26 @@ function WorkshopPreflight() {
     }
   }
 
-  async function handleHost() {
+  function handleHost() {
+    if (busy || !canDrop) return;
+    setPrivacyOpen(true);
+  }
+
+  async function confirmHost(args: { title: string; visibility: RoomVisibility; medium: Category | null }) {
     if (busy || !canDrop) return;
     setBusy("host");
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(null); return; }
-      const { roomId } = await host({ data: { medium: hostMedium ?? null } });
+      const { roomId } = await host({
+        data: {
+          medium: args.medium ?? null,
+          title: args.title || null,
+          visibility: args.visibility,
+        },
+      });
+      qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
+      setPrivacyOpen(false);
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open your Workshop");
@@ -250,6 +267,16 @@ function WorkshopPreflight() {
           router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
         }}
       />
+
+      <HostPrivacyDialog
+        open={privacyOpen}
+        onOpenChange={setPrivacyOpen}
+        defaultMedium={hostMedium}
+        busy={busy === "host"}
+        onConfirm={confirmHost}
+      />
+
+
 
       <WorkshopStrip />
     </main>
