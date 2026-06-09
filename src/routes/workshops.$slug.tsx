@@ -199,13 +199,17 @@ function WorkshopDetail() {
 
       {isHost && <HostStatusBar ws={ws} onChanged={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
+      {isHost && ws.is_lobby && <ScheduleDraftPanel ws={ws} onScheduled={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
+
       <CheckInPanel ws={ws} />
+
+      <RsvpButton ws={ws} />
 
       <RolesAndApply ws={ws} />
 
       {isHost && <HostApplications ws={ws} />}
 
-      {(isLive || isHost) && <Room ws={ws} />}
+      {(isLive || isHost || ws.is_lobby) && <Room ws={ws} />}
 
       {isHost && isOver && ws.status !== "shipped" && <FinalizePanel ws={ws} onShipped={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
