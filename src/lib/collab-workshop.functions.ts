@@ -425,6 +425,74 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       }
     }
 
+    // 6c. Copy ephemeral Docs forward into workshop_docs.
+    const { data: srcDocs } = await supabaseAdmin
+      .from("instant_docs")
+      .select("title, content_md, sort_order, created_by, created_at")
+      .eq("room_id", roomId);
+    if (srcDocs && srcDocs.length > 0) {
+      await (supabaseAdmin.from("workshop_docs") as any)
+        .insert(
+          srcDocs.map((d) => ({
+            workshop_id: ws.id,
+            title: d.title,
+            content_md: d.content_md,
+            sort_order: d.sort_order,
+            created_by: d.created_by,
+            created_at: d.created_at,
+          })),
+        )
+        .then(() => null, () => null);
+    }
+
+    // 6d. Copy ephemeral Drive links forward into workshop_drive_links.
+    const { data: srcLinks } = await supabaseAdmin
+      .from("instant_drive_links")
+      .select("url, provider, title, note, added_by, created_at")
+      .eq("room_id", roomId);
+    if (srcLinks && srcLinks.length > 0) {
+      await (supabaseAdmin.from("workshop_drive_links") as any)
+        .insert(
+          srcLinks
+            .filter((l) => !!l.added_by)
+            .map((l) => ({
+              workshop_id: ws.id,
+              url: l.url,
+              provider: l.provider,
+              title: l.title,
+              note: l.note,
+              added_by: l.added_by,
+              created_at: l.created_at,
+            })),
+        )
+        .then(() => null, () => null);
+    }
+
+    // 6e. Promote any List items into workshop_tasks (instant_tools.tool_type='list').
+    const listTools = (srcTools ?? []).filter((st) => st.tool_type === "list");
+    for (const lt of listTools) {
+      const { data: lItems } = await supabaseAdmin
+        .from("instant_tool_items")
+        .select("title, body, done, created_by_user_id, created_at")
+        .eq("tool_id", lt.id);
+      const tasks = (lItems ?? [])
+        .filter((it) => !!it.title && !!it.created_by_user_id)
+        .map((it, idx) => ({
+          workshop_id: ws.id,
+          created_by: it.created_by_user_id,
+          title: it.title as string,
+          body: it.body,
+          status: it.done ? "done" : "open",
+          completed_at: it.done ? it.created_at : null,
+          sort_order: idx,
+          created_at: it.created_at,
+        }));
+      if (tasks.length > 0) {
+        await (supabaseAdmin.from("workshop_tasks") as any).insert(tasks).then(() => null, () => null);
+      }
+    }
+
+
 
 
     // 7. Opt-in invites for everyone else currently present.
