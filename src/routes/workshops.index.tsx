@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Calendar } from "lucide-react";
+import { Calendar, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card";
@@ -11,6 +11,7 @@ import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { getMyAgeFields } from "@/lib/profile-age.functions";
+import { LobbiesSection } from "@/components/lobbies-section";
 
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
@@ -92,10 +93,17 @@ function WorkshopsPage() {
           <h1 className="font-display text-4xl text-ink md:text-5xl">Workshops</h1>
           <p className="mt-1 text-ink-muted">Scheduled Workshops you can RSVP to. Or skip the wait — <Link to="/workshop" className="underline hover:text-ink">drop in</Link>.</p>
         </div>
-        <Link to="/workshops/new">
-          <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to="/workshops/lobby/new">
+            <Button variant="outline" className="rounded-full gap-2"><Sparkles className="h-4 w-4" /> Start a Lobby</Button>
+          </Link>
+          <Link to="/workshops/new">
+            <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
+          </Link>
+        </div>
       </motion.div>
+
+      {user && <LobbiesSection />}
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
