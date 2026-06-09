@@ -109,14 +109,33 @@ export function MediaPanel({
               {m.cameraOn ? "Camera off" : "Camera on"}
             </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExit}
-            className="w-full rounded-full gap-1.5 text-destructive hover:text-destructive"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Exit Workshop
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={m.isScreenSharing ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => (m.isScreenSharing ? m.stopScreenShare() : m.startScreenShare())}
+              className="rounded-full gap-1.5"
+              title={m.isScreenSharing ? "Stop sharing your screen" : "Share your screen with the room"}
+            >
+              {m.isScreenSharing ? <MonitorOff className="h-3.5 w-3.5" /> : <MonitorPlay className="h-3.5 w-3.5" />}
+              {m.isScreenSharing ? "Stop share" : "Share screen"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExit}
+              className="rounded-full gap-1.5 text-destructive hover:text-destructive"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Exit
+            </Button>
+          </div>
+
+          {m.screenSharerId && !m.isScreenSharing && (
+            <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary">
+              Someone is sharing their screen
+            </p>
+          )}
+
 
           <div className="border-t border-border pt-3">
             <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
