@@ -193,19 +193,17 @@ function LiveRoomPage() {
         roomId={id}
         title={title}
         initialMode={mode ?? "video"}
-        toolsSlot={(media) =>
-          room ? (
-            <WorkshopToolsPanel
-              scope={{
-                kind: "instant",
-                roomId: id,
-                hostUserId: room.host_user_id,
-                category: (room.category as any) ?? (room.medium as any) ?? null,
-              }}
-              media={media}
-            />
-          ) : null
-        }
+        toolsSlot={(media) => (
+          <WorkshopToolsPanel
+            scope={{
+              kind: "instant",
+              roomId: id,
+              hostUserId: room?.host_user_id ?? null,
+              category: (room?.category as any) ?? (room?.medium as any) ?? null,
+            }}
+            media={media}
+          />
+        )}
 
       />
 
