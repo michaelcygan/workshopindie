@@ -370,12 +370,20 @@ export function useMediaRoom(roomId: string | undefined) {
       for (const t of localStreamRef.current.getTracks()) t.stop();
       localStreamRef.current = null;
     }
+    if (screenStreamRef.current) {
+      for (const t of screenStreamRef.current.getTracks()) t.stop();
+      screenStreamRef.current = null;
+    }
+    originalCamTrackRef.current = null;
+    setScreenStream(null);
+    setScreenSharerId(null);
     if (speakingStopRef.current) speakingStopRef.current();
     setSpeaking(false);
     setMuted(false);
     setCameraOnState(false);
     lastSpeakingSentRef.current = false;
   }
+
 
   const leave = useCallback(() => {
     teardownMedia();
