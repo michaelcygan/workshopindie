@@ -492,6 +492,37 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       }
     }
 
+    // 6f. Copy board items forward (instant_board_items -> workshop_board_items).
+    // Note: image content URLs that point to the ephemeral 'instant-whiteboard' bucket
+    // stay as-is — they remain reachable after promotion since that bucket is public.
+    const { data: srcBoardItems } = await supabaseAdmin
+      .from("instant_board_items")
+      .select("user_id, kind, content, x, y, w, h, z, rotation, created_at")
+      .eq("room_id", roomId);
+    if (srcBoardItems && srcBoardItems.length > 0) {
+      await (supabaseAdmin.from("workshop_board_items") as any)
+        .insert(
+          srcBoardItems
+            .filter((b) => !!b.user_id)
+            .map((b) => ({
+              workshop_id: ws.id,
+              user_id: b.user_id,
+              kind: b.kind,
+              content: b.content,
+              x: b.x,
+              y: b.y,
+              w: b.w,
+              h: b.h,
+              z: b.z,
+              rotation: b.rotation,
+              created_at: b.created_at,
+            })),
+        )
+        .then(() => null, () => null);
+    }
+
+
+
 
 
 
