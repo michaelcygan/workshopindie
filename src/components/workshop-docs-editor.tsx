@@ -1,0 +1,217 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Plus, Save, Trash2, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+/**
+ * Polymorphic collaborative Docs editor. Backs onto either:
+ *  - `workshop_docs` (persistent Workshop, scoped by workshop_id), or
+ *  - `instant_docs`  (live room, scoped by room_id).
+ */
+export type DocsScope =
+  | { kind: "persistent"; workshopId: string }
+  | { kind: "instant"; roomId: string };
+
+type Doc = {
+  id: string;
+  title: string;
+  content_md: string;
+  sort_order: number;
+  updated_at: string;
+};
+
+function tableFor(scope: DocsScope) {
+  return scope.kind === "persistent"
+    ? { name: "workshop_docs" as const, parentCol: "workshop_id" as const, parentId: scope.workshopId, createdByCol: "created_by" as const }
+    : { name: "instant_docs"  as const, parentCol: "room_id"     as const, parentId: scope.roomId,     createdByCol: "created_by" as const };
+}
+
+export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const t = tableFor(scope);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const queryKey = ["docs", scope.kind, t.parentId] as const;
+
+  const { data: docs = [], isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const { data } = await (supabase.from(t.name) as any)
+        .select("id,title,content_md,sort_order,updated_at")
+        .eq(t.parentCol, t.parentId)
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: true });
+      return (data as Doc[]) ?? [];
+    },
+  });
+
+  useEffect(() => {
+    const ch = supabase
+      .channel(`docs-${scope.kind}-${t.parentId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: t.name, filter: `${t.parentCol}=eq.${t.parentId}` },
+        () => qc.invalidateQueries({ queryKey }),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [scope.kind, t.name, t.parentCol, t.parentId, qc]);
+
+  const active = useMemo(
+    () => docs.find((d) => d.id === activeId) ?? docs[0] ?? null,
+    [docs, activeId],
+  );
+
+  async function addDoc() {
+    if (!user) return;
+    const nextOrder = (docs[docs.length - 1]?.sort_order ?? 0) + 1;
+    const payload: any = {
+      [t.parentCol]: t.parentId,
+      [t.createdByCol]: user.id,
+      title: "Untitled",
+      content_md: "",
+      sort_order: nextOrder,
+    };
+    const { data, error } = await (supabase.from(t.name) as any).insert(payload).select("id").single();
+    if (error) return toast.error(error.message);
+    setActiveId(data.id);
+  }
+
+  async function removeDoc(id: string) {
+    if (!confirm("Delete this doc?")) return;
+    const { error } = await (supabase.from(t.name) as any).delete().eq("id", id);
+    if (error) toast.error(error.message);
+    if (id === activeId) setActiveId(null);
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Loader2 className="h-4 w-4 animate-spin text-ink-muted" />
+      </div>
+    );
+  }
+
+  if (docs.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center">
+        <p className="text-sm text-ink-muted">No docs yet.</p>
+        <Button onClick={addDoc} className="mt-4 rounded-full gap-2">
+          <Plus className="h-4 w-4" /> Start a doc
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4 md:grid-cols-[200px_1fr]">
+      <aside className="rounded-2xl border border-border bg-surface p-2">
+        <ul className="space-y-0.5">
+          {docs.map((d) => (
+            <li key={d.id}>
+              <button
+                onClick={() => setActiveId(d.id)}
+                className={cn(
+                  "w-full truncate rounded-xl px-3 py-2 text-left text-sm transition",
+                  (active?.id ?? "") === d.id ? "bg-muted text-ink" : "text-ink-soft hover:bg-muted/50",
+                )}
+              >
+                {d.title || "Untitled"}
+              </button>
+            </li>
+          ))}
+        </ul>
+        <Button
+          onClick={addDoc}
+          variant="ghost"
+          size="sm"
+          className="mt-1 w-full justify-start rounded-xl text-ink-muted hover:text-ink"
+        >
+          <Plus className="h-4 w-4" /> New doc
+        </Button>
+      </aside>
+
+      {active && (
+        <DocEditor key={active.id} doc={active} tableName={t.name} onDelete={() => removeDoc(active.id)} />
+      )}
+    </div>
+  );
+}
+
+function DocEditor({
+  doc,
+  tableName,
+  onDelete,
+}: {
+  doc: Doc;
+  tableName: "workshop_docs" | "instant_docs";
+  onDelete: () => void;
+}) {
+  const [title, setTitle] = useState(doc.title);
+  const [body, setBody] = useState(doc.content_md);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setTitle(doc.title);
+    setBody(doc.content_md);
+    setDirty(false);
+  }, [doc.id, doc.title, doc.content_md]);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const tm = setTimeout(save, 800);
+    return () => clearTimeout(tm);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, body, dirty]);
+
+  async function save() {
+    setSaving(true);
+    const { error } = await (supabase.from(tableName) as any)
+      .update({ title: title.trim() || "Untitled", content_md: body })
+      .eq("id", doc.id);
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    setDirty(false);
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="flex items-center gap-2">
+        <Input
+          value={title}
+          onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
+          className="border-none bg-transparent px-0 text-lg font-display focus-visible:ring-0"
+          placeholder="Untitled"
+          maxLength={200}
+        />
+        <span className="text-xs text-ink-muted">{saving ? "Saving…" : dirty ? "Unsaved" : "Saved"}</span>
+        <Button onClick={save} size="sm" variant="ghost" className="rounded-full" disabled={!dirty || saving}>
+          <Save className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          onClick={onDelete}
+          size="sm"
+          variant="ghost"
+          className="rounded-full text-ink-muted hover:text-destructive"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+      <Textarea
+        value={body}
+        onChange={(e) => { setBody(e.target.value); setDirty(true); }}
+        rows={16}
+        placeholder="Start writing. Markdown is fine."
+        className="mt-3 resize-y border-none bg-transparent px-0 focus-visible:ring-0"
+      />
+    </div>
+  );
+}
