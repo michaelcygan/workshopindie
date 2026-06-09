@@ -16,11 +16,12 @@ import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-e
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
 import { WorkshopRecorder } from "@/components/workshop-recorder";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
+import RoomBoard from "@/components/room-board";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder" | "board";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "board";
+type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
 
 
