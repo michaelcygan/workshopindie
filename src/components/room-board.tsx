@@ -42,7 +42,6 @@ type Content =
   | { text: string };
 type Item = {
   id: string;
-  room_id: string;
   user_id: string;
   kind: Kind;
   content: Content;
@@ -52,6 +51,43 @@ type Item = {
   h: number;
   z: number;
 };
+
+export type BoardScope =
+  | { kind: "persistent"; workshopId: string }
+  | { kind: "instant"; roomId: string };
+
+type BoardConfig = {
+  table: "instant_board_items" | "workshop_board_items";
+  parentCol: "room_id" | "workshop_id";
+  parentId: string;
+  channelKey: string;
+  bucket: "instant-whiteboard" | "workshop-whiteboard";
+  isPublicBucket: boolean;
+  assetsTable: "instant_whiteboard_assets" | null;
+};
+
+function configFor(scope: BoardScope): BoardConfig {
+  if (scope.kind === "persistent") {
+    return {
+      table: "workshop_board_items",
+      parentCol: "workshop_id",
+      parentId: scope.workshopId,
+      channelKey: `board:ws:${scope.workshopId}`,
+      bucket: "workshop-whiteboard",
+      isPublicBucket: false,
+      assetsTable: null,
+    };
+  }
+  return {
+    table: "instant_board_items",
+    parentCol: "room_id",
+    parentId: scope.roomId,
+    channelKey: `board:room:${scope.roomId}`,
+    bucket: "instant-whiteboard",
+    isPublicBucket: true,
+    assetsTable: "instant_whiteboard_assets",
+  };
+}
 
 const STICKY_COLORS = [
   { name: "yellow", bg: "#fef3c7", ink: "#78350f" },
@@ -68,15 +104,19 @@ function stickyPalette(name: string) {
 
 export default function RoomBoard({
   roomId,
+  scope: scopeProp,
   userId,
   className,
   fullscreen = false,
 }: {
-  roomId: string;
+  roomId?: string;
+  scope?: BoardScope;
   userId: string;
   className?: string;
   fullscreen?: boolean;
 }) {
+  const scope: BoardScope = scopeProp ?? { kind: "instant", roomId: roomId! };
+  const cfg = useMemo(() => configFor(scope), [scope.kind, (scope as { roomId?: string; workshopId?: string }).roomId, (scope as { roomId?: string; workshopId?: string }).workshopId]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -99,10 +139,10 @@ export default function RoomBoard({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
-        .from("instant_board_items")
+      const { data, error } = await (supabase as any)
+        .from(cfg.table)
         .select("*")
-        .eq("room_id", roomId)
+        .eq(cfg.parentCol, cfg.parentId)
         .order("z", { ascending: true });
       if (cancelled) return;
       if (error) toast.error(error.message);
@@ -111,14 +151,14 @@ export default function RoomBoard({
     })();
 
     const ch = supabase
-      .channel(`board:${roomId}`)
+      .channel(cfg.channelKey)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) =>
           setItems((prev) =>
@@ -130,8 +170,8 @@ export default function RoomBoard({
         {
           event: "UPDATE",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) =>
           setItems((prev) => prev.map((x) => (x.id === (p.new as Item).id ? (p.new as Item) : x))),
@@ -141,8 +181,8 @@ export default function RoomBoard({
         {
           event: "DELETE",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) => setItems((prev) => prev.filter((x) => x.id !== (p.old as Item).id)),
       )
@@ -152,7 +192,7 @@ export default function RoomBoard({
       cancelled = true;
       supabase.removeChannel(ch);
     };
-  }, [roomId]);
+  }, [cfg.table, cfg.parentCol, cfg.parentId, cfg.channelKey]);
 
   const maxZ = useMemo(() => items.reduce((m, x) => Math.max(m, x.z), 0), [items]);
 
@@ -170,9 +210,9 @@ export default function RoomBoard({
       const jitter = () => (Math.random() - 0.5) * 80;
       const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
       const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
-      const row = { room_id: roomId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
-      const { data, error } = await supabase
-        .from("instant_board_items")
+      const row = { [cfg.parentCol]: cfg.parentId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
+      const { data, error } = await (supabase as any)
+        .from(cfg.table)
         .insert(row)
         .select()
         .single();
@@ -181,23 +221,23 @@ export default function RoomBoard({
         return;
       }
       setItems((prev) =>
-        prev.some((x) => x.id === data.id) ? prev : [...prev, data as unknown as Item],
+        prev.some((x) => x.id === (data as Item).id) ? prev : [...prev, data as unknown as Item],
       );
     },
-    [roomId, userId, maxZ],
+    [cfg.table, cfg.parentCol, cfg.parentId, userId, maxZ],
   );
 
   const updateItem = useCallback(async (id: string, patch: Partial<Item>) => {
     setItems((prev) => prev.map((x) => (x.id === id ? ({ ...x, ...patch } as Item) : x)));
-    const { error } = await supabase.from("instant_board_items").update(patch).eq("id", id);
+    const { error } = await (supabase as any).from(cfg.table).update(patch).eq("id", id);
     if (error) toast.error(error.message);
-  }, []);
+  }, [cfg.table]);
 
   const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((x) => x.id !== id));
-    const { error } = await supabase.from("instant_board_items").delete().eq("id", id);
+    const { error } = await (supabase as any).from(cfg.table).delete().eq("id", id);
     if (error) toast.error(error.message);
-  }, []);
+  }, [cfg.table]);
 
   // Drag handlers — divide screen-space deltas by zoom to keep the cursor on the item.
   const onPointerDown = (e: React.PointerEvent, item: Item) => {
@@ -267,10 +307,10 @@ export default function RoomBoard({
       >
         <div className="flex items-center gap-2">
           <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
-            {fullscreen ? "Fullscreen Board" : "Board · ephemeral"}
+            {fullscreen ? "Fullscreen Board" : scope.kind === "persistent" ? "Board" : "Board · ephemeral"}
           </div>
         </div>
-        <Toolbar onAdd={addItem} roomId={roomId} userId={userId} />
+        <Toolbar onAdd={addItem} cfg={cfg} userId={userId} />
       </div>
 
       <div ref={scrollRef} className="relative flex-1 min-h-0 overflow-auto bg-muted/20">
@@ -373,16 +413,16 @@ export default function RoomBoard({
 
 function Toolbar({
   onAdd,
-  roomId,
+  cfg,
   userId,
 }: {
   onAdd: (k: Kind, c: Content, s?: { w: number; h: number }) => void;
-  roomId: string;
+  cfg: BoardConfig;
   userId: string;
 }) {
   return (
     <div className="flex items-center gap-1">
-      <ImageAdd onAdd={onAdd} roomId={roomId} userId={userId} />
+      <ImageAdd onAdd={onAdd} cfg={cfg} userId={userId} />
       <Button
         type="button"
         size="sm"
@@ -408,11 +448,11 @@ function Toolbar({
 
 function ImageAdd({
   onAdd,
-  roomId,
+  cfg,
   userId,
 }: {
   onAdd: (k: Kind, c: Content) => void;
-  roomId: string;
+  cfg: BoardConfig;
   userId: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -429,16 +469,27 @@ function ImageAdd({
     try {
       const ext =
         (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-      const path = `${roomId}/${crypto.randomUUID()}.${ext}`;
+      const path = `${cfg.parentId}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
-        .from("instant-whiteboard")
+        .from(cfg.bucket)
         .upload(path, file, { contentType: file.type });
       if (error) throw error;
-      await supabase
-        .from("instant_whiteboard_assets")
-        .insert({ room_id: roomId, user_id: userId, storage_path: path });
-      const { data } = supabase.storage.from("instant-whiteboard").getPublicUrl(path);
-      onAdd("image", { src: data.publicUrl });
+      if (cfg.assetsTable) {
+        await (supabase as any)
+          .from(cfg.assetsTable)
+          .insert({ [cfg.parentCol]: cfg.parentId, user_id: userId, storage_path: path });
+      }
+      let src: string;
+      if (cfg.isPublicBucket) {
+        src = supabase.storage.from(cfg.bucket).getPublicUrl(path).data.publicUrl;
+      } else {
+        const { data: signed, error: sErr } = await supabase.storage
+          .from(cfg.bucket)
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (sErr || !signed) throw sErr ?? new Error("Couldn't sign URL");
+        src = signed.signedUrl;
+      }
+      onAdd("image", { src });
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -446,6 +497,7 @@ function ImageAdd({
       setUploading(false);
     }
   }
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

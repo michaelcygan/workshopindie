@@ -6,6 +6,7 @@ import {
   ListChecks,
   FolderOpen,
   FileText,
+  PenLine,
   Plus,
   Trash2,
   Check,
@@ -15,6 +16,7 @@ import {
   Lock,
   Save,
 } from "lucide-react";
+import RoomBoard from "@/components/room-board";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -23,7 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-const SUPPORTED = ["tasks", "drive", "docs"] as const;
+const SUPPORTED = ["tasks", "drive", "docs", "board"] as const;
 type Tool = (typeof SUPPORTED)[number];
 
 export const Route = createFileRoute("/workshops/$slug/tools/$tool")({
@@ -131,6 +133,7 @@ function ToolPage() {
             {tool === "tasks" && <ListChecks className="h-5 w-5" />}
             {tool === "drive" && <FolderOpen className="h-5 w-5" />}
             {tool === "docs" && <FileText className="h-5 w-5" />}
+            {tool === "board" && <PenLine className="h-5 w-5" />}
           </div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">{cap(tool)}</h1>
         </div>
@@ -138,12 +141,21 @@ function ToolPage() {
           {tool === "tasks" && "Lightweight checklist to actually ship within the session."}
           {tool === "drive" && "Drop files and paste cloud links collaborators need."}
           {tool === "docs" && "Shared notes, scripts, treatments, lyrics."}
+          {tool === "board" && "Realtime whiteboard — stickies, images, links, text. Survives between sessions."}
         </p>
 
-        <div className="mt-8">
+        <div className={cn("mt-8", tool === "board" && "h-[calc(100vh-16rem)]")}>
           {tool === "tasks" && <Tasks workshopId={ws.id} />}
           {tool === "drive" && <Drive workshopId={ws.id} />}
           {tool === "docs" && <Docs workshopId={ws.id} userId={user.id} />}
+          {tool === "board" && (
+            <RoomBoard
+              scope={{ kind: "persistent", workshopId: ws.id }}
+              userId={user.id}
+              fullscreen
+              className="h-full"
+            />
+          )}
         </div>
       </motion.div>
     </main>

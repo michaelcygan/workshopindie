@@ -16,11 +16,12 @@ import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-e
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
 import { WorkshopRecorder } from "@/components/workshop-recorder";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
+import RoomBoard from "@/components/room-board";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder" | "board";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "board";
+type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
 
 
@@ -45,7 +46,7 @@ const PRESETS: Record<ToolType, Preset> = {
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",            comingSoon: true, fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard — stickies, images, links.", fields: [] },
 };
 
 const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "recorder", "board"];
@@ -316,8 +317,28 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
+  if (tool.tool_type === "board") {
+    return <BoardBody scope={scope} />;
+  }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
+}
+
+function BoardBody({ scope }: { scope: ToolsScope }) {
+  const { user } = useAuth();
+  if (!user) return null;
+  return (
+    <div className="p-2 h-[560px]">
+      <RoomBoard
+        scope={scope.kind === "instant"
+          ? { kind: "instant", roomId: scope.roomId }
+          : { kind: "persistent", workshopId: scope.workshopId }}
+        userId={user.id}
+        fullscreen
+        className="h-full"
+      />
+    </div>
+  );
 }
 
 
