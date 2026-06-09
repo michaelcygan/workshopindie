@@ -139,7 +139,7 @@ export default function RoomBoard({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from(cfg.table)
         .select("*")
         .eq(cfg.parentCol, cfg.parentId)
