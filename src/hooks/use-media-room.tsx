@@ -263,8 +263,14 @@ export function useMediaRoom(roomId: string | undefined) {
         if (!cur || cur.speaking === ev.speaking) return prev;
         return { ...prev, [ev.from]: { ...cur, speaking: ev.speaking } };
       });
+    } else if (ev.type === "screen") {
+      setScreenSharerId((cur) => {
+        if (ev.active) return ev.from;
+        return cur === ev.from ? null : cur;
+      });
     }
   }
+
 
   function startSpeakingDetector(stream: MediaStream) {
     const AudioCtx: typeof AudioContext =
