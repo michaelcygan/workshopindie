@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink, Check,
+  Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
   FolderOpen, MonitorPlay, PenLine, Mic, X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,8 @@ import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-pan
 import RoomBoard from "@/components/room-board";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder" | "board";
+// Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
 type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
@@ -39,30 +40,31 @@ type Preset = {
 // Order here drives chip order in the picker. Shipped tools first.
 const PRESETS: Record<ToolType, Preset> = {
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard — image, text, and link stickers.", fields: [] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
-  moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard — stickies, images, links.", fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "recorder", "board"];
+const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
-  film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
+  film: "list", music: "list", writing: "outline", build: "repo_links", visual: "board",
   critique: "outline", business: "outline", coworking: "outline",
 };
 
 // Stored value mapping — UI label "List" stores tool_type='list'.
 // Legacy rows with tool_type='shot_list' / 'track_list' are still rendered as List below.
-type StoredToolType = ShippedToolType | "shot_list" | "track_list";
+// Legacy 'moodboard' rows were migrated to 'board' by SQL; map any stragglers defensively.
+type StoredToolType = ShippedToolType | "shot_list" | "track_list" | "moodboard";
 
 function presetFor(stored: StoredToolType): Preset {
   if (stored === "shot_list" || stored === "track_list") return PRESETS.list;
+  if (stored === "moodboard") return PRESETS.board;
   return PRESETS[stored];
 }
 
