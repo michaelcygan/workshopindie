@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, Video, Loader2, ArrowLeft, Radio, Crown } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
+import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
+import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 

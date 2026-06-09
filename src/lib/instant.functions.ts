@@ -5,6 +5,90 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const MEDIUMS = ["film", "music", "writing", "build", "visual", "critique", "business", "coworking"] as const;
 const mediumSchema = z.enum(MEDIUMS);
+const VISIBILITIES = ["open", "mutuals", "invite"] as const;
+const visibilitySchema = z.enum(VISIBILITIES);
+export type RoomVisibility = (typeof VISIBILITIES)[number];
+
+/**
+ * Notify mutual followers that a host just opened a live Workshop. Best-effort:
+ * never throws into the host's create flow. Skips when visibility = 'invite',
+ * and rate-limits to one notification batch per host per 30 minutes.
+ */
+async function notifyMutualsOnHost(opts: {
+  hostUserId: string;
+  roomId: string;
+  visibility: RoomVisibility;
+  medium: (typeof MEDIUMS)[number] | null;
+  title: string;
+}) {
+  try {
+    if (opts.visibility === "invite") return;
+
+    // Rate-limit: don't spam if the same host opened a room recently.
+    const { data: allowed } = await supabaseAdmin.rpc("check_and_bump", {
+      _action: "workshop_live_notify",
+      _key: opts.hostUserId,
+      _window_s: 1800,
+      _max: 1,
+    });
+    if (allowed === false) return;
+
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", opts.hostUserId)
+      .maybeSingle();
+    const actorName = (profile as any)?.display_name || (profile as any)?.username || "Someone";
+    const actorUsername = (profile as any)?.username ?? null;
+
+    // Mutual follows: I follow them AND they follow me back.
+    const { data: outgoing } = await supabaseAdmin
+      .from("follows")
+      .select("followed_user_id")
+      .eq("follower_user_id", opts.hostUserId);
+    const outgoingIds = (outgoing ?? []).map((r: any) => r.followed_user_id as string);
+    if (outgoingIds.length === 0) return;
+    const { data: incoming } = await supabaseAdmin
+      .from("follows")
+      .select("follower_user_id")
+      .eq("followed_user_id", opts.hostUserId)
+      .in("follower_user_id", outgoingIds);
+    const mutuals = (incoming ?? []).map((r: any) => r.follower_user_id as string);
+    if (mutuals.length === 0) return;
+
+    // Respect prefs (inapp_workshop_updates). Anyone with no prefs row defaults to true.
+    const { data: prefs } = await supabaseAdmin
+      .from("notification_preferences")
+      .select("user_id, inapp_workshop_updates")
+      .in("user_id", mutuals);
+    const optedOut = new Set(
+      (prefs ?? [])
+        .filter((p: any) => p.inapp_workshop_updates === false)
+        .map((p: any) => p.user_id as string),
+    );
+    const recipients = mutuals.filter((id) => !optedOut.has(id));
+    if (recipients.length === 0) return;
+
+    const rows = recipients.map((uid) => ({
+      user_id: uid,
+      kind: "workshop_live",
+      actor_user_id: opts.hostUserId,
+      entity_type: "instant_room",
+      entity_id: opts.roomId,
+      payload: {
+        actor_name: actorName,
+        actor_username: actorUsername,
+        room_id: opts.roomId,
+        title: opts.title,
+        medium: opts.medium,
+        visibility: opts.visibility,
+      },
+    }));
+    await supabaseAdmin.from("notifications").insert(rows);
+  } catch {
+    // best effort; never block the host flow
+  }
+}
 
 /**
  * Spin up a brand-new live Workshop room owned by the caller as host.
@@ -14,10 +98,15 @@ const mediumSchema = z.enum(MEDIUMS);
  */
 export const hostInstantWorkshop = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { medium?: (typeof MEDIUMS)[number] | null; title?: string | null } | undefined) =>
+  .inputValidator((input: {
+    medium?: (typeof MEDIUMS)[number] | null;
+    title?: string | null;
+    visibility?: RoomVisibility;
+  } | undefined) =>
     z.object({
       medium: mediumSchema.nullish(),
       title: z.string().trim().min(1).max(120).nullish(),
+      visibility: visibilitySchema.default("open"),
     }).parse(input ?? {}),
   )
   .handler(async ({ data, context }) => {
@@ -39,10 +128,21 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
         creator_id: userId,
         host_user_id: userId,
         medium: data.medium ?? null,
-      })
+        visibility: data.visibility,
+      } as any)
       .select("id")
       .single();
     if (error || !room) throw new Error(error?.message ?? "Couldn't open your Workshop");
+
+    // Fire-and-forget mutual notification (also surfaces a soft viral loop).
+    await notifyMutualsOnHost({
+      hostUserId: userId,
+      roomId: room.id as string,
+      visibility: data.visibility,
+      medium: data.medium ?? null,
+      title,
+    });
+
     return { roomId: room.id };
   });
 
@@ -132,52 +232,59 @@ export type ActiveInstantRoom = {
   participants: RoomPresenceUser[];
 };
 
-/** Public list of currently-active Instant rooms (lounges + medium-specific) with live counts and top participants. */
-export const listActiveInstantRooms = createServerFn({ method: "GET" }).handler(async () => {
-  const { data, error } = await supabaseAdmin.rpc("list_active_instant_rooms");
-  if (error) throw new Error(error.message);
-  const rows = (data ?? []) as Omit<ActiveInstantRoom, "participants">[];
-  if (rows.length === 0) return { rooms: [] as ActiveInstantRoom[] };
+/**
+ * Public list of currently-active Instant rooms (lounges + medium-specific) with
+ * live counts and top participants. Scoped by viewer so mutuals-only rooms are
+ * filtered to mutual follows of the host.
+ */
+export const listActiveInstantRooms = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { data, error } = await supabaseAdmin.rpc("list_active_instant_rooms", { _viewer: userId });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as Omit<ActiveInstantRoom, "participants">[];
+    if (rows.length === 0) return { rooms: [] as ActiveInstantRoom[] };
 
-  const roomIds = rows.map((r) => r.id);
-  const cutoff = new Date(Date.now() - 60_000).toISOString();
-  const { data: presence } = await supabaseAdmin
-    .from("instant_presence")
-    .select("room_id, user_id, last_seen_at")
-    .in("room_id", roomIds)
-    .gt("last_seen_at", cutoff)
-    .order("last_seen_at", { ascending: false });
+    const roomIds = rows.map((r) => r.id);
+    const cutoff = new Date(Date.now() - 60_000).toISOString();
+    const { data: presence } = await supabaseAdmin
+      .from("instant_presence")
+      .select("room_id, user_id, last_seen_at")
+      .in("room_id", roomIds)
+      .gt("last_seen_at", cutoff)
+      .order("last_seen_at", { ascending: false });
 
-  const userIds = Array.from(new Set((presence ?? []).map((p) => p.user_id)));
-  const profilesById = new Map<string, RoomPresenceUser>();
-  if (userIds.length > 0) {
-    const { data: profs } = await supabaseAdmin
-      .from("profiles")
-      .select("id, display_name, username, avatar_url")
-      .in("id", userIds);
-    for (const p of profs ?? []) {
-      profilesById.set(p.id as string, {
-        user_id: p.id as string,
-        display_name: (p as any).display_name ?? null,
-        username: (p as any).username ?? null,
-        avatar_url: (p as any).avatar_url ?? null,
-      });
+    const userIds = Array.from(new Set((presence ?? []).map((p) => p.user_id)));
+    const profilesById = new Map<string, RoomPresenceUser>();
+    if (userIds.length > 0) {
+      const { data: profs } = await supabaseAdmin
+        .from("profiles")
+        .select("id, display_name, username, avatar_url")
+        .in("id", userIds);
+      for (const p of profs ?? []) {
+        profilesById.set(p.id as string, {
+          user_id: p.id as string,
+          display_name: (p as any).display_name ?? null,
+          username: (p as any).username ?? null,
+          avatar_url: (p as any).avatar_url ?? null,
+        });
+      }
     }
-  }
 
-  const byRoom = new Map<string, RoomPresenceUser[]>();
-  for (const p of presence ?? []) {
-    const prof = profilesById.get(p.user_id as string);
-    if (!prof) continue;
-    const list = byRoom.get(p.room_id as string) ?? [];
-    if (list.length < 5) list.push(prof);
-    byRoom.set(p.room_id as string, list);
-  }
+    const byRoom = new Map<string, RoomPresenceUser[]>();
+    for (const p of presence ?? []) {
+      const prof = profilesById.get(p.user_id as string);
+      if (!prof) continue;
+      const list = byRoom.get(p.room_id as string) ?? [];
+      if (list.length < 5) list.push(prof);
+      byRoom.set(p.room_id as string, list);
+    }
 
-  return {
-    rooms: rows.map((r) => ({ ...r, participants: byRoom.get(r.id) ?? [] })) as ActiveInstantRoom[],
-  };
-});
+    return {
+      rooms: rows.map((r) => ({ ...r, participants: byRoom.get(r.id) ?? [] })) as ActiveInstantRoom[],
+    };
+  });
 
 export type InstantActivityEvent = {
   id: string;
