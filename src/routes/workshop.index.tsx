@@ -190,6 +190,7 @@ function WorkshopPreflight() {
               onSelectMedium={setSelectedDropMedium}
               onJoinNow={handleJoinNow}
               onLiveCountChange={setLiveCount}
+              onSelectedMediumLiveChange={setSelectedMediumLive}
             />
           </div>
           <div className="mt-auto pt-4">
@@ -198,8 +199,8 @@ function WorkshopPreflight() {
               {busy === "drop"
                 ? "Finding you a seat…"
                 : selectedDropMedium
-                  ? (liveCount > 0
-                      ? `Drop into ${dropLabel} (${liveCount} live)`
+                  ? (selectedMediumLive > 0
+                      ? `Drop into ${dropLabel} (${selectedMediumLive} live)`
                       : `Open the first ${dropLabel} room`)
                   : (liveCount > 0
                       ? `Drop in (${liveCount} live)`
