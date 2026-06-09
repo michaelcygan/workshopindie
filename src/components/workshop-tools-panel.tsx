@@ -227,7 +227,7 @@ export function WorkshopToolsPanel(props: Props) {
           <AddToolMenu enabled={enabledTools.map((tool) => tool.tool_type)} onAdd={enableTool} />
         )}
       </div>
-      {currentTool && <ActiveToolBody scope={scope} tool={currentTool} />}
+      {currentTool && <ActiveToolBody scope={scope} tool={currentTool} media={media} />}
     </div>
   );
 }
