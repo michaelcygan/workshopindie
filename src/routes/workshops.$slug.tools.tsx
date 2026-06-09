@@ -152,18 +152,16 @@ function WorkshopToolsHub() {
     {
       key: "recorder",
       title: "Recorder",
-      blurb: "Capture takes from inside the live room.",
+      blurb: "Capture takes from inside the live room — saved to Drive.",
       icon: <Mic className="h-5 w-5" />,
-      action: () => toast.info("Recorder is coming soon."),
-      soon: true,
+      action: openLive,
     },
     {
       key: "screen",
       title: "Screen Share",
-      blurb: "Share your screen with collaborators.",
+      blurb: "Share your screen with collaborators in the live room.",
       icon: <MonitorPlay className="h-5 w-5" />,
-      action: () => toast.info("Screen Share is coming soon."),
-      soon: true,
+      action: openLive,
     },
     {
       key: "board",
@@ -173,6 +171,7 @@ function WorkshopToolsHub() {
       action: () => toast.info("Board is coming soon."),
       soon: true,
     },
+
     {
       key: "docs",
       title: "Docs",

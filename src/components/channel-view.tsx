@@ -65,8 +65,9 @@ export function ChannelView({
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
-  toolsSlot?: React.ReactNode;
+  toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
+
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
   const router = useRouter();
@@ -531,12 +532,13 @@ export function ChannelView({
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
-              {toolsSlot ?? (
+              {(typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot) ?? (
                 <div className="flex h-full items-center justify-center text-sm text-ink-muted">
                   No tools available in this room.
                 </div>
               )}
             </div>
+
           ) : viewMode === "collabs" && user ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel

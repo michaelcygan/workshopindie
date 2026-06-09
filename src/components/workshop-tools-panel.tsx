@@ -14,12 +14,15 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
+import { WorkshopRecorder } from "@/components/workshop-recorder";
+import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "moodboard" | "screen_share" | "recorder";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = "screen_share" | "board" | "recorder";
+type ComingSoonToolType = "board";
 type ToolType = ShippedToolType | ComingSoonToolType;
+
 
 type Preset = {
   label: string;
@@ -37,15 +40,16 @@ const PRESETS: Record<ToolType, Preset> = {
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
-  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links — files coming.", fields: [] },
+  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.",   comingSoon: true, fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",                            comingSoon: true, fields: [] },
-  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes from inside the room.",             comingSoon: true, fields: [] },
+  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
+  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",            comingSoon: true, fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "board", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "drive", "moodboard", "repo_links", "screen_share", "recorder", "board"];
+
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
@@ -85,13 +89,29 @@ function tables(scope: ToolsScope) {
 }
 
 type LegacyProps = { workshopId: string; hostUserId: string; category: Category };
-type NewProps = { scope: ToolsScope };
+type NewProps = { scope: ToolsScope; media?: MediaForTools };
 type Props = NewProps | LegacyProps;
+
+// Subset of useMediaRoom return shape — passed in optionally so the
+// Screen Share + Recorder tools can drive the live media session.
+export type MediaForTools = {
+  joined: boolean;
+  muted: boolean;
+  cameraOn: boolean;
+  toggleMute: () => void;
+  setCameraEnabled: (on: boolean) => void;
+  isScreenSharing: boolean;
+  screenSharerId: string | null;
+  startScreenShare: () => Promise<void> | void;
+  stopScreenShare: () => Promise<void> | void;
+};
 
 export function WorkshopToolsPanel(props: Props) {
   const scope: ToolsScope = "scope" in props
     ? props.scope
     : { kind: "persistent", workshopId: props.workshopId, hostUserId: props.hostUserId, category: props.category };
+  const media = "scope" in props ? props.media : undefined;
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const [active, setActive] = useState<StoredToolType | null>(null);
@@ -207,7 +227,7 @@ export function WorkshopToolsPanel(props: Props) {
           <AddToolMenu enabled={enabledTools.map((tool) => tool.tool_type)} onAdd={enableTool} />
         )}
       </div>
-      {currentTool && <ActiveToolBody scope={scope} tool={currentTool} />}
+      {currentTool && <ActiveToolBody scope={scope} tool={currentTool} media={media} />}
     </div>
   );
 }
@@ -261,7 +281,7 @@ function toDriveScope(scope: ToolsScope): DrivePanelScope {
     : { kind: "instant", roomId: scope.roomId };
 }
 
-function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
+function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType }; media?: MediaForTools }) {
   // Dedicated full-featured components for the rich tools.
   if (tool.tool_type === "outline") {
     return (
@@ -277,9 +297,29 @@ function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string
       </div>
     );
   }
+  if (tool.tool_type === "screen_share") {
+    return (
+      <div className="p-4">
+        <WorkshopScreenSharePanel scope={scope.kind} media={media} />
+      </div>
+    );
+  }
+  if (tool.tool_type === "recorder") {
+    return (
+      <div className="p-4">
+        <WorkshopRecorder
+          scope={scope.kind === "instant"
+            ? { kind: "instant", roomId: scope.roomId }
+            : { kind: "persistent", workshopId: scope.workshopId }}
+          media={media as any}
+        />
+      </div>
+    );
+  }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
 }
+
 
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();

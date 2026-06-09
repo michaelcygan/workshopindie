@@ -177,7 +177,7 @@ function LiveRoomPage() {
         roomId={id}
         title={title}
         initialMode={mode ?? "video"}
-        toolsSlot={
+        toolsSlot={(media) =>
           room ? (
             <WorkshopToolsPanel
               scope={{
@@ -186,9 +186,11 @@ function LiveRoomPage() {
                 hostUserId: room.host_user_id,
                 category: (room.category as any) ?? (room.medium as any) ?? null,
               }}
+              media={media}
             />
           ) : null
         }
+
       />
 
       <CreateCollabSheet

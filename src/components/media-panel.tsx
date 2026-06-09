@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff } from "lucide-react";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -108,14 +109,33 @@ export function MediaPanel({
               {m.cameraOn ? "Camera off" : "Camera on"}
             </Button>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onExit}
-            className="w-full rounded-full gap-1.5 text-destructive hover:text-destructive"
-          >
-            <LogOut className="h-3.5 w-3.5" /> Exit Workshop
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              variant={m.isScreenSharing ? "secondary" : "outline"}
+              size="sm"
+              onClick={() => (m.isScreenSharing ? m.stopScreenShare() : m.startScreenShare())}
+              className="rounded-full gap-1.5"
+              title={m.isScreenSharing ? "Stop sharing your screen" : "Share your screen with the room"}
+            >
+              {m.isScreenSharing ? <MonitorOff className="h-3.5 w-3.5" /> : <MonitorPlay className="h-3.5 w-3.5" />}
+              {m.isScreenSharing ? "Stop share" : "Share screen"}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onExit}
+              className="rounded-full gap-1.5 text-destructive hover:text-destructive"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Exit
+            </Button>
+          </div>
+
+          {m.screenSharerId && !m.isScreenSharing && (
+            <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary">
+              Someone is sharing their screen
+            </p>
+          )}
+
 
           <div className="border-t border-border pt-3">
             <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
@@ -191,16 +211,45 @@ export function VideoStage({
 }) {
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
   const showLocalVideo = m.cameraOn && m.localStream;
-  const hasAny = showLocalVideo || videoPeers.length > 0;
+  const sharerName = m.screenSharerId
+    ? (profileLookup.get(m.screenSharerId)?.display_name
+       ?? profileLookup.get(m.screenSharerId)?.username
+       ?? (m.screenSharerId === (m as any).myId ? "You" : "Someone"))
+    : null;
+  const localScreen = m.isScreenSharing && m.screenStream;
+  // When a remote peer is sharing, their video tile is already showing the screen
+  // (we replaceTrack'd on their end). We just highlight it with a bigger frame.
+  const remoteSharingPeer = m.screenSharerId && !m.isScreenSharing
+    ? videoPeers.find((p) => p.userId === m.screenSharerId)
+    : null;
+  const hasAny = showLocalVideo || videoPeers.length > 0 || localScreen;
   if (!hasAny) return null;
 
   return (
     <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
+      {localScreen && (
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <MonitorPlay className="h-3 w-3 text-primary" />
+            <span>You're sharing your screen</span>
+          </div>
+          <VideoTile stream={m.screenStream!} label="Your screen" muted />
+        </div>
+      )}
+      {remoteSharingPeer && (
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
+            <MonitorPlay className="h-3 w-3 text-primary" />
+            <span>{sharerName} is sharing their screen</span>
+          </div>
+          <VideoTile stream={remoteSharingPeer.stream!} label={`${sharerName}'s screen`} speaking={remoteSharingPeer.speaking} />
+        </div>
+      )}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-        {showLocalVideo && (
+        {showLocalVideo && !localScreen && (
           <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
         )}
-        {videoPeers.map((p) => {
+        {videoPeers.filter((p) => p.userId !== m.screenSharerId).map((p) => {
           const prof = profileLookup.get(p.userId);
           return (
             <VideoTile
@@ -215,6 +264,7 @@ export function VideoStage({
     </div>
   );
 }
+
 
 // ============================================================================
 // Fullscreen room — unified tile grid (video + audio-only avatars) + chat
