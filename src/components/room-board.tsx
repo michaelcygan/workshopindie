@@ -413,16 +413,16 @@ export default function RoomBoard({
 
 function Toolbar({
   onAdd,
-  roomId,
+  cfg,
   userId,
 }: {
   onAdd: (k: Kind, c: Content, s?: { w: number; h: number }) => void;
-  roomId: string;
+  cfg: BoardConfig;
   userId: string;
 }) {
   return (
     <div className="flex items-center gap-1">
-      <ImageAdd onAdd={onAdd} roomId={roomId} userId={userId} />
+      <ImageAdd onAdd={onAdd} cfg={cfg} userId={userId} />
       <Button
         type="button"
         size="sm"
@@ -448,11 +448,11 @@ function Toolbar({
 
 function ImageAdd({
   onAdd,
-  roomId,
+  cfg,
   userId,
 }: {
   onAdd: (k: Kind, c: Content) => void;
-  roomId: string;
+  cfg: BoardConfig;
   userId: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -469,16 +469,27 @@ function ImageAdd({
     try {
       const ext =
         (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
-      const path = `${roomId}/${crypto.randomUUID()}.${ext}`;
+      const path = `${cfg.parentId}/${crypto.randomUUID()}.${ext}`;
       const { error } = await supabase.storage
-        .from("instant-whiteboard")
+        .from(cfg.bucket)
         .upload(path, file, { contentType: file.type });
       if (error) throw error;
-      await supabase
-        .from("instant_whiteboard_assets")
-        .insert({ room_id: roomId, user_id: userId, storage_path: path });
-      const { data } = supabase.storage.from("instant-whiteboard").getPublicUrl(path);
-      onAdd("image", { src: data.publicUrl });
+      if (cfg.assetsTable) {
+        await (supabase as any)
+          .from(cfg.assetsTable)
+          .insert({ [cfg.parentCol]: cfg.parentId, user_id: userId, storage_path: path });
+      }
+      let src: string;
+      if (cfg.isPublicBucket) {
+        src = supabase.storage.from(cfg.bucket).getPublicUrl(path).data.publicUrl;
+      } else {
+        const { data: signed, error: sErr } = await supabase.storage
+          .from(cfg.bucket)
+          .createSignedUrl(path, 60 * 60 * 24 * 365);
+        if (sErr || !signed) throw sErr ?? new Error("Couldn't sign URL");
+        src = signed.signedUrl;
+      }
+      onAdd("image", { src });
       setOpen(false);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Upload failed");
@@ -486,6 +497,7 @@ function ImageAdd({
       setUploading(false);
     }
   }
+
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
