@@ -3777,6 +3777,10 @@ export type Database = {
         | "outline"
         | "repo_links"
         | "moodboard"
+        | "list"
+        | "drive"
+        | "docs"
+        | "board"
       visibility: "public" | "unlisted" | "invite_only" | "private"
       work_license:
         | "cc_by"
@@ -3995,6 +3999,10 @@ export const Constants = {
         "outline",
         "repo_links",
         "moodboard",
+        "list",
+        "drive",
+        "docs",
+        "board",
       ],
       visibility: ["public", "unlisted", "invite_only", "private"],
       work_license: [
