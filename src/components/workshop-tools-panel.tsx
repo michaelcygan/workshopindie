@@ -281,7 +281,7 @@ function toDriveScope(scope: ToolsScope): DrivePanelScope {
     : { kind: "instant", roomId: scope.roomId };
 }
 
-function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
+function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType }; media?: MediaForTools }) {
   // Dedicated full-featured components for the rich tools.
   if (tool.tool_type === "outline") {
     return (
@@ -297,9 +297,29 @@ function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string
       </div>
     );
   }
+  if (tool.tool_type === "screen_share") {
+    return (
+      <div className="p-4">
+        <WorkshopScreenSharePanel scope={scope.kind} media={media} />
+      </div>
+    );
+  }
+  if (tool.tool_type === "recorder") {
+    return (
+      <div className="p-4">
+        <WorkshopRecorder
+          scope={scope.kind === "instant"
+            ? { kind: "instant", roomId: scope.roomId }
+            : { kind: "persistent", workshopId: scope.workshopId }}
+          media={media as any}
+        />
+      </div>
+    );
+  }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
 }
+
 
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();
