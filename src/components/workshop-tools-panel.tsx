@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pin, ListChecks, Music, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink } from "lucide-react";
+import {
+  Pin, ListChecks, FileText, Github, Image as ImageIcon, Trash2, Plus, ExternalLink,
+  FolderOpen, MonitorPlay, PenLine, Mic, Sparkles,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -10,30 +13,57 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 
-type ToolType = "pinboard" | "shot_list" | "track_list" | "outline" | "repo_links" | "moodboard";
+// Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
+type ShippedToolType = "pinboard" | "list" | "outline" | "repo_links" | "moodboard";
+// Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
+type ComingSoonToolType = "docs_rich" | "drive" | "screen_share" | "board" | "recorder";
+type ToolType = ShippedToolType | ComingSoonToolType;
 
-const PRESETS: Record<ToolType, {
-  label: string; icon: typeof Pin; titlePlaceholder?: string; bodyPlaceholder?: string; urlPlaceholder?: string;
+type Preset = {
+  label: string;
+  icon: typeof Pin;
+  blurb: string;
+  comingSoon?: boolean;
+  titlePlaceholder?: string;
+  bodyPlaceholder?: string;
+  urlPlaceholder?: string;
   fields: ("title" | "body" | "url")[];
-}> = {
-  pinboard:    { label: "Pinboard",    icon: Pin,        bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
-  shot_list:   { label: "Shot List",   icon: ListChecks, titlePlaceholder: "Shot title (e.g. EXT. Rooftop, wide)", bodyPlaceholder: "Notes — framing, talent, blocking…", fields: ["title", "body"] },
-  track_list:  { label: "Track List",  icon: Music,      titlePlaceholder: "Track or section",  urlPlaceholder: "Link (Splice, Drive, demo…)", fields: ["title", "url"] },
-  outline:     { label: "Outline",     icon: FileText,   titlePlaceholder: "Section heading",   bodyPlaceholder: "Beats, ideas, draft text…", fields: ["title", "body"] },
-  repo_links:  { label: "Repo & Demo", icon: Github,     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  moodboard:   { label: "Moodboard",   icon: ImageIcon,  titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
 };
 
-const CATEGORY_DEFAULTS: Record<Category, ToolType> = {
-  film: "shot_list", music: "track_list", writing: "outline", build: "repo_links", visual: "moodboard",
+// Order here drives chip order in the picker. Shipped tools first.
+const PRESETS: Record<ToolType, Preset> = {
+  outline:      { label: "Docs",         icon: FileText,    blurb: "Beats, notes, drafts.",          titlePlaceholder: "Section heading",   bodyPlaceholder: "Beats, ideas, draft text…", fields: ["title", "body"] },
+  pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
+  list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
+  moodboard:    { label: "Moodboard",    icon: ImageIcon,   blurb: "Visual references.",             titlePlaceholder: "Caption",           urlPlaceholder: "Image URL (https://…)", fields: ["title", "url"] },
+  repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
+  docs_rich:    { label: "Docs (rich)",  icon: Sparkles,    blurb: "Multi-page collaborative editor with comments.", comingSoon: true, fields: [] },
+  drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share files and cloud links in the room.",       comingSoon: true, fields: [] },
+  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.",   comingSoon: true, fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Realtime whiteboard.",                            comingSoon: true, fields: [] },
+  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes from inside the room.",             comingSoon: true, fields: [] },
+};
+
+const TOOL_ORDER: ToolType[] = ["outline", "pinboard", "list", "moodboard", "repo_links", "docs_rich", "drive", "screen_share", "board", "recorder"];
+
+const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
+  film: "list", music: "list", writing: "outline", build: "repo_links", visual: "moodboard",
   critique: "outline", business: "outline", coworking: "outline",
 };
+
+// Stored value mapping — UI label "List" stores tool_type='list'.
+// Legacy rows with tool_type='shot_list' / 'track_list' are still rendered as List below.
+type StoredToolType = ShippedToolType | "shot_list" | "track_list";
+
+function presetFor(stored: StoredToolType): Preset {
+  if (stored === "shot_list" || stored === "track_list") return PRESETS.list;
+  return PRESETS[stored];
+}
 
 export type ToolsScope =
   | { kind: "persistent"; workshopId: string; hostUserId: string; category: Category }
   | { kind: "instant"; roomId: string; hostUserId: string | null; category?: Category | null };
 
-// Table/column shim so the rest of the component stays scope-agnostic.
 function tables(scope: ToolsScope) {
   if (scope.kind === "persistent") {
     return {
@@ -63,7 +93,7 @@ export function WorkshopToolsPanel(props: Props) {
     : { kind: "persistent", workshopId: props.workshopId, hostUserId: props.hostUserId, category: props.category };
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [active, setActive] = useState<ToolType | null>(null);
+  const [active, setActive] = useState<StoredToolType | null>(null);
   const t = tables(scope);
 
   const { data: tools = [] } = useQuery({
@@ -72,19 +102,18 @@ export function WorkshopToolsPanel(props: Props) {
     queryFn: async () => {
       const { data } = await (supabase.from(t.toolsTable) as any)
         .select("id,tool_type,enabled").eq(t.parentCol, t.parentId);
-      return (data ?? []) as { id: string; tool_type: ToolType; enabled: boolean }[];
+      return (data ?? []) as { id: string; tool_type: StoredToolType; enabled: boolean }[];
     },
   });
 
   if (!user) return null;
   const isHost = scope.hostUserId !== null && user.id === scope.hostUserId;
-  // Leaderless instant rooms: anyone present can enable tools.
   const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
-  const enabledTools = tools.filter((t) => t.enabled);
-  const currentType: ToolType | null = active ?? enabledTools[0]?.tool_type ?? null;
+  const enabledTools = tools.filter((tool) => tool.enabled);
+  const currentType: StoredToolType | null = active ?? enabledTools[0]?.tool_type ?? null;
   const currentTool = enabledTools.find((tool) => tool.tool_type === currentType);
 
-  async function enableTool(type: ToolType) {
+  async function enableTool(type: ShippedToolType) {
     const payload: any = { [t.parentCol]: t.parentId, tool_type: type, enabled: true };
     if (scope.kind === "instant") payload.created_by_user_id = user!.id;
     const { error } = await (supabase.from(t.toolsTable) as any).insert(payload);
@@ -97,6 +126,7 @@ export function WorkshopToolsPanel(props: Props) {
     scope.kind === "persistent" ? scope.category : (scope.category ?? "coworking");
   const suggested = CATEGORY_DEFAULTS[category];
 
+  // Empty state: full picker with every tool visible. Coming-soon ones are disabled.
   if (enabledTools.length === 0) {
     if (!canEnable) {
       return (
@@ -106,15 +136,52 @@ export function WorkshopToolsPanel(props: Props) {
       );
     }
     return (
-      <div className="mt-4 rounded-2xl border border-dashed border-border p-4 text-center">
-        <p className="text-sm text-ink-muted">Enable a shared tool so the Workshop can collect ideas, shots, links, and references.</p>
-        <div className="mt-3 flex flex-wrap justify-center gap-2">
-          <Button size="sm" className="rounded-full gap-1.5" onClick={() => enableTool(suggested)}>
-            <Plus className="h-3.5 w-3.5" /> {PRESETS[suggested].label} <span className="text-[11px] opacity-70">· suggested</span>
-          </Button>
-          <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => enableTool("pinboard")}>
-            <Pin className="h-3.5 w-3.5" /> Pinboard
-          </Button>
+      <div className="mt-4 rounded-2xl border border-dashed border-border p-4">
+        <p className="text-sm text-ink-muted text-center">
+          Spin up a shared tool — Docs, Pinboard, List, Moodboard, Repo & Demo. Add as many as you need.
+        </p>
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          {TOOL_ORDER.map((type) => {
+            const P = PRESETS[type];
+            const Icon = P.icon;
+            const isSuggested = type === suggested;
+            if (P.comingSoon) {
+              return (
+                <button
+                  key={type}
+                  disabled
+                  title="Coming soon"
+                  className="group flex flex-col items-start gap-1 rounded-xl border border-border bg-surface-2/50 p-3 text-left opacity-60 cursor-not-allowed"
+                >
+                  <div className="flex w-full items-center gap-2">
+                    <Icon className="h-4 w-4 text-ink-muted" />
+                    <span className="text-sm font-medium text-ink-soft">{P.label}</span>
+                    <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink-muted">Soon</span>
+                  </div>
+                  <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+                </button>
+              );
+            }
+            return (
+              <button
+                key={type}
+                onClick={() => enableTool(type as ShippedToolType)}
+                className={
+                  "group flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-soft " +
+                  (isSuggested ? "border-primary/40 bg-primary/5" : "border-border bg-surface")
+                }
+              >
+                <div className="flex w-full items-center gap-2">
+                  <Icon className="h-4 w-4 text-ink" />
+                  <span className="text-sm font-medium text-ink">{P.label}</span>
+                  {isSuggested && (
+                    <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary">Suggested</span>
+                  )}
+                </div>
+                <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+              </button>
+            );
+          })}
         </div>
       </div>
     );
@@ -124,7 +191,7 @@ export function WorkshopToolsPanel(props: Props) {
     <div className="mt-4 rounded-2xl border border-border">
       <div className="flex flex-wrap items-center gap-1 border-b border-border bg-surface-2 px-2 py-1.5">
         {enabledTools.map((tool) => {
-          const P = PRESETS[tool.tool_type];
+          const P = presetFor(tool.tool_type);
           const Icon = P.icon;
           const isActive = currentType === tool.tool_type;
           return (
@@ -135,7 +202,7 @@ export function WorkshopToolsPanel(props: Props) {
             </button>
           );
         })}
-        {canEnable && enabledTools.length < 6 && (
+        {canEnable && (
           <AddToolMenu enabled={enabledTools.map((tool) => tool.tool_type)} onAdd={enableTool} />
         )}
       </div>
@@ -144,9 +211,11 @@ export function WorkshopToolsPanel(props: Props) {
   );
 }
 
-function AddToolMenu({ enabled, onAdd }: { enabled: ToolType[]; onAdd: (t: ToolType) => void }) {
+function AddToolMenu({ enabled, onAdd }: { enabled: StoredToolType[]; onAdd: (t: ShippedToolType) => void }) {
   const [open, setOpen] = useState(false);
-  const available = (Object.keys(PRESETS) as ToolType[]).filter((t) => !enabled.includes(t));
+  // Treat any legacy shot_list/track_list as occupying the "list" slot.
+  const occupied = new Set<StoredToolType>(enabled.map((e) => (e === "shot_list" || e === "track_list" ? "list" : e)));
+  const available = TOOL_ORDER.filter((t) => !occupied.has(t as StoredToolType));
   if (available.length === 0) return null;
   return (
     <div className="relative ml-auto">
@@ -154,12 +223,20 @@ function AddToolMenu({ enabled, onAdd }: { enabled: ToolType[]; onAdd: (t: ToolT
         <Plus className="h-3 w-3" /> Tool
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-10 mt-1 w-44 rounded-xl border border-border bg-surface p-1 shadow-lift">
-          {available.map((t) => {
-            const P = PRESETS[t];
+        <div className="absolute right-0 top-full z-10 mt-1 w-56 rounded-xl border border-border bg-surface p-1 shadow-lift">
+          {available.map((type) => {
+            const P = PRESETS[type];
             const Icon = P.icon;
+            if (P.comingSoon) {
+              return (
+                <div key={type} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-muted opacity-60" title="Coming soon">
+                  <Icon className="h-3.5 w-3.5" /> {P.label}
+                  <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide">Soon</span>
+                </div>
+              );
+            }
             return (
-              <button key={t} onClick={() => { setOpen(false); onAdd(t); }}
+              <button key={type} onClick={() => { setOpen(false); onAdd(type as ShippedToolType); }}
                 className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-soft hover:bg-muted">
                 <Icon className="h-3.5 w-3.5" /> {P.label}
               </button>
@@ -171,11 +248,11 @@ function AddToolMenu({ enabled, onAdd }: { enabled: ToolType[]; onAdd: (t: ToolT
   );
 }
 
-function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: ToolType } }) {
+function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const t = tables(scope);
-  const preset = PRESETS[tool.tool_type];
+  const preset = presetFor(tool.tool_type);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [url, setUrl] = useState("");

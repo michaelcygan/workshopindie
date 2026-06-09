@@ -1,69 +1,122 @@
-## Goal
+## Audit summary
 
-The `/workshop/$id` live room currently stacks: page header → ChannelView (video + chat + right sidebar) → WorkshopToolsPanel below. On desktop this overflows the fold and tools get buried. Reorganize so the entire room fits one viewport, with all current functionality intact.
+In the live room (`/workshop/$id`), the tools panel only shows two quick-enable buttons (suggested + Pinboard) in its empty state — the full "+ Tool" picker is hidden until *after* the first tool is enabled. That is why the screenshot shows just Outline + Pinboard.
 
-## Layout shift
+Beyond the picker bug, the live room and the persistent Workshop are running two different tool sets:
 
-Turn `src/routes/workshop.$id.tsx` into a viewport-locked shell:
+| Tool | Live room (`instant_tools`) | Persistent Workshop |
+|---|---|---|
+| Pinboard | yes (primitive) | yes (primitive) |
+| Outline / Docs | "Outline" = sectioned title+body list | **real rich editor** (`workshop_docs`) with realtime + comments |
+| Drive (files + links) | missing | yes (`workshop_drive_files`, `workshop_drive_links`) |
+| Tasks / List | missing | yes (`workshop_tasks`) |
+| Shot List, Track List, Moodboard, Repo & Demo | yes (primitives) | not present as separate tools |
+| Screen Share | not built (button just opens the room) | not built |
+| Board (whiteboard) | `room-board.tsx` exists but unused; marked "soon" | not built |
+| Recorder | not built | not built |
 
-```text
-┌─ slim header row ────────────────────────────────────────────────┐
-│ ← Workshop · ☕ Artist's Lounge · Live · [chip]   [Create Collab]│
-├──────────────────────────────────────┬───────────────────────────┤
-│  MAIN STAGE (flex-1, scrolls inside) │  RIGHT RAIL (fixed col)   │
-│                                      │  ARTIST'S LOUNGE 1/5      │
-│  Mode tabs: Chat · Tools · Gallery · │  [Chat|Gallery|Collabs]   │
-│             Collabs                  │  Mute · Camera off        │
-│                                      │  Exit Workshop            │
-│  → Chat:  existing ChannelView chat  │  ─────────────────────    │
-│  → Tools: WorkshopToolsPanel here    │  TOOLS (compact)          │
-│  → Gallery / Collabs: same as today  │   • Pinboard  • Outline   │
-│                                      │   + Add tool              │
-│                                      │  ─────────────────────    │
-│                                      │  IN THE WORKSHOP · 1      │
-│                                      │   M  Mike Cygan (you)     │
-└──────────────────────────────────────┴───────────────────────────┘
-```
+Promotion (`createCollabFromRoom`) copies `instant_tools` → `workshop_tools` 1:1, so it does NOT migrate live-room data into the richer persistent tables (Docs/Drive/Tasks). That gap gets larger once Docs becomes a real editor.
 
-Wrapper: `main` becomes `h-[calc(100dvh-var(--nav-h,64px))] flex flex-col`. Header row is a single line (icon + title truncate + chips inline). Body is `flex-1 min-h-0 grid md:grid-cols-[1fr_320px] gap-4`. The main stage and right rail both get `min-h-0 overflow-hidden` so internal scroll containers (chat messages, tools list) handle overflow — outer page never scrolls on desktop.
+## Goals
 
-## Tools surfaced two ways
+1. Every tool that exists is reachable from the live room at creation — no hidden picker.
+2. Replace "Outline" with **Docs** (the real collaborative editor), wired into the live room.
+3. Bring **Drive** and a generalized **List** tool into the live room.
+4. Surface Screen Share, Board, and Recorder as **Coming soon** tiles everywhere tools appear — visible, disabled, with a clear label — so users know they're on the roadmap.
+5. Preserve user data through promotion to a persistent Collab.
 
-1. **Compact Tools section in the right rail** (above "IN THE WORKSHOP"): always visible. Lists enabled tools as chips with their icon; clicking a chip activates Tools mode in the main stage focused on that tool. Empty state shows one-tap "+ Outline · suggested" / "+ Pinboard" buttons — same affordance as today, just collapsed.
+## Plan
 
-2. **"Tools" as a main-stage mode**: extend the existing main-view toggle (Chat / Gallery / Collabs in `ChannelView`) with a fourth `Tools` tab. When active, the chat composer/messages area is replaced by `<WorkshopToolsPanel scope={...} />` rendered full-height inside the main stage. Chat remains one click away; media tile strip and controls stay in the rail unchanged.
+### 1. Fix the picker (small, high-impact)
 
-Implementation: `ChannelView` already owns the Chat/Gallery/Collabs toggle (see lines 501–654). Add a `Tools` option to that toggle and a `toolsSlot?: ReactNode` prop. The route passes `<WorkshopToolsPanel .../>` as `toolsSlot`. No business logic touched in `ChannelView`; just one more case in its view switch.
+`WorkshopToolsPanel` empty state currently renders only "suggested + Pinboard". Replace it with the full set of available tools as chips — each enable-able in one click — with the category-suggested one visually highlighted. Coming-soon tools render alongside, disabled, with a "Coming soon" pill.
 
-## Header compression
+### 2. Rename Outline → Docs, upgrade to the real editor
 
-Collapse the current two-line title block to a single row:
-- Coffee icon (h-8 w-8) + title (text-2xl, truncate) + ` · Live · up to 5` muted small text + host/leaderless chip.
-- "Create a Collab" stays right-aligned on the same row (icon-only on `<md`, label on `md+`).
-- The Promoted banner stays where it is but becomes a slim one-liner inside the header strip when present (single row, "Open persistent room" link on the right).
+- Rename the `outline` preset label to **Docs** in `workshop-tools-panel.tsx` (icon stays `FileText`). Keep the underlying `tool_type` value `outline` in the DB to avoid a destructive enum migration; just relabel in the UI.
+- In the live room, when the active tool is Docs, replace the tiny title+body form with the existing rich Docs editor currently in `src/routes/workshops.$slug.tools.$tool.tsx` (`<Docs />` component, backed by `workshop_docs`).
+- New tables for the live-room Docs: `instant_docs` and `instant_doc_comments` mirroring `workshop_docs` / `workshop_doc_comments`, scoped to `room_id`. RLS: anyone in the room (via `is_room_member`) can read/write; only the author or host can delete.
+- Extract the existing `<Docs />` component out of the route file into `src/components/workshop-docs-editor.tsx` and make it polymorphic via the same `ToolsScope` shim (`workshop_docs` vs `instant_docs`).
 
-## Right rail
+### 3. Add Drive to the live room
 
-Same components, restacked inside a single `flex flex-col gap-3` card sized to viewport:
-- Room name + capacity (existing)
-- View toggle (Chat/Tools/Gallery/Collabs)
-- Media controls (Mute / Camera) — unchanged
-- Exit Workshop — unchanged
-- **Tools (compact)** — new compact renderer using the same data hooks as `WorkshopToolsPanel` (chips + add menu); no item editor here, that lives in the main stage Tools view
-- IN THE WORKSHOP list — existing
+- New tables `instant_drive_files`, `instant_drive_links`, `instant_drive_file_comments` mirroring the `workshop_drive_*` set, scoped to `room_id`.
+- Add a new private `instant-drive` storage bucket gated by RLS on the row.
+- Extract the existing Drive component out of `workshops.$slug.tools.$tool.tsx` into `src/components/workshop-drive-panel.tsx`, made polymorphic via `ToolsScope`.
+- Add a `drive` preset to `PRESETS` in `workshop-tools-panel.tsx`.
 
-If the rail exceeds viewport height on small desktop, the participants list scrolls internally inside its own `min-h-0 overflow-auto` section.
+### 4. Generalize Tasks → List
 
-## Mobile
+- Rename UI label "Tasks" → **List**; description "A list — to-dos, tracks, shots, whatever you need."
+- Replace the existing `shot_list` and `track_list` presets with a single `list` primitive that accepts title + optional body + optional URL, plus a `done` checkbox.
+- Extend `instant_tool_items` with a nullable `done boolean` and a `position int` for ordering, then render a checkbox when `tool_type = 'list'`.
+- Promotion path: copy `list` items into `workshop_tasks`.
 
-Below `md`, keep current stacked behavior (header → ChannelView → tools below) — single-viewport constraint only applies to `md+`. No regression on phones.
+### 5. Coming-soon tools (Screen Share, Board, Recorder)
+
+These three are not yet built but are on the roadmap, so they get first-class placeholders rather than being hidden:
+
+- Add `screen_share`, `board`, and `recorder` entries to `PRESETS` with their icons and one-line blurbs.
+- In every tool picker (live-room empty state, "+ Tool" menu, persistent Tools hub), render them as **disabled chips/tiles with a "Coming soon" pill**. No enable action. Tooltip explains "Available in an upcoming release."
+- Order them after the shipped tools so they don't distract from what works today.
+- `room-board.tsx` is already built but unused. Recommendation: still mark Board as "Coming soon" in this pass (the existing component needs auth/RLS hookup, undo/redo, and persistence into a new `instant_board_*` schema before it ships). Tracked as the first follow-up.
+
+### 6. Empty state copy + suggested mapping
+
+Update `CATEGORY_DEFAULTS` so the suggested tool per category points at the new primitives:
+
+- film → list (was shot_list)
+- music → list (was track_list)
+- writing → outline (Docs)
+- build → repo_links
+- visual → moodboard
+- critique / business / coworking → outline (Docs)
+
+Empty-state copy: "Spin up a shared tool — Docs, Pinboard, Drive, List, Moodboard, Repo & Demo. Add as many as you need."
+
+### 7. Promotion (createCollabFromRoom)
+
+Extend `src/lib/collab-workshop.functions.ts` so when a room promotes:
+
+- `instant_docs` → `workshop_docs` (+ comments)
+- `instant_drive_files` / `_links` → `workshop_drive_files` / `_links`
+- `instant_tool_items` where `tool_type='list'` → `workshop_tasks`
+- Existing `instant_tools` → `workshop_tools` flow stays for the lighter primitives (Pinboard, Moodboard, Repo & Demo).
+
+### 8. Polish pass on existing flow
+
+- Tooltip on each picker chip explaining the tool.
+- After enabling a tool, auto-focus the first input.
+- Realtime: add new `instant_*` tables to `supabase_realtime` publication and subscribe in the live room so multiple participants see updates without manual refetch.
+- Mobile: collapse the tool tab strip into a horizontal scroll when > 4 tools are enabled.
+
+## Out of scope (this turn — Coming soon in UI, follow-up implementation)
+
+- Real Screen Share via `getDisplayMedia` wired into the existing WebRTC track set.
+- Real-time Board built on top of the existing `room-board.tsx` with persistence + RLS.
+- Recorder via `MediaRecorder` writing into the `instant-drive` bucket.
+
+Tracked as the first three follow-up tasks after this lands.
+
+## Technical notes
+
+- **DB enum**: `tool_type` is `text`, so adding `'list'`, `'drive'`, `'screen_share'`, `'board'`, `'recorder'` is a one-line change with no enum migration. We keep `outline` as the stored value behind the Docs label.
+- **Component extraction**: the Docs and Drive sub-components live inline inside `src/routes/workshops.$slug.tools.$tool.tsx` (~700 LOC). Extracting them with a `scope: ToolsScope` prop unblocks both surfaces.
+- **Migrations** (one combined file):
+  - `instant_docs`, `instant_doc_comments`
+  - `instant_drive_files`, `instant_drive_links`, `instant_drive_file_comments`
+  - `instant-drive` storage bucket
+  - Add `done boolean`, `position int` to `instant_tool_items`
+  - GRANTs + RLS scoped through `is_room_member(room_id, auth.uid())`
+  - New tables added to `supabase_realtime` publication
+- **`createCollabFromRoom`**: extend the copy step in one server function, wrapped in a single transaction.
 
 ## Files touched
 
-- `src/routes/workshop.$id.tsx` — viewport shell, slim header, grid layout, pass `toolsSlot` to `ChannelView`, render compact tools in rail.
-- `src/components/channel-view.tsx` — add `Tools` to the Chat/Gallery/Collabs toggle and a `toolsSlot?: ReactNode` prop; render it when active. No other changes.
-- `src/components/workshop-tools-panel.tsx` — export a small `<WorkshopToolsCompact scope={...} onOpenTool={(t) => ...} />` companion that reuses the same query/insert logic for the rail chips + add menu. Existing panel stays as-is for the main-stage view.
-
-## Out of scope
-
-No changes to presence, media plumbing, promotion logic, DB schema, or styling tokens. No new tool types. Mobile layout unchanged. The `Create a Collab` dialog is untouched.
+- `src/components/workshop-tools-panel.tsx` — picker fix, new presets including Coming soon entries, List checkbox rendering, Docs/Drive slot rendering
+- `src/components/workshop-docs-editor.tsx` (new, extracted)
+- `src/components/workshop-drive-panel.tsx` (new, extracted)
+- `src/routes/workshops.$slug.tools.$tool.tsx` — swap inline impls for the extracted components
+- `src/routes/workshops.$slug.tools.tsx` — Screen Share / Board / Recorder rendered as Coming soon tiles
+- `src/lib/collab-workshop.functions.ts` — extend promotion copy
+- `supabase/migrations/<new>.sql` — tables, RLS, GRANTs, storage bucket, realtime publication
