@@ -6,16 +6,17 @@ import { useState } from "react";
 import { toast } from "sonner";
 import {
   listActiveInstantRooms,
-  joinLounge,
-  joinMediumLounge,
+  joinSpecificInstantRoom,
   type ActiveInstantRoom,
 } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { useQueryClient } from "@tanstack/react-query";
 
 type Props = {
   canJoin: boolean;
+  medium?: Category | null;
   onTakeSeat: (roomId: string) => Promise<void> | void;
 };
 
