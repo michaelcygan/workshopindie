@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
 import { LoungeForkDropdown } from "@/components/lounge-fork-dropdown";
 import { WorkshopStrip } from "@/components/workshop-strip";
+import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { toast } from "sonner";
 
