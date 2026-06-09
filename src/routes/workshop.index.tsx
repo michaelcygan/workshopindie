@@ -268,6 +268,16 @@ function WorkshopPreflight() {
         }}
       />
 
+      <HostPrivacyDialog
+        open={privacyOpen}
+        onOpenChange={setPrivacyOpen}
+        defaultMedium={hostMedium}
+        busy={busy === "host"}
+        onConfirm={confirmHost}
+      />
+
+
+
       <WorkshopStrip />
     </main>
   );
