@@ -11,9 +11,10 @@ type Props = {
   onSelectMedium: (medium: Category | null) => void;
   onJoinNow?: (medium: Category) => void;
   onLiveCountChange?: (n: number) => void;
+  onSelectedMediumLiveChange?: (n: number) => void;
 };
 
-export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, onLiveCountChange }: Props) {
+export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, onLiveCountChange, onSelectedMediumLiveChange }: Props) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const fetchRooms = useServerFn(listActiveInstantRooms);
@@ -39,9 +40,14 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const mediumRooms = rooms.filter((r): r is ActiveInstantRoom & { medium: Category } => !!r.medium);
+  const mediumRooms = rooms.filter((r): r is typeof r & { medium: Category } => !!r.medium);
   const mediumLiveMap = new Map<Category, number>();
   for (const r of mediumRooms) mediumLiveMap.set(r.medium, (mediumLiveMap.get(r.medium) ?? 0) + r.live_count);
+
+  const selectedMediumLive = selectedMedium ? (mediumLiveMap.get(selectedMedium) ?? 0) : 0;
+  useEffect(() => {
+    onSelectedMediumLiveChange?.(selectedMediumLive);
+  }, [selectedMediumLive, onSelectedMediumLiveChange]);
 
   const selectedLabel = selectedMedium ? CATEGORIES.find((c) => c.id === selectedMedium)?.label ?? null : null;
 
