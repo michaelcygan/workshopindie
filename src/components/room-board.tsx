@@ -104,15 +104,19 @@ function stickyPalette(name: string) {
 
 export default function RoomBoard({
   roomId,
+  scope: scopeProp,
   userId,
   className,
   fullscreen = false,
 }: {
-  roomId: string;
+  roomId?: string;
+  scope?: BoardScope;
   userId: string;
   className?: string;
   fullscreen?: boolean;
 }) {
+  const scope: BoardScope = scopeProp ?? { kind: "instant", roomId: roomId! };
+  const cfg = useMemo(() => configFor(scope), [scope.kind, (scope as { roomId?: string; workshopId?: string }).roomId, (scope as { roomId?: string; workshopId?: string }).workshopId]);
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -136,9 +140,9 @@ export default function RoomBoard({
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
-        .from("instant_board_items")
+        .from(cfg.table)
         .select("*")
-        .eq("room_id", roomId)
+        .eq(cfg.parentCol, cfg.parentId)
         .order("z", { ascending: true });
       if (cancelled) return;
       if (error) toast.error(error.message);
@@ -147,14 +151,14 @@ export default function RoomBoard({
     })();
 
     const ch = supabase
-      .channel(`board:${roomId}`)
+      .channel(cfg.channelKey)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) =>
           setItems((prev) =>
@@ -166,8 +170,8 @@ export default function RoomBoard({
         {
           event: "UPDATE",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) =>
           setItems((prev) => prev.map((x) => (x.id === (p.new as Item).id ? (p.new as Item) : x))),
@@ -177,8 +181,8 @@ export default function RoomBoard({
         {
           event: "DELETE",
           schema: "public",
-          table: "instant_board_items",
-          filter: `room_id=eq.${roomId}`,
+          table: cfg.table,
+          filter: `${cfg.parentCol}=eq.${cfg.parentId}`,
         },
         (p) => setItems((prev) => prev.filter((x) => x.id !== (p.old as Item).id)),
       )
@@ -188,7 +192,7 @@ export default function RoomBoard({
       cancelled = true;
       supabase.removeChannel(ch);
     };
-  }, [roomId]);
+  }, [cfg.table, cfg.parentCol, cfg.parentId, cfg.channelKey]);
 
   const maxZ = useMemo(() => items.reduce((m, x) => Math.max(m, x.z), 0), [items]);
 
@@ -206,10 +210,10 @@ export default function RoomBoard({
       const jitter = () => (Math.random() - 0.5) * 80;
       const x = Math.max(20, Math.min(CANVAS_W - w - 20, viewCx - w / 2 + jitter()));
       const y = Math.max(20, Math.min(CANVAS_H - h - 20, viewCy - h / 2 + jitter()));
-      const row = { room_id: roomId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
+      const row = { [cfg.parentCol]: cfg.parentId, user_id: userId, kind, content, x, y, w, h, z: maxZ + 1 };
       const { data, error } = await supabase
-        .from("instant_board_items")
-        .insert(row)
+        .from(cfg.table)
+        .insert(row as never)
         .select()
         .single();
       if (error) {
@@ -220,20 +224,20 @@ export default function RoomBoard({
         prev.some((x) => x.id === data.id) ? prev : [...prev, data as unknown as Item],
       );
     },
-    [roomId, userId, maxZ],
+    [cfg.table, cfg.parentCol, cfg.parentId, userId, maxZ],
   );
 
   const updateItem = useCallback(async (id: string, patch: Partial<Item>) => {
     setItems((prev) => prev.map((x) => (x.id === id ? ({ ...x, ...patch } as Item) : x)));
-    const { error } = await supabase.from("instant_board_items").update(patch).eq("id", id);
+    const { error } = await supabase.from(cfg.table).update(patch).eq("id", id);
     if (error) toast.error(error.message);
-  }, []);
+  }, [cfg.table]);
 
   const deleteItem = useCallback(async (id: string) => {
     setItems((prev) => prev.filter((x) => x.id !== id));
-    const { error } = await supabase.from("instant_board_items").delete().eq("id", id);
+    const { error } = await supabase.from(cfg.table).delete().eq("id", id);
     if (error) toast.error(error.message);
-  }, []);
+  }, [cfg.table]);
 
   // Drag handlers — divide screen-space deltas by zoom to keep the cursor on the item.
   const onPointerDown = (e: React.PointerEvent, item: Item) => {
