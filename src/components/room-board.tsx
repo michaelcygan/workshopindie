@@ -42,7 +42,6 @@ type Content =
   | { text: string };
 type Item = {
   id: string;
-  room_id: string;
   user_id: string;
   kind: Kind;
   content: Content;
@@ -52,6 +51,43 @@ type Item = {
   h: number;
   z: number;
 };
+
+export type BoardScope =
+  | { kind: "persistent"; workshopId: string }
+  | { kind: "instant"; roomId: string };
+
+type BoardConfig = {
+  table: "instant_board_items" | "workshop_board_items";
+  parentCol: "room_id" | "workshop_id";
+  parentId: string;
+  channelKey: string;
+  bucket: "instant-whiteboard" | "workshop-whiteboard";
+  isPublicBucket: boolean;
+  assetsTable: "instant_whiteboard_assets" | null;
+};
+
+function configFor(scope: BoardScope): BoardConfig {
+  if (scope.kind === "persistent") {
+    return {
+      table: "workshop_board_items",
+      parentCol: "workshop_id",
+      parentId: scope.workshopId,
+      channelKey: `board:ws:${scope.workshopId}`,
+      bucket: "workshop-whiteboard",
+      isPublicBucket: false,
+      assetsTable: null,
+    };
+  }
+  return {
+    table: "instant_board_items",
+    parentCol: "room_id",
+    parentId: scope.roomId,
+    channelKey: `board:room:${scope.roomId}`,
+    bucket: "instant-whiteboard",
+    isPublicBucket: true,
+    assetsTable: "instant_whiteboard_assets",
+  };
+}
 
 const STICKY_COLORS = [
   { name: "yellow", bg: "#fef3c7", ink: "#78350f" },
