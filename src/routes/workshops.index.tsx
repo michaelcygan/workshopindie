@@ -95,7 +95,7 @@ function WorkshopsPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/workshops/lobby/new">
-            <Button variant="outline" className="rounded-full gap-2"><Sparkles className="h-4 w-4" /> Start a Lobby</Button>
+            <Button variant="outline" className="rounded-full gap-2"><Sparkles className="h-4 w-4" /> Start a Draft</Button>
           </Link>
           <Link to="/workshops/new">
             <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
