@@ -249,6 +249,38 @@ function AddToolMenu({ enabled, onAdd }: { enabled: StoredToolType[]; onAdd: (t:
   );
 }
 
+function toDocsScope(scope: ToolsScope): DocsScope {
+  return scope.kind === "persistent"
+    ? { kind: "persistent", workshopId: scope.workshopId }
+    : { kind: "instant", roomId: scope.roomId };
+}
+
+function toDriveScope(scope: ToolsScope): DrivePanelScope {
+  return scope.kind === "persistent"
+    ? { kind: "persistent", workshopId: scope.workshopId }
+    : { kind: "instant", roomId: scope.roomId };
+}
+
+function ActiveToolBody({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
+  // Dedicated full-featured components for the rich tools.
+  if (tool.tool_type === "outline") {
+    return (
+      <div className="p-4">
+        <WorkshopDocsEditor scope={toDocsScope(scope)} />
+      </div>
+    );
+  }
+  if (tool.tool_type === "drive") {
+    return (
+      <div className="p-4">
+        <WorkshopDrivePanel scope={toDriveScope(scope)} />
+      </div>
+    );
+  }
+  // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
+  return <ToolItems scope={scope} tool={tool} />;
+}
+
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();
   const qc = useQueryClient();
