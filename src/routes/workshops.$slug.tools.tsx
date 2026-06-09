@@ -191,8 +191,8 @@ function WorkshopToolsHub() {
     },
     {
       key: "tasks",
-      title: "Tasks",
-      blurb: "Lightweight checklist to actually ship.",
+      title: "List",
+      blurb: "To-dos, shots, tracks — any list you need to ship.",
       icon: <ListChecks className="h-5 w-5" />,
       action: () =>
         router.navigate({ to: "/workshops/$slug/tools/$tool", params: { slug, tool: "tasks" } }),
