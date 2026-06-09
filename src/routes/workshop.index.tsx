@@ -194,7 +194,15 @@ function WorkshopPreflight() {
           <div className="mt-auto pt-4">
             <Button onClick={handleDrop} disabled={!canDrop || busy !== null} className="w-full rounded-2xl h-12 gap-2">
               {busy === "drop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
-              {busy === "drop" ? "Finding you a seat…" : dropLabel ? `Drop into ${dropLabel}` : "Drop in"}
+              {busy === "drop"
+                ? "Finding you a seat…"
+                : selectedDropMedium
+                  ? (liveCount > 0
+                      ? `Drop into ${dropLabel} (${liveCount} live)`
+                      : `Open the first ${dropLabel} room`)
+                  : (liveCount > 0
+                      ? `Drop in (${liveCount} live)`
+                      : "Open the first room")}
             </Button>
           </div>
         </motion.div>
