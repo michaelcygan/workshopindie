@@ -94,14 +94,15 @@ export const listFollowingForLobby = createServerFn({ method: "POST" })
   });
 
 const CategoryEnum = z.enum([
-  "visual",
+  "film",
   "music",
   "writing",
-  "moving_image",
-  "performance",
-  "design",
-  "code",
-  "other",
+  "build",
+  "visual",
+  "critique",
+  "business",
+  "mentorship",
+  "coworking",
 ]);
 
 /** Create a Workshop "lobby" — a draft, invite-only workshop with invitees. */
@@ -135,7 +136,7 @@ export const createLobby = createServerFn({ method: "POST" })
       }
     }
 
-    // @ts-expect-error -- new columns not yet in regenerated types
+    
     const { data: ws, error } = await supabaseAdmin
       .from("workshops")
       .insert({
@@ -355,7 +356,7 @@ export const requestToJoinLobby = createServerFn({ method: "POST" })
   .inputValidator((input) => z.object({ workshopId: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    // @ts-expect-error new column not yet in types
+    
     const { data: ws } = await supabaseAdmin
       .from("workshops")
       .select("id, host_user_id, is_lobby, lobby_discoverable, title, slug")
