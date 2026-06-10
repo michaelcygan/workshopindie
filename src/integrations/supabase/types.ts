@@ -3781,6 +3781,8 @@ export type Database = {
         | "drive"
         | "docs"
         | "board"
+        | "screen_share"
+        | "recorder"
       visibility: "public" | "unlisted" | "invite_only" | "private"
       work_license:
         | "cc_by"
@@ -4003,6 +4005,8 @@ export const Constants = {
         "drive",
         "docs",
         "board",
+        "screen_share",
+        "recorder",
       ],
       visibility: ["public", "unlisted", "invite_only", "private"],
       work_license: [
