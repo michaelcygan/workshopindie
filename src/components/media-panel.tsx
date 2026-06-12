@@ -225,31 +225,57 @@ export function VideoStage({
   const hasAny = showLocalVideo || videoPeers.length > 0 || localScreen;
   if (!hasAny) return null;
 
+  // SPOTLIGHT MODE — when anyone's sharing a screen, it dominates the stage and
+  // participants shrink to a thumbnail strip below.
+  const sharing = !!(localScreen || (m.screenSharerId && !m.isScreenSharing && m.peers.find((p) => p.userId === m.screenSharerId && p.stream)));
+  if (sharing) {
+    const remotePeer = !localScreen && m.screenSharerId
+      ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream)
+      : null;
+    const spotlightStream = (localScreen ? m.screenStream : remotePeer!.stream) as MediaStream;
+    const spotlightLabel = localScreen ? "Your screen" : `${sharerName}'s screen`;
+    const stripPeers = videoPeers.filter((p) => p.userId !== m.screenSharerId);
+    return (
+      <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6">
+        <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
+          <MonitorPlay className="h-3 w-3 text-primary" />
+          <span>{localScreen ? "You're sharing your screen" : `${sharerName} is sharing their screen`}</span>
+        </div>
+        <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
+          <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
+        </div>
+        {(showLocalVideo || stripPeers.length > 0) && (
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {showLocalVideo && !localScreen && (
+              <div className="w-32 shrink-0">
+                <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
+              </div>
+            )}
+            {stripPeers.map((p) => {
+              const prof = profileLookup.get(p.userId);
+              return (
+                <div key={p.userId} className="w-32 shrink-0">
+                  <VideoTile
+                    stream={p.stream!}
+                    label={prof?.display_name || prof?.username || "Anon"}
+                    speaking={p.speaking}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
-      {localScreen && (
-        <div className="mb-3">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
-            <MonitorPlay className="h-3 w-3 text-primary" />
-            <span>You're sharing your screen</span>
-          </div>
-          <VideoTile stream={m.screenStream!} label="Your screen" muted />
-        </div>
-      )}
-      {remoteSharingPeer && (
-        <div className="mb-3">
-          <div className="mb-1.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
-            <MonitorPlay className="h-3 w-3 text-primary" />
-            <span>{sharerName} is sharing their screen</span>
-          </div>
-          <VideoTile stream={remoteSharingPeer.stream!} label={`${sharerName}'s screen`} speaking={remoteSharingPeer.speaking} />
-        </div>
-      )}
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-        {showLocalVideo && !localScreen && (
+        {showLocalVideo && (
           <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
         )}
-        {videoPeers.filter((p) => p.userId !== m.screenSharerId).map((p) => {
+        {videoPeers.map((p) => {
           const prof = profileLookup.get(p.userId);
           return (
             <VideoTile
@@ -260,6 +286,32 @@ export function VideoStage({
             />
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+/** Large-format video used for the screen-share spotlight. Uses object-contain
+ *  so slides/code aren't cropped, and a tall max-height so it dominates. */
+function SpotlightVideo({ stream, label, muted }: { stream: MediaStream; label: string; muted?: boolean }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.srcObject = stream;
+      ref.current.play().catch(() => {});
+    }
+  }, [stream]);
+  return (
+    <div className="relative w-full" style={{ aspectRatio: "16 / 9", maxHeight: "70vh" }}>
+      <video
+        ref={ref}
+        autoPlay
+        playsInline
+        muted={muted}
+        className="absolute inset-0 h-full w-full object-contain bg-black"
+      />
+      <div className="absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[11px] text-background">
+        {label}
       </div>
     </div>
   );
