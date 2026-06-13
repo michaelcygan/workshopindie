@@ -280,17 +280,36 @@ export function WorkshopRecorder({
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [activeRecording, setActiveRecording] = useState<{ by: string; name: string } | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
+  // When persona owner triggers "Start everyone", invitees see a Join dialog.
+  const [joinPromptOpen, setJoinPromptOpen] = useState(false);
   useEffect(() => {
-    if (!roomId || !user) return;
-    const ch = supabase.channel(`recorder:${roomId}`, { config: { broadcast: { self: false } } });
+    if (!user) return;
+    // Persona-scoped channel for synced personas; room-scoped for solo recordings.
+    const key = persona ? `persona:${persona.id}` : roomId ? `recorder:${roomId}` : null;
+    if (!key) return;
+    const ch = supabase.channel(key, { config: { broadcast: { self: false } } });
     ch.on("broadcast", { event: "recorder" }, ({ payload }) => {
-      const ev = payload as { type: "start"; by: string; name: string } | { type: "stop" };
+      const ev = payload as
+        | { type: "start"; by: string; name: string }
+        | { type: "stop" }
+        | { type: "persona.start"; by: string; name: string }
+        | { type: "persona.stop" };
       if (ev.type === "start") { setActiveRecording({ by: ev.by, name: ev.name }); setConsentOpen(true); }
-      else { setActiveRecording(null); setConsentOpen(false); }
+      else if (ev.type === "stop") { setActiveRecording(null); setConsentOpen(false); }
+      else if (ev.type === "persona.start") {
+        // Owner asks members to join this take.
+        if (persona && user && persona.ownerUserId === ev.by && user.id !== ev.by) {
+          setActiveRecording({ by: ev.by, name: ev.name });
+          setJoinPromptOpen(true);
+        }
+      } else if (ev.type === "persona.stop") {
+        setActiveRecording(null);
+        setJoinPromptOpen(false);
+      }
     }).subscribe();
     channelRef.current = ch;
     return () => { supabase.removeChannel(ch); channelRef.current = null; };
-  }, [roomId, user]);
+  }, [roomId, user, persona]);
 
   function broadcast(payload: unknown) { channelRef.current?.send({ type: "broadcast", event: "recorder", payload }); }
 
@@ -302,7 +321,7 @@ export function WorkshopRecorder({
   }
 
   // ---- Start / stop ----
-  async function start() {
+  async function start(opts?: { silent?: boolean }) {
     if (!user) return;
     if (!canRecord) { toast.error("Pick at least one source."); return; }
     setElapsed(0);
@@ -314,9 +333,21 @@ export function WorkshopRecorder({
       return;
     }
     setRecording(true);
-    if (isInstant && user) {
-      broadcast({ type: "start", by: user.id, name: user.user_metadata?.display_name ?? user.email ?? "Someone" });
+    const displayName = user.user_metadata?.display_name ?? user.email ?? "Someone";
+    if (persona) {
+      // Update my member state so the owner sees who's actually rolling.
+      void setMemberState({ data: { personaId: persona.id, state: "recording" } }).catch(() => {});
+      if (isPersonaOwner && !opts?.silent && persona.controlMode === "owner_start") {
+        broadcast({ type: "persona.start", by: user.id, name: persona.name });
+      }
+    } else if (isInstant) {
+      broadcast({ type: "start", by: user.id, name: displayName });
     }
+  }
+
+  async function joinPersonaTake() {
+    setJoinPromptOpen(false);
+    await start({ silent: true });
   }
 
   async function stop() {
