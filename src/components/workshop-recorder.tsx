@@ -613,6 +613,29 @@ export function WorkshopRecorder({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={joinPromptOpen} onOpenChange={setJoinPromptOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-60" />
+                <span className="relative h-2.5 w-2.5 rounded-full bg-destructive" />
+              </span>
+              {persona?.name ?? "Producer"} is rolling
+            </DialogTitle>
+            <DialogDescription>
+              {activeRecording?.name ?? "The producer"} is recording this persona. Join with the sources you have selected — or skip this take.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setJoinPromptOpen(false)} className="rounded-full">Skip this take</Button>
+            <Button onClick={joinPersonaTake} disabled={!canRecord} className="rounded-full gap-2">
+              <span className="h-2 w-2 rounded-full bg-destructive" /> Join take
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
