@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,8 +26,17 @@ import {
 import { toast } from "sonner";
 import type { useMediaRoom } from "@/hooks/use-media-room";
 import { RecorderEngine, type Layout, type RecordedFile, type SourceSpec } from "@/components/recorder/recorder-engine";
+import { mirrorPersonaTakeFile, setPersonaMemberState } from "@/lib/recorder-personas.functions";
 
 type RoomScope = { kind: "instant"; roomId: string } | { kind: "persistent"; workshopId: string };
+
+/** Persona context passed into a WorkshopRecorder instance bound to a persona tab. */
+export type PersonaContext = {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  controlMode: "owner_start" | "self";
+};
 
 type UIDevice = { deviceId: string; label: string };
 type UIRow = {
@@ -47,13 +57,18 @@ const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*saf
 export function WorkshopRecorder({
   scope,
   media,
+  persona,
 }: {
   scope: RoomScope;
   media?: ReturnType<typeof useMediaRoom>;
+  persona?: PersonaContext;
 }) {
   const { user } = useAuth();
   const isInstant = scope.kind === "instant";
   const roomId = isInstant ? scope.roomId : null;
+  const isPersonaOwner = !!persona && !!user && persona.ownerUserId === user.id;
+  const mirrorFn = useServerFn(mirrorPersonaTakeFile);
+  const setMemberState = useServerFn(setPersonaMemberState);
 
   // ---- Devices ----
   const [cams, setCams] = useState<UIDevice[]>([]);
