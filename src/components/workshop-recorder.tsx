@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,8 +26,17 @@ import {
 import { toast } from "sonner";
 import type { useMediaRoom } from "@/hooks/use-media-room";
 import { RecorderEngine, type Layout, type RecordedFile, type SourceSpec } from "@/components/recorder/recorder-engine";
+import { mirrorPersonaTakeFile, setPersonaMemberState } from "@/lib/recorder-personas.functions";
 
 type RoomScope = { kind: "instant"; roomId: string } | { kind: "persistent"; workshopId: string };
+
+/** Persona context passed into a WorkshopRecorder instance bound to a persona tab. */
+export type PersonaContext = {
+  id: string;
+  name: string;
+  ownerUserId: string;
+  controlMode: "owner_start" | "self";
+};
 
 type UIDevice = { deviceId: string; label: string };
 type UIRow = {
@@ -47,13 +57,18 @@ const isSafari = typeof navigator !== "undefined" && /^((?!chrome|android).)*saf
 export function WorkshopRecorder({
   scope,
   media,
+  persona,
 }: {
   scope: RoomScope;
   media?: ReturnType<typeof useMediaRoom>;
+  persona?: PersonaContext;
 }) {
   const { user } = useAuth();
   const isInstant = scope.kind === "instant";
   const roomId = isInstant ? scope.roomId : null;
+  const isPersonaOwner = !!persona && !!user && persona.ownerUserId === user.id;
+  const mirrorFn = useServerFn(mirrorPersonaTakeFile);
+  const setMemberState = useServerFn(setPersonaMemberState);
 
   // ---- Devices ----
   const [cams, setCams] = useState<UIDevice[]>([]);
@@ -265,17 +280,36 @@ export function WorkshopRecorder({
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [activeRecording, setActiveRecording] = useState<{ by: string; name: string } | null>(null);
   const [consentOpen, setConsentOpen] = useState(false);
+  // When persona owner triggers "Start everyone", invitees see a Join dialog.
+  const [joinPromptOpen, setJoinPromptOpen] = useState(false);
   useEffect(() => {
-    if (!roomId || !user) return;
-    const ch = supabase.channel(`recorder:${roomId}`, { config: { broadcast: { self: false } } });
+    if (!user) return;
+    // Persona-scoped channel for synced personas; room-scoped for solo recordings.
+    const key = persona ? `persona:${persona.id}` : roomId ? `recorder:${roomId}` : null;
+    if (!key) return;
+    const ch = supabase.channel(key, { config: { broadcast: { self: false } } });
     ch.on("broadcast", { event: "recorder" }, ({ payload }) => {
-      const ev = payload as { type: "start"; by: string; name: string } | { type: "stop" };
+      const ev = payload as
+        | { type: "start"; by: string; name: string }
+        | { type: "stop" }
+        | { type: "persona.start"; by: string; name: string }
+        | { type: "persona.stop" };
       if (ev.type === "start") { setActiveRecording({ by: ev.by, name: ev.name }); setConsentOpen(true); }
-      else { setActiveRecording(null); setConsentOpen(false); }
+      else if (ev.type === "stop") { setActiveRecording(null); setConsentOpen(false); }
+      else if (ev.type === "persona.start") {
+        // Owner asks members to join this take.
+        if (persona && user && persona.ownerUserId === ev.by && user.id !== ev.by) {
+          setActiveRecording({ by: ev.by, name: ev.name });
+          setJoinPromptOpen(true);
+        }
+      } else if (ev.type === "persona.stop") {
+        setActiveRecording(null);
+        setJoinPromptOpen(false);
+      }
     }).subscribe();
     channelRef.current = ch;
     return () => { supabase.removeChannel(ch); channelRef.current = null; };
-  }, [roomId, user]);
+  }, [roomId, user, persona]);
 
   function broadcast(payload: unknown) { channelRef.current?.send({ type: "broadcast", event: "recorder", payload }); }
 
@@ -287,7 +321,7 @@ export function WorkshopRecorder({
   }
 
   // ---- Start / stop ----
-  async function start() {
+  async function start(opts?: { silent?: boolean }) {
     if (!user) return;
     if (!canRecord) { toast.error("Pick at least one source."); return; }
     setElapsed(0);
@@ -299,9 +333,21 @@ export function WorkshopRecorder({
       return;
     }
     setRecording(true);
-    if (isInstant && user) {
-      broadcast({ type: "start", by: user.id, name: user.user_metadata?.display_name ?? user.email ?? "Someone" });
+    const displayName = user.user_metadata?.display_name ?? user.email ?? "Someone";
+    if (persona) {
+      // Update my member state so the owner sees who's actually rolling.
+      void setMemberState({ data: { personaId: persona.id, state: "recording" } }).catch(() => {});
+      if (isPersonaOwner && !opts?.silent && persona.controlMode === "owner_start") {
+        broadcast({ type: "persona.start", by: user.id, name: persona.name });
+      }
+    } else if (isInstant) {
+      broadcast({ type: "start", by: user.id, name: displayName });
     }
+  }
+
+  async function joinPersonaTake() {
+    setJoinPromptOpen(false);
+    await start({ silent: true });
   }
 
   async function stop() {
@@ -313,7 +359,13 @@ export function WorkshopRecorder({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Stop failed");
     }
-    if (isInstant && user) broadcast({ type: "stop" });
+    if (isInstant && user) {
+      if (persona && isPersonaOwner) broadcast({ type: "persona.stop" });
+      else if (!persona) broadcast({ type: "stop" });
+    }
+    if (persona && user) {
+      void setMemberState({ data: { personaId: persona.id, state: "ready" } }).catch(() => {});
+    }
 
     if (files.length === 0) { setUploading(false); return; }
 
@@ -330,7 +382,7 @@ export function WorkshopRecorder({
         try {
           const { error: upErr } = await supabase.storage.from("instant-drive").upload(path, f.blob, { contentType: f.mime, upsert: false });
           if (upErr) throw upErr;
-          const { error: rowErr } = await (supabase.from("instant_drive_files") as any).insert({
+          const { data: row, error: rowErr } = await (supabase.from("instant_drive_files") as any).insert({
             room_id: roomId,
             uploader_id: user.id,
             storage_path: path,
@@ -340,8 +392,15 @@ export function WorkshopRecorder({
             duration_ms: f.durationMs,
             note: f.sourceId === "mixed" ? "Mixed take" : `Raw: ${f.label}`,
             take_id: takeId,
-          });
+            persona_id: persona?.id ?? null,
+          }).select("id").single();
           if (rowErr) throw rowErr;
+          // Collaborators in a shared persona: mirror this file into the owner's drive.
+          if (persona && !isPersonaOwner) {
+            mirrorFn({ data: { personaId: persona.id, sourceFileId: row.id, takeId } }).catch((err) => {
+              console.warn("mirror to owner failed", err);
+            });
+          }
           const { data: signed } = await supabase.storage.from("instant-drive").createSignedUrl(path, 60 * 60);
           out.push({ name: filename, url: signed?.signedUrl ?? URL.createObjectURL(f.blob), mime: f.mime, bytes: f.blob.size, isMixed: f.sourceId === "mixed" });
         } catch (e) {
@@ -371,8 +430,15 @@ export function WorkshopRecorder({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Recorder · Studio</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">
+              {persona ? `Persona · ${persona.name}` : "Recorder · Studio"}
+            </div>
             <div className="mt-0.5 font-display text-lg leading-tight text-ink">Capture a take</div>
+            {persona && (
+              <div className="mt-0.5 text-[11px] text-ink-muted">
+                {isPersonaOwner ? "You're the producer" : "Producer-led"} · {persona.controlMode === "owner_start" ? "Owner-start" : "Free start"}
+              </div>
+            )}
           </div>
           {recording ? (
             <div className="flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-1.5">
@@ -484,9 +550,9 @@ export function WorkshopRecorder({
                   <Square className="h-3.5 w-3.5" /> Stop
                 </Button>
               ) : (
-                <Button onClick={start} disabled={!canRecord || uploading || !!activeRecording} className="rounded-full gap-2">
+                <Button onClick={() => start()} disabled={!canRecord || uploading || (!persona && !!activeRecording)} className="rounded-full gap-2">
                   <span className="h-2 w-2 rounded-full bg-destructive" />
-                  Start recording
+                  {persona && isPersonaOwner && persona.controlMode === "owner_start" ? "Start everyone" : persona ? "Start my take" : "Start recording"}
                 </Button>
               )}
             </div>
@@ -544,6 +610,29 @@ export function WorkshopRecorder({
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={muteSelfForRecording} className="rounded-full">Mute me</Button>
             <Button onClick={() => setConsentOpen(false)} className="rounded-full">I'm in</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={joinPromptOpen} onOpenChange={setJoinPromptOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-60" />
+                <span className="relative h-2.5 w-2.5 rounded-full bg-destructive" />
+              </span>
+              {persona?.name ?? "Producer"} is rolling
+            </DialogTitle>
+            <DialogDescription>
+              {activeRecording?.name ?? "The producer"} is recording this persona. Join with the sources you have selected — or skip this take.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => setJoinPromptOpen(false)} className="rounded-full">Skip this take</Button>
+            <Button onClick={joinPersonaTake} disabled={!canRecord} className="rounded-full gap-2">
+              <span className="h-2 w-2 rounded-full bg-destructive" /> Join take
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
