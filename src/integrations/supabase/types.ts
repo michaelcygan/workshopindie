@@ -850,8 +850,10 @@ export type Database = {
           filename: string
           height: number | null
           id: string
+          linked_take_owner_user_id: string | null
           mime_type: string | null
           note: string | null
+          persona_id: string | null
           room_id: string
           storage_path: string
           take_id: string | null
@@ -866,8 +868,10 @@ export type Database = {
           filename: string
           height?: number | null
           id?: string
+          linked_take_owner_user_id?: string | null
           mime_type?: string | null
           note?: string | null
+          persona_id?: string | null
           room_id: string
           storage_path: string
           take_id?: string | null
@@ -882,8 +886,10 @@ export type Database = {
           filename?: string
           height?: number | null
           id?: string
+          linked_take_owner_user_id?: string | null
           mime_type?: string | null
           note?: string | null
+          persona_id?: string | null
           room_id?: string
           storage_path?: string
           take_id?: string | null
@@ -892,6 +898,13 @@ export type Database = {
           width?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "instant_drive_files_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "recorder_personas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "instant_drive_files_room_id_fkey"
             columns: ["room_id"]
@@ -1668,6 +1681,89 @@ export type Database = {
           window_start?: string
         }
         Relationships: []
+      }
+      recorder_persona_members: {
+        Row: {
+          joined_at: string
+          persona_id: string
+          state: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          persona_id: string
+          state?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          persona_id?: string
+          state?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorder_persona_members_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "recorder_personas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      recorder_personas: {
+        Row: {
+          control_mode: string
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          privacy: string
+          room_id: string | null
+          updated_at: string
+          workshop_id: string | null
+        }
+        Insert: {
+          control_mode?: string
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+          privacy?: string
+          room_id?: string | null
+          updated_at?: string
+          workshop_id?: string | null
+        }
+        Update: {
+          control_mode?: string
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          privacy?: string
+          room_id?: string | null
+          updated_at?: string
+          workshop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recorder_personas_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recorder_personas_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       referral_credits: {
         Row: {
@@ -2763,8 +2859,10 @@ export type Database = {
           filename: string
           height: number | null
           id: string
+          linked_take_owner_user_id: string | null
           mime_type: string | null
           note: string | null
+          persona_id: string | null
           storage_path: string
           take_id: string | null
           updated_at: string
@@ -2779,8 +2877,10 @@ export type Database = {
           filename: string
           height?: number | null
           id?: string
+          linked_take_owner_user_id?: string | null
           mime_type?: string | null
           note?: string | null
+          persona_id?: string | null
           storage_path: string
           take_id?: string | null
           updated_at?: string
@@ -2795,8 +2895,10 @@ export type Database = {
           filename?: string
           height?: number | null
           id?: string
+          linked_take_owner_user_id?: string | null
           mime_type?: string | null
           note?: string | null
+          persona_id?: string | null
           storage_path?: string
           take_id?: string | null
           updated_at?: string
@@ -2805,6 +2907,13 @@ export type Database = {
           workshop_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "workshop_drive_files_persona_id_fkey"
+            columns: ["persona_id"]
+            isOneToOne: false
+            referencedRelation: "recorder_personas"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "workshop_drive_files_workshop_id_fkey"
             columns: ["workshop_id"]
@@ -3670,6 +3779,10 @@ export type Database = {
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
       is_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_persona_member: {
+        Args: { _persona_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
