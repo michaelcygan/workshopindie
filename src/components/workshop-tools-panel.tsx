@@ -345,7 +345,7 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   if (tool.tool_type === "recorder") {
     return (
       <div className="p-4">
-        <WorkshopRecorder
+        <PersonaRecorderTabs
           scope={scope.kind === "instant"
             ? { kind: "instant", roomId: scope.roomId }
             : { kind: "persistent", workshopId: scope.workshopId }}
