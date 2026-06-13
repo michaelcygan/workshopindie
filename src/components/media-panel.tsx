@@ -234,33 +234,35 @@ export function VideoStage({
       : null;
     const spotlightStream = (localScreen ? m.screenStream : remotePeer!.stream) as MediaStream;
     const spotlightLabel = localScreen ? "Your screen" : `${sharerName}'s screen`;
-    const stripPeers = videoPeers.filter((p) => p.userId !== m.screenSharerId);
+    // Keep the full participant grid below the spotlight so the local cam tile
+    // and remote cam tiles stay visible while someone is sharing. For a REMOTE
+    // sharer we hide their cam tile (their video track is already the screen).
+    const gridPeers = localScreen ? videoPeers : videoPeers.filter((p) => p.userId !== m.screenSharerId);
     return (
-      <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6">
-        <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
-          <MonitorPlay className="h-3 w-3 text-primary" />
-          <span>{localScreen ? "You're sharing your screen" : `${sharerName} is sharing their screen`}</span>
+      <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6 space-y-3">
+        <div>
+          <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
+            <MonitorPlay className="h-3 w-3 text-primary" />
+            <span>{localScreen ? "You're sharing your screen" : `${sharerName} is sharing their screen`}</span>
+          </div>
+          <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
+            <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
+          </div>
         </div>
-        <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
-          <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
-        </div>
-        {(showLocalVideo || stripPeers.length > 0) && (
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {showLocalVideo && !localScreen && (
-              <div className="w-32 shrink-0">
-                <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
-              </div>
+        {(showLocalVideo || gridPeers.length > 0) && (
+          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
+            {showLocalVideo && (
+              <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
             )}
-            {stripPeers.map((p) => {
+            {gridPeers.map((p) => {
               const prof = profileLookup.get(p.userId);
               return (
-                <div key={p.userId} className="w-32 shrink-0">
-                  <VideoTile
-                    stream={p.stream!}
-                    label={prof?.display_name || prof?.username || "Anon"}
-                    speaking={p.speaking}
-                  />
-                </div>
+                <VideoTile
+                  key={p.userId}
+                  stream={p.stream!}
+                  label={prof?.display_name || prof?.username || "Anon"}
+                  speaking={p.speaking}
+                />
               );
             })}
           </div>
