@@ -1,76 +1,101 @@
-## Recorder Studio — flexible capture for Workshop rooms
+## Goal
 
-The current Recorder is a one-button `getDisplayMedia` capture with the local mic mixed in. We're replacing it with a small in-browser studio: pick any combination of sources (cameras, mics, line-in/USB-C interfaces, screen, remote participants), choose a layout, hit record, and walk away with both a single mixed `.webm` and per-source raw `.webm` files saved to Drive.
+Turn the single shared Recorder into a per-user multi-tab studio. Each user gets their own recorder state. A user can spin up named "Personas" (tabs) inside Capture a take, invite other users in the room into a persona, and trigger a synchronized take across everyone in that persona. Tracks land in both the persona owner's take folder and each contributor's own take folder.
 
-All capture stays in the recorder's browser (no server transcoding), which is what makes pro audio interfaces and "guitar plugged into Scarlett" Just Work — they show up as standard `audioinput` devices.
+## How it works (end-user)
 
-## What you'll see in the UI
+```text
+┌─ Recorder ─────────────────────────────────────────────┐
+│ [● Solo]  [● Producer A]  [● Drums chain]  [ + Persona]│  ← tabs (personas)
+├────────────────────────────────────────────────────────┤
+│ PERSONA · Producer A                  Members: 3       │
+│ Owned by you · 2 invited · Privacy: Workshop only      │
+│                                                        │
+│  Invite from room ▾    Recording control: Owner-start  │
+│                                                        │
+│  SOURCES (your machine)                                │
+│   ☐ My room camera · LIVE                              │
+│   ☑ Logic Pro Out (line-in) · ▮▮▮▮▯                    │
+│   ☐ Screen                                             │
+│                                                        │
+│  COLLABORATORS · their picked sources show here        │
+│   ▸ Sarah  · Mic, Cam        status: Ready             │
+│   ▸ Theo   · Bass DI         status: Recording 00:42   │
+│                                                        │
+│  LAYOUT  [Grid] [Spotlight] [Single]                   │
+│                                                        │
+│  [● Record take]            00:42 · 3 streams live     │
+└────────────────────────────────────────────────────────┘
+```
 
-A compact 2027-leaning panel: dark surface, mono-spaced labels, hairline dividers, big level meters. Three stacked sections inside one card:
+- "Solo" tab always exists — a private persona only you see (current behaviour).
+- Any user can create a new persona, name it, and invite room members. Invitees see it appear as a new tab inside their own Recorder with an "Accept" banner. They pick their own local sources, hit "Ready". The owner (or any member, depending on control mode) hits Record — a synchronized start broadcast fires; each browser records its own enabled sources locally, then on stop everyone uploads under the same `take_id` to both their own drive and the owner's drive.
 
-1. **Sources** — checkbox list grouped by kind:
-   - Cameras (enumerated via `enumerateDevices`, plus "My room camera" which reuses the live stream so the device isn't double-opened)
-   - Microphones / line inputs (every `audioinput` — USB interfaces, guitar DI, USB-C mics, virtual cables all appear here). Each row has a live VU meter so you can confirm signal before hitting record.
-   - Screen / window / tab (triggers `getDisplayMedia` on enable; supports system audio when the browser allows it)
-   - Remote participants (one row per peer currently in the room; toggles capture their cam + mic streams)
-2. **Layout** (only relevant when 2+ video sources are active):
-   - Auto grid
-   - Spotlight + thumbnail strip (pick which source is the spotlight)
-   - Single source (picker)
-3. **Output** — read-only summary: "Mixed take + N raw tracks → Drive". Quality dropdown (720p / 1080p, bitrate auto). Big record button with elapsed timer and per-track recording dots.
+## Recording control
 
-After stopping: a results list with each file (mixed first, then one row per source), inline `<video>` preview on click, Download + "Open in Drive" links. Existing consent dialog for other room members stays.
+- Default: each member starts/stops their own take, but the persona owner has a "Start everyone" button that pops a confirm dialog on each member's screen ("Producer A is starting a take — Join / Skip this one"). Accept → that member's local recorder starts in sync; Skip → only owner's sources record.
+- Stop: each member can stop themselves any time; the owner's stop ends the mixed take and finalizes upload grouping.
 
-## Output model
+## Upload destination
 
-For every take we produce:
+- Each recorded source uploads to both:
+  - The recording user's own drive (their take_id, owner_user_id = self).
+  - The persona owner's drive (linked_take_id = owner take_id, contributor_user_id = self).
+- In persistent (workshop) rooms, the persona's "Privacy" toggle gates the duplication: Workshop-only (default, mirrors to owner) vs Private (each user keeps their own; no mirror).
+- Mixed take is always built locally by the persona owner from streams everyone is currently sending via WebRTC plus the owner's own local sources, and uploads only to the owner's drive.
 
-- `mixed-{timestamp}.webm` — single composited video (canvas) + mixed audio (Web Audio destination). This is the "share with the team" file.
-- `cam-{label}-{timestamp}.webm`, `screen-{timestamp}.webm`, `mic-{label}-{timestamp}.webm` (audio-only `.webm` for line inputs) — one `MediaRecorder` per source, raw, for editing.
+## Data model
 
-All files upload to the existing `instant-drive` bucket and get an `instant_drive_files` row. We add one new column, `take_id uuid` (nullable), so the Drive UI can group the files from the same recording together. Migration is a single `ALTER TABLE … ADD COLUMN`; no policy changes (existing RLS still applies).
+Two new tables (per room scope) plus a column on existing drive tables.
 
-For persistent (non-instant) workshops we mirror the same to `workshop_drive_files` with the same `take_id`. Until those rows exist, persistent rooms still fall back to local download (same as today).
+```sql
+-- Instant-room personas (ephemeral, per room)
+create table public.recorder_personas (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references public.instant_rooms(id) on delete cascade,
+  owner_user_id uuid not null,
+  name text not null,
+  control_mode text not null default 'owner_start',   -- owner_start | self
+  privacy text not null default 'shared',             -- shared | private (workshop scope only)
+  created_at timestamptz default now()
+);
+create table public.recorder_persona_members (
+  persona_id uuid references public.recorder_personas(id) on delete cascade,
+  user_id uuid not null,
+  state text not null default 'invited',              -- invited | ready | recording | declined
+  joined_at timestamptz default now(),
+  primary key (persona_id, user_id)
+);
+-- Mirror tables for persistent workshops:
+-- workshop_recorder_personas, workshop_recorder_persona_members (same shape, workshop_id fk).
+-- Add column on instant_drive_files + workshop_drive_files:
+alter table public.instant_drive_files add column linked_persona_id uuid;
+alter table public.instant_drive_files add column linked_take_owner_user_id uuid;
+-- (same on workshop_drive_files)
+```
 
-## How the mix is built
+RLS: members can read their own personas + ones they're invited to. Owner can update/delete. Members can insert their own member row when invited. GRANTs to authenticated + service_role; no anon.
 
-- **Video mix**: an offscreen `<canvas>` running at 24fps. Each frame draws the selected video sources according to the chosen layout (grid math, or spotlight + thumb strip). `canvas.captureStream(24)` becomes the mixed video track.
-- **Audio mix**: a single `AudioContext` with a `MediaStreamAudioDestinationNode`. Every selected audio source (local mic, each extra `audioinput`, screen audio, each remote peer's audio) gets a `MediaStreamSource` → gain node → destination. The destination's track is the mixed audio track.
-- The mixed `MediaRecorder` runs on `new MediaStream([canvasTrack, audioDestTrack])`.
-- The split recorders each run on a single-source `MediaStream` clone — independent of the mix.
+Realtime: persona changes + member state changes broadcast over the existing `recorder:${roomId}` Supabase channel (new event types: `persona.created`, `persona.member.update`, `persona.start`, `persona.stop`).
 
-## MIDI / instruments
+## UI / files
 
-We're treating "MIDI instrument" as **its audio output**, not note data. A user plugs their synth/guitar into an audio interface; the interface shows up in the Microphones list; they tick it; it gets its own raw track + lands in the mix. No Web MIDI dependency, no `.mid` files. This matches how DAWs treat external instruments and avoids a whole second capture pipeline.
+- `src/components/recorder/personas-tabs.tsx` — horizontal tab strip with "+ Persona" button. Solo + dynamic personas.
+- `src/components/recorder/persona-panel.tsx` — refactor of the current `workshop-recorder.tsx` body into a panel that takes a `personaId`; owns local engine, sources, layout, record button. Renders both "Your sources" and "Collaborators".
+- `src/components/recorder/persona-invite.tsx` — popover that lists room peers + invite/remove.
+- `src/components/recorder/persona-consent-dialog.tsx` — "Start everyone" popup on invitee browsers.
+- `src/components/workshop-recorder.tsx` — slimmed to a shell that renders `<PersonasTabs>` + the active `<PersonaPanel>`. Each `PersonaPanel` instance has its own `RecorderEngine`, so per-user/per-persona isolation is automatic.
+- `src/lib/recorder-personas.functions.ts` — server fns: `createPersona`, `invitePersonaMember`, `setPersonaMemberState`, `removePersona`, `listPersonas`. All `requireSupabaseAuth`.
 
-## Browser & device caveats (surfaced inline in the UI)
+## Design (2027-utilitarian)
 
-- Recording remote participants only captures the audio/video tracks they're already sending to us via WebRTC — quality is bounded by the room call.
-- Screen + system audio: Chrome/Edge only, and only for tab/window share with audio checkbox.
-- Safari does not support `MediaRecorder` for `video/webm` with multiple tracks reliably — Safari users see a "Mixed take unavailable, split tracks only" notice.
-- Per-track recorders share the device permission grant; we open each device exactly once and clone its track for both the mix and its split recorder.
+- Tabs: soft pill row, hairline divider under, mono-ish small caps for persona name, owner avatar inline. Active tab: ink fill, white text. Live recording: 4px live red dot pulses on the tab.
+- Persona body keeps the existing serif "Capture a take" title; add a single-line sub-meta: "Owned by Sarah · 3 members · Workshop only". Big record button stays bottom-right; collaborator rows are a thin list with avatar, name, source chips, status. No new color tokens — uses existing surface/ink palette.
+- Empty Solo state mirrors today. New "+ Persona" CTA inline in tab strip.
 
-## File changes
+## Out of scope
 
-- `src/components/workshop-recorder.tsx` — rewrite. Splits into:
-  - `recorder-studio.tsx` (the UI shell + state machine)
-  - `recorder-engine.ts` (canvas compositor, audio graph, MediaRecorder orchestration, upload)
-  - `recorder-source-row.tsx` (single device row with VU meter)
-- `src/components/workshop-tools-panel.tsx` — already wires `media` into the recorder; no behaviour change, just renders the new component.
-- `supabase/migrations/<ts>_drive_take_id.sql` — `ALTER TABLE public.instant_drive_files ADD COLUMN take_id uuid;` and same for `workshop_drive_files`. Index on `(room_id, take_id)` / `(workshop_id, take_id)`.
-- `src/components/workshop-drive-panel.tsx` — minor: when files share a `take_id`, render them as a collapsible group titled "Take · {time}".
-
-## Out of scope for this pass
-
-- Per-participant **opt-out** that actually drops their tracks from the recording (today they just mute themselves — same as current behaviour).
-- Cloud-side transcoding to MP4 (we hand back `.webm`; Drive already accepts it).
-- Web MIDI `.mid` capture (explicitly skipped per your answer).
-- Mobile Safari recording (unsupported by the browser).
-
-## Verify
-
-1. Open an instant Workshop room. Open Recorder.
-2. Tick "My room camera", default mic, "Screen", and one remote peer. Pick Spotlight layout, spotlight = Screen.
-3. Confirm VU meters move when you talk and when the peer talks.
-4. Plug in (or fake with a virtual cable) a second audio input — it appears in the list, tick it, see its meter.
-5. Record 20s. Stop. Confirm Drive shows one grouped take with: mixed file (plays back as spotlight + thumb composition, all audio audible), plus one raw file per ticked source.
+- Cross-room persona presets (per-room only, as agreed).
+- Persona templates saved to profile.
+- Editing a track after upload.
+- Conflict resolution if two members both have "owner_start" rights (only the owner can fire the synced start; members in `self` mode just record locally).
