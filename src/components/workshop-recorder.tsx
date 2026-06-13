@@ -430,8 +430,15 @@ export function WorkshopRecorder({
         {/* Header */}
         <div className="flex items-start justify-between gap-3 border-b border-border/60 px-4 py-3">
           <div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Recorder · Studio</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">
+              {persona ? `Persona · ${persona.name}` : "Recorder · Studio"}
+            </div>
             <div className="mt-0.5 font-display text-lg leading-tight text-ink">Capture a take</div>
+            {persona && (
+              <div className="mt-0.5 text-[11px] text-ink-muted">
+                {isPersonaOwner ? "You're the producer" : "Producer-led"} · {persona.controlMode === "owner_start" ? "Owner-start" : "Free start"}
+              </div>
+            )}
           </div>
           {recording ? (
             <div className="flex items-center gap-2 rounded-full bg-destructive/10 px-3 py-1.5">
