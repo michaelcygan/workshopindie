@@ -61,8 +61,7 @@ export const createPersona = createServerFn({ method: "POST" })
     };
     if (data.scope.kind === "instant") payload.room_id = data.scope.roomId;
     else payload.workshop_id = data.scope.workshopId;
-    const { data: row, error } = await supabase
-      .from("recorder_personas")
+    const { data: row, error } = await (supabase.from("recorder_personas") as any)
       .insert(payload)
       .select("id")
       .single();
