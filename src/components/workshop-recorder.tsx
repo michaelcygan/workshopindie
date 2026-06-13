@@ -530,9 +530,9 @@ export function WorkshopRecorder({
                   <Square className="h-3.5 w-3.5" /> Stop
                 </Button>
               ) : (
-                <Button onClick={start} disabled={!canRecord || uploading || !!activeRecording} className="rounded-full gap-2">
+                <Button onClick={() => start()} disabled={!canRecord || uploading || (!persona && !!activeRecording)} className="rounded-full gap-2">
                   <span className="h-2 w-2 rounded-full bg-destructive" />
-                  Start recording
+                  {persona && isPersonaOwner && persona.controlMode === "owner_start" ? "Start everyone" : persona ? "Start my take" : "Start recording"}
                 </Button>
               )}
             </div>
