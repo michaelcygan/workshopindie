@@ -854,6 +854,7 @@ export type Database = {
           note: string | null
           room_id: string
           storage_path: string
+          take_id: string | null
           updated_at: string
           uploader_id: string | null
           width: number | null
@@ -869,6 +870,7 @@ export type Database = {
           note?: string | null
           room_id: string
           storage_path: string
+          take_id?: string | null
           updated_at?: string
           uploader_id?: string | null
           width?: number | null
@@ -884,6 +886,7 @@ export type Database = {
           note?: string | null
           room_id?: string
           storage_path?: string
+          take_id?: string | null
           updated_at?: string
           uploader_id?: string | null
           width?: number | null
@@ -2763,6 +2766,7 @@ export type Database = {
           mime_type: string | null
           note: string | null
           storage_path: string
+          take_id: string | null
           updated_at: string
           uploader_id: string | null
           width: number | null
@@ -2778,6 +2782,7 @@ export type Database = {
           mime_type?: string | null
           note?: string | null
           storage_path: string
+          take_id?: string | null
           updated_at?: string
           uploader_id?: string | null
           width?: number | null
@@ -2793,6 +2798,7 @@ export type Database = {
           mime_type?: string | null
           note?: string | null
           storage_path?: string
+          take_id?: string | null
           updated_at?: string
           uploader_id?: string | null
           width?: number | null
