@@ -359,7 +359,13 @@ export function WorkshopRecorder({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Stop failed");
     }
-    if (isInstant && user) broadcast({ type: "stop" });
+    if (isInstant && user) {
+      if (persona && isPersonaOwner) broadcast({ type: "persona.stop" });
+      else if (!persona) broadcast({ type: "stop" });
+    }
+    if (persona && user) {
+      void setMemberState({ data: { personaId: persona.id, state: "ready" } }).catch(() => {});
+    }
 
     if (files.length === 0) { setUploading(false); return; }
 
@@ -376,7 +382,7 @@ export function WorkshopRecorder({
         try {
           const { error: upErr } = await supabase.storage.from("instant-drive").upload(path, f.blob, { contentType: f.mime, upsert: false });
           if (upErr) throw upErr;
-          const { error: rowErr } = await (supabase.from("instant_drive_files") as any).insert({
+          const { data: row, error: rowErr } = await (supabase.from("instant_drive_files") as any).insert({
             room_id: roomId,
             uploader_id: user.id,
             storage_path: path,
@@ -386,8 +392,15 @@ export function WorkshopRecorder({
             duration_ms: f.durationMs,
             note: f.sourceId === "mixed" ? "Mixed take" : `Raw: ${f.label}`,
             take_id: takeId,
-          });
+            persona_id: persona?.id ?? null,
+          }).select("id").single();
           if (rowErr) throw rowErr;
+          // Collaborators in a shared persona: mirror this file into the owner's drive.
+          if (persona && !isPersonaOwner) {
+            mirrorFn({ data: { personaId: persona.id, sourceFileId: row.id, takeId } }).catch((err) => {
+              console.warn("mirror to owner failed", err);
+            });
+          }
           const { data: signed } = await supabase.storage.from("instant-drive").createSignedUrl(path, 60 * 60);
           out.push({ name: filename, url: signed?.signedUrl ?? URL.createObjectURL(f.blob), mime: f.mime, bytes: f.blob.size, isMixed: f.sourceId === "mixed" });
         } catch (e) {
