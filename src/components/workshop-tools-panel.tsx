@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
-import { WorkshopRecorder } from "@/components/workshop-recorder";
+import { PersonaRecorderTabs } from "@/components/recorder/persona-tabs";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import RoomBoard from "@/components/room-board";
 
