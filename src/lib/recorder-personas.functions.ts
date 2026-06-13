@@ -202,7 +202,7 @@ export const mirrorPersonaTakeFile = createServerFn({ method: "POST" })
     };
     if (persona.room_id) mirror.room_id = persona.room_id;
     else mirror.workshop_id = persona.workshop_id;
-    const { error: iErr } = await supabaseAdmin.from(table).insert(mirror);
+    const { error: iErr } = await (supabaseAdmin.from(table) as any).insert(mirror);
     if (iErr) throw new Error(iErr.message);
     return { ok: true };
   });
