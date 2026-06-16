@@ -147,7 +147,6 @@ function WorkshopPreflight() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <span className="text-ink-muted/40">·</span>
           <h1 className="font-display text-2xl md:text-[28px] leading-none text-ink truncate">
             Workshop
           </h1>
