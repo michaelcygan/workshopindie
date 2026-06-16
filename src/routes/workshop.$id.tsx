@@ -102,6 +102,21 @@ function LiveRoomPage() {
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
 
+  // Stash this room so /workshop can offer a quick "Rejoin" pill for 60s
+  useEffect(() => {
+    if (typeof window === "undefined" || !id || isPromoted) return;
+    return () => {
+      try {
+        window.sessionStorage.setItem(
+          "workshop:last-room",
+          JSON.stringify({ id, title, leftAt: Date.now() }),
+        );
+      } catch {
+        // ignore
+      }
+    };
+  }, [id, title, isPromoted]);
+
   // Live presence count for the "waiting for others" nudge.
   const { data: liveCount = 0 } = useQuery({
     queryKey: ["instant-room-live-count", id],
