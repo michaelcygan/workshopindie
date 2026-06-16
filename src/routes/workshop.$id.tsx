@@ -269,8 +269,14 @@ function LiveRoomPage() {
         </div>
       )}
 
-      {/* Focus message — visible to everyone */}
-      {!isPromoted && <FocusStrip text={room?.focus_message ?? null} />}
+      {/* Focus message — visible to everyone; host sees a ghost CTA when empty */}
+      {!isPromoted && (
+        <FocusStrip
+          text={room?.focus_message ?? null}
+          isHost={isHost}
+          onHostSet={() => window.dispatchEvent(new CustomEvent("workshop:open-focus", { detail: { roomId: id } }))}
+        />
+      )}
 
       {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
       {user && <HostRoomEvents roomId={id} isHost={isHost} />}
