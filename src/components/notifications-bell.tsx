@@ -112,7 +112,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const mediumLabel = (n.payload?.medium as string) || null;
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
-        subtitle: (n.payload?.title as string) || "Drop into their Workshop while there's a seat.",
+        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Workshop while there's a seat.",
         href: roomId ? `/workshop/${roomId}` : "/workshop",
       };
     }
