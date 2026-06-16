@@ -183,10 +183,29 @@ export function LiveTopicsList({
       busyAny={busyKey === "any"}
       disabled={disabled}
       liveByMedium={liveByMedium}
+      loungeLive={loungeLive}
       busyKey={busyKey}
       onPickAny={() => onPick(null)}
       onPickMedium={(m) => onPick(m)}
     />
+  );
+
+  // Pinned "Lounge" row — rendered as the first item in the topic list.
+  const loungeRow = (
+    <motion.li key="lounge" layout transition={{ duration: 0.2 }}>
+      <TopicRow
+        id="lounge"
+        label="Lounge"
+        eyebrow="General"
+        accent
+        description="Mixed-medium drop-in. Whoever shows up."
+        live={loungeLive}
+        participants={loungeParticipants}
+        busy={busyKey === "any"}
+        disabled={disabled}
+        onClick={() => onPick(null)}
+      />
+    </motion.li>
   );
 
   // ── Split layout (desktop) ──────────────────────────────────────────────
