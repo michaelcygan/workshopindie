@@ -192,7 +192,8 @@ function WorkshopPreflight() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
+          {/* Live count chip — mobile only; desktop shows the count inside the topic column */}
+          <div className="md:hidden inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <span className="relative inline-flex h-2 w-2">
               {liveCount > 0 && (
                 <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
@@ -219,7 +220,7 @@ function WorkshopPreflight() {
             <span>live</span>
           </div>
 
-          <span className="h-4 w-px bg-border/70" aria-hidden />
+          <span className="md:hidden h-4 w-px bg-border/70" aria-hidden />
 
           <div className="inline-flex items-center gap-2 text-xs">
             {devices === null ? (
@@ -250,9 +251,9 @@ function WorkshopPreflight() {
         </div>
       </header>
 
-      {/* One-line subtitle */}
+      {/* One-line subtitle — adapts to live state */}
       <p className="mt-2 text-sm text-ink-muted">
-        Drop into a live room, or open the first one. Voice or video · 5 seats per room.
+        {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
       </p>
 
       {/* Live decision surface */}
@@ -276,7 +277,25 @@ function WorkshopPreflight() {
       </div>
 
       {devices && !canDrop && (
-        <p className="mt-2 text-xs text-destructive">Connect a mic or camera to continue.</p>
+        <div className="mt-3 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center gap-3">
+          <div className="hidden sm:grid h-9 w-9 place-items-center rounded-full bg-muted/40 text-ink shrink-0">
+            <Mic className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-ink">No mic or camera detected.</div>
+            <p className="text-xs text-ink-muted">
+              Workshops are voice or video — connect a device, or open this page on your phone.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full shrink-0"
+            onClick={async () => { await preGrantMedia(); }}
+          >
+            Test setup
+          </Button>
+        </div>
       )}
 
       {/* Host strip — hairline, filled CTA */}
@@ -303,7 +322,11 @@ function WorkshopPreflight() {
       </div>
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
-        Everything in a live room is ephemeral until someone creates a Collab from it.
+        Everything in a live room is ephemeral until someone turns it into a{" "}
+        <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
+          Collab
+        </Link>
+        .
       </p>
 
       <LiveWorkshopsRail
@@ -317,9 +340,10 @@ function WorkshopPreflight() {
 
       <HostPrivacyDialog
         open={privacyOpen}
-        onOpenChange={setPrivacyOpen}
+        onOpenChange={handlePrivacyOpenChange}
         defaultMedium={hostMedium}
         defaultTitle={pendingTitle}
+        inspiredBy={inspiredBy}
         busy={busy === "host"}
         onConfirm={confirmHost}
       />
