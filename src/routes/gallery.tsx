@@ -290,12 +290,15 @@ function GalleryPage() {
   };
 
   return (
-    <main>
+    <main className="pb-24 md:pb-0">
+      {/* Logged-out hero with live counters */}
+      {!user && <GalleryLoggedOutHero />}
+
       {/* Slim header */}
       <section className="border-b border-border">
         <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 px-4 py-8 md:px-6 md:py-10">
           <div>
-            <h1 className="font-display text-3xl text-ink md:text-4xl">Gallery</h1>
+            <h1 className="font-display text-3xl text-ink md:text-4xl">Work</h1>
             <p className="mt-1 text-sm text-ink-muted">Everything people have shipped — film, music, writing, build, visuals.</p>
           </div>
           <Link to="/works/new" className="shrink-0">
@@ -306,6 +309,13 @@ function GalleryPage() {
           </Link>
         </div>
       </section>
+
+      {/* Live "shipping right now" rail */}
+      <FreshWorksStrip />
+
+      {/* Community-boosted rail */}
+      <BoostedWorksStrip />
+
 
       {/* Sticky toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
