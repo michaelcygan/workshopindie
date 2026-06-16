@@ -177,67 +177,31 @@ function WorkshopPreflight() {
         )}
       </motion.div>
 
-      <div className="mt-10 grid gap-4 md:grid-cols-2">
-        {/* Drop in card */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-          className="rounded-3xl border border-border bg-surface p-6 shadow-soft flex flex-col">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-muted">
-            <Radio className="h-3.5 w-3.5" /> Drop in
-          </div>
-          <h2 className="mt-2 font-display text-2xl text-ink">Take a seat in a live one</h2>
-          <p className="mt-2 text-sm text-ink-soft">Matchmaker drops you into an open Workshop with a seat — and prefers rooms hosted by people you follow. Leaderless, focused.</p>
-          <div className="mt-4">
-            <LoungeForkDropdown
-              selectedMedium={selectedDropMedium}
-              onSelectMedium={setSelectedDropMedium}
-              onJoinNow={handleJoinNow}
-              onLiveCountChange={setLiveCount}
-              onSelectedMediumLiveChange={setSelectedMediumLive}
-            />
-          </div>
-          <div className="mt-auto pt-4">
-            <Button onClick={handleDrop} disabled={!canDrop || busy !== null} className="w-full rounded-2xl h-12 gap-2">
-              {busy === "drop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Radio className="h-4 w-4" />}
-              {busy === "drop"
-                ? "Finding you a seat…"
-                : selectedDropMedium
-                  ? (selectedMediumLive > 0
-                      ? `Drop into ${dropLabel} (${selectedMediumLive} live)`
-                      : `Open the first ${dropLabel} room`)
-                  : (liveCount > 0
-                      ? `Drop in (${liveCount} live)`
-                      : "Open the first room")}
-            </Button>
-          </div>
-        </motion.div>
+      <div className="mt-8 space-y-4">
+        <LiveTopicsList
+          busyKey={busy === "drop" ? busyMedium : null}
+          onPick={handlePick}
+          onLiveCountChange={setLiveCount}
+          disabled={!canDrop || busy !== null}
+        />
 
-        {/* Host card */}
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          className="rounded-3xl border border-border bg-surface p-6 shadow-soft flex flex-col">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-wide text-ink-muted">
-            <Crown className="h-3.5 w-3.5" /> Host
+        <div className="rounded-3xl border border-dashed border-border bg-surface/50 p-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 text-sm font-medium text-ink">
+              <Crown className="h-4 w-4" /> Want host controls?
+            </div>
+            <p className="mt-0.5 text-xs text-ink-muted">Name the room, pick visibility, share the link.</p>
           </div>
-          <h2 className="mt-2 font-display text-2xl text-ink">Spin up your own room</h2>
-          <p className="mt-2 text-sm text-ink-soft">You hold host controls. Share the link, invite collaborators, and turn it into a Collab when there's something worth shipping.</p>
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            <button onClick={() => setHostMedium(null)}
-              className={"rounded-full px-3 py-1 text-xs transition " + (hostMedium === null ? "bg-ink text-background" : "border border-border text-ink-soft hover:text-ink")}>
-              Open topic
-            </button>
-            {CATEGORIES.map((c) => (
-              <button key={c.id} onClick={() => setHostMedium(c.id)}
-                className={"rounded-full px-3 py-1 text-xs transition " + (hostMedium === c.id ? "bg-ink text-background" : "border border-border text-ink-soft hover:text-ink")}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-auto pt-4">
-            <Button onClick={handleHost} disabled={!canDrop || busy !== null} variant="outline" className="w-full rounded-2xl h-12 gap-2 border-ink/30 hover:border-ink/60">
-              {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-              {busy === "host" ? "Opening your room…" : hostLabel ? `Open my ${hostLabel} room` : "Open my room"}
-            </Button>
-          </div>
-        </motion.div>
+          <Button
+            onClick={handleHost}
+            disabled={!canDrop || busy !== null}
+            variant="outline"
+            className="shrink-0 rounded-full h-10 gap-2 border-ink/30 hover:border-ink/60"
+          >
+            {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+            {busy === "host" ? "Opening…" : hostLabel ? `Spin up ${hostLabel}` : "Spin up your room"}
+          </Button>
+        </div>
       </div>
 
       <p className="mt-4 text-center text-xs text-ink-muted">
@@ -246,12 +210,13 @@ function WorkshopPreflight() {
 
       <LiveWorkshopsRail
         canJoin={canDrop && busy === null}
-        medium={selectedDropMedium}
+        medium={null}
         onTakeSeat={async (roomId) => {
           const mode = await preGrantMedia();
           router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
         }}
       />
+
 
       <HostPrivacyDialog
         open={privacyOpen}
