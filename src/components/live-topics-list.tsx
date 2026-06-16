@@ -14,6 +14,8 @@ type Props = {
   busyKey?: string | null;
   onPick: (medium: Category | null) => void;
   onLiveCountChange?: (n: number) => void;
+  /** Emits a fresh per-medium live count map whenever it changes. */
+  onLiveByMediumChange?: (m: Map<Category, number>) => void;
   disabled?: boolean;
   /** "stack" = single column (mobile default), "split" = featured Any + topic grid (desktop). */
   layout?: "stack" | "split";
@@ -27,6 +29,7 @@ export function LiveTopicsList({
   busyKey,
   onPick,
   onLiveCountChange,
+  onLiveByMediumChange,
   disabled,
   layout = "stack",
   featuredFooter,
@@ -56,6 +59,11 @@ export function LiveTopicsList({
     }
     return m;
   }, [rooms]);
+
+  useEffect(() => {
+    onLiveByMediumChange?.(liveByMedium);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveByMedium]);
 
   const participantsByMedium = useMemo(() => {
     const m = new Map<Category, ActiveInstantRoom["participants"]>();
@@ -207,6 +215,40 @@ export function LiveTopicsList({
               )}
             </div>
           </button>
+          {/* Inline medium quick-picker — "or jump into one" */}
+          <div className="px-5 md:px-6 pb-4 -mt-1">
+            <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1.5">
+              or jump into
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {SUB_MEDIUMS.map((m) => {
+                const live = liveByMedium.get(m.id) ?? 0;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => onPick(m.id)}
+                    disabled={disabled || busyKey === m.id}
+                    className={cn(
+                      "shrink-0 rounded-full border border-border/70 bg-surface px-2.5 py-1 text-[11px] transition",
+                      "hover:border-ink/40 hover:bg-muted/40 hover:text-ink",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                      "disabled:opacity-60 inline-flex items-center gap-1",
+                      live > 0 ? "text-ink border-primary/40" : "text-ink-soft",
+                    )}
+                  >
+                    {live > 0 && (
+                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    )}
+                    {m.label}
+                    {live > 0 && (
+                      <span className="tabular-nums text-ink-muted">·{live}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
           {featuredFooter && (
             <div className="px-5 md:px-6 pb-5">{featuredFooter}</div>
           )}
@@ -353,6 +395,9 @@ export function LiveTopicsList({
               ? `See all topics · ${hiddenLive} more live`
               : "See all topics"}
         </button>
+      )}
+      {featuredFooter && (
+        <div className="border-t border-border/60 px-4 py-3">{featuredFooter}</div>
       )}
     </div>
   );

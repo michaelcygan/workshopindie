@@ -38,6 +38,7 @@ function WorkshopPreflight() {
   const [busyMedium, setBusyMedium] = useState<string | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
+  const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
   const [pendingTitle, setPendingTitle] = useState<string>("");
   const [privacyOpen, setPrivacyOpen] = useState(false);
@@ -238,10 +239,13 @@ function WorkshopPreflight() {
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
           onLiveCountChange={setLiveCount}
+          onLiveByMediumChange={setLiveByMedium}
           disabled={busy !== null}
           featuredFooter={
             <RoomPromptMarquee
               onUsePrompt={handleUsePrompt}
+              onJoinLive={(m) => handlePick(m)}
+              liveByMedium={liveByMedium}
               disabled={busy !== null || !canDrop}
             />
           }
