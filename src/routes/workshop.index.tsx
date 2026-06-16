@@ -104,7 +104,45 @@ function WorkshopPreflight() {
     };
   }, []);
 
+  // Tick once a second only while the rejoin pill is showing — drives the countdown ring.
+  useEffect(() => {
+    if (!rejoin) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [rejoin]);
+
+  // Idle nudge: if all mediums are empty for >20s, surface "be first" hint.
+  useEffect(() => {
+    setIdleNudge(false);
+    if (liveCount > 0) return;
+    const t = setTimeout(() => setIdleNudge(true), 20_000);
+    return () => clearTimeout(t);
+  }, [liveCount]);
+
+  // 24h recap chip — counts distinct rooms with activity in the last day.
+  const { data: recap24h = 0 } = useQuery({
+    queryKey: ["workshop-recap-24h"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data } = await supabase
+        .from("instant_activity")
+        .select("room_id")
+        .gt("created_at", cutoff);
+      const set = new Set((data ?? []).map((r: { room_id: string }) => r.room_id));
+      return set.size;
+    },
+  });
+
+  const favoriteMedium: Category | null = useMemo(() => {
+    let best: Category | null = null;
+    let bestN = -1;
+    liveByMedium.forEach((n, m) => { if (n > bestN) { bestN = n; best = m; } });
+    return best ?? "writing";
+  }, [liveByMedium]);
+
   const canDrop = !!devices && (devices.mic || devices.cam);
+
 
   const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
     if (!devices) return null;
