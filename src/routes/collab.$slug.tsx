@@ -405,3 +405,33 @@ function CollabDetail() {
     </main>
   );
 }
+
+function CollabSocialProof({ postId, authorId }: { postId: string; authorId: string }) {
+  const { data: vouchersByPost } = useVouchersForPosts([postId]);
+  const vouchers = vouchersByPost.get(postId) ?? [];
+  const { data: post } = useQuery({
+    queryKey: ["collab-detail-counts", postId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("vouch_count,boost_count")
+        .eq("id", postId)
+        .maybeSingle();
+      return data as { vouch_count: number | null; boost_count: number | null } | null;
+    },
+    staleTime: 15_000,
+  });
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3">
+      <div className="flex-1 min-w-[200px]">
+        <VouchRow
+          postId={postId}
+          authorId={authorId}
+          vouchCount={post?.vouch_count ?? vouchers.length}
+          vouchers={vouchers}
+        />
+      </div>
+      <BoostButton postId={postId} authorId={authorId} size="md" />
+    </div>
+  );
+}
