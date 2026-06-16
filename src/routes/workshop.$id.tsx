@@ -111,11 +111,24 @@ function LiveRoomPage() {
   const isHost = !!user && !!room && room.host_user_id === user.id;
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
+  const isEnded = !!room && room.status !== "active";
 
-  // Stash this room so /workshop can offer a quick "Rejoin" pill for 60s
+  // If the room is ended/archived and you're not the host, bounce home.
+  // Host stays so they can wrap up gracefully.
+  useEffect(() => {
+    if (!room || isPromoted || isHost) return;
+    if (isEnded) {
+      toast("This Workshop ended.");
+      router.navigate({ to: "/workshop" });
+    }
+  }, [room, isEnded, isHost, isPromoted, router]);
+
+  // Stash this room so /workshop can offer a quick "Rejoin" pill for 60s.
+  // Skip when ended/locked — no point offering a rejoin into a dead room.
   useEffect(() => {
     if (typeof window === "undefined" || !id || isPromoted) return;
     return () => {
+      if (isEnded || room?.locked) return;
       try {
         window.sessionStorage.setItem(
           "workshop:last-room",
@@ -125,7 +138,7 @@ function LiveRoomPage() {
         // ignore
       }
     };
-  }, [id, title, isPromoted]);
+  }, [id, title, isPromoted, isEnded, room?.locked]);
 
   // Live presence count for the "waiting for others" nudge.
   const { data: liveCount = 0 } = useQuery({
