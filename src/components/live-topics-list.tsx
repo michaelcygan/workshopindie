@@ -179,6 +179,7 @@ export function LiveTopicsList({
                     <TopicRow
                       label={c.label}
                       live={live}
+                      participants={participantsByMedium.get(c.id) ?? []}
                       busy={busyKey === c.id}
                       disabled={disabled}
                       dense
