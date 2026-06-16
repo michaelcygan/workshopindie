@@ -18,6 +18,7 @@ import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
 import { HostedByLine } from "@/components/hosted-by-line";
 import { HostMenu } from "@/components/host-menu";
+import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
