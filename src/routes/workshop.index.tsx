@@ -32,13 +32,11 @@ function WorkshopPreflight() {
   const dropMedium = useServerFn(joinMediumLounge);
   const host = useServerFn(hostInstantWorkshop);
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
+  const [busyMedium, setBusyMedium] = useState<string | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
-  const [selectedMediumLive, setSelectedMediumLive] = useState(0);
-  const [selectedDropMedium, setSelectedDropMedium] = useState<Category | null>(null);
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
-  const dropLabel = selectedDropMedium ? CATEGORIES.find((c) => c.id === selectedDropMedium)?.label ?? null : null;
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
   useEffect(() => {
