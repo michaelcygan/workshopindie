@@ -568,12 +568,14 @@ export function ChannelView({
             <div className="h-[60vh] p-3 md:p-4">
               {fsView === "gallery" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
-                  Gallery open in fullscreen…
+                  Work open in fullscreen…
                 </div>
               ) : (
                 <RoomGallery
                   meUserId={user.id}
                   members={galleryMembers}
+                  roomId={roomId}
+                  hostUserId={hostUserId ?? null}
                   onOpenWork={openWork}
                   className="h-full"
                 />
