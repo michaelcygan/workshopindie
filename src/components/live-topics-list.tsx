@@ -49,6 +49,20 @@ export function LiveTopicsList({
     return m;
   }, [rooms]);
 
+  const participantsByMedium = useMemo(() => {
+    const m = new Map<Category, ActiveInstantRoom["participants"]>();
+    for (const r of rooms) {
+      if (!r.medium) continue;
+      const list = m.get(r.medium as Category) ?? [];
+      for (const p of r.participants) {
+        if (list.length >= 3) break;
+        if (!list.find((x) => x.user_id === p.user_id)) list.push(p);
+      }
+      m.set(r.medium as Category, list);
+    }
+    return m;
+  }, [rooms]);
+
   const anyCount = useMemo(
     () => rooms.filter((r) => !r.medium).reduce((a, r) => a + r.live_count, 0),
     [rooms],
