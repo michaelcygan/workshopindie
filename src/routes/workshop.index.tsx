@@ -292,6 +292,7 @@ function WorkshopPreflight() {
         open={privacyOpen}
         onOpenChange={setPrivacyOpen}
         defaultMedium={hostMedium}
+        defaultTitle={pendingTitle}
         busy={busy === "host"}
         onConfirm={confirmHost}
       />
