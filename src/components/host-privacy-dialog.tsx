@@ -134,6 +134,22 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
               </p>
             )}
           </div>
+
+          <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-ink-muted">
+              <Crown className="h-3 w-3 text-violet" /> You're the host
+            </div>
+            <ul className="mt-1.5 space-y-0.5 text-xs text-ink-soft leading-snug">
+              <li>· Set a focus message everyone sees at the top</li>
+              <li>· Ask all guests to mute (they can unmute themselves)</li>
+              <li>· Remove someone if a session goes sideways</li>
+              <li>· Lock the room — no new seats fill</li>
+              <li>· End the Workshop for everyone</li>
+            </ul>
+            <p className="mt-1.5 text-[11px] text-ink-muted">
+              Anything written, drawn, or pinned stays ephemeral until someone turns it into a Collab.
+            </p>
+          </div>
         </div>
 
         <DialogFooter>
