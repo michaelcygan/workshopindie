@@ -3852,14 +3852,28 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
-      join_lounge: { Args: { _user_id: string }; Returns: string }
-      join_medium_lounge: {
-        Args: {
-          _medium: Database["public"]["Enums"]["category"]
-          _user_id: string
-        }
-        Returns: string
-      }
+      join_lounge:
+        | { Args: { _user_id: string }; Returns: string }
+        | {
+            Args: { _exclude_room_ids?: string[]; _user_id: string }
+            Returns: string
+          }
+      join_medium_lounge:
+        | {
+            Args: {
+              _medium: Database["public"]["Enums"]["category"]
+              _user_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              _exclude_room_ids?: string[]
+              _medium: Database["public"]["Enums"]["category"]
+              _user_id: string
+            }
+            Returns: string
+          }
       list_active_instant_rooms: {
         Args: { _viewer: string }
         Returns: {
