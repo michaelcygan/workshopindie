@@ -320,26 +320,88 @@ function WorkshopPreflight() {
       </header>
 
       {/* One-line subtitle — adapts to live state */}
-      <p className="mt-2 text-sm text-ink-muted">
-        {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
-      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="text-sm text-ink-muted">
+          {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
+        </p>
+        {recap24h > 0 && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+            <Activity className="h-2.5 w-2.5" />
+            {recap24h} in the last 24h
+          </span>
+        )}
+      </div>
       {firstVisit && liveCount === 0 && (
         <p className="mt-1 text-xs text-ink/70 italic">You're the spark tonight.</p>
       )}
 
-      {rejoin && (
-        <div className="mt-3 flex">
-          <Link
-            to="/workshop/$id"
-            params={{ id: rejoin.id }}
-            search={{ mode: "video" }}
-            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs text-ink hover:bg-muted/40 transition"
+      <AnimatePresence>
+        {rejoin && (() => {
+          const elapsed = Math.min(60_000, now - rejoin.leftAt);
+          const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
+          const pct = Math.min(100, (elapsed / 60_000) * 100);
+          return (
+            <motion.div
+              key="rejoin"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="mt-3 flex"
+            >
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface pl-1 pr-1 py-1 text-xs text-ink shadow-soft">
+                <Link
+                  to="/workshop/$id"
+                  params={{ id: rejoin.id }}
+                  search={{ mode: "video" }}
+                  className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"
+                >
+                  <span
+                    className="grid h-5 w-5 place-items-center rounded-full"
+                    style={{ background: `conic-gradient(hsl(var(--primary)) ${pct}%, hsl(var(--muted)) 0)` }}
+                  >
+                    <span className="h-3 w-3 rounded-full bg-surface grid place-items-center">
+                      <span className="gradient-motion h-1.5 w-1.5 rounded-full" />
+                    </span>
+                  </span>
+                  <span>Rejoin {rejoin.title || "your room"}</span>
+                  <span className="tabular-nums text-ink-muted/80">{remaining}s</span>
+                </Link>
+                <button
+                  type="button"
+                  aria-label="Dismiss rejoin"
+                  onClick={() => {
+                    setRejoin(null);
+                    try { window.sessionStorage.removeItem("workshop:last-room"); } catch { /* ignore */ }
+                  }}
+                  className="grid h-5 w-5 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            </motion.div>
+          );
+        })()}
+      </AnimatePresence>
+
+      {idleNudge && liveCount === 0 && devices && canDrop && (
+        <div className="mt-3 flex items-center gap-2 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-xs text-ink-soft">
+          <Sparkles className="h-3 w-3 text-primary shrink-0" />
+          <span>Be first — spin up a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} room.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setHostMedium(favoriteMedium);
+              setPendingTitle("");
+              setInspiredBy(null);
+              setPrivacyOpen(true);
+            }}
+            className="ml-auto font-medium text-primary hover:underline"
           >
-            <span className="gradient-motion h-2 w-2 rounded-full" />
-            Rejoin {rejoin.title || "your room"}
-          </Link>
+            Open
+          </button>
         </div>
       )}
+
 
       {/* Live decision surface */}
       <div className="mt-4">
