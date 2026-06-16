@@ -349,13 +349,27 @@ function TopicRow({
         {sublabel && <div className="mt-0.5 text-xs text-ink-muted">{sublabel}</div>}
       </div>
 
+      {isLive && stack.length > 0 && (
+        <div className="hidden sm:flex -space-x-1.5 shrink-0">
+          {stack.map((p) => {
+            const name = p.display_name || p.username || "Anon";
+            return (
+              <Avatar key={p.user_id} className="h-5 w-5 ring-2 ring-surface">
+                <AvatarImage src={p.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
+              </Avatar>
+            );
+          })}
+        </div>
+      )}
+
       <span
         className={cn(
-          "shrink-0 rounded-full text-[11px] font-medium transition tabular-nums",
+          "shrink-0 rounded-full text-[11px] font-medium transition tabular-nums inline-flex items-center gap-1",
           dense ? "px-2.5 py-1" : "px-3 py-1.5 text-xs",
           isLive
             ? "bg-ink text-background group-hover:opacity-90"
-            : "border border-dashed border-ink/20 text-ink-muted group-hover:border-ink/50 group-hover:text-ink",
+            : "text-ink-muted group-hover:text-ink",
         )}
       >
         {busy ? (
@@ -363,7 +377,10 @@ function TopicRow({
         ) : isLive ? (
           forceLiveCTA ?? "Take a seat"
         ) : (
-          "Open first"
+          <>
+            <Plus className="h-3 w-3" />
+            Start
+          </>
         )}
       </span>
     </button>
