@@ -357,7 +357,7 @@ function WorkshopPreflight() {
                 >
                   <span
                     className="grid h-5 w-5 place-items-center rounded-full"
-                    style={{ background: `conic-gradient(hsl(var(--primary)) ${pct}%, hsl(var(--muted)) 0)` }}
+                    style={{ background: `conic-gradient(var(--primary) ${pct}%, var(--muted) 0)` }}
                   >
                     <span className="h-3 w-3 rounded-full bg-surface grid place-items-center">
                       <span className="gradient-motion h-1.5 w-1.5 rounded-full" />
