@@ -2,8 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Crown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 
 export function HostedByLine({ hostUserId }: { hostUserId: string | null }) {
+  const { user } = useAuth();
   const { data } = useQuery({
     queryKey: ["host-profile", hostUserId],
     enabled: !!hostUserId,
@@ -18,6 +20,10 @@ export function HostedByLine({ hostUserId }: { hostUserId: string | null }) {
   });
 
   if (!hostUserId) return null;
+
+  // Self case: the "Hosting" crown pill already lives in the header — skip the line.
+  if (user && user.id === hostUserId) return null;
+
   const name = data?.display_name || data?.username || "Host";
   const username = data?.username;
 
