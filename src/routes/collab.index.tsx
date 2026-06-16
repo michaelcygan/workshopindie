@@ -44,7 +44,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   let q = supabase
     .from("collab_posts")
     .select(
-      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
+      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,vouch_count,boost_count," +
         "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
@@ -68,14 +68,16 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[])
     .filter((r) => !blocked.has(r.user_id)) as CollabCardData[];
 
-  // Light blended sort: newest first, gentle boost for posts with more roles.
+  // Light blended sort: newest first, gentle boost for posts with more roles + vouches.
   return rows
     .slice()
     .sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
-      const ra = (a.roles?.length ?? 0) * 1000 * 60 * 60 * 6; // each role ~ 6h "freshness"
-      const rb = (b.roles?.length ?? 0) * 1000 * 60 * 60 * 6;
+      const ra = (a.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+        + (a.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
+      const rb = (b.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+        + (b.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
       return tb + rb - (ta + ra);
     });
 }
