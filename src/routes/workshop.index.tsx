@@ -283,6 +283,23 @@ function WorkshopPreflight() {
       <p className="mt-2 text-sm text-ink-muted">
         {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
       </p>
+      {firstVisit && liveCount === 0 && (
+        <p className="mt-1 text-xs text-ink/70 italic">You're the spark tonight.</p>
+      )}
+
+      {rejoin && (
+        <div className="mt-3 flex">
+          <Link
+            to="/workshop/$id"
+            params={{ id: rejoin.id }}
+            search={{ mode: "video" }}
+            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs text-ink hover:bg-muted/40 transition"
+          >
+            <span className="gradient-motion h-2 w-2 rounded-full" />
+            Rejoin {rejoin.title || "your room"}
+          </Link>
+        </div>
+      )}
 
       {/* Live decision surface */}
       <div className="mt-4">
