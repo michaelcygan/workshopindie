@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Coffee, Crown, Rocket, Sparkles, ArrowRight, X, Plus } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ArrowLeft, Coffee, Crown, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -164,24 +163,13 @@ function LiveRoomPage() {
         </div>
 
         {!isPromoted && user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="ml-auto rounded-full gap-1.5">
-                <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem onSelect={() => setCollabOpen(true)} className="gap-2">
-                <Rocket className="h-3.5 w-3.5" /> Create a Collab
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => router.navigate({ to: "/workshops/lobby/new" })}
-                className="gap-2"
-              >
-                <Coffee className="h-3.5 w-3.5" /> Start a Draft Workshop
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <Button
+            size="sm"
+            onClick={() => setCollabOpen(true)}
+            className="ml-auto rounded-full gap-1.5"
+          >
+            <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
+          </Button>
         )}
       </div>
 
