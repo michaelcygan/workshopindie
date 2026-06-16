@@ -234,6 +234,16 @@
 }
 @layer utilities {
   .scrollbar-none::-webkit-scrollbar { display: none; }
+  .shadow-halo {
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--color-ink) 6%, transparent),
+      0 24px 60px -40px color-mix(in oklab, var(--color-ink) 22%, transparent),
+      0 4px 16px -8px color-mix(in oklab, var(--color-ink) 8%, transparent);
+  }
+  .shadow-halo-sm {
+    box-shadow:
+      0 8px 24px -16px color-mix(in oklab, var(--color-ink) 30%, transparent);
+  }
 }
 
 /* Ethereal ambient background — drifting amorphous blobs across crossfading palettes */
