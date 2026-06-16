@@ -38,6 +38,56 @@ export const setRoomFocusMessage = createServerFn({ method: "POST" })
     return { ok: true, focus_message: text };
   });
 
+/** Host: rename the room mid-Workshop. */
+export const setRoomTitle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; title: string }) =>
+    z.object({
+      roomId: z.string().uuid(),
+      title: z.string().trim().min(1).max(120),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    await assertHost(data.roomId, context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("instant_rooms")
+      .update({ title: data.title })
+      .eq("id", data.roomId);
+    if (error) throw new Error(error.message);
+    return { ok: true, title: data.title };
+  });
+
+/** Host: hand off the crown to another live participant. */
+export const transferHost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; targetUserId: string }) =>
+    z.object({ roomId: z.string().uuid(), targetUserId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const room = await assertHost(data.roomId, context.userId);
+    if (data.targetUserId === room.host_user_id) {
+      throw new Error("They're already the host");
+    }
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // Sanity: target must currently be in the room.
+    const cutoff = new Date(Date.now() - 60_000).toISOString();
+    const { data: pres } = await supabaseAdmin
+      .from("instant_presence")
+      .select("user_id")
+      .eq("room_id", data.roomId)
+      .eq("user_id", data.targetUserId)
+      .gt("last_seen_at", cutoff)
+      .maybeSingle();
+    if (!pres) throw new Error("That person isn't in the room");
+    const { error } = await supabaseAdmin
+      .from("instant_rooms")
+      .update({ host_user_id: data.targetUserId } as any)
+      .eq("id", data.roomId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
 /** Host: lock/unlock the room. Locked rooms don't fill via matchmaker and reject direct joins. */
 export const setRoomLocked = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -77,7 +127,6 @@ export const removeFromRoom = createServerFn({ method: "POST" })
         removed_by: context.userId,
       } as any);
     if (rmErr) throw new Error(rmErr.message);
-    // Drop their presence row so the room reflects them leaving immediately.
     await supabaseAdmin
       .from("instant_presence")
       .delete()

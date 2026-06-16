@@ -154,7 +154,7 @@ export const getInstantRoom = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id, status")
+      .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
       .eq("id", data.roomId)
       .maybeSingle();
     return { room };
@@ -163,16 +163,23 @@ export const getInstantRoom = createServerFn({ method: "GET" })
 /**
  * Matchmaker: drop the user into the fullest active OPEN-visibility Lounge
  * with a seat, preferring rooms hosted by people the viewer follows. Skips
- * rooms that contain anyone the viewer has blocked (or who blocked them).
- * Spins up a brand-new Lounge if none qualify.
+ * rooms that contain anyone the viewer has blocked (or who blocked them),
+ * plus any rooms passed in `excludeRoomIds` (used by Hop and the client-side
+ * 5-minute "don't ping-pong back" skip list).
  */
 export const joinLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .inputValidator((input: { excludeRoomIds?: string[] } | undefined) =>
+    z.object({ excludeRoomIds: z.array(z.string().uuid()).max(20).optional() }).parse(input ?? {}),
+  )
+  .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { data, error } = await supabaseAdmin.rpc("join_lounge", { _user_id: userId });
+    const { data: roomId, error } = await supabaseAdmin.rpc("join_lounge", {
+      _user_id: userId,
+      _exclude_room_ids: data.excludeRoomIds ?? [],
+    } as any);
     if (error) throw new Error(error.message);
-    return { roomId: data as string };
+    return { roomId: roomId as string };
   });
 
 /**
@@ -261,15 +268,19 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
 export const joinMediumLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { medium: (typeof MEDIUMS)[number] }) =>
-    z.object({ medium: mediumSchema }).parse(input),
+  .inputValidator((input: { medium: (typeof MEDIUMS)[number]; excludeRoomIds?: string[] }) =>
+    z.object({
+      medium: mediumSchema,
+      excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
+    }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: roomId, error } = await supabaseAdmin.rpc("join_medium_lounge", {
       _user_id: userId,
       _medium: data.medium,
-    });
+      _exclude_room_ids: data.excludeRoomIds ?? [],
+    } as any);
     if (error) throw new Error(error.message);
     return { roomId: roomId as string, medium: data.medium };
   });

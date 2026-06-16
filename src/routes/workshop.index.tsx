@@ -135,7 +135,7 @@ function WorkshopPreflight() {
       }
       const { roomId } = medium
         ? await dropMedium({ data: { medium } })
-        : await drop();
+        : await drop({ data: {} });
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open that room");
