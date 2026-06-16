@@ -290,6 +290,7 @@ function TopicRow({
   label,
   sublabel,
   live,
+  participants,
   icon,
   highlight,
   busy,
@@ -301,6 +302,7 @@ function TopicRow({
   label: string;
   sublabel?: string;
   live: number;
+  participants?: ActiveInstantRoom["participants"];
   icon?: React.ReactNode;
   highlight?: boolean;
   busy?: boolean;
@@ -310,6 +312,7 @@ function TopicRow({
   forceLiveCTA?: string;
 }) {
   const isLive = live > 0;
+  const stack = (participants ?? []).slice(0, 3);
   return (
     <button
       type="button"
