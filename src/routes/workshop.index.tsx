@@ -85,19 +85,21 @@ function WorkshopPreflight() {
     return devices.cam ? "video" : "voice";
   }, [devices]);
 
-  async function handleDrop() {
+  async function handlePick(medium: Category | null) {
     if (busy || !canDrop) return;
     setBusy("drop");
+    setBusyMedium(medium ?? "any");
     try {
       const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); return; }
-      const { roomId } = selectedDropMedium
-        ? await dropMedium({ data: { medium: selectedDropMedium } })
+      if (!mode) { setBusy(null); setBusyMedium(null); return; }
+      const { roomId } = medium
+        ? await dropMedium({ data: { medium } })
         : await drop();
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't drop in");
+      toast.error(e instanceof Error ? e.message : "Couldn't open that room");
       setBusy(null);
+      setBusyMedium(null);
     }
   }
 
@@ -124,21 +126,6 @@ function WorkshopPreflight() {
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open your Workshop");
-      setBusy(null);
-    }
-  }
-
-  async function handleJoinNow(medium: Category) {
-    if (busy || !canDrop) return;
-    setSelectedDropMedium(medium);
-    setBusy("drop");
-    try {
-      const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); return; }
-      const { roomId } = await dropMedium({ data: { medium } });
-      router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't open that Workshop");
       setBusy(null);
     }
   }
