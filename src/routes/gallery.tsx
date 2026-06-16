@@ -91,7 +91,7 @@ async function fetchForYouPage(params: {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -124,6 +124,7 @@ async function fetchForYouPage(params: {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
+    vouch_count: number; boost_count: number;
     published_at: string | null;
     created_by: string;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
@@ -134,6 +135,8 @@ async function fetchForYouPage(params: {
     id: r.id, title: r.title, slug: r.slug, category: r.category,
     cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+    vouch_count: r.vouch_count, boost_count: r.boost_count,
+    published_at: r.published_at, created_by: r.created_by,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
