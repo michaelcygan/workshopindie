@@ -15,6 +15,7 @@ import { CreditStrip, type CreditChip } from "@/components/credit-strip";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
+import { WorkSocialProof } from "@/components/work-social-proof";
 import { getCoCreditedWorks } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
