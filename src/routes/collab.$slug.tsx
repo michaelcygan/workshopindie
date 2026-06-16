@@ -18,6 +18,8 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { applyToCollab } from "@/lib/collab.functions";
+import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
+import { BoostButton } from "@/components/boost-button";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
