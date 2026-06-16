@@ -1033,6 +1033,51 @@ export type Database = {
           },
         ]
       }
+      instant_room_pins: {
+        Row: {
+          collab_post_id: string
+          created_at: string
+          id: string
+          is_host_pin: boolean
+          pinned_by_user_id: string
+          room_id: string
+          sort_order: number
+        }
+        Insert: {
+          collab_post_id: string
+          created_at?: string
+          id?: string
+          is_host_pin?: boolean
+          pinned_by_user_id: string
+          room_id: string
+          sort_order?: number
+        }
+        Update: {
+          collab_post_id?: string
+          created_at?: string
+          id?: string
+          is_host_pin?: boolean
+          pinned_by_user_id?: string
+          room_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_room_pins_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_room_pins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_room_removals: {
         Row: {
           created_at: string
