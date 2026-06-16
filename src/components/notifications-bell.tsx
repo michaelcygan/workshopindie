@@ -42,7 +42,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
   const actorUsername = (n.payload?.actor_username as string) || undefined;
   const wsSlug = (n.payload?.slug as string) || undefined;
-  const wsTitle = (n.payload?.title as string) || "A Workshop";
+  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "A Workshop";
   switch (n.kind) {
     case "dm":
       return {
