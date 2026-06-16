@@ -24,7 +24,7 @@ export function WaitingForOthersCard({ roomId, visible, canPingMutuals }: Props)
     setDismissed(sessionStorage.getItem(`wf:waiting-dismissed:${roomId}`) === "1");
   }, [roomId]);
 
-  if (!visible || dismissed) return null;
+  const shouldShow = visible && !dismissed;
 
   function copyLink() {
     const url = `${window.location.origin}/workshop/${roomId}`;
