@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Crown, Globe2, Users, Link2, Loader2 } from "lucide-react";
+import { Crown, Globe2, Users, Link2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,6 +18,8 @@ type Props = {
   onOpenChange: (o: boolean) => void;
   defaultMedium: Category | null;
   defaultTitle?: string;
+  /** Optional eyebrow shown when a marquee prompt seeded the dialog. */
+  inspiredBy?: string | null;
   busy?: boolean;
   onConfirm: (args: { title: string; visibility: RoomVisibility; medium: Category | null }) => void;
 };
@@ -28,7 +30,7 @@ const OPTIONS: { id: RoomVisibility; label: string; blurb: string; Icon: typeof 
   { id: "invite",  label: "Invite link",  blurb: "Hidden from Live now. Share the link to fill seats yourself.",         Icon: Link2 },
 ];
 
-export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTitle, busy, onConfirm }: Props) {
+export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTitle, inspiredBy, busy, onConfirm }: Props) {
   const [title, setTitle] = useState(defaultTitle ?? "");
   const [visibility, setVisibility] = useState<RoomVisibility>("open");
   const [medium, setMedium] = useState<Category | null>(defaultMedium);
@@ -54,6 +56,13 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
             Confirm who can find this room. You can change topic and title before it opens.
           </DialogDescription>
         </DialogHeader>
+
+        {inspiredBy && (
+          <div className="flex items-center gap-2 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-[11px] text-ink-soft">
+            <Sparkles className="h-3 w-3 text-primary shrink-0" />
+            <span className="truncate">Inspired by: <span className="text-ink">{inspiredBy}</span></span>
+          </div>
+        )}
 
         <div className="space-y-3">
           <div>
