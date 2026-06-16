@@ -43,7 +43,35 @@ function WorkshopPreflight() {
   const [pendingTitle, setPendingTitle] = useState<string>("");
   const [inspiredBy, setInspiredBy] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [firstVisit, setFirstVisit] = useState(false);
+  const [rejoin, setRejoin] = useState<{ id: string; title: string } | null>(null);
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const seen = window.localStorage.getItem("workshop:opened-once");
+    if (!seen) {
+      setFirstVisit(true);
+      window.localStorage.setItem("workshop:opened-once", "1");
+    }
+    try {
+      const raw = window.sessionStorage.getItem("workshop:last-room");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { id: string; title: string; leftAt: number };
+      if (Date.now() - parsed.leftAt < 60_000) {
+        setRejoin({ id: parsed.id, title: parsed.title });
+        const ms = 60_000 - (Date.now() - parsed.leftAt);
+        const t = setTimeout(() => {
+          setRejoin(null);
+          window.sessionStorage.removeItem("workshop:last-room");
+        }, ms);
+        return () => clearTimeout(t);
+      }
+      window.sessionStorage.removeItem("workshop:last-room");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
