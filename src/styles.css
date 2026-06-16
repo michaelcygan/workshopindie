@@ -220,10 +220,14 @@
 }
 @layer utilities {
   .animate-marquee-x { animation: marquee-x 30s linear infinite; }
+  .animate-marquee-x-reverse { animation: marquee-x 30s linear infinite reverse; }
   .animate-marquee-x.is-paused,
-  .animate-marquee-x:hover { animation-play-state: paused; }
+  .animate-marquee-x-reverse.is-paused,
+  .animate-marquee-x:hover,
+  .animate-marquee-x-reverse:hover { animation-play-state: paused; }
   @media (prefers-reduced-motion: reduce) {
-    .animate-marquee-x { animation: none; }
+    .animate-marquee-x,
+    .animate-marquee-x-reverse { animation: none; }
   }
 }
 @layer utilities {
