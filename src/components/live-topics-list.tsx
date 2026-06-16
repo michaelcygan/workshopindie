@@ -120,17 +120,23 @@ export function LiveTopicsList({
             "md:border-r border-border/70 border-b md:border-b-0",
           )}
         >
+          {/* Ambient gradient detail */}
+          <span aria-hidden className="pointer-events-none absolute right-6 top-6 inline-flex gap-1.5 opacity-40">
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-70" />
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-50 translate-y-1" />
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-30 translate-y-2" />
+          </span>
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
             <Sparkles className="h-3 w-3" />
-            {noneLive ? "Start the night" : "Matchmaker"}
+            {noneLive ? "Start the night" : "Jump in"}
+            {!noneLive && (
+              <span className="tabular-nums text-ink/70">· {liveCount} live</span>
+            )}
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <div className="font-display text-2xl md:text-[28px] leading-none text-ink">
               Any topic
             </div>
-            {anyCount > 0 && (
-              <div className="text-xs text-ink-muted tabular-nums">· {anyCount} live</div>
-            )}
           </div>
           <p className="mt-2 text-sm text-ink-muted max-w-xs">
             {noneLive
@@ -142,7 +148,7 @@ export function LiveTopicsList({
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <>
-                {noneLive ? "Open the first room" : "Take a seat"}
+                {noneLive ? "Open the first room" : "Match me to a seat"}
                 <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </>
             )}
