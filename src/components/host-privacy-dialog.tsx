@@ -17,6 +17,7 @@ type Props = {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   defaultMedium: Category | null;
+  defaultTitle?: string;
   busy?: boolean;
   onConfirm: (args: { title: string; visibility: RoomVisibility; medium: Category | null }) => void;
 };
@@ -27,18 +28,18 @@ const OPTIONS: { id: RoomVisibility; label: string; blurb: string; Icon: typeof 
   { id: "invite",  label: "Invite link",  blurb: "Hidden from Live now. Share the link to fill seats yourself.",         Icon: Link2 },
 ];
 
-export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, busy, onConfirm }: Props) {
-  const [title, setTitle] = useState("");
+export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTitle, busy, onConfirm }: Props) {
+  const [title, setTitle] = useState(defaultTitle ?? "");
   const [visibility, setVisibility] = useState<RoomVisibility>("open");
   const [medium, setMedium] = useState<Category | null>(defaultMedium);
 
   useEffect(() => {
     if (open) {
-      setTitle("");
+      setTitle(defaultTitle ?? "");
       setVisibility("open");
       setMedium(defaultMedium);
     }
-  }, [open, defaultMedium]);
+  }, [open, defaultMedium, defaultTitle]);
 
   const mediumLabel = medium ? CATEGORIES.find((c) => c.id === medium)?.label ?? medium : "Open topic";
 
