@@ -44,8 +44,10 @@ export function HostRoomEvents({ roomId, isHost }: { roomId: string; isHost: boo
       })
       .on("broadcast", { event: "ended" }, () => {
         if (isHost) return;
+        supabase.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", user.id);
         toast("The host ended this Workshop.");
         qc.invalidateQueries({ queryKey: ["instant-room", roomId] });
+        router.navigate({ to: "/workshop" });
       })
       .subscribe();
 
