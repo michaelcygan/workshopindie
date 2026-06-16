@@ -2422,6 +2422,35 @@ export type Database = {
           },
         ]
       }
+      work_boosts: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_boosts_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       work_collaborators: {
         Row: {
           created_at: string
@@ -2664,8 +2693,38 @@ export type Database = {
           },
         ]
       }
+      work_vouches: {
+        Row: {
+          created_at: string
+          id: string
+          user_id: string
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user_id: string
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_vouches_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       works: {
         Row: {
+          boost_count: number
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           comment_count: number
@@ -2697,8 +2756,10 @@ export type Database = {
           updated_at: string
           view_count: number
           visibility: Database["public"]["Enums"]["visibility"]
+          vouch_count: number
         }
         Insert: {
+          boost_count?: number
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
@@ -2730,8 +2791,10 @@ export type Database = {
           updated_at?: string
           view_count?: number
           visibility?: Database["public"]["Enums"]["visibility"]
+          vouch_count?: number
         }
         Update: {
+          boost_count?: number
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
@@ -2763,6 +2826,7 @@ export type Database = {
           updated_at?: string
           view_count?: number
           visibility?: Database["public"]["Enums"]["visibility"]
+          vouch_count?: number
         }
         Relationships: [
           {
@@ -3936,6 +4000,10 @@ export type Database = {
     }
     Functions: {
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
+      bump_work_view: {
+        Args: { _key: string; _work_id: string }
+        Returns: undefined
+      }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
       cast_workshop_poll_vote: {
         Args: { _choice_index: number; _poll_id: string }
@@ -4040,6 +4108,15 @@ export type Database = {
       }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       slugify: { Args: { _in: string }; Returns: string }
+      toggle_work_reaction: {
+        Args: { _reaction: string; _work_id: string }
+        Returns: {
+          like_count: number
+          liked: boolean
+          save_count: number
+          saved: boolean
+        }[]
+      }
       user_age: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
