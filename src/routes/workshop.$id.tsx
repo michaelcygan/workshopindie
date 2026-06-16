@@ -98,7 +98,7 @@ function LiveRoomPage() {
     },
   });
 
-  const title = room?.title ?? FALLBACK_TITLE;
+  const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
   const isHost = !!user && !!room && room.host_user_id === user.id;
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
