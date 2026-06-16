@@ -19,7 +19,9 @@ import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as GRouteImport } from './routes/g'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as CitiesRouteImport } from './routes/cities'
@@ -28,6 +30,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
@@ -108,9 +111,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GRoute = GRouteImport.update({
+  id: '/g',
+  path: '/g',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -152,6 +165,11 @@ const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsIndexRoute = GroupsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GroupsRoute,
 } as any)
 const DmsIndexRoute = DmsIndexRouteImport.update({
   id: '/dms/',
@@ -306,7 +324,9 @@ export interface FileRoutesByFullPath {
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRoute
   '/gallery': typeof GalleryRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -337,6 +357,7 @@ export interface FileRoutesByFullPath {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -353,6 +374,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRoute
   '/gallery': typeof GalleryRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -382,6 +404,7 @@ export interface FileRoutesByTo {
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
+  '/groups': typeof GroupsIndexRoute
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
@@ -402,7 +425,9 @@ export interface FileRoutesById {
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRoute
   '/gallery': typeof GalleryRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -433,6 +458,7 @@ export interface FileRoutesById {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -454,7 +480,9 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
+    | '/groups'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -485,6 +513,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/groups/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -501,6 +530,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
     | '/login'
     | '/onboarding'
@@ -530,6 +560,7 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/dms'
+    | '/groups'
     | '/me'
     | '/workshop'
     | '/workshops'
@@ -549,7 +580,9 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
+    | '/groups'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -580,6 +613,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/groups/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -600,7 +634,9 @@ export interface RootRouteChildren {
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GRoute: typeof GRoute
   GalleryRoute: typeof GalleryRoute
+  GroupsRoute: typeof GroupsRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
@@ -700,11 +736,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gallery': {
       id: '/gallery'
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/g': {
+      id: '/g'
+      path: '/g'
+      fullPath: '/g'
+      preLoaderRoute: typeof GRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -762,6 +812,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/groups/': {
+      id: '/groups/'
+      path: '/'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof GroupsIndexRouteImport
+      parentRoute: typeof GroupsRoute
     }
     '/dms/': {
       id: '/dms/'
@@ -1011,6 +1068,17 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface GroupsRouteChildren {
+  GroupsIndexRoute: typeof GroupsIndexRoute
+}
+
+const GroupsRouteChildren: GroupsRouteChildren = {
+  GroupsIndexRoute: GroupsIndexRoute,
+}
+
+const GroupsRouteWithChildren =
+  GroupsRoute._addFileChildren(GroupsRouteChildren)
+
 interface WorkshopRouteChildren {
   WorkshopIdRoute: typeof WorkshopIdRoute
   WorkshopIndexRoute: typeof WorkshopIndexRoute
@@ -1074,7 +1142,9 @@ const rootRouteChildren: RootRouteChildren = {
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GRoute: GRoute,
   GalleryRoute: GalleryRoute,
+  GroupsRoute: GroupsRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,

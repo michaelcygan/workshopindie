@@ -1,8 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
-async function assertAdmin(supabase: { rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown }> }, userId: string) {
+async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   const { data } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
   if (!data) throw new Error("Admin only");
 }
@@ -54,6 +56,20 @@ export const createGroup = createServerFn({ method: "POST" })
   });
 
 const updateSchema = createSchema.partial().extend({ id: z.string().uuid() });
+type UpdatePatch = {
+  slug?: string;
+  name?: string;
+  kind?: "city" | "genre" | "micro" | "scene";
+  city_id?: string | null;
+  tagline?: string | null;
+  description?: string | null;
+  cover_url?: string | null;
+  avatar_url?: string | null;
+  accent_color?: string | null;
+  is_official?: boolean;
+  visibility?: "public" | "unlisted";
+  featured_at?: string | null;
+};
 
 export const updateGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -62,7 +78,7 @@ export const updateGroup = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
     const { id, featured, ...rest } = data;
-    const patch: Record<string, unknown> = { ...rest };
+    const patch: UpdatePatch = { ...rest };
     if (typeof featured === "boolean") {
       patch.featured_at = featured ? new Date().toISOString() : null;
     }
@@ -99,7 +115,9 @@ export const seedGroupMembers = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
     const rows = data.user_ids.map((uid) => ({ group_id: data.group_id, user_id: uid }));
-    const { error } = await supabase.from("group_members").upsert(rows, { onConflict: "group_id,user_id" });
+    const { error } = await supabase
+      .from("group_members")
+      .upsert(rows, { onConflict: "group_id,user_id" });
     if (error) throw new Error(error.message);
     return { ok: true, added: rows.length };
   });
