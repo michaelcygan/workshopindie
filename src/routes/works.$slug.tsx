@@ -149,7 +149,7 @@ function WorkDetail() {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-4xl text-ink">Work not found</h1>
-        <Link to="/" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to gallery</Button></Link>
+        <Link to="/gallery" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to Work</Button></Link>
       </main>
     );
   }
