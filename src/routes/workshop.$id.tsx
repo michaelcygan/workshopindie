@@ -214,10 +214,18 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="ml-auto flex items-center gap-2">
+            {!isHost && room?.status === "active" && (
+              <HopButton
+                roomId={id}
+                medium={(room?.medium as any) ?? null}
+                mode={mode ?? "video"}
+              />
+            )}
             {isHost && room && (
               <HostMenu
                 roomId={id}
                 hostUserId={user.id}
+                title={room.title || FALLBACK_TITLE}
                 focusMessage={room.focus_message}
                 locked={!!room.locked}
                 participants={participants}
