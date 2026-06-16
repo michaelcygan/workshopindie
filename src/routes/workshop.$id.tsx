@@ -213,15 +213,45 @@ function LiveRoomPage() {
         </div>
 
         {!isPromoted && user && (
-          <Button
-            size="sm"
-            onClick={() => setCollabOpen(true)}
-            className="ml-auto rounded-full gap-1.5"
-          >
-            <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {isHost && room && (
+              <HostMenu
+                roomId={id}
+                hostUserId={user.id}
+                focusMessage={room.focus_message}
+                locked={!!room.locked}
+                participants={participants}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+              />
+            )}
+            <Button
+              size="sm"
+              onClick={() => setCollabOpen(true)}
+              className="rounded-full gap-1.5"
+            >
+              <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* Hosted by + lock badge — sits just under the title row */}
+      {!isPromoted && room?.host_user_id && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <HostedByLine hostUserId={room.host_user_id} />
+          {room.locked && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-ink-soft">
+              Locked
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Focus message — visible to everyone */}
+      {!isPromoted && <FocusStrip text={room?.focus_message ?? null} />}
+
+      {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
+      {user && <HostRoomEvents roomId={id} isHost={isHost} />}
 
       {/* Promoted banner — slim */}
       {isPromoted && forkedWs && (
