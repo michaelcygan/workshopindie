@@ -104,6 +104,16 @@ export function HostMenu({
     if (renameOpen) setDraftTitle(title);
   }, [renameOpen, title]);
 
+  // Allow other components (e.g. FocusStrip empty-state CTA) to open the focus dialog.
+  useEffect(() => {
+    function handler(e: Event) {
+      const detail = (e as CustomEvent).detail as { roomId?: string } | undefined;
+      if (!detail || detail.roomId === roomId) setFocusOpen(true);
+    }
+    window.addEventListener("workshop:open-focus", handler);
+    return () => window.removeEventListener("workshop:open-focus", handler);
+  }, [roomId]);
+
   async function onSetFocus() {
     setBusy("focus");
     try {
