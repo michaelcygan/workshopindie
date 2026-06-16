@@ -8,10 +8,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
 import { LiveTopicsList } from "@/components/live-topics-list";
+import { RoomPromptMarquee } from "@/components/room-prompt-marquee";
 import { WorkshopStrip } from "@/components/workshop-strip";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import type { RoomPrompt } from "@/lib/topic-prompts";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
