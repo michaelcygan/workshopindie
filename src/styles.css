@@ -225,6 +225,8 @@
   .animate-marquee-x-reverse.is-paused,
   .animate-marquee-x:hover,
   .animate-marquee-x-reverse:hover { animation-play-state: paused; }
+  .marquee-row:focus-within .animate-marquee-x,
+  .marquee-row:focus-within .animate-marquee-x-reverse { animation-play-state: paused; }
   @media (prefers-reduced-motion: reduce) {
     .animate-marquee-x,
     .animate-marquee-x-reverse { animation: none; }
