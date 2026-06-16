@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Share2, BellRing, X, Loader2 } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { pingMutualsForRoom } from "@/lib/instant.functions";
