@@ -119,18 +119,17 @@ function WorkshopPreflight() {
     return () => clearTimeout(t);
   }, [liveCount]);
 
-  // 24h recap chip — counts distinct rooms with activity in the last day.
+  // 24h recap chip — counts activity events in the last day.
   const { data: recap24h = 0 } = useQuery({
     queryKey: ["workshop-recap-24h"],
     refetchInterval: 60_000,
     queryFn: async () => {
       const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data } = await supabase
+      const { count } = await supabase
         .from("instant_activity")
-        .select("room_id")
+        .select("id", { count: "exact", head: true })
         .gt("created_at", cutoff);
-      const set = new Set((data ?? []).map((r: { room_id: string }) => r.room_id));
-      return set.size;
+      return count ?? 0;
     },
   });
 
