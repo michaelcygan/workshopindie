@@ -219,6 +219,14 @@ function WorkDetail() {
           </div>
         </div>
 
+        {/* Social proof — Vouch + Boost */}
+        <WorkSocialProof
+          workId={work.id}
+          createdBy={work.created_by}
+          vouchCount={work.vouch_count ?? 0}
+          boostCount={work.boost_count ?? 0}
+        />
+
         {/* Body */}
         {work.description && (
           <div className="prose-workshop mt-8 whitespace-pre-wrap text-base leading-relaxed text-ink-soft">{work.description}</div>
