@@ -519,6 +519,8 @@ function TopicRow({
   disabled,
   onClick,
   onPickSub,
+  eyebrow,
+  accent,
 }: {
   id: string;
   label: string;
@@ -530,6 +532,8 @@ function TopicRow({
   disabled?: boolean;
   onClick: () => void;
   onPickSub?: (m: Category) => void;
+  eyebrow?: string;
+  accent?: boolean;
 }) {
   const isLive = live > 0;
   const stack = (participants ?? []).slice(0, 3);
@@ -547,8 +551,15 @@ function TopicRow({
       className={cn(
         "group relative w-full transition",
         "hover:bg-muted/35",
+        accent && "bg-gradient-to-r from-primary/[0.05] via-transparent to-transparent",
       )}
     >
+      {accent && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-2 left-0 w-px gradient-motion opacity-70 rounded-full"
+        />
+      )}
       <div className="flex items-center gap-2 px-4">
         <button
           type="button"
