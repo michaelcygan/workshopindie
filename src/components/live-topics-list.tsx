@@ -29,6 +29,7 @@ export function LiveTopicsList({
   busyKey,
   onPick,
   onLiveCountChange,
+  onLiveByMediumChange,
   disabled,
   layout = "stack",
   featuredFooter,
