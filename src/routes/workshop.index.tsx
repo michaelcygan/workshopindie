@@ -45,7 +45,9 @@ function WorkshopPreflight() {
   const [inspiredBy, setInspiredBy] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [firstVisit, setFirstVisit] = useState(false);
-  const [rejoin, setRejoin] = useState<{ id: string; title: string } | null>(null);
+  const [rejoin, setRejoin] = useState<{ id: string; title: string; leftAt: number } | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const [idleNudge, setIdleNudge] = useState(false);
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
   useEffect(() => {
