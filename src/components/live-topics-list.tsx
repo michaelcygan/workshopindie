@@ -52,6 +52,11 @@ export function LiveTopicsList({
     onLiveCountChange?.(liveCount);
   }, [liveCount, onLiveCountChange]);
 
+  useEffect(() => {
+    onLiveByMediumChange?.(liveByMedium);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [liveByMedium]);
+
   const liveByMedium = useMemo(() => {
     const m = new Map<Category, number>();
     for (const r of rooms) {
