@@ -113,6 +113,18 @@ function WorkshopPreflight() {
 
   function handleHost() {
     if (busy || !canDrop) return;
+    setHostMedium(null);
+    setPendingTitle("");
+    setPrivacyOpen(true);
+  }
+
+  function handleUsePrompt(p: RoomPrompt) {
+    if (busy || !canDrop) {
+      if (!canDrop) toast.error("Connect a mic or camera to continue.");
+      return;
+    }
+    setHostMedium(p.medium);
+    setPendingTitle(p.title);
     setPrivacyOpen(true);
   }
 
