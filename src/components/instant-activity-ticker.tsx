@@ -7,7 +7,7 @@ import { listRecentActivity, type InstantActivityEvent } from "@/lib/instant.fun
 import { formatRoomTitle } from "@/lib/instant";
 
 function formatEvent(e: InstantActivityEvent): string {
-  const title = formatRoomTitle(e.title, (e as any).medium ?? null);
+  const title = formatRoomTitle(e.title, e.medium);
   if (e.kind === "join") {
     const who = e.actor_display_name ?? "Someone";
     return `${who} just joined ${title}`;
