@@ -114,7 +114,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
               </span>
               <span className="ml-auto text-[11px] tabular-nums text-ink-muted">{r.live_count}/5</span>
             </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{r.title}</h3>
+            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
 
             <div className="mt-3 flex items-center gap-2">
               <div className="flex -space-x-2">
