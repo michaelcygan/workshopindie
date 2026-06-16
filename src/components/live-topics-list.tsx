@@ -584,8 +584,13 @@ function TopicRow({
           </span>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 font-medium text-ink text-[13.5px]">
+            <div className={cn("flex items-center gap-1.5 text-ink text-[13.5px]", accent ? "font-semibold" : "font-medium")}>
               <span className="truncate">{label}</span>
+              {eyebrow && (
+                <span className="shrink-0 rounded-full border border-ink/15 bg-surface/60 px-1.5 py-px text-[9px] uppercase tracking-[0.14em] text-ink-muted/80">
+                  {eyebrow}
+                </span>
+              )}
               {isLive && (
                 <span className="text-[10.5px] font-normal text-ink/55 tabular-nums">·{live}</span>
               )}
