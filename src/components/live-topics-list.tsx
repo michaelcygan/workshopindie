@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
@@ -627,7 +628,7 @@ function TopicRow({
                   to="/u/$username"
                   params={{ username: p.username }}
                   aria-label={`Open ${name}'s profile`}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
                   className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 >
                   {avatar}
