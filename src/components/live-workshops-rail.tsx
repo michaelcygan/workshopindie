@@ -168,7 +168,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
               </span>
               <span className="ml-auto text-[11px] tabular-nums text-ink-muted">5/5 · full</span>
             </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{r.title}</h3>
+            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
             <p className="mt-3 text-xs text-ink-muted">Full — try another room or open your own.</p>
           </article>
         ))}
