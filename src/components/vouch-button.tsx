@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Link } from "@tanstack/react-router";
 import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -195,5 +194,3 @@ export function useVouchersForPosts(postIds: string[]): {
   return { data: data ?? new Map(), isLoading };
 }
 
-// Silence unused import warning when consumers don't use Link
-export const _ = Link;
