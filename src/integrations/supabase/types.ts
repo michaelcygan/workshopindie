@@ -50,6 +50,35 @@ export type Database = {
         }
         Relationships: []
       }
+      collab_boosts: {
+        Row: {
+          collab_post_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          collab_post_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          collab_post_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_boosts_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_contact_events: {
         Row: {
           collab_post_id: string
@@ -263,6 +292,7 @@ export type Database = {
       collab_posts: {
         Row: {
           also_cities: string[]
+          boost_count: number
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           close_nudge_dismissed_at: string | null
@@ -288,9 +318,11 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          vouch_count: number
         }
         Insert: {
           also_cities?: string[]
+          boost_count?: number
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -316,9 +348,11 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          vouch_count?: number
         }
         Update: {
           also_cities?: string[]
+          boost_count?: number
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -344,6 +378,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          vouch_count?: number
         }
         Relationships: [
           {
@@ -429,6 +464,35 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "collab_share_events_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_vouches: {
+        Row: {
+          collab_post_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          collab_post_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          collab_post_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_vouches_collab_post_id_fkey"
             columns: ["collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
