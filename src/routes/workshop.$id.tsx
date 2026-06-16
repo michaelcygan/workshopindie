@@ -15,6 +15,10 @@ import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvi
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
+import { FocusStrip } from "@/components/focus-strip";
+import { HostedByLine } from "@/components/hosted-by-line";
+import { HostMenu } from "@/components/host-menu";
+import { HostRoomEvents } from "@/components/host-room-events";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
@@ -41,6 +45,10 @@ type Room = {
   host_user_id: string | null;
   promoted_at: string | null;
   source_workshop_id: string | null;
+  status: string;
+  focus_message: string | null;
+  locked: boolean;
+  ended_by_user_id: string | null;
 };
 
 function LiveRoomPage() {
@@ -60,12 +68,13 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
       return data as Room | null;
     },
+    refetchInterval: 5000,
   });
 
   // Pending opt-in invite for the persistent fork
