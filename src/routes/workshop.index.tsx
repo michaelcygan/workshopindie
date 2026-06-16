@@ -393,7 +393,20 @@ function WorkshopPreflight() {
         onConfirm={confirmHost}
       />
 
-      <WorkshopStrip />
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink-muted">
+            Recent Workshops
+          </h2>
+          <Link
+            to="/workshops"
+            className="text-xs text-ink-muted hover:text-ink transition"
+          >
+            Open library →
+          </Link>
+        </div>
+        <WorkshopStrip />
+      </section>
     </main>
   );
 }
