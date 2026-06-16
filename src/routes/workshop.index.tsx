@@ -239,6 +239,12 @@ function WorkshopPreflight() {
           onPick={handlePick}
           onLiveCountChange={setLiveCount}
           disabled={busy !== null}
+          featuredFooter={
+            <RoomPromptMarquee
+              onUsePrompt={handleUsePrompt}
+              disabled={busy !== null || !canDrop}
+            />
+          }
         />
       </div>
 
