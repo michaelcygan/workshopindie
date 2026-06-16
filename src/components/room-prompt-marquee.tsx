@@ -49,7 +49,11 @@ export function RoomPromptMarquee({
   return (
     <div
       aria-label="Suggested rooms — click to start or join"
-      className="relative mt-5 overflow-hidden"
+      className={cn(
+        "group/marquee relative mt-5",
+        "overflow-x-hidden hover:overflow-x-auto focus-within:overflow-x-auto",
+        "overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      )}
       style={{
         maskImage:
           "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
@@ -57,6 +61,7 @@ export function RoomPromptMarquee({
           "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
       }}
     >
+
       {rows.map((items, i) => {
         // Row 1 always visible; row 2 ≥ sm; row 3 ≥ md; row 4 ≥ lg.
         const visibility =
