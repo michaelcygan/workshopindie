@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { z } from "zod";
@@ -16,6 +16,9 @@ import { listFollowingWorks } from "@/lib/gallery.functions";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
+import { FreshWorksStrip } from "@/components/fresh-works-strip";
+import { BoostedWorksStrip } from "@/components/boosted-works-strip";
+import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -29,9 +32,9 @@ export const Route = createFileRoute("/gallery")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Gallery — Workshop" },
-      { name: "description", content: "Browse everything people have shipped on Workshop. Filter by medium, location, and what your network is making." },
-      { property: "og:title", content: "Gallery — Workshop" },
+      { title: "Work — Workshop" },
+      { name: "description", content: "Browse everything people have shipped on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
+      { property: "og:title", content: "Work — Workshop" },
       { property: "og:description", content: "Browse everything people have shipped on Workshop." },
     ],
   }),
@@ -88,7 +91,7 @@ async function fetchForYouPage(params: {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -121,6 +124,7 @@ async function fetchForYouPage(params: {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
+    vouch_count: number; boost_count: number;
     published_at: string | null;
     created_by: string;
     work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
@@ -131,6 +135,8 @@ async function fetchForYouPage(params: {
     id: r.id, title: r.title, slug: r.slug, category: r.category,
     cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+    vouch_count: r.vouch_count, boost_count: r.boost_count,
+    published_at: r.published_at, created_by: r.created_by,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
       .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
@@ -230,6 +236,33 @@ function GalleryPage() {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
+  // Realtime: refresh the feed when anyone vouches or boosts a Work
+  const qc = useQueryClient();
+  useEffect(() => {
+    const ch = supabase
+      .channel("gallery-social")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "work_vouches" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["gallery"] });
+          qc.invalidateQueries({ queryKey: ["work-vouchers-batch"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "work_boosts" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["boosted-works"] });
+          qc.invalidateQueries({ queryKey: ["gallery"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [qc]);
+
   // Geo-default: auto-apply user's home city (or IP-inferred nearest) on first visit
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
@@ -257,12 +290,15 @@ function GalleryPage() {
   };
 
   return (
-    <main>
+    <main className="pb-24 md:pb-0">
+      {/* Logged-out hero with live counters */}
+      {!user && <GalleryLoggedOutHero />}
+
       {/* Slim header */}
       <section className="border-b border-border">
         <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 px-4 py-8 md:px-6 md:py-10">
           <div>
-            <h1 className="font-display text-3xl text-ink md:text-4xl">Gallery</h1>
+            <h1 className="font-display text-3xl text-ink md:text-4xl">Work</h1>
             <p className="mt-1 text-sm text-ink-muted">Everything people have shipped — film, music, writing, build, visuals.</p>
           </div>
           <Link to="/works/new" className="shrink-0">
@@ -273,6 +309,13 @@ function GalleryPage() {
           </Link>
         </div>
       </section>
+
+      {/* Live "shipping right now" rail */}
+      <FreshWorksStrip />
+
+      {/* Community-boosted rail */}
+      <BoostedWorksStrip />
+
 
       {/* Sticky toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
@@ -408,12 +451,19 @@ function GalleryPage() {
             />
           ) : (
             <EmptyState
-              title="No works match those filters"
-              body="Try clearing filters or a different search."
+              title="Be the first to ship here"
+              body={
+                category !== "all" || citySlug !== "all"
+                  ? "No Work in this slice yet. Post yours and start the thread."
+                  : "Nothing matches your search. Try fewer filters — or post something new."
+              }
               cta={
-                <Button variant="outline" onClick={clearAll} className="rounded-full">
-                  Clear filters
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Link to="/works/new"><Button className="rounded-full">Post Work</Button></Link>
+                  <Button variant="outline" onClick={clearAll} className="rounded-full">
+                    Clear filters
+                  </Button>
+                </div>
               }
             />
           )
@@ -436,6 +486,17 @@ function GalleryPage() {
           </>
         )}
       </section>
+
+      {/* Sticky mobile CTA */}
+      <Link
+        to="/works/new"
+        className="fixed bottom-4 right-4 z-40 md:hidden"
+      >
+        <Button className="rounded-full shadow-lift">
+          <Plus className="h-4 w-4" />
+          Post Work
+        </Button>
+      </Link>
     </main>
   );
 }

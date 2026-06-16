@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Props = { workId: string; initialLikes: number; initialSaves: number };
 
@@ -14,6 +15,7 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
   const [saved, setSaved] = useState(false);
   const [likes, setLikes] = useState(initialLikes);
   const [saves, setSaves] = useState(initialSaves);
+  const [pending, setPending] = useState<null | "like" | "save">(null);
 
   useEffect(() => {
     if (!user) return;
@@ -30,18 +32,39 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
 
   async function toggle(kind: "like" | "save") {
     if (!user) return navigate({ to: "/login" });
-    const isOn = kind === "like" ? liked : saved;
-    if (isOn) {
-      await supabase.from("work_reactions").delete().eq("user_id", user.id).eq("work_id", workId).eq("reaction", kind);
-    } else {
-      await supabase.from("work_reactions").insert({ user_id: user.id, work_id: workId, reaction: kind });
-    }
+    if (pending) return;
+    setPending(kind);
+    // Optimistic
     if (kind === "like") {
-      setLiked(!isOn);
-      setLikes((n) => n + (isOn ? -1 : 1));
+      setLiked((v) => !v);
+      setLikes((n) => n + (liked ? -1 : 1));
     } else {
-      setSaved(!isOn);
-      setSaves((n) => n + (isOn ? -1 : 1));
+      setSaved((v) => !v);
+      setSaves((n) => n + (saved ? -1 : 1));
+    }
+    const { data, error } = await supabase.rpc("toggle_work_reaction", {
+      _work_id: workId,
+      _reaction: kind,
+    });
+    setPending(null);
+    if (error) {
+      toast.error(error.message);
+      // Rollback
+      if (kind === "like") {
+        setLiked((v) => !v);
+        setLikes((n) => n + (liked ? 1 : -1));
+      } else {
+        setSaved((v) => !v);
+        setSaves((n) => n + (saved ? 1 : -1));
+      }
+      return;
+    }
+    const row = Array.isArray(data) ? data[0] : data;
+    if (row) {
+      setLikes(row.like_count);
+      setSaves(row.save_count);
+      setLiked(row.liked);
+      setSaved(row.saved);
     }
   }
 
@@ -49,6 +72,7 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
     <div className="flex items-center gap-2">
       <button
         onClick={() => toggle("like")}
+        disabled={pending === "like"}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
           liked && "bg-primary/10 border-primary/30 text-primary",
@@ -58,6 +82,7 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
       </button>
       <button
         onClick={() => toggle("save")}
+        disabled={pending === "save"}
         className={cn(
           "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
           saved && "bg-violet/10 border-violet/30 text-violet",
