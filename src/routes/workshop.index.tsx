@@ -43,7 +43,35 @@ function WorkshopPreflight() {
   const [pendingTitle, setPendingTitle] = useState<string>("");
   const [inspiredBy, setInspiredBy] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [firstVisit, setFirstVisit] = useState(false);
+  const [rejoin, setRejoin] = useState<{ id: string; title: string } | null>(null);
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const seen = window.localStorage.getItem("workshop:opened-once");
+    if (!seen) {
+      setFirstVisit(true);
+      window.localStorage.setItem("workshop:opened-once", "1");
+    }
+    try {
+      const raw = window.sessionStorage.getItem("workshop:last-room");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { id: string; title: string; leftAt: number };
+      if (Date.now() - parsed.leftAt < 60_000) {
+        setRejoin({ id: parsed.id, title: parsed.title });
+        const ms = 60_000 - (Date.now() - parsed.leftAt);
+        const t = setTimeout(() => {
+          setRejoin(null);
+          window.sessionStorage.removeItem("workshop:last-room");
+        }, ms);
+        return () => clearTimeout(t);
+      }
+      window.sessionStorage.removeItem("workshop:last-room");
+    } catch {
+      // ignore
+    }
+  }, []);
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
@@ -255,6 +283,23 @@ function WorkshopPreflight() {
       <p className="mt-2 text-sm text-ink-muted">
         {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
       </p>
+      {firstVisit && liveCount === 0 && (
+        <p className="mt-1 text-xs text-ink/70 italic">You're the spark tonight.</p>
+      )}
+
+      {rejoin && (
+        <div className="mt-3 flex">
+          <Link
+            to="/workshop/$id"
+            params={{ id: rejoin.id }}
+            search={{ mode: "video" }}
+            className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs text-ink hover:bg-muted/40 transition"
+          >
+            <span className="gradient-motion h-2 w-2 rounded-full" />
+            Rejoin {rejoin.title || "your room"}
+          </Link>
+        </div>
+      )}
 
       {/* Live decision surface */}
       <div className="mt-4">
@@ -348,7 +393,20 @@ function WorkshopPreflight() {
         onConfirm={confirmHost}
       />
 
-      <WorkshopStrip />
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-3 mb-3">
+          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink-muted">
+            Recent Workshops
+          </h2>
+          <Link
+            to="/workshops"
+            className="text-xs text-ink-muted hover:text-ink transition"
+          >
+            Open library →
+          </Link>
+        </div>
+        <WorkshopStrip />
+      </section>
     </main>
   );
 }
