@@ -195,10 +195,72 @@ function CollabPage() {
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
 
+  const qc = useQueryClient();
+
   const { data: posts, isLoading } = useQuery({
     queryKey: ["collab", filters, blockedKey],
     queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
   });
+
+  const postIds = useMemo(() => (posts ?? []).map((p) => p.id), [posts]);
+  const { data: vouchersByPost } = useVouchersForPosts(postIds);
+
+  // Top boosted Collabs (community pinned, one per user)
+  const { data: boostedPosts } = useQuery({
+    queryKey: ["collab-boosted", blockedKey],
+    queryFn: async (): Promise<CollabCardData[]> => {
+      const { data: boosts } = await supabase
+        .from("collab_boosts")
+        .select("collab_post_id,created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const ids = Array.from(new Set((boosts ?? []).map((b) => b.collab_post_id as string)));
+      if (ids.length === 0) return [];
+      const { data: rows } = await supabase
+        .from("collab_posts")
+        .select(
+          "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,vouch_count,boost_count," +
+            "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
+            "city:cities!collab_posts_city_id_fkey(name)," +
+            "roles:collab_roles(id,role_name,sort_order)",
+        )
+        .in("id", ids)
+        .eq("status", "open");
+      const blocked = new Set(blockedIds);
+      const byId = new Map<string, CollabCardData>();
+      for (const r of ((rows ?? []) as unknown as (CollabCardData & { user_id: string })[])) {
+        if (!blocked.has(r.user_id)) byId.set(r.id, r as CollabCardData);
+      }
+      // Order: by boost_count desc, then recency
+      return ids
+        .map((id) => byId.get(id))
+        .filter((r): r is CollabCardData => !!r)
+        .slice()
+        .sort((a, b) => (b.boost_count ?? 0) - (a.boost_count ?? 0))
+        .slice(0, 6);
+    },
+    staleTime: 30_000,
+  });
+
+  // Live Collabs (have a running Workshop)
+  const livePosts = useMemo(() => (posts ?? []).filter((p) => !!p.live_workshop_id), [posts]);
+
+  // Realtime: invalidate on vouch/boost changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("collab-board-signals")
+      .on("postgres_changes", { event: "*", schema: "public", table: "collab_vouches" }, () => {
+        qc.invalidateQueries({ queryKey: ["collab"] });
+        qc.invalidateQueries({ queryKey: ["collab-vouchers-batch"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "collab_boosts" }, () => {
+        qc.invalidateQueries({ queryKey: ["collab-boosted"] });
+        qc.invalidateQueries({ queryKey: ["collab"] });
+        qc.invalidateQueries({ queryKey: ["my-collab-boost"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const tabs = useMemo(
     () => [
