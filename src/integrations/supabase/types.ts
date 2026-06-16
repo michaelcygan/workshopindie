@@ -1110,6 +1110,51 @@ export type Database = {
           },
         ]
       }
+      instant_room_work_pins: {
+        Row: {
+          created_at: string
+          id: string
+          is_host_pin: boolean
+          pinned_by_user_id: string
+          room_id: string
+          sort_order: number
+          work_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_host_pin?: boolean
+          pinned_by_user_id: string
+          room_id: string
+          sort_order?: number
+          work_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_host_pin?: boolean
+          pinned_by_user_id?: string
+          room_id?: string
+          sort_order?: number
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_room_work_pins_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_room_work_pins_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_rooms: {
         Row: {
           category: Database["public"]["Enums"]["category"] | null

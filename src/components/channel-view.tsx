@@ -477,7 +477,7 @@ export function ChannelView({
   const fsTarget: "chat" | "gallery" =
     viewMode === "gallery" ? "gallery" : "chat";
   const fsLabel =
-    fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
+    fsTarget === "gallery" ? "Expand Work" : "Expand chat";
 
 
   return (
@@ -503,13 +503,15 @@ export function ChannelView({
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
         <FullscreenShell
-          title={`${title} · Gallery`}
+          title={`${title} · Work`}
           presence={presenceStrip}
           onMinimize={() => setFsView(null)}
         >
           <RoomGallery
             meUserId={user.id}
             members={galleryMembers}
+            roomId={roomId}
+            hostUserId={hostUserId ?? null}
             onOpenWork={openWork}
             className="h-full"
             fullscreen
@@ -566,12 +568,14 @@ export function ChannelView({
             <div className="h-[60vh] p-3 md:p-4">
               {fsView === "gallery" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
-                  Gallery open in fullscreen…
+                  Work open in fullscreen…
                 </div>
               ) : (
                 <RoomGallery
                   meUserId={user.id}
                   members={galleryMembers}
+                  roomId={roomId}
+                  hostUserId={hostUserId ?? null}
                   onOpenWork={openWork}
                   className="h-full"
                 />
