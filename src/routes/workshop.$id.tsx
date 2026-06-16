@@ -15,6 +15,10 @@ import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvi
 import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
+import { FocusStrip } from "@/components/focus-strip";
+import { HostedByLine } from "@/components/hosted-by-line";
+import { HostMenu } from "@/components/host-menu";
+import { HostRoomEvents } from "@/components/host-room-events";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
@@ -41,6 +45,10 @@ type Room = {
   host_user_id: string | null;
   promoted_at: string | null;
   source_workshop_id: string | null;
+  status: string;
+  focus_message: string | null;
+  locked: boolean;
+  ended_by_user_id: string | null;
 };
 
 function LiveRoomPage() {
@@ -60,12 +68,13 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
       return data as Room | null;
     },
+    refetchInterval: 5000,
   });
 
   // Pending opt-in invite for the persistent fork
@@ -133,6 +142,32 @@ function LiveRoomPage() {
     },
   });
 
+  // Other participants (for the host's Remove picker). Only fetched when host.
+  const { data: participants = [] } = useQuery({
+    queryKey: ["instant-room-participants", id, isHost],
+    enabled: !!user && isHost,
+    refetchInterval: 8000,
+    queryFn: async () => {
+      const cutoff = new Date(Date.now() - 60_000).toISOString();
+      const { data } = await supabase
+        .from("instant_presence")
+        .select("user_id, profile:profiles!instant_presence_user_id_fkey(display_name, username, avatar_url)")
+        .eq("room_id", id)
+        .gt("last_seen_at", cutoff);
+      return ((data ?? []) as Array<{
+        user_id: string;
+        profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
+      }>)
+        .filter((p) => p.user_id !== user!.id)
+        .map((p) => ({
+          user_id: p.user_id,
+          display_name: p.profile?.display_name ?? null,
+          username: p.profile?.username ?? null,
+          avatar_url: p.profile?.avatar_url ?? null,
+        }));
+    },
+  });
+
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
 
@@ -178,15 +213,45 @@ function LiveRoomPage() {
         </div>
 
         {!isPromoted && user && (
-          <Button
-            size="sm"
-            onClick={() => setCollabOpen(true)}
-            className="ml-auto rounded-full gap-1.5"
-          >
-            <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
-          </Button>
+          <div className="ml-auto flex items-center gap-2">
+            {isHost && room && (
+              <HostMenu
+                roomId={id}
+                hostUserId={user.id}
+                focusMessage={room.focus_message}
+                locked={!!room.locked}
+                participants={participants}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+              />
+            )}
+            <Button
+              size="sm"
+              onClick={() => setCollabOpen(true)}
+              className="rounded-full gap-1.5"
+            >
+              <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
+            </Button>
+          </div>
         )}
       </div>
+
+      {/* Hosted by + lock badge — sits just under the title row */}
+      {!isPromoted && room?.host_user_id && (
+        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+          <HostedByLine hostUserId={room.host_user_id} />
+          {room.locked && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-ink-soft">
+              Locked
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Focus message — visible to everyone */}
+      {!isPromoted && <FocusStrip text={room?.focus_message ?? null} />}
+
+      {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
+      {user && <HostRoomEvents roomId={id} isHost={isHost} />}
 
       {/* Promoted banner — slim */}
       {isPromoted && forkedWs && (

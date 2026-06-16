@@ -222,15 +222,30 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
   .inputValidator((input: { roomId: string }) =>
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id, kind, status, participant_cap")
+      .select("id, kind, status, participant_cap, locked, host_user_id")
       .eq("id", data.roomId)
       .maybeSingle();
     if (!room) throw new Error("That room no longer exists");
     if (room.kind !== "lounge" || room.status !== "active") {
       throw new Error("That room isn't live anymore");
+    }
+    // Locked rooms reject new joiners (host can still rejoin).
+    if ((room as any).locked && (room as any).host_user_id !== userId) {
+      throw new Error("This Workshop is locked. Ask the host for a link.");
+    }
+    // Recently removed users can't rejoin until their cooldown expires.
+    const { data: rm } = await supabaseAdmin
+      .from("instant_room_removals")
+      .select("until")
+      .eq("room_id", data.roomId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (rm && new Date((rm as any).until).getTime() > Date.now()) {
+      throw new Error("You were removed from this Workshop. Try again later.");
     }
     const cap = (room as any).participant_cap ?? 5;
     const cutoff = new Date(Date.now() - 60_000).toISOString();
