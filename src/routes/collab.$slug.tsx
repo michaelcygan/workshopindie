@@ -18,6 +18,8 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { applyToCollab } from "@/lib/collab.functions";
+import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
+import { BoostButton } from "@/components/boost-button";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
@@ -318,6 +320,8 @@ function CollabDetail() {
           )}
         </div>
 
+        <CollabSocialProof postId={post.id} authorId={post.user_id} />
+
         {hostUser && (
           <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
             <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
@@ -401,5 +405,35 @@ function CollabDetail() {
         />
       )}
     </main>
+  );
+}
+
+function CollabSocialProof({ postId, authorId }: { postId: string; authorId: string }) {
+  const { data: vouchersByPost } = useVouchersForPosts([postId]);
+  const vouchers = vouchersByPost.get(postId) ?? [];
+  const { data: post } = useQuery({
+    queryKey: ["collab-detail-counts", postId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("vouch_count,boost_count")
+        .eq("id", postId)
+        .maybeSingle();
+      return data as { vouch_count: number | null; boost_count: number | null } | null;
+    },
+    staleTime: 15_000,
+  });
+  return (
+    <div className="mt-5 flex flex-wrap items-center gap-2 rounded-2xl border border-border bg-surface p-3">
+      <div className="flex-1 min-w-[200px]">
+        <VouchRow
+          postId={postId}
+          authorId={authorId}
+          vouchCount={post?.vouch_count ?? vouchers.length}
+          vouchers={vouchers}
+        />
+      </div>
+      <BoostButton postId={postId} authorId={authorId} size="md" />
+    </div>
   );
 }

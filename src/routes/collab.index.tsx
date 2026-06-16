@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Search, X, MapPin, Briefcase } from "lucide-react";
+import { Megaphone, Search, X, MapPin, Briefcase, Radio, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
+import { useVouchersForPosts } from "@/components/vouch-button";
 
 
 const searchSchema = z.object({
@@ -44,7 +45,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   let q = supabase
     .from("collab_posts")
     .select(
-      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id," +
+      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,vouch_count,boost_count," +
         "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
@@ -68,14 +69,16 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[])
     .filter((r) => !blocked.has(r.user_id)) as CollabCardData[];
 
-  // Light blended sort: newest first, gentle boost for posts with more roles.
+  // Light blended sort: newest first, gentle boost for posts with more roles + vouches.
   return rows
     .slice()
     .sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
-      const ra = (a.roles?.length ?? 0) * 1000 * 60 * 60 * 6; // each role ~ 6h "freshness"
-      const rb = (b.roles?.length ?? 0) * 1000 * 60 * 60 * 6;
+      const ra = (a.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+        + (a.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
+      const rb = (b.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+        + (b.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
       return tb + rb - (ta + ra);
     });
 }
@@ -192,10 +195,72 @@ function CollabPage() {
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
 
+  const qc = useQueryClient();
+
   const { data: posts, isLoading } = useQuery({
     queryKey: ["collab", filters, blockedKey],
     queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
   });
+
+  const postIds = useMemo(() => (posts ?? []).map((p) => p.id), [posts]);
+  const { data: vouchersByPost } = useVouchersForPosts(postIds);
+
+  // Top boosted Collabs (community pinned, one per user)
+  const { data: boostedPosts } = useQuery({
+    queryKey: ["collab-boosted", blockedKey],
+    queryFn: async (): Promise<CollabCardData[]> => {
+      const { data: boosts } = await supabase
+        .from("collab_boosts")
+        .select("collab_post_id,created_at")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      const ids = Array.from(new Set((boosts ?? []).map((b) => b.collab_post_id as string)));
+      if (ids.length === 0) return [];
+      const { data: rows } = await supabase
+        .from("collab_posts")
+        .select(
+          "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,vouch_count,boost_count," +
+            "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
+            "city:cities!collab_posts_city_id_fkey(name)," +
+            "roles:collab_roles(id,role_name,sort_order)",
+        )
+        .in("id", ids)
+        .eq("status", "open");
+      const blocked = new Set(blockedIds);
+      const byId = new Map<string, CollabCardData>();
+      for (const r of ((rows ?? []) as unknown as (CollabCardData & { user_id: string })[])) {
+        if (!blocked.has(r.user_id)) byId.set(r.id, r as CollabCardData);
+      }
+      // Order: by boost_count desc, then recency
+      return ids
+        .map((id) => byId.get(id))
+        .filter((r): r is CollabCardData => !!r)
+        .slice()
+        .sort((a, b) => (b.boost_count ?? 0) - (a.boost_count ?? 0))
+        .slice(0, 6);
+    },
+    staleTime: 30_000,
+  });
+
+  // Live Collabs (have a running Workshop)
+  const livePosts = useMemo(() => (posts ?? []).filter((p) => !!p.live_workshop_id), [posts]);
+
+  // Realtime: invalidate on vouch/boost changes
+  useEffect(() => {
+    const channel = supabase
+      .channel("collab-board-signals")
+      .on("postgres_changes", { event: "*", schema: "public", table: "collab_vouches" }, () => {
+        qc.invalidateQueries({ queryKey: ["collab"] });
+        qc.invalidateQueries({ queryKey: ["collab-vouchers-batch"] });
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "collab_boosts" }, () => {
+        qc.invalidateQueries({ queryKey: ["collab-boosted"] });
+        qc.invalidateQueries({ queryKey: ["collab"] });
+        qc.invalidateQueries({ queryKey: ["my-collab-boost"] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const tabs = useMemo(
     () => [
@@ -316,9 +381,57 @@ function CollabPage() {
         )}
       </div>
 
+      {/* Live Collabs strip */}
+      {livePosts.length > 0 && (
+        <div className="mt-10">
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <Radio className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg text-ink">Live right now</h2>
+            <span className="text-xs text-ink-muted">— Workshops on these Collabs are running</span>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:-mx-6 md:px-6 [scrollbar-width:thin]">
+            {livePosts.map((p) => (
+              <Link
+                key={p.id}
+                to="/collab/$slug"
+                params={{ slug: p.slug }}
+                className="group relative flex min-w-[260px] max-w-[280px] shrink-0 flex-col gap-1.5 rounded-2xl border border-primary/30 bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                  <span className="text-[11px] font-medium uppercase tracking-wide text-primary">Live</span>
+                  <span className="ml-auto text-[11px] text-ink-muted">{p.user?.display_name ?? p.user?.username ?? "Host"}</span>
+                </div>
+                <div className="font-display text-base text-ink line-clamp-2">{p.title}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
+      {/* Boosted strip */}
+      {boostedPosts && boostedPosts.length > 0 && (
+        <div className="mt-10">
+          <div className="mb-3 flex items-center gap-2 px-1">
+            <Rocket className="h-4 w-4 text-primary" />
+            <h2 className="font-display text-lg text-ink">Boosted by the community</h2>
+            <span className="text-xs text-ink-muted">— most boosted Collabs right now</span>
+          </div>
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {boostedPosts.map((p) => (
+              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} boosted />
+            ))}
+          </div>
+        </div>
+      )}
 
-      <div className="mt-8">
+      <div className="mt-10">
+        {(boostedPosts && boostedPosts.length > 0) && (
+          <h2 className="mb-3 px-1 font-display text-lg text-ink">Open Collabs</h2>
+        )}
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
@@ -327,9 +440,13 @@ function CollabPage() {
           </div>
         ) : !posts || posts.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">Nothing open right now.</h3>
+            <h3 className="font-display text-2xl text-ink">
+              {filters.city || filters.online ? "Nothing open here yet." : "Nothing open right now."}
+            </h3>
             <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-              Be the first to post — list the roles, the people show up.
+              {filters.city
+                ? "Be the first — post one and the right people will see it."
+                : "Post yours — list the roles, the people show up."}
             </p>
             <Link to="/collab/new" className="mt-5 inline-block">
               <Button className="rounded-full">Post a Collab</Button>
@@ -337,7 +454,9 @@ function CollabPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((p) => <CollabCard key={p.id} post={p} />)}
+            {posts.map((p) => (
+              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} />
+            ))}
           </div>
         )}
       </div>

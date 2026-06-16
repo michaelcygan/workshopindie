@@ -5,9 +5,12 @@ import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
+import { VouchRow, type VouchersByPost } from "./vouch-button";
+import { BoostButton } from "./boost-button";
 
 export type CollabCardData = {
   id: string;
+  user_id: string;
   title: string;
   slug: string;
   category: Category;
@@ -21,6 +24,8 @@ export type CollabCardData = {
   status: string;
   created_at: string;
   live_workshop_id?: string | null;
+  vouch_count?: number | null;
+  boost_count?: number | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
@@ -58,7 +63,17 @@ function locationLabel(post: CollabCardData): string {
   return post.city?.name || "In person";
 }
 
-export function CollabCard({ post, className }: { post: CollabCardData; className?: string }) {
+export function CollabCard({
+  post,
+  vouchers,
+  boosted,
+  className,
+}: {
+  post: CollabCardData;
+  vouchers?: VouchersByPost;
+  boosted?: boolean;
+  className?: string;
+}) {
   const roles = (post.roles ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
   const shownRoles = roles.slice(0, 2);
   const overflow = Math.max(0, roles.length - shownRoles.length);
@@ -68,6 +83,9 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
     ? timelineBadgeText(post.timeline_mode, post.starts_on ?? null, post.ends_on ?? null)
     : null;
   const tlLabel = tlBadge ?? post.timeline_text;
+  const postVouchers = vouchers?.get(post.id) ?? [];
+  const vouchCount = post.vouch_count ?? postVouchers.length;
+  const isLive = !!post.live_workshop_id;
 
   return (
     <motion.article
@@ -76,7 +94,9 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition-shadow hover:shadow-lift",
+        "group relative flex flex-col overflow-hidden rounded-3xl border bg-surface shadow-soft transition-shadow hover:shadow-lift",
+        boosted ? "border-primary/40 ring-1 ring-primary/20" : "border-border",
+        isLive && "ring-1 ring-primary/30",
         className,
       )}
     >
@@ -89,13 +109,18 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
 
       <div className="flex items-center gap-2 px-5 pt-5">
         <CategoryChip category={post.category} />
-        {post.live_workshop_id && (
+        {isLive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
             <span className="relative flex h-1.5 w-1.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
             </span>
             <Radio className="h-3 w-3" /> Live
+          </span>
+        )}
+        {boosted && (
+          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+            Boosted
           </span>
         )}
         <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
@@ -134,7 +159,13 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
           </div>
         )}
 
-
+        <VouchRow
+          postId={post.id}
+          authorId={post.user_id}
+          vouchCount={vouchCount}
+          vouchers={postVouchers}
+          className="pt-1"
+        />
 
         <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
@@ -155,6 +186,10 @@ export function CollabCard({ post, className }: { post: CollabCardData; classNam
           <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
             {COMP_LABEL[post.compensation_type]}
           </span>
+        </div>
+
+        <div className="flex items-center gap-2 pt-1">
+          <BoostButton postId={post.id} authorId={post.user_id} />
         </div>
       </div>
     </motion.article>
