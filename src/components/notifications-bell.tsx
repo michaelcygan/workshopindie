@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
+import { formatRoomTitle } from "@/lib/instant";
 
 type Row = {
   id: string;
