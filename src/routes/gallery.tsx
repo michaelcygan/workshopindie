@@ -32,9 +32,9 @@ export const Route = createFileRoute("/gallery")({
   validateSearch: zodValidator(searchSchema),
   head: () => ({
     meta: [
-      { title: "Gallery — Workshop" },
-      { name: "description", content: "Browse everything people have shipped on Workshop. Filter by medium, location, and what your network is making." },
-      { property: "og:title", content: "Gallery — Workshop" },
+      { title: "Work — Workshop" },
+      { name: "description", content: "Browse everything people have shipped on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
+      { property: "og:title", content: "Work — Workshop" },
       { property: "og:description", content: "Browse everything people have shipped on Workshop." },
     ],
   }),
