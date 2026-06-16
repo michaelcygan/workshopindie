@@ -4,14 +4,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { listRecentActivity, type InstantActivityEvent } from "@/lib/instant.functions";
+import { formatRoomTitle } from "@/lib/instant";
 
 function formatEvent(e: InstantActivityEvent): string {
+  const title = formatRoomTitle(e.title, (e as any).medium ?? null);
   if (e.kind === "join") {
     const who = e.actor_display_name ?? "Someone";
-    return `${who} just joined ${e.title}`;
+    return `${who} just joined ${title}`;
   }
-  if (e.kind === "spawn") return `${e.title} just started`;
-  return `${e.title} just ended`;
+  if (e.kind === "spawn") return `${title} just started`;
+  return `${title} just ended`;
 }
 
 export function InstantActivityTicker() {
