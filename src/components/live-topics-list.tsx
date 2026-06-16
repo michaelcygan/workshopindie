@@ -217,19 +217,19 @@ export function LiveTopicsList({
         onKeyDown={handleListKeyDown}
         className="relative rounded-3xl bg-surface shadow-halo overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
-        {/* Featured: Any topic */}
+        {/* Featured: Lounge */}
         <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative">
           {/* "now playing" hairline */}
           <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
           <div className="p-5 md:p-6 pb-4">
             {eyebrow}
             <h2 className="mt-3 font-display text-[26px] md:text-[30px] leading-[1.05] text-ink tracking-tight">
-              Any topic
+              Lounge
             </h2>
             <p className="mt-1.5 text-[13px] text-ink-muted/90 max-w-[28ch]">
               {noneLive
-                ? "Be the first in tonight. We'll open the room."
-                : "We'll drop you in the best open seat right now."}
+                ? "Open the room — the night starts here."
+                : "Drop in where the conversation's already going."}
             </p>
             <div className="mt-4">{splitCTA}</div>
           </div>
@@ -268,6 +268,7 @@ export function LiveTopicsList({
             style={{ maxHeight: 380 }}
           >
             <ul className="divide-y divide-border/40">
+              {loungeRow}
               {sorted.map((c) => {
                 const live = liveByMedium.get(c.id) ?? 0;
                 return (
@@ -306,12 +307,12 @@ export function LiveTopicsList({
         <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
         {eyebrow}
         <h2 className="mt-3 font-display text-[26px] leading-[1.05] text-ink tracking-tight">
-          Any topic
+          Lounge
         </h2>
         <p className="mt-1.5 text-[13px] text-ink-muted/90">
           {noneLive
-            ? "Be the first in tonight. We'll open the room."
-            : "We'll drop you in the best open seat."}
+            ? "Open the room — the night starts here."
+            : "Drop in where the conversation's already going."}
         </p>
         <div className="mt-4">{splitCTA}</div>
       </div>
@@ -321,6 +322,7 @@ export function LiveTopicsList({
           <div className="text-[10.5px] text-ink-muted tabular-nums">{liveCount} live</div>
         </div>
         <ul className="divide-y divide-border/40">
+          {loungeRow}
           {sorted.map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
             return (
