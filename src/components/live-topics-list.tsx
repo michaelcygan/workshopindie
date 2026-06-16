@@ -396,6 +396,9 @@ export function LiveTopicsList({
               : "See all topics"}
         </button>
       )}
+      {featuredFooter && (
+        <div className="border-t border-border/60 px-4 py-3">{featuredFooter}</div>
+      )}
     </div>
   );
 }
