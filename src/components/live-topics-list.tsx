@@ -277,8 +277,9 @@ export function LiveTopicsList({
           <div
             ref={scrollerRef}
             className="scrollbar-none overflow-y-auto"
-            style={{ maxHeight: 380 }}
+            style={{ height: 380 }}
           >
+
             <ul className="divide-y divide-border/40">
               {loungeRow}
               {sorted.map((c) => {
