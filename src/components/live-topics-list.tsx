@@ -159,7 +159,7 @@ export function LiveTopicsList({
         <div className="flex flex-col">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
             <div className="text-[11px] uppercase tracking-wider text-ink-muted">By topic</div>
-            <div className="text-[11px] text-ink-muted tabular-nums">
+            <div className={cn("text-[11px] tabular-nums", liveCount > 0 ? "text-ink" : "text-ink-muted")}>
               {liveCount} {liveCount === 1 ? "person" : "people"} live
             </div>
           </div>
