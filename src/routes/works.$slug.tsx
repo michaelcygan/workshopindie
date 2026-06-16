@@ -78,6 +78,7 @@ type WorkRow = {
   source_type: string; license_type: string; published_at: string | null; created_at: string;
   source_workshop_id: string | null;
   like_count: number; save_count: number; view_count: number; comment_count: number;
+  vouch_count: number; boost_count: number;
   created_by: string;
   work_credits: { id: string; role_label: string; sort_order: number;
     profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; headline: string | null } | null;
@@ -87,7 +88,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,created_by,source_workshop_id, work_credits(id,role_label,sort_order, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id, work_credits(id,role_label,sort_order, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -100,10 +101,20 @@ function WorkDetail() {
   const navigate = useNavigate();
   const { data: work, isLoading } = useQuery({ queryKey: ["work", slug], queryFn: () => fetchWork(slug) });
 
-  // Bump view counter once per mount.
+  // Rate-limited view bump — RPC dedupes per (work, browser, hour).
   useEffect(() => {
     if (!work) return;
-    supabase.from("works").update({ view_count: work.view_count + 1 }).eq("id", work.id).then(() => {});
+    let key: string;
+    try {
+      key = localStorage.getItem("ws_view_key") ?? "";
+      if (!key) {
+        key = crypto.randomUUID();
+        localStorage.setItem("ws_view_key", key);
+      }
+    } catch {
+      key = Math.random().toString(36).slice(2);
+    }
+    supabase.rpc("bump_work_view", { _work_id: work.id, _key: key }).then(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [work?.id]);
 
