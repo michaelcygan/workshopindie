@@ -58,6 +58,7 @@ export function ChannelView({
   pinned,
   initialMode = "voice",
   workshopId,
+  hostUserId,
   toolsSlot,
 }: {
   roomId: string;
@@ -65,6 +66,7 @@ export function ChannelView({
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
+  hostUserId?: string | null;
   toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
 
@@ -542,6 +544,8 @@ export function ChannelView({
           ) : viewMode === "collabs" && user ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
+                roomId={roomId}
+                hostUserId={hostUserId ?? null}
                 presenceUsers={[
                   {
                     user_id: user.id,
