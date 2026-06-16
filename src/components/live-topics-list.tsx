@@ -615,11 +615,25 @@ function TopicRow({
           <div className="hidden sm:flex -space-x-1.5 shrink-0">
             {stack.map((p) => {
               const name = p.display_name || p.username || "Anon";
-              return (
-                <Avatar key={p.user_id} className="h-5 w-5 ring-2 ring-surface">
+              const avatar = (
+                <Avatar className="h-5 w-5 ring-2 ring-surface transition hover:ring-primary/40">
                   <AvatarImage src={p.avatar_url ?? undefined} />
                   <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
                 </Avatar>
+              );
+              return p.username ? (
+                <Link
+                  key={p.user_id}
+                  to="/u/$username"
+                  params={{ username: p.username }}
+                  aria-label={`Open ${name}'s profile`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="block rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+                >
+                  {avatar}
+                </Link>
+              ) : (
+                <span key={p.user_id}>{avatar}</span>
               );
             })}
           </div>
