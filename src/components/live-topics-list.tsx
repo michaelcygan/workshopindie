@@ -98,12 +98,23 @@ export function LiveTopicsList({
   }, [loungeRooms]);
 
   const sorted = useMemo(() => {
+    // Pin Critique (2nd) and Co-working (3rd) right under the Lounge; everything
+    // else falls in line by live count.
+    const pinOrder: Partial<Record<Category, number>> = { critique: 0, coworking: 1 };
     return [...CATEGORIES].sort((a, b) => {
+      const pa = pinOrder[a.id];
+      const pb = pinOrder[b.id];
+      if (pa !== undefined || pb !== undefined) {
+        if (pa === undefined) return 1;
+        if (pb === undefined) return -1;
+        return pa - pb;
+      }
       const la = liveByMedium.get(a.id) ?? 0;
       const lb = liveByMedium.get(b.id) ?? 0;
       return lb - la;
     });
   }, [liveByMedium]);
+
 
   // Arrow-key navigation between topic rows
   function handleListKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
