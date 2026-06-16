@@ -236,6 +236,33 @@ function GalleryPage() {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
+  // Realtime: refresh the feed when anyone vouches or boosts a Work
+  const qc = useQueryClient();
+  useEffect(() => {
+    const ch = supabase
+      .channel("gallery-social")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "work_vouches" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["gallery"] });
+          qc.invalidateQueries({ queryKey: ["work-vouchers-batch"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "work_boosts" },
+        () => {
+          qc.invalidateQueries({ queryKey: ["boosted-works"] });
+          qc.invalidateQueries({ queryKey: ["gallery"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [qc]);
+
   // Geo-default: auto-apply user's home city (or IP-inferred nearest) on first visit
   const defaultCityQuery = useDefaultCity();
   const defaultCity = defaultCityQuery.data?.city ?? null;
