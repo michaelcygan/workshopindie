@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Loader2, Sparkles } from "lucide-react";
-import { listActiveInstantRooms } from "@/lib/instant.functions";
+import { ChevronDown, Loader2, Plus, Sparkles } from "lucide-react";
+import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -44,6 +45,20 @@ export function LiveTopicsList({
     const m = new Map<Category, number>();
     for (const r of rooms) {
       if (r.medium) m.set(r.medium as Category, (m.get(r.medium as Category) ?? 0) + r.live_count);
+    }
+    return m;
+  }, [rooms]);
+
+  const participantsByMedium = useMemo(() => {
+    const m = new Map<Category, ActiveInstantRoom["participants"]>();
+    for (const r of rooms) {
+      if (!r.medium) continue;
+      const list = m.get(r.medium as Category) ?? [];
+      for (const p of r.participants) {
+        if (list.length >= 3) break;
+        if (!list.find((x) => x.user_id === p.user_id)) list.push(p);
+      }
+      m.set(r.medium as Category, list);
     }
     return m;
   }, [rooms]);
@@ -105,17 +120,23 @@ export function LiveTopicsList({
             "md:border-r border-border/70 border-b md:border-b-0",
           )}
         >
+          {/* Ambient gradient detail */}
+          <span aria-hidden className="pointer-events-none absolute right-6 top-6 inline-flex gap-1.5 opacity-40">
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-70" />
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-50 translate-y-1" />
+            <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-30 translate-y-2" />
+          </span>
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
             <Sparkles className="h-3 w-3" />
-            {noneLive ? "Start the night" : "Matchmaker"}
+            {noneLive ? "Start the night" : "Jump in"}
+            {!noneLive && (
+              <span className="tabular-nums text-ink/70">· {liveCount} live</span>
+            )}
           </div>
           <div className="mt-3 flex items-baseline gap-2">
             <div className="font-display text-2xl md:text-[28px] leading-none text-ink">
               Any topic
             </div>
-            {anyCount > 0 && (
-              <div className="text-xs text-ink-muted tabular-nums">· {anyCount} live</div>
-            )}
           </div>
           <p className="mt-2 text-sm text-ink-muted max-w-xs">
             {noneLive
@@ -127,7 +148,7 @@ export function LiveTopicsList({
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <>
-                {noneLive ? "Open the first room" : "Take a seat"}
+                {noneLive ? "Open the first room" : "Match me to a seat"}
                 <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </>
             )}
@@ -138,7 +159,7 @@ export function LiveTopicsList({
         <div className="flex flex-col">
           <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
             <div className="text-[11px] uppercase tracking-wider text-ink-muted">By topic</div>
-            <div className="text-[11px] text-ink-muted tabular-nums">
+            <div className={cn("text-[11px] tabular-nums", liveCount > 0 ? "text-ink" : "text-ink-muted")}>
               {liveCount} {liveCount === 1 ? "person" : "people"} live
             </div>
           </div>
@@ -158,6 +179,7 @@ export function LiveTopicsList({
                     <TopicRow
                       label={c.label}
                       live={live}
+                      participants={participantsByMedium.get(c.id) ?? []}
                       busy={busyKey === c.id}
                       disabled={disabled}
                       dense
@@ -268,6 +290,7 @@ function TopicRow({
   label,
   sublabel,
   live,
+  participants,
   icon,
   highlight,
   busy,
@@ -279,6 +302,7 @@ function TopicRow({
   label: string;
   sublabel?: string;
   live: number;
+  participants?: ActiveInstantRoom["participants"];
   icon?: React.ReactNode;
   highlight?: boolean;
   busy?: boolean;
@@ -288,6 +312,7 @@ function TopicRow({
   forceLiveCTA?: string;
 }) {
   const isLive = live > 0;
+  const stack = (participants ?? []).slice(0, 3);
   return (
     <button
       type="button"
@@ -298,7 +323,7 @@ function TopicRow({
         "group flex w-full items-center gap-3 text-left transition",
         dense ? "px-4 py-2.5" : "px-5 py-3.5",
         "hover:bg-muted/40 disabled:opacity-60 disabled:hover:bg-transparent",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink/20",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30",
         highlight && "bg-muted/30",
       )}
     >
@@ -324,13 +349,27 @@ function TopicRow({
         {sublabel && <div className="mt-0.5 text-xs text-ink-muted">{sublabel}</div>}
       </div>
 
+      {isLive && stack.length > 0 && (
+        <div className="hidden sm:flex -space-x-1.5 shrink-0">
+          {stack.map((p) => {
+            const name = p.display_name || p.username || "Anon";
+            return (
+              <Avatar key={p.user_id} className="h-5 w-5 ring-2 ring-surface">
+                <AvatarImage src={p.avatar_url ?? undefined} />
+                <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
+              </Avatar>
+            );
+          })}
+        </div>
+      )}
+
       <span
         className={cn(
-          "shrink-0 rounded-full text-[11px] font-medium transition tabular-nums",
+          "shrink-0 rounded-full text-[11px] font-medium transition tabular-nums inline-flex items-center gap-1",
           dense ? "px-2.5 py-1" : "px-3 py-1.5 text-xs",
           isLive
             ? "bg-ink text-background group-hover:opacity-90"
-            : "border border-dashed border-ink/20 text-ink-muted group-hover:border-ink/50 group-hover:text-ink",
+            : "text-ink-muted group-hover:text-ink",
         )}
       >
         {busy ? (
@@ -338,7 +377,10 @@ function TopicRow({
         ) : isLive ? (
           forceLiveCTA ?? "Take a seat"
         ) : (
-          "Open first"
+          <>
+            <Plus className="h-3 w-3" />
+            Start
+          </>
         )}
       </span>
     </button>

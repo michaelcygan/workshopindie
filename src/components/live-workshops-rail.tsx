@@ -10,6 +10,7 @@ import {
   type ActiveInstantRoom,
 } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { formatRoomTitle } from "@/lib/instant";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -113,7 +114,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
               </span>
               <span className="ml-auto text-[11px] tabular-nums text-ink-muted">{r.live_count}/5</span>
             </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{r.title}</h3>
+            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
 
             <div className="mt-3 flex items-center gap-2">
               <div className="flex -space-x-2">
@@ -167,7 +168,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
               </span>
               <span className="ml-auto text-[11px] tabular-nums text-ink-muted">5/5 · full</span>
             </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{r.title}</h3>
+            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
             <p className="mt-3 text-xs text-ink-muted">Full — try another room or open your own.</p>
           </article>
         ))}

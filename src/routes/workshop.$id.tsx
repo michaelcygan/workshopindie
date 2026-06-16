@@ -17,6 +17,7 @@ import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { toast } from "sonner";
+import { formatRoomTitle } from "@/lib/instant";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Workshop";
@@ -97,7 +98,7 @@ function LiveRoomPage() {
     },
   });
 
-  const title = room?.title ?? FALLBACK_TITLE;
+  const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
   const isHost = !!user && !!room && room.host_user_id === user.id;
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;

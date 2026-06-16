@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
+import { formatRoomTitle } from "@/lib/instant";
 
 type Row = {
   id: string;
@@ -41,7 +42,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
   const actorUsername = (n.payload?.actor_username as string) || undefined;
   const wsSlug = (n.payload?.slug as string) || undefined;
-  const wsTitle = (n.payload?.title as string) || "A Workshop";
+  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "A Workshop";
   switch (n.kind) {
     case "dm":
       return {
@@ -111,7 +112,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const mediumLabel = (n.payload?.medium as string) || null;
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
-        subtitle: (n.payload?.title as string) || "Drop into their Workshop while there's a seat.",
+        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Workshop while there's a seat.",
         href: roomId ? `/workshop/${roomId}` : "/workshop",
       };
     }
