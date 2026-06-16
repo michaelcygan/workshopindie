@@ -54,38 +54,49 @@ export function WaitingForOthersCard({ roomId, visible, canPingMutuals }: Props)
   }
 
   return (
-    <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface px-4 py-3 shadow-soft">
-      <div className="flex items-start gap-3">
-        <div className="relative mt-0.5 inline-flex h-2 w-2 shrink-0">
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink">You're first in — share to fill the room</p>
-          <p className="mt-0.5 text-xs text-ink-muted">
-            Up to 5 seats. People who follow you back will see this room in Live now.
-          </p>
-          <div className="mt-2.5 flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" className="rounded-full h-8 gap-1.5" onClick={copyLink}>
-              <Share2 className="h-3.5 w-3.5" /> Copy share link
-            </Button>
-            {canPingMutuals && (
-              <Button size="sm" className="rounded-full h-8 gap-1.5" onClick={pingMutuals} disabled={pinging}>
-                {pinging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
-                {pinging ? "Pinging…" : "Ping mutuals"}
-              </Button>
-            )}
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={dismiss}
-          className="text-ink-muted hover:text-ink"
-          aria-label="Dismiss"
+    <AnimatePresence initial={false}>
+      {shouldShow && (
+        <motion.div
+          key="waiting-card"
+          initial={{ opacity: 0, y: 8, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -4, scale: 0.98 }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+          className="mt-3 rounded-2xl border border-dashed border-border bg-surface px-4 py-3 shadow-soft"
         >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
+          <div className="flex items-start gap-3">
+            <div className="relative mt-0.5 inline-flex h-2 w-2 shrink-0">
+              <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-ink">You're first in — share to fill the room</p>
+              <p className="mt-0.5 text-xs text-ink-muted">
+                Up to 5 seats. People who follow you back will see this room in Live now.
+              </p>
+              <div className="mt-2.5 flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" className="rounded-full h-8 gap-1.5" onClick={copyLink}>
+                  <Share2 className="h-3.5 w-3.5" /> Copy share link
+                </Button>
+                {canPingMutuals && (
+                  <Button size="sm" className="rounded-full h-8 gap-1.5" onClick={pingMutuals} disabled={pinging}>
+                    {pinging ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
+                    {pinging ? "Pinging…" : "Ping mutuals"}
+                  </Button>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={dismiss}
+              className="text-ink-muted hover:text-ink"
+              aria-label="Dismiss"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
