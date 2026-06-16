@@ -10,6 +10,7 @@ import {
   type ActiveInstantRoom,
 } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { formatRoomTitle } from "@/lib/instant";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
