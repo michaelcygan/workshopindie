@@ -375,6 +375,7 @@ function SplitOpenButton({
   busyAny,
   disabled,
   liveByMedium,
+  loungeLive,
   busyKey,
   onPickAny,
   onPickMedium,
@@ -383,6 +384,7 @@ function SplitOpenButton({
   busyAny: boolean;
   disabled?: boolean;
   liveByMedium: Map<Category, number>;
+  loungeLive: number;
   busyKey?: string | null;
   onPickAny: () => void;
   onPickMedium: (m: Category) => void;
@@ -443,6 +445,32 @@ function SplitOpenButton({
             Jump straight into
           </div>
           <ul className="flex flex-col">
+            <li key="lounge">
+              <button
+                type="button"
+                disabled={disabled || busyAny}
+                onClick={() => { setOpen(false); onPickAny(); }}
+                className={cn(
+                  "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-ink font-medium",
+                  "hover:bg-muted/60 transition disabled:opacity-60",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full shrink-0",
+                    loungeLive > 0 ? "bg-primary" : "border border-ink/20",
+                  )}
+                />
+                <span className="flex-1 text-left">Lounge</span>
+                <span className="text-[9px] uppercase tracking-[0.14em] text-ink-muted/70">General</span>
+                {loungeLive > 0 && (
+                  <span className="text-[10.5px] tabular-nums text-ink-muted">{loungeLive} live</span>
+                )}
+                {busyAny && <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />}
+              </button>
+            </li>
+            <li aria-hidden className="my-1 h-px bg-border/50" />
             {CATEGORIES.map((c) => {
               const live = liveByMedium.get(c.id) ?? 0;
               const isBusy = busyKey === c.id;
