@@ -41,6 +41,7 @@ function WorkshopPreflight() {
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
   const [pendingTitle, setPendingTitle] = useState<string>("");
+  const [inspiredBy, setInspiredBy] = useState<string | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
@@ -101,6 +102,9 @@ function WorkshopPreflight() {
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(null); setBusyMedium(null); return; }
+      if (medium == null && liveCount === 0) {
+        toast("Opening a fresh Lounge — others can drop in any second.");
+      }
       const { roomId } = medium
         ? await dropMedium({ data: { medium } })
         : await drop();
@@ -116,6 +120,7 @@ function WorkshopPreflight() {
     if (busy || !canDrop) return;
     setHostMedium(null);
     setPendingTitle("");
+    setInspiredBy(null);
     setPrivacyOpen(true);
   }
 
@@ -126,7 +131,17 @@ function WorkshopPreflight() {
     }
     setHostMedium(p.medium);
     setPendingTitle(p.title);
+    setInspiredBy(p.title);
     setPrivacyOpen(true);
+  }
+
+  function handlePrivacyOpenChange(o: boolean) {
+    setPrivacyOpen(o);
+    if (!o) {
+      setHostMedium(null);
+      setPendingTitle("");
+      setInspiredBy(null);
+    }
   }
 
   async function confirmHost(args: { title: string; visibility: RoomVisibility; medium: Category | null }) {
@@ -143,6 +158,7 @@ function WorkshopPreflight() {
         },
       });
       qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
+      router.invalidate();
       setPrivacyOpen(false);
       router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
@@ -150,6 +166,13 @@ function WorkshopPreflight() {
       setBusy(null);
     }
   }
+
+  const subtitle =
+    liveCount === 0
+      ? "No one's in yet. Open the first room — it fills fast."
+      : liveCount === 1
+      ? "One room is open. Take a seat or start your own."
+      : `${liveCount} rooms going. Drop in or host your own.`;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
