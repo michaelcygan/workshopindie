@@ -318,6 +318,8 @@ function CollabDetail() {
           )}
         </div>
 
+        <CollabSocialProof postId={post.id} authorId={post.user_id} />
+
         {hostUser && (
           <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
             <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
