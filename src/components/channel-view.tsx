@@ -477,7 +477,7 @@ export function ChannelView({
   const fsTarget: "chat" | "gallery" =
     viewMode === "gallery" ? "gallery" : "chat";
   const fsLabel =
-    fsTarget === "gallery" ? "Expand gallery" : "Expand chat";
+    fsTarget === "gallery" ? "Expand Work" : "Expand chat";
 
 
   return (
