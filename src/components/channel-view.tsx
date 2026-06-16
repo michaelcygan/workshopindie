@@ -544,6 +544,8 @@ export function ChannelView({
           ) : viewMode === "collabs" && user ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
+                roomId={roomId}
+                hostUserId={hostUserId ?? null}
                 presenceUsers={[
                   {
                     user_id: user.id,
