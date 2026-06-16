@@ -479,6 +479,17 @@ function GalleryPage() {
           </>
         )}
       </section>
+
+      {/* Sticky mobile CTA */}
+      <Link
+        to="/works/new"
+        className="fixed bottom-4 right-4 z-40 md:hidden"
+      >
+        <Button className="rounded-full shadow-lift">
+          <Plus className="h-4 w-4" />
+          Post Work
+        </Button>
+      </Link>
     </main>
   );
 }
