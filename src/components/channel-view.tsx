@@ -58,6 +58,7 @@ export function ChannelView({
   pinned,
   initialMode = "voice",
   workshopId,
+  hostUserId,
   toolsSlot,
 }: {
   roomId: string;
@@ -65,6 +66,7 @@ export function ChannelView({
   pinned?: React.ReactNode;
   initialMode?: MediaMode;
   workshopId?: string;
+  hostUserId?: string | null;
   toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
 
