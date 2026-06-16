@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Loader2, Plus, Sparkles } from "lucide-react";
+import { motion } from "framer-motion";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -35,7 +35,6 @@ export function LiveTopicsList({
   featuredFooter,
 }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
-  const [showAll, setShowAll] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
 
@@ -79,28 +78,15 @@ export function LiveTopicsList({
     return m;
   }, [rooms]);
 
-  const anyCount = useMemo(
-    () => rooms.filter((r) => !r.medium).reduce((a, r) => a + r.live_count, 0),
-    [rooms],
-  );
-
   const sorted = useMemo(() => {
     return [...CATEGORIES].sort((a, b) => {
       const la = liveByMedium.get(a.id) ?? 0;
       const lb = liveByMedium.get(b.id) ?? 0;
-      if (la !== lb) return lb - la;
-      return 0;
+      return lb - la;
     });
   }, [liveByMedium]);
 
-  const defaultVisible = layout === "split" ? 6 : 5;
-  const visibleCount = showAll ? sorted.length : defaultVisible;
-  const visible = sorted.slice(0, visibleCount);
-  const hiddenLive = sorted
-    .slice(visibleCount)
-    .reduce((a, c) => a + (liveByMedium.get(c.id) ?? 0), 0);
-
-  // Arrow-key navigation between rows
+  // Arrow-key navigation between topic rows
   function handleListKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
     const buttons = Array.from(
@@ -126,7 +112,7 @@ export function LiveTopicsList({
     let lastTs = 0;
     let lastInteraction = Date.now();
     const IDLE_MS = 4000;
-    const PX_PER_S = 12;
+    const PX_PER_S = 10;
 
     function bump() { lastInteraction = Date.now(); }
     const events: (keyof HTMLElementEventMap)[] = [
@@ -143,7 +129,6 @@ export function LiveTopicsList({
       const maxScroll = el.scrollHeight - el.clientHeight;
       if (idle > IDLE_MS && maxScroll > 4) {
         const next = el.scrollTop + (PX_PER_S * dt) / 1000;
-        // Loop back to top once we hit the bottom; brief pause built into next idle window.
         if (next >= maxScroll) {
           el.scrollTop = 0;
           lastInteraction = Date.now();
@@ -158,208 +143,151 @@ export function LiveTopicsList({
       cancelAnimationFrame(raf);
       events.forEach((ev) => el.removeEventListener(ev, bump));
     };
-  }, [layout, visible.length, showAll]);
+  }, [layout]);
 
   const noneLive = liveCount === 0;
+
+  // ── Shared building blocks ──────────────────────────────────────────────
+
+  const eyebrow = (
+    <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">
+      <PulseDots active={!noneLive} />
+      <span>{noneLive ? "Start the night" : "Live now"}</span>
+      {!noneLive && (
+        <span className="tabular-nums text-ink/55">· {liveCount}</span>
+      )}
+    </div>
+  );
+
+  const splitCTA = (
+    <SplitOpenButton
+      noneLive={noneLive}
+      busyAny={busyKey === "any"}
+      disabled={disabled}
+      liveByMedium={liveByMedium}
+      busyKey={busyKey}
+      onPickAny={() => onPick(null)}
+      onPickMedium={(m) => onPick(m)}
+    />
+  );
+
+  // ── Split layout (desktop) ──────────────────────────────────────────────
 
   if (layout === "split") {
     return (
       <div
         ref={listRef}
         onKeyDown={handleListKeyDown}
-        className="rounded-2xl border border-border/70 bg-surface shadow-soft overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]"
+        className="relative rounded-3xl bg-surface shadow-halo overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
         {/* Featured: Any topic */}
-        <div className="md:border-r border-border/70 border-b md:border-b-0 bg-gradient-to-br from-muted/40 via-muted/20 to-transparent flex flex-col">
-          <button
-            type="button"
-            data-row
-            onClick={() => onPick(null)}
-            disabled={disabled || busyKey === "any"}
-            className={cn(
-              "group relative text-left p-5 md:p-6 transition",
-              "hover:bg-muted/30 disabled:opacity-60",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink/20",
-            )}
-          >
-            <span aria-hidden className="pointer-events-none absolute right-6 top-6 inline-flex gap-1.5 opacity-40">
-              <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-70" />
-              <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-50 translate-y-1" />
-              <span className="h-1.5 w-1.5 rounded-full gradient-motion opacity-30 translate-y-2" />
-            </span>
-            <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
-              <Sparkles className="h-3 w-3" />
-              {noneLive ? "Start the night" : "Jump in"}
-              {!noneLive && (
-                <span className="tabular-nums text-ink/70">· {liveCount} live</span>
-              )}
-            </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <div className="font-display text-2xl md:text-[28px] leading-none text-ink">
-                Any topic
-              </div>
-            </div>
-            <p className="mt-2 text-sm text-ink-muted max-w-xs">
+        <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative">
+          {/* "now playing" hairline */}
+          <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
+          <div className="p-5 md:p-6 pb-4">
+            {eyebrow}
+            <h2 className="mt-3 font-display text-[26px] md:text-[30px] leading-[1.05] text-ink tracking-tight">
+              Any topic
+            </h2>
+            <p className="mt-1.5 text-[13px] text-ink-muted/90 max-w-[28ch]">
               {noneLive
-                ? "Be the first in tonight. We'll open a room for you."
+                ? "Be the first in tonight. We'll open the room."
                 : "We'll drop you in the best open seat right now."}
             </p>
-            <div className="mt-5 inline-flex items-center gap-2 rounded-full bg-ink text-background px-4 py-2 text-xs font-medium group-hover:opacity-90 transition">
-              {busyKey === "any" ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <>
-                  {noneLive ? "Open the first room" : "Match me to a seat"}
-                  <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
-                </>
-              )}
-            </div>
-          </button>
-          {/* Inline medium quick-picker — "or jump into one" */}
-          <div className="px-5 md:px-6 pb-4 -mt-1">
-            <div className="text-[10px] uppercase tracking-wider text-ink-muted mb-1.5">
-              or jump into
-            </div>
-            <div className="flex flex-wrap gap-1">
-              {SUB_MEDIUMS.map((m) => {
-                const live = liveByMedium.get(m.id) ?? 0;
-                return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    onClick={() => onPick(m.id)}
-                    disabled={disabled || busyKey === m.id}
-                    className={cn(
-                      "shrink-0 rounded-full border border-border/70 bg-surface px-2.5 py-1 text-[11px] transition",
-                      "hover:border-ink/40 hover:bg-muted/40 hover:text-ink",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
-                      "disabled:opacity-60 inline-flex items-center gap-1",
-                      live > 0 ? "text-ink border-primary/40" : "text-ink-soft",
-                    )}
-                  >
-                    {live > 0 && (
-                      <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary" />
-                    )}
-                    {m.label}
-                    {live > 0 && (
-                      <span className="tabular-nums text-ink-muted">·{live}</span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+            <div className="mt-4">{splitCTA}</div>
           </div>
           {featuredFooter && (
-            <div className="px-5 md:px-6 pb-5">{featuredFooter}</div>
+            <div className="px-5 md:px-6 pb-5 mt-auto">{featuredFooter}</div>
           )}
         </div>
 
         {/* Topics column */}
-        <div className="flex flex-col min-h-0">
-          <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
-            <div className="text-[11px] uppercase tracking-wider text-ink-muted">By topic</div>
-            <div className={cn("text-[11px] tabular-nums", liveCount > 0 ? "text-ink" : "text-ink-muted")}>
-              {liveCount} {liveCount === 1 ? "person" : "people"} live
+        <div className="flex flex-col min-h-0 relative">
+          {/* Pulse bar */}
+          <div className="relative h-px overflow-hidden">
+            <div
+              className={cn(
+                "absolute inset-0",
+                noneLive ? "bg-border/60" : "gradient-motion opacity-70 animate-pulse",
+              )}
+            />
+          </div>
+
+          <div className="flex items-center justify-between px-4 pt-3.5 pb-1.5">
+            <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
+            <div
+              className={cn(
+                "text-[10.5px] tabular-nums",
+                liveCount > 0 ? "text-ink/70" : "text-ink-muted/60",
+              )}
+            >
+              {liveCount} live
             </div>
           </div>
+
           <div
             ref={scrollerRef}
             className="scrollbar-none overflow-y-auto"
-            style={{ maxHeight: 360 }}
+            style={{ maxHeight: 380 }}
           >
-            <ul className="divide-y divide-border/60">
-              <AnimatePresence initial={false}>
-                {visible.map((c) => {
-                  const live = liveByMedium.get(c.id) ?? 0;
-                  return (
-                    <motion.li
-                      key={c.id}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.18 }}
-                    >
-                      <TopicRow
-                        id={c.id}
-                        label={c.label}
-                        description={TOPIC_DESCRIPTIONS[c.id]}
-                        hasSubMediums={SUB_PARENTS.has(c.id)}
-                        live={live}
-                        participants={participantsByMedium.get(c.id) ?? []}
-                        busy={busyKey === c.id}
-                        disabled={disabled}
-                        dense
-                        onClick={() => onPick(c.id)}
-                        onPickSub={(m) => onPick(m)}
-                      />
-                    </motion.li>
-                  );
-                })}
-              </AnimatePresence>
+            <ul className="divide-y divide-border/40">
+              {sorted.map((c) => {
+                const live = liveByMedium.get(c.id) ?? 0;
+                return (
+                  <motion.li key={c.id} layout transition={{ duration: 0.2 }}>
+                    <TopicRow
+                      id={c.id}
+                      label={c.label}
+                      description={TOPIC_DESCRIPTIONS[c.id]}
+                      hasSubMediums={SUB_PARENTS.has(c.id)}
+                      live={live}
+                      participants={participantsByMedium.get(c.id) ?? []}
+                      busy={busyKey === c.id}
+                      disabled={disabled}
+                      onClick={() => onPick(c.id)}
+                      onPickSub={(m) => onPick(m)}
+                    />
+                  </motion.li>
+                );
+              })}
             </ul>
           </div>
-          {sorted.length > defaultVisible && (
-            <button
-              type="button"
-              onClick={() => setShowAll((v) => !v)}
-              className="flex w-full items-center justify-center gap-1.5 border-t border-border/60 px-4 py-2 text-[11px] text-ink-muted hover:bg-muted/40 hover:text-ink transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20"
-            >
-              <motion.span
-                animate={{ rotate: showAll ? 180 : 0 }}
-                transition={{ type: "spring", stiffness: 300, damping: 22 }}
-                className="inline-flex"
-              >
-                <ChevronDown className="h-3 w-3" />
-              </motion.span>
-              {showAll
-                ? "Fewer"
-                : hiddenLive > 0
-                  ? `${sorted.length - defaultVisible} more · ${hiddenLive} live`
-                  : `${sorted.length - defaultVisible} more topics`}
-            </button>
-          )}
         </div>
       </div>
     );
   }
 
-  // stack layout (mobile fallback)
+  // ── Stack layout (mobile) ───────────────────────────────────────────────
+
   return (
     <div
       ref={listRef}
       onKeyDown={handleListKeyDown}
-      className="rounded-2xl border border-border/70 bg-surface shadow-soft overflow-hidden"
+      className="rounded-3xl bg-surface shadow-halo overflow-hidden"
     >
-      <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
-        <div className="text-[11px] uppercase tracking-wider text-ink-muted">Live now</div>
-        <div className="text-[11px] text-ink-muted tabular-nums">{liveCount} in rooms</div>
+      <div className="relative p-5 pb-4">
+        <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
+        {eyebrow}
+        <h2 className="mt-3 font-display text-[26px] leading-[1.05] text-ink tracking-tight">
+          Any topic
+        </h2>
+        <p className="mt-1.5 text-[13px] text-ink-muted/90">
+          {noneLive
+            ? "Be the first in tonight. We'll open the room."
+            : "We'll drop you in the best open seat."}
+        </p>
+        <div className="mt-4">{splitCTA}</div>
       </div>
-      <ul className="divide-y divide-border/60">
-        <TopicRow
-          id="any"
-          label="Any topic"
-          sublabel={noneLive ? "Be the first in tonight" : "Matchmaker picks the best open seat"}
-          live={anyCount}
-          icon={<Sparkles className="h-4 w-4" />}
-          highlight
-          busy={busyKey === "any"}
-          disabled={disabled}
-          onClick={() => onPick(null)}
-          forceLiveCTA={noneLive ? "Open the first room" : undefined}
-        />
-        <AnimatePresence initial={false}>
-          {visible.map((c) => {
+      <div className="border-t border-border/50">
+        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
+          <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
+          <div className="text-[10.5px] text-ink-muted tabular-nums">{liveCount} live</div>
+        </div>
+        <ul className="divide-y divide-border/40">
+          {sorted.map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
             return (
-              <motion.li
-                key={c.id}
-                layout
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18 }}
-              >
+              <motion.li key={c.id} layout transition={{ duration: 0.2 }}>
                 <TopicRow
                   id={c.id}
                   label={c.label}
@@ -374,31 +302,141 @@ export function LiveTopicsList({
               </motion.li>
             );
           })}
-        </AnimatePresence>
-      </ul>
-      {sorted.length > defaultVisible && (
-        <button
-          type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className="flex w-full items-center justify-center gap-1.5 border-t border-border/60 px-4 py-2.5 text-xs text-ink-muted hover:bg-muted/40 hover:text-ink transition"
-        >
-          <motion.span
-            animate={{ rotate: showAll ? 180 : 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 22 }}
-            className="inline-flex"
-          >
-            <ChevronDown className="h-3.5 w-3.5" />
-          </motion.span>
-          {showAll
-            ? "Show fewer topics"
-            : hiddenLive > 0
-              ? `See all topics · ${hiddenLive} more live`
-              : "See all topics"}
-        </button>
-      )}
+        </ul>
+      </div>
       {featuredFooter && (
-        <div className="border-t border-border/60 px-4 py-3">{featuredFooter}</div>
+        <div className="border-t border-border/50 px-4 py-3">{featuredFooter}</div>
       )}
+    </div>
+  );
+}
+
+// ── Small subcomponents ──────────────────────────────────────────────────
+
+function PulseDots({ active }: { active: boolean }) {
+  return (
+    <span aria-hidden className="inline-flex items-center gap-0.5">
+      {[0, 1, 2].map((i) => (
+        <span
+          key={i}
+          className={cn(
+            "h-1 w-1 rounded-full transition",
+            active ? "gradient-motion" : "bg-ink/15",
+            active && "animate-pulse",
+          )}
+          style={active ? { animationDelay: `${i * 180}ms` } : undefined}
+        />
+      ))}
+    </span>
+  );
+}
+
+function SplitOpenButton({
+  noneLive,
+  busyAny,
+  disabled,
+  liveByMedium,
+  busyKey,
+  onPickAny,
+  onPickMedium,
+}: {
+  noneLive: boolean;
+  busyAny: boolean;
+  disabled?: boolean;
+  liveByMedium: Map<Category, number>;
+  busyKey?: string | null;
+  onPickAny: () => void;
+  onPickMedium: (m: Category) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const primaryLabel = noneLive ? "Open the first room" : "Match me to a seat";
+  const primary = (
+    <button
+      type="button"
+      data-row
+      onClick={onPickAny}
+      disabled={disabled || busyAny}
+      className={cn(
+        "group/btn inline-flex items-center gap-2 rounded-l-full bg-ink text-background",
+        "pl-5 pr-4 py-2.5 text-[13px] font-medium tracking-tight",
+        "transition hover:bg-ink/90 disabled:opacity-60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+      )}
+    >
+      {busyAny ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <>
+          {primaryLabel}
+          <span aria-hidden className="transition-transform group-hover/btn:translate-x-0.5">→</span>
+        </>
+      )}
+    </button>
+  );
+
+  return (
+    <div className="inline-flex items-stretch shadow-halo-sm rounded-full">
+      {primary}
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label="Pick a topic"
+            disabled={disabled}
+            className={cn(
+              "inline-flex items-center justify-center rounded-r-full bg-ink text-background",
+              "border-l border-background/20 px-3 py-2.5",
+              "transition hover:bg-ink/90 disabled:opacity-60",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+            )}
+          >
+            <motion.span
+              animate={{ rotate: open ? 180 : 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              className="inline-flex"
+            >
+              <ChevronDown className="h-3.5 w-3.5" />
+            </motion.span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" sideOffset={6} className="w-56 p-1.5">
+          <div className="px-2 pt-1 pb-1.5 text-[10px] uppercase tracking-[0.14em] text-ink-muted/80">
+            Jump straight into
+          </div>
+          <ul className="flex flex-col">
+            {CATEGORIES.map((c) => {
+              const live = liveByMedium.get(c.id) ?? 0;
+              const isBusy = busyKey === c.id;
+              return (
+                <li key={c.id}>
+                  <button
+                    type="button"
+                    disabled={disabled || isBusy}
+                    onClick={() => { setOpen(false); onPickMedium(c.id); }}
+                    className={cn(
+                      "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-ink",
+                      "hover:bg-muted/60 transition disabled:opacity-60",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "h-1.5 w-1.5 rounded-full shrink-0",
+                        live > 0 ? "bg-primary" : "border border-ink/20",
+                      )}
+                    />
+                    <span className="flex-1 text-left">{c.label}</span>
+                    {live > 0 && (
+                      <span className="text-[10.5px] tabular-nums text-ink-muted">{live} live</span>
+                    )}
+                    {isBusy && <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -406,35 +444,25 @@ export function LiveTopicsList({
 function TopicRow({
   id,
   label,
-  sublabel,
   description,
   hasSubMediums,
   live,
   participants,
-  icon,
-  highlight,
   busy,
   disabled,
   onClick,
   onPickSub,
-  dense,
-  forceLiveCTA,
 }: {
   id: string;
   label: string;
-  sublabel?: string;
   description?: string;
   hasSubMediums?: boolean;
   live: number;
   participants?: ActiveInstantRoom["participants"];
-  icon?: React.ReactNode;
-  highlight?: boolean;
   busy?: boolean;
   disabled?: boolean;
   onClick: () => void;
   onPickSub?: (m: Category) => void;
-  dense?: boolean;
-  forceLiveCTA?: string;
 }) {
   const isLive = live > 0;
   const stack = (participants ?? []).slice(0, 3);
@@ -451,19 +479,17 @@ function TopicRow({
       onBlur={() => setHovered(false)}
       className={cn(
         "group relative w-full transition",
-        "hover:bg-muted/40",
-        highlight && "bg-muted/30",
+        "hover:bg-muted/35",
       )}
     >
-      <div className={cn("flex items-center gap-3", dense ? "px-4" : "px-5")}>
+      <div className="flex items-center gap-2 px-4">
         <button
           type="button"
           data-row
           onClick={onClick}
           disabled={disabled || busy}
           className={cn(
-            "flex flex-1 items-center gap-3 text-left min-w-0",
-            dense ? "py-2.5" : "py-3.5",
+            "flex flex-1 items-center gap-2.5 text-left min-w-0 py-2.5",
             "disabled:opacity-60",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30 rounded-md",
           )}
@@ -480,15 +506,12 @@ function TopicRow({
           </span>
 
           <div className="min-w-0 flex-1">
-            <div className={cn("flex items-center gap-1.5 font-medium text-ink", dense ? "text-[13px]" : "text-sm")}>
-              {icon}
+            <div className="flex items-center gap-1.5 font-medium text-ink text-[13.5px]">
               <span className="truncate">{label}</span>
               {isLive && (
-                <span className="text-[11px] font-normal text-ink-muted tabular-nums">· {live}</span>
+                <span className="text-[10.5px] font-normal text-ink/55 tabular-nums">·{live}</span>
               )}
             </div>
-            {sublabel && <div className="mt-0.5 text-xs text-ink-muted">{sublabel}</div>}
-            {/* Hover-reveal description — grid trick avoids layout jump */}
             {description && (
               <div
                 className={cn(
@@ -504,7 +527,7 @@ function TopicRow({
           </div>
         </button>
 
-        {/* Avatar stack — clicking still goes through the row */}
+        {/* Avatar stack — only renders when there are live participants */}
         {isLive && stack.length > 0 && (
           <div className="hidden sm:flex -space-x-1.5 shrink-0">
             {stack.map((p) => {
@@ -533,12 +556,15 @@ function TopicRow({
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
                 )}
                 onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+                }}
               >
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             </PopoverTrigger>
             <PopoverContent align="end" className="w-44 p-1">
-              <div className="px-2 pt-1.5 pb-1 text-[10px] uppercase tracking-wider text-ink-muted">
+              <div className="px-2 pt-1.5 pb-1 text-[10px] uppercase tracking-[0.14em] text-ink-muted/80">
                 {label} · pick a medium
               </div>
               <ul className="flex flex-col">
@@ -558,31 +584,18 @@ function TopicRow({
           </Popover>
         )}
 
-        <button
-          type="button"
-          onClick={onClick}
-          disabled={disabled || busy}
-          tabIndex={-1}
+        {/* Hover-only arrow affordance — replaces the noisy +Start pill */}
+        <span
           aria-hidden
           className={cn(
-            "shrink-0 rounded-full text-[11px] font-medium transition tabular-nums inline-flex items-center gap-1",
-            dense ? "px-2.5 py-1" : "px-3 py-1.5 text-xs",
-            isLive
-              ? "bg-ink text-background group-hover:opacity-90"
-              : "text-ink-muted group-hover:text-ink",
+            "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-muted",
+            "opacity-0 -translate-x-1 transition-all duration-150",
+            "group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0",
+            busy && "opacity-100 translate-x-0",
           )}
         >
-          {busy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : isLive ? (
-            forceLiveCTA ?? "Take a seat"
-          ) : (
-            <>
-              <Plus className="h-3 w-3" />
-              Start
-            </>
-          )}
-        </button>
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <span className="text-[13px]">→</span>}
+        </span>
       </div>
     </div>
   );
