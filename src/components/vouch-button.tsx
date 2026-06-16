@@ -148,35 +148,43 @@ export function useVouchersForPosts(postIds: string[]): {
     queryFn: async (): Promise<VouchersByPost> => {
       const { data: rows, error } = await supabase
         .from("collab_vouches")
-        .select("collab_post_id,user_id,created_at,profile:profiles!collab_vouches_user_id_fkey(display_name,username,avatar_url)")
+        .select("collab_post_id,user_id,created_at")
         .in("collab_post_id", postIds)
         .order("created_at", { ascending: false });
       if (error) throw error;
 
+      const userIds = Array.from(new Set((rows ?? []).map((r) => r.user_id as string)));
+      const profilesById = new Map<string, Voucher["profile"]>();
+      if (userIds.length > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,display_name,username,avatar_url")
+          .in("id", userIds);
+        for (const p of (profs ?? []) as Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>) {
+          profilesById.set(p.id, { display_name: p.display_name, username: p.username, avatar_url: p.avatar_url });
+        }
+      }
+
       let followedIds = new Set<string>();
-      if (user) {
+      if (user && userIds.length > 0) {
         const { data: f } = await supabase
           .from("follows")
           .select("followed_user_id")
-          .eq("follower_user_id", user.id);
+          .eq("follower_user_id", user.id)
+          .in("followed_user_id", userIds);
         followedIds = new Set((f ?? []).map((r) => r.followed_user_id as string));
       }
 
       const map: VouchersByPost = new Map();
-      for (const r of (rows ?? []) as Array<{
-        collab_post_id: string;
-        user_id: string;
-        profile: Voucher["profile"];
-      }>) {
+      for (const r of (rows ?? []) as Array<{ collab_post_id: string; user_id: string }>) {
         const list = map.get(r.collab_post_id) ?? [];
         list.push({
           user_id: r.user_id,
           follows_viewer: followedIds.has(r.user_id),
-          profile: r.profile,
+          profile: profilesById.get(r.user_id) ?? null,
         });
         map.set(r.collab_post_id, list);
       }
-      // Sort each list: follows first, then by created_at (already desc)
       for (const [k, list] of map) {
         map.set(k, list.slice().sort((a, b) => Number(b.follows_viewer) - Number(a.follows_viewer)));
       }
