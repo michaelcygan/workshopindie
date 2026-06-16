@@ -239,10 +239,13 @@ function WorkshopPreflight() {
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
           onLiveCountChange={setLiveCount}
+          onLiveByMediumChange={setLiveByMedium}
           disabled={busy !== null}
           featuredFooter={
             <RoomPromptMarquee
               onUsePrompt={handleUsePrompt}
+              onJoinLive={(m) => handlePick(m)}
+              liveByMedium={liveByMedium}
               disabled={busy !== null || !canDrop}
             />
           }
