@@ -62,7 +62,7 @@ function WorkshopPreflight() {
       if (!raw) return;
       const parsed = JSON.parse(raw) as { id: string; title: string; leftAt: number };
       if (Date.now() - parsed.leftAt < 60_000) {
-        setRejoin({ id: parsed.id, title: parsed.title });
+        setRejoin({ id: parsed.id, title: parsed.title, leftAt: parsed.leftAt });
         const ms = 60_000 - (Date.now() - parsed.leftAt);
         const t = setTimeout(() => {
           setRejoin(null);
