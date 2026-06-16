@@ -14,6 +14,8 @@ type Props = {
   busyKey?: string | null;
   onPick: (medium: Category | null) => void;
   onLiveCountChange?: (n: number) => void;
+  /** Emits a fresh per-medium live count map whenever it changes. */
+  onLiveByMediumChange?: (m: Map<Category, number>) => void;
   disabled?: boolean;
   /** "stack" = single column (mobile default), "split" = featured Any + topic grid (desktop). */
   layout?: "stack" | "split";
