@@ -1033,6 +1033,38 @@ export type Database = {
           },
         ]
       }
+      instant_room_removals: {
+        Row: {
+          created_at: string
+          removed_by: string | null
+          room_id: string
+          until: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          removed_by?: string | null
+          room_id: string
+          until: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          removed_by?: string | null
+          room_id?: string
+          until?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_room_removals_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_rooms: {
         Row: {
           category: Database["public"]["Enums"]["category"] | null
@@ -1040,10 +1072,13 @@ export type Database = {
           created_at: string
           creator_id: string | null
           description: string | null
+          ended_by_user_id: string | null
           ends_at: string | null
+          focus_message: string | null
           host_user_id: string | null
           id: string
           kind: string
+          locked: boolean
           medium: Database["public"]["Enums"]["category"] | null
           participant_cap: number
           promoted_at: string | null
@@ -1061,10 +1096,13 @@ export type Database = {
           created_at?: string
           creator_id?: string | null
           description?: string | null
+          ended_by_user_id?: string | null
           ends_at?: string | null
+          focus_message?: string | null
           host_user_id?: string | null
           id?: string
           kind?: string
+          locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
           promoted_at?: string | null
@@ -1082,10 +1120,13 @@ export type Database = {
           created_at?: string
           creator_id?: string | null
           description?: string | null
+          ended_by_user_id?: string | null
           ends_at?: string | null
+          focus_message?: string | null
           host_user_id?: string | null
           id?: string
           kind?: string
+          locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
           promoted_at?: string | null
