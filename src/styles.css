@@ -219,8 +219,8 @@
   to   { transform: translateX(-50%); }
 }
 @layer utilities {
-  .animate-marquee-x { animation: marquee-x 30s linear infinite; }
-  .animate-marquee-x-reverse { animation: marquee-x 30s linear infinite reverse; }
+  .animate-marquee-x { animation: marquee-x var(--marquee-duration, 60s) linear infinite; }
+  .animate-marquee-x-reverse { animation: marquee-x var(--marquee-duration, 60s) linear infinite reverse; }
   .animate-marquee-x.is-paused,
   .animate-marquee-x-reverse.is-paused,
   .animate-marquee-x:hover,
