@@ -268,15 +268,19 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
 /** Matchmaker for medium-specific Instant Workshops (Film, Music, Writing, Build, Visual). */
 export const joinMediumLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: { medium: (typeof MEDIUMS)[number] }) =>
-    z.object({ medium: mediumSchema }).parse(input),
+  .inputValidator((input: { medium: (typeof MEDIUMS)[number]; excludeRoomIds?: string[] }) =>
+    z.object({
+      medium: mediumSchema,
+      excludeRoomIds: z.array(z.string().uuid()).max(20).optional(),
+    }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
     const { data: roomId, error } = await supabaseAdmin.rpc("join_medium_lounge", {
       _user_id: userId,
       _medium: data.medium,
-    });
+      _exclude_room_ids: data.excludeRoomIds ?? [],
+    } as any);
     if (error) throw new Error(error.message);
     return { roomId: roomId as string, medium: data.medium };
   });
