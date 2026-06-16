@@ -19,7 +19,7 @@ type Props = {
   disabled?: boolean;
   /** "stack" = single column (mobile default), "split" = featured Any + topic grid (desktop). */
   layout?: "stack" | "split";
-  /** Optional slot rendered under the featured "Any topic" card (e.g. prompt marquee). */
+  /** Optional slot rendered under the featured "Lounge" card (e.g. prompt marquee). */
   featuredFooter?: React.ReactNode;
 };
 
@@ -77,6 +77,24 @@ export function LiveTopicsList({
     }
     return m;
   }, [rooms]);
+
+  // Lounge = the general / matchmaker rooms (no specific medium).
+  const loungeRooms = useMemo(() => rooms.filter((r) => !r.medium), [rooms]);
+  const loungeLive = useMemo(
+    () => loungeRooms.reduce((acc, r) => acc + r.live_count, 0),
+    [loungeRooms],
+  );
+  const loungeParticipants = useMemo(() => {
+    const list: ActiveInstantRoom["participants"] = [];
+    for (const r of loungeRooms) {
+      for (const p of r.participants) {
+        if (list.length >= 3) break;
+        if (!list.find((x) => x.user_id === p.user_id)) list.push(p);
+      }
+      if (list.length >= 3) break;
+    }
+    return list;
+  }, [loungeRooms]);
 
   const sorted = useMemo(() => {
     return [...CATEGORIES].sort((a, b) => {
