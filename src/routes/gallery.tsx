@@ -451,12 +451,19 @@ function GalleryPage() {
             />
           ) : (
             <EmptyState
-              title="No works match those filters"
-              body="Try clearing filters or a different search."
+              title="Be the first to ship here"
+              body={
+                category !== "all" || citySlug !== "all"
+                  ? "No Work in this slice yet. Post yours and start the thread."
+                  : "Nothing matches your search. Try fewer filters — or post something new."
+              }
               cta={
-                <Button variant="outline" onClick={clearAll} className="rounded-full">
-                  Clear filters
-                </Button>
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Link to="/works/new"><Button className="rounded-full">Post Work</Button></Link>
+                  <Button variant="outline" onClick={clearAll} className="rounded-full">
+                    Clear filters
+                  </Button>
+                </div>
               }
             />
           )
