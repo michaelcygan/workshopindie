@@ -5,9 +5,12 @@ import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
+import { VouchRow, type VouchersByPost } from "./vouch-button";
+import { BoostButton } from "./boost-button";
 
 export type CollabCardData = {
   id: string;
+  user_id: string;
   title: string;
   slug: string;
   category: Category;
@@ -21,6 +24,8 @@ export type CollabCardData = {
   status: string;
   created_at: string;
   live_workshop_id?: string | null;
+  vouch_count?: number | null;
+  boost_count?: number | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
