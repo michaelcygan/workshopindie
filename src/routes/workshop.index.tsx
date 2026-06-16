@@ -12,6 +12,7 @@ import { WorkshopStrip } from "@/components/workshop-strip";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/workshop/")({
@@ -35,7 +36,7 @@ function WorkshopPreflight() {
   const [busyMedium, setBusyMedium] = useState<string | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
   const [liveCount, setLiveCount] = useState(0);
-  const [hostMedium, setHostMedium] = useState<Category | null>(null);
+  const [hostMedium] = useState<Category | null>(null);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
 
@@ -86,7 +87,11 @@ function WorkshopPreflight() {
   }, [devices]);
 
   async function handlePick(medium: Category | null) {
-    if (busy || !canDrop) return;
+    if (busy) return;
+    if (!canDrop) {
+      toast.error("Connect a mic or camera to continue.");
+      return;
+    }
     setBusy("drop");
     setBusyMedium(medium ?? "any");
     try {
@@ -131,81 +136,127 @@ function WorkshopPreflight() {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-10 md:px-6 md:py-16">
-      <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
-        <ArrowLeft className="h-4 w-4" /> Home
-      </Link>
+    <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
+      {/* Single compact header bar */}
+      <header className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link
+            to="/"
+            aria-label="Home"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <span className="text-ink-muted/40">·</span>
+          <h1 className="font-display text-2xl md:text-[28px] leading-none text-ink truncate">
+            Workshop
+          </h1>
+        </div>
 
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-        <h1 className="font-display text-4xl md:text-5xl text-ink flex flex-wrap items-baseline gap-x-3">
-          Workshop
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-muted">
             <span className="relative inline-flex h-2 w-2">
-              <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
-              <span className="gradient-motion relative inline-flex h-2 w-2 rounded-full" />
+              {liveCount > 0 && (
+                <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-75" />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex h-2 w-2 rounded-full",
+                  liveCount > 0 ? "gradient-motion" : "border border-ink/20",
+                )}
+              />
             </span>
             <AnimatePresence mode="popLayout" initial={false}>
-              <motion.span key={liveCount} initial={{ y: 6, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -6, opacity: 0 }} transition={{ duration: 0.18 }} className="tabular-nums">
+              <motion.span
+                key={liveCount}
+                initial={{ y: 6, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: -6, opacity: 0 }}
+                transition={{ duration: 0.18 }}
+                className="tabular-nums"
+              >
                 {liveCount}
               </motion.span>
             </AnimatePresence>
             <span>live</span>
-          </span>
-        </h1>
-        <p className="mt-3 text-lg text-ink-muted max-w-2xl">
-          Drop into a live one, or spin up your own. Voice or video, up to 5 per Workshop. Anyone in the room can turn it into a Collab when there's something worth shipping.
-        </p>
+          </div>
 
-        <div className="mt-5 flex items-center gap-4 text-xs">
-          {devices === null ? (
-            <span className="inline-flex items-center gap-1.5 text-ink-muted">
-              <Loader2 className="h-3 w-3 animate-spin" /> Checking devices…
-            </span>
-          ) : (
-            <>
-              <span className={`inline-flex items-center gap-1.5 ${devices.mic ? "text-ink" : "text-ink-muted opacity-60"}`}>
-                <Mic className="h-3.5 w-3.5" /> {devices.mic ? "Mic ready" : "No mic"}
-              </span>
-              <span className={`inline-flex items-center gap-1.5 ${devices.cam ? "text-ink" : "text-ink-muted opacity-60"}`}>
-                <Video className="h-3.5 w-3.5" /> {devices.cam ? "Camera ready" : "No camera"}
-              </span>
-            </>
-          )}
+          <span className="h-4 w-px bg-border/70" aria-hidden />
+
+          <div className="inline-flex items-center gap-2 text-xs">
+            {devices === null ? (
+              <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />
+            ) : (
+              <>
+                <span
+                  title={devices.mic ? "Mic ready" : "No mic"}
+                  className={cn(
+                    "inline-flex items-center gap-1",
+                    devices.mic ? "text-ink" : "text-ink-muted/50",
+                  )}
+                >
+                  <Mic className="h-3.5 w-3.5" />
+                </span>
+                <span
+                  title={devices.cam ? "Camera ready" : "No camera"}
+                  className={cn(
+                    "inline-flex items-center gap-1",
+                    devices.cam ? "text-ink" : "text-ink-muted/50",
+                  )}
+                >
+                  <Video className="h-3.5 w-3.5" />
+                </span>
+              </>
+            )}
+          </div>
         </div>
-        {devices && !canDrop && (
-          <p className="mt-2 text-xs text-destructive">Connect a mic or camera to continue.</p>
-        )}
-      </motion.div>
+      </header>
 
-      <div className="mt-8 space-y-4">
+      {/* One-line subtitle */}
+      <p className="mt-2 text-sm text-ink-muted">
+        Drop into a live room, or open the first one. Voice or video · 5 seats per room.
+      </p>
+
+      {/* Live decision surface */}
+      <div className="mt-4">
         <LiveTopicsList
+          layout="split"
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
           onLiveCountChange={setLiveCount}
-          disabled={!canDrop || busy !== null}
+          disabled={busy !== null}
         />
-
-        <div className="rounded-3xl border border-dashed border-border bg-surface/50 p-4 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 text-sm font-medium text-ink">
-              <Crown className="h-4 w-4" /> Want host controls?
-            </div>
-            <p className="mt-0.5 text-xs text-ink-muted">Name the room, pick visibility, share the link.</p>
-          </div>
-          <Button
-            onClick={handleHost}
-            disabled={!canDrop || busy !== null}
-            variant="outline"
-            className="shrink-0 rounded-full h-10 gap-2 border-ink/30 hover:border-ink/60"
-          >
-            {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
-            {busy === "host" ? "Opening…" : hostLabel ? `Spin up ${hostLabel}` : "Spin up your room"}
-          </Button>
-        </div>
       </div>
 
-      <p className="mt-4 text-center text-xs text-ink-muted">
-        Cap 5 per room. Everything in a live room is ephemeral until someone creates a Collab from it.
+      {devices && !canDrop && (
+        <p className="mt-2 text-xs text-destructive">Connect a mic or camera to continue.</p>
+      )}
+
+      {/* Host strip — hairline, filled CTA */}
+      <div className="mt-4 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center justify-between gap-3">
+        <div className="min-w-0 flex items-center gap-3">
+          <div className="hidden sm:grid h-9 w-9 place-items-center rounded-full bg-muted/40 text-ink shrink-0">
+            <Crown className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-ink truncate">Want host controls?</div>
+            <p className="text-xs text-ink-muted truncate">
+              Name the room, pick visibility, share the link.
+            </p>
+          </div>
+        </div>
+        <Button
+          onClick={handleHost}
+          disabled={!canDrop || busy !== null}
+          className="shrink-0 rounded-full h-9 gap-2 px-4"
+        >
+          {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+          {busy === "host" ? "Opening…" : hostLabel ? `Spin up ${hostLabel}` : "Spin up your room"}
+        </Button>
+      </div>
+
+      <p className="mt-3 text-center text-[11px] text-ink-muted">
+        Everything in a live room is ephemeral until someone creates a Collab from it.
       </p>
 
       <LiveWorkshopsRail
@@ -217,7 +268,6 @@ function WorkshopPreflight() {
         }}
       />
 
-
       <HostPrivacyDialog
         open={privacyOpen}
         onOpenChange={setPrivacyOpen}
@@ -225,8 +275,6 @@ function WorkshopPreflight() {
         busy={busy === "host"}
         onConfirm={confirmHost}
       />
-
-
 
       <WorkshopStrip />
     </main>
