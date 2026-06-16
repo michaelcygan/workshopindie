@@ -1,96 +1,109 @@
-# Pinning Collabs in a Workshop
 
-Add lightweight pinning for the in-room Collabs list. Anyone in the room can pin one Collab; the host can pin many and reorder them. Pins are scoped to the room and ephemeral (drop with the room).
+# Collab Page Audit & v1 Upgrade
 
-## Rules
+Goal: bring Collab up to Workshop's energy bar, and unlock one high-leverage viral loop — **Vouch**, where people you follow co-sign a Collab and you see "Vouched by 3 you follow" right on the card. Plus a Workshop-style **Boost** pin (one per user) to surface the Collabs the community cares about most.
 
-- **Guest (non-host):** at most one pinned Collab at a time per user. Re-pinning replaces their previous pin.
-- **Host:** unlimited pins, manual order. Can unpin anyone's pin.
-- **Pinned strip** renders above the existing "Collabs from people in this Workshop" list, ordered: host pins (in host's order) first, then guest pins by created_at desc.
-- Pinning is only allowed if the user is currently present in the room.
-- Pins clear automatically when the room ends/archives (cascade).
+## What's missing today (audit)
 
-## Schema (one migration)
+Looking at `collab.index.tsx` and `collab-card.tsx` against Workshop:
 
-```sql
-CREATE TABLE public.instant_room_pins (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id uuid NOT NULL REFERENCES public.instant_rooms(id) ON DELETE CASCADE,
-  collab_post_id uuid NOT NULL REFERENCES public.collab_posts(id) ON DELETE CASCADE,
-  pinned_by_user_id uuid NOT NULL,           -- no FK to auth.users
-  is_host_pin boolean NOT NULL DEFAULT false,
-  sort_order int NOT NULL DEFAULT 0,
-  created_at timestamptz NOT NULL DEFAULT now(),
-  UNIQUE (room_id, collab_post_id)
-);
+1. **Static feel.** Workshop has live pulses, presence dots, marquee. Collab is a flat grid of equal-weight cards.
+2. **No social proof on cards.** You see author + comp + roles. You don't see *who else thinks this is worth doing*.
+3. **No "right now" surface.** A Collab with a live Workshop running on it gets the same visual weight as one posted 6 days ago.
+4. **Empty / discovery states are thin.** "Nothing open right now" is a dead end. No "people near you working on…" pulse.
+5. **Logged-out is a generic feed.** No reason to sign up beyond "see more cards."
+6. **Apply is the only action.** No lightweight signal between "scroll past" and "write an application."
 
--- Enforce "one pin per non-host user per room"
-CREATE UNIQUE INDEX instant_room_pins_one_per_guest
-  ON public.instant_room_pins (room_id, pinned_by_user_id)
-  WHERE is_host_pin = false;
+## Scope (one viral loop + UI polish)
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON public.instant_room_pins TO authenticated;
-GRANT ALL ON public.instant_room_pins TO service_role;
+Three things, in order:
 
-ALTER TABLE public.instant_room_pins ENABLE ROW LEVEL SECURITY;
+### 1. Vouch — the IRL viral loop
 
--- Reads: anyone authenticated can see pins for any active room (matches Collabs panel posture)
-CREATE POLICY "read pins" ON public.instant_room_pins
-  FOR SELECT TO authenticated USING (true);
+A Vouch is a one-tap public co-sign on a Collab post by someone other than the author.
 
--- Writes go through server fns only (service_role); no direct insert/update/delete policies.
+- **Action**: signed-in user taps "Vouch" on any Collab. Adds a row. Lightweight, public, not an application.
+- **On the card**: replace nothing; *add* a small row above the author line:
+  - If viewer follows ≥1 voucher: `Vouched by @alex + 2 others you follow`
+  - Else if vouches > 0: `Vouched by 4 people`
+  - Else: hidden
+  - Avatar stack of up to 3 (prioritize people the viewer follows).
+- **On the detail page**: full voucher list with avatars + a "Vouch" button.
+- **Notifies** the post author ("@alex vouched for your Collab"), creating a relationship signal we can later use for invites.
+- **Logged-out behavior**: tapping Vouch opens an inline "Sign in to vouch" CTA — `@alex` becomes the implicit referrer if they shared the link. This is the viral wedge: shared Collab links → friends vouch → those friends are now in the product, attributed.
+- **Anti-spam**: one vouch per (user, collab). Rate-limited via existing `rate_limits` table. Authors can't vouch their own post.
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.instant_room_pins;
-```
+Why this is the right loop for v1:
+- Maps to how IRL creative networks actually work ("you should do this with my friend Sam").
+- Doesn't require new graphs — uses existing `follows`.
+- Creates a public-count flywheel: posters share to get vouches, vouches make the post more credible, more credible posts attract better applicants.
+- Sets up the next feature naturally (DM-an-application, "people you've vouched for" inbox).
 
-## Server functions (`src/lib/room-pins.functions.ts`)
+### 2. Boost — Workshop pin pattern on the board
 
-All wrapped in `requireSupabaseAuth`. Use `supabaseAdmin` inside handlers after authorization.
+Same mental model the user just shipped on Workshop:
+- **Anyone**: can Boost **one** Collab at a time (re-boosting replaces). Boosting ≠ applying.
+- **Admin** (no per-board host concept on Collab — this is a community board): can pin multiple in order, for editorial promotion.
+- **UI**: a "Boosted" strip above the grid showing up to 6 boosted Collabs. Subtle distinction from regular cards (a small `Boosted` chip + soft border accent). Empty state: hidden entirely.
+- A Boost also implicitly counts as a Vouch (saves a tap; both signal "I care about this one").
 
-1. `pinCollab({ roomId, collabPostId })`
-   - Verify caller has a fresh `instant_presence` row in the room.
-   - Lookup `instant_rooms.host_user_id`. `isHost = host_user_id === userId`.
-   - If host: insert with `is_host_pin=true`, `sort_order = max(host_pins.sort_order)+1`.
-   - If guest: delete any existing `is_host_pin=false` pin by user for this room, then insert with `is_host_pin=false`.
-2. `unpinCollab({ pinId })`
-   - Load pin → room. Allow if caller is pin owner OR host of the room.
-3. `reorderHostPins({ roomId, orderedIds })`
-   - Host only. Update `sort_order` on each id in the array.
+### 3. Workshop-grade UI polish
 
-No edge functions; everything is `createServerFn`.
+Visual + interaction lifts borrowed directly from Workshop:
 
-## UI changes
+- **Live row at top** (when any Collab has `live_workshop_id`): a horizontal scrollable strip of currently-live Collab→Workshop rooms with the same pulse dot pattern as `room-prompt-marquee` / live indicators. Tap → jump straight into the Workshop. Sells the live product the moment you land.
+- **Card upgrades** (`collab-card.tsx`):
+  - Add Vouch row (see above).
+  - When `live_workshop_id` is set, promote the Live badge: larger, animated, and the whole card gets a subtle border-gradient hover (mirror Workshop's `shadow-lift`).
+  - Recent-activity dot: posts with a vouch or applicant in the last 24h get a small ` Active` chip.
+  - Hover micro-interaction: roles chips lift slightly (Workshop's `whileHover y:-3` rhythm).
+- **Empty state → invitation**: when the filtered grid is empty, instead of "nothing open" show "No open Collabs in {City} — start one and we'll notify the {N} creatives nearby" with the Post button.
+- **Logged-out home (Collab Board)**:
+  - Hero swaps from "Collab Board / What people are trying to make" → a live counter: `{N} open Collabs · {M} vouched today · {K} live right now in {City}`.
+  - First card slot becomes a read-only Workshop peek (live marquee from one active room) → "This is what a Collab looks like when it goes live."
+  - Sticky bottom CTA on mobile: "Sign in to vouch + apply" (instead of nav-only auth).
 
-`src/components/workshop-collabs-panel.tsx`:
-- Accept new props: `roomId: string`, `hostUserId: string | null`.
-- Add `useQuery(["room-pins", roomId])` returning joined Collab rows ordered correctly. Realtime channel `room-pins:${roomId}` on `instant_room_pins` `INSERT/UPDATE/DELETE` invalidates the query.
-- New `<PinnedStrip />` above the existing list:
-  - Section label `Pinned · {n}`.
-  - Each card mirrors the existing collab row but compact, with a "Unpin" button visible to pin owner or host, and (host only) up/down reorder chevrons on host pins.
-- Each row in the existing "Collabs from people" list gets a small Pin/Unpin toggle:
-  - Guest who already has a pin: clicking another row's Pin shows confirm "Replace your pin?" then swaps.
-  - Host: Pin is always additive.
-- Empty pinned strip is hidden entirely.
+## Out of scope (intentionally)
 
-`src/components/channel-view.tsx`:
-- Pass `roomId` and `hostUserId` to `WorkshopCollabsPanel`. `hostUserId` is already fetched at the route level; thread it through `ChannelView` props (`hostUserId?: string | null`) and pass it in.
+- DM-an-applicant flow (separate ticket).
+- Vouch decay / unvouch UI niceties beyond a basic toggle.
+- Editorial admin tooling beyond Boost pin/unpin.
+- Replacing the existing apply funnel.
+- City pulse / IRL bring-a-friend SMS invite — keeping focus on the one loop we picked. Vouch already pulls IRL networks in via shared links.
 
-`src/routes/workshop.$id.tsx`:
-- Pass `hostUserId={room?.host_user_id ?? null}` to `<ChannelView />`.
+## Technical notes
 
-## Realtime
+**New table — `collab_vouches`**
+- `id`, `collab_post_id` (fk, cascade), `user_id` (fk auth.users), `created_at`.
+- `UNIQUE (collab_post_id, user_id)`.
+- RLS: anyone authenticated can `SELECT`; users can `INSERT` their own, `DELETE` their own. Author cannot insert for own post (trigger).
+- Trigger updates a `vouch_count` on `collab_posts` and inserts a notification.
+- GRANT SELECT to `anon` (counts are public on shared links), INSERT/DELETE to `authenticated`, ALL to `service_role`.
 
-Single subscribed Realtime channel per room (`room-pins:${roomId}`) listening to `postgres_changes` on `instant_room_pins` filtered by `room_id=eq.${roomId}`. Subscribe in `useEffect` inside the panel; tear down on unmount.
+**New table — `collab_boosts`** (Workshop-pin analog for the board)
+- `id`, `collab_post_id`, `user_id`, `is_admin_pin bool`, `sort_order int`, `created_at`.
+- Partial unique index `(user_id) WHERE is_admin_pin = false` → enforces one-boost-per-user.
+- Re-uses Workshop's `has_role('admin')` for admin pins.
+- RLS + grants follow the `instant_room_pins` precedent already in this codebase.
 
-## Files
+**Server functions — `src/lib/collab-vouches.functions.ts`, `src/lib/collab-boosts.functions.ts`**
+- `vouchCollab({ collabPostId })` / `unvouchCollab(...)`
+- `boostCollab({ collabPostId })` / `unboostCollab(...)` / `reorderAdminBoosts(...)`
+- All use `requireSupabaseAuth`. Boost auto-creates a Vouch if absent.
 
-- `supabase/migrations/<new>.sql` — table + grants + RLS + publication
-- `src/lib/room-pins.functions.ts` — three server fns
-- `src/components/workshop-collabs-panel.tsx` — pinned strip + pin buttons + realtime
-- `src/components/channel-view.tsx` — thread `hostUserId` to the panel
-- `src/routes/workshop.$id.tsx` — pass `hostUserId` to `ChannelView`
+**Reads**
+- Extend the existing `fetchPosts` select with `vouch_count`. Add a sibling query that fetches the viewer's followed-voucher avatars for the current page of posts (single batched query, not N+1).
+- Add a "boosted" query for the top strip.
 
-## Out of scope
+**Realtime**
+- Subscribe `collab_vouches` + `collab_boosts` on the index page → invalidate queries. Same pattern as `workshop-collabs-panel`.
 
-- Pin notifications, pin analytics, "pin to all rooms," pin transfer when host changes (host pins simply remain; new host can unpin).
-- Promoting a pinned Collab into the persistent fork (already covered by Create-a-Collab flow).
+**Files touched**
+- Migration: `collab_vouches`, `collab_boosts`, trigger, RLS, grants, realtime publication.
+- New: `src/lib/collab-vouches.functions.ts`, `src/lib/collab-boosts.functions.ts`, `src/components/vouch-button.tsx`, `src/components/boosted-collabs-strip.tsx`, `src/components/live-collabs-strip.tsx`.
+- Edit: `src/components/collab-card.tsx` (vouch row, live promo, active chip), `src/routes/collab.index.tsx` (strips, empty state, logged-out hero), `src/routes/collab.$slug.tsx` (Vouch button + voucher list).
+- No Workshop code changes.
+
+## Open question for after approval
+
+Do you want **admin Boost pins** at all in v1, or just user-Boosts (one per person)? Admin pins are 30 minutes of extra work and useful for launch curation, but skippable if you'd rather let the crowd decide entirely.
