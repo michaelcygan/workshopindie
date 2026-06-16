@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { z } from "zod";
@@ -16,6 +16,9 @@ import { listFollowingWorks } from "@/lib/gallery.functions";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
+import { FreshWorksStrip } from "@/components/fresh-works-strip";
+import { BoostedWorksStrip } from "@/components/boosted-works-strip";
+import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
