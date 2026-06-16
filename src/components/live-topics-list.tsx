@@ -2,9 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Loader2, Sparkles } from "lucide-react";
-import { listActiveInstantRooms } from "@/lib/instant.functions";
+import { ChevronDown, Loader2, Plus, Sparkles } from "lucide-react";
+import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
 import { CATEGORIES, type Category } from "@/lib/categories";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 
 type Props = {
