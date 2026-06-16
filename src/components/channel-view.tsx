@@ -503,13 +503,15 @@ export function ChannelView({
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
         <FullscreenShell
-          title={`${title} · Gallery`}
+          title={`${title} · Work`}
           presence={presenceStrip}
           onMinimize={() => setFsView(null)}
         >
           <RoomGallery
             meUserId={user.id}
             members={galleryMembers}
+            roomId={roomId}
+            hostUserId={hostUserId ?? null}
             onOpenWork={openWork}
             className="h-full"
             fullscreen
