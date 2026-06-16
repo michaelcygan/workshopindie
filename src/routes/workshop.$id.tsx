@@ -140,6 +140,33 @@ function LiveRoomPage() {
     };
   }, [id, title, isPromoted, isEnded, room?.locked]);
 
+  // First-Workshop receipt — one-time gentle toast on the user's first join.
+  useEffect(() => {
+    if (typeof window === "undefined" || !user || !room || isPromoted) return;
+    try {
+      if (window.localStorage.getItem("ws:first_done") === "1") return;
+      window.localStorage.setItem("ws:first_done", "1");
+      const t = setTimeout(() => toast.success("First Workshop — nicely done."), 1200);
+      return () => clearTimeout(t);
+    } catch {
+      // ignore
+    }
+  }, [user, room, isPromoted]);
+
+  // Keyboard shortcut: "N" hops to next Workshop (guests only).
+  useEffect(() => {
+    if (!user || !room || isHost || isPromoted || room.status !== "active") return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "n" && e.key !== "N") return;
+      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
+      if (tag === "input" || tag === "textarea" || (e.target as HTMLElement | null)?.isContentEditable) return;
+      const btn = document.querySelector<HTMLButtonElement>('[data-hop-button]');
+      btn?.click();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [user, room, isHost, isPromoted]);
+
   // Live presence count for the "waiting for others" nudge.
   const { data: liveCount = 0 } = useQuery({
     queryKey: ["instant-room-live-count", id],
@@ -269,8 +296,14 @@ function LiveRoomPage() {
         </div>
       )}
 
-      {/* Focus message — visible to everyone */}
-      {!isPromoted && <FocusStrip text={room?.focus_message ?? null} />}
+      {/* Focus message — visible to everyone; host sees a ghost CTA when empty */}
+      {!isPromoted && (
+        <FocusStrip
+          text={room?.focus_message ?? null}
+          isHost={isHost}
+          onHostSet={() => window.dispatchEvent(new CustomEvent("workshop:open-focus", { detail: { roomId: id } }))}
+        />
+      )}
 
       {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
       {user && <HostRoomEvents roomId={id} isHost={isHost} />}
