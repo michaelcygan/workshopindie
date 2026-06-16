@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, MapPin, Megaphone, Gift, Briefcase } from "lucide-react";
+import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -34,11 +34,11 @@ export function MobileNav() {
         </Link>
         <Link to="/gallery" className={tabBase} activeProps={{ className: tabActive }}>
           <LayoutGrid className="h-[18px] w-[18px]" />
-          <span>Gallery</span>
+          <span>Work</span>
         </Link>
-        <Link to="/cities" className={tabBase} activeProps={{ className: tabActive }}>
-          <MapPin className="h-[18px] w-[18px]" />
-          <span>Cities</span>
+        <Link to="/groups" className={tabBase} activeProps={{ className: tabActive }}>
+          <Sparkles className="h-[18px] w-[18px]" />
+          <span>Groups</span>
         </Link>
 
         {user ? (

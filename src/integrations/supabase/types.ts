@@ -684,6 +684,226 @@ export type Database = {
           },
         ]
       }
+      group_collabs: {
+        Row: {
+          added_by: string | null
+          collab_post_id: string
+          created_at: string
+          group_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          collab_post_id: string
+          created_at?: string
+          group_id: string
+        }
+        Update: {
+          added_by?: string | null
+          collab_post_id?: string
+          created_at?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_collabs_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_collabs_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_members: {
+        Row: {
+          group_id: string
+          joined_at: string
+          role: Database["public"]["Enums"]["group_member_role"]
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_member_role"]
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          joined_at?: string
+          role?: Database["public"]["Enums"]["group_member_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_works: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          group_id: string
+          work_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          group_id: string
+          work_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          group_id?: string
+          work_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_works_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_works_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_workshops: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          group_id: string
+          workshop_id: string
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          group_id: string
+          workshop_id: string
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          group_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_workshops_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_workshops_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          accent_color: string | null
+          avatar_url: string | null
+          city_id: string | null
+          collab_count: number
+          cover_url: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          featured_at: string | null
+          id: string
+          is_official: boolean
+          join_mode: Database["public"]["Enums"]["group_join_mode"]
+          kind: Database["public"]["Enums"]["group_kind"]
+          member_count: number
+          name: string
+          slug: string
+          tagline: string | null
+          updated_at: string
+          visibility: Database["public"]["Enums"]["group_visibility"]
+          work_count: number
+          workshop_count: number
+        }
+        Insert: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          city_id?: string | null
+          collab_count?: number
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          featured_at?: string | null
+          id?: string
+          is_official?: boolean
+          join_mode?: Database["public"]["Enums"]["group_join_mode"]
+          kind: Database["public"]["Enums"]["group_kind"]
+          member_count?: number
+          name: string
+          slug: string
+          tagline?: string | null
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["group_visibility"]
+          work_count?: number
+          workshop_count?: number
+        }
+        Update: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          city_id?: string | null
+          collab_count?: number
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          featured_at?: string | null
+          id?: string
+          is_official?: boolean
+          join_mode?: Database["public"]["Enums"]["group_join_mode"]
+          kind?: Database["public"]["Enums"]["group_kind"]
+          member_count?: number
+          name?: string
+          slug?: string
+          tagline?: string | null
+          updated_at?: string
+          visibility?: Database["public"]["Enums"]["group_visibility"]
+          work_count?: number
+          workshop_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       instant_activity: {
         Row: {
           actor_display_name: string | null
@@ -1748,6 +1968,7 @@ export type Database = {
           follower_count: number
           following_count: number
           headline: string | null
+          hide_group_memberships: boolean
           home_city_changed_at: string | null
           home_city_id: string | null
           id: string
@@ -1785,6 +2006,7 @@ export type Database = {
           follower_count?: number
           following_count?: number
           headline?: string | null
+          hide_group_memberships?: boolean
           home_city_changed_at?: string | null
           home_city_id?: string | null
           id: string
@@ -1822,6 +2044,7 @@ export type Database = {
           follower_count?: number
           following_count?: number
           headline?: string | null
+          hide_group_memberships?: boolean
           home_city_changed_at?: string | null
           home_city_id?: string | null
           id?: string
@@ -4154,6 +4377,10 @@ export type Database = {
         | "city_host"
         | "verified_creator"
         | "admin"
+      group_join_mode: "open" | "gated"
+      group_kind: "city" | "genre" | "micro" | "scene"
+      group_member_role: "member" | "steward" | "owner"
+      group_visibility: "public" | "unlisted"
       instant_status: "active" | "archived"
       location_type: "online" | "in_person" | "hybrid"
       meetup_status: "active" | "paused" | "archived"
@@ -4376,6 +4603,10 @@ export const Constants = {
         "verified_creator",
         "admin",
       ],
+      group_join_mode: ["open", "gated"],
+      group_kind: ["city", "genre", "micro", "scene"],
+      group_member_role: ["member", "steward", "owner"],
+      group_visibility: ["public", "unlisted"],
       instant_status: ["active", "archived"],
       location_type: ["online", "in_person", "hybrid"],
       meetup_status: ["active", "paused", "archived"],

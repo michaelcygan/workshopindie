@@ -19,7 +19,9 @@ import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as GRouteImport } from './routes/g'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as CollabRouteImport } from './routes/collab'
 import { Route as CitiesRouteImport } from './routes/cities'
@@ -28,6 +30,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
@@ -42,11 +45,13 @@ import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
+import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
@@ -108,9 +113,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GRoute = GRouteImport.update({
+  id: '/g',
+  path: '/g',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -152,6 +167,11 @@ const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsIndexRoute = GroupsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GroupsRoute,
 } as any)
 const DmsIndexRoute = DmsIndexRouteImport.update({
   id: '/dms/',
@@ -223,6 +243,11 @@ const MeBlockedRoute = MeBlockedRouteImport.update({
   path: '/me/blocked',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GSlugRoute = GSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => GRoute,
+} as any)
 const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
   id: '/dms/$conversationId',
   path: '/dms/$conversationId',
@@ -247,6 +272,11 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminBadgesRoute = AdminBadgesRouteImport.update({
   id: '/badges',
@@ -306,7 +336,9 @@ export interface FileRoutesByFullPath {
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -318,11 +350,13 @@ export interface FileRoutesByFullPath {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/g/$slug': typeof GSlugRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -337,6 +371,7 @@ export interface FileRoutesByFullPath {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -353,6 +388,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -363,11 +399,13 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/g/$slug': typeof GSlugRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -382,6 +420,7 @@ export interface FileRoutesByTo {
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
+  '/groups': typeof GroupsIndexRoute
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
@@ -402,7 +441,9 @@ export interface FileRoutesById {
   '/cities': typeof CitiesRouteWithChildren
   '/collab': typeof CollabRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
+  '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -414,11 +455,13 @@ export interface FileRoutesById {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/g/$slug': typeof GSlugRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -433,6 +476,7 @@ export interface FileRoutesById {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -454,7 +498,9 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
+    | '/groups'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -466,11 +512,13 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -485,6 +533,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/groups/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -501,6 +550,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
     | '/login'
     | '/onboarding'
@@ -511,11 +561,13 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/badges'
+    | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -530,6 +582,7 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/dms'
+    | '/groups'
     | '/me'
     | '/workshop'
     | '/workshops'
@@ -549,7 +602,9 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/forgot-password'
+    | '/g'
     | '/gallery'
+    | '/groups'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -561,11 +616,13 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -580,6 +637,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/groups/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -600,7 +658,9 @@ export interface RootRouteChildren {
   CitiesRoute: typeof CitiesRouteWithChildren
   CollabRoute: typeof CollabRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GRoute: typeof GRouteWithChildren
   GalleryRoute: typeof GalleryRoute
+  GroupsRoute: typeof GroupsRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
@@ -700,11 +760,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/groups': {
+      id: '/groups'
+      path: '/groups'
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/gallery': {
       id: '/gallery'
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/g': {
+      id: '/g'
+      path: '/g'
+      fullPath: '/g'
+      preLoaderRoute: typeof GRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -762,6 +836,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/groups/': {
+      id: '/groups/'
+      path: '/'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof GroupsIndexRouteImport
+      parentRoute: typeof GroupsRoute
     }
     '/dms/': {
       id: '/dms/'
@@ -861,6 +942,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeBlockedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/g/$slug': {
+      id: '/g/$slug'
+      path: '/$slug'
+      fullPath: '/g/$slug'
+      preLoaderRoute: typeof GSlugRouteImport
+      parentRoute: typeof GRoute
+    }
     '/dms/$conversationId': {
       id: '/dms/$conversationId'
       path: '/dms/$conversationId'
@@ -895,6 +983,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/checkout/return'
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/badges': {
       id: '/admin/badges'
@@ -971,11 +1066,13 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
+  AdminGroupsRoute: typeof AdminGroupsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
+  AdminGroupsRoute: AdminGroupsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -1010,6 +1107,27 @@ const CollabRouteChildren: CollabRouteChildren = {
 
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
+
+interface GRouteChildren {
+  GSlugRoute: typeof GSlugRoute
+}
+
+const GRouteChildren: GRouteChildren = {
+  GSlugRoute: GSlugRoute,
+}
+
+const GRouteWithChildren = GRoute._addFileChildren(GRouteChildren)
+
+interface GroupsRouteChildren {
+  GroupsIndexRoute: typeof GroupsIndexRoute
+}
+
+const GroupsRouteChildren: GroupsRouteChildren = {
+  GroupsIndexRoute: GroupsIndexRoute,
+}
+
+const GroupsRouteWithChildren =
+  GroupsRoute._addFileChildren(GroupsRouteChildren)
 
 interface WorkshopRouteChildren {
   WorkshopIdRoute: typeof WorkshopIdRoute
@@ -1074,7 +1192,9 @@ const rootRouteChildren: RootRouteChildren = {
   CitiesRoute: CitiesRouteWithChildren,
   CollabRoute: CollabRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GRoute: GRouteWithChildren,
   GalleryRoute: GalleryRoute,
+  GroupsRoute: GroupsRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
