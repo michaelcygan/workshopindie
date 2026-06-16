@@ -23,7 +23,7 @@ type Props = {
   maxRows?: 2 | 3 | 4;
 };
 
-const ROW_DURATIONS_MS = [110_000, 125_000, 100_000, 118_000];
+const ROW_DURATIONS_MS = [130_000, 145_000, 118_000, 135_000];
 
 /**
  * Stacked, slow, opposing marquee rows of clickable room-name prompts.
@@ -52,9 +52,9 @@ export function RoomPromptMarquee({
       className="relative mt-5 overflow-hidden"
       style={{
         maskImage:
-          "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+          "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
         WebkitMaskImage:
-          "linear-gradient(to right, transparent, black 8%, black 92%, transparent)",
+          "linear-gradient(to right, transparent, black 14%, black 86%, transparent)",
       }}
     >
       {rows.map((items, i) => {

@@ -1,76 +1,83 @@
-# Workshop join module — prompt pass, 4 rows, and connection audit
+# Workshop module — 2027 design pass
 
-Scope: `src/lib/topic-prompts.ts`, `src/components/room-prompt-marquee.tsx`, plus a light audit pass surfacing wiring gaps. No backend/schema changes.
+Scope: `src/components/live-topics-list.tsx` and `src/components/room-prompt-marquee.tsx`, with minor wiring in `src/routes/workshop.index.tsx` and one CSS token in `src/styles.css`. No backend/schema work.
 
-## 1. Rebalance the prompt pool (65/35 obvious vs. weird)
+## 1. Kill the "or jump into" row — fold mediums into the CTA
 
-Today the list leans esoteric ("Type-design crit", "Cold-open writers' room", "Morning pages then heads-down"). Rewrite `ROOM_PROMPTS` in `src/lib/topic-prompts.ts` so roughly **65% are immediately obvious** ("Mix feedback, bring stems", "Co-writing sprint", "Photo critique") and **35% stay weird/specific** ("1 hyperpop song an hour, all day", "Mental health hackathon", "Need a vocalist for a tech house song"). Target ~60 prompts total so 4 desktop rows of ~14 each draw from distinct windows without obvious repeats.
+The 5 medium chips push the left column ~80px taller than the topic list and unbalance the split. Replace them with a **split-button**:
 
-Each medium gets 6–8 entries with that same internal ratio. The weird ones stay first-person and time-bound — they're what sells the platform.
+```
+┌────────────────────────────┬───┐
+│  Open the first room   →   │ ▾ │
+└────────────────────────────┴───┘
+```
 
-I'll tag each prompt with a small `weight: "obvious" | "wild"` field so the marquee can deal them out evenly across rows (no row ends up all-wild or all-obvious).
+- Primary half: existing "Open the first room / Match me to a seat" CTA — unchanged behavior.
+- Caret half: opens a `Popover` listing the 5 work mediums (Film, Music, Writing, Build, Visual) plus Critique and Co-working in a secondary group. Each row shows live count (•3) and on click calls `onPick(medium)`. Keyboard: ArrowDown opens, ArrowUp/Down navigate, Enter selects, Esc closes.
+- The split-button is the only element under the headline; gives the left column ~120px back so it visually matches the topic list height.
 
-## 2. Four rows on desktop, half-speed again
+## 2. 2027 pass — what "trending forward" means here
 
-In `src/components/room-prompt-marquee.tsx`:
+Concrete moves, not vibes:
 
-- Add a 4th row. Direction pattern: **R → L → R → L** (rows 1+3 use `animate-marquee-x`, rows 2+4 use `animate-marquee-x-reverse`).
-- Halve the speed once more: durations become **~110s / 125s / 100s / 118s** (was 58/64/52). Per-row jitter prevents lockstep.
-- **Responsive row count**: mobile (<640px) keeps 2 rows, tablet 3, desktop (md+) 4. Implemented by rendering all 4 rows and hiding rows 3+4 with `hidden md:block` / `hidden sm:block` — no JS resize listener needed.
-- Bump `perRow` to 14, slice the shuffled pool into 4 non-overlapping windows. If pool is short, re-shuffle and slice again (existing fallback).
-- Interleave by `weight` per row so each row has the same obvious/wild ratio.
-- Respect `prefers-reduced-motion` (already handled in `styles.css`).
+**a. Tactile hairlines + soft halo, not cards-in-cards.**
+The current `rounded-2xl border bg-surface shadow-soft` outer card around an already-bordered grid reads as 2023 dashboardy. Drop the outer border + shadow on the container; use a single hairline divider between the two halves and an ambient soft halo (`box-shadow: 0 0 0 1px ink/5, 0 30px 60px -40px ink/15`) so it floats rather than sits in a box.
 
-## 3. Module audit — connection gaps & flow opportunities
+**b. Live-ness as light, not text.**
+Replace the textual "0 people live" label with a thin **pulse bar** at the top of the topic column (1px high gradient bar that breathes when liveCount>0, dim when 0). The number moves to a tabular-nums chip on the topic column header, smaller.
 
-Issues I found in `live-topics-list.tsx`, `room-prompt-marquee.tsx`, and `workshop.index.tsx` that are worth fixing in this same pass:
+**c. Topic rows: spring-in count chip, not "+ Start" button.**
+Right-aligned "+ Start" pill on every row is noisy. Replace with:
+- Default: just label + (live count pill if >0)
+- On row hover/focus: a single ghost arrow `→` slides in from right; row itself becomes the button.
+- The Critique/Co-working sub-medium caret stays but moves inline next to the label as a faint chevron, not a separate column.
 
-**a. Prompt chip → host dialog loses the live-room context.**
-A prompt click always opens `HostPrivacyDialog`, even when a matching live room already exists for that medium. Better flow: if `liveByMedium.get(prompt.medium) > 0`, the popover shows a third option — **"Join a live one"** — that calls `onPick(prompt.medium)` instead of hosting. Three buttons: *Join live (N) · Start now · Cancel*. Keeps "start now" but rewards the user when the room already exists.
+**d. Featured card: shift from "section card" to "moment card".**
+- Drop the gradient bg from-muted/40. Replace with a single faint gradient line at the top edge (1.5px, `gradient-motion`) — a "now playing" tape feel.
+- "START THE NIGHT / JUMP IN" eyebrow keeps but loses the Sparkles icon (overused). Replace with a tiny 3-dot status indicator that pulses when liveCount>0.
+- Headline "Any topic" stays in display serif but drop weight one notch — current size feels billboard-y next to the slim topic rows. Pair with a one-line subhead.
+- Move the marquee a little closer (less pb) — it currently visually disconnects from the CTA.
 
-**b. Sub-medium picker only on Critique / Co-working.**
-The `SUB_PARENTS` set is hard-coded. The "Any topic" featured card has no analogous picker even though it's the most-clicked surface. Add a tiny "or pick a medium" inline row under the Any-topic CTA (5 medium chips) so users who know what they want don't have to scan the topic list.
+**e. Marquee: vapor edge, not hard mask.**
+Increase the mask gradient transparency window from 8% to 14% so chips fade in/out more gradually. Add a tiny "pause" affordance: tiny dot bottom-right that highlights when any row is paused (already paused via hover/focus, this just makes it legible). Optional: slow rows further to 130/145/118/135s — current 110s still feels fast for ambient reading.
 
-**c. Prompt marquee has no keyboard discoverability.**
-Chips are `<button>` so they're tab-reachable, but with 56 chips moving at 100s+, keyboard users will struggle. Add a "Pause" affordance: hovering OR focusing any chip pauses its row (CSS-only via `:has(:hover, :focus-within)` on the row container — already half-there with pause-on-hover, just extend to focus).
+**f. Type weight rebalance.**
+- Eyebrows currently `text-[11px] uppercase tracking-wider` — keep, but lighten color to `ink-muted/70` so they recede.
+- Topic row label down from `text-sm` to `text-[13.5px]` with `font-medium` → cleaner rhythm with the eyebrows.
+- Live count tabular chip: `text-[10.5px] tabular-nums text-ink/60` — quiet, not shouty.
 
-**d. `featuredFooter` (the marquee) lives inside the Any-topic card.**
-On mobile (`stack` layout) the marquee never renders — `featuredFooter` is only consumed in the `split` branch. Mobile users see no prompts at all. Either render it under the stacked list on mobile, or skip it on mobile intentionally — recommend rendering 2 rows below the stacked list.
+**g. Subtle micro-motion.**
+- Topic rows: when liveCount transitions 0→N, animate the live dot from border-only to filled with a scale spring (framer-motion `layout`).
+- Split-button caret: rotate 180° on open (already a pattern in the file, reuse).
+- Marquee chips: gentle `transition-all` on hover (`scale-[1.02]`, no shadow).
 
-**e. No "what just happened" feedback.**
-When a host opens a room from a prompt, the prompt vanishes (next shuffle). Optional: keep last-used prompt visually pinned for ~10s with a "you opened this" subtle ring, so the host's intent is reinforced. Low priority — flagging only.
+**h. Mobile.**
+Stack layout already exists; apply the same split-button + hairline treatment so mobile and desktop feel like the same surface. Marquee already renders under stack list — keep that.
 
-**f. `hostLabel` computation in `workshop.index.tsx`.**
-`hostLabel` reads `hostMedium` but the CTA still says "Spin up your room" even after a prompt pre-fills a medium, because `hostMedium` is set but `pendingTitle` isn't surfaced on the strip button itself. Minor: when a prompt is queued (state added in next step), the host strip button could read "Spin up: *{title}*" so the user sees the dialog isn't a surprise. Defer if you want to keep this PR tight.
+## 3. Audit fixes rolled into this pass
 
-**g. Pool re-shuffle on every re-render.**
-`useMemo` keys on `perRow` only, but `Math.random()` inside `shuffle()` means HMR/dev re-mounts pick new prompts. Production is fine (no re-mount), but worth seeding once per session via `useRef` so users see a stable set across navigation back to `/workshop`.
+- The "By topic / N people live" header row uses `justify-between` — the count jumps when it changes from "1 person" to "2 people". Switch to `tabular-nums` + always-plural "live" (already done in the live indicator at top of route header; mirror it here).
+- The Critique sub-medium caret currently has `e.stopPropagation` on click but no keyboard handling — Enter/Space falls through to the row. Add `onKeyDown` stop for Space/Enter so the sub-popover doesn't double-trigger row pick.
+- `defaultVisible = 6` in split layout — with 8 categories, the "2 more topics" button shows ~always. Either show all 8 (the list is 7 rows tall, fits without scroll) and drop the expand control, OR raise `defaultVisible` to 8. Recommend showing all 8 and removing the toggle — fewer affordances, more honesty.
+- Avatar stack column on topic rows is `hidden sm:flex` — at the current 1050px viewport it shows but participants are usually empty, leaving dead space. Render the avatar column only when `stack.length > 0` (it already conditionally renders, but the parent `flex` keeps the gap allocated). Tighten the row gap when empty.
 
-## 4. What I'll ship this turn
+## 4. Files touched
 
-- Rewrite `ROOM_PROMPTS` with the 65/35 mix + `weight` tags (~60 entries).
-- Marquee: 4 rows responsive, half-speed durations, weight-balanced slicing, stable per-session shuffle, focus-within pause.
-- Prompt popover: third "Join a live one" button when that medium has live rooms.
-- Any-topic featured card: inline 5-chip medium quick-picker under the CTA.
-- Render the marquee under the stacked list on mobile too.
+- `src/components/live-topics-list.tsx` — split-button CTA, remove medium chip row, container shell change, row layout/typography pass, drop expand toggle, sub-medium keyboard fix.
+- `src/components/room-prompt-marquee.tsx` — mask widening, optional slower durations, paused-state dot indicator.
+- `src/styles.css` — add `--shadow-halo` token used by the new container shell.
+- `src/routes/workshop.index.tsx` — no API change; ensure the redundant `liveCount` text in the header still reads naturally now that the list also surfaces it (no edit expected, just verify).
 
-## 5. Out of scope (flagging only)
+## 5. Out of scope
 
-- Host strip CTA dynamic label (item f).
-- "You opened this" pinned-prompt feedback (item e).
-- Any changes to `/workshop/$id`, `HostPrivacyDialog` internals, analytics, schema, or server fns.
+- No changes to `/workshop/$id`, host strip, `HostPrivacyDialog`, `LiveWorkshopsRail`, `WorkshopStrip`, analytics, schema, or server fns.
+- No new dependencies.
+- No copy rewrite beyond the eyebrow/subhead micro-tweaks above.
 
-## Files touched
+## 6. One clarification
 
-- `src/lib/topic-prompts.ts` — rewritten prompts + `weight` field.
-- `src/components/room-prompt-marquee.tsx` — 4 rows, responsive, slower, weight-balanced, stable shuffle, "Join live" popover variant.
-- `src/components/live-topics-list.tsx` — Any-topic inline medium picker; mobile marquee slot.
-- `src/routes/workshop.index.tsx` — pass `liveByMedium` (or equivalent) down so the popover knows when to show "Join live"; wire mobile footer.
+For item §1 — when the user clicks the **caret half** of the split-button and picks a medium, should it:
+- **A.** Drop them straight into a matching live room (or open a new one) — same as clicking the topic row, OR
+- **B.** Pre-fill the host dialog with that medium and let them name+lock the room (same as marquee prompts)?
 
-## One clarification
-
-For item (c) — when a prompt's medium has live rooms, do you want:
-- **A.** Three buttons (Join live · Start now · Cancel) — gives the user the choice each time, or
-- **B.** Auto-prefer Join live (Start now becomes secondary/ghost) — nudges toward joining what's already happening?
-
-I'll default to **A** unless you say otherwise.
+I'll default to **A** (dropping straight in matches the "Open the first room" verb and matches what the medium chips did before) unless you say B.
