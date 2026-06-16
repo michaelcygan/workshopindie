@@ -323,7 +323,7 @@ function TopicRow({
         "group flex w-full items-center gap-3 text-left transition",
         dense ? "px-4 py-2.5" : "px-5 py-3.5",
         "hover:bg-muted/40 disabled:opacity-60 disabled:hover:bg-transparent",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink/20",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30",
         highlight && "bg-muted/30",
       )}
     >
