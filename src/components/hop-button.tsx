@@ -60,10 +60,11 @@ export function HopButton({ roomId, medium, mode }: Props) {
       onClick={onHop}
       disabled={busy}
       className="rounded-full gap-1.5"
-      title="Hop to the next live Workshop"
+      title="Hop to the next live Workshop (N)"
+      data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">Hop</span>
+      <span className="hidden sm:inline">{busy ? "Hopping…" : "Hop"}</span>
     </Button>
   );
 }
