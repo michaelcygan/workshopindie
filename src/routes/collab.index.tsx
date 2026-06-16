@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Search, X, MapPin, Briefcase } from "lucide-react";
+import { Megaphone, Search, X, MapPin, Briefcase, Radio, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -14,6 +14,7 @@ import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
+import { useVouchersForPosts } from "@/components/vouch-button";
 
 
 const searchSchema = z.object({
