@@ -1,9 +1,9 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft, Crown } from "lucide-react";
+import { Mic, Video, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
@@ -14,6 +14,7 @@ import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import type { RoomPrompt } from "@/lib/topic-prompts";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
