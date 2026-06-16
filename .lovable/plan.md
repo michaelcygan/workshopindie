@@ -1,116 +1,62 @@
+## Workshop flow audit — v1 polish pass
 
-# Host v1 — what "Spin up your own room" actually grants
+Goal: tighten what's already shipped. No new primitives, no schema sprawl. Mostly wiring, presentation, and two small unlocks that drive stickiness (hop-to-next, edit title mid-room).
 
-The dialog currently asks who can find the room and stops there. Once inside, the only signs of hosting are a "Hosting" badge and the ability to ping mutuals. Guests see no difference. This plan makes hosting visible, scoped, and respected — without giving the host a moderator console they don't need at five seats.
+---
 
-## Principle
+### A. Wiring + correctness fixes (no UI noise)
 
-A Workshop seats up to five people who chose to be there. The host is the person who opened the door. They get:
-- the right to **set the frame** (title, topic, focus message)
-- the right to **keep it on track** (ask all to mute, remove someone, lock seats)
-- the right to **end the session** for everyone
+1. **`liveCount` in `/workshop` is never set.** `LiveTopicsList` calls `onLiveCountChange`, but the subtitle, the rejoin pill placement, and the "first visit / spark" line all depend on it. Verify it actually fires; today the header sometimes shows "No one's in yet" while the rail below has live rooms. Fix the prop wiring + add a fallback derived from `liveByMedium` sum.
+2. **`getInstantRoom` server fn is out of date** — selects `…, status` but not the new `focus_message, locked, ended_by_user_id`. Anywhere that reads through this fn is silently missing host state. Update the select.
+3. **`endRoom` sets `status = 'archived'` but the route's `useQuery` polls every 5s and never reacts to ended state.** Today guests rely solely on the `ended` broadcast; anyone who joins after the broadcast lands in a zombie room. Add: when `room.status !== 'active'` and not host, route to `/workshop` with a toast ("This Workshop ended").
+4. **Host `useEffect` leave-stash runs for ended rooms too**, so guests who get kicked or whose host ended the room get a "Rejoin" pill back on `/workshop` that 404s into a locked/archived room. Skip the stash when `room.status !== 'active'` or `locked`.
+5. **`HostRoomEvents` `mute_all` toast** uses `document.querySelector('[data-mic-toggle]')` — confirm `ChannelView` actually emits that attribute on the mic button. If not, drop the auto-action and keep the toast advisory ("Tap your mic to mute"). One quick edit either way.
+6. **`broadcast()` in `HostMenu` creates a fresh channel per call and never `subscribe()`s.** Supabase requires `subscribe()` before `send()` works reliably. Reuse the same channel as `HostRoomEvents` via a small `useHostBroadcast(roomId)` hook (one channel per room).
 
-That's it. No spotlight, no admin console, no "raise hand" queue. The room shell, video grid, chat, and tools panel stay byte-for-byte the same for everyone — host powers are surfaced as a single tucked-away menu plus three small inline affordances.
+### B. Host quality-of-life (the asks)
 
-## A. Make the grant explicit in the dialog
+7. **Edit title mid-Workshop.** Add to `HostMenu`: "Rename Workshop" → dialog with the current title, 120-char cap, host-only RLS already covered by `assertHost`. New tiny server fn `setRoomTitle` next to `setRoomFocusMessage`. Title in the header updates via the existing 5s refetch + an optimistic invalidate. No schema change.
+8. **Hand off host.** New menu item "Transfer host…" → picks from the same `participants` list as Remove. Server fn `transferHost` updates `instant_rooms.host_user_id`. Useful when the host has to drop. No schema change.
+9. **Copy share link from the menu** (one-tap, also available outside the "waiting" card). Today the only path to the link is the waiting-card before others arrive.
 
-Right now "Open your Workshop" reads like a privacy picker. Add a short, calm "You'll be the host" block under the visibility list, before the footer:
+### C. Matching + join/exit upgrades
 
-```
-You're the host
-─────────────────
-· Set a focus message everyone sees at the top
-· Ask all guests to mute (they can unmute themselves)
-· Remove someone if a session goes sideways
-· Lock the room — no new seats fill
-· End the Workshop for everyone
+10. **"Hop to next Workshop" — the speed/persistence unlock you asked for.** Add a `<HopButton />` in the room header (next to Leave) and a keyboard shortcut `N`:
+    - Calls `joinLounge` (or `joinMediumLounge` if the current room has a medium) **excluding** the current `roomId`. Add a `_exclude_room_id` arg to both RPCs via migration (one-line `AND r.id <> _exclude` filter).
+    - On success: drop presence row for current room → `router.navigate` to the new room id with the same `mode` search param. ChannelView already keys off `roomId` so it remounts cleanly.
+    - If matchmaker returns the same room (only one live), the server returns `null` → button toasts "No other rooms right now. Open a new one?" with a one-tap host shortcut.
+    - This is the persistence loop: scroll-style room hopping, low complexity, big behavior change.
+11. **Auto-spawn after end.** When the host ends or you get kicked, show one-tap "Find another" in the toast that calls the same hop logic. Removes the dead end.
+12. **Block re-match into rooms you recently left** (last 5 min). Reuse `instant_room_removals` semantics with a new `instant_recent_exits` lightweight table OR just a `last_exited_at` column on the existing presence row's last value — simplest: keep a client `sessionStorage` skip-list and pass it as `_exclude_room_ids` to matchmaker. Avoids "ping-ponging back into a room you just left."
 
-Anything written, drawn, or pinned stays ephemeral until
-someone turns it into a Collab.
-```
+### D. UI polish (low code, high impact)
 
-Five short lines, no icons-per-line — it should read as a small contract, not a feature list. Copy lives in `host-privacy-dialog.tsx` only.
+13. **Room header is information-dense.** Reflow on mobile: title row → host meta row (Hosted by + Locked + Hop/Host menu/Create Collab) → focus strip. Today everything fights for the first row.
+14. **Focus strip** — promote visually when present (subtle gradient border, slightly larger, sticky under header on scroll). It's currently a hairline that disappears once you scroll.
+15. **HostedByLine** — when the host is `auth.uid()`, render as "Hosting" pill instead of "Hosted by You" to avoid redundancy with the Crown badge.
+16. **"Spin up" button on `/workshop`** — when `hostMedium` is preselected from a prompt, show the inspired-by chip beside the CTA instead of inside the dialog only. Better continuity.
+17. **Rejoin pill** — show countdown ring (60s) so the affordance feels alive, and add `Dismiss` X to clear early.
+18. **Waiting-for-others card** — once `liveCount > 1`, animate it out (fade + height collapse) instead of unmount-snap.
 
-## B. What changes inside the room (host-only)
+### E. Stickiness unlocks (no new builds)
 
-A new `<HostMenu />` component, mounted next to the existing "Create a Collab" button in the room header. Crown icon, single dropdown, four items. Visible only when `isHost`.
+19. **First-room receipt.** After a user's first room (track via `localStorage`), surface a one-time card on `/workshop`: "You hosted/joined your first Workshop. See who else is live →" — drives second session within minutes.
+20. **Auto-prompt nudge for empty mediums.** When a category has 0 live rooms and the user has been on `/workshop` for >20s, the prompt marquee picks a category-relevant prompt and surfaces it as a soft CTA ("Be the first in Music tonight"). Pure presentational reuse of existing `RoomPromptMarquee`.
+21. **"Last 24h" recap chip** under the header: "12 Workshops happened today" — pulls from `instant_activity`. Social proof without a leaderboard.
 
-1. **Set focus message** — opens a small dialog with a 140-char text field. Saves to `instant_rooms.focus_message` (new column). Rendered as a hairline strip below the room title for everyone (`<FocusStrip />`). Host can clear it.
-2. **Ask all to mute** — fires a Realtime broadcast on the existing room channel. Guests receive a one-tap toast: *"{Host} asked everyone to mute. [Mute me]"* with a 6-second auto-dismiss. Pure social signal — does NOT force-mute via the SFU. Guests stay in control of their own mic; the host just made the ask visible.
-3. **Lock the room** — toggles `instant_rooms.locked` (new column). When locked: matchmaker skips it, the join page shows "This Workshop is locked — ask the host for a link", and the live rail tags it `Locked`. Host can unlock anytime.
-4. **End Workshop** — confirm dialog. Sets `instant_rooms.status = 'ended'`, broadcasts an `ended` event. Everyone is shown the existing end-of-room screen with one extra line: *"{Host} ended this Workshop."*
+---
 
-A fifth item, **Remove someone**, lives on each guest tile (host-only ellipsis on hover/long-press → "Remove from Workshop"). Confirm dialog. Writes a `instant_room_removals` row (user_id + room_id + until = now + 30 min) and broadcasts a `kick` event for that user_id. RLS on the join function blocks re-entry until `until` expires. Host sees a small toast: *"Removed. They can rejoin in 30 minutes."*
+### Technical map
 
-That's the entire host surface. Five capabilities. No tab, no panel, no second sidebar.
+- **Server fns (new, all under existing `host-room.functions.ts`):** `setRoomTitle`, `transferHost`. Both `requireSupabaseAuth` + `assertHost`.
+- **Server fn changes:** `joinLounge`, `joinMediumLounge` accept optional `excludeRoomIds: string[]`; `getInstantRoom` selects the host columns.
+- **Migration (one):** add `_exclude_room_ids uuid[] DEFAULT '{}'` arg to both `join_lounge*` RPCs with `AND r.id <> ALL(_exclude_room_ids)` filter. No table changes.
+- **New component:** `HopButton` (header) + tiny `useHostBroadcast(roomId)` hook (replaces `HostMenu`'s ad-hoc channel).
+- **Edits:** `workshop.$id.tsx` (status guard, header reflow, HopButton, sticky focus strip), `workshop.index.tsx` (liveCount wiring, recap chip), `HostMenu` (Rename, Transfer, Copy link), `HostedByLine` (self case), `WaitingForOthersCard` (exit animation), `host-room.functions.ts` (+2 fns), `instant.functions.ts` (exclude args).
 
-## C. What guests see (and don't)
+### Out of scope for this pass
+- Raise hand / spotlight / per-guest perms (v2 host).
+- Persistent bans, recording, force-mute via SFU.
+- Any redesign of `ChannelView` internals.
 
-- A small `Hosted by {Name}` line under the room title when there is a host. Avatar + name, links to `/u/$username`. The Crown badge stays on the host's video tile.
-- Focus message strip, if set (same component, just read-only).
-- Receive-side toasts for "asked to mute" and "ended".
-- No host menu, no remove buttons, no lock toggle. The `<HostMenu />` simply does not render.
-
-Leaderless rooms (the matchmaker Lounge with no host) keep today's behavior. The focus strip, lock toggle, and end button are simply unavailable — the room ends when the last person leaves. No code path tries to "promote" a guest to host in v1.
-
-## D. Backend (one migration)
-
-```sql
-alter table public.instant_rooms
-  add column focus_message text,
-  add column locked boolean not null default false,
-  add column ended_by_user_id uuid references auth.users(id);
-
-create table public.instant_room_removals (
-  room_id uuid not null references public.instant_rooms(id) on delete cascade,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  until timestamptz not null,
-  removed_by uuid references auth.users(id),
-  primary key (room_id, user_id)
-);
-
-grant select on public.instant_room_removals to authenticated;
-grant all on public.instant_room_removals to service_role;
-alter table public.instant_room_removals enable row level security;
-create policy "read own removals" on public.instant_room_removals
-  for select to authenticated using (auth.uid() = user_id);
-```
-
-Server functions (all `requireSupabaseAuth`, all assert `host_user_id = auth.uid()` before writing):
-- `setRoomFocusMessage({ roomId, text })`
-- `setRoomLocked({ roomId, locked })`
-- `removeFromRoom({ roomId, targetUserId })`
-- `endRoom({ roomId })`
-
-The matchmaker (`joinLounge`, `joinMediumLounge`) gets two filters: skip rooms where `locked = true`, reject join when the caller has an unexpired `instant_room_removals` row.
-
-## E. Files touched
-
-- `src/components/host-privacy-dialog.tsx` — "You're the host" block + tightened copy on visibility options.
-- `src/components/host-menu.tsx` — new. Crown dropdown with four actions + their dialogs.
-- `src/components/focus-strip.tsx` — new. Reads `focus_message`; rendered for everyone.
-- `src/components/hosted-by-line.tsx` — new. Avatar + display name + profile link.
-- `src/components/channel-view.tsx` — add host-only ellipsis on remote tiles → "Remove from Workshop" confirm. Wire `kick` broadcast → leave room for the targeted user. Wire `muteAll` broadcast → toast with "Mute me".
-- `src/routes/workshop.$id.tsx` — mount `<FocusStrip />` and `<HostedByLine />`; mount `<HostMenu />` when `isHost`; wire `ended` broadcast.
-- `src/lib/instant.functions.ts` — four new server fns + two matchmaker filters.
-- One migration as above.
-
-`workshop-tools-panel.tsx`, `waiting-for-others-card.tsx`, `host-first-run-tour.tsx` need a one-line refresh of copy to reference the new powers — no structural change.
-
-## Out of scope for v1
-
-- Spotlight a speaker / pin a video tile
-- Raise-hand queue, request-to-speak
-- Host promotion / co-host
-- Recording, transcripts, captions
-- Force-mute via SFU (we ask, we don't force)
-- Per-guest permissions matrix
-- Persistent bans across rooms (the 30-min cooldown is room-scoped)
-
-These belong in v2 once the v1 contract is real, used, and either trusted or stress-tested.
-
-## Risks and how v1 absorbs them
-
-- **"Ask to mute" feels weak.** It's intentional. Five-seat rooms don't need force-mute, and the social request keeps the host's authority human. We can add a SFU-level mute in v2 if a real session shows it's needed.
-- **30-min removal could be abused.** It's per-room only, the removed user keeps platform access everywhere else, and the row is auditable. Acceptable for v1.
-- **Leaderless Lounge loses host-only features.** By design — those rooms are the matchmaker's, not a person's. They end when empty.
+Want me to ship all of A–E, or trim to a tier (A+B+C only is the lean version; D+E are pure polish/growth)?
