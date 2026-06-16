@@ -19,7 +19,7 @@ type Props = {
   disabled?: boolean;
   /** "stack" = single column (mobile default), "split" = featured Any + topic grid (desktop). */
   layout?: "stack" | "split";
-  /** Optional slot rendered under the featured "Any topic" card (e.g. prompt marquee). */
+  /** Optional slot rendered under the featured "Lounge" card (e.g. prompt marquee). */
   featuredFooter?: React.ReactNode;
 };
 
@@ -77,6 +77,24 @@ export function LiveTopicsList({
     }
     return m;
   }, [rooms]);
+
+  // Lounge = the general / matchmaker rooms (no specific medium).
+  const loungeRooms = useMemo(() => rooms.filter((r) => !r.medium), [rooms]);
+  const loungeLive = useMemo(
+    () => loungeRooms.reduce((acc, r) => acc + r.live_count, 0),
+    [loungeRooms],
+  );
+  const loungeParticipants = useMemo(() => {
+    const list: ActiveInstantRoom["participants"] = [];
+    for (const r of loungeRooms) {
+      for (const p of r.participants) {
+        if (list.length >= 3) break;
+        if (!list.find((x) => x.user_id === p.user_id)) list.push(p);
+      }
+      if (list.length >= 3) break;
+    }
+    return list;
+  }, [loungeRooms]);
 
   const sorted = useMemo(() => {
     return [...CATEGORIES].sort((a, b) => {
@@ -165,10 +183,29 @@ export function LiveTopicsList({
       busyAny={busyKey === "any"}
       disabled={disabled}
       liveByMedium={liveByMedium}
+      loungeLive={loungeLive}
       busyKey={busyKey}
       onPickAny={() => onPick(null)}
       onPickMedium={(m) => onPick(m)}
     />
+  );
+
+  // Pinned "Lounge" row — rendered as the first item in the topic list.
+  const loungeRow = (
+    <motion.li key="lounge" layout transition={{ duration: 0.2 }}>
+      <TopicRow
+        id="lounge"
+        label="Lounge"
+        eyebrow="General"
+        accent
+        description="Mixed-medium drop-in. Whoever shows up."
+        live={loungeLive}
+        participants={loungeParticipants}
+        busy={busyKey === "any"}
+        disabled={disabled}
+        onClick={() => onPick(null)}
+      />
+    </motion.li>
   );
 
   // ── Split layout (desktop) ──────────────────────────────────────────────
@@ -180,19 +217,19 @@ export function LiveTopicsList({
         onKeyDown={handleListKeyDown}
         className="relative rounded-3xl bg-surface shadow-halo overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
-        {/* Featured: Any topic */}
+        {/* Featured: Lounge */}
         <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative">
           {/* "now playing" hairline */}
           <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
           <div className="p-5 md:p-6 pb-4">
             {eyebrow}
             <h2 className="mt-3 font-display text-[26px] md:text-[30px] leading-[1.05] text-ink tracking-tight">
-              Any topic
+              Lounge
             </h2>
             <p className="mt-1.5 text-[13px] text-ink-muted/90 max-w-[28ch]">
               {noneLive
-                ? "Be the first in tonight. We'll open the room."
-                : "We'll drop you in the best open seat right now."}
+                ? "Open the room — the night starts here."
+                : "Drop in where the conversation's already going."}
             </p>
             <div className="mt-4">{splitCTA}</div>
           </div>
@@ -231,6 +268,7 @@ export function LiveTopicsList({
             style={{ maxHeight: 380 }}
           >
             <ul className="divide-y divide-border/40">
+              {loungeRow}
               {sorted.map((c) => {
                 const live = liveByMedium.get(c.id) ?? 0;
                 return (
@@ -269,12 +307,12 @@ export function LiveTopicsList({
         <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
         {eyebrow}
         <h2 className="mt-3 font-display text-[26px] leading-[1.05] text-ink tracking-tight">
-          Any topic
+          Lounge
         </h2>
         <p className="mt-1.5 text-[13px] text-ink-muted/90">
           {noneLive
-            ? "Be the first in tonight. We'll open the room."
-            : "We'll drop you in the best open seat."}
+            ? "Open the room — the night starts here."
+            : "Drop in where the conversation's already going."}
         </p>
         <div className="mt-4">{splitCTA}</div>
       </div>
@@ -284,6 +322,7 @@ export function LiveTopicsList({
           <div className="text-[10.5px] text-ink-muted tabular-nums">{liveCount} live</div>
         </div>
         <ul className="divide-y divide-border/40">
+          {loungeRow}
           {sorted.map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
             return (
@@ -336,6 +375,7 @@ function SplitOpenButton({
   busyAny,
   disabled,
   liveByMedium,
+  loungeLive,
   busyKey,
   onPickAny,
   onPickMedium,
@@ -344,6 +384,7 @@ function SplitOpenButton({
   busyAny: boolean;
   disabled?: boolean;
   liveByMedium: Map<Category, number>;
+  loungeLive: number;
   busyKey?: string | null;
   onPickAny: () => void;
   onPickMedium: (m: Category) => void;
@@ -404,6 +445,32 @@ function SplitOpenButton({
             Jump straight into
           </div>
           <ul className="flex flex-col">
+            <li key="lounge">
+              <button
+                type="button"
+                disabled={disabled || busyAny}
+                onClick={() => { setOpen(false); onPickAny(); }}
+                className={cn(
+                  "w-full flex items-center gap-2 rounded-md px-2 py-1.5 text-[13px] text-ink font-medium",
+                  "hover:bg-muted/60 transition disabled:opacity-60",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
+                )}
+              >
+                <span
+                  className={cn(
+                    "h-1.5 w-1.5 rounded-full shrink-0",
+                    loungeLive > 0 ? "bg-primary" : "border border-ink/20",
+                  )}
+                />
+                <span className="flex-1 text-left">Lounge</span>
+                <span className="text-[9px] uppercase tracking-[0.14em] text-ink-muted/70">General</span>
+                {loungeLive > 0 && (
+                  <span className="text-[10.5px] tabular-nums text-ink-muted">{loungeLive} live</span>
+                )}
+                {busyAny && <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />}
+              </button>
+            </li>
+            <li aria-hidden className="my-1 h-px bg-border/50" />
             {CATEGORIES.map((c) => {
               const live = liveByMedium.get(c.id) ?? 0;
               const isBusy = busyKey === c.id;
@@ -452,6 +519,8 @@ function TopicRow({
   disabled,
   onClick,
   onPickSub,
+  eyebrow,
+  accent,
 }: {
   id: string;
   label: string;
@@ -463,6 +532,8 @@ function TopicRow({
   disabled?: boolean;
   onClick: () => void;
   onPickSub?: (m: Category) => void;
+  eyebrow?: string;
+  accent?: boolean;
 }) {
   const isLive = live > 0;
   const stack = (participants ?? []).slice(0, 3);
@@ -480,8 +551,15 @@ function TopicRow({
       className={cn(
         "group relative w-full transition",
         "hover:bg-muted/35",
+        accent && "bg-gradient-to-r from-primary/[0.05] via-transparent to-transparent",
       )}
     >
+      {accent && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-y-2 left-0 w-px gradient-motion opacity-70 rounded-full"
+        />
+      )}
       <div className="flex items-center gap-2 px-4">
         <button
           type="button"
@@ -506,8 +584,13 @@ function TopicRow({
           </span>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5 font-medium text-ink text-[13.5px]">
+            <div className={cn("flex items-center gap-1.5 text-ink text-[13.5px]", accent ? "font-semibold" : "font-medium")}>
               <span className="truncate">{label}</span>
+              {eyebrow && (
+                <span className="shrink-0 rounded-full border border-ink/15 bg-surface/60 px-1.5 py-px text-[9px] uppercase tracking-[0.14em] text-ink-muted/80">
+                  {eyebrow}
+                </span>
+              )}
               {isLive && (
                 <span className="text-[10.5px] font-normal text-ink/55 tabular-nums">·{live}</span>
               )}
