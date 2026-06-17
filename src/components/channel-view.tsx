@@ -525,6 +525,8 @@ export function ChannelView({
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
           {/* Persistent contextual expand — always available, routes to the active surface. */}
+          <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} />
+          {pip.portal}
           <button
             type="button"
             onClick={() => setFsView(fsTarget)}
