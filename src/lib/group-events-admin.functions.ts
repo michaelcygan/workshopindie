@@ -57,6 +57,43 @@ export const createEvent = createServerFn({ method: "POST" })
       .select("id,slug,group_id")
       .single();
     if (error) throw new Error(error.message);
+
+    // Notify all group members (except the creator) of the new event.
+    try {
+      const { data: group } = await supabase
+        .from("groups")
+        .select("slug,name")
+        .eq("id", data.group_id)
+        .maybeSingle();
+      const { data: members } = await supabase
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", data.group_id);
+      const recipients = (members ?? [])
+        .map((m) => m.user_id as string)
+        .filter((uid) => uid && uid !== userId);
+      if (group && recipients.length > 0) {
+        const g = group as { slug: string; name: string };
+        const payload = {
+          event_title: data.title,
+          event_slug: row.slug,
+          group_slug: g.slug,
+          group_name: g.name,
+        };
+        await supabase.from("notifications").insert(
+          recipients.map((uid) => ({
+            user_id: uid,
+            kind: "event_new_in_my_group",
+            actor_user_id: userId,
+            entity_type: "group_event",
+            entity_id: row.id,
+            payload,
+          })),
+        );
+      }
+    } catch {
+      // Notifications are best-effort; never block event creation.
+    }
     return row;
   });
 

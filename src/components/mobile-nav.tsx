@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase, Mail } from "lucide-react";
+import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase, Mail, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -59,6 +59,9 @@ export function MobileNav() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                 <Briefcase className="mr-2 h-4 w-4" /> My Collabs
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
+                <Ticket className="mr-2 h-4 w-4" /> Your tickets
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
