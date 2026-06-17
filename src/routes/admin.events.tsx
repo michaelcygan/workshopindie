@@ -23,6 +23,7 @@ import {
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
+import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
