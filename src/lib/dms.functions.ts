@@ -20,9 +20,10 @@ export const checkCanDm = createServerFn({ method: "POST" })
 
 export const openOrCreateConversation = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { otherUserId: string; contextCollabPostId?: string | null }) => ({
+  .inputValidator((d: { otherUserId: string; contextCollabPostId?: string | null; contextWorkshopId?: string | null }) => ({
     otherUserId: uuidSchema.parse(d.otherUserId),
     contextCollabPostId: d.contextCollabPostId ? uuidSchema.parse(d.contextCollabPostId) : null,
+    contextWorkshopId: d.contextWorkshopId ? uuidSchema.parse(d.contextWorkshopId) : null,
   }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
@@ -39,8 +40,9 @@ export const openOrCreateConversation = createServerFn({ method: "POST" })
 
     if (existing?.id) return { conversationId: existing.id };
 
-    const insertRow: { user_a: string; user_b: string; context_collab_post_id?: string } = { user_a: a, user_b: b };
+    const insertRow: { user_a: string; user_b: string; context_collab_post_id?: string; context_workshop_id?: string } = { user_a: a, user_b: b };
     if (data.contextCollabPostId) insertRow.context_collab_post_id = data.contextCollabPostId;
+    if (data.contextWorkshopId) insertRow.context_workshop_id = data.contextWorkshopId;
 
     const { data: created, error } = await supabase
       .from("conversations")

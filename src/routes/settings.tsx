@@ -412,7 +412,7 @@ function PrivacySection() {
     queryFn: () => getAgeFn(),
   });
 
-  async function update(patch: { dmPolicy?: "everyone" | "nobody"; discoverable?: boolean; indexable?: boolean }) {
+  async function update(patch: { dmPolicy?: "mutuals" | "everyone" | "nobody"; discoverable?: boolean; indexable?: boolean }) {
     try {
       await updatePrivacyFn({ data: patch });
       qc.invalidateQueries({ queryKey: ["my-privacy"] });
@@ -439,16 +439,44 @@ function PrivacySection() {
   ];
   const birthdateLocked = !!ageInfo?.birthdate;
 
+  const dmOptions: { v: "mutuals" | "everyone" | "nobody"; label: string; hint: string }[] = [
+    { v: "mutuals", label: "Mutuals only", hint: "Only people you follow back can start a new DM. (Recommended)" },
+    { v: "everyone", label: "Anyone signed in", hint: "Anyone on Workshop can message you." },
+    { v: "nobody", label: "No new DMs", hint: "No one can start a new conversation. Existing threads keep working." },
+  ];
+  const currentDm = (privacy?.dmPolicy ?? "mutuals") as "mutuals" | "everyone" | "nobody";
+
   return (
     <div className="space-y-4">
       {/* DMs */}
-      <ToggleCard
-        label="Allow direct messages"
-        description="When off, no one can start a new conversation with you. Existing threads still work."
-        loading={pLoading}
-        checked={privacy?.dmPolicy !== "nobody"}
-        onChange={(on) => update({ dmPolicy: on ? "everyone" : "nobody" })}
-      />
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="text-sm font-medium text-ink">Who can message me</div>
+        <p className="mt-1 text-xs text-ink-muted">
+          Collab applicants and workshop hosts you've registered with can always reach you about that specific post.
+        </p>
+        <div className="mt-3 grid gap-2">
+          {dmOptions.map((opt) => {
+            const active = currentDm === opt.v;
+            return (
+              <button
+                key={opt.v}
+                type="button"
+                disabled={pLoading}
+                onClick={() => { if (!active) update({ dmPolicy: opt.v }); }}
+                className={`flex items-start gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                  active ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
+                }`}
+              >
+                <span className={`mt-1 inline-block h-3.5 w-3.5 shrink-0 rounded-full border ${active ? "border-primary bg-primary" : "border-border"}`} />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-ink">{opt.label}</span>
+                  <span className="block text-xs text-ink-muted">{opt.hint}</span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Discoverability */}
       <ToggleCard

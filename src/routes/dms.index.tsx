@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { MessageCircle } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { MessageCircle, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/require-auth";
@@ -12,10 +12,11 @@ type ConversationRow = {
   last_message_at: string | null;
   last_message_preview: string | null;
   context_collab_post_id: string | null;
+  context_workshop_id: string | null;
 };
 
 type CollabLite = { id: string; title: string; slug: string };
-
+type WorkshopLite = { id: string; title: string | null; slug: string };
 
 type ProfileLite = {
   id: string;
@@ -24,6 +25,16 @@ type ProfileLite = {
   avatar_url: string | null;
 };
 
+type Row = {
+  conv: ConversationRow;
+  other: ProfileLite | null;
+  unread: number;
+  collab: CollabLite | null;
+  workshop: WorkshopLite | null;
+};
+
+type Tab = "all" | "unread" | "collabs" | "workshops";
+
 export const Route = createFileRoute("/dms/")({
   component: () => <RequireAuth><DmsIndex /></RequireAuth>,
   head: () => ({ meta: [{ title: "Messages — Workshop" }] }),
@@ -31,8 +42,10 @@ export const Route = createFileRoute("/dms/")({
 
 function DmsIndex() {
   const { user, loading } = useAuth();
-  const [rows, setRows] = useState<Array<{ conv: ConversationRow; other: ProfileLite | null; unread: number; collab: CollabLite | null }>>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [busy, setBusy] = useState(true);
+  const [tab, setTab] = useState<Tab>("all");
+  const [q, setQ] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -41,22 +54,27 @@ function DmsIndex() {
       setBusy(true);
       const { data: convs } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id")
+        .select("id, user_a, user_b, last_message_at, last_message_preview, context_collab_post_id, context_workshop_id")
         .or(`user_a.eq.${user.id},user_b.eq.${user.id}`)
         .order("last_message_at", { ascending: false, nullsFirst: false });
       const list = (convs ?? []) as ConversationRow[];
       const otherIds = list.map((c) => (c.user_a === user.id ? c.user_b : c.user_a));
       const collabIds = Array.from(new Set(list.map((c) => c.context_collab_post_id).filter(Boolean) as string[]));
-      const [{ data: profs }, { data: collabs }] = await Promise.all([
+      const workshopIds = Array.from(new Set(list.map((c) => c.context_workshop_id).filter(Boolean) as string[]));
+      const [{ data: profs }, { data: collabs }, { data: workshops }] = await Promise.all([
         otherIds.length
           ? supabase.from("profiles").select("id, username, display_name, avatar_url").in("id", otherIds)
           : Promise.resolve({ data: [] as ProfileLite[] }),
         collabIds.length
           ? supabase.from("collab_posts").select("id, title, slug").in("id", collabIds)
           : Promise.resolve({ data: [] as CollabLite[] }),
+        workshopIds.length
+          ? supabase.from("workshops").select("id, title, slug").in("id", workshopIds)
+          : Promise.resolve({ data: [] as WorkshopLite[] }),
       ]);
       const byId = new Map<string, ProfileLite>((profs ?? []).map((p) => [p.id, p as ProfileLite]));
       const collabById = new Map<string, CollabLite>((collabs ?? []).map((c) => [c.id, c as CollabLite]));
+      const workshopById = new Map<string, WorkshopLite>((workshops ?? []).map((w) => [w.id, w as WorkshopLite]));
       const unreadCounts = new Map<string, number>();
       if (list.length) {
         const { data: unread } = await supabase
@@ -75,33 +93,108 @@ function DmsIndex() {
         other: byId.get(c.user_a === user.id ? c.user_b : c.user_a) ?? null,
         unread: unreadCounts.get(c.id) ?? 0,
         collab: c.context_collab_post_id ? collabById.get(c.context_collab_post_id) ?? null : null,
+        workshop: c.context_workshop_id ? workshopById.get(c.context_workshop_id) ?? null : null,
       })));
       setBusy(false);
     })();
     return () => { cancelled = true; };
   }, [user?.id]);
 
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (tab === "unread" && r.unread === 0) return false;
+      if (tab === "collabs" && !r.collab) return false;
+      if (tab === "workshops" && !r.workshop) return false;
+      if (!query) return true;
+      const hay = [
+        r.other?.display_name ?? "",
+        r.other?.username ?? "",
+        r.conv.last_message_preview ?? "",
+        r.collab?.title ?? "",
+        r.workshop?.title ?? "",
+      ].join(" ").toLowerCase();
+      return hay.includes(query);
+    });
+  }, [rows, tab, q]);
+
+  const counts = useMemo(() => ({
+    all: rows.length,
+    unread: rows.filter((r) => r.unread > 0).length,
+    collabs: rows.filter((r) => r.collab).length,
+    workshops: rows.filter((r) => r.workshop).length,
+  }), [rows]);
 
   if (loading || !user) return null;
+
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "all", label: "All", count: counts.all },
+    { id: "unread", label: "Unread", count: counts.unread },
+    { id: "collabs", label: "Collabs", count: counts.collabs },
+    { id: "workshops", label: "Workshops", count: counts.workshops },
+  ];
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-8">
       <h1 className="font-display text-3xl text-ink">Messages</h1>
-      <p className="mt-1 text-sm text-ink-muted">You can DM anyone you follow each other with.</p>
+      <p className="mt-1 text-sm text-ink-muted">DM mutuals — or anyone connected to your collabs and workshops.</p>
+
+      {!busy && rows.length > 0 && (
+        <>
+          <div className="mt-5 flex flex-wrap gap-1.5">
+            {tabs.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                  tab === t.id ? "bg-ink text-background" : "bg-muted text-ink-soft hover:bg-muted/80"
+                }`}
+              >
+                {t.label}
+                {t.count > 0 && (
+                  <span className={`rounded-full px-1.5 text-[10px] ${tab === t.id ? "bg-background/20" : "bg-background/40 text-ink-muted"}`}>
+                    {t.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="mt-3 relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+            <input
+              type="search"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by name or message…"
+              className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-3 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none"
+            />
+          </div>
+        </>
+      )}
 
       {busy ? (
         <div className="mt-8 text-sm text-ink-muted">Loading…</div>
       ) : rows.length === 0 ? (
         <div className="mt-12 rounded-2xl border border-border bg-surface p-8 text-center">
           <MessageCircle className="mx-auto h-8 w-8 text-ink-muted" />
-          <p className="mt-3 text-sm text-ink-muted">No conversations yet. Find people on the Collab Board and message them — once you follow each other, you can DM.</p>
-          <Link to="/collab" className="mt-4 inline-flex items-center justify-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-background hover:opacity-90">
-            Browse the Collab Board
-          </Link>
+          <p className="mt-3 text-sm text-ink-muted">No conversations yet. Find people on the Collab Board or in a Group and message them.</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <Link to="/collab" className="inline-flex items-center justify-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-background hover:opacity-90">
+              Browse the Collab Board
+            </Link>
+            <Link to="/groups" className="inline-flex items-center justify-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-muted">
+              Find your groups
+            </Link>
+          </div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 rounded-2xl border border-border bg-surface p-6 text-center text-sm text-ink-muted">
+          No conversations match.
         </div>
       ) : (
-        <ul className="mt-6 divide-y divide-border rounded-2xl border border-border bg-surface">
-          {rows.map(({ conv, other, unread, collab }) => (
+        <ul className="mt-4 divide-y divide-border rounded-2xl border border-border bg-surface">
+          {filtered.map(({ conv, other, unread, collab, workshop }) => (
             <li key={conv.id}>
               <Link
                 to="/dms/$conversationId"
@@ -124,9 +217,11 @@ function DmsIndex() {
                       </span>
                     )}
                   </div>
-                  {collab && (
-                    <span className="mt-0.5 inline-block max-w-full truncate rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
-                      Re: {collab.title}
+                  {(collab || workshop) && (
+                    <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
+                      collab ? "bg-primary/10 text-primary" : "bg-violet/10 text-violet"
+                    }`}>
+                      Re: {collab?.title ?? workshop?.title ?? "Workshop"}
                     </span>
                   )}
                   <p className="truncate text-xs text-ink-muted">{conv.last_message_preview ?? "No messages yet"}</p>
@@ -139,7 +234,6 @@ function DmsIndex() {
               </Link>
             </li>
           ))}
-
         </ul>
       )}
     </main>

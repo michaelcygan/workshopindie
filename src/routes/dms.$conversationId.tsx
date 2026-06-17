@@ -38,6 +38,7 @@ function DmsThread() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<ProfileLite | null>(null);
   const [collab, setCollab] = useState<{ title: string; slug: string } | null>(null);
+  const [workshop, setWorkshop] = useState<{ title: string | null; slug: string } | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const send = useServerFn(sendMessage);
@@ -51,7 +52,7 @@ function DmsThread() {
     (async () => {
       const { data: conv } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, context_collab_post_id")
+        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id")
         .eq("id", conversationId)
         .maybeSingle();
       if (!conv) {
@@ -59,15 +60,19 @@ function DmsThread() {
         return;
       }
       const otherId = conv.user_a === user.id ? conv.user_b : conv.user_a;
-      const [{ data: prof }, { data: post }] = await Promise.all([
+      const [{ data: prof }, { data: post }, { data: ws }] = await Promise.all([
         supabase.from("profiles").select("id, username, display_name, avatar_url").eq("id", otherId).maybeSingle(),
         conv.context_collab_post_id
           ? supabase.from("collab_posts").select("title, slug").eq("id", conv.context_collab_post_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        conv.context_workshop_id
+          ? supabase.from("workshops").select("title, slug").eq("id", conv.context_workshop_id).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
       if (cancelled) return;
       setOther(prof as ProfileLite | null);
       setCollab(post ? { title: post.title, slug: post.slug } : null);
+      setWorkshop(ws ? { title: ws.title ?? null, slug: ws.slug } : null);
 
 
       const { data: msgs } = await supabase
@@ -92,6 +97,14 @@ function DmsThread() {
             if (prev.some((x) => x.id === m.id)) return prev;
             return [...prev, m];
           });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
+        (payload) => {
+          const m = payload.new as Message;
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, read_at: m.read_at } : x)));
         },
       )
       .subscribe();
@@ -146,19 +159,33 @@ function DmsThread() {
             <span className="truncate">Re: {collab.title}</span>
           </Link>
         )}
+        {!collab && workshop && (
+          <Link
+            to="/workshops/$slug"
+            params={{ slug: workshop.slug }}
+            className="ml-auto inline-flex shrink-0 items-center rounded-full bg-violet/10 px-2.5 py-1 text-[11px] text-violet hover:bg-violet/15 max-w-[55%] truncate"
+            title={`Re: ${workshop.title ?? "Workshop"}`}
+          >
+            <span className="truncate">Re: {workshop.title ?? "Workshop"}</span>
+          </Link>
+        )}
       </header>
 
 
       <div className="flex-1 space-y-2 overflow-y-auto py-4">
         {messages.length === 0 ? (
           <p className="mt-12 text-center text-sm text-ink-muted">Say hi.</p>
-        ) : messages.map((m) => {
+        ) : messages.map((m, i) => {
           const mine = m.sender_id === user.id;
+          const isLastMine = mine && i === messages.length - 1;
           return (
-            <div key={m.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
+            <div key={m.id} className={`flex flex-col ${mine ? "items-end" : "items-start"}`}>
               <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 text-sm ${mine ? "bg-primary text-primary-foreground" : "bg-muted text-ink"}`}>
                 <p className="whitespace-pre-wrap break-words">{m.body}</p>
               </div>
+              {isLastMine && m.read_at && (
+                <span className="mt-0.5 mr-1 text-[10px] text-ink-muted">Seen</span>
+              )}
             </div>
           );
         })}

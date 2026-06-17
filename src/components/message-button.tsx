@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
-export function MessageButton({ otherUserId, variant = "outline", size = "sm" }: {
+export function MessageButton({ otherUserId, variant = "outline", size = "sm", contextCollabPostId, contextWorkshopId }: {
   otherUserId: string;
   variant?: "outline" | "default";
   size?: "sm" | "default";
+  contextCollabPostId?: string | null;
+  contextWorkshopId?: string | null;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -33,7 +35,7 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm" }:
     if (!canDm) return;
     setBusy(true);
     try {
-      const r = await open({ data: { otherUserId } });
+      const r = await open({ data: { otherUserId, contextCollabPostId: contextCollabPostId ?? null, contextWorkshopId: contextWorkshopId ?? null } });
       navigate({ to: "/dms/$conversationId", params: { conversationId: r.conversationId } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open conversation");

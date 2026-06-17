@@ -15,7 +15,7 @@ export const getMyPrivacy = createServerFn({ method: "GET" })
       .maybeSingle();
     if (error) throw new Error(error.message);
     return {
-      dmPolicy: (data?.dm_policy as "everyone" | "nobody" | null) ?? "everyone",
+      dmPolicy: (data?.dm_policy as "mutuals" | "everyone" | "nobody" | null) ?? "mutuals",
       discoverable: data?.discoverable ?? true,
       indexable: data?.indexable ?? true,
     };
@@ -27,7 +27,7 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z
       .object({
-        dmPolicy: z.enum(["everyone", "nobody"]).optional(),
+        dmPolicy: z.enum(["mutuals", "everyone", "nobody"]).optional(),
         discoverable: z.boolean().optional(),
         indexable: z.boolean().optional(),
       })

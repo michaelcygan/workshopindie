@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase } from "lucide-react";
+import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase, Mail } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,6 +54,9 @@ export function MobileNav() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" side="top" className="w-52">
               <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/dms" })}>
+                <Mail className="mr-2 h-4 w-4" /> Messages
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                 <Briefcase className="mr-2 h-4 w-4" /> My Collabs
               </DropdownMenuItem>
