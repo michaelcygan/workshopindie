@@ -342,6 +342,9 @@ export function FullscreenRoom({
   sending,
   onExit,
   onMinimize,
+  roomId,
+  stageSlot,
+  dockExtra,
 }: {
   m: MediaState;
   channelTitle: string;
@@ -357,6 +360,12 @@ export function FullscreenRoom({
   sending: boolean;
   onExit: () => void;
   onMinimize: () => void;
+  /** Optional room id used for the reactions broadcast channel. */
+  roomId?: string;
+  /** Optional content for the "Stage" surface — e.g. the active workshop tool. */
+  stageSlot?: React.ReactNode;
+  /** Extra control (e.g. "New") rendered in the floating dock. */
+  dockExtra?: React.ReactNode;
 }) {
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
