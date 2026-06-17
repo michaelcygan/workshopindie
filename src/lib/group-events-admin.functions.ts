@@ -59,8 +59,8 @@ export const createEvent = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    // Notify all group members (except the creator) of the new event.
-    try {
+    // Notify all group members (except the creator) of the new event. Skip for drafts.
+    if (insertRow.status !== "draft") try {
       const { data: group } = await supabase
         .from("groups")
         .select("slug,name")
