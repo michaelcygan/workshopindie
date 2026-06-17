@@ -38,6 +38,7 @@ function DmsThread() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<ProfileLite | null>(null);
   const [collab, setCollab] = useState<{ title: string; slug: string } | null>(null);
+  const [workshop, setWorkshop] = useState<{ title: string | null; slug: string } | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const send = useServerFn(sendMessage);
@@ -51,7 +52,7 @@ function DmsThread() {
     (async () => {
       const { data: conv } = await supabase
         .from("conversations")
-        .select("id, user_a, user_b, context_collab_post_id")
+        .select("id, user_a, user_b, context_collab_post_id, context_workshop_id")
         .eq("id", conversationId)
         .maybeSingle();
       if (!conv) {
@@ -59,15 +60,19 @@ function DmsThread() {
         return;
       }
       const otherId = conv.user_a === user.id ? conv.user_b : conv.user_a;
-      const [{ data: prof }, { data: post }] = await Promise.all([
+      const [{ data: prof }, { data: post }, { data: ws }] = await Promise.all([
         supabase.from("profiles").select("id, username, display_name, avatar_url").eq("id", otherId).maybeSingle(),
         conv.context_collab_post_id
           ? supabase.from("collab_posts").select("title, slug").eq("id", conv.context_collab_post_id).maybeSingle()
+          : Promise.resolve({ data: null }),
+        conv.context_workshop_id
+          ? supabase.from("workshops").select("title, slug").eq("id", conv.context_workshop_id).maybeSingle()
           : Promise.resolve({ data: null }),
       ]);
       if (cancelled) return;
       setOther(prof as ProfileLite | null);
       setCollab(post ? { title: post.title, slug: post.slug } : null);
+      setWorkshop(ws ? { title: ws.title ?? null, slug: ws.slug } : null);
 
 
       const { data: msgs } = await supabase
