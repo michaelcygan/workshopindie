@@ -64,7 +64,7 @@ export function HopButton({ roomId, medium, mode }: Props) {
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{busy ? "Hopping…" : "Hop"}</span>
+      <span className="hidden sm:inline">{busy ? "Starting…" : "New"}</span>
     </Button>
   );
 }
