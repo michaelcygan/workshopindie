@@ -35,6 +35,7 @@ const baseSchema = z.object({
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
+  series_key: z.string().max(60).nullable().optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
