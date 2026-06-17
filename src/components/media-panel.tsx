@@ -386,6 +386,59 @@ export function FullscreenRoom({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
+  // ── Stage source: local screen, peer screen, or stageSlot (active tool) ──
+  const remoteSharer = useMemo(
+    () => (m.screenSharerId ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream) : null),
+    [m.screenSharerId, m.peers],
+  );
+  const sharerName = m.screenSharerId
+    ? (m.isScreenSharing
+        ? "You"
+        : profileLookup.get(m.screenSharerId)?.display_name
+          ?? profileLookup.get(m.screenSharerId)?.username
+          ?? "Someone")
+    : null;
+  const hasShare = !!(m.isScreenSharing && m.screenStream) || !!remoteSharer;
+  const stageHasContent = hasShare || !!stageSlot;
+
+  // ── Layout mode: stage (split), grid (legacy tiles), tool (just the surface) ──
+  type LayoutMode = "stage" | "grid" | "tool";
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(stageHasContent ? "stage" : "grid");
+  // Auto-switch back to grid the moment stage has nothing to show.
+  useEffect(() => {
+    if (!stageHasContent && layoutMode !== "grid") setLayoutMode("grid");
+    else if (stageHasContent && layoutMode === "grid" && hasShare) setLayoutMode("stage");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stageHasContent, hasShare]);
+
+  // ── Reactions: lightweight broadcast over a per-room channel. ──
+  type Reaction = { id: string; emoji: string; from: string; ts: number };
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const reactionChanRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    if (!roomId) return;
+    const ch = supabase.channel(`reactions:${roomId}`, { config: { broadcast: { self: false } } });
+    ch.on("broadcast", { event: "react" }, (msg) => {
+      const p = msg.payload as { emoji?: string; from?: string };
+      if (!p?.emoji) return;
+      const r: Reaction = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, emoji: p.emoji, from: p.from || "Someone", ts: Date.now() };
+      setReactions((prev) => [...prev, r]);
+      window.setTimeout(() => setReactions((prev) => prev.filter((x) => x.id !== r.id)), 1800);
+    });
+    ch.subscribe();
+    reactionChanRef.current = ch;
+    return () => {
+      supabase.removeChannel(ch);
+      reactionChanRef.current = null;
+    };
+  }, [roomId]);
+  function fireReaction(emoji: string) {
+    const r: Reaction = { id: `${Date.now()}-me`, emoji, from: meDisplay, ts: Date.now() };
+    setReactions((prev) => [...prev, r]);
+    window.setTimeout(() => setReactions((prev) => prev.filter((x) => x.id !== r.id)), 1800);
+    reactionChanRef.current?.send({ type: "broadcast", event: "react", payload: { emoji, from: meDisplay } }).catch(() => {});
+  }
+
   type Tile =
     | { kind: "me-video"; key: string }
     | { kind: "me-audio"; key: string }
@@ -406,6 +459,8 @@ export function FullscreenRoom({
       username: o.profile.username,
       avatar_url: o.profile.avatar_url,
     } : undefined);
+    // In stage layout, hide the remote sharer's camera tile — their tile *is* the stage.
+    if (layoutMode !== "grid" && remoteSharer && peer?.userId === remoteSharer.userId) continue;
     if (peer && peer.mode === "video" && peer.stream) {
       tiles.push({ kind: "peer-video", key: o.user_id, peer, profile: prof });
     } else {
@@ -426,6 +481,58 @@ export function FullscreenRoom({
     tiles.length <= 4 ? "grid-cols-2 lg:grid-cols-2" :
     "grid-cols-2 lg:grid-cols-3";
 
+  function renderTile(t: Tile) {
+    if (t.kind === "me-video") {
+      return (
+        <VideoTile
+          key={t.key}
+          stream={m.localStream!}
+          label={`${meDisplay} (you)`}
+          muted
+          speaking={m.speaking && !m.muted}
+          mirrored
+        />
+      );
+    }
+    if (t.kind === "me-audio") {
+      return (
+        <AudioTile
+          key={t.key}
+          displayName={`${meDisplay} (you)`}
+          avatarUrl={meAvatar}
+          speaking={m.speaking && !m.muted}
+          muted={m.muted}
+        />
+      );
+    }
+    if (t.kind === "peer-video") {
+      return (
+        <VideoTile
+          key={t.key}
+          stream={t.peer.stream!}
+          label={t.profile?.display_name || t.profile?.username || "Anon"}
+          speaking={t.peer.speaking}
+        />
+      );
+    }
+    return (
+      <AudioTile
+        key={t.key}
+        displayName={t.profile?.display_name || t.profile?.username || "Anon"}
+        avatarUrl={t.profile?.avatar_url ?? null}
+        speaking={t.speaking}
+        muted={false}
+      />
+    );
+  }
+
+  const stageStream: MediaStream | null = m.isScreenSharing
+    ? (m.screenStream ?? null)
+    : (remoteSharer?.stream ?? null);
+  const stageLabel = m.isScreenSharing
+    ? "Your screen"
+    : (remoteSharer ? `${sharerName}'s screen` : null);
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -435,19 +542,27 @@ export function FullscreenRoom({
     >
       {/* Top bar */}
       <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
-        <div className="flex items-center gap-2">
-          <span className="relative inline-flex h-2 w-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="relative inline-flex h-2 w-2 shrink-0">
             <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
-          <h2 className="text-xs font-medium uppercase tracking-wider text-background/70">
+          <h2 className="text-xs font-medium uppercase tracking-wider text-background/70 truncate">
             {channelTitle}
           </h2>
-          <span className="rounded-full bg-background/10 px-2 py-0.5 text-[11px] text-background/70">
+          <span className="rounded-full bg-background/10 px-2 py-0.5 text-[11px] text-background/70 shrink-0">
             {totalHere}/{m.cap}
           </span>
         </div>
         <div className="flex items-center gap-2">
+          {/* Layout segmented control — only when stage has something to show */}
+          {stageHasContent && (
+            <div className="hidden sm:flex items-center gap-0.5 rounded-full bg-background/10 p-0.5">
+              <LayoutSeg active={layoutMode === "stage"} onClick={() => setLayoutMode("stage")} icon={<MonitorPlay className="h-3.5 w-3.5" />} label="Stage" />
+              <LayoutSeg active={layoutMode === "grid"} onClick={() => setLayoutMode("grid")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Grid" />
+              <LayoutSeg active={layoutMode === "tool"} onClick={() => setLayoutMode("tool")} icon={<Maximize2 className="h-3.5 w-3.5" />} label="Tool" />
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setChatOpen((v) => !v)}
@@ -467,57 +582,41 @@ export function FullscreenRoom({
         </div>
       </header>
 
-      {/* Main: tiles + chat */}
+      {/* Main: stage/tiles + chat */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 px-4 pb-28 md:px-6">
-        <div className="min-h-0 overflow-auto flex items-center justify-center">
-          <div className="w-full max-w-6xl">
-            <div className={cn("grid gap-3", gridCols)}>
-              {tiles.map((t) => {
-                if (t.kind === "me-video") {
-                  return (
-                    <VideoTile
-                      key={t.key}
-                      stream={m.localStream!}
-                      label={`${meDisplay} (you)`}
-                      muted
-                      speaking={m.speaking && !m.muted}
-                      mirrored
-                    />
-                  );
-                }
-                if (t.kind === "me-audio") {
-                  return (
-                    <AudioTile
-                      key={t.key}
-                      displayName={`${meDisplay} (you)`}
-                      avatarUrl={meAvatar}
-                      speaking={m.speaking && !m.muted}
-                      muted={m.muted}
-                    />
-                  );
-                }
-                if (t.kind === "peer-video") {
-                  return (
-                    <VideoTile
-                      key={t.key}
-                      stream={t.peer.stream!}
-                      label={t.profile?.display_name || t.profile?.username || "Anon"}
-                      speaking={t.peer.speaking}
-                    />
-                  );
-                }
-                return (
-                  <AudioTile
-                    key={t.key}
-                    displayName={t.profile?.display_name || t.profile?.username || "Anon"}
-                    avatarUrl={t.profile?.avatar_url ?? null}
-                    speaking={t.speaking}
-                    muted={false}
-                  />
-                );
-              })}
+        <div className="min-h-0 overflow-auto">
+          {(layoutMode === "stage" || layoutMode === "tool") && stageHasContent ? (
+            <div className="flex h-full flex-col gap-3">
+              {/* Stage surface */}
+              <div className="flex-1 min-h-0 overflow-hidden rounded-2xl ring-1 ring-background/10 bg-black">
+                {stageStream ? (
+                  <SpotlightVideo stream={stageStream} label={stageLabel || "Stage"} muted={m.isScreenSharing} />
+                ) : (
+                  <div className="h-full w-full overflow-auto bg-[#111]">{stageSlot}</div>
+                )}
+              </div>
+              {/* Filmstrip — hidden in Tool-only */}
+              {layoutMode === "stage" && (
+                <div className="shrink-0 overflow-x-auto">
+                  <div className="flex gap-2 pb-1">
+                    {tiles.map((t) => (
+                      <div key={t.key} className="w-40 shrink-0">
+                        {renderTile(t)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          ) : (
+            <div className="flex h-full items-center justify-center">
+              <div className="w-full max-w-6xl">
+                <div className={cn("grid gap-3", gridCols)}>
+                  {tiles.map(renderTile)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Chat — desktop side panel */}
@@ -533,6 +632,10 @@ export function FullscreenRoom({
           className="hidden lg:flex"
         />
       </div>
+
+      {/* Floating reactions overlay */}
+      <ReactionsOverlay reactions={reactions} />
+
 
       {/* Mobile chat sheet */}
       <AnimatePresence>
