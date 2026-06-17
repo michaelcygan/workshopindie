@@ -176,7 +176,25 @@ function GroupPage() {
               </div>
             </div>
           </div>
-          <div className="md:pb-2">
+          <div className="flex items-center gap-2 md:pb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+                  <Plus className="h-4 w-4" /> Post here
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
+                <DropdownMenuItem asChild>
+                  <Link to="/works/new" search={{ group: group.slug }}>New Work</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/collab/new" search={{ group: group.slug }}>New Collab</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/workshops/new" search={{ group: group.slug }}>New Workshop</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <JoinGroupButton groupId={group.id} />
           </div>
         </div>
