@@ -2,6 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
+export type Recurrence = {
+  rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
+  weekday: number | null; // 0=Sun..6=Sat
+  hint: string;
+} | null;
+
 type Draft = {
   title: string;
   tagline: string | null;
@@ -16,6 +22,7 @@ type Draft = {
   venue_address: string | null;
   online_url: string | null;
   capacity: number | null;
+  recurrence: Recurrence;
 };
 
 const inputSchema = z.object({
