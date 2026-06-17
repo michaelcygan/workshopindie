@@ -115,11 +115,15 @@ function Onboarding() {
       }
     } catch { /* non-fatal */ }
     toast.success("Profile created");
-    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
-    navigate({ to: "/" });
+    setStage("groups");
 
 
   };
+
+  function finishOnboarding() {
+    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
+    navigate({ to: "/" });
+  }
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
