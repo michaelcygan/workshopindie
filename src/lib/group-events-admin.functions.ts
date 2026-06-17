@@ -34,6 +34,7 @@ const baseSchema = z.object({
   promo_pass_months: z.number().int().min(0).max(36).optional(),
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
+  status: z.enum(["draft", "scheduled"]).optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
