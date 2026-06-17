@@ -193,6 +193,18 @@ function NewWorkshop() {
       workshop_id: ws.id, user_id: user.id, participant_status: "confirmed",
     });
 
+    // Tag into selected Groups (best-effort)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) => tagGroup({ data: { group_id: g.id, workshop_id: ws.id } })),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Scheduled. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
+
     setSubmitting(false);
     toast.success("Workshop scheduled");
     navigate({ to: "/workshops/$slug", params: { slug: ws.slug } });
