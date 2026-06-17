@@ -1,21 +1,13 @@
 import { useEffect, useRef } from "react";
 import type { Provider } from "@/lib/works-import.functions";
+import { ALLOWED_EMBED_HOSTS } from "@/lib/media-providers";
 import { cn } from "@/lib/utils";
-
-const ALLOWED_HOSTS = new Set([
-  "www.youtube.com", "youtube.com", "www.youtube-nocookie.com", "youtube-nocookie.com",
-  "player.vimeo.com",
-  "w.soundcloud.com",
-  "open.spotify.com",
-  "bandcamp.com", "embed.bandcamp.com",
-  "www.tiktok.com",
-]);
 
 function isAllowed(url: string): boolean {
   try {
     const u = new URL(url);
     if (u.protocol !== "https:") return false;
-    return ALLOWED_HOSTS.has(u.hostname);
+    return ALLOWED_EMBED_HOSTS.has(u.hostname);
   } catch {
     return false;
   }
