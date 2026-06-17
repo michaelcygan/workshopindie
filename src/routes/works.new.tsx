@@ -218,6 +218,20 @@ function NewWork() {
         .eq("owner_id", user.id);
     }
 
+    // Tag into selected Groups (best-effort, non-blocking)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) =>
+          tagWorkGroup({ data: { group_id: g.id, work_id: work.id } }),
+        ),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Posted. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
+
     setSubmitting(false);
     toast.success("Work published");
 
