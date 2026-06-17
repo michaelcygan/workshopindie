@@ -11,6 +11,7 @@ import { WelcomeTour } from "@/components/welcome-tour";
 import { FirstRunHint } from "@/components/first-run-hint";
 import { WorkshopLiveToast } from "@/components/workshop-live-toast";
 import { RefCapture } from "@/components/ref-capture";
+import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
 
 
 import { Toaster } from "@/components/ui/sonner";
