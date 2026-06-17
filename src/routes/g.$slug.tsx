@@ -248,6 +248,114 @@ function GroupPage() {
   );
 }
 
+function GroupEventsTab({ group }: { group: GroupRow }) {
+  const { user } = useAuth();
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user!.id).eq("role", "admin").maybeSingle();
+      return !!data;
+    },
+  });
+  const { data: events, isLoading } = useQuery({
+    queryKey: ["group", group.id, "events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("group_events")
+        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,promo_pass_months")
+        .eq("group_id", group.id)
+        .is("deleted_at", null)
+        .order("starts_at", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+  const now = new Date();
+  const upcoming = (events ?? []).filter((e) => new Date(e.starts_at) >= now);
+  const past = (events ?? []).filter((e) => new Date(e.starts_at) < now);
+
+  return (
+    <div className="space-y-8">
+      <div className="flex items-center justify-between">
+        <h3 className="font-display text-xl text-ink">Upcoming events</h3>
+        {isAdmin ? (
+          <Link to="/admin/events" className="text-xs text-primary hover:underline">+ Create event (admin)</Link>
+        ) : (
+          <span className="text-[11px] text-ink-muted" title="Hosting opens to all members in a later tier">Request to host (coming soon)</span>
+        )}
+      </div>
+      {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
+      {!isLoading && upcoming.length === 0 && (
+        <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+          No upcoming events yet. Your scene's quiet — RSVP first when one drops.
+        </p>
+      )}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {upcoming.map((e) => (
+          <EventCardLite key={e.id} groupSlug={group.slug} ev={e as EventLite} />
+        ))}
+      </div>
+      {past.length > 0 && (
+        <details className="rounded-2xl border border-border bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-medium text-ink-soft">Past events ({past.length})</summary>
+          <ul className="mt-3 space-y-2">
+            {past.map((e) => (
+              <li key={e.id}>
+                <Link to="/g/$slug/e/$eventSlug" params={{ slug: group.slug, eventSlug: e.slug }} className="text-sm text-ink-soft hover:text-ink">
+                  · {e.title} <span className="text-ink-muted">— {new Date(e.starts_at).toLocaleDateString()}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+type EventLite = {
+  id: string; slug: string; title: string; tagline: string | null; kind: string;
+  format: "in_person" | "online" | "hybrid"; cover_url: string | null;
+  starts_at: string; venue_name: string | null; venue_address: string | null;
+  going_count: number; capacity: number | null; featured_at: string | null; promo_pass_months: number;
+};
+
+function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) {
+  const starts = new Date(ev.starts_at);
+  return (
+    <Link
+      to="/g/$slug/e/$eventSlug"
+      params={{ slug: groupSlug, eventSlug: ev.slug }}
+      className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+    >
+      <div
+        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
+        style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
+      >
+        <div className="absolute left-3 top-3 rounded-xl bg-background/90 px-2 py-1 text-center shadow-soft">
+          <div className="text-[9px] font-medium uppercase text-ink-muted">{starts.toLocaleDateString(undefined, { month: "short" })}</div>
+          <div className="font-display text-base leading-none text-ink">{starts.getDate()}</div>
+        </div>
+      </div>
+      <div className="flex flex-1 flex-col gap-1 p-3">
+        <h4 className="font-display text-sm text-ink line-clamp-2">{ev.title}</h4>
+        <div className="text-[11px] text-ink-muted">
+          {starts.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
+          {" · "}
+          {ev.format === "online" ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA")}
+        </div>
+        <div className="mt-auto flex items-center justify-between pt-1 text-[11px]">
+          <span className="text-ink-muted">{ev.going_count} going{ev.capacity ? ` / ${ev.capacity}` : ""}</span>
+          {ev.promo_pass_months > 0 && (
+            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">+{ev.promo_pass_months}mo Plus</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 function GroupAboutTab({ group }: { group: GroupRow }) {
   return (
     <div className="prose prose-sm max-w-3xl text-ink">
