@@ -6,9 +6,9 @@ import type { useMediaRoom } from "@/hooks/use-media-room";
 type Media = ReturnType<typeof useMediaRoom>;
 type Source = "me" | "speaker";
 
-type ProfileLookup = Record<
+type ProfileLookup = Map<
   string,
-  { display_name: string | null; username: string | null; avatar_url: string | null } | null | undefined
+  { display_name: string | null; username: string | null; avatar_url: string | null }
 >;
 
 export function isDocPipSupported(): boolean {
