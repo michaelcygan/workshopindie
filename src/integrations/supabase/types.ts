@@ -602,6 +602,7 @@ export type Database = {
       conversations: {
         Row: {
           context_collab_post_id: string | null
+          context_workshop_id: string | null
           created_at: string
           id: string
           last_message_at: string | null
@@ -611,6 +612,7 @@ export type Database = {
         }
         Insert: {
           context_collab_post_id?: string | null
+          context_workshop_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -620,6 +622,7 @@ export type Database = {
         }
         Update: {
           context_collab_post_id?: string | null
+          context_workshop_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
@@ -633,6 +636,13 @@ export type Database = {
             columns: ["context_collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_context_workshop_id_fkey"
+            columns: ["context_workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
           {
