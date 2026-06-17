@@ -326,6 +326,9 @@ function GalleryPage() {
       {/* Community-boosted rail */}
       <BoostedWorksStrip />
 
+      {/* Your groups */}
+      <YourGroupsStrip />
+
 
       {/* Sticky toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
