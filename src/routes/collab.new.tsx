@@ -198,6 +198,20 @@ function NewCollab() {
     );
     if (rolesErr) toast.error(rolesErr.message);
 
+    // Tag into selected Groups (best-effort)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) =>
+          tagGroup({ data: { group_id: g.id, collab_post_id: post.id } }),
+        ),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Posted. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
+
     // Workshop pairing
     if (workshopMode === "scheduled") {
       const startsAt = new Date(scheduledAt);
