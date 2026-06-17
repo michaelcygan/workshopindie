@@ -94,6 +94,9 @@ export function TopNav() {
                 <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                   <Users className="mr-2 h-4 w-4" /> My Collabs
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
+                  <Ticket className="mr-2 h-4 w-4" /> Your tickets
+                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                   <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
                 </DropdownMenuItem>
