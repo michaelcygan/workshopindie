@@ -42,6 +42,7 @@ import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
+import { Route as MeTicketsRouteImport } from './routes/me.tickets'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
@@ -231,6 +232,11 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   path: '/redeem/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeTicketsRoute = MeTicketsRouteImport.update({
+  id: '/me/tickets',
+  path: '/me/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeEditRoute = MeEditRouteImport.update({
   id: '/me/edit',
   path: '/me/edit',
@@ -378,6 +384,7 @@ export interface FileRoutesByFullPath {
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -430,6 +437,7 @@ export interface FileRoutesByTo {
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -489,6 +497,7 @@ export interface FileRoutesById {
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -549,6 +558,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -601,6 +611,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -659,6 +670,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -712,6 +724,7 @@ export interface RootRouteChildren {
   MeBlockedRoute: typeof MeBlockedRoute
   MeCollabsRoute: typeof MeCollabsRoute
   MeEditRoute: typeof MeEditRoute
+  MeTicketsRoute: typeof MeTicketsRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WorksSlugRoute: typeof WorksSlugRoute
@@ -957,6 +970,13 @@ declare module '@tanstack/react-router' {
       path: '/redeem/$code'
       fullPath: '/redeem/$code'
       preLoaderRoute: typeof RedeemCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/tickets': {
+      id: '/me/tickets'
+      path: '/me/tickets'
+      fullPath: '/me/tickets'
+      preLoaderRoute: typeof MeTicketsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/me/edit': {
@@ -1279,6 +1299,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeBlockedRoute: MeBlockedRoute,
   MeCollabsRoute: MeCollabsRoute,
   MeEditRoute: MeEditRoute,
+  MeTicketsRoute: MeTicketsRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WorksSlugRoute: WorksSlugRoute,
