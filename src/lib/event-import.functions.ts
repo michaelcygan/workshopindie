@@ -177,6 +177,125 @@ async function fetchHtml(url: string): Promise<string> {
   }
 }
 
+const WEEKDAY_NAMES = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+function detectRecurrence(title: string, desc: string, startsAt: string | null): Recurrence {
+  const s = `${title}\n${desc}`.toLowerCase();
+  let weekday: number | null = null;
+  if (startsAt) {
+    try { weekday = new Date(startsAt).getDay(); } catch { /* ignore */ }
+  }
+  for (let i = 0; i < WEEKDAY_NAMES.length; i++) {
+    const n = WEEKDAY_NAMES[i];
+    if (new RegExp(`every\\s+${n}`, "i").test(s) || new RegExp(`${n}s\\b`, "i").test(s)) {
+      weekday = i;
+      return { rule: "WEEKLY", weekday, hint: `every ${n.charAt(0).toUpperCase() + n.slice(1)}` };
+    }
+  }
+  if (/\b(bi[- ]?weekly|every other week)\b/i.test(s)) return { rule: "BIWEEKLY", weekday, hint: "every 2 weeks" };
+  if (/\b(weekly|each week)\b/i.test(s)) return { rule: "WEEKLY", weekday, hint: "weekly" };
+  if (/\b(monthly|each month|first \w+ of the month|last \w+ of the month)\b/i.test(s)) {
+    return { rule: "MONTHLY", weekday: null, hint: "monthly" };
+  }
+  return null;
+}
+
+async function parseEventFromHtml(url: string, html: string): Promise<{ draft: Draft; warnings: string[]; parser: "json-ld" | "og" | "fallback" }> {
+  const warnings: string[] = [];
+  let parser: "json-ld" | "og" | "fallback" = "fallback";
+
+  const ld = extractJsonLd(html);
+  const ev = findEventNode(ld);
+
+  let title: string | null = null;
+  let description: string | null = null;
+  let coverUrl: string | null = null;
+  let startsAt: string | null = null;
+  let endsAt: string | null = null;
+  let venueName: string | null = null;
+  let venueAddress: string | null = null;
+  let onlineUrl: string | null = null;
+  let attendanceMode: string | null = null;
+
+  if (ev) {
+    parser = "json-ld";
+    title = asString(ev.name);
+    description = asString(ev.description);
+    coverUrl = pickImage(ev.image);
+    startsAt = asString(ev.startDate);
+    endsAt = asString(ev.endDate);
+    attendanceMode = asString(ev.eventAttendanceMode);
+    const loc = ev.location;
+    const locs = Array.isArray(loc) ? loc : loc ? [loc] : [];
+    for (const l of locs as Record<string, unknown>[]) {
+      const t = l["@type"];
+      if (typeof t === "string" && /VirtualLocation/i.test(t)) {
+        onlineUrl = onlineUrl ?? asString(l.url);
+      } else {
+        venueName = venueName ?? asString(l.name);
+        const addr = l.address;
+        if (typeof addr === "string") venueAddress = venueAddress ?? addr;
+        else if (addr && typeof addr === "object") {
+          const a = addr as Record<string, unknown>;
+          const parts = [a.streetAddress, a.addressLocality, a.addressRegion, a.postalCode, a.addressCountry]
+            .map(asString)
+            .filter(Boolean);
+          if (parts.length) venueAddress = venueAddress ?? parts.join(", ");
+        }
+      }
+    }
+  }
+
+  title = title ?? metaTag(html, "og:title") ?? metaTag(html, "twitter:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ?? null);
+  description = description ?? metaTag(html, "og:description") ?? metaTag(html, "description");
+  coverUrl = coverUrl ?? metaTag(html, "og:image") ?? metaTag(html, "twitter:image");
+  startsAt = startsAt ?? metaTag(html, "event:start_time");
+  endsAt = endsAt ?? metaTag(html, "event:end_time");
+  if (!ev && (title || description)) parser = "og";
+
+  if (description) description = stripHtml(description).slice(0, 6000);
+  if (title) title = stripHtml(title).slice(0, 120);
+
+  if (!title) warnings.push("Couldn't read a title — fill it in manually.");
+  if (!startsAt) warnings.push("No start time found — set one before publishing.");
+  if (!endsAt && startsAt) {
+    try { endsAt = new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString(); }
+    catch { /* leave null */ }
+  }
+
+  const format: Draft["format"] =
+    attendanceMode && /Online/i.test(attendanceMode)
+      ? "online"
+      : attendanceMode && /Mixed/i.test(attendanceMode)
+        ? "hybrid"
+        : venueAddress || venueName
+          ? "in_person"
+          : onlineUrl
+            ? "online"
+            : "in_person";
+
+  const recurrence = detectRecurrence(title ?? "", description ?? "", startsAt);
+  if (recurrence) warnings.push(`Looks like a recurring event (${recurrence.hint}).`);
+
+  const draft: Draft = {
+    title: title ?? "",
+    tagline: null,
+    description,
+    kind: guessKind(title ?? "", description ?? ""),
+    format,
+    cover_url: coverUrl,
+    starts_at: startsAt,
+    ends_at: endsAt,
+    timezone: tzFromIso(startsAt) ?? "UTC",
+    venue_name: venueName,
+    venue_address: venueAddress,
+    online_url: onlineUrl,
+    capacity: null,
+    recurrence,
+  };
+  return { draft, warnings, parser };
+}
+
 export const importEventFromUrl = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => inputSchema.parse(i))
