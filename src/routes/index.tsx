@@ -308,7 +308,7 @@ function CollabsRail() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((p) => <CollabCard key={p.id} post={p} />)}
+            {posts.map((p) => <CollabCard key={p.id} post={p} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />)}
           </div>
           <div className="mt-8 text-center">
             <Link
