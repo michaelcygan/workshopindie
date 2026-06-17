@@ -443,6 +443,10 @@ function NewCollab() {
           <p className="text-xs text-ink-muted">Sets expectations now to avoid friction later. You can change this while the post is open.</p>
         </section>
 
+        <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
+
 
         <section className="space-y-2">
           <Label>How people contact you <span className="text-destructive">*</span></Label>
