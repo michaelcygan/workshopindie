@@ -220,9 +220,12 @@ function EventPage() {
               </Avatar>
               <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
             </Link>
-            <Button variant="ghost" size="sm" onClick={share} className="rounded-full">
-              <Share2 className="mr-1 h-4 w-4" /> Share
-            </Button>
+            <div className="flex items-center gap-1">
+              <ReportDialog entityType="group_event" entityId={ev.id} />
+              <Button variant="ghost" size="sm" onClick={share} className="rounded-full">
+                <Share2 className="mr-1 h-4 w-4" /> Share
+              </Button>
+            </div>
           </div>
         </div>
 
