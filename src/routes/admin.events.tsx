@@ -23,6 +23,7 @@ import {
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
+import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
@@ -42,7 +43,10 @@ function AdminEventsPage() {
     <div>
       <div className="mb-5 flex items-center justify-between">
         <h2 className="font-display text-2xl text-ink">Events</h2>
-        <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
+        <div className="flex items-center gap-2">
+          <AdminImportEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
+          <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
+        </div>
       </div>
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <table className="w-full text-sm">

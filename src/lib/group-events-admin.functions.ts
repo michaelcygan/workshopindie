@@ -34,6 +34,7 @@ const baseSchema = z.object({
   promo_pass_months: z.number().int().min(0).max(36).optional(),
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
+  status: z.enum(["draft", "scheduled"]).optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
@@ -42,13 +43,13 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, ...rest } = data;
+    const { featured, status, ...rest } = data;
     const insertRow = {
       ...rest,
       slug: "",
       created_by: userId,
       featured_at: featured ? new Date().toISOString() : null,
-      status: "scheduled" as const,
+      status: (status ?? "scheduled") as "draft" | "scheduled",
       is_official: data.is_official ?? true,
     };
     const { data: row, error } = await supabase
@@ -58,8 +59,8 @@ export const createEvent = createServerFn({ method: "POST" })
       .single();
     if (error) throw new Error(error.message);
 
-    // Notify all group members (except the creator) of the new event.
-    try {
+    // Notify all group members (except the creator) of the new event. Skip for drafts.
+    if (insertRow.status !== "draft") try {
       const { data: group } = await supabase
         .from("groups")
         .select("slug,name")
