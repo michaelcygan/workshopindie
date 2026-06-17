@@ -1,142 +1,71 @@
-# Groups v1 — Launch Plan
+# Groups v1 — Finishing Pass
 
-Replace `cities` as the user-facing organizer with **Groups**: a unified container that holds Workshops, Collabs, Works, and Members. Cities become *one kind* of group. Admin-curated at launch; one-tap join; public membership with per-user opt-out.
+Three remaining pieces from the Groups v1 plan, plus the polish needed to make Groups feel native everywhere a post is created or consumed.
 
-## Why this is the right move
+## 1. Onboarding — "Pick 3 Groups"
 
-- Rural / suburban liquidity: a solo filmmaker in Asheville has no scene, but can join "Southern Gothic Shorts" and find their people.
-- Dense cities still work: "Chicago" is a city-group **plus** nested "Chicago footwork", "Pilsen visual", etc.
-- One primitive, many shapes (geo, genre, micro-genre × city, scene, UGC niche) — no second taxonomy to maintain.
-- Admin curation at launch = quality bar, hand-seeded membership, no spam — you set the tone before opening UGC creation later.
+Add a Groups step to `src/routes/onboarding.tsx`, placed right after the city/home-city step (city stays — it powers the nearby fallback).
 
----
+- New step component `OnboardingGroupsStep` renders a search + grid of group cards (kind chips: City / Genre / Micro / Scene), highlighting the user's home-city group as a pre-selected suggestion.
+- Min 1, recommend 3, no hard max. Continue button enabled at ≥1.
+- "Skip for now" link → user lands in `/groups` later via a soft banner on home.
+- Persists by calling `joinGroup` server fn per selection (batched in parallel).
+- On completion, invalidates `["my-group-ids"]` so the rest of the app sees memberships immediately.
 
-## 1. Data model — one table, one migration
+## 2. Group picker in post creation
 
-**`groups`** (the new primitive, replaces `cities` as the public-facing org unit)
+Add a multi-select Groups picker to:
+- `src/routes/works.new.tsx`
+- `src/routes/collab.new.tsx`
+- `src/routes/workshops.new.tsx`
 
-| field | purpose |
-|---|---|
-| `id`, `slug` (unique), `name`, `tagline`, `description` | identity |
-| `kind` (`city` \| `genre` \| `micro` \| `scene`) | shape of the group |
-| `city_id` (nullable FK → cities) | for `city` groups + "Chicago footwork" style micros |
-| `cover_url`, `avatar_url`, `accent_color` | visual identity |
-| `join_mode` (`open` \| `gated`) | v1 ships everything `open`; column ready for later |
-| `visibility` (`public` \| `unlisted`) | unlisted = direct-link only |
-| `member_count`, `workshop_count`, `collab_count`, `work_count` | denormalized counters |
-| `created_by` (admin user), `is_official` (bool), `featured_at` | admin-curated surface |
+Behavior (shared component `<GroupPicker value onChange max={3} />`):
+- Loads the user's joined groups first (pre-selected), then "Add another group" search across all public groups.
+- Max 3 selections. Chips with × to remove.
+- On submit, after the primary entity insert returns its id, tag each selected group via `tagWorkInGroup` / `tagCollabInGroup` / `tagWorkshopInGroup` in parallel.
+- Workshops form: add an `external_url` field that appears when "Hosted elsewhere" mode is selected (in-person / online / external link triad). Stored on `workshops.external_url` (column add if missing).
+- Failure on a tag does not roll back the post — surface a soft toast: "Posted. Couldn't tag {group}, try from the group page."
 
-**Cities → groups migration:** every existing `cities` row mirrors into `groups` with `kind='city'`, `city_id=self`. **Keep `cities`** as the geo/IP/home-city source of truth (geo lookup, "city changed once per 30 days", IP-nearest). `groups` becomes the org/social layer. Old `city_id` FKs on `collab_posts`, `works`, `workshops`, `profiles.home_city_id` stay intact.
+Lightweight `group_added_to_post` notification fires only to the post's creator on each successful tag (mirroring the vouch-flow rule: keep notifications light, creator-only).
 
-**`group_members`** — `(group_id, user_id, role, joined_at)`. Role: `member` \| `steward` \| `owner` (only `member` used in v1, others reserved).
+## 3. Group-aware feeds
 
-**`group_workshops` / `group_collabs` / `group_works`** — many-to-many tag tables so a single post can belong to multiple groups (e.g. a Collab posted in "Chicago" + "Indie Horror"). Triggers maintain counters on `groups`.
+Update the main reads to rank by joined groups:
 
-**`profiles.hide_group_memberships`** (bool, default false) — the privacy opt-out.
+**Gallery (`/gallery` and `/g/$slug/gallery`)**
+- Signed-in with joined groups: union of works tagged into joined groups, ordered by `created_at desc` with a small recency-decayed boost score (existing boost/vouch counters).
+- "Your groups" chip strip at the top: All • [Group A] • [Group B] … toggles a single-group filter.
+- Signed-in, no groups: existing nearby-city fallback + soft "Join Groups to personalize" banner.
+- Logged-out: unchanged worldwide-first.
 
-**Realtime:** add `group_members`, `group_workshops`, `group_collabs`, `group_works` to the publication so group pages live-update.
+**Collab board (`/collab`)**
+- Same join-first union; "Your groups" chip strip mirrors gallery.
 
-**Counters & triggers:** mirror the existing pattern (`tg_collab_vouches_counter`-style) — increment/decrement on tag-table insert/delete.
+**Workshops index (`/workshops`)**
+- Same join-first union; preserves the live/upcoming tab structure.
 
----
+**Home (`/`)**
+- "Your groups" section renders 1 rail per joined group (cap 5 rails, "View all" → `/groups`), each rail = latest works/collabs/workshops mixed, ranked by recency.
 
-## 2. Routes
+Implementation note: add a thin server fn `getJoinedGroupFeed({ kind, limit, cursor })` in `src/lib/groups.functions.ts` that does the union+rank server-side using the existing junction tables, so route loaders stay simple and SSR-safe (called from the component via `useServerFn` since it needs auth).
 
-| Route | Purpose |
-|---|---|
-| `/groups` | Browse all groups. Tabs: **For you** (joined + nearby city), **Cities**, **Genres**, **Micro**, **Scenes**. Search + featured rail. |
-| `/g/$slug` | Group home: hero (cover, name, member count, Join button), tabs → **Workshops** / **Collabs** / **Work** / **Members** / **About**. |
-| `/g/$slug/workshops` | Workshops scoped to this group. "Create Workshop in {group}" CTA → existing `/workshops/new` with `group_id` prefilled. Supports in-person, online, **external link** (Zoom/Discord — we list, don't host). |
-| `/g/$slug/collab` | Collab board scoped to group, "Post Collab in {group}" CTA. |
-| `/g/$slug/gallery` | Work gallery scoped, with Boosted + Fresh rails inherited. |
-| `/g/$slug/members` | Member directory (avatars, recent shipped work). Hidden members not listed; count still accurate. |
-| `/admin/groups` | Admin CRUD: create/edit/delete groups, mark featured, seed members, set cover/avatar. |
+## 4. Small polish
 
-`/cities/*` routes stay as redirects → `/g/{city-slug}` for backwards compatibility.
+- `work-card.tsx`, `collab-card.tsx`, `workshop-card.tsx`: render up to 2 tiny group chips (linked to `/g/$slug`) under the title when tags exist.
+- `/g/$slug` group home: surface a "Post here" CTA (dropdown → New Work / New Collab / New Workshop) that deep-links into the new-post routes with `?group={slug}` so the picker pre-selects that group.
+- `top-nav` / `mobile-nav`: add a small "Your groups" submenu under Groups (top 5 joined, then "All groups").
 
----
+## Technical details
 
-## 3. Feeds — joined-first, city-fallback
+- **DB**: only additive — `workshops.external_url text null` if not present; no other schema changes (counters and triggers already shipped).
+- **Server fns**: new `getJoinedGroupFeed` (auth-gated) in `groups.functions.ts`; reuse existing tag fns from picker submissions.
+- **Notifications**: extend `notifications.functions.ts` insert helper to emit `group_added_to_post` (creator-only, idempotent on `(post_id, group_id)`).
+- **No changes** to Workshop runtime, Collab runtime, vouch/boost flows, or the integration-managed auth layout.
 
-`/gallery`, `/collab`, `/workshops`:
-1. **Signed in + has joined groups**: feed = union of items tagged to joined groups, ranked by recency + boost/vouch signals. Header: "Your groups" with a chip per group.
-2. **Signed in, no groups joined**: fall back to IP/home-city (current behavior), with a soft banner: "Join a Group to make this yours →".
-3. **Logged out**: worldwide-first (current), with `/groups` featured in the logged-out hero.
+## Files (expected)
 
-City/Online filters remain as orthogonal chips. "Worldwide" stays available.
+- new: `src/components/group-picker.tsx`, `src/components/onboarding-groups-step.tsx`, `src/components/your-groups-chip-strip.tsx`, `src/components/group-chips-inline.tsx`
+- edited: `src/routes/onboarding.tsx`, `src/routes/works.new.tsx`, `src/routes/collab.new.tsx`, `src/routes/workshops.new.tsx`, `src/routes/gallery.tsx`, `src/routes/collab.index.tsx`, `src/routes/workshops.index.tsx`, `src/routes/index.tsx`, `src/routes/g.$slug.tsx`, `src/components/work-card.tsx`, `src/components/collab-card.tsx`, `src/components/workshop-card.tsx`, `src/components/top-nav.tsx`, `src/components/mobile-nav.tsx`, `src/lib/groups.functions.ts`, `src/lib/notifications.functions.ts`
+- migration: add `workshops.external_url` if missing
 
----
-
-## 4. Workshop / Collab / Work creation — group picker
-
-Add a multi-select **Groups** picker to:
-- `/workshops/new` (and `/workshops/lobby/new`)
-- `/collab/new`
-- `/works/new` (and `/works/collab/new`)
-
-Defaults: pre-selects the user's joined groups that match (city group always pre-selected if location matches). Max 3 groups per post (prevents spam-tagging).
-
-External-link Workshops: existing `workshops` already supports external/online — surface an `external_url` field if missing, and gate the "Enter Workshop" button to open the external link in a new tab when set.
-
----
-
-## 5. Admin tooling (`/admin/groups`)
-
-- Table of all groups with quick edit (name, kind, cover, featured).
-- "Create Group" form (name, slug, kind, optional city_id, tagline, description, cover upload, accent color).
-- "Seed members" — paste handles / search users, bulk add to `group_members`.
-- Feature toggle (`featured_at`) for the `/groups` top rail.
-- Soft-delete (`deleted_at`) — preserves history.
-
-Admin gate: existing `has_role(auth.uid(), 'admin')`.
-
----
-
-## 6. Surfaces touched (UI polish, same level as Workshop/Collab/Work)
-
-- **Top nav**: add "Groups" link between "Work" and "Workshops".
-- **Mobile nav**: same.
-- **Profile (`/u/$username`)**: new "Groups" strip showing joined groups (respects `hide_group_memberships`).
-- **Onboarding**: new step — "Pick 3 groups to follow" with featured + city-nearest suggestions. Single biggest activation lever.
-- **Collab card / Work card / Workshop card**: add small group chip(s) under the title.
-- **Notifications**: new kind `group_added` (admin seeded you into a group) + `group_workshop_live` (Workshop in your group just went live).
-
----
-
-## 7. What ships, what waits
-
-**v1 (this build):**
-- Groups schema + cities mirror
-- `/groups`, `/g/$slug` + 4 sub-tabs
-- Admin CRUD + seeding
-- Group picker on Workshop/Collab/Work creation
-- Joined-first feeds with city fallback
-- Onboarding "pick 3 groups" step
-- Profile group strip + privacy opt-out
-- Realtime on group tables
-
-**v1.1 (next, not now):**
-- "Suggest a Group" user queue
-- Stewards / per-group moderation
-- Group lounges (live presence per group)
-- Group pinned resources / drive folder / recurring meetup info
-- Gated `join_mode='gated'` flow
-- Group-scoped notifications digest
-
----
-
-## Open question for you
-
-**Migration of existing posts**: should I auto-tag every existing Collab/Work/Workshop into its `city_id`'s mirror city-group, so day-one Chicago group isn't empty? (My recommendation: yes, one-time backfill in the same migration.)
-
-```text
-cities ──mirror──► groups (kind='city')
-                     │
-          ┌──────────┼──────────┐
-          ▼          ▼          ▼
-    group_workshops  group_collabs  group_works   (many-to-many tags)
-          │          │          │
-          └──────────┴──────────┘
-                     │
-                feeds: union of joined groups, ranked
-```
+Approve to build.
