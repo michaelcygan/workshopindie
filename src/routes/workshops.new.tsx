@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
+import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
 import { resolveVenueAndCity } from "@/lib/venues.functions";
+import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
+import { tagWorkshopInGroup } from "@/lib/groups.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/workshops/new")({ component: NewWorkshop });
+export const Route = createFileRoute("/workshops/new")({
+  component: NewWorkshop,
+  validateSearch: z.object({ group: z.string().optional() }),
+});
 
 type LocationType = "online" | "in_person" | "hybrid";
 type AgeScope = "all" | "18" | "21" | "custom";
