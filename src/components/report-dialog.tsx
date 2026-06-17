@@ -14,12 +14,19 @@ import {
   RadioGroup, RadioGroupItem,
 } from "@/components/ui/radio-group";
 
-export type ReportEntityType = "work" | "profile" | "workshop" | "collab_post" | "comment";
+export type ReportEntityType = "work" | "profile" | "workshop" | "collab_post" | "comment" | "group_event";
 
-const REASONS: { value: string; label: string }[] = [
+const COMMON_REASONS: { value: string; label: string }[] = [
   { value: "spam", label: "Spam or scam" },
   { value: "harassment", label: "Harassment or hate" },
   { value: "ip", label: "Intellectual property / impersonation" },
+  { value: "off_topic", label: "Off-topic or low quality" },
+  { value: "other", label: "Other" },
+];
+
+const EVENT_REASONS: { value: string; label: string }[] = [
+  { value: "not_an_event", label: "Not a real event / link is wrong" },
+  { value: "spam", label: "Spam or scam" },
   { value: "off_topic", label: "Off-topic or low quality" },
   { value: "other", label: "Other" },
 ];
