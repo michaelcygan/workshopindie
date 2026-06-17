@@ -34,13 +34,17 @@ export function useGroupTagsFor(kind: Kind, ids: string[]) {
     staleTime: 60_000,
     queryFn: async () => {
       const fk = FK[kind];
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as unknown as {
+        from: (t: string) => {
+          select: (s: string) => { in: (col: string, vals: string[]) => Promise<{ data: unknown[] | null; error: { message: string } | null }> };
+        };
+      })
         .from(TABLE[kind])
         .select(`${fk}, groups(id,slug,name,kind,deleted_at)`)
         .in(fk, ids);
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       const map = new Map<string, GroupTag[]>();
-      for (const row of (data ?? []) as Array<Record<string, unknown>>) {
+      for (const row of ((data ?? []) as unknown as Array<Record<string, unknown>>)) {
         const itemId = row[fk] as string;
         const g = row.groups as
           | { id: string; slug: string; name: string; kind: GroupTag["kind"]; deleted_at: string | null }
