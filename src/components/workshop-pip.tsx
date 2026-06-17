@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { PictureInPicture2, Mic, MicOff, Video, VideoOff, MonitorPlay, X } from "lucide-react";
+import { PictureInPicture2, Mic, MicOff, Video, VideoOff, MonitorPlay, X, Sparkles } from "lucide-react";
 import type { useMediaRoom } from "@/hooks/use-media-room";
 
 type Media = ReturnType<typeof useMediaRoom>;
 type Source = "me" | "speaker" | "tool";
+type DirectorPreset = "tool" | "split" | "cam";
 
 type ProfileLookup = Map<
   string,
