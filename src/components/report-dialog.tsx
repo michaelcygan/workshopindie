@@ -89,7 +89,7 @@ export function ReportDialog({
           <div>
             <Label className="text-sm">Reason</Label>
             <RadioGroup value={reason} onValueChange={setReason} className="mt-2 space-y-2">
-              {REASONS.map((r) => (
+              {(entityType === "group_event" ? EVENT_REASONS : COMMON_REASONS).map((r) => (
                 <div key={r.value} className="flex items-center gap-2">
                   <RadioGroupItem value={r.value} id={`reason-${r.value}`} />
                   <Label htmlFor={`reason-${r.value}`} className="cursor-pointer text-sm font-normal">{r.label}</Label>
