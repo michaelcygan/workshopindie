@@ -16,6 +16,7 @@ import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
 import { setMyBirthdate } from "@/lib/profile-age.functions";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
+import { OnboardingGroupsStep } from "@/components/onboarding-groups-step";
 
 const REF_KEY = "signup-ref";
 
