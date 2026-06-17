@@ -106,6 +106,21 @@ function GroupPage() {
   const group = Route.useLoaderData();
   const [tab, setTab] = useState<Tab>("work");
   const qc = useQueryClient();
+  const { data: nextEvent } = useQuery({
+    queryKey: ["group", group.id, "next-event"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_events")
+        .select("slug,title,starts_at")
+        .eq("group_id", group.id)
+        .is("deleted_at", null)
+        .gt("starts_at", new Date().toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   useEffect(() => {
     const channel = supabase
