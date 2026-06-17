@@ -398,6 +398,7 @@ export function ChannelView({
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
+  const pip = useWorkshopPip({ media, meDisplay, profileLookup });
   const others = useMemo(
     () => presence.filter((p) => p.user_id !== user?.id),
     [presence, user?.id],
