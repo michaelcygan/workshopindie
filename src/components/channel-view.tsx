@@ -683,6 +683,13 @@ export function ChannelView({
             onViewModeChange={setViewMode}
             onOpenWork={openWork}
             roomId={roomId}
+            dockExtra={
+              <HopButton
+                roomId={roomId}
+                medium={null}
+                mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
+              />
+            }
           />
 
           {/* Collabs moved into the main view toggle — sidebar is media-only now. */}
