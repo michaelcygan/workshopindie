@@ -314,6 +314,10 @@ function NewWorkshop() {
           <p className="text-xs text-ink-muted">Applicants get a friendly message if they don't qualify. Their age stays private.</p>
         </section>
 
+        <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
+
 
 
         <section className="space-y-2">
