@@ -7,6 +7,8 @@ import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
 import { VouchRow, type VouchersByPost } from "./vouch-button";
 import { BoostButton } from "./boost-button";
+import { InlineGroupChips } from "./inline-group-chips";
+import type { GroupTag } from "@/hooks/use-group-tags";
 
 export type CollabCardData = {
   id: string;
@@ -67,11 +69,15 @@ export function CollabCard({
   post,
   vouchers,
   boosted,
+  groups,
+  myGroupIds,
   className,
 }: {
   post: CollabCardData;
   vouchers?: VouchersByPost;
   boosted?: boolean;
+  groups?: GroupTag[];
+  myGroupIds?: Set<string>;
   className?: string;
 }) {
   const roles = (post.roles ?? []).slice().sort((a, b) => a.sort_order - b.sort_order);
@@ -130,6 +136,7 @@ export function CollabCard({
         <h3 className="font-display text-[22px] leading-[1.15] text-ink line-clamp-2 transition-colors group-hover:text-gradient-motion">
           {post.title}
         </h3>
+        <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
         {post.description && (
           <p className="text-sm leading-relaxed text-ink-muted line-clamp-3">{post.description}</p>
         )}

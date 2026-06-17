@@ -4,6 +4,8 @@ import { Link } from "@tanstack/react-router";
 import { CategoryChip } from "./category-chip";
 import { ProfilePeek } from "./profile-peek";
 import { providerFromUrl, providerLabel } from "./embed-player";
+import { InlineGroupChips } from "./inline-group-chips";
+import type { GroupTag } from "@/hooks/use-group-tags";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +27,7 @@ export type WorkCardData = {
   credits?: { id?: string | null; display_name: string | null; username: string | null }[];
 };
 
-export function WorkCard({ work, className }: { work: WorkCardData; className?: string }) {
+export function WorkCard({ work, groups, myGroupIds, className }: { work: WorkCardData; groups?: GroupTag[]; myGroupIds?: Set<string>; className?: string }) {
   const credits = work.credits ?? [];
   const shown = credits.slice(0, 3);
   const extra = credits.length - shown.length;
@@ -95,6 +97,7 @@ export function WorkCard({ work, className }: { work: WorkCardData; className?: 
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <h3 className="font-display text-lg leading-tight text-ink line-clamp-2">{work.title}</h3>
+        <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
         {shown.length > 0 && (
           <p className="relative z-20 text-xs text-ink-muted line-clamp-1">
             by{" "}
