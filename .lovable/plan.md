@@ -1,49 +1,74 @@
-# Screen Share PiP — Director Mode (distilled v1)
+## Goal
 
-Two changes. Both frontend-only. No schema, no new realtime.
+Add an "Import from link" flow to the admin Events tab so you can paste an Eventbrite / Partiful / public event URL and get a pre-filled draft event to review, edit, and publish — instead of typing every field by hand.
 
-## 1. Label the shared window
+## UX
 
-The share surface currently reads "You're sharing your screen" with no app name. Read `videoTrack.label` from the screen track and append it: **"You're sharing — Apple Music"**. Same for remote: **"Michael's screen — Ableton Live"**. Fallback to "Shared window" when the browser hides the label.
+In `src/routes/admin.events.tsx`, next to the existing **+ Create Event** button, add a second button: **Import from link**.
 
-- File: `src/components/media-panel.tsx`
+Clicking it opens a dialog with two steps:
 
-## 2. Director PiP (when a screen is being shared)
+1. **Paste URL**
+   - Single URL input + "Fetch" button.
+   - Helper text: "Works best with Eventbrite, Partiful, Luma, and most public event pages."
+   - Loading state while scraping.
+   - On error: inline message + a "Fill manually instead" link that opens the existing Create dialog.
 
-The existing pop-out button stays the same. When a screenshare is active, the PiP body swaps to a **Director** layout with **3 view presets** and the existing in-PiP mic/cam/return controls.
+2. **Review draft** (same form fields as Create Event, pre-filled)
+   - Title, tagline, description, kind, format, cover image URL, starts_at, ends_at, timezone, venue name/address, online URL, capacity.
+   - A small "Imported from {host}" chip + link back to the source.
+   - **Group** picker is required (we can't infer which Workshop group it belongs to).
+   - Each pre-filled field shows a subtle "AI-filled" hint that disappears once you edit it.
+   - Buttons: **Save as draft** (status=`draft`) and **Publish** (status=`scheduled`, current behavior of `createEvent`).
 
-```text
-┌──────────────────────────────┐
-│  [ Stage preview ]           │
-│                              │
-├──────────────────────────────┤
-│ [1 Tool]* [2 Split] [3 Cam]  │
-│ ● Mute  ● Cam  ⌞ Return      │
-└──────────────────────────────┘
-```
+No new tables. Uses existing `group_events` + `createEvent`.
 
-Presets and what they do to **the room's stage** (not just the host's PiP):
+## Technical
 
-1. **Tool** — full-bleed shared screen (default; today's behavior).
-2. **Split** — shared screen + host camera inset (PiP-style overlay, bottom-right).
-3. **Cam** — host camera full-bleed, screenshare paused visually.
+### Scraper server function
 
-How switching works: a single `<canvas>` composes the chosen layout at 12fps; its `captureStream()` replaces the outbound screenshare track via `RTCRtpSender.replaceTrack`. Preset 1 swaps back to the raw screen track (no canvas overhead in the common case). Keyboard `1`/`2`/`3` cuts between them.
+New file `src/lib/event-import.functions.ts`:
 
-### What we cut from the earlier plan (and why)
-- **4th saveable preset** — adds a "bind current state" interaction model that needs its own affordances and persistence. Ship 3 fixed presets first; add custom slots once we see which combos people actually use.
-- **localStorage persistence** — nothing to persist with fixed presets.
-- **Tool-audio remix via AudioContext** — keep the existing screenshare audio path; don't introduce a Web Audio mixer in v1.
-- **New `replaceOutboundVideoTrack` helper** — only add if the hook doesn't already expose it; otherwise call `replaceTrack` directly where we already swap screen tracks.
-- **Long-press / "save current view" gesture** — deferred with the 4th slot.
+- `importEventFromUrl` — `createServerFn({ method: "POST" })` with `.middleware([requireSupabaseAuth])`, admin check via `has_role`.
+- Input: `{ url: string }` (zod, http/https only, max 500 chars, basic SSRF guard: reject localhost / private IP hostnames / non-http(s) protocols).
+- Handler:
+  1. `fetch(url)` with a desktop User-Agent, 10s timeout, max 2MB body, follow redirects.
+  2. Parse HTML and extract in this priority order:
+     - **JSON-LD** `<script type="application/ld+json">` with `@type: Event` (Eventbrite, Luma, many others ship this). Pull `name`, `description`, `startDate`, `endDate`, `image`, `location.name`, `location.address`, `url`, `eventAttendanceMode` → format.
+     - **OpenGraph / Twitter meta** as fallback (`og:title`, `og:description`, `og:image`, `og:url`, `event:start_time`, `event:end_time`).
+     - **Site-specific light parsers** for Partiful (no JSON-LD): read `<title>`, `og:*`, and the `__NEXT_DATA__` script when present.
+  3. Map to the same shape `createEvent` accepts:
+     - `format`: `online` if `eventAttendanceMode` is `OnlineEventAttendanceMode` or only `online_url` present; `in_person` if address present; else `hybrid`.
+     - `kind`: heuristic from title/description keywords (workshop → `workshop_irl`/`online`, listening → `listening_party`, screening → `screening`, mic → `open_mic`, else `other`).
+     - `timezone`: from JSON-LD `startDate` offset when present, else `"UTC"`.
+     - Strip HTML from description, cap at 6000 chars.
+  4. Return `{ draft, source: { url, host, parser: "json-ld" | "og" | "partiful" }, warnings: string[] }`. Never write to the DB here — the dialog reuses `createEvent` after user review.
 
-### What stays
-- Director only activates when a share exists; otherwise PiP keeps today's Me/Speaker/Tool body.
-- One PiP per host. Same pop-out button. Same browser support gate.
+No new dependencies — use a small regex/`DOMParser`-free HTML scanner (string search for `<script type="application/ld+json">` blocks and `<meta property="...">` tags). Keeps the Worker runtime happy (no `cheerio`/`jsdom`).
 
-## Files touched
-- `src/components/media-panel.tsx` — track label.
-- `src/components/workshop-pip.tsx` — mode routing + Director body (keep it in this file; no new file needed for 3 presets).
+### Client dialog
 
-## Out of scope (v1)
-Custom/saved presets, multi-window PiP, server-side composite recording, Safari fallback, cropping/zoom, audio remixing.
+New component `src/components/admin-import-event-dialog.tsx`:
+
+- Step 1 calls `importEventFromUrl` via `useServerFn`.
+- Step 2 reuses the field layout from the existing `CreateEventDialog` form. Submits through the existing `createEvent` server fn (no schema changes).
+- Adds a `status` toggle: "Save as draft" vs "Publish now". `createEvent` already defaults to `scheduled`; extend its zod schema with optional `status: z.enum(["draft","scheduled"]).optional()` and pass through in the insert. (Tiny edit in `src/lib/group-events-admin.functions.ts`.)
+
+### Files touched
+
+- **New**: `src/lib/event-import.functions.ts`, `src/components/admin-import-event-dialog.tsx`
+- **Edit**: `src/routes/admin.events.tsx` (add button + dialog), `src/lib/group-events-admin.functions.ts` (allow `status: "draft"` on create)
+
+### Out of scope (v1)
+
+- Scraping ticket prices / RSVPs / attendee lists.
+- Private/auth-gated event pages.
+- Image rehosting — we keep the source `og:image` URL as `cover_url`. Can add Lovable storage upload later.
+- Recurring events.
+- Bulk import.
+
+### Failure modes handled
+
+- Non-200 fetch, HTML over 2MB, no parseable event data → return a clear error string; dialog shows it and offers "Fill manually".
+- Private/local URLs blocked at the zod layer.
+- Partial extraction is fine — the review step lets you fix anything missing before saving.
