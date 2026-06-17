@@ -25,6 +25,7 @@ import { tagWorkInGroup } from "@/lib/groups.functions";
 const newWorkSearch = z.object({
   import: z.string().optional(),
   manual: z.coerce.boolean().optional(),
+  group: z.string().optional(),
 });
 
 export const Route = createFileRoute("/works/new")({
