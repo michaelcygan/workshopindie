@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic, X,
+  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,10 +17,11 @@ import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-
 import { PersonaRecorderTabs } from "@/components/recorder/persona-tabs";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import RoomBoard from "@/components/room-board";
+import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
 // Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
 type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
@@ -47,9 +48,10 @@ const PRESETS: Record<ToolType, Preset> = {
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
+  player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder", "player"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
@@ -356,6 +358,12 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   }
   if (tool.tool_type === "board") {
     return <BoardBody scope={scope} />;
+  }
+  if (tool.tool_type === "player") {
+    const playerScope = scope.kind === "instant"
+      ? { kind: "instant" as const, roomId: scope.roomId, hostUserId: scope.hostUserId }
+      : { kind: "persistent" as const, workshopId: scope.workshopId, hostUserId: scope.hostUserId };
+    return <WorkshopPlayerTool scope={playerScope} toolId={tool.id} />;
   }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
