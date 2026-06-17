@@ -36,6 +36,13 @@ const ICONS: Record<string, typeof Bell> = {
   first_work_shipped: Sparkles,
   work_published: Sparkles,
   collab_first_ship: Sparkles,
+  event_starts_soon_24h: Calendar,
+  event_starts_soon_2h: Calendar,
+  event_updated: Calendar,
+  event_canceled: Calendar,
+  event_promoted_from_waitlist: Ticket,
+  event_promo_pass_granted: Sparkles,
+  event_recap: Calendar,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
