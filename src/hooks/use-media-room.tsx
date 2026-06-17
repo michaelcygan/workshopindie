@@ -674,6 +674,21 @@ export function useMediaRoom(roomId: string | undefined) {
     });
   }, [myId, stopScreenShare]);
 
+  // Swap the outbound video track on every peer connection. Used by the
+  // Director PiP to push a composed canvas (split / cam-only) to the room
+  // without renegotiation. Passing null restores the raw screen track when
+  // a share is active.
+  const setOutboundScreenTrack = useCallback(async (track: MediaStreamTrack | null) => {
+    const restore = !track ? screenStreamRef.current?.getVideoTracks()[0] ?? null : track;
+    if (!restore) return;
+    for (const pc of pcsRef.current.values()) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (sender) {
+        try { await sender.replaceTrack(restore); } catch { /* noop */ }
+      }
+    }
+  }, []);
+
   useEffect(() => {
     return () => { leave(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
