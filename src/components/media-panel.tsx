@@ -255,7 +255,10 @@ export function VideoStage({
       ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream)
       : null;
     const spotlightStream = (localScreen ? m.screenStream : remotePeer!.stream) as MediaStream;
-    const spotlightLabel = localScreen ? "Your screen" : `${sharerName}'s screen`;
+    const sourceLabel = screenSourceLabel(spotlightStream);
+    const spotlightLabel = localScreen
+      ? `Your screen${sourceLabel ? ` — ${sourceLabel}` : ""}`
+      : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
     // Keep the full participant grid below the spotlight so the local cam tile
     // and remote cam tiles stay visible while someone is sharing. For a REMOTE
     // sharer we hide their cam tile (their video track is already the screen).
@@ -265,7 +268,7 @@ export function VideoStage({
         <div>
           <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
             <MonitorPlay className="h-3 w-3 text-primary" />
-            <span>{localScreen ? "You're sharing your screen" : `${sharerName} is sharing their screen`}</span>
+            <span>{localScreen ? `You're sharing${sourceLabel ? ` — ${sourceLabel}` : " your screen"}` : `${sharerName} is sharing${sourceLabel ? ` — ${sourceLabel}` : " their screen"}`}</span>
           </div>
           <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
             <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
