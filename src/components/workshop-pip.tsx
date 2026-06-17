@@ -113,6 +113,11 @@ function PipBody({
   profileLookup: ProfileLookup;
   onClose: () => void;
 }) {
+  // When a screen share is active (local or remote), swap to Director mode.
+  const sharing = !!media.screenSharerId;
+  if (sharing) {
+    return <DirectorBody media={media} profileLookup={profileLookup} onClose={onClose} />;
+  }
   const [source, setSource] = useState<Source>("me");
   const [followSpeaker, setFollowSpeaker] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
