@@ -339,6 +339,10 @@ function NewWork() {
             <p className="text-xs text-ink-muted">Where the original lives — Vimeo, Bandcamp, GitHub, your site.</p>
           </section>
 
+          <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
+
           <section className="space-y-1.5">
             <Label htmlFor="lic">License</Label>
             <select id="lic" value={license} onChange={(e) => setLicense(e.target.value as typeof license)}
