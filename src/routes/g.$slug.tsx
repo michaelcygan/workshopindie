@@ -203,6 +203,7 @@ function GroupPage() {
         {/* Tabs */}
         <div className="mt-8 flex flex-wrap gap-1.5 border-b border-border">
           {[
+            { id: "events" as const, label: "Events", icon: Calendar, count: null },
             { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "collab" as const, label: "Collabs", icon: Megaphone, count: group.collab_count },
             { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
@@ -235,6 +236,7 @@ function GroupPage() {
 
         {/* Content */}
         <div className="mt-8">
+          {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
           {tab === "workshops" && <GroupWorkshopTab group={group} />}
