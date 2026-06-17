@@ -17,10 +17,11 @@ import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-
 import { PersonaRecorderTabs } from "@/components/recorder/persona-tabs";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import RoomBoard from "@/components/room-board";
+import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
 // Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
 type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
