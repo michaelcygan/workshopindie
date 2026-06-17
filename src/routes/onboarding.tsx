@@ -236,6 +236,8 @@ function Onboarding() {
           </Button>
 
         </form>
+          </>
+        )}
       </motion.div>
     </div>
   );
