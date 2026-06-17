@@ -114,16 +114,13 @@ export function MediaPanel({
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={m.isScreenSharing ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => (m.isScreenSharing ? m.stopScreenShare() : m.startScreenShare())}
-              className="rounded-full gap-1.5"
-              title={m.isScreenSharing ? "Stop sharing your screen" : "Share your screen with the room"}
-            >
-              {m.isScreenSharing ? <MonitorOff className="h-3.5 w-3.5" /> : <MonitorPlay className="h-3.5 w-3.5" />}
-              {m.isScreenSharing ? "Stop share" : "Share screen"}
-            </Button>
+            {dockExtra ? (
+              <div className="flex items-center justify-center [&_button]:w-full [&_button]:rounded-full">
+                {dockExtra}
+              </div>
+            ) : (
+              <span />
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -134,11 +131,13 @@ export function MediaPanel({
             </Button>
           </div>
 
-          {m.screenSharerId && !m.isScreenSharing && (
-            <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary">
-              Someone is sharing their screen
+          {m.screenSharerId && (
+            <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
+              <MonitorPlay className="h-3 w-3" />
+              {m.isScreenSharing ? "You're sharing your screen" : "Someone is sharing their screen"}
             </p>
           )}
+
 
 
           <div className="border-t border-border pt-3">
