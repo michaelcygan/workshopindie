@@ -63,6 +63,7 @@ import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/events.$id.ics'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
@@ -335,6 +336,11 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
+  id: '/api/public/events/$id/ics',
+  path: '/api/public/events/$id/ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -391,6 +397,7 @@ export interface FileRoutesByFullPath {
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -441,6 +448,7 @@ export interface FileRoutesByTo {
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -498,6 +506,7 @@ export interface FileRoutesById {
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -556,6 +565,7 @@ export interface FileRouteTypes {
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -606,6 +616,7 @@ export interface FileRouteTypes {
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   id:
     | '__root__'
     | '/'
@@ -662,6 +673,7 @@ export interface FileRouteTypes {
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -698,6 +710,7 @@ export interface RootRouteChildren {
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
+  ApiPublicEventsIdIcsRoute: typeof ApiPublicEventsIdIcsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1080,6 +1093,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/events/$id/ics': {
+      id: '/api/public/events/$id/ics'
+      path: '/api/public/events/$id/ics'
+      fullPath: '/api/public/events/$id/ics'
+      preLoaderRoute: typeof ApiPublicEventsIdIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1249,6 +1269,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorksInviteTokenRoute: WorksInviteTokenRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
+  ApiPublicEventsIdIcsRoute: ApiPublicEventsIdIcsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
