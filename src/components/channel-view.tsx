@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, UserPlus, X, Maximize2 } from "lucide-react";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
+import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
