@@ -73,7 +73,7 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (typeof featured === "boolean") {
       patch.featured_at = featured ? new Date().toISOString() : null;
     }
-    const { error } = await supabase.from("group_events").update(patch).eq("id", id);
+    const { error } = await supabase.from("group_events").update(patch as never).eq("id", id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
