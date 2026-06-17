@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { Plus, Star, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Flag, Plus, Star, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   adminListAllEvents,
   adminListGroups,
+  adminListEventReports,
+  adminDismissReports,
   createEvent,
   cancelEvent,
   setEventFeatured,
@@ -28,6 +30,9 @@ import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
 });
+
+const AUTOCANCEL_KEY = "admin-events-autocancel";
+const AUTOCANCEL_THRESHOLD = 3;
 
 function AdminEventsPage() {
   const listFn = useServerFn(adminListAllEvents);
@@ -48,6 +53,9 @@ function AdminEventsPage() {
           <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
         </div>
       </div>
+
+      <ReportsAlertStrip onAnyChange={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
+
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-ink-muted">
@@ -288,5 +296,127 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ReportsAlertStrip({ onAnyChange }: { onAnyChange: () => void }) {
+  const listFn = useServerFn(adminListEventReports);
+  const dismissFn = useServerFn(adminDismissReports);
+  const cancelFn = useServerFn(cancelEvent);
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["admin-event-reports"],
+    queryFn: () => listFn(),
+    refetchInterval: 60_000,
+  });
+  const [auto, setAuto] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(AUTOCANCEL_KEY) === "1";
+  });
+  const acted = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!auto || !data) return;
+    (async () => {
+      for (const row of data) {
+        const r = row as { event: { id: string; title: string; status: string }; report_ids: string[] };
+        if (acted.current.has(r.event.id)) continue;
+        if (r.event.status === "canceled") continue;
+        if (r.report_ids.length < AUTOCANCEL_THRESHOLD) continue;
+        acted.current.add(r.event.id);
+        try {
+          await cancelFn({ data: { id: r.event.id, reason: "Auto-canceled: multiple reports as not a real event." } });
+          await dismissFn({ data: { report_ids: r.report_ids } });
+          toast.success(`Auto-canceled "${r.event.title}"`);
+          qc.invalidateQueries({ queryKey: ["admin-event-reports"] });
+          onAnyChange();
+        } catch (ex) {
+          toast.error((ex as Error).message);
+        }
+      }
+    })();
+  }, [auto, data, cancelFn, dismissFn, qc, onAnyChange]);
+
+  const rows = (data ?? []) as {
+    event: { id: string; slug: string; title: string; status: string; group: { slug: string; name: string } };
+    report_ids: string[];
+    reasons: string[];
+  }[];
+
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mb-4 rounded-2xl border border-amber-500/40 bg-amber-500/5 p-3">
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-300">
+          <Flag className="h-4 w-4" />
+          <span className="font-medium">{rows.length} event{rows.length === 1 ? "" : "s"} reported</span>
+        </div>
+        <label className="flex items-center gap-1.5 text-xs text-ink-soft">
+          <input
+            type="checkbox"
+            checked={auto}
+            onChange={(e) => {
+              setAuto(e.target.checked);
+              if (typeof window !== "undefined") {
+                window.localStorage.setItem(AUTOCANCEL_KEY, e.target.checked ? "1" : "0");
+              }
+            }}
+          />
+          Auto-cancel after {AUTOCANCEL_THRESHOLD} reports
+        </label>
+      </div>
+      <ul className="mt-2 divide-y divide-amber-500/20">
+        {rows.map((r) => {
+          const notEvent = r.reasons.filter((x) => x === "not_an_event").length;
+          return (
+            <li key={r.event.id} className="flex flex-wrap items-center gap-2 py-2 text-sm">
+              <a
+                href={`/g/${r.event.group.slug}/e/${r.event.slug}`}
+                target="_blank"
+                rel="noreferrer"
+                className="font-medium text-ink hover:underline"
+              >
+                {r.event.title}
+              </a>
+              <span className="text-xs text-ink-muted">
+                {r.event.group.name} · {r.report_ids.length} report{r.report_ids.length === 1 ? "" : "s"}
+                {notEvent > 0 ? ` · ${notEvent} "not an event"` : ""}
+                {r.event.status === "canceled" ? " · already canceled" : ""}
+              </span>
+              <div className="ml-auto flex items-center gap-1">
+                {r.event.status !== "canceled" && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 rounded-full text-destructive"
+                    onClick={async () => {
+                      if (!confirm(`Cancel "${r.event.title}"? RSVPs will be notified.`)) return;
+                      await cancelFn({ data: { id: r.event.id, reason: "Reported as not a real event." } });
+                      await dismissFn({ data: { report_ids: r.report_ids } });
+                      qc.invalidateQueries({ queryKey: ["admin-event-reports"] });
+                      onAnyChange();
+                    }}
+                  >
+                    Cancel event
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 rounded-full"
+                  onClick={async () => {
+                    await dismissFn({ data: { report_ids: r.report_ids } });
+                    qc.invalidateQueries({ queryKey: ["admin-event-reports"] });
+                  }}
+                >
+                  <X className="mr-1 h-3 w-3" /> Dismiss
+                </Button>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

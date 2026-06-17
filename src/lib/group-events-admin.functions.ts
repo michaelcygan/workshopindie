@@ -35,6 +35,7 @@ const baseSchema = z.object({
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
+  series_key: z.string().max(60).nullable().optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
@@ -234,4 +235,111 @@ export const adminListGroups = createServerFn({ method: "POST" })
       .is("deleted_at", null)
       .order("name");
     return data ?? [];
+  });
+
+// ---------- Recurring series ----------
+
+const seriesSchema = baseSchema.omit({ starts_at: true, ends_at: true }).extend({
+  starts_at: z.string(),
+  ends_at: z.string(),
+  recurrence_rule: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
+  occurrence_count: z.number().int().min(1).max(26),
+});
+
+function addOccurrence(date: Date, rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY", step: number): Date {
+  const d = new Date(date);
+  if (rule === "WEEKLY") d.setDate(d.getDate() + 7 * step);
+  else if (rule === "BIWEEKLY") d.setDate(d.getDate() + 14 * step);
+  else d.setMonth(d.getMonth() + step);
+  return d;
+}
+
+export const createEventSeries = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => seriesSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { recurrence_rule, occurrence_count, featured, status, ...rest } = data;
+    const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    const baseStart = new Date(rest.starts_at);
+    const baseEnd = new Date(rest.ends_at);
+    if (Number.isNaN(baseStart.getTime()) || Number.isNaN(baseEnd.getTime())) {
+      throw new Error("Invalid start or end time");
+    }
+    const rows = Array.from({ length: occurrence_count }, (_, i) => {
+      const s = addOccurrence(baseStart, recurrence_rule, i);
+      const e = addOccurrence(baseEnd, recurrence_rule, i);
+      return {
+        ...rest,
+        slug: "",
+        created_by: userId,
+        featured_at: i === 0 && featured ? new Date().toISOString() : null,
+        status: (status ?? "scheduled") as "draft" | "scheduled",
+        is_official: rest.is_official ?? true,
+        starts_at: s.toISOString(),
+        ends_at: e.toISOString(),
+        series_key: seriesKey,
+      };
+    });
+    const { data: inserted, error } = await supabase
+      .from("group_events")
+      .insert(rows as never)
+      .select("id,slug");
+    if (error) throw new Error(error.message);
+    return { series_key: seriesKey, count: inserted?.length ?? 0 };
+  });
+
+// ---------- "Not an event" reports ----------
+
+export const adminListEventReports = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: reports, error } = await supabase
+      .from("reports")
+      .select("id,entity_id,reason,description,created_at")
+      .eq("entity_type", "group_event")
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) throw new Error(error.message);
+    const list = reports ?? [];
+    if (list.length === 0) return [];
+    const eventIds = Array.from(new Set(list.map((r) => r.entity_id as string)));
+    const { data: events } = await supabase
+      .from("group_events")
+      .select("id,slug,title,status,group:groups!inner(slug,name)")
+      .in("id", eventIds);
+    type Ev = { id: string; slug: string; title: string; status: string; group: { slug: string; name: string } };
+    const byId = new Map<string, Ev>();
+    for (const e of (events ?? []) as unknown as Ev[]) byId.set(e.id, e);
+    const grouped = new Map<string, { event: Ev; report_ids: string[]; reasons: string[]; latest_at: string }>();
+    for (const r of list) {
+      const ev = byId.get(r.entity_id as string);
+      if (!ev) continue;
+      const g = grouped.get(ev.id);
+      if (g) {
+        g.report_ids.push(r.id as string);
+        if (r.reason) g.reasons.push(r.reason as string);
+      } else {
+        grouped.set(ev.id, { event: ev, report_ids: [r.id as string], reasons: r.reason ? [r.reason as string] : [], latest_at: r.created_at as string });
+      }
+    }
+    return Array.from(grouped.values());
+  });
+
+export const adminDismissReports = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ report_ids: z.array(z.string().uuid()).min(1).max(200) }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("reports")
+      .update({ status: "dismissed" })
+      .in("id", data.report_ids);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
