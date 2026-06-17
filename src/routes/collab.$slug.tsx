@@ -18,6 +18,7 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { applyToCollab } from "@/lib/collab.functions";
+import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
 

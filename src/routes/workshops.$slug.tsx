@@ -22,6 +22,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { ImageUpload } from "@/components/image-upload";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
+import { MessageButton } from "@/components/message-button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -170,12 +171,15 @@ function WorkshopDetail() {
         </div>
 
         {ws.host && (
-          <Link to="/u/$username" params={{ username: ws.host.username ?? "" }}
-            className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm hover:shadow-soft">
-            <Avatar className="h-6 w-6"><AvatarImage src={ws.host.avatar_url ?? undefined} /><AvatarFallback className="text-[10px]">{(ws.host.display_name || ws.host.username || "·")[0]}</AvatarFallback></Avatar>
-            <span className="text-ink-soft">Hosted by</span>
-            <span className="text-ink">{ws.host.display_name || ws.host.username}</span>
-          </Link>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <Link to="/u/$username" params={{ username: ws.host.username ?? "" }}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-sm hover:shadow-soft">
+              <Avatar className="h-6 w-6"><AvatarImage src={ws.host.avatar_url ?? undefined} /><AvatarFallback className="text-[10px]">{(ws.host.display_name || ws.host.username || "·")[0]}</AvatarFallback></Avatar>
+              <span className="text-ink-soft">Hosted by</span>
+              <span className="text-ink">{ws.host.display_name || ws.host.username}</span>
+            </Link>
+            {!isHost && <MessageButton otherUserId={ws.host.id} contextWorkshopId={ws.id} />}
+          </div>
         )}
       </motion.div>
 
