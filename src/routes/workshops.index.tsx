@@ -12,6 +12,10 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { getMyAgeFields } from "@/lib/profile-age.functions";
 import { LobbiesSection } from "@/components/lobbies-section";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
+import { useMemo } from "react";
 
 export const Route = createFileRoute("/workshops/")({
   head: () => ({
@@ -66,7 +70,7 @@ function WorkshopsPage() {
   const ageFilterMin = ageCtx?.ageFilterMin ?? null;
   const myAge = ageCtx?.age ?? null;
   const myHomeCityId = ageCtx?.homeCityId ?? null;
-  const workshops = (rawWorkshops ?? []).filter((w) => {
+  const filteredWorkshops = (rawWorkshops ?? []).filter((w) => {
     // User opted into 18+/21+ only → hide teen-capped workshops
     if (ageFilterMin != null && w.max_age != null && w.max_age < ageFilterMin) return false;
     // Host opted to hide from ineligible → respect when we know the viewer's age
@@ -84,10 +88,19 @@ function WorkshopsPage() {
     return true;
   });
 
+  const workshopIds = useMemo(() => filteredWorkshops.map((w) => w.id), [filteredWorkshops]);
+  const { data: groupTagMap } = useGroupTagsFor("workshop", workshopIds);
+  const myGroupIds = useMyGroupIdSet();
+  const workshops = useMemo(
+    () => rerankByMyGroups(filteredWorkshops, groupTagMap, myGroupIds),
+    [filteredWorkshops, groupTagMap, myGroupIds],
+  );
+
   const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
+      <YourGroupsStrip className="-mx-4 -mt-10 mb-6 rounded-none border-b md:-mx-6 md:-mt-14" />
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">Workshops</h1>
