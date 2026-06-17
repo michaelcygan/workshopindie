@@ -54,6 +54,15 @@ function NewWork() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/works/new" });
   const extract = useServerFn(extractWorkFromUrl);
+  const tagWorkGroup = useServerFn(tagWorkInGroup);
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   type Step = "drop" | "confirm" | "manual";
   const [step, setStep] = useState<Step>(search.manual ? "manual" : "drop");
