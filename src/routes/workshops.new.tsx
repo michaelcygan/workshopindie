@@ -1,8 +1,9 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X } from "lucide-react";
+import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,10 +14,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { CATEGORIES, type Category, categoryClass } from "@/lib/categories";
 import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
 import { resolveVenueAndCity } from "@/lib/venues.functions";
+import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
+import { tagWorkshopInGroup } from "@/lib/groups.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/workshops/new")({ component: NewWorkshop });
+export const Route = createFileRoute("/workshops/new")({
+  component: NewWorkshop,
+  validateSearch: z.object({ group: z.string().optional() }),
+});
 
 type LocationType = "online" | "in_person" | "hybrid";
 type AgeScope = "all" | "18" | "21" | "custom";
@@ -32,6 +38,16 @@ function NewWorkshop() {
   const { user, loading } = useAuth();
   const { loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
+  const search = useSearch({ from: "/workshops/new" });
+  const tagGroup = useServerFn(tagWorkshopInGroup);
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("visual");
@@ -177,6 +193,18 @@ function NewWorkshop() {
       workshop_id: ws.id, user_id: user.id, participant_status: "confirmed",
     });
 
+    // Tag into selected Groups (best-effort)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) => tagGroup({ data: { group_id: g.id, workshop_id: ws.id } })),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Scheduled. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
+
     setSubmitting(false);
     toast.success("Workshop scheduled");
     navigate({ to: "/workshops/$slug", params: { slug: ws.slug } });
@@ -285,6 +313,10 @@ function NewWorkshop() {
           )}
           <p className="text-xs text-ink-muted">Applicants get a friendly message if they don't qualify. Their age stays private.</p>
         </section>
+
+        <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
 
 
 

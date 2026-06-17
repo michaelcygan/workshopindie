@@ -1,5 +1,6 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
 import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale, Check, Copy } from "lucide-react";
@@ -19,8 +20,13 @@ import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { logShareEvent } from "@/lib/collab.functions";
+import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
+import { tagCollabInGroup } from "@/lib/groups.functions";
 
-export const Route = createFileRoute("/collab/new")({ component: NewCollab });
+export const Route = createFileRoute("/collab/new")({
+  component: NewCollab,
+  validateSearch: z.object({ group: z.string().optional() }),
+});
 
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
@@ -66,6 +72,16 @@ function NewCollab() {
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
   const openWorkshopFn = useServerFn(openWorkshopOnCollab);
+  const tagGroup = useServerFn(tagCollabInGroup);
+  const search = useSearch({ from: "/collab/new" });
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("visual");
@@ -181,6 +197,20 @@ function NewCollab() {
       })),
     );
     if (rolesErr) toast.error(rolesErr.message);
+
+    // Tag into selected Groups (best-effort)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) =>
+          tagGroup({ data: { group_id: g.id, collab_post_id: post.id } }),
+        ),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Posted. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
 
     // Workshop pairing
     if (workshopMode === "scheduled") {
@@ -412,6 +442,10 @@ function NewCollab() {
           </div>
           <p className="text-xs text-ink-muted">Sets expectations now to avoid friction later. You can change this while the post is open.</p>
         </section>
+
+        <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
 
 
         <section className="space-y-2">

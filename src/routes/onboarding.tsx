@@ -16,6 +16,7 @@ import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
 import { setMyBirthdate } from "@/lib/profile-age.functions";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
+import { OnboardingGroupsStep } from "@/components/onboarding-groups-step";
 
 const REF_KEY = "signup-ref";
 
@@ -41,6 +42,7 @@ function Onboarding() {
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
   const [cityId, setCityId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [stage, setStage] = useState<"basics" | "groups">("basics");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -113,18 +115,32 @@ function Onboarding() {
       }
     } catch { /* non-fatal */ }
     toast.success("Profile created");
-    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
-    navigate({ to: "/" });
+    setStage("groups");
 
 
   };
 
+  function finishOnboarding() {
+    try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
+    navigate({ to: "/" });
+  }
+
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+        {stage === "groups" ? (
+          <OnboardingGroupsStep
+            homeCityId={cityId || null}
+            onDone={finishOnboarding}
+            onSkip={finishOnboarding}
+          />
+        ) : (
+          <>
         <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 1 of 2 — Profile basics</p>
         <h1 className="mt-1 font-display text-3xl text-ink">Create your profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your first move. You can change anything later.</p>
+        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your Groups. You can change anything later.</p>
+
+
 
 
 
@@ -220,6 +236,8 @@ function Onboarding() {
           </Button>
 
         </form>
+          </>
+        )}
       </motion.div>
     </div>
   );

@@ -19,10 +19,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
+import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
+import { tagWorkInGroup } from "@/lib/groups.functions";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
   manual: z.coerce.boolean().optional(),
+  group: z.string().optional(),
 });
 
 export const Route = createFileRoute("/works/new")({
@@ -51,6 +54,15 @@ function NewWork() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/works/new" });
   const extract = useServerFn(extractWorkFromUrl);
+  const tagWorkGroup = useServerFn(tagWorkInGroup);
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   type Step = "drop" | "confirm" | "manual";
   const [step, setStep] = useState<Step>(search.manual ? "manual" : "drop");
@@ -206,6 +218,20 @@ function NewWork() {
         .eq("owner_id", user.id);
     }
 
+    // Tag into selected Groups (best-effort, non-blocking)
+    if (selectedGroups.length > 0) {
+      const results = await Promise.allSettled(
+        selectedGroups.map((g) =>
+          tagWorkGroup({ data: { group_id: g.id, work_id: work.id } }),
+        ),
+      );
+      results.forEach((r, i) => {
+        if (r.status === "rejected") {
+          toast.error(`Posted. Couldn't tag ${selectedGroups[i].name}, try from the group page.`);
+        }
+      });
+    }
+
     setSubmitting(false);
     toast.success("Work published");
 
@@ -312,6 +338,10 @@ function NewWork() {
             <Input id="url" type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} placeholder="https://…" />
             <p className="text-xs text-ink-muted">Where the original lives — Vimeo, Bandcamp, GitHub, your site.</p>
           </section>
+
+          <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+
 
           <section className="space-y-1.5">
             <Label htmlFor="lic">License</Label>
