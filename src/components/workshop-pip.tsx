@@ -118,10 +118,9 @@ function PipBody({
     return media.peers.find((p) => p.userId === stickySpeakerId) ?? null;
   }, [media.peers, stickySpeakerId]);
 
+  const speakerProfile = speaker ? profileLookup.get(speaker.userId) : null;
   const speakerName = speaker
-    ? profileLookup[speaker.userId]?.display_name ||
-      profileLookup[speaker.userId]?.username ||
-      "Speaker"
+    ? speakerProfile?.display_name || speakerProfile?.username || "Speaker"
     : "Waiting for speaker…";
 
   // Wire video element.
