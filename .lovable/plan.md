@@ -1,74 +1,96 @@
-## Goal
+## Audit of the import flow (v1 scope)
 
-Add an "Import from link" flow to the admin Events tab so you can paste an Eventbrite / Partiful / public event URL and get a pre-filled draft event to review, edit, and publish — instead of typing every field by hand.
+Three additions, all small, all reusing existing tables (`group_events`, `reports`, `notifications`). No new tables — that keeps it durable at scale and reversible.
 
-## UX
+---
 
-In `src/routes/admin.events.tsx`, next to the existing **+ Create Event** button, add a second button: **Import from link**.
+### 1. Recurring events
 
-Clicking it opens a dialog with two steps:
+**Detection (server-side, in `event-import.functions.ts`):**
+- JSON-LD `EventSeries` / nested `subEvent` array → use those dates directly.
+- Plain-text heuristic on title + description: regex for `every (Sun|Mon|…)day`, `weekly`, `bi-?weekly`, `every other`, `monthly`, `first/last <weekday> of the month`.
+- If matched, return an extra field on the draft: `recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY", weekday: 0–6, hint: "every Sunday" } | null`.
 
-1. **Paste URL**
-   - Single URL input + "Fetch" button.
-   - Helper text: "Works best with Eventbrite, Partiful, Luma, and most public event pages."
-   - Loading state while scraping.
-   - On error: inline message + a "Fill manually instead" link that opens the existing Create dialog.
+**UX in the review dialog:**
+- New "Repeats" row appears when recurrence is detected (or admin can toggle it on manually):
+  - Pattern dropdown: One-time / Weekly / Every 2 weeks / Monthly
+  - "Generate next N occurrences" number input (default 8, max 26)
+  - "Until" optional date
+- "Auto-filled" sparkle on the Repeats row if detection found it.
 
-2. **Review draft** (same form fields as Create Event, pre-filled)
-   - Title, tagline, description, kind, format, cover image URL, starts_at, ends_at, timezone, venue name/address, online URL, capacity.
-   - A small "Imported from {host}" chip + link back to the source.
-   - **Group** picker is required (we can't infer which Workshop group it belongs to).
-   - Each pre-filled field shows a subtle "AI-filled" hint that disappears once you edit it.
-   - Buttons: **Save as draft** (status=`draft`) and **Publish** (status=`scheduled`, current behavior of `createEvent`).
+**Storage approach (no schema change):**
+- On submit, generate N occurrence rows in one `createEvents` call (new server fn that loops `createEvent`'s insert logic in a single transaction). Each row gets a `series_key` stored in a new lightweight TEXT column `series_key` on `group_events` (small migration: add nullable column + index). That lets the admin filter/bulk-cancel a whole series later.
+- Drafts (`status='draft'`) just store the parent; series materializes on Publish.
 
-No new tables. Uses existing `group_events` + `createEvent`.
+**Why this and not RRULE in one row:** every other page in the codebase (event detail, RSVP, ICS, sweep job, notifications) reads `starts_at`/`ends_at` as a single instant. Materializing rows means zero changes to those code paths. `series_key` is the only new field.
 
-## Technical
+---
 
-### Scraper server function
+### 2. "Report non-event" + admin alert (with auto-cancel option)
 
-New file `src/lib/event-import.functions.ts`:
+**User side:**
+- On the event detail page, add a small "Report" link (uses existing `reports` table with `entity_type='group_event'`, new `reason='not_an_event'`). No new endpoint — `submitReport` already exists.
 
-- `importEventFromUrl` — `createServerFn({ method: "POST" })` with `.middleware([requireSupabaseAuth])`, admin check via `has_role`.
-- Input: `{ url: string }` (zod, http/https only, max 500 chars, basic SSRF guard: reject localhost / private IP hostnames / non-http(s) protocols).
-- Handler:
-  1. `fetch(url)` with a desktop User-Agent, 10s timeout, max 2MB body, follow redirects.
-  2. Parse HTML and extract in this priority order:
-     - **JSON-LD** `<script type="application/ld+json">` with `@type: Event` (Eventbrite, Luma, many others ship this). Pull `name`, `description`, `startDate`, `endDate`, `image`, `location.name`, `location.address`, `url`, `eventAttendanceMode` → format.
-     - **OpenGraph / Twitter meta** as fallback (`og:title`, `og:description`, `og:image`, `og:url`, `event:start_time`, `event:end_time`).
-     - **Site-specific light parsers** for Partiful (no JSON-LD): read `<title>`, `og:*`, and the `__NEXT_DATA__` script when present.
-  3. Map to the same shape `createEvent` accepts:
-     - `format`: `online` if `eventAttendanceMode` is `OnlineEventAttendanceMode` or only `online_url` present; `in_person` if address present; else `hybrid`.
-     - `kind`: heuristic from title/description keywords (workshop → `workshop_irl`/`online`, listening → `listening_party`, screening → `screening`, mic → `open_mic`, else `other`).
-     - `timezone`: from JSON-LD `startDate` offset when present, else `"UTC"`.
-     - Strip HTML from description, cap at 6000 chars.
-  4. Return `{ draft, source: { url, host, parser: "json-ld" | "og" | "partiful" }, warnings: string[] }`. Never write to the DB here — the dialog reuses `createEvent` after user review.
+**Admin side (top of `/admin/events`):**
+- A dismissible alert strip listing any event with ≥1 unresolved `not_an_event` report:
+  - "{title} — 3 reports" · [View] [Cancel event] [Dismiss reports]
+- "Dismiss reports" marks them resolved (existing `reports.status` column) without touching the event.
+- "Cancel event" calls existing `cancelEvent`.
 
-No new dependencies — use a small regex/`DOMParser`-free HTML scanner (string search for `<script type="application/ld+json">` blocks and `<meta property="...">` tags). Keeps the Worker runtime happy (no `cheerio`/`jsdom`).
+**Auto mode (per-admin toggle, stored in `localStorage`):**
+- Checkbox in the alert header: "Auto-cancel after 3 reports."
+- When ON, the page-level effect runs once per event: if reports ≥ threshold and not yet canceled, call `cancelEvent` and toast "Auto-canceled {title}." Threshold (3) is hard-coded for v1.
+- Stays client-side for v1 — no cron, no server policy. Keeps the trust model: a human admin tab must be open for an auto-cancel to fire. We can promote it to a server cron later without changing the UI.
 
-### Client dialog
+---
 
-New component `src/components/admin-import-event-dialog.tsx`:
+### 3. Bulk import from a list of links
 
-- Step 1 calls `importEventFromUrl` via `useServerFn`.
-- Step 2 reuses the field layout from the existing `CreateEventDialog` form. Submits through the existing `createEvent` server fn (no schema changes).
-- Adds a `status` toggle: "Save as draft" vs "Publish now". `createEvent` already defaults to `scheduled`; extend its zod schema with optional `status: z.enum(["draft","scheduled"]).optional()` and pass through in the insert. (Tiny edit in `src/lib/group-events-admin.functions.ts`.)
+**UX:** In the Admin Events tab, the "Import from link" dialog gets a second tab: **Bulk**.
+- Textarea: paste one URL per line (also accepts comma- or newline-separated; trims/dedupes).
+- Optional: a single Group picker that applies to all (since you'll usually batch by group); per-row override available in the review step.
+- "Fetch all" → server function `importEventsFromUrls({ urls: string[] })` with:
+  - Zod cap at 25 URLs per call.
+  - Sequential fetch with 3-way concurrency (`Promise.all` over chunks of 3) to be polite.
+  - 10s timeout per URL (already in place); per-URL failures don't fail the batch — they come back as `{ url, error }`.
+- Result screen: a compact queue list, one row per URL with status chip (`Ready` / `Needs date` / `Failed`), the imported title, and an **Edit** button that opens the existing single-event review dialog pre-filled.
+- Group-level actions: **Publish all ready** (only rows with title + starts/ends + group), **Save all as drafts**, **Discard failed**.
+
+**Safety rails:**
+- Admin-only middleware (already enforced).
+- The same SSRF guard applies per URL.
+- Server fn returns drafts only — never writes. All inserts go through the existing reviewed `createEvent` so RLS, slug generation, and notifications stay consistent.
+
+---
 
 ### Files touched
 
-- **New**: `src/lib/event-import.functions.ts`, `src/components/admin-import-event-dialog.tsx`
-- **Edit**: `src/routes/admin.events.tsx` (add button + dialog), `src/lib/group-events-admin.functions.ts` (allow `status: "draft"` on create)
+**New**
+- `src/components/admin-import-bulk.tsx` — the bulk tab + queue list.
 
-### Out of scope (v1)
+**Edited**
+- `src/lib/event-import.functions.ts` — add recurrence detection, add `importEventsFromUrls`.
+- `src/lib/group-events-admin.functions.ts` — add `createEventSeries` (loops inserts with shared `series_key`).
+- `src/components/admin-import-event-dialog.tsx` — add tabs (Single / Bulk), add Repeats row in review step.
+- `src/routes/admin.events.tsx` — add the dismissible reports alert strip + auto-cancel toggle.
 
-- Scraping ticket prices / RSVPs / attendee lists.
-- Private/auth-gated event pages.
-- Image rehosting — we keep the source `og:image` URL as `cover_url`. Can add Lovable storage upload later.
-- Recurring events.
-- Bulk import.
+**Migration**
+- Add nullable `series_key text` to `group_events` + index. No RLS changes; grants unchanged.
 
-### Failure modes handled
+---
 
-- Non-200 fetch, HTML over 2MB, no parseable event data → return a clear error string; dialog shows it and offers "Fill manually".
-- Private/local URLs blocked at the zod layer.
-- Partial extraction is fine — the review step lets you fix anything missing before saving.
+### Explicitly out of scope (v1)
+
+- True RRULE engine / "edit this and all following" semantics.
+- Server-side auto-cancel cron (client-only for v1).
+- Image rehosting from source pages.
+- Importing tickets, prices, or attendee lists.
+- Auth-gated event pages (Eventbrite private, Facebook, Meetup behind login).
+- Bulk imports over 25 URLs in one shot (paginate by running it twice).
+
+### Why this is still v1-shaped
+
+- One new nullable column, no new tables.
+- Reuses existing `reports`, `notifications`, `cancelEvent`, `createEvent`.
+- All AI/heuristic work runs once at import time, then becomes plain rows — no runtime cost per page view.
+- The auto-cancel sits client-side so we avoid a cron + trust audit until the feature proves useful.
