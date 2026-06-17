@@ -38,6 +38,16 @@ function NewWorkshop() {
   const { user, loading } = useAuth();
   const { loading: rolesLoading } = useUserRoles();
   const navigate = useNavigate();
+  const search = useSearch({ from: "/workshops/new" });
+  const tagGroup = useServerFn(tagWorkshopInGroup);
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("visual");
