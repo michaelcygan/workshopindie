@@ -72,6 +72,16 @@ function NewCollab() {
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
   const openWorkshopFn = useServerFn(openWorkshopOnCollab);
+  const tagGroup = useServerFn(tagCollabInGroup);
+  const search = useSearch({ from: "/collab/new" });
+  const preselect = usePreselectGroup(search.group);
+  const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+  useEffect(() => {
+    if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
+      setSelectedGroups(preselect.data);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselect.data]);
 
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<Category>("visual");
