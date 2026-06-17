@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Radio, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, Maximize2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
