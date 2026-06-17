@@ -551,9 +551,10 @@ export function FullscreenRoom({
   const stageStream: MediaStream | null = m.isScreenSharing
     ? (m.screenStream ?? null)
     : (remoteSharer?.stream ?? null);
+  const stageSourceLabel = screenSourceLabel(stageStream);
   const stageLabel = m.isScreenSharing
-    ? "Your screen"
-    : (remoteSharer ? `${sharerName}'s screen` : null);
+    ? `Your screen${stageSourceLabel ? ` — ${stageSourceLabel}` : ""}`
+    : (remoteSharer ? `${sharerName}'s screen${stageSourceLabel ? ` — ${stageSourceLabel}` : ""}` : null);
 
   return (
     <motion.div
