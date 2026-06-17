@@ -898,6 +898,7 @@ export type Database = {
           online_url: string | null
           promo_pass_months: number
           rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          series_key: string | null
           slug: string
           starts_at: string
           status: Database["public"]["Enums"]["group_event_status"]
@@ -937,6 +938,7 @@ export type Database = {
           online_url?: string | null
           promo_pass_months?: number
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          series_key?: string | null
           slug: string
           starts_at: string
           status?: Database["public"]["Enums"]["group_event_status"]
@@ -976,6 +978,7 @@ export type Database = {
           online_url?: string | null
           promo_pass_months?: number
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          series_key?: string | null
           slug?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["group_event_status"]
