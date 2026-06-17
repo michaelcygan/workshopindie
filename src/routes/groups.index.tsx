@@ -108,6 +108,11 @@ function GroupsIndex() {
         />
       </div>
 
+      <div className="mt-8">
+        <FeaturedEventsCarousel />
+      </div>
+
+
       <div className="mt-5 flex flex-wrap gap-1.5">
         {TABS.map((t) => (
           <button
