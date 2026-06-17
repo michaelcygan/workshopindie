@@ -13,6 +13,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
+import { MessageButton } from "@/components/message-button";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
 import { ProfileCompletionChip } from "@/components/profile-completion-chip";
@@ -419,6 +420,7 @@ function ProfilePage() {
             ) : (
               <>
                 <FollowButton targetUserId={profile.id} />
+                <MessageButton otherUserId={profile.id} />
                 <ShareSheet
                   entity={{
                     type: "profile",

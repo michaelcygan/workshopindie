@@ -323,15 +323,18 @@ function CollabDetail() {
         <CollabSocialProof postId={post.id} authorId={post.user_id} />
 
         {hostUser && (
-          <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
-            <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
-              {hostUser.avatar_url && <img src={hostUser.avatar_url} alt="" className="h-full w-full object-cover" />}
-            </div>
-            <div>
-              <div className="font-medium text-ink">{hostUser.display_name || hostUser.username}</div>
-              {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
-            </div>
-          </Link>
+          <div className="mt-6 flex flex-wrap items-center gap-2">
+            <Link to="/u/$username" params={{ username: hostUser.username || "" }} className="inline-flex flex-1 min-w-[14rem] items-center gap-3 rounded-2xl border border-border bg-surface p-3 hover:bg-surface-2 transition">
+              <div className="h-10 w-10 overflow-hidden rounded-full bg-muted">
+                {hostUser.avatar_url && <img src={hostUser.avatar_url} alt="" className="h-full w-full object-cover" />}
+              </div>
+              <div>
+                <div className="font-medium text-ink">{hostUser.display_name || hostUser.username}</div>
+                {hostUser.headline && <div className="text-xs text-ink-muted">{hostUser.headline}</div>}
+              </div>
+            </Link>
+            {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
+          </div>
         )}
 
         {post.description && (
