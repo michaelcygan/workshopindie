@@ -190,6 +190,10 @@ function Index() {
 
       <YourGroupsStrip />
 
+      <section className="mx-auto max-w-7xl px-4 pt-8 md:px-6">
+        <FeaturedEventsCarousel />
+      </section>
+
       <NetworkRail />
 
       <section className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
