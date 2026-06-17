@@ -664,6 +664,21 @@ export function FullscreenRoom({
         )}
       </AnimatePresence>
 
+      {/* Reactions tray */}
+      <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-1 rounded-full border border-background/15 bg-background/5 backdrop-blur-md px-2 py-1.5">
+        {["👏","🔥","💡","❤️","❓"].map((e) => (
+          <button
+            key={e}
+            type="button"
+            onClick={() => fireReaction(e)}
+            className="rounded-full px-2 py-1 text-base leading-none transition hover:scale-125 hover:bg-background/10"
+            title={`Send ${e}`}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+
       {/* Floating control dock */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -678,6 +693,9 @@ export function FullscreenRoom({
           {m.cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
           <span className="hidden sm:inline">{m.cameraOn ? "Camera off" : "Camera on"}</span>
         </DockButton>
+        {dockExtra && (
+          <div className="inline-flex [&_button]:rounded-full">{dockExtra}</div>
+        )}
         <button
           type="button"
           onClick={onExit}
@@ -690,6 +708,47 @@ export function FullscreenRoom({
     </motion.div>
   );
 }
+
+function LayoutSeg({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium transition",
+        active ? "bg-background text-ink" : "text-background/80 hover:bg-background/10",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
+function ReactionsOverlay({ reactions }: { reactions: Array<{ id: string; emoji: string; from: string }> }) {
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-40 z-[56] flex justify-center">
+      <div className="relative h-32 w-full max-w-3xl">
+        <AnimatePresence>
+          {reactions.map((r, i) => (
+            <motion.div
+              key={r.id}
+              initial={{ opacity: 0, y: 0, scale: 0.6, x: (i % 5 - 2) * 60 }}
+              animate={{ opacity: 1, y: -80, scale: 1 }}
+              exit={{ opacity: 0, y: -120, scale: 0.8 }}
+              transition={{ duration: 1.6, ease: "easeOut" }}
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center"
+            >
+              <span className="text-4xl drop-shadow-lg">{r.emoji}</span>
+              <span className="mt-1 rounded-full bg-ink/70 px-2 py-0.5 text-[10px] text-background/90">{r.from}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
 
 function DockButton({
   children, onClick, active, disabled,
