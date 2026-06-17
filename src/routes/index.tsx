@@ -15,6 +15,9 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -168,14 +171,23 @@ function Index() {
   const [sort, setSort] = useState<SortKey>("newest");
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
-  const { data: works, isLoading } = useQuery({
+  const { data: rawWorks, isLoading } = useQuery({
     queryKey: ["works", category, sort, blockedKey],
     queryFn: () => fetchWorks(category, sort, Array.from(blockedIds)),
   });
+  const workIds = useMemo(() => (rawWorks ?? []).map((w) => w.id), [rawWorks]);
+  const { data: groupTagMap } = useGroupTagsFor("work", workIds);
+  const myGroupIds = useMyGroupIdSet();
+  const works = useMemo(
+    () => rerankByMyGroups(rawWorks ?? [], groupTagMap, myGroupIds),
+    [rawWorks, groupTagMap, myGroupIds],
+  );
 
   return (
     <main>
       <Hero />
+
+      <YourGroupsStrip />
 
       <NetworkRail />
 
