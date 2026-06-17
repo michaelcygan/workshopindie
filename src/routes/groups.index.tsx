@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
+import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/groups/")({
@@ -106,6 +107,11 @@ function GroupsIndex() {
           className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
         />
       </div>
+
+      <div className="mt-8">
+        <FeaturedEventsCarousel />
+      </div>
+
 
       <div className="mt-5 flex flex-wrap gap-1.5">
         {TABS.map((t) => (

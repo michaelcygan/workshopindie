@@ -42,6 +42,7 @@ import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
+import { Route as MeTicketsRouteImport } from './routes/me.tickets'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
@@ -52,6 +53,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
@@ -60,8 +62,11 @@ import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$tok
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
+import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
+import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/events.$id.ics'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
@@ -228,6 +233,11 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
   path: '/redeem/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MeTicketsRoute = MeTicketsRouteImport.update({
+  id: '/me/tickets',
+  path: '/me/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MeEditRoute = MeEditRouteImport.update({
   id: '/me/edit',
   path: '/me/edit',
@@ -278,6 +288,11 @@ const AdminGroupsRoute = AdminGroupsRouteImport.update({
   path: '/groups',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBadgesRoute = AdminBadgesRouteImport.update({
   id: '/badges',
   path: '/badges',
@@ -318,6 +333,11 @@ const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   path: '/$tool',
   getParentRoute: () => WorkshopsSlugToolsRoute,
 } as any)
+const GSlugEEventSlugRoute = GSlugEEventSlugRouteImport.update({
+  id: '/e/$eventSlug',
+  path: '/e/$eventSlug',
+  getParentRoute: () => GSlugRoute,
+} as any)
 const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
   id: '/api/public/workshops/sweep',
   path: '/api/public/workshops/sweep',
@@ -329,6 +349,16 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEventsSweepRoute = ApiPublicEventsSweepRouteImport.update({
+  id: '/api/public/events/sweep',
+  path: '/api/public/events/sweep',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
+  id: '/api/public/events/$id/ics',
+  path: '/api/public/events/$id/ics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -350,16 +380,18 @@ export interface FileRoutesByFullPath {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -381,9 +413,12 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -399,16 +434,18 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -430,9 +467,12 @@ export interface FileRoutesByTo {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -455,16 +495,18 @@ export interface FileRoutesById {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
+  '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/works/$slug': typeof WorksSlugRoute
@@ -486,9 +528,12 @@ export interface FileRoutesById {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
+  '/api/public/events/$id/ics': typeof ApiPublicEventsIdIcsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -512,6 +557,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/events'
     | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
@@ -522,6 +568,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -543,9 +590,12 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -561,6 +611,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/badges'
+    | '/admin/events'
     | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
@@ -571,6 +622,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -592,9 +644,12 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   id:
     | '__root__'
     | '/'
@@ -616,6 +671,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/events'
     | '/admin/groups'
     | '/checkout/return'
     | '/cities/$slug'
@@ -626,6 +682,7 @@ export interface FileRouteTypes {
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
+    | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
     | '/works/$slug'
@@ -647,9 +704,12 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
+    | '/api/public/events/$id/ics'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -676,6 +736,7 @@ export interface RootRouteChildren {
   MeBlockedRoute: typeof MeBlockedRoute
   MeCollabsRoute: typeof MeCollabsRoute
   MeEditRoute: typeof MeEditRoute
+  MeTicketsRoute: typeof MeTicketsRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WorksSlugRoute: typeof WorksSlugRoute
@@ -684,8 +745,10 @@ export interface RootRouteChildren {
   MeIndexRoute: typeof MeIndexRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
+  ApiPublicEventsSweepRoute: typeof ApiPublicEventsSweepRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
+  ApiPublicEventsIdIcsRoute: typeof ApiPublicEventsIdIcsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -921,6 +984,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RedeemCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/tickets': {
+      id: '/me/tickets'
+      path: '/me/tickets'
+      fullPath: '/me/tickets'
+      preLoaderRoute: typeof MeTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/me/edit': {
       id: '/me/edit'
       path: '/me/edit'
@@ -991,6 +1061,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminGroupsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/badges': {
       id: '/admin/badges'
       path: '/badges'
@@ -1047,6 +1124,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsSlugToolsToolRouteImport
       parentRoute: typeof WorkshopsSlugToolsRoute
     }
+    '/g/$slug/e/$eventSlug': {
+      id: '/g/$slug/e/$eventSlug'
+      path: '/e/$eventSlug'
+      fullPath: '/g/$slug/e/$eventSlug'
+      preLoaderRoute: typeof GSlugEEventSlugRouteImport
+      parentRoute: typeof GSlugRoute
+    }
     '/api/public/workshops/sweep': {
       id: '/api/public/workshops/sweep'
       path: '/api/public/workshops/sweep'
@@ -1061,17 +1145,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/events/sweep': {
+      id: '/api/public/events/sweep'
+      path: '/api/public/events/sweep'
+      fullPath: '/api/public/events/sweep'
+      preLoaderRoute: typeof ApiPublicEventsSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/events/$id/ics': {
+      id: '/api/public/events/$id/ics'
+      path: '/api/public/events/$id/ics'
+      fullPath: '/api/public/events/$id/ics'
+      preLoaderRoute: typeof ApiPublicEventsIdIcsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
+  AdminEventsRoute: typeof AdminEventsRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
+  AdminEventsRoute: AdminEventsRoute,
   AdminGroupsRoute: AdminGroupsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
@@ -1108,12 +1208,22 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface GSlugRouteChildren {
+  GSlugEEventSlugRoute: typeof GSlugEEventSlugRoute
+}
+
+const GSlugRouteChildren: GSlugRouteChildren = {
+  GSlugEEventSlugRoute: GSlugEEventSlugRoute,
+}
+
+const GSlugRouteWithChildren = GSlugRoute._addFileChildren(GSlugRouteChildren)
+
 interface GRouteChildren {
-  GSlugRoute: typeof GSlugRoute
+  GSlugRoute: typeof GSlugRouteWithChildren
 }
 
 const GRouteChildren: GRouteChildren = {
-  GSlugRoute: GSlugRoute,
+  GSlugRoute: GSlugRouteWithChildren,
 }
 
 const GRouteWithChildren = GRoute._addFileChildren(GRouteChildren)
@@ -1210,6 +1320,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeBlockedRoute: MeBlockedRoute,
   MeCollabsRoute: MeCollabsRoute,
   MeEditRoute: MeEditRoute,
+  MeTicketsRoute: MeTicketsRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WorksSlugRoute: WorksSlugRoute,
@@ -1218,19 +1329,11 @@ const rootRouteChildren: RootRouteChildren = {
   MeIndexRoute: MeIndexRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
+  ApiPublicEventsSweepRoute: ApiPublicEventsSweepRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
+  ApiPublicEventsIdIcsRoute: ApiPublicEventsIdIcsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

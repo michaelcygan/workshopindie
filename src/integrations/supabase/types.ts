@@ -730,6 +730,285 @@ export type Database = {
           },
         ]
       }
+      group_event_cohosts: {
+        Row: {
+          created_at: string
+          event_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_cohosts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_event_comments: {
+        Row: {
+          body: string
+          created_at: string
+          event_id: string
+          id: string
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          event_id: string
+          id?: string
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+          parent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "group_event_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_event_rsvps: {
+        Row: {
+          created_at: string
+          event_id: string
+          note: string | null
+          plus_ones: number
+          promo_pass_granted_at: string | null
+          status: Database["public"]["Enums"]["group_event_rsvp_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          note?: string | null
+          plus_ones?: number
+          promo_pass_granted_at?: string | null
+          status?: Database["public"]["Enums"]["group_event_rsvp_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          note?: string | null
+          plus_ones?: number
+          promo_pass_granted_at?: string | null
+          status?: Database["public"]["Enums"]["group_event_rsvp_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_event_updates: {
+        Row: {
+          body: string
+          created_at: string
+          created_by: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_updates_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_events: {
+        Row: {
+          accent_color: string | null
+          capacity: number | null
+          cover_url: string | null
+          created_at: string
+          created_by: string
+          deleted_at: string | null
+          description: string | null
+          ends_at: string
+          featured_at: string | null
+          format: Database["public"]["Enums"]["group_event_format"]
+          going_count: number
+          group_id: string
+          id: string
+          is_official: boolean
+          kind: Database["public"]["Enums"]["group_event_kind"]
+          maybe_count: number
+          notified_24h_at: string | null
+          notified_2h_at: string | null
+          notified_recap_at: string | null
+          online_url: string | null
+          promo_pass_months: number
+          rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          slug: string
+          starts_at: string
+          status: Database["public"]["Enums"]["group_event_status"]
+          tagline: string | null
+          timezone: string
+          title: string
+          updated_at: string
+          venue_address: string | null
+          venue_city_id: string | null
+          venue_lat: number | null
+          venue_lng: number | null
+          venue_name: string | null
+          visibility: Database["public"]["Enums"]["group_event_visibility"]
+          waitlist_count: number
+          waitlist_enabled: boolean
+        }
+        Insert: {
+          accent_color?: string | null
+          capacity?: number | null
+          cover_url?: string | null
+          created_at?: string
+          created_by: string
+          deleted_at?: string | null
+          description?: string | null
+          ends_at: string
+          featured_at?: string | null
+          format?: Database["public"]["Enums"]["group_event_format"]
+          going_count?: number
+          group_id: string
+          id?: string
+          is_official?: boolean
+          kind?: Database["public"]["Enums"]["group_event_kind"]
+          maybe_count?: number
+          notified_24h_at?: string | null
+          notified_2h_at?: string | null
+          notified_recap_at?: string | null
+          online_url?: string | null
+          promo_pass_months?: number
+          rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          slug: string
+          starts_at: string
+          status?: Database["public"]["Enums"]["group_event_status"]
+          tagline?: string | null
+          timezone?: string
+          title: string
+          updated_at?: string
+          venue_address?: string | null
+          venue_city_id?: string | null
+          venue_lat?: number | null
+          venue_lng?: number | null
+          venue_name?: string | null
+          visibility?: Database["public"]["Enums"]["group_event_visibility"]
+          waitlist_count?: number
+          waitlist_enabled?: boolean
+        }
+        Update: {
+          accent_color?: string | null
+          capacity?: number | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string
+          deleted_at?: string | null
+          description?: string | null
+          ends_at?: string
+          featured_at?: string | null
+          format?: Database["public"]["Enums"]["group_event_format"]
+          going_count?: number
+          group_id?: string
+          id?: string
+          is_official?: boolean
+          kind?: Database["public"]["Enums"]["group_event_kind"]
+          maybe_count?: number
+          notified_24h_at?: string | null
+          notified_2h_at?: string | null
+          notified_recap_at?: string | null
+          online_url?: string | null
+          promo_pass_months?: number
+          rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
+          slug?: string
+          starts_at?: string
+          status?: Database["public"]["Enums"]["group_event_status"]
+          tagline?: string | null
+          timezone?: string
+          title?: string
+          updated_at?: string
+          venue_address?: string | null
+          venue_city_id?: string | null
+          venue_lat?: number | null
+          venue_lng?: number | null
+          venue_name?: string | null
+          visibility?: Database["public"]["Enums"]["group_event_visibility"]
+          waitlist_count?: number
+          waitlist_enabled?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_events_venue_city_id_fkey"
+            columns: ["venue_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -1973,6 +2252,7 @@ export type Database = {
           discoverable: boolean
           display_name: string | null
           dm_policy: string
+          event_visibility: Database["public"]["Enums"]["event_visibility"]
           external_links: Json
           first_name: string | null
           follower_count: number
@@ -2011,6 +2291,7 @@ export type Database = {
           discoverable?: boolean
           display_name?: string | null
           dm_policy?: string
+          event_visibility?: Database["public"]["Enums"]["event_visibility"]
           external_links?: Json
           first_name?: string | null
           follower_count?: number
@@ -2049,6 +2330,7 @@ export type Database = {
           discoverable?: boolean
           display_name?: string | null
           dm_policy?: string
+          event_visibility?: Database["public"]["Enums"]["event_visibility"]
           external_links?: Json
           first_name?: string | null
           follower_count?: number
@@ -4256,6 +4538,10 @@ export type Database = {
           signed_up_count: number
         }[]
       }
+      grant_promo_pass: {
+        Args: { _months: number; _reason: string; _user_id: string }
+        Returns: boolean
+      }
       has_max_age: {
         Args: { _max: number; _user_id: string }
         Returns: boolean
@@ -4273,6 +4559,10 @@ export type Database = {
         Returns: boolean
       }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_event_host: {
+        Args: { _event_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_persona_member: {
@@ -4387,6 +4677,30 @@ export type Database = {
         | "city_host"
         | "verified_creator"
         | "admin"
+      event_visibility: "public" | "group_only" | "hidden"
+      group_event_format: "in_person" | "online" | "hybrid"
+      group_event_kind:
+        | "open_mic"
+        | "listening_party"
+        | "networking"
+        | "screening"
+        | "workshop_irl"
+        | "online"
+        | "other"
+      group_event_rsvp_mode: "open" | "approval" | "invite_only"
+      group_event_rsvp_status:
+        | "going"
+        | "maybe"
+        | "waitlist"
+        | "declined"
+        | "canceled"
+      group_event_status:
+        | "draft"
+        | "scheduled"
+        | "live"
+        | "completed"
+        | "canceled"
+      group_event_visibility: "public" | "group_only" | "unlisted"
       group_join_mode: "open" | "gated"
       group_kind: "city" | "genre" | "micro" | "scene"
       group_member_role: "member" | "steward" | "owner"
@@ -4613,6 +4927,33 @@ export const Constants = {
         "verified_creator",
         "admin",
       ],
+      event_visibility: ["public", "group_only", "hidden"],
+      group_event_format: ["in_person", "online", "hybrid"],
+      group_event_kind: [
+        "open_mic",
+        "listening_party",
+        "networking",
+        "screening",
+        "workshop_irl",
+        "online",
+        "other",
+      ],
+      group_event_rsvp_mode: ["open", "approval", "invite_only"],
+      group_event_rsvp_status: [
+        "going",
+        "maybe",
+        "waitlist",
+        "declined",
+        "canceled",
+      ],
+      group_event_status: [
+        "draft",
+        "scheduled",
+        "live",
+        "completed",
+        "canceled",
+      ],
+      group_event_visibility: ["public", "group_only", "unlisted"],
       group_join_mode: ["open", "gated"],
       group_kind: ["city", "genre", "micro", "scene"],
       group_member_role: ["member", "steward", "owner"],

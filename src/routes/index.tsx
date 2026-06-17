@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
@@ -188,6 +189,10 @@ function Index() {
       <Hero />
 
       <YourGroupsStrip />
+
+      <section className="mx-auto max-w-7xl px-4 pt-8 md:px-6">
+        <FeaturedEventsCarousel />
+      </section>
 
       <NetworkRail />
 

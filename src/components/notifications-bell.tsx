@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift } from "lucide-react";
+import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -36,6 +36,13 @@ const ICONS: Record<string, typeof Bell> = {
   first_work_shipped: Sparkles,
   work_published: Sparkles,
   collab_first_ship: Sparkles,
+  event_starts_soon_24h: Calendar,
+  event_starts_soon_2h: Calendar,
+  event_updated: Calendar,
+  event_canceled: Calendar,
+  event_promoted_from_waitlist: Ticket,
+  event_promo_pass_granted: Sparkles,
+  event_recap: Calendar,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
@@ -120,6 +127,40 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return { title: "Payment failed", subtitle: "Update your card to keep Plus active.", href: "/me" };
     case "comp_redeemed":
       return { title: "Plus unlocked ✨", subtitle: "Your invite was redeemed.", href: "/me" };
+    case "event_starts_soon_24h":
+    case "event_starts_soon_2h": {
+      const evTitle = (n.payload?.event_title as string) || "An event";
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const evSlug = (n.payload?.event_slug as string) || "";
+      const when = n.kind === "event_starts_soon_2h" ? "in 2 hours" : "tomorrow";
+      return { title: `${evTitle} ${when}`, subtitle: "Tap to view details and join link.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+    }
+    case "event_updated": {
+      const evTitle = (n.payload?.event_title as string) || "An event";
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const evSlug = (n.payload?.event_slug as string) || "";
+      return { title: `${evTitle} was updated`, subtitle: "Date, venue, or link changed.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+    }
+    case "event_canceled": {
+      const evTitle = (n.payload?.event_title as string) || "An event";
+      return { title: `${evTitle} was canceled`, subtitle: (n.payload?.reason as string) || "Sorry about that.", href: "/me/tickets" };
+    }
+    case "event_promoted_from_waitlist": {
+      const evTitle = (n.payload?.event_title as string) || "An event";
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const evSlug = (n.payload?.event_slug as string) || "";
+      return { title: `You're off the waitlist for ${evTitle}`, subtitle: "Your spot is locked in.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
+    }
+    case "event_promo_pass_granted": {
+      const months = (n.payload?.months as number) || 1;
+      return { title: `${months} month${months === 1 ? "" : "s"} of Plus unlocked ✨`, subtitle: "Thanks for RSVPing. Welcome aboard.", href: "/me" };
+    }
+    case "event_recap": {
+      const evTitle = (n.payload?.event_title as string) || "the event";
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const evSlug = (n.payload?.event_slug as string) || "";
+      return { title: `How was ${evTitle}?`, subtitle: "Drop a thought on the wall.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/" };
+    }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };
   }
