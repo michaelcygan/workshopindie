@@ -43,15 +43,17 @@ export const createEvent = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
     const { featured, ...rest } = data;
+    const insertRow = {
+      ...rest,
+      slug: "",
+      created_by: userId,
+      featured_at: featured ? new Date().toISOString() : null,
+      status: "scheduled" as const,
+      is_official: data.is_official ?? true,
+    };
     const { data: row, error } = await supabase
       .from("group_events")
-      .insert({
-        ...rest,
-        created_by: userId,
-        featured_at: featured ? new Date().toISOString() : null,
-        status: "scheduled",
-        is_official: data.is_official ?? true,
-      })
+      .insert(insertRow as never)
       .select("id,slug,group_id")
       .single();
     if (error) throw new Error(error.message);
