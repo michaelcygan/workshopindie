@@ -48,9 +48,10 @@ const PRESETS: Record<ToolType, Preset> = {
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
+  player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder"];
+const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder", "player"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
