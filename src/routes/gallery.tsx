@@ -216,7 +216,14 @@ function GalleryPage() {
   });
 
   const pages = queryResult.data?.pages ?? [];
-  const works = pages.flatMap((p) => p.works);
+  const flatWorks = pages.flatMap((p) => p.works);
+  const workIds = useMemo(() => flatWorks.map((w) => w.id), [flatWorks]);
+  const { data: groupTagMap } = useGroupTagsFor("work", workIds);
+  const myGroupIds = useMyGroupIdSet();
+  const works = useMemo(
+    () => rerankByMyGroups(flatWorks, groupTagMap, myGroupIds),
+    [flatWorks, groupTagMap, myGroupIds],
+  );
   const isLoading = queryResult.isLoading;
   const isFetchingNext = queryResult.isFetchingNextPage;
   const hasNext = queryResult.hasNextPage;
@@ -473,7 +480,7 @@ function GalleryPage() {
         ) : (
           <>
             <Grid>
-              {works.map((w) => <WorkCard key={w.id} work={w} />)}
+              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
             </Grid>
             <div ref={sentinelRef} className="h-12" />
             {isFetchingNext && (
