@@ -20,8 +20,13 @@ import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { logShareEvent } from "@/lib/collab.functions";
+import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
+import { tagCollabInGroup } from "@/lib/groups.functions";
 
-export const Route = createFileRoute("/collab/new")({ component: NewCollab });
+export const Route = createFileRoute("/collab/new")({
+  component: NewCollab,
+  validateSearch: z.object({ group: z.string().optional() }),
+});
 
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
