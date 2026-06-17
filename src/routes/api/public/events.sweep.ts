@@ -60,7 +60,7 @@ export const Route = createFileRoute("/api/public/events/sweep")({
                 })),
               );
             }
-            await supabaseAdmin.from("group_events").update({ [column]: nowIso }).eq("id", ev.id);
+            await supabaseAdmin.from("group_events").update({ [column]: nowIso } as never).eq("id", ev.id);
           }
         }
 

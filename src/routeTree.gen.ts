@@ -63,6 +63,7 @@ import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
 import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/events.$id.ics'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
@@ -336,6 +337,11 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEventsSweepRoute = ApiPublicEventsSweepRouteImport.update({
+  id: '/api/public/events/sweep',
+  path: '/api/public/events/sweep',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
   id: '/api/public/events/$id/ics',
   path: '/api/public/events/$id/ics',
@@ -393,6 +399,7 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
@@ -444,6 +451,7 @@ export interface FileRoutesByTo {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
@@ -502,6 +510,7 @@ export interface FileRoutesById {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
+  '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
   '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
@@ -561,6 +570,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
@@ -612,6 +622,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
@@ -669,6 +680,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/workshops/lobby/new'
+    | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
     | '/g/$slug/e/$eventSlug'
@@ -708,6 +720,7 @@ export interface RootRouteChildren {
   MeIndexRoute: typeof MeIndexRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
+  ApiPublicEventsSweepRoute: typeof ApiPublicEventsSweepRoute
   ApiPublicPaymentsWebhookRoute: typeof ApiPublicPaymentsWebhookRoute
   ApiPublicWorkshopsSweepRoute: typeof ApiPublicWorkshopsSweepRoute
   ApiPublicEventsIdIcsRoute: typeof ApiPublicEventsIdIcsRoute
@@ -1093,6 +1106,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/events/sweep': {
+      id: '/api/public/events/sweep'
+      path: '/api/public/events/sweep'
+      fullPath: '/api/public/events/sweep'
+      preLoaderRoute: typeof ApiPublicEventsSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/events/$id/ics': {
       id: '/api/public/events/$id/ics'
       path: '/api/public/events/$id/ics'
@@ -1267,6 +1287,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeIndexRoute: MeIndexRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
+  ApiPublicEventsSweepRoute: ApiPublicEventsSweepRoute,
   ApiPublicPaymentsWebhookRoute: ApiPublicPaymentsWebhookRoute,
   ApiPublicWorkshopsSweepRoute: ApiPublicWorkshopsSweepRoute,
   ApiPublicEventsIdIcsRoute: ApiPublicEventsIdIcsRoute,
