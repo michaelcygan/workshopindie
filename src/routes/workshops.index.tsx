@@ -158,7 +158,7 @@ function WorkshopsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {workshops.map((w) => <WorkshopCard key={w.id} ws={w} />)}
+            {workshops.map((w) => <WorkshopCard key={w.id} ws={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
           </div>
         )}
       </div>
