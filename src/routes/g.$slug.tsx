@@ -106,6 +106,21 @@ function GroupPage() {
   const group = Route.useLoaderData();
   const [tab, setTab] = useState<Tab>("work");
   const qc = useQueryClient();
+  const { data: nextEvent } = useQuery({
+    queryKey: ["group", group.id, "next-event"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_events")
+        .select("slug,title,starts_at")
+        .eq("group_id", group.id)
+        .is("deleted_at", null)
+        .gt("starts_at", new Date().toISOString())
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   useEffect(() => {
     const channel = supabase
@@ -169,6 +184,17 @@ function GroupPage() {
               </div>
               <h1 className="mt-1 font-display text-3xl text-ink md:text-4xl">{group.name}</h1>
               {group.tagline && <p className="mt-1 text-sm text-ink-muted md:text-base">{group.tagline}</p>}
+              {nextEvent && (
+                <Link
+                  to="/g/$slug/e/$eventSlug"
+                  params={{ slug: group.slug, eventSlug: nextEvent.slug }}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  {new Date(nextEvent.starts_at).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} · {nextEvent.title}
+                  <span aria-hidden>→</span>
+                </Link>
+              )}
               <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
                 <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {group.member_count} members</span>
                 <span>· {group.workshop_count} Workshops</span>

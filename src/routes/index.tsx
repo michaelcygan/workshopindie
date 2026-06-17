@@ -17,6 +17,7 @@ import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
+import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
@@ -192,6 +193,10 @@ function Index() {
 
       <section className="mx-auto max-w-7xl px-4 pt-8 md:px-6">
         <FeaturedEventsCarousel />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pt-6 md:px-6">
+        <UpcomingInMyGroupsRail />
       </section>
 
       <NetworkRail />
