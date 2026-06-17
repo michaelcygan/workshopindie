@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageButton } from "@/components/message-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
