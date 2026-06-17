@@ -457,40 +457,51 @@ export function WorkshopRecorder({
 
         {/* Sources */}
         <div className="divide-y divide-border/40">
-          <Section title="Sources" hint="Pick anything you want in the take. Each one becomes its own raw file plus part of the mixed video.">
-            <div className="space-y-1">
-              <GroupLabel icon={<Camera className="h-3 w-3" />} label="Cameras" />
-              {rows.filter((r) => r.kind === "self-cam" || r.kind === "camera").map((r) => (
-                <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
-              ))}
-              {cams.length === 0 && !rows.some(r => r.kind === "self-cam") && (
-                <button onClick={askPermissionAndEnumerate} className="text-xs text-ink-muted underline underline-offset-2">Grant access to list cameras</button>
-              )}
-            </div>
-            <div className="space-y-1 pt-2">
-              <GroupLabel icon={<Mic className="h-3 w-3" />} label="Microphones & line inputs" />
-              {rows.filter((r) => r.kind === "self-mic" || r.kind === "mic").map((r) => (
-                <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
-              ))}
-              {mics.length === 0 && (
-                <button onClick={askPermissionAndEnumerate} className="text-xs text-ink-muted underline underline-offset-2">Grant access to list audio inputs (USB-C, interfaces, MIDI synths)</button>
-              )}
-            </div>
-            <div className="space-y-1 pt-2">
-              <GroupLabel icon={<MonitorPlay className="h-3 w-3" />} label="Screen" />
-              {rows.filter((r) => r.kind === "screen").map((r) => (
-                <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
-              ))}
-            </div>
-            {peerRows.length > 0 && (
+          {recording ? (
+            <LiveRecordingBlock
+              elapsed={elapsed}
+              videoSources={enabledVideoSources}
+              audioSources={enabledAudioSources}
+              localStream={media?.localStream ?? null}
+              screenStream={media?.screenStream ?? null}
+            />
+          ) : (
+            <Section title="Sources" hint="Pick anything you want in the take. Each one becomes its own raw file plus part of the mixed video.">
+              <div className="space-y-1">
+                <GroupLabel icon={<Camera className="h-3 w-3" />} label="Cameras" />
+                {rows.filter((r) => r.kind === "self-cam" || r.kind === "camera").map((r) => (
+                  <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
+                ))}
+                {cams.length === 0 && !rows.some(r => r.kind === "self-cam") && (
+                  <button onClick={askPermissionAndEnumerate} className="text-xs text-ink-muted underline underline-offset-2">Grant access to list cameras</button>
+                )}
+              </div>
               <div className="space-y-1 pt-2">
-                <GroupLabel icon={<Users className="h-3 w-3" />} label="Participants" />
-                {rows.filter((r) => r.kind === "remote").map((r) => (
+                <GroupLabel icon={<Mic className="h-3 w-3" />} label="Microphones & line inputs" />
+                {rows.filter((r) => r.kind === "self-mic" || r.kind === "mic").map((r) => (
+                  <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
+                ))}
+                {mics.length === 0 && (
+                  <button onClick={askPermissionAndEnumerate} className="text-xs text-ink-muted underline underline-offset-2">Grant access to list audio inputs (USB-C, interfaces, MIDI synths)</button>
+                )}
+              </div>
+              <div className="space-y-1 pt-2">
+                <GroupLabel icon={<MonitorPlay className="h-3 w-3" />} label="Screen" />
+                {rows.filter((r) => r.kind === "screen").map((r) => (
                   <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
                 ))}
               </div>
-            )}
-          </Section>
+              {peerRows.length > 0 && (
+                <div className="space-y-1 pt-2">
+                  <GroupLabel icon={<Users className="h-3 w-3" />} label="Participants" />
+                  {rows.filter((r) => r.kind === "remote").map((r) => (
+                    <SourceRow key={r.id} row={r} disabled={recording} onToggle={() => toggleRow(r)} />
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
+
 
           {/* Layout */}
           {enabledVideoSources.length > 1 && (
