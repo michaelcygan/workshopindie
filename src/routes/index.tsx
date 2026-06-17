@@ -191,14 +191,6 @@ function Index() {
 
       <YourGroupsStrip />
 
-      <section className="mx-auto max-w-7xl px-4 pt-8 md:px-6">
-        <FeaturedEventsCarousel />
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pt-6 md:px-6">
-        <UpcomingInMyGroupsRail />
-      </section>
-
       <NetworkRail />
 
       <section className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
@@ -250,6 +242,14 @@ function Index() {
       <CityMeetupsStrip />
 
       <CollabsRail />
+
+      <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
+        <FeaturedEventsCarousel />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+        <UpcomingInMyGroupsRail />
+      </section>
     </main>
   );
 }
