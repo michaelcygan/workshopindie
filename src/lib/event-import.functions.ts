@@ -79,8 +79,11 @@ function extractJsonLd(html: string): Record<string, unknown>[] {
     const raw = m[1].trim();
     try {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) for (const it of parsed) if (it && typeof it === "object") out.push(it);
-      else if (parsed && typeof parsed === "object") out.push(parsed);
+      if (Array.isArray(parsed)) {
+        for (const it of parsed) if (it && typeof it === "object") out.push(it as Record<string, unknown>);
+      } else if (parsed && typeof parsed === "object") {
+        out.push(parsed as Record<string, unknown>);
+      }
     } catch {
       /* ignore bad json */
     }
