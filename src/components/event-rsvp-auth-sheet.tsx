@@ -68,8 +68,11 @@ export function EventRsvpAuthSheet({
         </SheetHeader>
         <div className="mt-5 flex flex-col gap-3">
           <div onClick={persist}>
-            <GoogleSignIn redirectTo={redirectTo} />
+            <GoogleSignIn />
           </div>
+          <p className="-mt-1 text-center text-[11px] text-ink-muted">
+            We'll bring you back here right after.
+          </p>
           <div className="relative my-2">
             <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
             <div className="relative flex justify-center"><span className="bg-background px-2 text-xs text-ink-muted">or with email</span></div>
