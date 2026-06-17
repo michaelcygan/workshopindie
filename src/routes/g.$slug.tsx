@@ -443,23 +443,25 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
     return <EmptyState label="No public members yet." cta="Be the first to join" to="/g/$slug" toParams={{ slug: group.slug }} />;
   }
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {members.map((m) => (
-        <Link
-          key={m.id}
-          to="/u/$username"
-          params={{ username: m.username ?? "" }}
-          className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted"
-        >
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={m.avatar_url ?? undefined} />
-            <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
-            {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
-          </div>
-        </Link>
+        <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
+          <Link
+            to="/u/$username"
+            params={{ username: m.username ?? "" }}
+            className="flex min-w-0 flex-1 items-center gap-3"
+          >
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={m.avatar_url ?? undefined} />
+              <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
+              {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
+            </div>
+          </Link>
+          <MessageButton otherUserId={m.id} />
+        </div>
       ))}
     </div>
   );
