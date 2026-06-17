@@ -359,6 +359,12 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   if (tool.tool_type === "board") {
     return <BoardBody scope={scope} />;
   }
+  if (tool.tool_type === "player") {
+    const playerScope = scope.kind === "instant"
+      ? { kind: "instant" as const, roomId: scope.roomId, hostUserId: scope.hostUserId }
+      : { kind: "persistent" as const, workshopId: scope.workshopId, hostUserId: scope.hostUserId };
+    return <WorkshopPlayerTool scope={playerScope} toolId={tool.id} />;
+  }
   // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
 }
