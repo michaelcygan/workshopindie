@@ -715,3 +715,83 @@ function prettyBytes(n: number) {
   if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`;
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LiveRecordingBlock — replaces the Sources picker while recording is in-flight.
+// Shows a compact summary chip strip of selected sources, a live video preview
+// of the local camera/screen, and a big REC clock. Keyboard: Esc to stop.
+// ─────────────────────────────────────────────────────────────────────────────
+function LiveRecordingBlock({
+  elapsed,
+  videoSources,
+  audioSources,
+  localStream,
+  screenStream,
+}: {
+  elapsed: number;
+  videoSources: UIRow[];
+  audioSources: UIRow[];
+  localStream: MediaStream | null;
+  screenStream: MediaStream | null;
+}) {
+  const previewRef = useRef<HTMLVideoElement>(null);
+  // Prefer screen if shared, otherwise local cam.
+  const previewStream = screenStream ?? localStream;
+  useEffect(() => {
+    if (!previewRef.current) return;
+    previewRef.current.srcObject = previewStream ?? null;
+    if (previewStream) previewRef.current.play().catch(() => {});
+  }, [previewStream]);
+
+  const totalSources = videoSources.length + audioSources.length;
+
+  return (
+    <div className="px-4 py-4">
+      {/* Big live preview */}
+      <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black ring-1 ring-border">
+        {previewStream && previewStream.getVideoTracks().length > 0 ? (
+          <video
+            ref={previewRef}
+            autoPlay
+            playsInline
+            muted
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-xs text-background/60">
+            Audio-only take
+          </div>
+        )}
+        {/* REC badge */}
+        <div className="absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full bg-black/70 px-2.5 py-1 text-[11px] font-mono tabular-nums text-white backdrop-blur">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-80" />
+            <span className="relative h-2 w-2 rounded-full bg-destructive" />
+          </span>
+          REC {mins(elapsed)}
+        </div>
+      </div>
+
+      {/* Source chip strip */}
+      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px] text-ink-soft">
+        <span className="uppercase tracking-wider text-[10px] text-ink-muted">{totalSources} source{totalSources === 1 ? "" : "s"}</span>
+        {videoSources.map((r) => (
+          <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+            {r.kind === "screen" ? <MonitorPlay className="h-3 w-3" /> : <Camera className="h-3 w-3" />}
+            <span className="truncate max-w-[140px]">{r.label}</span>
+          </span>
+        ))}
+        {audioSources.map((r) => (
+          <span key={r.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
+            <Mic className="h-3 w-3" />
+            <span className="truncate max-w-[140px]">{r.label}</span>
+          </span>
+        ))}
+      </div>
+
+      <p className="mt-2 text-[11px] text-ink-muted">
+        Stop the take below to finalize. Selections are locked while rolling.
+      </p>
+    </div>
+  );
+}
