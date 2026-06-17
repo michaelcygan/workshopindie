@@ -501,6 +501,15 @@ export function ChannelView({
           sending={sending}
           onExit={handleExit}
           onMinimize={() => setFsView(null)}
+          roomId={roomId}
+          stageSlot={typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot}
+          dockExtra={
+            <HopButton
+              roomId={roomId}
+              medium={null}
+              mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
+            />
+          }
         />
       )}
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
