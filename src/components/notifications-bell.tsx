@@ -43,6 +43,7 @@ const ICONS: Record<string, typeof Bell> = {
   event_promoted_from_waitlist: Ticket,
   event_promo_pass_granted: Sparkles,
   event_recap: Calendar,
+  event_new_in_my_group: Calendar,
 };
 
 function labelFor(n: Row): { title: string; subtitle: string; href: string } {
@@ -160,6 +161,13 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
       return { title: `How was ${evTitle}?`, subtitle: "Drop a thought on the wall.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/" };
+    }
+    case "event_new_in_my_group": {
+      const evTitle = (n.payload?.event_title as string) || "A new event";
+      const groupName = (n.payload?.group_name as string) || "your group";
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const evSlug = (n.payload?.event_slug as string) || "";
+      return { title: `${evTitle} — new in ${groupName}`, subtitle: "Tap to RSVP.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/groups" };
     }
     default:
       return { title: n.kind, subtitle: "", href: "/me" };
