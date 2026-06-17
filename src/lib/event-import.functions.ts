@@ -307,97 +307,52 @@ export const importEventFromUrl = createServerFn({ method: "POST" })
     const url = data.url;
     const host = new URL(url).hostname.replace(/^www\./, "");
     const html = await fetchHtml(url);
+    const { draft, warnings, parser } = await parseEventFromHtml(url, html);
+    return { draft, source: { url, host, parser }, warnings };
+  });
 
-    const warnings: string[] = [];
-    let parser: "json-ld" | "og" | "fallback" = "fallback";
+const bulkSchema = z.object({
+  urls: z.array(inputSchema.shape.url).min(1).max(25),
+});
 
-    const ld = extractJsonLd(html);
-    const ev = findEventNode(ld);
+export type BulkImportRow =
+  | { ok: true; url: string; host: string; draft: Draft; warnings: string[]; parser: "json-ld" | "og" | "fallback" }
+  | { ok: false; url: string; host: string; error: string };
 
-    let title: string | null = null;
-    let description: string | null = null;
-    let coverUrl: string | null = null;
-    let startsAt: string | null = null;
-    let endsAt: string | null = null;
-    let venueName: string | null = null;
-    let venueAddress: string | null = null;
-    let onlineUrl: string | null = null;
-    let attendanceMode: string | null = null;
+export const importEventsFromUrls = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => bulkSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", { _user_id: userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Admin only");
 
-    if (ev) {
-      parser = "json-ld";
-      title = asString(ev.name);
-      description = asString(ev.description);
-      coverUrl = pickImage(ev.image);
-      startsAt = asString(ev.startDate);
-      endsAt = asString(ev.endDate);
-      attendanceMode = asString(ev.eventAttendanceMode);
-      const loc = ev.location;
-      const locs = Array.isArray(loc) ? loc : loc ? [loc] : [];
-      for (const l of locs as Record<string, unknown>[]) {
-        const t = l["@type"];
-        if (typeof t === "string" && /VirtualLocation/i.test(t)) {
-          onlineUrl = onlineUrl ?? asString(l.url);
-        } else {
-          venueName = venueName ?? asString(l.name);
-          const addr = l.address;
-          if (typeof addr === "string") venueAddress = venueAddress ?? addr;
-          else if (addr && typeof addr === "object") {
-            const a = addr as Record<string, unknown>;
-            const parts = [a.streetAddress, a.addressLocality, a.addressRegion, a.postalCode, a.addressCountry]
-              .map(asString)
-              .filter(Boolean);
-            if (parts.length) venueAddress = venueAddress ?? parts.join(", ");
-          }
+    // Trim, dedupe, preserve order
+    const seen = new Set<string>();
+    const urls = data.urls.map((u) => u.trim()).filter((u) => {
+      if (!u || seen.has(u)) return false;
+      seen.add(u);
+      return true;
+    });
+
+    const results: BulkImportRow[] = new Array(urls.length);
+    const CONCURRENCY = 3;
+    let cursor = 0;
+    async function worker() {
+      while (true) {
+        const i = cursor++;
+        if (i >= urls.length) return;
+        const u = urls[i];
+        const host = (() => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return ""; } })();
+        try {
+          const html = await fetchHtml(u);
+          const { draft, warnings, parser } = await parseEventFromHtml(u, html);
+          results[i] = { ok: true, url: u, host, draft, warnings, parser };
+        } catch (ex) {
+          results[i] = { ok: false, url: u, host, error: (ex as Error).message || "Couldn't read that page." };
         }
       }
     }
-
-    // OG / meta fallback for any missing field
-    title = title ?? metaTag(html, "og:title") ?? metaTag(html, "twitter:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ?? null);
-    description = description ?? metaTag(html, "og:description") ?? metaTag(html, "description");
-    coverUrl = coverUrl ?? metaTag(html, "og:image") ?? metaTag(html, "twitter:image");
-    startsAt = startsAt ?? metaTag(html, "event:start_time");
-    endsAt = endsAt ?? metaTag(html, "event:end_time");
-    if (!ev && (title || description)) parser = "og";
-
-    if (description) description = stripHtml(description).slice(0, 6000);
-    if (title) title = stripHtml(title).slice(0, 120);
-
-    if (!title) warnings.push("Couldn't read a title — fill it in manually.");
-    if (!startsAt) warnings.push("No start time found — set one before publishing.");
-    if (!endsAt && startsAt) {
-      // Default to +2 hours when end is missing
-      try { endsAt = new Date(new Date(startsAt).getTime() + 2 * 60 * 60 * 1000).toISOString(); }
-      catch { /* leave null */ }
-    }
-
-    const format: Draft["format"] =
-      attendanceMode && /Online/i.test(attendanceMode)
-        ? "online"
-        : attendanceMode && /Mixed/i.test(attendanceMode)
-          ? "hybrid"
-          : venueAddress || venueName
-            ? "in_person"
-            : onlineUrl
-              ? "online"
-              : "in_person";
-
-    const draft: Draft = {
-      title: title ?? "",
-      tagline: null,
-      description,
-      kind: guessKind(title ?? "", description ?? ""),
-      format,
-      cover_url: coverUrl,
-      starts_at: startsAt,
-      ends_at: endsAt,
-      timezone: tzFromIso(startsAt) ?? "UTC",
-      venue_name: venueName,
-      venue_address: venueAddress,
-      online_url: onlineUrl,
-      capacity: null,
-    };
-
-    return { draft, source: { url, host, parser }, warnings };
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, urls.length) }, worker));
+    return { results };
   });
