@@ -15,6 +15,9 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -168,14 +171,23 @@ function Index() {
   const [sort, setSort] = useState<SortKey>("newest");
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
-  const { data: works, isLoading } = useQuery({
+  const { data: rawWorks, isLoading } = useQuery({
     queryKey: ["works", category, sort, blockedKey],
     queryFn: () => fetchWorks(category, sort, Array.from(blockedIds)),
   });
+  const workIds = useMemo(() => (rawWorks ?? []).map((w) => w.id), [rawWorks]);
+  const { data: groupTagMap } = useGroupTagsFor("work", workIds);
+  const myGroupIds = useMyGroupIdSet();
+  const works = useMemo(
+    () => rerankByMyGroups(rawWorks ?? [], groupTagMap, myGroupIds),
+    [rawWorks, groupTagMap, myGroupIds],
+  );
 
   return (
     <main>
       <Hero />
+
+      <YourGroupsStrip />
 
       <NetworkRail />
 
@@ -209,7 +221,7 @@ function Index() {
           ) : (
             <>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {works.map((w) => <WorkCard key={w.id} work={w} />)}
+                {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
               </div>
               <div className="mt-8 text-center">
                 <Link
@@ -235,7 +247,7 @@ function Index() {
 function CollabsRail() {
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
-  const { data: posts, isLoading } = useQuery({
+  const { data: rawPosts, isLoading } = useQuery({
     queryKey: ["home-open-collabs", blockedKey],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -255,6 +267,13 @@ function CollabsRail() {
       return rows.filter((r) => !blockedIds.has(r.user_id)).slice(0, 6) as CollabCardData[];
     },
   });
+  const postIds = useMemo(() => (rawPosts ?? []).map((p) => p.id), [rawPosts]);
+  const { data: groupTagMap } = useGroupTagsFor("collab", postIds);
+  const myGroupIds = useMyGroupIdSet();
+  const posts = useMemo(
+    () => rerankByMyGroups(rawPosts ?? [], groupTagMap, myGroupIds),
+    [rawPosts, groupTagMap, myGroupIds],
+  );
 
   return (
     <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
@@ -289,7 +308,7 @@ function CollabsRail() {
       ) : (
         <>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((p) => <CollabCard key={p.id} post={p} />)}
+            {posts.map((p) => <CollabCard key={p.id} post={p} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />)}
           </div>
           <div className="mt-8 text-center">
             <Link

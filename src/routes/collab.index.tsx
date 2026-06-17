@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { useVouchersForPosts } from "@/components/vouch-button";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
 
 const searchSchema = z.object({
@@ -197,13 +200,19 @@ function CollabPage() {
 
   const qc = useQueryClient();
 
-  const { data: posts, isLoading } = useQuery({
+  const { data: rawPosts, isLoading } = useQuery({
     queryKey: ["collab", filters, blockedKey],
     queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
   });
 
-  const postIds = useMemo(() => (posts ?? []).map((p) => p.id), [posts]);
+  const postIds = useMemo(() => (rawPosts ?? []).map((p) => p.id), [rawPosts]);
   const { data: vouchersByPost } = useVouchersForPosts(postIds);
+  const { data: groupTagMap } = useGroupTagsFor("collab", postIds);
+  const myGroupIds = useMyGroupIdSet();
+  const posts = useMemo(
+    () => rerankByMyGroups(rawPosts ?? [], groupTagMap, myGroupIds),
+    [rawPosts, groupTagMap, myGroupIds],
+  );
 
   // Top boosted Collabs (community pinned, one per user)
   const { data: boostedPosts } = useQuery({
@@ -301,6 +310,7 @@ function CollabPage() {
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
+      <YourGroupsStrip className="-mx-4 -mt-10 mb-6 rounded-none border-b md:-mx-6 md:-mt-14" />
       <motion.div
         initial={{ opacity: 0, y: 6 }}
         animate={{ opacity: 1, y: 0 }}
@@ -422,7 +432,7 @@ function CollabPage() {
           </div>
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {boostedPosts.map((p) => (
-              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} boosted />
+              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} boosted groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
             ))}
           </div>
         </div>
@@ -455,7 +465,7 @@ function CollabPage() {
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((p) => (
-              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} />
+              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
             ))}
           </div>
         )}

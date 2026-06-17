@@ -4,6 +4,8 @@ import { Calendar, MapPin, Users } from "lucide-react";
 import { CategoryChip } from "./category-chip";
 import type { Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { InlineGroupChips } from "./inline-group-chips";
+import type { GroupTag } from "@/hooks/use-group-tags";
 
 export type WorkshopCardData = {
   id: string;
@@ -35,7 +37,7 @@ function whenText(starts: string | null) {
   return d.toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" }) + ` · ${t}`;
 }
 
-export function WorkshopCard({ ws, className }: { ws: WorkshopCardData; className?: string }) {
+export function WorkshopCard({ ws, groups, myGroupIds, className }: { ws: WorkshopCardData; groups?: GroupTag[]; myGroupIds?: Set<string>; className?: string }) {
   const seats = ws.participant_cap ? `${ws.confirmed_count}/${ws.participant_cap}` : `${ws.confirmed_count}`;
   return (
     <motion.article
@@ -54,6 +56,7 @@ export function WorkshopCard({ ws, className }: { ws: WorkshopCardData; classNam
       <div className="flex flex-1 flex-col gap-2 px-4 pb-4">
         <h3 className="font-display text-xl leading-tight text-ink line-clamp-2">{ws.title}</h3>
         {ws.prompt && <p className="text-sm text-ink-muted line-clamp-2">{ws.prompt}</p>}
+        <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
         <div className="mt-auto flex flex-wrap items-center gap-3 pt-3 text-xs text-ink-soft">
           <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> {whenText(ws.starts_at)}</span>
           <span className="inline-flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {ws.location_type === "online" ? "Online" : ws.location_text || ws.location_type}</span>

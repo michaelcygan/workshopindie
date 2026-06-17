@@ -19,6 +19,9 @@ import { GeoDefaultBanner } from "@/components/geo-default-banner";
 import { FreshWorksStrip } from "@/components/fresh-works-strip";
 import { BoostedWorksStrip } from "@/components/boosted-works-strip";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -213,7 +216,14 @@ function GalleryPage() {
   });
 
   const pages = queryResult.data?.pages ?? [];
-  const works = pages.flatMap((p) => p.works);
+  const flatWorks = pages.flatMap((p) => p.works);
+  const workIds = useMemo(() => flatWorks.map((w) => w.id), [flatWorks]);
+  const { data: groupTagMap } = useGroupTagsFor("work", workIds);
+  const myGroupIds = useMyGroupIdSet();
+  const works = useMemo(
+    () => rerankByMyGroups(flatWorks, groupTagMap, myGroupIds),
+    [flatWorks, groupTagMap, myGroupIds],
+  );
   const isLoading = queryResult.isLoading;
   const isFetchingNext = queryResult.isFetchingNextPage;
   const hasNext = queryResult.hasNextPage;
@@ -315,6 +325,9 @@ function GalleryPage() {
 
       {/* Community-boosted rail */}
       <BoostedWorksStrip />
+
+      {/* Your groups */}
+      <YourGroupsStrip />
 
 
       {/* Sticky toolbar */}
@@ -470,7 +483,7 @@ function GalleryPage() {
         ) : (
           <>
             <Grid>
-              {works.map((w) => <WorkCard key={w.id} work={w} />)}
+              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
             </Grid>
             <div ref={sentinelRef} className="h-12" />
             {isFetchingNext && (
