@@ -113,6 +113,7 @@ function RootComponent() {
           <FirstRunHint />
           <WorkshopLiveToast />
           <RefCapture />
+          <PendingRsvpFlush />
 
 
 
