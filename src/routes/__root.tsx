@@ -124,3 +124,8 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
+
+function PendingRsvpFlush() {
+  usePendingRsvpFlush();
+  return null;
+}
