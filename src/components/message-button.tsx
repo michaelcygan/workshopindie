@@ -35,7 +35,7 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm", c
     if (!canDm) return;
     setBusy(true);
     try {
-      const r = await open({ data: { otherUserId } });
+      const r = await open({ data: { otherUserId, contextCollabPostId: contextCollabPostId ?? null, contextWorkshopId: contextWorkshopId ?? null } });
       navigate({ to: "/dms/$conversationId", params: { conversationId: r.conversationId } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open conversation");
