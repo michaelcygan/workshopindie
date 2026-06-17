@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { PictureInPicture2, Mic, MicOff, Video, VideoOff, MonitorPlay, X } from "lucide-react";
+import { PictureInPicture2, Mic, MicOff, Video, VideoOff, MonitorPlay, X, Sparkles } from "lucide-react";
 import type { useMediaRoom } from "@/hooks/use-media-room";
 
 type Media = ReturnType<typeof useMediaRoom>;
 type Source = "me" | "speaker" | "tool";
+type DirectorPreset = "tool" | "split" | "cam";
 
 type ProfileLookup = Map<
   string,
@@ -102,6 +103,25 @@ export function useWorkshopPip(opts: {
 }
 
 function PipBody({
+  media,
+  meDisplay,
+  profileLookup,
+  onClose,
+}: {
+  media: Media;
+  meDisplay: string;
+  profileLookup: ProfileLookup;
+  onClose: () => void;
+}) {
+  // When a screen share is active, render Director mode. We branch at the very
+  // top via a child component swap so each branch keeps a stable hook order.
+  if (media.screenSharerId) {
+    return <DirectorBody media={media} profileLookup={profileLookup} onClose={onClose} />;
+  }
+  return <StandardPipBody media={media} meDisplay={meDisplay} profileLookup={profileLookup} onClose={onClose} />;
+}
+
+function StandardPipBody({
   media,
   meDisplay,
   profileLookup,
@@ -378,6 +398,263 @@ export function PopOutButton({
       title={title}
     >
       <PictureInPicture2 className="h-3.5 w-3.5" />
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Director PiP — active when someone is sharing a screen.
+// Three fixed presets: Tool (raw screen), Split (screen + host cam inset),
+// Cam (host cam full-bleed). Switching composes a canvas locally; the host
+// pushes that canvas to the room via setOutboundScreenTrack so every viewer
+// sees the same cut. Tool preset restores the raw screen track (no canvas
+// overhead in the common case).
+// ─────────────────────────────────────────────────────────────────────────────
+function DirectorBody({
+  media,
+  profileLookup,
+  onClose,
+}: {
+  media: Media;
+  profileLookup: ProfileLookup;
+  onClose: () => void;
+}) {
+  const [preset, setPreset] = useState<DirectorPreset>("tool");
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const composedStreamRef = useRef<MediaStream | null>(null);
+
+  const isHost = media.isScreenSharing;
+
+  // Source streams
+  const remoteSharer = useMemo(
+    () => (media.screenSharerId ? media.peers.find((p) => p.userId === media.screenSharerId && p.stream) : null),
+    [media.screenSharerId, media.peers],
+  );
+  const screenStream: MediaStream | null = media.isScreenSharing
+    ? (media.screenStream ?? null)
+    : (remoteSharer?.stream ?? null);
+  const camStream: MediaStream | null = media.localStream ?? null;
+
+  const sharerProfile = media.screenSharerId ? profileLookup.get(media.screenSharerId) : null;
+  const sharerName = media.isScreenSharing
+    ? "You"
+    : (sharerProfile?.display_name || sharerProfile?.username || "Someone");
+
+  // ── Canvas composer ────────────────────────────────────────────────────────
+  // Lazily create the canvas + offscreen video elements only when a composed
+  // preset (split / cam) is selected. Tear down when returning to Tool.
+  useEffect(() => {
+    const stopComposer = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      const s = composedStreamRef.current;
+      if (s) for (const t of s.getTracks()) t.stop();
+      composedStreamRef.current = null;
+      canvasRef.current = null;
+    };
+
+    if (preset === "tool") {
+      // Restore raw screen track for the room.
+      if (isHost) media.setOutboundScreenTrack(null);
+      stopComposer();
+      return;
+    }
+
+    if (!screenStream && !camStream) return;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = 1280;
+    canvas.height = 720;
+    canvasRef.current = canvas;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Hidden video elements for sources.
+    const screenEl = document.createElement("video");
+    screenEl.muted = true; screenEl.playsInline = true; screenEl.autoplay = true;
+    if (screenStream) screenEl.srcObject = screenStream;
+    screenEl.play().catch(() => {});
+
+    const camEl = document.createElement("video");
+    camEl.muted = true; camEl.playsInline = true; camEl.autoplay = true;
+    if (camStream) camEl.srcObject = camStream;
+    camEl.play().catch(() => {});
+
+    let lastDraw = 0;
+    const frameMs = 1000 / 12;
+    const draw = (t: number) => {
+      rafRef.current = requestAnimationFrame(draw);
+      if (t - lastDraw < frameMs) return;
+      lastDraw = t;
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      if (preset === "split") {
+        // Screen left 2/3, cam right 1/3.
+        if (screenEl.readyState >= 2) drawCover(ctx, screenEl, 0, 0, 853, 720);
+        if (camEl.readyState >= 2) drawCover(ctx, camEl, 853, 0, 427, 720);
+      } else if (preset === "cam") {
+        if (camEl.readyState >= 2) drawCover(ctx, camEl, 0, 0, canvas.width, canvas.height);
+      }
+    };
+    rafRef.current = requestAnimationFrame(draw);
+
+    // Push composed stream to the room (host only).
+    if (isHost) {
+      try {
+        const composed = (canvas as HTMLCanvasElement & { captureStream: (fps: number) => MediaStream }).captureStream(12);
+        composedStreamRef.current = composed;
+        const track = composed.getVideoTracks()[0];
+        if (track) media.setOutboundScreenTrack(track);
+      } catch (e) {
+        console.warn("[director] captureStream failed", e);
+      }
+    }
+
+    // Show the canvas locally too.
+    if (videoRef.current) {
+      try {
+        const local = (canvas as HTMLCanvasElement & { captureStream: (fps: number) => MediaStream }).captureStream(12);
+        videoRef.current.srcObject = local;
+        videoRef.current.play().catch(() => {});
+      } catch { /* noop */ }
+    }
+
+    return () => {
+      stopComposer();
+      screenEl.srcObject = null;
+      camEl.srcObject = null;
+    };
+  }, [preset, screenStream, camStream, isHost, media]);
+
+  // Local preview for Tool preset = raw screen stream.
+  useEffect(() => {
+    if (preset !== "tool") return;
+    const el = videoRef.current;
+    if (!el) return;
+    el.srcObject = screenStream;
+    el.play().catch(() => {});
+  }, [preset, screenStream]);
+
+  // Mixed peer audio.
+  useEffect(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    const stream = new MediaStream();
+    for (const p of media.peers) {
+      if (!p.stream) continue;
+      for (const t of p.stream.getAudioTracks()) stream.addTrack(t);
+    }
+    el.srcObject = stream;
+    el.play().catch(() => {});
+  }, [media.peers]);
+
+  // Keyboard 1/2/3 cuts.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "1") setPreset("tool");
+      else if (e.key === "2") setPreset("split");
+      else if (e.key === "3") setPreset("cam");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // On unmount: restore raw screen for the room.
+  useEffect(() => {
+    return () => { if (isHost) media.setOutboundScreenTrack(null); };
+  }, [isHost, media]);
+
+  return (
+    <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", background: "#0a0a0a" }}>
+      <div style={{ position: "relative", flex: 1, background: "#000" }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ width: "100%", height: "100%", objectFit: preset === "cam" ? "cover" : "contain" }}
+        />
+        <div
+          style={{
+            position: "absolute", left: 10, top: 10,
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "3px 8px", borderRadius: 999,
+            background: "rgba(0,0,0,0.55)", color: "#fff",
+            fontSize: 10, letterSpacing: 0.5, textTransform: "uppercase",
+          }}
+        >
+          <Sparkles size={11} /> Director · {sharerName}
+          {!isHost && <span style={{ opacity: 0.6 }}>· view only</span>}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 4, padding: 6, background: "#111", borderTop: "1px solid #222", alignItems: "center" }}>
+        <PresetChip n={1} active={preset === "tool"} onClick={() => setPreset("tool")}>Tool</PresetChip>
+        <PresetChip n={2} active={preset === "split"} onClick={() => setPreset("split")}>Split</PresetChip>
+        <PresetChip n={3} active={preset === "cam"} onClick={() => setPreset("cam")}>Cam</PresetChip>
+        <div style={{ flex: 1 }} />
+        <IconBtn onClick={media.toggleMute} title={media.muted ? "Unmute" : "Mute"}>
+          {media.muted ? <MicOff size={13} /> : <Mic size={13} />}
+        </IconBtn>
+        <IconBtn onClick={() => media.setCameraEnabled(!media.cameraOn)} title={media.cameraOn ? "Camera off" : "Camera on"}>
+          {media.cameraOn ? <Video size={13} /> : <VideoOff size={13} />}
+        </IconBtn>
+        <button
+          onClick={onClose}
+          title="Return to workshop"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 4,
+            padding: "4px 10px", borderRadius: 999,
+            background: "#222", color: "#fff", border: "1px solid #333",
+            fontSize: 12, cursor: "pointer",
+          }}
+        >
+          <X size={12} /> Return
+        </button>
+      </div>
+      <audio ref={audioRef} autoPlay />
+    </div>
+  );
+}
+
+function drawCover(
+  ctx: CanvasRenderingContext2D,
+  el: HTMLVideoElement,
+  x: number, y: number, w: number, h: number,
+) {
+  const vw = el.videoWidth || w;
+  const vh = el.videoHeight || h;
+  const scale = Math.max(w / vw, h / vh);
+  const dw = vw * scale, dh = vh * scale;
+  const dx = x + (w - dw) / 2, dy = y + (h - dh) / 2;
+  ctx.drawImage(el, dx, dy, dw, dh);
+}
+
+function PresetChip({
+  n, active, onClick, children,
+}: { n: number; active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      title={`Preset ${n}`}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "4px 10px", borderRadius: 999,
+        background: active ? "#fff" : "transparent",
+        color: active ? "#000" : "#bbb",
+        border: "1px solid " + (active ? "#fff" : "#333"),
+        fontSize: 12, cursor: "pointer",
+      }}
+    >
+      <span style={{
+        fontSize: 9, fontWeight: 700,
+        opacity: active ? 0.5 : 0.6,
+        padding: "1px 4px", borderRadius: 4,
+        background: active ? "#0001" : "#222",
+      }}>{n}</span>
+      {children}
     </button>
   );
 }

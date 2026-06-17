@@ -9,6 +9,23 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
+/** Best-effort: derive a human label from a screen capture track.
+ *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
+ *  tab captures the tab title. We surface anything that looks like a real
+ *  name (contains a letter outside the screen/window/tab prefix) and ignore
+ *  the opaque ids. Returns null when nothing meaningful is exposed. */
+function screenSourceLabel(stream: MediaStream | null | undefined): string | null {
+  if (!stream) return null;
+  const track = stream.getVideoTracks()[0];
+  const raw = track?.label?.trim();
+  if (!raw) return null;
+  // Strip Chrome's "screen:1:0" / "window:12345:0" id-only labels.
+  if (/^(screen|window|tab|monitor):[\d:]+$/i.test(raw)) return null;
+  // Some browsers prefix with "window:Title" — keep the tail.
+  const m = raw.match(/^(?:screen|window|tab|monitor):(.+)$/i);
+  return (m ? m[1] : raw).trim() || null;
+}
+
 export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
@@ -134,7 +151,9 @@ export function MediaPanel({
           {m.screenSharerId && (
             <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
               <MonitorPlay className="h-3 w-3" />
-              {m.isScreenSharing ? "You're sharing your screen" : "Someone is sharing their screen"}
+              {m.isScreenSharing
+                ? `You're sharing${screenSourceLabel(m.screenStream) ? ` — ${screenSourceLabel(m.screenStream)}` : " your screen"}`
+                : "Someone is sharing their screen"}
             </p>
           )}
 
@@ -236,7 +255,10 @@ export function VideoStage({
       ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream)
       : null;
     const spotlightStream = (localScreen ? m.screenStream : remotePeer!.stream) as MediaStream;
-    const spotlightLabel = localScreen ? "Your screen" : `${sharerName}'s screen`;
+    const sourceLabel = screenSourceLabel(spotlightStream);
+    const spotlightLabel = localScreen
+      ? `Your screen${sourceLabel ? ` — ${sourceLabel}` : ""}`
+      : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
     // Keep the full participant grid below the spotlight so the local cam tile
     // and remote cam tiles stay visible while someone is sharing. For a REMOTE
     // sharer we hide their cam tile (their video track is already the screen).
@@ -246,7 +268,7 @@ export function VideoStage({
         <div>
           <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
             <MonitorPlay className="h-3 w-3 text-primary" />
-            <span>{localScreen ? "You're sharing your screen" : `${sharerName} is sharing their screen`}</span>
+            <span>{localScreen ? `You're sharing${sourceLabel ? ` — ${sourceLabel}` : " your screen"}` : `${sharerName} is sharing${sourceLabel ? ` — ${sourceLabel}` : " their screen"}`}</span>
           </div>
           <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
             <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
@@ -529,9 +551,10 @@ export function FullscreenRoom({
   const stageStream: MediaStream | null = m.isScreenSharing
     ? (m.screenStream ?? null)
     : (remoteSharer?.stream ?? null);
+  const stageSourceLabel = screenSourceLabel(stageStream);
   const stageLabel = m.isScreenSharing
-    ? "Your screen"
-    : (remoteSharer ? `${sharerName}'s screen` : null);
+    ? `Your screen${stageSourceLabel ? ` — ${stageSourceLabel}` : ""}`
+    : (remoteSharer ? `${sharerName}'s screen${stageSourceLabel ? ` — ${stageSourceLabel}` : ""}` : null);
 
   return (
     <motion.div
