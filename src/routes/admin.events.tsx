@@ -1,8 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { Plus, Star, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Flag, Plus, Star, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   adminListAllEvents,
   adminListGroups,
+  adminListEventReports,
+  adminDismissReports,
   createEvent,
   cancelEvent,
   setEventFeatured,
@@ -28,6 +30,9 @@ import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
 });
+
+const AUTOCANCEL_KEY = "admin-events-autocancel";
+const AUTOCANCEL_THRESHOLD = 3;
 
 function AdminEventsPage() {
   const listFn = useServerFn(adminListAllEvents);
@@ -48,6 +53,9 @@ function AdminEventsPage() {
           <CreateEventDialog onCreated={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
         </div>
       </div>
+
+      <ReportsAlertStrip onAnyChange={() => { qc.invalidateQueries({ queryKey: ["admin-events"] }); }} />
+
       <div className="overflow-hidden rounded-2xl border border-border bg-surface">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left text-xs uppercase tracking-wide text-ink-muted">
