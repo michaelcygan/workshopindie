@@ -42,6 +42,7 @@ function Onboarding() {
   const [cities, setCities] = useState<{ id: string; name: string; country: string }[]>([]);
   const [cityId, setCityId] = useState<string>("");
   const [saving, setSaving] = useState(false);
+  const [stage, setStage] = useState<"basics" | "groups">("basics");
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
