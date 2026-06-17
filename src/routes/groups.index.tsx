@@ -5,6 +5,7 @@ import { Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
+import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/groups/")({
