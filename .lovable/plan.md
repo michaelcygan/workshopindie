@@ -1,67 +1,55 @@
-# Media Player tool — plan
+# Workshop Picture-in-Picture
 
-A new chip in the Workshop Tools Panel ("Player") that lets anyone in the room paste links from approved streaming sites and play them inline. Each item joins a shared playlist that follows the same lifecycle as every other tool: session-only inside an instant room, automatically persistent if the room is forked into a Workshop. Playback is independent per viewer.
-
-## Scope
-
-- Workshop-tool-only — not a standalone route, no homepage surface.
-- Reuses existing `workshop_tool_items` / `instant_tool_items` storage (no schema change), exactly like Pinboard/List/Drive — so persistence "follows the Workshop flow" automatically.
-- Reuses `EmbedPlayer` and its provider/HLS detection.
+Add a "Pop out" button next to the existing Expand (Maximize2) icon in the workshop channel view. Clicking it opens a native floating Document PiP window that follows the workshop — by default showing self video with room audio, plus a toggle for active-speaker video or the current tool/shared surface.
 
 ## UX
 
-```
-Player                                                  + Add link
-────────────────────────────────────────────────────────────────────
-[ Big embed of currently-selected item ]
-  Now playing · "Title" — added by @alice · YouTube
+Header area of `channel-view.tsx` (the absolute-positioned button cluster top-right of the main stage, currently just `Expand chat`):
 
-Queue
- ▸ 1. YouTube — Skate edit (alice)            [play] [open] [×]
- ▸ 2. SoundCloud — vibe demo (sam)            [play] [open] [×]
- ▸ 3. Spotify — reference album (sam)         [play] [open] [×]
+```text
+[ PiP ⧉ ] [ Expand ⛶ ]
 ```
 
-- "+ Add link" opens an inline row: paste URL → on submit we parse provider, validate against allowlist, store a row with `tool_type='player'`, `url`, optional `title` (derived from `extractWorkFromUrl` oEmbed if available, otherwise hostname).
-- Clicking a queue row sets it as the local "now playing" (client state only — independent per viewer, as requested).
-- Auto-advance to the next item when an HTML5/HLS video ends; iframe providers (YouTube/Vimeo/etc.) get a manual "Next" button since cross-origin iframes don't fire `ended`.
-- Item author or workshop host can delete; everyone else can only play/open.
-- Empty state: "Drop a link from YouTube, Vimeo, SoundCloud, Spotify, Bandcamp, Apple Music, TikTok, Instagram, Threads, X…" with a single input.
+- Button shows a `PictureInPicture2` lucide icon, tooltip "Pop out".
+- Disabled with tooltip "Pop-out isn't supported in this browser" when `window.documentPictureInPicture` is missing (Safari/Firefox today).
+- Clicking opens a Document PiP window (~360×260) containing:
+  - A compact source selector chip row: **Me · Speaker · Tool**
+    - **Me**: local camera preview + room audio element (default)
+    - **Speaker**: auto-follows whichever peer's `peer.speaking` is true (falls back to last active speaker; "—" placeholder if silence)
+    - **Tool**: clones the active tool surface (player iframe poster / shared screen video) — for `player` tool, render the same `EmbedPlayer` URL; for screenshare peer, attach that stream
+  - Small label strip with speaker name + mic indicator
+  - A "Return" button that closes PiP and refocuses the tab
+- Closing the PiP window (native close or "Return") restores normal state. Closing the workshop tab/route also closes the PiP window.
+- Audio: a single hidden `<audio>` element in the PiP window plays the mixed room audio (reused from existing media context); video element switches its `srcObject` when the source selector changes.
 
-## Provider allowlist (expanded, international)
+## Trigger & state
 
-Extend `ALLOWED_HOSTS` and the provider/embed builders in `src/components/embed-player.tsx` + `src/lib/works-import.functions.ts`:
+- Manual only — no auto-on-blur in v1.
+- One PiP instance per tab. Opening again while open just refocuses it.
 
-- Video: YouTube, Vimeo, TikTok, Dailymotion, Twitch (clips + videos), Loom, Wistia, Bilibili, Niconico, Facebook video, Instagram Reels, Threads, X / Twitter
-- Music / audio: SoundCloud, Spotify, Bandcamp, Apple Music (embed.music.apple.com), Deezer, Mixcloud, Audius, Tidal (embed.tidal.com), YouTube Music
-- Long-form / talks: Vimeo Showcase, TED (embed.ted.com)
+## Technical
 
-Each provider gets:
-1. Hostname in `ALLOWED_HOSTS`
-2. `buildEmbedUrl` case that converts the canonical URL to its `/embed/...` form
-3. A short `providerLabel` mapping
+- New component `src/components/workshop-pip.tsx` exporting:
+  - `useWorkshopPip({ media, meStream, meDisplay, profileLookup, activeTool })` → `{ supported, open, isOpen, close }`
+  - Internally calls `window.documentPictureInPicture.requestWindow({ width: 360, height: 260 })`, then renders a React subtree into the PiP document via `createPortal`. Copies current `<style>`/`<link rel="stylesheet">` nodes into the PiP document head so Tailwind classes apply.
+  - Listens to `pagehide` on the PiP window for cleanup.
+  - Source state: `'me' | 'speaker' | 'tool'`, persisted in `useState` (not across sessions).
+  - Active speaker: derived from `media.peers.find(p => p.speaking)`, memoized with a 750ms hold so the tile doesn't flicker between words.
+- Wire-up in `src/components/channel-view.tsx`:
+  - Import `PictureInPicture2` from lucide-react and `useWorkshopPip`.
+  - Render new button immediately left of the existing Expand button (lines ~527–535) using the same styling.
+  - Pass existing `media`, `meDisplay`, `profileLookup`, plus the current tool descriptor (already known from `viewMode`/`toolsSlot` — pull the active player URL from the `player` tool state if present, else `null`).
+- Type declaration: add `src/types/document-pip.d.ts` with the `DocumentPictureInPicture` interface (TS lib doesn't yet ship it).
+- No backend, no schema, no new dependencies.
 
-Anything not on the allowlist is rejected with a friendly toast ("This site isn't supported yet — try YouTube, SoundCloud…").
+## Out of scope
 
-## Persistence model (no schema change)
-
-- Instant room: rows live in `instant_tool_items` (`tool_type='player'`, `url`, `title`, `body` = provider id). RLS already restricts to room members.
-- Persistent workshop (forked from a room or created directly): same rows but in `workshop_tool_items`. The existing fork pipeline copies tool items, so the playlist follows the workshop automatically.
-- No new RLS, no new tables, no GRANTs needed.
-
-## Sync
-
-Independent per viewer. Adding/removing items uses the existing react-query invalidation that the tools panel already does, so the queue list updates for others within a few seconds — but each viewer chooses what's playing locally.
+- Auto-pop on tab blur (can add later behind a settings toggle).
+- PiP fallback in browsers without Document PiP (Safari/Firefox get the disabled button + tooltip).
+- Multi-tile composite ("whole stage") — single source at a time in v1.
+- Recording / streaming the PiP output.
 
 ## Files
 
-- `src/components/workshop-tools-panel.tsx` — register `player` in `PRESETS`, `TOOL_ORDER`, `ShippedToolType`; add `PlayerTool` render branch.
-- `src/components/workshop-player-tool.tsx` — new: queue UI + current `EmbedPlayer` + add-link row + delete affordance.
-- `src/components/embed-player.tsx` — expand `ALLOWED_HOSTS`, add `providerLabel` entries, broaden `providerFromUrl`.
-- `src/lib/works-import.functions.ts` — extend `detectProvider` + `buildEmbedUrl` for new providers (so we can derive titles via oEmbed where available; falls back to OG scrape, then hostname).
-
-## Out of scope (call-outs)
-
-- No host-synced playback. Can be added later via Supabase realtime broadcast on the `instant_rooms` channel.
-- No uploads of raw video files. (Cloudflare Stream uploads stay in the Recorder/Drive tools.)
-- No cross-room "saved playlists" library. Playlist == tool items of the current room/workshop.
+- New: `src/components/workshop-pip.tsx`, `src/types/document-pip.d.ts`
+- Edit: `src/components/channel-view.tsx` (add button + hook wiring only)

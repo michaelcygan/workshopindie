@@ -3,6 +3,7 @@ import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, UserPlus, X, Maximize2 } from "lucide-react";
+import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
@@ -397,6 +398,7 @@ export function ChannelView({
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
+  const pip = useWorkshopPip({ media, meDisplay, profileLookup });
   const others = useMemo(
     () => presence.filter((p) => p.user_id !== user?.id),
     [presence, user?.id],
@@ -524,6 +526,8 @@ export function ChannelView({
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
           {/* Persistent contextual expand — always available, routes to the active surface. */}
+          <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} />
+          {pip.portal}
           <button
             type="button"
             onClick={() => setFsView(fsTarget)}
