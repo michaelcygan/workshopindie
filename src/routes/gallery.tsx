@@ -19,6 +19,9 @@ import { GeoDefaultBanner } from "@/components/geo-default-banner";
 import { FreshWorksStrip } from "@/components/fresh-works-strip";
 import { BoostedWorksStrip } from "@/components/boosted-works-strip";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
+import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { useMyGroupIdSet } from "@/hooks/use-my-groups";
+import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
