@@ -117,13 +117,21 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const { data: groups } = useQuery({ queryKey: ["admin-events-groups"], queryFn: () => groupsFn(), enabled: open });
 
-  const [form, setForm] = useState({
+  type FormState = {
+    group_id: string; title: string; tagline: string; description: string;
+    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
+    format: "in_person" | "online" | "hybrid";
+    cover_url: string; starts_at: string; ends_at: string;
+    venue_name: string; venue_address: string; online_url: string;
+    capacity: string; promo_pass_months: number; featured: boolean;
+  };
+  const [form, setForm] = useState<FormState>({
     group_id: "",
     title: "",
     tagline: "",
     description: "",
-    kind: "open_mic" as const,
-    format: "in_person" as const,
+    kind: "open_mic",
+    format: "in_person",
     cover_url: "",
     starts_at: "",
     ends_at: "",
