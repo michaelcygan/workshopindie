@@ -60,6 +60,7 @@ import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$tok
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
+import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
 import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
 
@@ -318,6 +319,11 @@ const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   path: '/$tool',
   getParentRoute: () => WorkshopsSlugToolsRoute,
 } as any)
+const GSlugEEventSlugRoute = GSlugEEventSlugRouteImport.update({
+  id: '/e/$eventSlug',
+  path: '/e/$eventSlug',
+  getParentRoute: () => GSlugRoute,
+} as any)
 const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
   id: '/api/public/workshops/sweep',
   path: '/api/public/workshops/sweep',
@@ -356,7 +362,7 @@ export interface FileRoutesByFullPath {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -383,6 +389,7 @@ export interface FileRoutesByFullPath {
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
 }
 export interface FileRoutesByTo {
@@ -405,7 +412,7 @@ export interface FileRoutesByTo {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -432,6 +439,7 @@ export interface FileRoutesByTo {
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
 }
 export interface FileRoutesById {
@@ -461,7 +469,7 @@ export interface FileRoutesById {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
-  '/g/$slug': typeof GSlugRoute
+  '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -488,6 +496,7 @@ export interface FileRoutesById {
   '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
   '/api/public/workshops/sweep': typeof ApiPublicWorkshopsSweepRoute
+  '/g/$slug/e/$eventSlug': typeof GSlugEEventSlugRoute
   '/workshops/$slug/tools/$tool': typeof WorkshopsSlugToolsToolRoute
 }
 export interface FileRouteTypes {
@@ -545,6 +554,7 @@ export interface FileRouteTypes {
     | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -594,6 +604,7 @@ export interface FileRouteTypes {
     | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
   id:
     | '__root__'
@@ -649,6 +660,7 @@ export interface FileRouteTypes {
     | '/workshops/lobby/new'
     | '/api/public/payments/webhook'
     | '/api/public/workshops/sweep'
+    | '/g/$slug/e/$eventSlug'
     | '/workshops/$slug/tools/$tool'
   fileRoutesById: FileRoutesById
 }
@@ -1047,6 +1059,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsSlugToolsToolRouteImport
       parentRoute: typeof WorkshopsSlugToolsRoute
     }
+    '/g/$slug/e/$eventSlug': {
+      id: '/g/$slug/e/$eventSlug'
+      path: '/e/$eventSlug'
+      fullPath: '/g/$slug/e/$eventSlug'
+      preLoaderRoute: typeof GSlugEEventSlugRouteImport
+      parentRoute: typeof GSlugRoute
+    }
     '/api/public/workshops/sweep': {
       id: '/api/public/workshops/sweep'
       path: '/api/public/workshops/sweep'
@@ -1108,12 +1127,22 @@ const CollabRouteChildren: CollabRouteChildren = {
 const CollabRouteWithChildren =
   CollabRoute._addFileChildren(CollabRouteChildren)
 
+interface GSlugRouteChildren {
+  GSlugEEventSlugRoute: typeof GSlugEEventSlugRoute
+}
+
+const GSlugRouteChildren: GSlugRouteChildren = {
+  GSlugEEventSlugRoute: GSlugEEventSlugRoute,
+}
+
+const GSlugRouteWithChildren = GSlugRoute._addFileChildren(GSlugRouteChildren)
+
 interface GRouteChildren {
-  GSlugRoute: typeof GSlugRoute
+  GSlugRoute: typeof GSlugRouteWithChildren
 }
 
 const GRouteChildren: GRouteChildren = {
-  GSlugRoute: GSlugRoute,
+  GSlugRoute: GSlugRouteWithChildren,
 }
 
 const GRouteWithChildren = GRoute._addFileChildren(GRouteChildren)
