@@ -8,7 +8,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee } from "lucide-react";
+import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee, Ticket } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { GroupsNavItem } from "@/components/groups-nav-item";
