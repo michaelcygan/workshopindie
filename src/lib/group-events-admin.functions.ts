@@ -43,13 +43,13 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, ...rest } = data;
+    const { featured, status, ...rest } = data;
     const insertRow = {
       ...rest,
       slug: "",
       created_by: userId,
       featured_at: featured ? new Date().toISOString() : null,
-      status: "scheduled" as const,
+      status: (status ?? "scheduled") as "draft" | "scheduled",
       is_official: data.is_official ?? true,
     };
     const { data: row, error } = await supabase
