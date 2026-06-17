@@ -13,6 +13,7 @@ import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
+import { ReportDialog } from "@/components/report-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
