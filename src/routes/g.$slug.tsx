@@ -100,7 +100,7 @@ export const Route = createFileRoute("/g/$slug")({
   }),
 });
 
-type Tab = "workshops" | "collab" | "work" | "members" | "about";
+type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
