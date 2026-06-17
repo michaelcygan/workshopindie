@@ -45,6 +45,7 @@ export function MediaPanel({
   onViewModeChange,
   onOpenWork,
   roomId,
+  dockExtra,
 }: {
   m: MediaState;
   channelTitle: string;
@@ -58,6 +59,8 @@ export function MediaPanel({
   onViewModeChange?: (v: RoomViewMode) => void;
   onOpenWork?: (workId: string) => void;
   roomId?: string;
+  /** Optional extra control rendered in the dock alongside Mute/Camera/Exit. */
+  dockExtra?: React.ReactNode;
 }) {
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
