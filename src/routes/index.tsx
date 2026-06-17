@@ -221,7 +221,7 @@ function Index() {
           ) : (
             <>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {works.map((w) => <WorkCard key={w.id} work={w} />)}
+                {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
               </div>
               <div className="mt-8 text-center">
                 <Link
