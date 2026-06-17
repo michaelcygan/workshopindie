@@ -10,6 +10,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
+import { MessagesInboxButton } from "@/components/messages-inbox-button";
 
 export function TopNav() {
   const { user, loading } = useAuth();
@@ -72,6 +73,7 @@ export function TopNav() {
 
           {loading ? null : user ? (
             <>
+            <MessagesInboxButton />
             <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
