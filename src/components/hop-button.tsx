@@ -60,7 +60,7 @@ export function HopButton({ roomId, medium, mode }: Props) {
       onClick={onHop}
       disabled={busy}
       className="rounded-full gap-1.5"
-      title="Skip to the next Workshop."
+      title="Skip to the next Workshop"
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
