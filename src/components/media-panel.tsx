@@ -9,6 +9,23 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 
+/** Best-effort: derive a human label from a screen capture track.
+ *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
+ *  tab captures the tab title. We surface anything that looks like a real
+ *  name (contains a letter outside the screen/window/tab prefix) and ignore
+ *  the opaque ids. Returns null when nothing meaningful is exposed. */
+function screenSourceLabel(stream: MediaStream | null | undefined): string | null {
+  if (!stream) return null;
+  const track = stream.getVideoTracks()[0];
+  const raw = track?.label?.trim();
+  if (!raw) return null;
+  // Strip Chrome's "screen:1:0" / "window:12345:0" id-only labels.
+  if (/^(screen|window|tab|monitor):[\d:]+$/i.test(raw)) return null;
+  // Some browsers prefix with "window:Title" — keep the tail.
+  const m = raw.match(/^(?:screen|window|tab|monitor):(.+)$/i);
+  return (m ? m[1] : raw).trim() || null;
+}
+
 export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
