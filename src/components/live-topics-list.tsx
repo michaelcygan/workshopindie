@@ -369,23 +369,6 @@ export function LiveTopicsList({
 
 // ── Small subcomponents ──────────────────────────────────────────────────
 
-function PulseDots({ active }: { active: boolean }) {
-  return (
-    <span aria-hidden className="inline-flex items-center gap-0.5">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-1 w-1 rounded-full transition",
-            active ? "gradient-motion" : "bg-ink/15",
-            active && "animate-pulse",
-          )}
-          style={active ? { animationDelay: `${i * 180}ms` } : undefined}
-        />
-      ))}
-    </span>
-  );
-}
 
 function SplitOpenButton({
   noneLive,
