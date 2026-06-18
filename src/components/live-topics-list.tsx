@@ -8,12 +8,14 @@ import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.fu
 import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TOPIC_DESCRIPTIONS, SUB_MEDIUMS } from "@/lib/topic-prompts";
+import { TOPIC_DESCRIPTIONS, SUB_OPTIONS_BY_PARENT, type RoomPrompt } from "@/lib/topic-prompts";
 import { cn } from "@/lib/utils";
 
 type Props = {
   busyKey?: string | null;
   onPick: (medium: Category | null) => void;
+  /** Fired when a sub-topic of kind "flavor" is picked — pre-fills a room title. */
+  onPickFlavor?: (prompt: RoomPrompt) => void;
   onLiveCountChange?: (n: number) => void;
   /** Emits a fresh per-medium live count map whenever it changes. */
   onLiveByMediumChange?: (m: Map<Category, number>) => void;
@@ -24,7 +26,7 @@ type Props = {
   featuredFooter?: React.ReactNode;
 };
 
-const SUB_PARENTS = new Set<Category>(["critique", "coworking"]);
+const SUB_PARENTS = new Set<Category>(Object.keys(SUB_OPTIONS_BY_PARENT) as Category[]);
 
 export function LiveTopicsList({
   busyKey,
