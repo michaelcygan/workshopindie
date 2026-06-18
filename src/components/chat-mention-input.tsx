@@ -267,16 +267,3 @@ export function MessageBody({
   );
 }
 
-/** Strict equality just to silence "unused" lint when only one export is used. */
-export const __noop = () => undefined;
-
-// re-export for callers that only need the candidate type via this module
-export {};
-
-// Keep the hook simple; consumers may want to reset draft on submit themselves.
-export function useChatDraft(initial = "") {
-  const [draft, setDraft] = useState(initial);
-  // Reset helper.
-  useEffect(() => {}, []);
-  return { draft, setDraft };
-}
