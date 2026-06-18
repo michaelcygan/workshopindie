@@ -291,14 +291,18 @@ export function LiveTopicsList({
                       id={c.id}
                       label={c.label}
                       description={TOPIC_DESCRIPTIONS[c.id]}
-                      hasSubMediums={SUB_PARENTS.has(c.id)}
+                      subOptions={SUB_OPTIONS_BY_PARENT[c.id]}
                       live={live}
                       participants={participantsByMedium.get(c.id) ?? []}
                       busy={busyKey === c.id}
                       disabled={disabled}
                       onClick={() => onPick(c.id)}
-                      onPickSub={(m) => onPick(m)}
+                      onPickSub={(opt) => {
+                        if (opt.kind === "medium") onPick(opt.id);
+                        else onPickFlavor?.({ title: opt.title, medium: opt.medium, weight: "obvious" });
+                      }}
                     />
+
                   </motion.li>
                 );
               })}
