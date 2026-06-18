@@ -715,12 +715,14 @@ export function ChannelView({
                       {messages.map((m) => {
                         const p = presence.find((pp) => pp.user_id === m.user_id)?.profile;
                         const mine = m.user_id === user?.id;
+                        const mentionsMe = !!user && (m.mentions ?? []).includes(user.id);
+                        const msgReactions = reactions.filter((r) => r.message_id === m.id);
                         return (
                           <motion.li
                             key={m.id}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
+                            className={`group flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
                           >
                             <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
                               {p?.avatar_url ? (
@@ -733,15 +735,35 @@ export function ChannelView({
                                 p?.display_name?.[0] || "?"
                               )}
                             </div>
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-ink text-background" : "bg-muted text-ink"}`}
-                            >
-                              {!mine && p && (
-                                <div className="text-[10px] font-medium opacity-70 mb-0.5">
-                                  {p.display_name || p.username}
-                                </div>
-                              )}
-                              <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                            <div className={`flex max-w-[75%] flex-col ${mine ? "items-end" : "items-start"}`}>
+                              <div
+                                className={`rounded-2xl px-3 py-2 text-sm ${
+                                  mentionsMe && !mine
+                                    ? "bg-primary/10 ring-1 ring-primary/40 text-ink"
+                                    : mine
+                                      ? "bg-ink text-background"
+                                      : "bg-muted text-ink"
+                                }`}
+                              >
+                                {!mine && p && (
+                                  <div className="text-[10px] font-medium opacity-70 mb-0.5">
+                                    {p.display_name || p.username}
+                                  </div>
+                                )}
+                                <MessageBody
+                                  body={m.body}
+                                  participants={mentionCandidates}
+                                  meUsername={me?.username ?? null}
+                                />
+                              </div>
+                              <div className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}>
+                                <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
+                                <ReactionPills
+                                  reactions={msgReactions}
+                                  meUserId={user?.id}
+                                  onToggle={(e) => toggleReaction(m.id, e)}
+                                />
+                              </div>
                             </div>
                           </motion.li>
                         );
@@ -750,22 +772,15 @@ export function ChannelView({
                   </ul>
                 )}
               </div>
-              <form onSubmit={send} className="flex items-center gap-2 border-t border-border p-3">
-                <Input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder={`Say something in ${title}…`}
-                  maxLength={1000}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="rounded-full"
-                  disabled={!draft.trim() || sending}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              <ChatMentionInput
+                draft={draft}
+                setDraft={setDraft}
+                onSubmit={submitChat}
+                sending={sending}
+                placeholder={`Say something in ${title}…`}
+                participants={mentionCandidates}
+                className="border-t border-border p-3"
+              />
             </>
           )}
         </div>
