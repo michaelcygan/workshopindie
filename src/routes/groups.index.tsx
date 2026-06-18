@@ -7,7 +7,6 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
-import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { cn } from "@/lib/utils";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
@@ -16,6 +15,8 @@ import { EmptySpark } from "@/components/empty-spark";
 import { GroupsTrendingList } from "@/components/groups-trending-list";
 import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
+import { SceneTicker } from "@/components/scene-ticker";
+import { FeaturedEventsCompact } from "@/components/featured-events-compact";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
