@@ -282,10 +282,10 @@ export function ChannelView({
         status: "active",
         last_seen_at: new Date().toISOString(),
       });
-      const [msgs, pres] = await Promise.all([
+      const [msgs, pres, reax] = await Promise.all([
         supabase
           .from("instant_messages")
-          .select("id,user_id,body,created_at")
+          .select("id,user_id,body,created_at,mentions")
           .eq("room_id", roomId)
           .order("created_at", { ascending: true })
           .limit(200),
@@ -295,10 +295,15 @@ export function ChannelView({
             "user_id,last_seen_at,profile:profiles!instant_presence_user_id_fkey(display_name,username,avatar_url)",
           )
           .eq("room_id", roomId),
+        supabase
+          .from("instant_message_reactions")
+          .select("id,message_id,user_id,emoji")
+          .eq("room_id", roomId),
       ]);
       if (cancelled) return;
       setMessages((msgs.data ?? []) as Message[]);
       setPresence((pres.data ?? []) as unknown as Presence[]);
+      setReactions((reax.data ?? []) as ReactionRow[]);
     }
     join();
 
@@ -313,6 +318,31 @@ export function ChannelView({
           filter: `room_id=eq.${roomId}`,
         },
         (p) => setMessages((prev) => [...prev, p.new as Message]),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "instant_message_reactions",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) =>
+          setReactions((prev) => {
+            const next = p.new as ReactionRow;
+            if (prev.some((r) => r.id === next.id)) return prev;
+            return [...prev, next];
+          }),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "instant_message_reactions",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) => setReactions((prev) => prev.filter((r) => r.id !== (p.old as ReactionRow).id)),
       )
       .on(
         "postgres_changes",
