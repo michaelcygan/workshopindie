@@ -110,18 +110,30 @@ function PipBody({
   meDisplay,
   profileLookup,
   onClose,
+  initialSource,
 }: {
   media: Media;
   meDisplay: string;
   profileLookup: ProfileLookup;
   onClose: () => void;
+  initialSource?: Source | "director";
 }) {
   // When a screen share is active, render Director mode. We branch at the very
   // top via a child component swap so each branch keeps a stable hook order.
   if (media.screenSharerId) {
     return <DirectorBody media={media} profileLookup={profileLookup} onClose={onClose} />;
   }
-  return <StandardPipBody media={media} meDisplay={meDisplay} profileLookup={profileLookup} onClose={onClose} />;
+  const standardInitial: Source = initialSource && initialSource !== "director" ? initialSource : "me";
+  return (
+    <StandardPipBody
+      media={media}
+      meDisplay={meDisplay}
+      profileLookup={profileLookup}
+      onClose={onClose}
+      initialSource={standardInitial}
+      waitingForShare={initialSource === "director"}
+    />
+  );
 }
 
 function StandardPipBody({
@@ -129,13 +141,17 @@ function StandardPipBody({
   meDisplay,
   profileLookup,
   onClose,
+  initialSource = "me",
+  waitingForShare = false,
 }: {
   media: Media;
   meDisplay: string;
   profileLookup: ProfileLookup;
   onClose: () => void;
+  initialSource?: Source;
+  waitingForShare?: boolean;
 }) {
-  const [source, setSource] = useState<Source>("me");
+  const [source, setSource] = useState<Source>(initialSource);
   const [followSpeaker, setFollowSpeaker] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
