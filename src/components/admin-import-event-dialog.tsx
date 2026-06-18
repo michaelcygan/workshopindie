@@ -124,10 +124,10 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
 
   function loadDraftIntoForm(
     draft: { title: string; tagline: string | null; description: string | null; kind: Kind; format: Format; cover_url: string | null; starts_at: string | null; ends_at: string | null; venue_name: string | null; venue_address: string | null; online_url: string | null; capacity: number | null; recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY"; hint: string } | null },
-    src: { url: string; host: string },
+    src: { url: string; host: string; parser?: string },
     warn: string[],
   ) {
-    setSource({ url: src.url, host: src.host });
+    setSource({ url: src.url, host: src.host, parser: src.parser });
     setWarnings(warn);
     setEdited(new Set());
     setForm({
