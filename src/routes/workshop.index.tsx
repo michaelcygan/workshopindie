@@ -319,24 +319,40 @@ function WorkshopPreflight() {
               <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />
             ) : (
               <>
-                <span
-                  title={devices.mic ? "Mic ready" : "No mic"}
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  disabled={!devices.mic}
+                  title={!devices.mic ? "No mic detected" : effMic ? "Mic on — click to mute on join" : "Mic muted — click to unmute"}
+                  aria-pressed={effMic}
                   className={cn(
-                    "inline-flex items-center gap-1",
-                    devices.mic ? "text-ink" : "text-ink-muted/50",
+                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
+                    !devices.mic
+                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
+                      : effMic
+                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
+                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
                   )}
                 >
-                  <Mic className="h-3.5 w-3.5" />
-                </span>
-                <span
-                  title={devices.cam ? "Camera ready" : "No camera"}
+                  {effMic ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleCam}
+                  disabled={!devices.cam}
+                  title={!devices.cam ? "No camera detected" : effCam ? "Camera on — click to turn off on join" : "Camera off — click to turn on"}
+                  aria-pressed={effCam}
                   className={cn(
-                    "inline-flex items-center gap-1",
-                    devices.cam ? "text-ink" : "text-ink-muted/50",
+                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
+                    !devices.cam
+                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
+                      : effCam
+                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
+                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
                   )}
                 >
-                  <Video className="h-3.5 w-3.5" />
-                </span>
+                  {effCam ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+                </button>
               </>
             )}
           </div>
