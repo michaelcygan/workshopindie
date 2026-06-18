@@ -83,7 +83,7 @@ export const Route = createFileRoute("/api/public/events/report-sweep")({
           if (canceledIds.has(eid)) resolveIds.push(...ids);
         }
         if (resolveIds.length > 0) {
-          await supabaseAdmin.from("reports").update({ status: "resolved" }).in("id", resolveIds);
+          await supabaseAdmin.from("reports").update({ status: "action_taken" }).in("id", resolveIds);
         }
 
         return Response.json({ ok: true, canceled, considered: byEvent.size });
