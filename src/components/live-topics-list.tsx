@@ -31,6 +31,7 @@ const SUB_PARENTS = new Set<Category>(Object.keys(SUB_OPTIONS_BY_PARENT) as Cate
 export function LiveTopicsList({
   busyKey,
   onPick,
+  onPickFlavor,
   onLiveCountChange,
   onLiveByMediumChange,
   disabled,
