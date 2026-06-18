@@ -4949,6 +4949,13 @@ export type Database = {
         | "business"
         | "mentorship"
         | "coworking"
+        | "office_hours"
+        | "pitch"
+        | "roundtable"
+        | "listen_party"
+        | "open_mic"
+        | "jam"
+        | "standup"
       collab_invite_status: "pending" | "accepted" | "declined" | "withdrawn"
       collab_post_status: "open" | "closed" | "archived" | "removed"
       compensation_type:
@@ -5200,6 +5207,13 @@ export const Constants = {
         "business",
         "mentorship",
         "coworking",
+        "office_hours",
+        "pitch",
+        "roundtable",
+        "listen_party",
+        "open_mic",
+        "jam",
+        "standup",
       ],
       collab_invite_status: ["pending", "accepted", "declined", "withdrawn"],
       collab_post_status: ["open", "closed", "archived", "removed"],
