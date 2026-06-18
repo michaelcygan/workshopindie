@@ -20,6 +20,7 @@ import {
   createEventSeries,
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Kind = "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
 type Format = "in_person" | "online" | "hybrid";
