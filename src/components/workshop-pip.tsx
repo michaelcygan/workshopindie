@@ -263,6 +263,16 @@ function StandardPipBody({
              "No shared screen yet"}
           </div>
         )}
+        {waitingForShare && (
+          <div style={{
+            position: "absolute", top: 8, left: 8, right: 8,
+            padding: "4px 10px", borderRadius: 999,
+            background: "rgba(0,0,0,0.6)", color: "#fff",
+            fontSize: 11, textAlign: "center",
+          }}>
+            Waiting for a screen share to start Director mode…
+          </div>
+        )}
         <div
           style={{
             position: "absolute",
