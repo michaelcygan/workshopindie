@@ -131,11 +131,18 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
 
   type FormState = {
     group_id: string; title: string; tagline: string; description: string;
-    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
+    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
     capacity: string; promo_pass_months: number; featured: boolean;
+    lineup_slot_count: number;
+    lineup_mode: "open_claim" | "host_approval";
+    lineup_field_act_type: boolean;
+    lineup_field_link: boolean;
+    lineup_field_notes: boolean;
+    lineup_allow_switch: boolean;
+    lineup_lock_minutes_before: number;
   };
   const [form, setForm] = useState<FormState>({
     group_id: "",
@@ -153,6 +160,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     capacity: "",
     promo_pass_months: 1,
     featured: false,
+    lineup_slot_count: 10,
+    lineup_mode: "open_claim",
+    lineup_field_act_type: true,
+    lineup_field_link: true,
+    lineup_field_notes: true,
+    lineup_allow_switch: true,
+    lineup_lock_minutes_before: 60,
   });
 
   async function submit(e: React.FormEvent) {
@@ -181,6 +195,15 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           promo_pass_months: form.promo_pass_months,
           featured: form.featured,
           is_official: true,
+          ...(form.kind === "lineup" ? {
+            lineup_slot_count: form.lineup_slot_count,
+            lineup_mode: form.lineup_mode,
+            lineup_field_act_type: form.lineup_field_act_type,
+            lineup_field_link: form.lineup_field_link,
+            lineup_field_notes: form.lineup_field_notes,
+            lineup_allow_switch: form.lineup_allow_switch,
+            lineup_lock_minutes_before: form.lineup_lock_minutes_before,
+          } : {}),
         },
       });
       toast.success("Event created");
