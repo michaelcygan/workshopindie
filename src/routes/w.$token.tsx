@@ -12,10 +12,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/w/$token")({
   component: LinkLanding,
-  loader: async ({ params }) => {
-    const { peekLinkWorkshop } = await import("@/lib/workshop-links.functions");
-    return peekLinkWorkshop({ data: { token: params.token } });
-  },
+  loader: ({ params }) => peekLinkWorkshop({ data: { token: params.token } }),
   head: ({ loaderData }) => {
     const link = (loaderData as any)?.link;
     const title = link?.title ? `${link.title} — Workshop` : "Workshop";
