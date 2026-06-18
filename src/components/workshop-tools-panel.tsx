@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic,
+  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic, PictureInPicture2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +21,7 @@ import { WorkshopRecordingLink } from "@/components/workshop-recording-link";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
 // Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player" | "pip";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
 type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
@@ -45,6 +45,7 @@ type Preset = {
 const PRESETS: Record<ToolType, Preset> = {
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
+  pip:          { label: "Pop-out",      icon: PictureInPicture2, blurb: "Float the room in a Picture-in-Picture window so you can keep working in other tabs.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard for images, text, links, and reference pins.", fields: [] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
@@ -54,7 +55,7 @@ const PRESETS: Record<ToolType, Preset> = {
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
 };
 
-const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "outline", "board", "list", "drive", "player", "repo_links"];
+const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "pip", "outline", "board", "list", "drive", "player", "repo_links"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
