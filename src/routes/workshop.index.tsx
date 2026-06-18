@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
