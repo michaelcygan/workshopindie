@@ -327,7 +327,7 @@ function CollabPage() {
             )}
             <Link to="/collab/new">
               <Button size="sm" className="rounded-full gap-2">
-                <Megaphone className="h-4 w-4" /> Post
+                <Megaphone className="h-4 w-4" /> Post Collab
               </Button>
             </Link>
           </div>
