@@ -25,9 +25,11 @@ export function useWorkshopPip(opts: {
   profileLookup: ProfileLookup;
 }) {
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
+  const [initialSource, setInitialSource] = useState<Source | "director" | undefined>(undefined);
   const supported = useMemo(() => isDocPipSupported(), []);
 
-  const open = useCallback(async () => {
+  const open = useCallback(async (openOpts?: { initialSource?: Source | "director" }) => {
+    setInitialSource(openOpts?.initialSource);
     if (!supported) return;
     if (window.documentPictureInPicture?.window) {
       window.documentPictureInPicture.window.focus();
