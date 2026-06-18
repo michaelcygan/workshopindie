@@ -1,5 +1,6 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { RequireAuth } from "@/components/require-auth";
 import { ArrowLeft, Coffee, Crown, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -27,14 +28,32 @@ const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Workshop";
 
 export const Route = createFileRoute("/workshop/$id")({
-  component: LiveRoomPage,
+  component: () => <RequireAuth><LiveRoomPage /></RequireAuth>,
   validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "Workshop" },
       { name: "description", content: "A live Workshop. Drop in, talk shop, find your people." },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
+  errorComponent: ({ error, reset }) => {
+    const router = useRouter();
+    return (
+      <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+        <h1 className="font-display text-3xl text-ink">Couldn't load this Workshop</h1>
+        <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
+        <button onClick={() => { router.invalidate(); reset(); }} className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Try again</button>
+      </main>
+    );
+  },
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">This Workshop isn't here</h1>
+      <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
+      <Link to="/workshop" className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Back to Workshop</Link>
+    </main>
+  ),
 });
 
 type Room = {
@@ -64,7 +83,7 @@ function LiveRoomPage() {
     if (!loading && !user) router.navigate({ to: "/login" });
   }, [user, loading, router]);
 
-  const { data: room } = useQuery({
+  const { data: room, isFetched } = useQuery({
     queryKey: ["instant-room", id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -73,10 +92,15 @@ function LiveRoomPage() {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      return data as Room | null;
+      return (data as Room | null) ?? null;
     },
     refetchInterval: 5000,
   });
+
+  // Bad room ID → trigger the notFound boundary instead of a blank live-room shell.
+  if (isFetched && room === null) throw notFound();
+
+
 
   // Pending opt-in invite for the persistent fork
   const { data: invite } = useQuery({

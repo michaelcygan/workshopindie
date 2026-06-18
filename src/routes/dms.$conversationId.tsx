@@ -28,7 +28,12 @@ type ProfileLite = {
 
 export const Route = createFileRoute("/dms/$conversationId")({
   component: () => <RequireAuth><DmsThread /></RequireAuth>,
-  head: () => ({ meta: [{ title: "Conversation — Workshop" }] }),
+  head: () => ({
+    meta: [
+      { title: "Conversation — Workshop" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
 });
 
 function DmsThread() {

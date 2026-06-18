@@ -41,7 +41,12 @@ type Tab = "all" | "unread" | "collabs" | "workshops";
 
 export const Route = createFileRoute("/dms/")({
   component: () => <RequireAuth><DmsIndex /></RequireAuth>,
-  head: () => ({ meta: [{ title: "Messages — Workshop" }] }),
+  head: () => ({
+    meta: [
+      { title: "Messages — Workshop" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
 });
 
 function DmsIndex() {
