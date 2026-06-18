@@ -9,6 +9,13 @@ export const TOPIC_DESCRIPTIONS: Record<Category, string> = {
   critique: "Drop a Work, get five sharp minds on it.",
   business: "Pricing, deals, distribution, taxes — bring questions.",
   coworking: "Cameras on, mics off. Get work done with company.",
+  office_hours: "Drop in, ask the host one specific question, leave.",
+  roundtable: "Topic-led discussion — bring an opinion.",
+  pitch: "Practice a pitch or logline and get reactions.",
+  listen_party: "Share finished work; everyone reacts together.",
+  open_mic: "Take turns performing — comedy, music, poetry.",
+  jam: "No goal, just make something with whoever shows up.",
+  standup: "Quick check-in: what you're on, what's blocking you.",
 };
 
 /** Sub-mediums shown when picking under Critique / Co-working. */
