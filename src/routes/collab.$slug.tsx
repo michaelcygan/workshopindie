@@ -42,6 +42,7 @@ export const Route = createFileRoute("/collab/$slug")({
       ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
     // Archived (closed + no Work) collabs are owner-only — keep them out of search.
     const isArchived = s?.status === "closed" && !s?.resulting_work_id;
+    const ogImage = s?.workCover ?? undefined;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -53,6 +54,10 @@ export const Route = createFileRoute("/collab/$slug")({
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
     ];
+    if (ogImage) {
+      meta.push({ property: "og:image", content: ogImage });
+      meta.push({ name: "twitter:image", content: ogImage });
+    }
     if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
     return {
       meta,
