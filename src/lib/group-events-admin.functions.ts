@@ -169,7 +169,8 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { id, featured, ...rest } = data;
+    const { id, featured, lineup_slot_count: _lsc, ...rest } = data;
+    void _lsc;
     const patch: Record<string, unknown> = { ...rest };
     if (typeof featured === "boolean") {
       patch.featured_at = featured ? new Date().toISOString() : null;
