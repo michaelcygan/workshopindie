@@ -240,17 +240,6 @@ function CollabDetail() {
             {isOwner ? (
               <>
                 {post.status === "open" && (
-                  isLive ? (
-                    <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
-                      <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
-                      <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open a Workshop on this"}
-                    </Button>
-                  )
-                )}
-                {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
                   </Button>
@@ -272,6 +261,76 @@ function CollabDetail() {
             )}
           </div>
         </div>
+
+        {/* Owner: single next-best-action strip */}
+        {isOwner && post.status === "open" && !deadlinePassed && (
+          (() => {
+            const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
+            if (isLive) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <Radio className="h-5 w-5 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">Your Workshop is live.</p>
+                    <p className="text-xs text-ink-muted">Drop back in — applicants can join from this page.</p>
+                  </div>
+                  <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                    <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
+                  </Button>
+                </div>
+              );
+            }
+            if (applicantCount > 0) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">
+                      {applicantCount} {applicantCount === 1 ? "person is" : "people are"} in. Reply to keep momentum.
+                    </p>
+                    <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                    <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
+                  </Button>
+                  <Button size="sm" className="rounded-full gap-1" asChild>
+                    <a href="#applicants">
+                      <Inbox className="h-3.5 w-3.5" /> Review applicants
+                    </a>
+                  </Button>
+                </div>
+              );
+            }
+            if (ageHours < 72) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+                  <Share2 className="h-5 w-5 text-ink-muted" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
+                    <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                    <Radio className="h-3.5 w-3.5" /> Open Workshop
+                  </Button>
+                </div>
+              );
+            }
+            return (
+              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+                <Sparkles className="h-5 w-5 text-ink-muted" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-ink">Quiet so far. Try a Workshop or another share.</p>
+                  <p className="text-xs text-ink-muted">Live sessions and one fresh share usually unstick a post.</p>
+                </div>
+                <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                  <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
+                </Button>
+              </div>
+            );
+          })()
+        )}
+
+
 
         {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
         {isOwner && deadlinePassed && (
