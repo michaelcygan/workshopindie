@@ -479,7 +479,7 @@ export function HostMenu({
           <AlertDialogHeader>
             <AlertDialogTitle>End this Workshop for everyone?</AlertDialogTitle>
             <AlertDialogDescription>
-              Everyone in the room will see a wrap screen. The room is archived. You can always spin up a new one.
+              Everyone in the room will see a wrap screen. The room is archived. You can always start a new Workshop.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
