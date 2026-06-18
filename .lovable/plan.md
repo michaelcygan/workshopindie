@@ -1,34 +1,22 @@
-## Lock the left column: cap Featured events, redesign Trending now
+## Cleanup: All-groups header + per-card hover action
 
-Two coordinated fixes so the left column has a stable rhythm and nothing gets clipped.
+### 1) Replace hover Workshop/Collab buttons with a Join action
 
-### 1. `src/components/featured-events-compact.tsx` — cap height to empty-state size
+**`src/components/group-card-actions.tsx`** — currently shows `Workshop` + `Collab` create-shortcut buttons on hover. These send users into the *authoring* flow, which is wrong for a discovery card.
 
-The empty-state card is the visual baseline (~3 text rows tall). When events populate, the list currently grows to 6 items, blowing past that and pushing Trending down.
+Rewrite the component to render a single hover-revealed **Join / Joined** pill, wired to the existing `joinGroup` / `leaveGroup` server functions (same logic as `JoinGroupButton`). When signed out, the pill becomes a `Link` to `/login`. The pill keeps the same hover-reveal animation (`opacity-0` → `opacity-100` on `group-hover`) and `stopPropagation` so the card's parent link isn't triggered.
 
-- Reduce `upcoming` from `slice(0, 6)` to `slice(0, 3)` — three event rows roughly equals the empty-state card height.
-- Keep the list as-is below that; no scroll affordance needed at 3 rows.
-- Empty state stays unchanged.
+Signature changes to `{ slug, groupId, joined }` — `group-card.tsx` already knows `joined` and `group.id`, so it passes them through. No other call sites use `GroupCardActions`.
 
-That gives Featured events a near-constant height across empty/populated, and the "extra" vertical space lives in Trending and the Join feed below — which is where you want depth.
+### 2) Flesh out the "All groups" section header
 
-### 2. `src/components/groups-trending-list.tsx` — single-column rows, no clipping
+**`src/routes/groups.index.tsx`** — current header is just `All groups` + `64 shown`, which reads as half-finished after the rich discovery band above.
 
-At the current left-column width (`lg:col-span-4` ≈ 280–340px), the 2-column grid (`sm:grid-cols-2`) crushes each pill to ~110px, so names truncate to "H…", "N…", "S…" — unusable as a chart.
-
-- Drop the 2-column variant: keep a single column at every breakpoint (`grid-cols-1`, no `sm:grid-cols-2`).
-- Tighten row vertical padding (`py-2`) to keep all 8 rows compact.
-- Increase the name column's share: drop the per-row kind icon (`KIcon`) — the accent stripe + numeric rank already carry visual rhythm, the icon is what's stealing width. Keep the rank, accent stripe, name (truncates only when truly long), member count, and "In" chip.
-- Tighten gaps: `gap-2.5` instead of `gap-3` so the name has more room.
-
-Result: every group name reads in full at this width, 8 rows fit comfortably, and the column matches the right-side `Browse by kind` grid height without empty space.
+Add:
+- A short sub-line under the title (e.g. *"Every scene, genre, city, and micro-sprint open right now."*) styled like the other section sublines (`text-ink-muted text-sm`).
+- A small chip row on the right that mirrors the active filter context: count + active tab label (e.g. `64 groups · All`), so the bottom of the scroll feels intentional rather than truncated.
+- Keep the existing `ref={allGroupsRef}` and scroll-margin so the "Browse groups" CTA still lands here.
 
 ### Out of scope
 
-- No changes to `GroupsJoinFeedCard`, `GroupsBrowseByKind`, the route layout, the All-groups grid, or the SceneTicker.
-- No schema or server-fn changes — display-only.
-
-### Technical notes
-
-- The route already uses `items-stretch` on the 12-col grid and `flex-1` on the Join feed card, so once Featured events stops growing, the Join feed naturally absorbs the freed space and the column bottom stays aligned with the right grid.
-- The icon removal in Trending also removes the `KIND_ICON`/`KIcon` references; clean up the unused `MapPin, Sparkles, Zap, Flame` imports in the same edit.
+No changes to card body stats, the discovery band, trending list, Join feed, schema, or any server functions beyond the existing `joinGroup` / `leaveGroup`. Mobile layout unchanged (hover overlay is already `md:flex` only — Join action stays desktop-hover; mobile users tap into the group page and join there as today).
