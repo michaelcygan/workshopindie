@@ -22,6 +22,8 @@ import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
+import { PageHeaderCompact } from "@/components/page-header-compact";
+import { KickerChip } from "@/components/kicker-chip";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -306,19 +308,27 @@ function GalleryPage() {
 
       {/* Slim header */}
       <section className="border-b border-border">
-        <div className="mx-auto flex max-w-7xl items-end justify-between gap-4 px-4 py-8 md:px-6 md:py-10">
-          <div>
-            <h1 className="font-display text-3xl text-ink md:text-4xl">Work</h1>
-            <p className="mt-1 text-sm text-ink-muted">Everything people have shipped — film, music, writing, build, visuals.</p>
+        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+          <PageHeaderCompact
+            title="Work"
+            right={
+              <Link to="/works/new" className="shrink-0">
+                <Button size="sm" className="rounded-full">
+                  <Plus className="h-4 w-4" />
+                  Post Work
+                </Button>
+              </Link>
+            }
+          />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <KickerChip live>Shipping now</KickerChip>
+            <p className="text-sm text-ink-muted">
+              Everything people made — film, music, writing, build, visuals.
+            </p>
           </div>
-          <Link to="/works/new" className="shrink-0">
-            <Button className="rounded-full">
-              <Plus className="h-4 w-4" />
-              Post Work
-            </Button>
-          </Link>
         </div>
       </section>
+
 
       {/* Live "shipping right now" rail */}
       <FreshWorksStrip />
