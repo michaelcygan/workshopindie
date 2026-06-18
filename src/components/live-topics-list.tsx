@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
-import { CATEGORIES, type Category } from "@/lib/categories";
+import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TOPIC_DESCRIPTIONS, SUB_MEDIUMS } from "@/lib/topic-prompts";
@@ -179,12 +179,21 @@ export function LiveTopicsList({
 
   // ── Shared building blocks ──────────────────────────────────────────────
 
+  // Pill eyebrow with primary ping dot — matches "Live editorial" direction.
   const eyebrow = (
-    <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">
-      <PulseDots active={!noneLive} />
+    <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-primary">
+      <span className="relative inline-flex h-1.5 w-1.5">
+        {!noneLive && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
+        )}
+        <span className={cn(
+          "relative inline-flex h-1.5 w-1.5 rounded-full",
+          noneLive ? "bg-primary/40" : "bg-primary",
+        )} />
+      </span>
       <span>{noneLive ? "Start the night" : "Live now"}</span>
       {!noneLive && (
-        <span className="tabular-nums text-ink/55">· {liveCount}</span>
+        <span className="tabular-nums text-primary/70">· {liveCount}</span>
       )}
     </div>
   );
@@ -208,7 +217,7 @@ export function LiveTopicsList({
       <TopicRow
         id="lounge"
         label="Lounge"
-        eyebrow="General"
+        eyebrow="Pinned"
         accent
         description="Mixed-medium drop-in. Whoever shows up."
         live={loungeLive}
@@ -227,47 +236,37 @@ export function LiveTopicsList({
       <div
         ref={listRef}
         onKeyDown={handleListKeyDown}
-        className="relative rounded-3xl bg-surface shadow-halo overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
+        className="relative rounded-[2rem] bg-surface shadow-halo border border-border/50 overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
         {/* Featured: Lounge */}
-        <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative">
-          {/* "now playing" hairline */}
-          <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
-          <div className="p-5 md:p-6 pb-4">
+        <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative bg-background/40">
+          <div className="p-7 md:p-9 pb-5 flex-1 flex flex-col">
             {eyebrow}
-            <h2 className="mt-3 font-display text-[26px] md:text-[30px] leading-[1.05] text-ink tracking-tight">
-              Lounge
+            <h2 className="mt-6 font-display text-[44px] md:text-[54px] leading-[0.95] text-ink tracking-tight">
+              The Lounge
             </h2>
-            <p className="mt-1.5 text-[13px] text-ink-muted/90 max-w-[28ch]">
+            <p className="mt-4 text-[15px] leading-relaxed text-ink-muted max-w-[34ch]">
               {noneLive
-                ? "Open the room — the night starts here."
-                : "Drop in where the conversation's already going."}
+                ? "The town square for wandering minds. Open the room — the night starts here."
+                : "The town square for wandering minds. Drop in, grab a seat, and see where the conversation leads."}
             </p>
-            <div className="mt-4">{splitCTA}</div>
+            <div className="mt-8">{splitCTA}</div>
           </div>
           {featuredFooter && (
-            <div className="px-5 md:px-6 pb-5 mt-auto">{featuredFooter}</div>
+            <div className="border-t border-border/50 bg-surface/40">{featuredFooter}</div>
           )}
         </div>
 
         {/* Topics column */}
         <div className="flex flex-col min-h-0 relative">
-          {/* Pulse bar */}
-          <div className="relative h-px overflow-hidden">
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
+            <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+              Select a topic to enter
+            </div>
             <div
               className={cn(
-                "absolute inset-0",
-                noneLive ? "bg-border/60" : "gradient-motion opacity-70 animate-pulse",
-              )}
-            />
-          </div>
-
-          <div className="flex items-center justify-between px-4 pt-3.5 pb-1.5">
-            <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
-            <div
-              className={cn(
-                "text-[10.5px] tabular-nums",
-                liveCount > 0 ? "text-ink/70" : "text-ink-muted/60",
+                "text-[10.5px] font-semibold tabular-nums",
+                liveCount > 0 ? "text-primary" : "text-ink-muted/50",
               )}
             >
               {liveCount} live
@@ -276,11 +275,10 @@ export function LiveTopicsList({
 
           <div
             ref={scrollerRef}
-            className="scrollbar-none overflow-y-auto"
-            style={{ height: 380 }}
+            className="scrollbar-none overflow-y-auto p-3"
+            style={{ height: 420 }}
           >
-
-            <ul className="divide-y divide-border/40">
+            <ul className="flex flex-col gap-0.5">
               {loungeRow}
               {sorted.map((c) => {
                 const live = liveByMedium.get(c.id) ?? 0;
@@ -314,27 +312,33 @@ export function LiveTopicsList({
     <div
       ref={listRef}
       onKeyDown={handleListKeyDown}
-      className="rounded-3xl bg-surface shadow-halo overflow-hidden"
+      className="rounded-[1.75rem] bg-surface shadow-halo border border-border/50 overflow-hidden"
     >
-      <div className="relative p-5 pb-4">
-        <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
+      <div className="p-6 pb-5 bg-background/40">
         {eyebrow}
-        <h2 className="mt-3 font-display text-[26px] leading-[1.05] text-ink tracking-tight">
-          Lounge
+        <h2 className="mt-5 font-display text-[34px] leading-[0.95] text-ink tracking-tight">
+          The Lounge
         </h2>
-        <p className="mt-1.5 text-[13px] text-ink-muted/90">
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
           {noneLive
             ? "Open the room — the night starts here."
-            : "Drop in where the conversation's already going."}
+            : "Drop in, grab a seat, see where the conversation leads."}
         </p>
-        <div className="mt-4">{splitCTA}</div>
+        <div className="mt-5">{splitCTA}</div>
       </div>
       <div className="border-t border-border/50">
-        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
-          <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
-          <div className="text-[10.5px] text-ink-muted tabular-nums">{liveCount} live</div>
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/50">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+            Select a topic to enter
+          </div>
+          <div className={cn(
+            "text-[10.5px] font-semibold tabular-nums",
+            liveCount > 0 ? "text-primary" : "text-ink-muted/50",
+          )}>
+            {liveCount} live
+          </div>
         </div>
-        <ul className="divide-y divide-border/40">
+        <ul className="flex flex-col gap-0.5 p-2.5">
           {loungeRow}
           {sorted.map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
@@ -357,7 +361,7 @@ export function LiveTopicsList({
         </ul>
       </div>
       {featuredFooter && (
-        <div className="border-t border-border/50 px-4 py-3">{featuredFooter}</div>
+        <div className="border-t border-border/50 bg-background/40">{featuredFooter}</div>
       )}
     </div>
   );
@@ -365,23 +369,6 @@ export function LiveTopicsList({
 
 // ── Small subcomponents ──────────────────────────────────────────────────
 
-function PulseDots({ active }: { active: boolean }) {
-  return (
-    <span aria-hidden className="inline-flex items-center gap-0.5">
-      {[0, 1, 2].map((i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-1 w-1 rounded-full transition",
-            active ? "gradient-motion" : "bg-ink/15",
-            active && "animate-pulse",
-          )}
-          style={active ? { animationDelay: `${i * 180}ms` } : undefined}
-        />
-      ))}
-    </span>
-  );
-}
 
 function SplitOpenButton({
   noneLive,
@@ -411,17 +398,17 @@ function SplitOpenButton({
       onClick={onPickAny}
       disabled={disabled || busyAny}
       className={cn(
-        "group/btn inline-flex items-center gap-2 rounded-l-full bg-ink text-background",
-        "pl-5 pr-4 py-2.5 text-[13px] font-medium tracking-tight",
-        "transition hover:bg-ink/90 disabled:opacity-60",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+        "group/btn inline-flex flex-1 items-center justify-between gap-2 rounded-l-2xl bg-primary text-primary-foreground",
+        "pl-5 pr-4 py-3.5 text-[14px] font-semibold tracking-tight",
+        "transition hover:bg-primary/90 disabled:opacity-60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
       )}
     >
       {busyAny ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          {primaryLabel}
+          <span>{primaryLabel}</span>
           <span aria-hidden className="transition-transform group-hover/btn:translate-x-0.5">→</span>
         </>
       )}
@@ -429,7 +416,7 @@ function SplitOpenButton({
   );
 
   return (
-    <div className="inline-flex items-stretch shadow-halo-sm rounded-full">
+    <div className="flex items-stretch rounded-2xl overflow-hidden border border-ink/10 shadow-halo-sm">
       {primary}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -438,10 +425,10 @@ function SplitOpenButton({
             aria-label="Pick a topic"
             disabled={disabled}
             className={cn(
-              "inline-flex items-center justify-center rounded-r-full bg-ink text-background",
-              "border-l border-background/20 px-3 py-2.5",
-              "transition hover:bg-ink/90 disabled:opacity-60",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+              "inline-flex items-center justify-center bg-primary text-primary-foreground",
+              "border-l border-primary-foreground/20 px-4",
+              "transition hover:bg-primary/90 disabled:opacity-60",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
             )}
           >
             <motion.span
@@ -554,6 +541,11 @@ function TopicRow({
   const [subOpen, setSubOpen] = useState(false);
   const showDescription = !!description && (hovered || subOpen);
 
+  // Color swatch: per-category token, or primary for the Lounge / accent row.
+  const swatchClass = id === "lounge" || accent
+    ? "bg-primary"
+    : (categoryClass(id as Category)?.split(" ")[0] ?? "bg-muted");
+
   return (
     <div
       data-topic={id}
@@ -562,61 +554,53 @@ function TopicRow({
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
       className={cn(
-        "group relative w-full transition",
-        "hover:bg-muted/35",
-        accent && "bg-gradient-to-r from-primary/[0.05] via-transparent to-transparent",
+        "group relative w-full rounded-2xl border border-transparent transition-all",
+        "hover:bg-background/60 hover:border-border/60",
+        accent && "bg-primary/[0.04] border-primary/15",
+        !isLive && !accent && "opacity-70 hover:opacity-100",
       )}
     >
-      {accent && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-y-2 left-0 w-px gradient-motion opacity-70 rounded-full"
-        />
-      )}
-      <div className="flex items-center gap-2 px-4">
+      <div className="flex items-center gap-3 px-4">
         <button
           type="button"
           data-row
           onClick={onClick}
           disabled={disabled || busy}
           className={cn(
-            "flex flex-1 items-center gap-2.5 text-left min-w-0 py-2.5",
+            "flex flex-1 items-center gap-3.5 text-left min-w-0 py-3",
             "disabled:opacity-60",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30 rounded-md",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/30 rounded-xl",
           )}
         >
-          <span className="relative inline-flex h-2 w-2 shrink-0">
-            {isLive ? (
-              <>
-                <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </>
-            ) : (
-              <span className="inline-flex h-2 w-2 rounded-full border border-ink/20" />
+          {/* Category swatch dot */}
+          <span className="relative inline-flex h-2.5 w-2.5 shrink-0">
+            {isLive && (
+              <span className={cn("absolute inset-0 animate-ping rounded-full opacity-60", swatchClass)} />
             )}
+            <span className={cn(
+              "relative inline-flex h-2.5 w-2.5 rounded-full ring-2 ring-surface",
+              swatchClass,
+            )} />
           </span>
 
           <div className="min-w-0 flex-1">
-            <div className={cn("flex items-center gap-1.5 text-ink text-[13.5px]", accent ? "font-semibold" : "font-medium")}>
+            <div className="flex items-center gap-2 text-ink text-[14px] font-semibold tracking-tight">
               <span className="truncate">{label}</span>
               {eyebrow && (
-                <span className="shrink-0 rounded-full border border-ink/15 bg-surface/60 px-1.5 py-px text-[9px] uppercase tracking-[0.14em] text-ink-muted/80">
+                <span className="shrink-0 rounded-md bg-ink/[0.06] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-ink-muted/70">
                   {eyebrow}
                 </span>
-              )}
-              {isLive && (
-                <span className="text-[10.5px] font-normal text-ink/55 tabular-nums">·{live}</span>
               )}
             </div>
             {description && (
               <div
                 className={cn(
                   "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-                  showDescription ? "grid-rows-[1fr] opacity-100 mt-0.5" : "grid-rows-[0fr] opacity-0",
+                  showDescription ? "grid-rows-[1fr] opacity-100 mt-1" : "grid-rows-[0fr] opacity-0",
                 )}
               >
                 <div className="overflow-hidden">
-                  <p className="text-[11.5px] leading-snug text-ink-muted">{description}</p>
+                  <p className="text-[12px] leading-snug text-ink-muted">{description}</p>
                 </div>
               </div>
             )}
@@ -629,7 +613,7 @@ function TopicRow({
             {stack.map((p) => {
               const name = p.display_name || p.username || "Anon";
               const avatar = (
-                <Avatar className="h-5 w-5 ring-2 ring-surface transition hover:ring-primary/40">
+                <Avatar className="h-6 w-6 ring-2 ring-surface transition hover:ring-primary/40">
                   <AvatarImage src={p.avatar_url ?? undefined} />
                   <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
                 </Avatar>
@@ -652,6 +636,14 @@ function TopicRow({
           </div>
         )}
 
+        {/* Live count badge — bold primary if live, muted if quiet */}
+        <span className={cn(
+          "shrink-0 text-[11.5px] font-bold tabular-nums tracking-tight",
+          isLive ? "text-primary" : "text-ink-muted/40",
+        )}>
+          {live}
+        </span>
+
         {/* Sub-medium picker for Critique / Co-working */}
         {hasSubMediums && onPickSub && (
           <Popover open={subOpen} onOpenChange={setSubOpen}>
@@ -662,7 +654,7 @@ function TopicRow({
                 disabled={disabled}
                 className={cn(
                   "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full",
-                  "text-ink-muted hover:text-ink hover:bg-muted/60 transition",
+                  "text-ink-muted hover:text-ink hover:bg-ink/5 transition",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
                 )}
                 onClick={(e) => e.stopPropagation()}
@@ -694,18 +686,9 @@ function TopicRow({
           </Popover>
         )}
 
-        {/* Hover-only arrow affordance — replaces the noisy +Start pill */}
-        <span
-          aria-hidden
-          className={cn(
-            "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full text-ink-muted",
-            "opacity-0 -translate-x-1 transition-all duration-150",
-            "group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:opacity-100 group-focus-within:translate-x-0",
-            busy && "opacity-100 translate-x-0",
-          )}
-        >
-          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : <span className="text-[13px]">→</span>}
-        </span>
+        {busy && (
+          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-ink-muted" />
+        )}
       </div>
     </div>
   );
