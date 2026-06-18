@@ -2,13 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { motion } from "framer-motion";
 import { Calendar, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { WorkshopCard, type WorkshopCardData } from "@/components/workshop-card";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
+import { PageHeaderCompact } from "@/components/page-header-compact";
+import { KickerChip } from "@/components/kicker-chip";
+import { RecapChip } from "@/components/recap-chip";
+import { EmptySpark } from "@/components/empty-spark";
 import { useAuth } from "@/hooks/use-auth";
 import { getMyAgeFields } from "@/lib/profile-age.functions";
 import { LobbiesSection } from "@/components/lobbies-section";
@@ -98,23 +101,39 @@ function WorkshopsPage() {
 
   const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];
 
+  const happeningCount = (rawWorkshops ?? []).filter((w) => {
+    const now = Date.now();
+    return w.starts_at && new Date(w.starts_at).getTime() <= now && w.ends_at && new Date(w.ends_at).getTime() >= now;
+  }).length;
+
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
-      <YourGroupsStrip className="-mx-4 -mt-10 mb-6 rounded-none border-b md:-mx-6 md:-mt-14" />
-      <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-4xl text-ink md:text-5xl">Workshops</h1>
-          <p className="mt-1 text-ink-muted">Scheduled Workshops you can RSVP to. Or skip the wait — <Link to="/workshop" className="underline hover:text-ink">drop in</Link>.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to="/workshops/lobby/new">
-            <Button variant="outline" className="rounded-full gap-2"><Sparkles className="h-4 w-4" /> Start a Draft</Button>
-          </Link>
-          <Link to="/workshops/new">
-            <Button className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
-          </Link>
-        </div>
-      </motion.div>
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <YourGroupsStrip className="-mx-4 -mt-6 mb-6 rounded-none border-b md:-mx-6 md:-mt-8" />
+
+      <PageHeaderCompact
+        title="Workshops"
+        right={
+          <div className="flex flex-wrap items-center gap-2">
+            <Link to="/workshops/lobby/new">
+              <Button variant="outline" size="sm" className="rounded-full gap-2"><Sparkles className="h-4 w-4" /> Draft</Button>
+            </Link>
+            <Link to="/workshops/new">
+              <Button size="sm" className="rounded-full gap-2"><Calendar className="h-4 w-4" /> Schedule</Button>
+            </Link>
+          </div>
+        }
+      />
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <KickerChip live={happeningCount > 0}>
+          {happeningCount > 0 ? `${happeningCount} happening now` : "On the books"}
+        </KickerChip>
+        <p className="text-sm text-ink-muted">
+          RSVP to what's scheduled — or skip the wait and{" "}
+          <Link to="/workshop" className="underline hover:text-ink">drop in</Link>.
+        </p>
+        <RecapChip count={workshops?.length ?? 0} label="in the rotation" />
+      </div>
 
       {user && <LobbiesSection />}
 
@@ -147,15 +166,15 @@ function WorkshopsPage() {
             ))}
           </div>
         ) : !workshops || workshops.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">Nothing on the books.</h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-              Post a Collab, pick a time — the Workshop schedules itself.
-            </p>
-            <Link to="/workshops/new" className="mt-5 inline-block">
-              <Button className="rounded-full">Schedule a Workshop</Button>
-            </Link>
-          </div>
+          <EmptySpark
+            title="Nothing on the books."
+            body="Post a Collab, pick a time — the Workshop schedules itself."
+            action={
+              <Link to="/workshops/new">
+                <Button className="rounded-full">Schedule a Workshop</Button>
+              </Link>
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {workshops.map((w) => <WorkshopCard key={w.id} ws={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
