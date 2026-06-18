@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Clock, Radio } from "lucide-react";
 import { CategoryChip } from "./category-chip";
+import { StateBadge } from "./state-badge";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
@@ -26,6 +27,7 @@ export type CollabCardData = {
   status: string;
   created_at: string;
   live_workshop_id?: string | null;
+  resulting_work_id?: string | null;
   vouch_count?: number | null;
   boost_count?: number | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
