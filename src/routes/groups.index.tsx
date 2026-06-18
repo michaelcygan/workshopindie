@@ -36,7 +36,13 @@ export const Route = createFileRoute("/groups/")({
       { name: "description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
       { property: "og:title", content: "Groups — Workshop" },
       { property: "og:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
+      { property: "og:url", content: "https://workshopindie.com/groups" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Groups — Workshop" },
+      { name: "twitter:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
     ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/groups" }],
   }),
 });
 
@@ -313,9 +319,12 @@ function GroupsIndex() {
               </p>
               <p className="text-xs text-ink-muted/80">
                 Missing your scene?{" "}
-                <Link to="/groups" className="text-ink underline-offset-2 hover:underline">
+                <a
+                  href="mailto:hello@workshopindie.com?subject=Suggest%20a%20group"
+                  className="text-ink underline-offset-2 hover:underline"
+                >
                   Suggest a group
-                </Link>{" "}
+                </a>{" "}
                 — we add new rooms weekly.
               </p>
             </div>

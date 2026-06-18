@@ -1,22 +1,26 @@
-## Cleanup: All-groups header + per-card hover action
+## Groups launch lock-in pass
 
-### 1) Replace hover Workshop/Collab buttons with a Join action
+Three focused fixes — display + metadata only, no schema or behavior changes.
 
-**`src/components/group-card-actions.tsx`** — currently shows `Workshop` + `Collab` create-shortcut buttons on hover. These send users into the *authoring* flow, which is wrong for a discovery card.
+### 1) Single-item marquee fallback
 
-Rewrite the component to render a single hover-revealed **Join / Joined** pill, wired to the existing `joinGroup` / `leaveGroup` server functions (same logic as `JoinGroupButton`). When signed out, the pill becomes a `Link` to `/login`. The pill keeps the same hover-reveal animation (`opacity-0` → `opacity-100` on `group-hover`) and `stopPropagation` so the card's parent link isn't triggered.
+**`src/components/groups-join-feed-strip.tsx`** — when `items.length === 1`, skip the doubled-loop marquee (which currently drifts "Item · Item · Item…" awkwardly) and render the single item as a static, centered row inside the same bordered shell. Keep the header bar and "Browse all →" action unchanged. Marquee still kicks in for `items.length >= 2`.
 
-Signature changes to `{ slug, groupId, joined }` — `group-card.tsx` already knows `joined` and `group.id`, so it passes them through. No other call sites use `GroupCardActions`.
+### 2) Replace the dead "Suggest a group" link
 
-### 2) Flesh out the "All groups" section header
+**`src/routes/groups.index.tsx`** — the closing line under All groups currently links `/groups` back to itself. Swap it for a `mailto:hello@workshopindie.com?subject=Suggest a group` link so the CTA actually goes somewhere until a real submission form exists. Same copy, same styling.
 
-**`src/routes/groups.index.tsx`** — current header is just `All groups` + `64 shown`, which reads as half-finished after the rich discovery band above.
+### 3) Social/share metadata for `/groups`
 
-Add:
-- A short sub-line under the title (e.g. *"Every scene, genre, city, and micro-sprint open right now."*) styled like the other section sublines (`text-ink-muted text-sm`).
-- A small chip row on the right that mirrors the active filter context: count + active tab label (e.g. `64 groups · All`), so the bottom of the scroll feels intentional rather than truncated.
-- Keep the existing `ref={allGroupsRef}` and scroll-margin so the "Browse groups" CTA still lands here.
+**`src/routes/groups.index.tsx`** — the route's `head()` has `title`, `description`, `og:title`, `og:description` but no `og:image`, `twitter:card`, `twitter:title`, `twitter:description`, or `twitter:image`. Add:
+- `twitter:card = summary_large_image`
+- `twitter:title` / `twitter:description` mirroring the OG values
+- `og:image` + `twitter:image` pointing at the existing site share image if one is already wired in `__root.tsx`; otherwise leave image tags off (no placeholder URLs).
+
+I'll read `src/routes/__root.tsx` first to confirm whether a share image already exists and reuse it; if not, the image tags are skipped and the user can add one later from a single asset.
 
 ### Out of scope
 
-No changes to card body stats, the discovery band, trending list, Join feed, schema, or any server functions beyond the existing `joinGroup` / `leaveGroup`. Mobile layout unchanged (hover overlay is already `md:flex` only — Join action stays desktop-hover; mobile users tap into the group page and join there as today).
+- Mobile audit (separate pass — needs preview at narrow widths, not a code change yet).
+- Generating a new branded OG image asset (the user hasn't asked for image creation; I'll only wire existing assets).
+- Any change to `GroupCard`, `GroupsBrowseByKind`, `GroupsTrendingList`, `FeaturedEventsCompact`, server functions, or schema.
