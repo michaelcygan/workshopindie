@@ -81,12 +81,13 @@ export function GroupCard({
             </span>
           )}
         </div>
-        {joined && (
+        {joined ? (
           <span className="absolute right-2 top-2 rounded-full bg-ink/90 px-1.5 py-0.5 text-[10px] font-medium text-background backdrop-blur">
             In
           </span>
+        ) : (
+          <GroupCardActions groupId={group.id} joined={joined} />
         )}
-        <GroupCardActions slug={group.slug} />
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <h3 className={cn("font-display text-lg text-ink line-clamp-1")}>{group.name}</h3>

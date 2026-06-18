@@ -262,11 +262,32 @@ function GroupsIndex() {
           />
         ) : (
           <>
-            <div className="mb-3 flex items-baseline justify-between px-1">
-              <h2 className="font-display text-xl text-ink md:text-2xl">
-                {tab === "all" || tab === "for-you" ? "All groups" : TABS.find((t) => t.id === tab)?.label}
-              </h2>
-              <span className="text-xs text-ink-muted">{filtered.length} shown</span>
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
+              <div className="min-w-0">
+                <h2 className="font-display text-xl text-ink md:text-2xl">
+                  {tab === "all" || tab === "for-you" ? "All groups" : TABS.find((t) => t.id === tab)?.label}
+                </h2>
+                <p className="mt-1 text-sm text-ink-muted">
+                  {tab === "for-you"
+                    ? "The scenes you've joined — everything happening across them."
+                    : tab === "all"
+                      ? "Every scene, genre, city, and micro-sprint open right now."
+                      : `All ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} on Workshop.`}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-soft">
+                  {filtered.length} {filtered.length === 1 ? "group" : "groups"}
+                </span>
+                <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-background">
+                  {TABS.find((t) => t.id === tab)?.label}
+                </span>
+                {query && (
+                  <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] text-ink-soft">
+                    "{query}"
+                  </span>
+                )}
+              </div>
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((g) => (
@@ -278,7 +299,20 @@ function GroupsIndex() {
                 />
               ))}
             </div>
+            <div className="mt-8 flex flex-col items-center gap-2 border-t border-border/60 pt-6 text-center">
+              <p className="text-sm text-ink-muted">
+                That's every group {query ? "matching your search" : tab === "for-you" ? "you're in" : "open right now"}.
+              </p>
+              <p className="text-xs text-ink-muted/80">
+                Missing your scene?{" "}
+                <Link to="/groups" className="text-ink underline-offset-2 hover:underline">
+                  Suggest a group
+                </Link>{" "}
+                — we add new rooms weekly.
+              </p>
+            </div>
           </>
+
         )}
       </section>
     </main>
