@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { Megaphone, Search, X, MapPin, Briefcase, Radio, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
@@ -18,6 +17,9 @@ import { useVouchersForPosts } from "@/components/vouch-button";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
+import { PageHeaderCompact } from "@/components/page-header-compact";
+import { KickerChip } from "@/components/kicker-chip";
+import { RecapChip } from "@/components/recap-chip";
 
 
 const searchSchema = z.object({
@@ -309,32 +311,39 @@ function CollabPage() {
   });
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
-      <YourGroupsStrip className="-mx-4 -mt-10 mb-6 rounded-none border-b md:-mx-6 md:-mt-14" />
-      <motion.div
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-end"
-      >
-        <div>
-          <h1 className="font-display text-4xl text-ink md:text-5xl">Collab Board</h1>
-          <p className="mt-1 text-ink-muted">What people are trying to make. Help out — or open a Workshop on yours.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {user && (
-            <Link to="/me/collabs">
-              <Button variant="outline" className="rounded-full gap-2">
-                <Briefcase className="h-4 w-4" /> My Collabs
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <YourGroupsStrip className="-mx-4 -mt-6 mb-6 rounded-none border-b md:-mx-6 md:-mt-8" />
+
+      <PageHeaderCompact
+        title="Collab Board"
+        right={
+          <div className="flex flex-wrap items-center gap-2">
+            {user && (
+              <Link to="/me/collabs">
+                <Button variant="outline" size="sm" className="rounded-full gap-2">
+                  <Briefcase className="h-4 w-4" /> Mine
+                </Button>
+              </Link>
+            )}
+            <Link to="/collab/new">
+              <Button size="sm" className="rounded-full gap-2">
+                <Megaphone className="h-4 w-4" /> Post
               </Button>
             </Link>
-          )}
-          <Link to="/collab/new">
-            <Button className="rounded-full gap-2">
-              <Megaphone className="h-4 w-4" /> Post a Collab
-            </Button>
-          </Link>
-        </div>
-      </motion.div>
+          </div>
+        }
+      />
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <KickerChip live={livePosts.length > 0}>
+          {livePosts.length > 0 ? `${livePosts.length} live now` : "Start a Collab"}
+        </KickerChip>
+        <p className="text-sm text-ink-muted">
+          What people are trying to make. Help out — or open a Workshop on yours.
+        </p>
+        <RecapChip count={rawPosts?.length ?? 0} label="open" />
+      </div>
+
 
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-8 max-w-5xl space-y-2.5">

@@ -1,12 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { toast } from "sonner";
@@ -98,13 +98,19 @@ function Signup() {
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
-        <h1 className="font-display text-3xl text-ink">{fromGuest ? "Boost your application" : "Join Workshop"}</h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          {fromGuest
-            ? "Your application is sent. Finish your profile so the host can see your face and past work — applications from members get replied to faster."
-            : "Find people. Make the thing. Show your Work."}
-        </p>
+      <div className="mb-4 flex items-center gap-2">
+        <KickerChip live>Join the night</KickerChip>
+        <span className="text-xs text-ink-muted">{fromGuest ? "Finish your profile" : "Free to start"}</span>
+      </div>
+      <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
+        {fromGuest ? "Boost your application." : "Find people. Make the thing."}
+      </h1>
+      <p className="mt-2 text-sm text-ink-muted">
+        {fromGuest
+          ? "Your application is sent. Members get replied to faster — finish your profile so the host can see your face and past work."
+          : "Show your Work. Walk into a live Workshop, or post a Collab and pull one together."}
+      </p>
+      <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
           <GoogleSignIn label="Sign up with Google" />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
