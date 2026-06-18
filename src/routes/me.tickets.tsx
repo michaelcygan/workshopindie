@@ -9,7 +9,7 @@ export const Route = createFileRoute("/me/tickets")({
   component: MyTicketsPage,
   head: () => ({
     meta: [
-      { title: "Your tickets — Workshop" },
+      { title: "My Events — Workshop" },
       { name: "description", content: "Upcoming events you've RSVP'd to." },
     ],
   }),
@@ -38,7 +38,7 @@ function MyTicketsPage() {
       <div className="mb-8 flex items-center gap-3">
         <div className="rounded-2xl bg-primary/10 p-2.5"><Ticket className="h-6 w-6 text-primary" /></div>
         <div>
-          <h1 className="font-display text-3xl text-ink">Your tickets</h1>
+          <h1 className="font-display text-3xl text-ink">My Events</h1>
           <p className="text-sm text-ink-muted">Upcoming events you've RSVP'd to.</p>
         </div>
       </div>
