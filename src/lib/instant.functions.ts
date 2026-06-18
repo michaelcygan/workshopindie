@@ -91,7 +91,7 @@ async function notifyMutualsOnHost(opts: {
 }
 
 /**
- * Spin up a brand-new live Workshop room owned by the caller as host.
+ * Start a brand-new live Workshop owned by the caller as host.
  * Distinct from `joinLounge` (matchmaker) — this room always belongs to
  * the caller, gets a "Host" badge, and the caller can later "Create a Collab"
  * from it to turn it into a persistent Workshop.
