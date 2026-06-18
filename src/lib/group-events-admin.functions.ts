@@ -9,6 +9,49 @@ async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   if (!data) throw new Error("Admin only");
 }
 
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+const ALLOWED_COVER_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5; // 5 years
+
+/**
+ * If cover_url points at an external host, download it server-side and re-upload
+ * to our private `event-covers` bucket, then swap to a long-lived signed URL.
+ * Returns the original URL on any failure — image rehost must never block publish.
+ */
+async function rehostCoverIfExternal(coverUrl: string | null | undefined, idHint: string): Promise<string | null> {
+  if (!coverUrl) return coverUrl ?? null;
+  let parsed: URL;
+  try { parsed = new URL(coverUrl); } catch { return coverUrl; }
+  if (!/^https?:$/.test(parsed.protocol)) return coverUrl;
+  // Already on our storage? Skip.
+  if (parsed.hostname.includes("supabase.co") && parsed.pathname.includes("/storage/v1/")) return coverUrl;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10_000);
+    let res: Response;
+    try {
+      res = await fetch(coverUrl, { signal: ctrl.signal, redirect: "follow" });
+    } finally { clearTimeout(timer); }
+    if (!res.ok) return coverUrl;
+    const mime = (res.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
+    if (!ALLOWED_COVER_MIMES.has(mime)) return coverUrl;
+    const len = Number(res.headers.get("content-length") || "0");
+    if (len > MAX_COVER_BYTES) return coverUrl;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > MAX_COVER_BYTES) return coverUrl;
+    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "gif";
+    const path = `${idHint}/${Date.now().toString(36)}.${ext}`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const up = await supabaseAdmin.storage.from("event-covers").upload(path, buf, { contentType: mime, upsert: false });
+    if (up.error) return coverUrl;
+    const signed = await supabaseAdmin.storage.from("event-covers").createSignedUrl(path, SIGNED_URL_TTL);
+    if (signed.error || !signed.data?.signedUrl) return coverUrl;
+    return signed.data.signedUrl;
+  } catch {
+    return coverUrl;
+  }
+}
+
 const baseSchema = z.object({
   group_id: z.string().uuid(),
   title: z.string().min(2).max(120),
