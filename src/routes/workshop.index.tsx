@@ -17,9 +17,10 @@ import type { RoomPrompt } from "@/lib/topic-prompts";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { RequireAuth } from "@/components/require-auth";
 
 export const Route = createFileRoute("/workshop/")({
-  component: WorkshopPreflight,
+  component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [
       { title: "Workshop — Drop in or host" },
