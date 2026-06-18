@@ -125,6 +125,15 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         href: roomId ? `/workshop/${roomId}` : "/workshop",
       };
     }
+    case "chat_mention": {
+      const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "a Workshop";
+      return {
+        title: `${actor} mentioned you in ${roomTitle}`,
+        subtitle: (n.payload?.preview as string) ?? "",
+        href: roomId ? `/workshop/${roomId}` : "/workshop",
+      };
+    }
     case "payment_failed":
       return { title: "Payment failed", subtitle: "Update your card to keep Plus active.", href: "/me" };
     case "comp_redeemed":
