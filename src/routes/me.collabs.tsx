@@ -260,82 +260,88 @@ function MyCollabsPage() {
         {tab === "hosting" && (
           hosting.length === 0 ? (
             <EmptyState
-              title="No open Collabs."
+              title="No Collabs yet."
               body="Post one to find collaborators. Roles, deadline, comp — it takes a minute."
               cta={<Link to="/collab/new"><Button className="rounded-full">Post a Collab</Button></Link>}
             />
           ) : (
-            hosting.map((r) => {
-              const passed = !!r.ends_on && r.ends_on < today;
-              return (
-                <div key={r.id} className={cn(
-                  "flex flex-wrap items-center gap-3 rounded-2xl border p-4 bg-surface",
-                  passed ? "border-amber-500/30" : "border-border",
-                )}>
-                  <CategoryChip category={r.category} />
-                  <div className="min-w-0 flex-1">
-                    <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                      {r.title}
-                    </Link>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                      {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
-                      {r.ends_on && (
-                        <span className={cn("inline-flex items-center gap-1", passed && "text-amber-700")}>
-                          <Clock className="h-3 w-3" /> {passed ? "Deadline passed" : `Until ${r.ends_on}`}
-                        </span>
-                      )}
-                      {r.applicant_count > 0 && (
-                        <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
-                      )}
-                      {r.live_workshop_id && (
-                        <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Workshop open</span>
-                      )}
+            <>
+              {archivedCount > 0 && (
+                <p className="px-1 text-[11px] text-ink-muted">
+                  {archivedCount} archived — only visible to you.
+                </p>
+              )}
+              {hosting.map((r) => {
+                const isArchived = r.status === "closed";
+                const passed = !isArchived && !!r.ends_on && r.ends_on < today;
+                return (
+                  <div key={r.id} className={cn(
+                    "flex flex-wrap items-center gap-3 rounded-2xl border p-4",
+                    isArchived ? "border-dashed border-border bg-surface-2/40" : passed ? "border-amber-500/30 bg-surface" : "border-border bg-surface",
+                  )}>
+                    <CategoryChip category={r.category} />
+                    {isArchived
+                      ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
+                      : passed
+                        ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
+                        : <StateBadge tone="open" label="Open" sublabel="Casting" />}
+                    <div className={cn("min-w-0 flex-1", isArchived && "opacity-70")}>
+                      <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                        {r.title}
+                      </Link>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                        {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
+                        {isArchived && r.closed_at && (
+                          <span className="inline-flex items-center gap-1"><Archive className="h-3 w-3" /> Archived {new Date(r.closed_at).toLocaleDateString()}</span>
+                        )}
+                        {!isArchived && r.ends_on && (
+                          <span className={cn("inline-flex items-center gap-1", passed && "text-amber-700")}>
+                            <Clock className="h-3 w-3" /> {passed ? "Deadline passed" : `Until ${r.ends_on}`}
+                          </span>
+                        )}
+                        {r.applicant_count > 0 && (
+                          <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
+                        )}
+                        {!isArchived && r.live_workshop_id && (
+                          <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Workshop open</span>
+                        )}
+                      </div>
                     </div>
+                    {isArchived ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
+                          <X className="h-3.5 w-3.5" /> Dismiss
+                        </Button>
+                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this archived collab permanently?")) deleteMut.mutate(r.id); }}>
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </Button>
+                        <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
+                          <Sparkles className="h-3.5 w-3.5" /> Publish a Work
+                        </Button>
+                      </div>
+                    ) : passed ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button size="sm" variant="ghost" className="rounded-full" onClick={() => {
+                          const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+                          if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
+                        }}>Extend</Button>
+                        <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Close this collab?")) closeMut.mutate(r.id); }}>Close</Button>
+                        <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
+                          <Sparkles className="h-3.5 w-3.5" /> Publish
+                        </Button>
+                      </div>
+                    ) : (
+                      <Link to="/collab/$slug" params={{ slug: r.slug }}>
+                        <Button size="sm" variant="outline" className="rounded-full">Manage</Button>
+                      </Link>
+                    )}
                   </div>
-                  {passed ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      <Button size="sm" variant="ghost" className="rounded-full" onClick={() => {
-                        const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
-                        if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
-                      }}>Extend</Button>
-                      <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Close this collab?")) closeMut.mutate(r.id); }}>Close</Button>
-                      <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: null })}>
-                        <Sparkles className="h-3.5 w-3.5" /> Publish
-                      </Button>
-                    </div>
-                  ) : (
-                    <Link to="/collab/$slug" params={{ slug: r.slug }}>
-                      <Button size="sm" variant="outline" className="rounded-full">Manage</Button>
-                    </Link>
-                  )}
-                </div>
-              );
-            })
+                );
+              })}
+            </>
           )
         )}
 
-        {tab === "wrapup" && (
-          wrapup.length === 0 ? (
-            <EmptyState title="Nothing to wrap up." body="Closed collabs without a published Work will show up here." />
-          ) : (
-            wrapup.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-ink">{r.title}</p>
-                  <p className="text-xs text-ink-muted">Publish the Work that came out of this — credits go out automatically.</p>
-                </div>
-                <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => reopenMut.mutate(r.id)}>Reopen</Button>
-                <Button size="sm" variant="ghost" className="rounded-full text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
-                  <X className="h-4 w-4" />
-                </Button>
-                <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
-                  <Sparkles className="h-3.5 w-3.5" /> Publish Work
-                </Button>
-              </div>
-            ))
-          )
-        )}
 
         {tab === "published" && (
           published.length === 0 ? (
