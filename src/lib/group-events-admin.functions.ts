@@ -87,9 +87,11 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, ...rest } = data;
+    const { featured, status, cover_url, ...rest } = data;
+    const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const insertRow = {
       ...rest,
+      cover_url: rehostedCover,
       slug: "",
       created_by: userId,
       featured_at: featured ? new Date().toISOString() : null,
