@@ -259,6 +259,11 @@ function GroupsIndex() {
           </>
         )}
       </section>
+
+      {/* Featured events appears only when there's something to show — no empty hero. */}
+      <section className="mt-10">
+        <FeaturedEventsCarousel hideWhenEmpty />
+      </section>
     </main>
   );
 }
