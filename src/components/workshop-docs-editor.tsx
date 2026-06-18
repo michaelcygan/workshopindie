@@ -347,12 +347,13 @@ function DocEditor({
             variant="ghost"
             className="h-8 w-8 rounded-full text-ink-muted hover:text-ink"
             title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            aria-label={fullscreen ? "Exit fullscreen" : "Enter fullscreen"}
           >
             {fullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-ink-muted hover:text-ink" title="More">
+              <Button size="icon" variant="ghost" className="h-8 w-8 rounded-full text-ink-muted hover:text-ink" title="More" aria-label="More document actions">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
