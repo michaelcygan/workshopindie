@@ -17,7 +17,6 @@ import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
 import { SceneTicker } from "@/components/scene-ticker";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { GroupsVerticalMarquee } from "@/components/groups-vertical-marquee";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
@@ -117,12 +116,7 @@ function GroupsIndex() {
     [allGroups],
   );
 
-  // Fresh / ambient feed — newest-feeling groups for the vertical marquee.
-  // Skip the ones already in trending so the left column doesn't repeat itself.
-  const freshFeed = useMemo(() => {
-    const trendingIds = new Set(trending.map((g) => g.id));
-    return allGroups.filter((g) => !trendingIds.has(g.id)).slice(0, 18);
-  }, [allGroups, trending]);
+
 
   const showClusters = (tab === "all" || tab === "for-you") && !query;
 
@@ -196,19 +190,17 @@ function GroupsIndex() {
         </div>
       )}
 
-      {/* Above-the-fold on desktop: left = Events + Trending. Right = Browse-by-kind. */}
+      {/* Discovery band: balanced 12-col grid so both columns share the same
+          vertical rhythm — no orphaned space on either side. */}
       {showClusters && (
-        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-1">
+        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-4">
             <FeaturedEventsCompact />
             {trending.length > 0 && (
               <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
             )}
-            {freshFeed.length > 0 && (
-              <GroupsVerticalMarquee groups={freshFeed} title="Fresh in" />
-            )}
           </div>
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-8">
             <GroupsBrowseByKind
               groups={allGroups}
               joinedIds={myIdSet}
