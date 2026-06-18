@@ -64,6 +64,13 @@ const ROLE_PRESETS: Record<Category, string[]> = {
   critique: ["Reader", "Reviewer", "Listener"],
   business: ["Co-founder", "Advisor", "Designer", "Engineer", "Marketer"],
   coworking: [],
+  office_hours: [],
+  roundtable: [],
+  pitch: [],
+  listen_party: [],
+  open_mic: [],
+  jam: [],
+  standup: [],
 };
 
 function NewCollab() {
