@@ -57,6 +57,8 @@ const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive",
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "outline", build: "repo_links", visual: "board",
   critique: "outline", business: "outline", coworking: "outline",
+  office_hours: "outline", roundtable: "outline", pitch: "outline",
+  listen_party: "list", open_mic: "list", jam: "outline", standup: "outline",
 };
 
 // Stored value mapping — UI label "List" stores tool_type='list'.

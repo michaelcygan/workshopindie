@@ -64,6 +64,20 @@
   --color-cat-business-ink: var(--cat-business-ink);
   --color-cat-coworking: var(--cat-coworking);
   --color-cat-coworking-ink: var(--cat-coworking-ink);
+  --color-cat-office-hours: var(--cat-office-hours);
+  --color-cat-office-hours-ink: var(--cat-office-hours-ink);
+  --color-cat-roundtable: var(--cat-roundtable);
+  --color-cat-roundtable-ink: var(--cat-roundtable-ink);
+  --color-cat-pitch: var(--cat-pitch);
+  --color-cat-pitch-ink: var(--cat-pitch-ink);
+  --color-cat-listen-party: var(--cat-listen-party);
+  --color-cat-listen-party-ink: var(--cat-listen-party-ink);
+  --color-cat-open-mic: var(--cat-open-mic);
+  --color-cat-open-mic-ink: var(--cat-open-mic-ink);
+  --color-cat-jam: var(--cat-jam);
+  --color-cat-jam-ink: var(--cat-jam-ink);
+  --color-cat-standup: var(--cat-standup);
+  --color-cat-standup-ink: var(--cat-standup-ink);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -140,6 +154,20 @@
   --cat-business-ink: oklch(0.38 0.14 145);
   --cat-coworking: oklch(0.93 0.05 60);  /* amber */
   --cat-coworking-ink: oklch(0.42 0.16 55);
+  --cat-office-hours: oklch(0.93 0.05 280);  /* lavender-violet */
+  --cat-office-hours-ink: oklch(0.40 0.16 290);
+  --cat-roundtable: oklch(0.93 0.05 200);    /* teal */
+  --cat-roundtable-ink: oklch(0.38 0.14 205);
+  --cat-pitch: oklch(0.93 0.06 30);          /* coral */
+  --cat-pitch-ink: oklch(0.44 0.18 30);
+  --cat-listen-party: oklch(0.93 0.06 330);  /* magenta */
+  --cat-listen-party-ink: oklch(0.42 0.18 335);
+  --cat-open-mic: oklch(0.93 0.06 15);       /* warm red */
+  --cat-open-mic-ink: oklch(0.44 0.18 20);
+  --cat-jam: oklch(0.93 0.06 110);           /* chartreuse */
+  --cat-jam-ink: oklch(0.42 0.16 115);
+  --cat-standup: oklch(0.93 0.05 250);       /* periwinkle */
+  --cat-standup-ink: oklch(0.40 0.16 260);
 
   --chart-1: oklch(0.68 0.17 32);
   --chart-2: oklch(0.62 0.24 295);
