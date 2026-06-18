@@ -96,6 +96,7 @@ export function useWorkshopPip(opts: {
           meDisplay={opts.meDisplay}
           profileLookup={opts.profileLookup}
           onClose={close}
+          initialSource={initialSource}
         />,
         pipWindow.document.getElementById("pip-root")!,
       )
