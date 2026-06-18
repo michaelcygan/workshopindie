@@ -25,6 +25,7 @@ import {
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
 import { toast } from "sonner";
+import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 
 type GroupRow = {
   id: string;
