@@ -3,13 +3,27 @@ import { RadioTower, Wrench, Rocket, Share2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-const STORAGE_KEY = "wf:host-tour-v1";
+// localStorage-backed counter so the tour auto-runs for the host's first N workshops,
+// then stays dismissed. Always re-openable via host menu.
+const COUNT_KEY = "wf:host-tour-count";
+const DISMISSED_KEY = "wf:host-tour-v1"; // legacy: if set, treat as "seen at least once"
+const MAX_AUTO_VIEWS = 3;
+
+function readCount(): number {
+  if (typeof window === "undefined") return MAX_AUTO_VIEWS;
+  try {
+    const raw = window.localStorage.getItem(COUNT_KEY);
+    if (raw != null) return parseInt(raw, 10) || 0;
+    // Migration: if the legacy single-shot key exists, count it as 1 prior view.
+    return window.localStorage.getItem(DISMISSED_KEY) ? 1 : 0;
+  } catch { return MAX_AUTO_VIEWS; }
+}
 
 const STEPS = [
   {
     Icon: Wrench,
     title: "Your host utilities are right here",
-    body: "Docs, Drive, Pinboard, Polls — pin whatever your room needs. Everyone in the seat can collaborate.",
+    body: "Docs, Board, Drive, Polls — pin whatever your room needs. Everyone in the seat can collaborate.",
   },
   {
     Icon: Rocket,
@@ -31,13 +45,16 @@ export function HostFirstRunTour({ active }: { active: boolean }) {
   useEffect(() => {
     if (!active) return;
     if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(STORAGE_KEY)) return;
+    if (readCount() >= MAX_AUTO_VIEWS) return;
     const t = window.setTimeout(() => setOpen(true), 600);
     return () => window.clearTimeout(t);
   }, [active]);
 
   function finish() {
-    try { window.localStorage.setItem(STORAGE_KEY, "1"); } catch { /* ignore */ }
+    try {
+      const next = readCount() + 1;
+      window.localStorage.setItem(COUNT_KEY, String(next));
+    } catch { /* ignore */ }
     setOpen(false);
     toast.success("You're hosting. Have fun.");
   }

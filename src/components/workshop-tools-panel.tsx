@@ -14,10 +14,10 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
-import { PersonaRecorderTabs } from "@/components/recorder/persona-tabs";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import RoomBoard from "@/components/room-board";
 import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
+import { WorkshopRecordingLink } from "@/components/workshop-recording-link";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
 // Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
@@ -38,20 +38,23 @@ type Preset = {
   fields: ("title" | "body" | "url")[];
 };
 
-// Order here drives chip order in the picker. Shipped tools first.
+// Order here drives chip order in the picker. Screen Share first, Recording second, then
+// collaboration surfaces, then niche ones. Pinboard is intentionally absent from
+// TOOL_ORDER — its function is fully covered by Board (whiteboard with image/text/link
+// stickers). The PRESETS entry stays so legacy Pinboard rows still render via presetFor().
 const PRESETS: Record<ToolType, Preset> = {
+  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
+  recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard — image, text, and link stickers.", fields: [] },
-  pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard for images, text, links, and reference pins.", fields: [] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
-  repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
-  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
-  recorder:     { label: "Recorder",     icon: Mic,         blurb: "Capture takes — saved to Drive.", fields: [] },
   player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
+  repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
+  pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
 };
 
-const TOOL_ORDER: ToolType[] = ["outline", "board", "pinboard", "list", "drive", "repo_links", "screen_share", "recorder", "player"];
+const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "outline", "board", "list", "drive", "player", "repo_links"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
@@ -180,7 +183,7 @@ export function WorkshopToolsPanel(props: Props) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border p-4">
         <p className="text-sm text-ink-muted text-center">
-          Spin up a shared tool — Docs, Board, Pinboard, List, Drive, Repo & Demo. Add as many as you need.
+          Spin up a shared tool — Screen Share, Recording, Docs, Board, List, Drive. Add as many as you need.
         </p>
         <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
           {TOOL_ORDER.map((type) => {
@@ -324,6 +327,7 @@ function toDriveScope(scope: ToolsScope): DrivePanelScope {
 }
 
 function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType }; media?: MediaForTools }) {
+  const { user } = useAuth();
   // Dedicated full-featured components for the rich tools.
   if (tool.tool_type === "outline") {
     return (
@@ -347,13 +351,15 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
     );
   }
   if (tool.tool_type === "recorder") {
+    const isHost = !!user && scope.hostUserId !== null && user.id === scope.hostUserId;
     return (
       <div className="p-4">
-        <PersonaRecorderTabs
+        <WorkshopRecordingLink
           scope={scope.kind === "instant"
             ? { kind: "instant", roomId: scope.roomId }
             : { kind: "persistent", workshopId: scope.workshopId }}
-          media={media as any}
+          toolId={tool.id}
+          isHost={isHost}
         />
       </div>
     );
