@@ -405,6 +405,7 @@ function PinnedGrid({
                       className="h-6 w-6 rounded-full bg-background/80 backdrop-blur"
                       disabled={hostIdx <= 0}
                       onClick={(e) => { e.stopPropagation(); onMove(w.id, -1); }}
+                      aria-label="Move pin up"
                     >
                       <ChevronUp className="h-3 w-3" />
                     </Button>
@@ -413,6 +414,7 @@ function PinnedGrid({
                       className="h-6 w-6 rounded-full bg-background/80 backdrop-blur"
                       disabled={hostIdx < 0 || hostIdx >= hostPinCount - 1}
                       onClick={(e) => { e.stopPropagation(); onMove(w.id, 1); }}
+                      aria-label="Move pin down"
                     >
                       <ChevronDown className="h-3 w-3" />
                     </Button>
@@ -424,6 +426,7 @@ function PinnedGrid({
                     className="absolute left-1 top-1 h-6 w-6 rounded-full bg-background/80 backdrop-blur"
                     onClick={(e) => { e.stopPropagation(); onUnpin(p.id); }}
                     title="Unpin"
+                    aria-label="Unpin Work"
                   >
                     <PinOff className="h-3 w-3" />
                   </Button>
