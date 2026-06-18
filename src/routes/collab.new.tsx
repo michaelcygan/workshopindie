@@ -532,7 +532,7 @@ function NewCollab() {
               onClick={() => setWorkshopMode("now")}
               icon={<Sparkles className="h-4 w-4" />}
               title="Open a Workshop right now"
-              body="Spin up a live Workshop the moment you post — meet collaborators, brainstorm the idea, and audition roles on the spot. Up to 5 seats."
+              body="Start a live Workshop the moment you post — meet collaborators, brainstorm the idea, and audition roles on the spot. Up to 5 seats."
             >
               {workshopMode === "now" && (
                 <p className="rounded-lg bg-background/60 px-3 py-2 text-[11px] text-ink-muted">
