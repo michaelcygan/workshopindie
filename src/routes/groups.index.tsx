@@ -1,7 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Search } from "lucide-react";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
@@ -11,10 +13,20 @@ import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
 import { RecapChip } from "@/components/recap-chip";
 import { EmptySpark } from "@/components/empty-spark";
-import { GroupsTrendingRail } from "@/components/groups-trending-rail";
+import { GroupsTrendingList } from "@/components/groups-trending-list";
 import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
+import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
+
+const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
+type Tab = (typeof TAB_VALUES)[number];
+
+const searchSchema = z.object({
+  t: fallback(z.enum(TAB_VALUES), "all").default("all"),
+  q: fallback(z.string(), "").default(""),
+});
 
 export const Route = createFileRoute("/groups/")({
+  validateSearch: zodValidator(searchSchema),
   component: GroupsIndex,
   head: () => ({
     meta: [
@@ -25,8 +37,6 @@ export const Route = createFileRoute("/groups/")({
     ],
   }),
 });
-
-type Tab = "for-you" | "city" | "genre" | "micro" | "scene" | "all";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For you" },
@@ -39,8 +49,23 @@ const TABS: { id: Tab; label: string }[] = [
 
 function GroupsIndex() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>(user ? "for-you" : "all");
-  const [query, setQuery] = useState("");
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
+  // Default to "for-you" only when signed in AND no explicit tab in URL.
+  const tab: Tab = useMemo(() => {
+    if (search.t === "all" && user) {
+      // Honor URL exactly — "all" means all. Sign-in default handled on first land
+      // by leaving the URL clean and letting this stay "all".
+    }
+    return search.t;
+  }, [search.t, user]);
+  const query = search.q;
+
+  const setTab = (t: Tab) =>
+    navigate({ search: (prev) => ({ ...prev, t }), replace: true });
+  const setQuery = (q: string) =>
+    navigate({ search: (prev) => ({ ...prev, q }), replace: true });
 
   const { data: allGroups = [], isLoading } = useQuery({
     queryKey: ["groups", "all"],
@@ -98,12 +123,14 @@ function GroupsIndex() {
     [allGroups],
   );
 
-  const featured = useMemo(
-    () => allGroups.filter((g) => g.featured_at).slice(0, 8),
-    [allGroups],
-  );
-
   const showClusters = (tab === "all" || tab === "for-you") && !query;
+
+  // Batched avatar fetch for visible cards (capped to avoid huge query).
+  const visibleIds = useMemo(
+    () => filtered.slice(0, 32).map((g) => g.id),
+    [filtered],
+  );
+  const { data: avatarMap } = useGroupMemberAvatars(visibleIds);
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
@@ -119,46 +146,60 @@ function GroupsIndex() {
         <RecapChip count={allGroups.length} label="groups open" />
       </div>
 
-      <div className="mt-5 flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">
-        <Search className="h-4 w-4 text-ink-muted" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search groups — try Indie Filmmakers, Hyperpop, Hackathon…"
-          className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
-        />
-      </div>
-
       <div className="mt-8">
         <FeaturedEventsCarousel />
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-medium transition",
-              tab === t.id
-                ? "bg-ink text-background"
-                : "border border-border bg-surface text-ink-soft hover:bg-muted",
+      {/* Sticky filter strip — tabs + search collapse together once the hero scrolls away. */}
+      <div className="sticky top-0 z-30 -mx-4 mt-6 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
+          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTab(t.id)}
+                className={cn(
+                  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition",
+                  tab === t.id
+                    ? "bg-ink text-background"
+                    : "border border-border bg-surface text-ink-soft hover:bg-muted",
+                )}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex h-10 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-3.5 shadow-soft md:max-w-md md:self-auto">
+            <Search className="h-4 w-4 text-ink-muted" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search — Indie Filmmakers, Hyperpop, Hackathon…"
+              className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="text-xs text-ink-muted hover:text-ink"
+                aria-label="Clear search"
+              >
+                Clear
+              </button>
             )}
-          >
-            {t.label}
-          </button>
-        ))}
+          </div>
+        </div>
       </div>
 
       {showClusters && trending.length > 0 && (
         <section className="mt-8">
-          <GroupsTrendingRail groups={trending} joinedIds={myIdSet} />
+          <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
         </section>
       )}
 
       {showClusters && (
-        <section className="mt-10">
+        <section className="mt-8">
           <GroupsBrowseByKind
             groups={allGroups}
             joinedIds={myIdSet}
@@ -167,7 +208,7 @@ function GroupsIndex() {
         </section>
       )}
 
-      <section className="mt-10">
+      <section className="mt-8">
         {tab === "for-you" && !user ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
             <h3 className="font-display text-2xl text-ink">Sign in to see your Groups.</h3>
@@ -217,26 +258,17 @@ function GroupsIndex() {
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((g) => (
-                <GroupCard key={g.id} group={g} joined={myIdSet.has(g.id)} />
+                <GroupCard
+                  key={g.id}
+                  group={g}
+                  joined={myIdSet.has(g.id)}
+                  avatars={avatarMap?.get(g.id)}
+                />
               ))}
             </div>
           </>
         )}
       </section>
-
-      {featured.length > 0 && tab === "all" && !query && (
-        <section className="mt-12">
-          <div className="mb-3 flex items-baseline justify-between px-1">
-            <h2 className="font-display text-xl text-ink md:text-2xl">Featured</h2>
-            <span className="text-xs text-ink-muted">Hand-picked this week</span>
-          </div>
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {featured.map((g) => (
-              <GroupCard key={g.id} group={g} joined={myIdSet.has(g.id)} />
-            ))}
-          </div>
-        </section>
-      )}
     </main>
   );
 }
