@@ -598,7 +598,7 @@ export function ChannelView({
           messages={messages}
           draft={draft}
           setDraft={setDraft}
-          onSend={send}
+          onSend={sendFromForm}
           sending={sending}
           onExit={handleExit}
           onMinimize={() => setFsView(null)}
