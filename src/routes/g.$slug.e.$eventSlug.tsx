@@ -248,6 +248,11 @@ function EventPage() {
           />
         </div>
 
+        {/* Lineup (for lineup events) */}
+        {ev.kind === "lineup" && (
+          <LineupPanel eventId={ev.id} isHostOrAdmin={!!user && (user.id === ev.created_by)} />
+        )}
+
         {/* RSVP */}
         <div className="mt-5">
           <EventRsvpBlock
