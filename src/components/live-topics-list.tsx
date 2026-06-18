@@ -236,47 +236,37 @@ export function LiveTopicsList({
       <div
         ref={listRef}
         onKeyDown={handleListKeyDown}
-        className="relative rounded-3xl bg-surface shadow-halo overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
+        className="relative rounded-[2rem] bg-surface shadow-halo border border-border/50 overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
         {/* Featured: Lounge */}
-        <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative">
-          {/* "now playing" hairline */}
-          <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
-          <div className="p-5 md:p-6 pb-4">
+        <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative bg-background/40">
+          <div className="p-7 md:p-9 pb-5 flex-1 flex flex-col">
             {eyebrow}
-            <h2 className="mt-3 font-display text-[26px] md:text-[30px] leading-[1.05] text-ink tracking-tight">
-              Lounge
+            <h2 className="mt-6 font-display text-[44px] md:text-[54px] leading-[0.95] text-ink tracking-tight">
+              The Lounge
             </h2>
-            <p className="mt-1.5 text-[13px] text-ink-muted/90 max-w-[28ch]">
+            <p className="mt-4 text-[15px] leading-relaxed text-ink-muted max-w-[34ch]">
               {noneLive
-                ? "Open the room — the night starts here."
-                : "Drop in where the conversation's already going."}
+                ? "The town square for wandering minds. Open the room — the night starts here."
+                : "The town square for wandering minds. Drop in, grab a seat, and see where the conversation leads."}
             </p>
-            <div className="mt-4">{splitCTA}</div>
+            <div className="mt-8">{splitCTA}</div>
           </div>
           {featuredFooter && (
-            <div className="px-5 md:px-6 pb-5 mt-auto">{featuredFooter}</div>
+            <div className="border-t border-border/50 bg-surface/40">{featuredFooter}</div>
           )}
         </div>
 
         {/* Topics column */}
         <div className="flex flex-col min-h-0 relative">
-          {/* Pulse bar */}
-          <div className="relative h-px overflow-hidden">
+          <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
+            <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+              Select a topic to enter
+            </div>
             <div
               className={cn(
-                "absolute inset-0",
-                noneLive ? "bg-border/60" : "gradient-motion opacity-70 animate-pulse",
-              )}
-            />
-          </div>
-
-          <div className="flex items-center justify-between px-4 pt-3.5 pb-1.5">
-            <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
-            <div
-              className={cn(
-                "text-[10.5px] tabular-nums",
-                liveCount > 0 ? "text-ink/70" : "text-ink-muted/60",
+                "text-[10.5px] font-semibold tabular-nums",
+                liveCount > 0 ? "text-primary" : "text-ink-muted/50",
               )}
             >
               {liveCount} live
@@ -285,11 +275,10 @@ export function LiveTopicsList({
 
           <div
             ref={scrollerRef}
-            className="scrollbar-none overflow-y-auto"
-            style={{ height: 380 }}
+            className="scrollbar-none overflow-y-auto p-3"
+            style={{ height: 420 }}
           >
-
-            <ul className="divide-y divide-border/40">
+            <ul className="flex flex-col gap-0.5">
               {loungeRow}
               {sorted.map((c) => {
                 const live = liveByMedium.get(c.id) ?? 0;
