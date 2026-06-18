@@ -388,7 +388,7 @@ const bulkSchema = z.object({
 });
 
 export type BulkImportRow =
-  | { ok: true; url: string; host: string; draft: Draft; warnings: string[]; parser: "json-ld" | "og" | "fallback" }
+  | { ok: true; url: string; host: string; draft: Draft; warnings: string[]; parser: ParserSource }
   | { ok: false; url: string; host: string; error: string };
 
 export const importEventsFromUrls = createServerFn({ method: "POST" })
