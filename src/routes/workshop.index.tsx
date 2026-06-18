@@ -449,6 +449,7 @@ function WorkshopPreflight() {
           layout="split"
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
+          onPickFlavor={handleUsePrompt}
           onLiveCountChange={setLiveCount}
           onLiveByMediumChange={setLiveByMedium}
           disabled={busy !== null}

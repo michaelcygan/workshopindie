@@ -8,12 +8,14 @@ import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.fu
 import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { TOPIC_DESCRIPTIONS, SUB_MEDIUMS } from "@/lib/topic-prompts";
+import { TOPIC_DESCRIPTIONS, SUB_OPTIONS_BY_PARENT, type RoomPrompt } from "@/lib/topic-prompts";
 import { cn } from "@/lib/utils";
 
 type Props = {
   busyKey?: string | null;
   onPick: (medium: Category | null) => void;
+  /** Fired when a sub-topic of kind "flavor" is picked — pre-fills a room title. */
+  onPickFlavor?: (prompt: RoomPrompt) => void;
   onLiveCountChange?: (n: number) => void;
   /** Emits a fresh per-medium live count map whenever it changes. */
   onLiveByMediumChange?: (m: Map<Category, number>) => void;
@@ -24,11 +26,12 @@ type Props = {
   featuredFooter?: React.ReactNode;
 };
 
-const SUB_PARENTS = new Set<Category>(["critique", "coworking"]);
+
 
 export function LiveTopicsList({
   busyKey,
   onPick,
+  onPickFlavor,
   onLiveCountChange,
   onLiveByMediumChange,
   disabled,
@@ -288,14 +291,18 @@ export function LiveTopicsList({
                       id={c.id}
                       label={c.label}
                       description={TOPIC_DESCRIPTIONS[c.id]}
-                      hasSubMediums={SUB_PARENTS.has(c.id)}
+                      subOptions={SUB_OPTIONS_BY_PARENT[c.id]}
                       live={live}
                       participants={participantsByMedium.get(c.id) ?? []}
                       busy={busyKey === c.id}
                       disabled={disabled}
                       onClick={() => onPick(c.id)}
-                      onPickSub={(m) => onPick(m)}
+                      onPickSub={(opt) => {
+                        if (opt.kind === "medium") onPick(opt.id);
+                        else onPickFlavor?.({ title: opt.title, medium: opt.medium, weight: "obvious" });
+                      }}
                     />
+
                   </motion.li>
                 );
               })}
@@ -348,12 +355,15 @@ export function LiveTopicsList({
                   id={c.id}
                   label={c.label}
                   description={TOPIC_DESCRIPTIONS[c.id]}
-                  hasSubMediums={SUB_PARENTS.has(c.id)}
+                  subOptions={SUB_OPTIONS_BY_PARENT[c.id]}
                   live={live}
                   busy={busyKey === c.id}
                   disabled={disabled}
                   onClick={() => onPick(c.id)}
-                  onPickSub={(m) => onPick(m)}
+                  onPickSub={(opt) => {
+                    if (opt.kind === "medium") onPick(opt.id);
+                    else onPickFlavor?.({ title: opt.title, medium: opt.medium, weight: "obvious" });
+                  }}
                 />
               </motion.li>
             );
@@ -512,7 +522,7 @@ function TopicRow({
   id,
   label,
   description,
-  hasSubMediums,
+  subOptions,
   live,
   participants,
   busy,
@@ -525,13 +535,13 @@ function TopicRow({
   id: string;
   label: string;
   description?: string;
-  hasSubMediums?: boolean;
+  subOptions?: import("@/lib/topic-prompts").SubOption[];
   live: number;
   participants?: ActiveInstantRoom["participants"];
   busy?: boolean;
   disabled?: boolean;
   onClick: () => void;
-  onPickSub?: (m: Category) => void;
+  onPickSub?: (opt: import("@/lib/topic-prompts").SubOption) => void;
   eyebrow?: string;
   accent?: boolean;
 }) {
@@ -644,13 +654,13 @@ function TopicRow({
           {live}
         </span>
 
-        {/* Sub-medium picker for Critique / Co-working */}
-        {hasSubMediums && onPickSub && (
+        {/* Sub-topic picker (Critique/Co-working: medium · Office Hours/Open Mic/Jam: flavor) */}
+        {subOptions && subOptions.length > 0 && onPickSub && (
           <Popover open={subOpen} onOpenChange={setSubOpen}>
             <PopoverTrigger asChild>
               <button
                 type="button"
-                aria-label={`Pick a medium under ${label}`}
+                aria-label={`Pick a sub-topic under ${label}`}
                 disabled={disabled}
                 className={cn(
                   "shrink-0 inline-flex h-6 w-6 items-center justify-center rounded-full",
@@ -665,22 +675,25 @@ function TopicRow({
                 <ChevronDown className="h-3.5 w-3.5" />
               </button>
             </PopoverTrigger>
-            <PopoverContent align="end" className="w-44 p-1">
+            <PopoverContent align="end" className="w-48 p-1">
               <div className="px-2 pt-1.5 pb-1 text-[10px] uppercase tracking-[0.14em] text-ink-muted/80">
-                {label} · pick a medium
+                {label} · pick a flavor
               </div>
               <ul className="flex flex-col">
-                {SUB_MEDIUMS.map((m) => (
-                  <li key={m.id}>
-                    <button
-                      type="button"
-                      onClick={() => { setSubOpen(false); onPickSub(m.id); }}
-                      className="w-full text-left rounded-md px-2 py-1.5 text-[13px] text-ink hover:bg-muted/60 transition"
-                    >
-                      {m.label}
-                    </button>
-                  </li>
-                ))}
+                {subOptions.map((opt) => {
+                  const key = opt.kind === "medium" ? opt.id : opt.title;
+                  return (
+                    <li key={key}>
+                      <button
+                        type="button"
+                        onClick={() => { setSubOpen(false); onPickSub(opt); }}
+                        className="w-full text-left rounded-md px-2 py-1.5 text-[13px] text-ink hover:bg-muted/60 transition"
+                      >
+                        {opt.label}
+                      </button>
+                    </li>
+                  );
+                })}
               </ul>
             </PopoverContent>
           </Popover>
