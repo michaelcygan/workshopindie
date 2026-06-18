@@ -232,6 +232,9 @@ function EventPage() {
             </div>
           </div>
         </div>
+        {/* Series admin strip */}
+        {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
+
 
         {/* Location */}
         <div className="mt-5">
