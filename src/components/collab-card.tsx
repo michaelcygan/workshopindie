@@ -94,6 +94,11 @@ export function CollabCard({
   const postVouchers = vouchers?.get(post.id) ?? [];
   const vouchCount = post.vouch_count ?? postVouchers.length;
   const isLive = !!post.live_workshop_id;
+  const isShipped = post.status === "closed" && !!post.resulting_work_id;
+  const daysToDeadline = post.ends_on
+    ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
+    : null;
+  const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
 
   return (
     <motion.article
@@ -117,6 +122,11 @@ export function CollabCard({
 
       <div className="flex items-center gap-2 px-5 pt-5">
         <CategoryChip category={post.category} />
+        {post.status === "open" ? (
+          <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
+        ) : isShipped ? (
+          <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
+        ) : null}
         {isLive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
             <span className="relative flex h-1.5 w-1.5">
@@ -133,6 +143,7 @@ export function CollabCard({
         )}
         <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
       </div>
+
 
       <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-3">
         <h3 className="font-display text-[22px] leading-[1.15] text-ink line-clamp-2 transition-colors group-hover:text-gradient-motion">
