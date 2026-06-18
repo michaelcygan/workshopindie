@@ -1,70 +1,101 @@
-## Finish the launch-readiness pass
+## Goal
+Turn `/groups` from a sparse 10-city wall into a dense, browsable directory that sparks workshop & collab creation right from the Group itself.
 
-Pick up exactly where we left off after the security migration + HIBP. Three focused workstreams, one PR each.
+---
 
-### 1. Realtime RLS (the last critical security blocker)
+## 1) Seed a real catalog (migration)
 
-Map every `realtime.messages` topic in use and write per-topic policies.
+Currently only 10 City groups exist — every other tab is empty, which is why the page feels thin. Seed ~40 groups across all four kinds, each with `tagline`, `description`, `accent_color`, and a curated unsplash `cover_url` so the cards stop looking like identical orange blocks.
 
-Topics in the codebase (from `rg "channel\("` and `topic:`):
-- `workshop:{id}` — gate by `workshop_participants` membership OR `host_user_id`
-- `instant:{roomId}` — gate by `instant_presence` membership
-- `dm:{conversationId}` — gate by `conversations` participant columns
-- `notifications:{userId}` — gate by `auth.uid() = userId`
-- `presence:*` — broadcast-only; allow authenticated SELECT but block private payloads via topic-name check
+**Genres** — Indie Filmmakers, SoundCloud Rappers, Bedroom Pop, Lo-fi Beatmakers, Indie Game Devs, Comic Artists, Zine Makers, Stand-up Comics, Documentary, Experimental Animation, Synthwave, DJ / Club, Photographers, Poets, Screenwriters.
 
-One migration: enable RLS on `realtime.messages`, add SELECT/INSERT policies per topic prefix using `split_part(topic, ':', 1)` + membership lookups. Smoke-test live workshop, DM, notification bell after.
+**Scenes** — Indie Sleaze, Hyperpop, DIY Punk, Vaporwave Revival, Cottagecore, Y2K Revival, Afrofuturism, New Weird, Dreampop.
 
-### 2. SECURITY DEFINER function audit
+**Micro** — Hackathon Crews, 48-Hour Film Race, NaNoWriMo Sprint, One-Take Music Video, Album-in-a-Weekend, Solo Dev Jam, Beat Battle, Open Mic Night, Sketch-a-Day, Demo Day Prep.
 
-Scanner flagged ~30 definer functions executable by `anon`/`authenticated`. Most are RLS helpers (`has_role`, `is_workshop_member`, etc.) and must stay callable. Pass:
+**Cities** — keep existing 10, mark NYC / LA / Tokyo as `featured_at = now()` so the Featured rail isn't empty.
 
-- List every definer function, classify as **RLS-helper** (keep grants) or **RPC** (intentional client call) or **internal** (`REVOKE EXECUTE FROM anon, authenticated`).
-- One migration with the REVOKEs for the internal set.
-- Move `extensions` out of `public` schema if low-risk (pgcrypto/uuid-ossp are safe to relocate; skip if any policy references them unqualified).
+All seeded via `supabase--insert` (idempotent `ON CONFLICT (slug) DO UPDATE`).
 
-### 3. SEO + per-route `head()` sweep
+---
 
-- Trigger `seo--trigger_scan`, read findings.
-- Add `head()` to public dynamic routes missing per-page metadata. `seo-loaders.functions.ts` already exposes `getWorkSeo`, `getProfileSeo`, `getWorkshopSeo`, `getCitySeo` — wire them into loaders and `head()` on:
-  - `/works/$slug`
-  - `/u/$username`
-  - `/workshops/$slug`
-  - `/cities/$slug`
-  - `/g/$slug` (add a `getGroupSeo` loader)
-  - `/collab/$slug` (add a `getCollabSeo` loader)
-- Each leaf: title, description, og:title, og:description, og:url, canonical, og:image when a cover exists.
-- Mark findings fixed.
+## 2) Redesign `/groups` for density + discovery
 
-### 4. UI activity sweep (blockers only, no redesigns)
+Replace the current 3-up card grid with a magazine-style layout that uses the horizontal space and pivots based on the active tab:
 
-Targeted fixes only — no visual overhaul.
+```text
+┌──────────────────────────────────────────────────────────┐
+│  ← Groups                              [Search ⌕]        │
+│  ● Your scenes · Join the rooms…       42 groups open    │
+├──────────────────────────────────────────────────────────┤
+│  Featured events carousel  (kept, tightened)             │
+├──────────────────────────────────────────────────────────┤
+│  [For you] [All] [Cities] [Genres] [Micro] [Scenes]      │
+├──────────────────────────────────────────────────────────┤
+│  TRENDING NOW                                            │
+│  ▸ horizontal rail of 8 compact GroupChipCards           │
+├──────────────────────────────────────────────────────────┤
+│  BROWSE BY KIND   (only on All / For you)                │
+│  ┌─ Cities ──────┐ ┌─ Genres ──────┐                     │
+│  │ NYC · LA · …  │ │ Indie Film …  │                     │
+│  └───────────────┘ └───────────────┘                     │
+│  ┌─ Scenes ──────┐ ┌─ Micro ───────┐                     │
+│  └───────────────┘ └───────────────┘                     │
+├──────────────────────────────────────────────────────────┤
+│  ALL GROUPS — grid (2/3/4 cols responsive)               │
+└──────────────────────────────────────────────────────────┘
+```
 
-- **404 coverage**: confirm `notFoundComponent` on `/u/$username`, `/works/$slug`, `/g/$slug`, `/collab/$slug`, `/workshops/$slug`, `/cities/$slug`. Add where missing.
-- **Empty states**: gallery filter-combo empty, `u/$username` empty profile, `me.tickets`/`me.collabs` empty, "For You" cold-start fallback.
-- **Mobile a11y**: `aria-label` on icon-only buttons in `top-nav`, `mobile-nav`, `notifications-bell`, `messages-inbox-button`, `work-actions`, room toolbars. Tap targets ≥44px on mobile nav.
-- **Toast consistency**: one success/error/info variant; sweep `toast.error`/`toast.success` calls for stray defaults.
-- **Loading skeletons** on `/gallery`, `/`, `/workshop`, `/u/$username` (replace bare spinners only where present).
-- **Image alt fallback** to work title on user-uploaded covers.
+Key UI moves:
+- **Compact card variant** (`GroupCardCompact`) — smaller cover band, accent-color tint instead of identical orange, member/workshop count as DottedRow-style meta. Used in rails and "Browse by kind" preview clusters.
+- **4-up grid on xl** (currently caps at 3) so a 1280px screen shows more above the fold.
+- **Tab-aware section order**: when a `kind` tab is active, hide "Browse by kind" and lead straight into the full grid sorted by member_count, with a sub-filter chip row ("Trending · New · Most active this week").
+- **"Trending now" rail** — top 8 by recent member joins; gives the page motion even with sparse data.
+- **Empty cover fallback** — generate a subtle gradient from `accent_color` so cards look distinct without imagery; show kind icon watermark.
 
-### 5. Final smoke pass
+---
 
-After publish:
-- Sign up → onboarding → create workshop → join from second account.
-- Hard-refresh on a protected route (no auth loop).
-- DM send/receive.
-- Live room join + tools panel switch.
-- 4 public dynamic routes return 404 for bad slugs.
-- Console + network sweep on published URL.
+## 3) Make Groups a creation engine
 
-### Out of scope (unchanged)
+Currently `/g/$slug` is mostly a read surface. Add explicit "spark" CTAs that turn a Group into the entry point for Workshops and Collabs:
 
-Performance pass, analytics, onboarding rewrite, branded Google consent screen, `group_event_lineup_slots` visibility decision.
+**On the Group hero (`/g/$slug`)** — add a sticky action bar under the title:
+- `Start a Workshop here` → routes to `/workshops/new?group=<id>` (pre-tags the new workshop to this group via existing `tagWorkshopInGroup`).
+- `Post a Collab here` → routes to `/collab/new?group=<id>` (pre-tags via `tagCollabInGroup`).
+- `Share your Work` → opens existing pinned-works picker scoped to this group.
 
-### Order of operations
+**New "Spark" tab on the Group page** — a single panel showing:
+- Open Collabs looking for collaborators in this group (existing `group_collabs` join).
+- Workshops scheduled in next 7 days.
+- Prompt cards: "3 people are looking for a drummer", "2 hackathon crews forming for next weekend" — pulled from recent `collab_posts` + `workshop_lobbies` filtered by this group. Each is a one-click join.
 
-1. Realtime RLS migration (security blocker — first).
-2. Definer audit migration.
-3. SEO scan + per-route `head()` wiring.
-4. UI sweep.
-5. Publish + smoke.
+**On `/groups` index** — every GroupCard gets a tiny `+ Workshop` / `+ Collab` quick-action on hover (desktop) or in an overflow menu (mobile), so creation is one tap from the directory, not three pages deep.
+
+**Cross-group discovery** — at the bottom of each Group page, add a "Adjacent scenes" rail (other groups members of this group also joined) to keep the flow moving.
+
+---
+
+## 4) Routing / pre-fill plumbing
+
+- `/workshops/new` and `/collab/new` learn a `?group=<id>` search param. On submit, after the row is created, call the existing `tagWorkshopInGroup` / `tagCollabInGroup` server fns so the link is permanent.
+- Add a tiny `GroupPrefillBanner` at the top of those forms: "Posting into **Indie Filmmakers** · change".
+
+---
+
+## Technical Notes
+
+- **Files added**: `src/components/group-card-compact.tsx`, `src/components/groups-trending-rail.tsx`, `src/components/groups-browse-by-kind.tsx`, `src/components/group-spark-bar.tsx`, `src/components/group-spark-panel.tsx`, `src/components/group-prefill-banner.tsx`, `src/components/adjacent-groups-rail.tsx`.
+- **Files edited**: `src/routes/groups.index.tsx` (layout overhaul), `src/routes/g.$slug.tsx` (spark bar + tab + adjacent rail), `src/routes/workshops.new.tsx`, `src/routes/collab.new.tsx` (group prefill), `src/components/group-card.tsx` (accent-color gradient fallback, hover quick-actions).
+- **DB**: one migration / insert to seed ~40 groups. No schema changes — uses existing `groups`, `group_workshops`, `group_collabs` tables.
+- **No new server functions** — reuses `tagWorkshopInGroup`, `tagCollabInGroup`, `listUpcomingForMyGroups`.
+- Adjacent-groups query: SQL aggregating `group_members` overlap; cached 5 min.
+
+---
+
+## Open question (one)
+
+For the Group cover imagery, two options:
+- **(A)** Use curated Unsplash URLs per seeded group (free, instant, realistic photos).
+- **(B)** Skip photos, lean on per-group `accent_color` gradient + kind glyph for a more uniform editorial look.
+
+I lean **B** — it matches the serif/hairline dialect we built in Pass 1/2 and won't fight your brand. Tell me if you'd rather have photos.

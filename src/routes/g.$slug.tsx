@@ -25,6 +25,7 @@ import {
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
 import { toast } from "sonner";
+import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 
 type GroupRow = {
   id: string;
@@ -268,6 +269,10 @@ function GroupPage() {
           {tab === "workshops" && <GroupWorkshopTab group={group} />}
           {tab === "members" && <GroupMembersTab group={group} />}
           {tab === "about" && <GroupAboutTab group={group} />}
+        </div>
+
+        <div className="mt-16">
+          <AdjacentGroupsRail groupId={group.id} />
         </div>
       </div>
     </main>
