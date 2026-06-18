@@ -57,7 +57,7 @@ const baseSchema = z.object({
   title: z.string().min(2).max(120),
   tagline: z.string().max(140).nullable().optional(),
   description: z.string().max(6000).nullable().optional(),
-  kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other"]),
+  kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other", "lineup"]),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: z.string().url().nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),
@@ -79,6 +79,14 @@ const baseSchema = z.object({
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
   series_key: z.string().max(60).nullable().optional(),
+  // Lineup config (only used when kind === "lineup")
+  lineup_slot_count: z.number().int().min(1).max(50).optional(),
+  lineup_mode: z.enum(["open_claim", "host_approval"]).optional(),
+  lineup_field_act_type: z.boolean().optional(),
+  lineup_field_link: z.boolean().optional(),
+  lineup_field_notes: z.boolean().optional(),
+  lineup_allow_switch: z.boolean().optional(),
+  lineup_lock_minutes_before: z.number().int().min(0).max(1440).optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
