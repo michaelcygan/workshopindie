@@ -38,6 +38,14 @@ function WorkshopPreflight() {
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [busyMedium, setBusyMedium] = useState<string | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
+  const [prefs, setPrefs] = useState<{ mic: boolean; cam: boolean }>(() => {
+    if (typeof window === "undefined") return { mic: true, cam: true };
+    try {
+      const raw = window.localStorage.getItem("workshop:av-prefs");
+      if (raw) return JSON.parse(raw);
+    } catch { /* noop */ }
+    return { mic: true, cam: true };
+  });
   const [liveCount, setLiveCount] = useState(0);
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
