@@ -365,6 +365,9 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
+  if (tool.tool_type === "pip") {
+    return <PipBody />;
+  }
   if (tool.tool_type === "board") {
     return <BoardBody scope={scope} />;
   }
