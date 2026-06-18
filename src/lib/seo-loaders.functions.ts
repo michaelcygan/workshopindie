@@ -54,3 +54,15 @@ export const getCitySeo = createServerFn({ method: "GET" })
       .maybeSingle();
     return row ?? null;
   });
+
+export const getCollabSeo = createServerFn({ method: "GET" })
+  .inputValidator((d: { slug: string }) => ({ slug: slug.parse(d.slug) }))
+  .handler(async ({ data }) => {
+    setResponseHeader("cache-control", PUBLIC_CACHE);
+    const { data: row } = await supabaseAdmin
+      .from("collab_posts")
+      .select("title,description,category,status")
+      .eq("slug", data.slug)
+      .maybeSingle();
+    return row ?? null;
+  });

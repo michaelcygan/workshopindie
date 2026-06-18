@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { Category } from "@/lib/categories";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const urlSchema = z.object({
   url: z.string().trim().min(1).max(2000).url(),
@@ -223,6 +224,7 @@ async function scrapeOpenGraph(url: string) {
 }
 
 export const extractWorkFromUrl = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => urlSchema.parse(input))
   .handler(async ({ data }): Promise<ExtractedWork> => {
     const cleaned = cleanUrl(data.url);

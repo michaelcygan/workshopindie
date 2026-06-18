@@ -27,10 +27,17 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/collab/$slug")({
   component: CollabDetail,
-  head: ({ params }) => {
+  loader: async ({ params }) => {
+    const { getCollabSeo } = await import("@/lib/seo-loaders.functions");
+    const seo = await getCollabSeo({ data: { slug: params.slug } });
+    return { seo };
+  },
+  head: ({ params, loaderData }) => {
     const url = `https://workshopindie.com/collab/${params.slug}`;
-    const title = `Open Collab Call — Workshop`;
-    const description = "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
+    const s = loaderData?.seo;
+    const title = s?.title ? `${s.title} — Open Collab on Workshop` : `Open Collab Call — Workshop`;
+    const description = s?.description?.slice(0, 160)
+      ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
     return {
       meta: [
         { title },

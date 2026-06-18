@@ -121,15 +121,15 @@ export const exportMyData = createServerFn({ method: "POST" })
     ] = await Promise.all([
       db.from("profiles").select("*").eq("id", userId).maybeSingle(),
       db.from("notification_preferences").select("*").eq("user_id", userId).maybeSingle(),
-      db.from("works").select("*").eq("created_by", userId),
-      db.from("collab_posts").select("*").eq("user_id", userId),
-      db.from("workshops").select("*").eq("host_user_id", userId),
-      db.from("workshop_applications").select("*").eq("user_id", userId),
-      db.from("comments").select("*").eq("user_id", userId),
-      db.from("follows").select("*").eq("follower_user_id", userId),
-      db.from("follows").select("*").eq("followed_user_id", userId),
-      db.from("user_blocks").select("*").eq("blocker_user_id", userId),
-      db.from("reports").select("*").eq("reporter_user_id", userId),
+      db.from("works").select("*").eq("created_by", userId).limit(500),
+      db.from("collab_posts").select("*").eq("user_id", userId).limit(500),
+      db.from("workshops").select("*").eq("host_user_id", userId).limit(500),
+      db.from("workshop_applications").select("*").eq("user_id", userId).limit(1000),
+      db.from("comments").select("*").eq("user_id", userId).limit(2000),
+      db.from("follows").select("*").eq("follower_user_id", userId).limit(2000),
+      db.from("follows").select("*").eq("followed_user_id", userId).limit(2000),
+      db.from("user_blocks").select("*").eq("blocker_user_id", userId).limit(500),
+      db.from("reports").select("*").eq("reporter_user_id", userId).limit(500),
     ]);
 
     return {

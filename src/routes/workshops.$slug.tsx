@@ -334,7 +334,8 @@ function HostApplications({ ws }: { ws: Workshop }) {
         .from("workshop_applications")
         .select("*, applicant:profiles!workshop_applications_user_id_fkey(id,display_name,username,avatar_url,headline), role:workshop_roles(role_name)")
         .eq("workshop_id", ws.id)
-        .order("submitted_at", { ascending: false });
+        .order("submitted_at", { ascending: false })
+        .limit(200);
       return data ?? [];
     },
   });
