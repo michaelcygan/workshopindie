@@ -11,15 +11,17 @@ import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
 import { RecapChip } from "@/components/recap-chip";
 import { EmptySpark } from "@/components/empty-spark";
+import { GroupsTrendingRail } from "@/components/groups-trending-rail";
+import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 
 export const Route = createFileRoute("/groups/")({
   component: GroupsIndex,
   head: () => ({
     meta: [
       { title: "Groups — Workshop" },
-      { name: "description", content: "Scenes, genres, cities. Join the rooms your work belongs in." },
+      { name: "description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
       { property: "og:title", content: "Groups — Workshop" },
-      { property: "og:description", content: "Scenes, genres, cities. Join the rooms your work belongs in." },
+      { property: "og:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
     ],
   }),
 });
@@ -29,10 +31,10 @@ type Tab = "for-you" | "city" | "genre" | "micro" | "scene" | "all";
 const TABS: { id: Tab; label: string }[] = [
   { id: "for-you", label: "For you" },
   { id: "all", label: "All" },
-  { id: "city", label: "Cities" },
   { id: "genre", label: "Genres" },
-  { id: "micro", label: "Micro" },
   { id: "scene", label: "Scenes" },
+  { id: "micro", label: "Micro" },
+  { id: "city", label: "Cities" },
 ];
 
 function GroupsIndex() {
@@ -88,10 +90,20 @@ function GroupsIndex() {
     return rows;
   }, [allGroups, tab, query, myIdSet]);
 
-  const featured = useMemo(
-    () => allGroups.filter((g) => g.featured_at).slice(0, 6),
+  const trending = useMemo(
+    () =>
+      [...allGroups]
+        .sort((a, b) => b.member_count - a.member_count)
+        .slice(0, 8),
     [allGroups],
   );
+
+  const featured = useMemo(
+    () => allGroups.filter((g) => g.featured_at).slice(0, 8),
+    [allGroups],
+  );
+
+  const showClusters = (tab === "all" || tab === "for-you") && !query;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
@@ -102,7 +114,7 @@ function GroupsIndex() {
           {myIds.length > 0 ? "Your scenes" : "Find your scene"}
         </KickerChip>
         <p className="text-sm text-ink-muted">
-          Scenes, genres, cities. Join the rooms your work belongs in.
+          Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in.
         </p>
         <RecapChip count={allGroups.length} label="groups open" />
       </div>
@@ -112,7 +124,7 @@ function GroupsIndex() {
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search groups"
+          placeholder="Search groups — try Indie Filmmakers, Hyperpop, Hackathon…"
           className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
         />
       </div>
@@ -120,9 +132,6 @@ function GroupsIndex() {
       <div className="mt-8">
         <FeaturedEventsCarousel />
       </div>
-
-
-
 
       <div className="mt-5 flex flex-wrap gap-1.5">
         {TABS.map((t) => (
@@ -142,14 +151,19 @@ function GroupsIndex() {
         ))}
       </div>
 
-      {tab === "all" && featured.length > 0 && (
+      {showClusters && trending.length > 0 && (
+        <section className="mt-8">
+          <GroupsTrendingRail groups={trending} joinedIds={myIdSet} />
+        </section>
+      )}
+
+      {showClusters && (
         <section className="mt-10">
-          <h2 className="mb-3 px-1 font-display text-lg text-ink">Featured</h2>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {featured.map((g) => (
-              <GroupCard key={g.id} group={g} joined={myIdSet.has(g.id)} />
-            ))}
-          </div>
+          <GroupsBrowseByKind
+            groups={allGroups}
+            joinedIds={myIdSet}
+            onJump={(k) => setTab(k)}
+          />
         </section>
       )}
 
@@ -162,14 +176,20 @@ function GroupsIndex() {
             </Link>
           </div>
         ) : isLoading ? (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <EmptySpark
-            title={tab === "for-you" ? "You haven't joined any Groups yet." : "No groups here yet."}
+            title={
+              query
+                ? "No groups match that search."
+                : tab === "for-you"
+                  ? "You haven't joined any Groups yet."
+                  : "No groups here yet."
+            }
             body={
               tab === "for-you"
                 ? "Browse the catalog and join the scenes your work belongs in."
@@ -188,13 +208,35 @@ function GroupsIndex() {
             }
           />
         ) : (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {filtered.map((g) => (
+          <>
+            <div className="mb-3 flex items-baseline justify-between px-1">
+              <h2 className="font-display text-xl text-ink md:text-2xl">
+                {tab === "all" || tab === "for-you" ? "All groups" : TABS.find((t) => t.id === tab)?.label}
+              </h2>
+              <span className="text-xs text-ink-muted">{filtered.length} shown</span>
+            </div>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((g) => (
+                <GroupCard key={g.id} group={g} joined={myIdSet.has(g.id)} />
+              ))}
+            </div>
+          </>
+        )}
+      </section>
+
+      {featured.length > 0 && tab === "all" && !query && (
+        <section className="mt-12">
+          <div className="mb-3 flex items-baseline justify-between px-1">
+            <h2 className="font-display text-xl text-ink md:text-2xl">Featured</h2>
+            <span className="text-xs text-ink-muted">Hand-picked this week</span>
+          </div>
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {featured.map((g) => (
               <GroupCard key={g.id} group={g} joined={myIdSet.has(g.id)} />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      )}
     </main>
   );
 }
