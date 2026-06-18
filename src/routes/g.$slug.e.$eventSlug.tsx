@@ -1,14 +1,16 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
-import { Calendar, Users, Share2, ArrowLeft, Tag } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Calendar, Users, Share2, ArrowLeft, Tag, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
+import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
 import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates } from "@/lib/group-events.functions";
+import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
