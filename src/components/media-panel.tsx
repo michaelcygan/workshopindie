@@ -858,7 +858,7 @@ function ChatPanel({
           maxLength={1000}
           className="bg-background/10 border-background/10 text-background placeholder:text-background/40"
         />
-        <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={!draft.trim() || sending}>
+        <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={!draft.trim() || sending} aria-label="Send message">
           <Send className="h-4 w-4" />
         </Button>
       </form>
