@@ -519,6 +519,7 @@ function Grid({
                       className="absolute right-1 top-1 h-6 w-6 rounded-full bg-background/80 backdrop-blur"
                       onClick={(e) => { e.stopPropagation(); onUnpin?.(existing.id); }}
                       title="Unpin"
+                      aria-label="Unpin Work"
                     >
                       <PinOff className="h-3 w-3" />
                     </Button>
@@ -533,6 +534,7 @@ function Grid({
                     className="absolute right-1 top-1 h-6 w-6 rounded-full bg-background/80 opacity-0 backdrop-blur transition group-hover:opacity-100"
                     onClick={(e) => { e.stopPropagation(); onPin?.(w.id); }}
                     title="Pin"
+                    aria-label="Pin Work"
                   >
                     <Pin className="h-3 w-3" />
                   </Button>
