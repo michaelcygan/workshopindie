@@ -1,7 +1,8 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import {
   Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { TopNav } from "@/components/top-nav";
@@ -12,6 +13,7 @@ import { FirstRunHint } from "@/components/first-run-hint";
 import { WorkshopLiveToast } from "@/components/workshop-live-toast";
 import { RefCapture } from "@/components/ref-capture";
 import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
+import { supabase } from "@/integrations/supabase/client";
 
 
 import { Toaster } from "@/components/ui/sonner";
@@ -114,6 +116,7 @@ function RootComponent() {
           <WorkshopLiveToast />
           <RefCapture />
           <PendingRsvpFlush />
+          <SignOutCacheReset />
 
 
 
@@ -127,5 +130,23 @@ function RootComponent() {
 
 function PendingRsvpFlush() {
   usePendingRsvpFlush();
+  return null;
+}
+
+/**
+ * Clear React Query cache on sign-out so a second user on the same browser
+ * doesn't briefly see the previous user's DMs / notifications / me-page data.
+ */
+function SignOutCacheReset() {
+  const qc = useQueryClient();
+  useEffect(() => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === "SIGNED_OUT") {
+        await qc.cancelQueries();
+        qc.clear();
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [qc]);
   return null;
 }
