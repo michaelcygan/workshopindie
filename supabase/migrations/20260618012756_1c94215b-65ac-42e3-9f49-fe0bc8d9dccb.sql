@@ -1,0 +1,1 @@
+ALTER VIEW public.group_event_lineup_slots_public SET (security_invoker = on);
