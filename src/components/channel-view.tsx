@@ -2,14 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, UserPlus, X, Maximize2 } from "lucide-react";
+import { UserPlus, X, Maximize2 } from "lucide-react";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   MediaPanel,
   VideoStage,
@@ -20,12 +18,23 @@ import {
 } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
+import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 import { ChatPolls } from "@/components/chat-polls";
+import {
+  ChatMentionInput,
+  MessageBody,
+  type MentionCandidate,
+} from "@/components/chat-mention-input";
+import {
+  ReactionAddButton,
+  ReactionPills,
+  type ReactionRow,
+} from "@/components/chat-message-reactions";
 
 // Board moved to Workshop Tools; live room no longer mounts RoomBoard.
 import {
@@ -40,7 +49,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-type Message = { id: string; user_id: string; body: string; created_at: string };
+type Message = {
+  id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  mentions?: string[] | null;
+};
 type Presence = {
   user_id: string;
   last_seen_at: string;
