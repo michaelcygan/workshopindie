@@ -635,41 +635,43 @@ function NewCollab() {
 
       {/* Desktop sticky action bar */}
       <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-border bg-background/95 backdrop-blur md:block">
-        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
-          <p className="text-xs text-ink-muted">
-            {allValid
-              ? "All set — post when you're ready."
-              : !pitchValid
-                ? "Add a title and a short description to continue."
-                : !shapeValid
-                  ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
-                  : !teamValid
-                    ? (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")
-                    : "Pick a date and time for the Workshop."}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
-            <Button
-              type="button"
-              disabled={submitting}
-              variant={allValid ? "default" : "outline"}
-              className="rounded-full"
-              onClick={(e) => {
-                const form = document.querySelector("form");
-                if (form) form.requestSubmit();
-                else onSubmit(e as unknown as React.FormEvent);
-              }}
-            >
-              {submitting
-                ? "Posting…"
-                : workshopMode === "now"
-                  ? "Post & open Workshop"
-                  : workshopMode === "scheduled"
-                    ? "Post & schedule Workshop"
-                    : "Post Collab"}
-            </Button>
+        <div className="mx-auto max-w-2xl px-4">
+          <div className="flex items-center justify-between gap-3 py-3">
+            <p className="text-xs text-ink-muted">
+              {allValid
+                ? "All set — post when you're ready."
+                : !pitchValid
+                  ? "Add a title and a short description to continue."
+                  : !shapeValid
+                    ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
+                    : !teamValid
+                      ? (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")
+                      : "Pick a date and time for the Workshop."}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+              <Button
+                type="button"
+                disabled={submitting}
+                variant={allValid ? "default" : "outline"}
+                className="rounded-full"
+                onClick={(e) => {
+                  const form = document.querySelector("form");
+                  if (form) form.requestSubmit();
+                  else onSubmit(e as unknown as React.FormEvent);
+                }}
+              >
+                {submitting
+                  ? "Posting…"
+                  : workshopMode === "now"
+                    ? "Post & open Workshop"
+                    : workshopMode === "scheduled"
+                      ? "Post & schedule Workshop"
+                      : "Post Collab"}
+              </Button>
+            </div>
           </div>
-          <p className="mt-1 hidden text-[11px] text-ink-muted md:block">
+          <p className="pb-2 text-[11px] text-ink-muted">
             What happens next:&nbsp;
             <span className="text-ink-soft">Post</span>
             <span className="mx-1.5 opacity-50">→</span>
@@ -679,6 +681,7 @@ function NewCollab() {
           </p>
         </div>
       </div>
+
 
 
       <PlusGate
