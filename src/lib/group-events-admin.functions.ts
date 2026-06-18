@@ -305,18 +305,21 @@ export const createEventSeries = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { recurrence_rule, occurrence_count, featured, status, ...rest } = data;
+    const { recurrence_rule, occurrence_count, featured, status, cover_url, ...rest } = data;
     const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const baseStart = new Date(rest.starts_at);
     const baseEnd = new Date(rest.ends_at);
     if (Number.isNaN(baseStart.getTime()) || Number.isNaN(baseEnd.getTime())) {
       throw new Error("Invalid start or end time");
     }
+    // Rehost once and share across the series.
+    const sharedCover = await rehostCoverIfExternal(cover_url, `series_${seriesKey}`);
     const rows = Array.from({ length: occurrence_count }, (_, i) => {
       const s = addOccurrence(baseStart, recurrence_rule, i);
       const e = addOccurrence(baseEnd, recurrence_rule, i);
       return {
         ...rest,
+        cover_url: sharedCover,
         slug: "",
         created_by: userId,
         featured_at: i === 0 && featured ? new Date().toISOString() : null,
