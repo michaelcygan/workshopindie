@@ -161,7 +161,7 @@ function Signup() {
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already here? <Link to="/login" className="text-gradient-motion hover:underline">Sign in</Link>
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
