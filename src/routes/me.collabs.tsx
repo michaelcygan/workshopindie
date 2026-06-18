@@ -166,26 +166,23 @@ function MyCollabsPage() {
   });
 
   const deadlinePassedCount = useMemo(
-    () => hosting.filter((r) => r.ends_on && r.ends_on < today).length,
+    () => hosting.filter((r) => r.status === "open" && r.ends_on && r.ends_on < today).length,
     [hosting, today],
   );
-  const wrapupCount = wrapup.length;
-  const attentionCount = deadlinePassedCount + wrapupCount;
+  const archivedCount = useMemo(
+    () => hosting.filter((r) => r.status === "closed").length,
+    [hosting],
+  );
+  const attentionCount = deadlinePassedCount;
 
   function invalidateAll() {
     qc.invalidateQueries({ queryKey: ["my-collabs-hosting"] });
-    qc.invalidateQueries({ queryKey: ["my-collabs-wrapup"] });
     qc.invalidateQueries({ queryKey: ["my-collabs-published"] });
   }
 
   const closeMut = useMutation({
     mutationFn: (id: string) => closeFn({ data: { collabPostId: id } }),
     onSuccess: () => { toast.success("Closed"); invalidateAll(); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const reopenMut = useMutation({
-    mutationFn: (id: string) => reopenFn({ data: { collabPostId: id } }),
-    onSuccess: () => { toast.success("Reopened"); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
@@ -197,6 +194,14 @@ function MyCollabsPage() {
     mutationFn: (id: string) => dismissFn({ data: { collabPostId: id } }),
     onSuccess: () => invalidateAll(),
   });
+  const deleteMut = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("collab_posts").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success("Removed"); invalidateAll(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   if (loading || !user) {
     return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
@@ -204,10 +209,10 @@ function MyCollabsPage() {
 
   const tabs: { id: Tab; label: string; count?: number; emphasize?: boolean }[] = [
     { id: "hosting", label: "Hosting", count: hosting.length, emphasize: deadlinePassedCount > 0 },
-    { id: "wrapup", label: "Wrap up", count: wrapupCount, emphasize: wrapupCount > 0 },
     { id: "published", label: "Published", count: published.length },
     { id: "applied", label: "Applied", count: applied.length },
   ];
+
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 md:px-6 md:py-14">
