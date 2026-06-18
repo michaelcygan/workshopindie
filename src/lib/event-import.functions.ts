@@ -318,12 +318,43 @@ async function parseEventFromHtml(url: string, html: string): Promise<{ draft: D
     }
   }
 
+  // Platform-specific inline JSON fallbacks (server-rendered, no headless browser needed).
+  const host = (() => { try { return new URL(url).hostname.toLowerCase(); } catch { return ""; } })();
+  if (!startsAt || !title) {
+    if (host.includes("eventbrite.")) {
+      const eb = findFirstEventbriteEvent(html);
+      if (eb) {
+        if (!ev) parser = "eventbrite";
+        title = title ?? eb.title;
+        description = description ?? eb.description;
+        startsAt = startsAt ?? eb.startsAt;
+        endsAt = endsAt ?? eb.endsAt;
+        coverUrl = coverUrl ?? eb.coverUrl;
+        venueName = venueName ?? eb.venueName;
+        venueAddress = venueAddress ?? eb.venueAddress;
+        onlineUrl = onlineUrl ?? eb.onlineUrl;
+      }
+    } else if (host.includes("partiful.com")) {
+      const pf = findFirstPartifulEvent(html);
+      if (pf) {
+        if (!ev) parser = "partiful";
+        title = title ?? pf.title;
+        description = description ?? pf.description;
+        startsAt = startsAt ?? pf.startsAt;
+        endsAt = endsAt ?? pf.endsAt;
+        coverUrl = coverUrl ?? pf.coverUrl;
+        venueName = venueName ?? pf.venueName;
+        venueAddress = venueAddress ?? pf.venueAddress;
+      }
+    }
+  }
+
   title = title ?? metaTag(html, "og:title") ?? metaTag(html, "twitter:title") ?? (html.match(/<title>([^<]*)<\/title>/i)?.[1]?.trim() ?? null);
   description = description ?? metaTag(html, "og:description") ?? metaTag(html, "description");
   coverUrl = coverUrl ?? metaTag(html, "og:image") ?? metaTag(html, "twitter:image");
   startsAt = startsAt ?? metaTag(html, "event:start_time");
   endsAt = endsAt ?? metaTag(html, "event:end_time");
-  if (!ev && (title || description)) parser = "og";
+  if (parser === "fallback" && !ev && (title || description)) parser = "og";
 
   if (description) description = stripHtml(description).slice(0, 6000);
   if (title) title = stripHtml(title).slice(0, 120);
