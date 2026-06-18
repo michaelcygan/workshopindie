@@ -511,7 +511,7 @@ function WorkshopPreflight() {
       </div>
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
-        Everything in a live room is ephemeral until someone turns it into a{" "}
+        Everything in a Workshop is ephemeral until someone creates a{" "}
         <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
           Collab
         </Link>
