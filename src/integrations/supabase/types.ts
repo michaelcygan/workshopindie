@@ -4917,6 +4917,27 @@ export type Database = {
         }[]
       }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      realtime_can_access_dm: {
+        Args: { _conversation_id: string }
+        Returns: boolean
+      }
+      realtime_can_access_instant_room: {
+        Args: { _room_id: string }
+        Returns: boolean
+      }
+      realtime_can_access_persona: {
+        Args: { _persona_id: string }
+        Returns: boolean
+      }
+      realtime_can_access_workshop: {
+        Args: { _workshop_id: string }
+        Returns: boolean
+      }
+      realtime_can_access_workshop_host: {
+        Args: { _workshop_id: string }
+        Returns: boolean
+      }
+      realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       slugify: { Args: { _in: string }; Returns: string }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
