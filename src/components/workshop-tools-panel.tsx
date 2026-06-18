@@ -398,6 +398,44 @@ function BoardBody({ scope }: { scope: ToolsScope }) {
   );
 }
 
+function PipBody() {
+  const supported = typeof window !== "undefined" && (
+    "documentPictureInPicture" in window || "pictureInPictureEnabled" in document
+  );
+  function openPip() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("workshop:pip-open"));
+  }
+  return (
+    <div className="p-4">
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet/10 text-violet">
+            <PictureInPicture2 className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Picture-in-Picture</div>
+            <h3 className="mt-0.5 font-display text-lg text-ink">Float the room above any tab</h3>
+            <p className="mt-1 text-sm text-ink-soft">
+              Pop the Workshop into a small always-on-top window so you can keep working in other apps without leaving the room.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Button onClick={openPip} disabled={!supported} size="sm" className="rounded-full gap-1.5">
+                <PictureInPicture2 className="h-3.5 w-3.5" /> Pop out
+              </Button>
+              {!supported && (
+                <span className="text-xs text-ink-muted">Not supported in this browser</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+
 
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
   const { user } = useAuth();
