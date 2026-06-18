@@ -249,7 +249,7 @@ export function LineupPanel({ eventId, isHostOrAdmin }: { eventId: string; isHos
                   {isHostOrAdmin && (s.status === "requested" || s.status === "confirmed" || s.status === "soft_hold") && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-7 w-7"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="More slot actions"><MoreVertical className="h-3.5 w-3.5" /></Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {s.status === "requested" && (
