@@ -519,7 +519,7 @@ function TopicRow({
   id,
   label,
   description,
-  hasSubMediums,
+  subOptions,
   live,
   participants,
   busy,
@@ -532,13 +532,13 @@ function TopicRow({
   id: string;
   label: string;
   description?: string;
-  hasSubMediums?: boolean;
+  subOptions?: import("@/lib/topic-prompts").SubOption[];
   live: number;
   participants?: ActiveInstantRoom["participants"];
   busy?: boolean;
   disabled?: boolean;
   onClick: () => void;
-  onPickSub?: (m: Category) => void;
+  onPickSub?: (opt: import("@/lib/topic-prompts").SubOption) => void;
   eyebrow?: string;
   accent?: boolean;
 }) {
