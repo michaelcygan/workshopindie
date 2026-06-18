@@ -148,24 +148,40 @@ function WorkshopPreflight() {
     return best ?? "writing";
   }, [liveByMedium]);
 
-  const canDrop = !!devices && (devices.mic || devices.cam);
+  const effMic = !!devices?.mic && prefs.mic;
+  const effCam = !!devices?.cam && prefs.cam;
+  const canDrop = effMic || effCam;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify(prefs)); } catch { /* noop */ }
+  }, [prefs]);
+
+  const toggleMic = () => {
+    if (!devices?.mic) { toast.error("No microphone detected."); return; }
+    setPrefs((p) => ({ ...p, mic: !p.mic }));
+  };
+  const toggleCam = () => {
+    if (!devices?.cam) { toast.error("No camera detected."); return; }
+    setPrefs((p) => ({ ...p, cam: !p.cam }));
+  };
 
   const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
     if (!devices) return null;
+    if (!effMic && !effCam) return null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: devices.mic,
-        video: devices.cam,
+        audio: effMic,
+        video: effCam,
       });
       for (const t of stream.getTracks()) t.stop();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Permission denied";
-      toast.error(`Couldn't access ${devices.cam && !devices.mic ? "camera" : "mic"}: ${msg}`);
+      toast.error(`Couldn't access ${effCam && !effMic ? "camera" : "mic"}: ${msg}`);
       return null;
     }
-    return devices.cam ? "video" : "voice";
-  }, [devices]);
+    return effCam ? "video" : "voice";
+  }, [devices, effMic, effCam]);
 
   async function handlePick(medium: Category | null) {
     if (busy) return;
