@@ -356,8 +356,30 @@ function CollabPage() {
         <RecapChip count={rawPosts?.length ?? 0} label="open" />
       </div>
 
+      {/* View filter: All / Open / Shipped */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        {(["all", "open", "shipped"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={cn(
+              "h-8 rounded-full border px-3 text-xs font-medium transition",
+              filters.view === v
+                ? "border-transparent bg-ink text-background"
+                : "border-border bg-surface text-ink-soft hover:bg-muted",
+            )}
+            aria-pressed={filters.view === v}
+          >
+            {v === "all" ? "All" : v === "open" ? "Open" : "Shipped"}
+          </button>
+        ))}
+      </div>
+
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
+
+
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="shrink-0">
