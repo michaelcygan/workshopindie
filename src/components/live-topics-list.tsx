@@ -179,12 +179,21 @@ export function LiveTopicsList({
 
   // ── Shared building blocks ──────────────────────────────────────────────
 
+  // Pill eyebrow with primary ping dot — matches "Live editorial" direction.
   const eyebrow = (
-    <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">
-      <PulseDots active={!noneLive} />
+    <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[10.5px] font-semibold uppercase tracking-[0.18em] text-primary">
+      <span className="relative inline-flex h-1.5 w-1.5">
+        {!noneLive && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
+        )}
+        <span className={cn(
+          "relative inline-flex h-1.5 w-1.5 rounded-full",
+          noneLive ? "bg-primary/40" : "bg-primary",
+        )} />
+      </span>
       <span>{noneLive ? "Start the night" : "Live now"}</span>
       {!noneLive && (
-        <span className="tabular-nums text-ink/55">· {liveCount}</span>
+        <span className="tabular-nums text-primary/70">· {liveCount}</span>
       )}
     </div>
   );
@@ -208,7 +217,7 @@ export function LiveTopicsList({
       <TopicRow
         id="lounge"
         label="Lounge"
-        eyebrow="General"
+        eyebrow="Pinned"
         accent
         description="Mixed-medium drop-in. Whoever shows up."
         live={loungeLive}
