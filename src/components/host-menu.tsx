@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import {
-  Crown,
+  RadioTower,
   Target,
   Lock,
   Unlock,
@@ -226,7 +226,7 @@ export function HostMenu({
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button size="sm" variant="outline" className="rounded-full gap-1.5">
-            <Crown className="h-3.5 w-3.5 text-violet" />
+            <RadioTower className="h-3.5 w-3.5 text-violet" />
             <span className="hidden sm:inline">Host</span>
           </Button>
         </DropdownMenuTrigger>

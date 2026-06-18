@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, Coffee, Crown, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, Coffee, RadioTower, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -269,7 +269,7 @@ function LiveRoomPage() {
           <span>Live · up to 5</span>
           {isHost && (
             <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 px-1.5 py-0.5 font-medium text-violet">
-              <Crown className="h-3 w-3" /> Hosting
+              <RadioTower className="h-3 w-3" /> Hosting
             </span>
           )}
           {isLeaderless && !isPromoted && (

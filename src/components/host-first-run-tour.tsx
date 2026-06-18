@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Crown, Wrench, Rocket, Share2, X, Check } from "lucide-react";
+import { RadioTower, Wrench, Rocket, Share2, X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -60,7 +60,7 @@ export function HostFirstRunTour({ active }: { active: boolean }) {
       <div className="rounded-2xl border border-border bg-surface p-4 shadow-lift">
         <div className="flex items-start gap-3">
           <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet/10 text-violet">
-            <Crown className="h-4 w-4" />
+            <RadioTower className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-ink-muted">

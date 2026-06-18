@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
@@ -491,7 +491,7 @@ function WorkshopPreflight() {
       <div className="mt-4 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center justify-between gap-3">
         <div className="min-w-0 flex items-center gap-3">
           <div className="hidden sm:grid h-9 w-9 place-items-center rounded-full bg-muted/40 text-ink shrink-0">
-            <Crown className="h-4 w-4" />
+            <RadioTower className="h-4 w-4" />
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium text-ink truncate">Hosting a session?</div>
@@ -505,7 +505,7 @@ function WorkshopPreflight() {
           disabled={!canDrop || busy !== null}
           className="shrink-0 rounded-full h-9 gap-2 px-4"
         >
-          {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+          {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
           {busy === "host" ? "Opening…" : hostLabel ? `Spin up ${hostLabel}` : "Spin up your room"}
         </Button>
       </div>
