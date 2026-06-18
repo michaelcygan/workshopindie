@@ -319,9 +319,12 @@ function GroupsIndex() {
               </p>
               <p className="text-xs text-ink-muted/80">
                 Missing your scene?{" "}
-                <Link to="/groups" className="text-ink underline-offset-2 hover:underline">
+                <a
+                  href="mailto:hello@workshopindie.com?subject=Suggest%20a%20group"
+                  className="text-ink underline-offset-2 hover:underline"
+                >
                   Suggest a group
-                </Link>{" "}
+                </a>{" "}
                 — we add new rooms weekly.
               </p>
             </div>
