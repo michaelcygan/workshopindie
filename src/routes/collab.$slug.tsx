@@ -39,18 +39,22 @@ export const Route = createFileRoute("/collab/$slug")({
     const title = s?.title ? `${s.title} — Open Collab on Workshop` : `Open Collab Call — Workshop`;
     const description = s?.description?.slice(0, 160)
       ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
+    // Archived (closed + no Work) collabs are owner-only — keep them out of search.
+    const isArchived = s?.status === "closed" && !s?.resulting_work_id;
+    const meta = [
+      { title },
+      { name: "description", content: description },
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { property: "og:type", content: "article" },
+      { property: "og:url", content: url },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: description },
+    ];
+    if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
     return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:type", content: "article" },
-        { property: "og:url", content: url },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-      ],
+      meta,
       links: [{ rel: "canonical", href: url }],
     };
   },
