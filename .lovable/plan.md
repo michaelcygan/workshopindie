@@ -66,3 +66,10 @@ Three targeted upgrades. Scraper stays in-house — no Firecrawl, no third-party
 - Per-end-user OAuth
 
 Ready to build on approval.
+---
+## v1 Polish Pass — Implemented (2026-06-18)
+
+- Cover image rehosting: private `event-covers` bucket; createEvent/createEventSeries/updateEventSeriesFuture download external cover URLs and replace with a 5-year signed URL. On any failure, the original URL is kept.
+- Server-side auto-cancel: `/api/public/events/report-sweep` cancels events with 3+ unresolved `not_an_event` reports; pg_cron runs it every 15 min. Marks reports as `action_taken`.
+- Series-wide edits: `updateEventSeriesFuture` + `cancelEventSeriesFuture` server fns; new admin strip on the event detail page (Edit all future / Cancel all future). Time/cadence stay per-occurrence.
+- Scraper upgrade: added Eventbrite `window.__SERVER_DATA__` and Partiful `__NEXT_DATA__` inline-JSON extractors. Source chip in review dialog shows which parser ran (`structured` / `eventbrite` / `partiful` / `og` / `fallback`).
