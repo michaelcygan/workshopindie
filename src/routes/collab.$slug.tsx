@@ -392,22 +392,23 @@ function CollabDetail() {
           </div>
         )}
 
-        {/* Owner-only nudge once closed but no Work published yet */}
-        {isOwner && post.status === "closed" && !post.resulting_work_id && (
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-            <Sparkles className="h-5 w-5 text-primary" />
+        {/* Owner-only nudge once closed but no Work published yet — this post is archived for everyone else */}
+        {isOwner && isArchived && (
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-2/60 p-4">
+            <Archive className="h-5 w-5 text-ink-soft" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-ink">Made something? Publish the Work.</p>
-              <p className="text-xs text-ink-muted">Three taps — your collaborators get credit automatically.</p>
+              <p className="font-medium text-ink">Archived{post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.</p>
+              <p className="text-xs text-ink-muted">Only you can see this page. Publish a Work to make it public, or delete it.</p>
             </div>
-            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => reopenMut.mutate()}>
-              <RotateCcw className="h-3.5 w-3.5" /> Reopen
+            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this post permanently?")) deletePost.mutate(); }}>
+              <Trash2 className="h-3.5 w-3.5" /> Delete
             </Button>
             <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
-              <Sparkles className="h-3.5 w-3.5" /> Publish Work
+              <Sparkles className="h-3.5 w-3.5" /> Publish a Work from this
             </Button>
           </div>
         )}
+
 
         {/* Public "this collab produced →" card, shown to everyone once linked */}
         {resultingWork && (
