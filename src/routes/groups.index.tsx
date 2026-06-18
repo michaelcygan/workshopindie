@@ -36,7 +36,13 @@ export const Route = createFileRoute("/groups/")({
       { name: "description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
       { property: "og:title", content: "Groups — Workshop" },
       { property: "og:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
+      { property: "og:url", content: "https://workshopindie.com/groups" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Groups — Workshop" },
+      { name: "twitter:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
     ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/groups" }],
   }),
 });
 
