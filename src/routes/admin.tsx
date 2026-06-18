@@ -55,6 +55,13 @@ function AdminLayout() {
             Events
           </Link>
           <Link
+            to="/admin/lineups"
+            className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-background"
+            activeProps={{ className: "rounded-full bg-background px-3 py-1.5 text-sm font-medium text-ink shadow-sm" }}
+          >
+            Lineups
+          </Link>
+          <Link
             to="/admin/links"
             className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-background"
             activeProps={{ className: "rounded-full bg-background px-3 py-1.5 text-sm font-medium text-ink shadow-sm" }}
