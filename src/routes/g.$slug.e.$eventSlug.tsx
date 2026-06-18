@@ -343,3 +343,84 @@ function EventPage() {
     </main>
   );
 }
+
+function SeriesAdminStrip({ eventId, seriesKey }: { eventId: string; seriesKey: string }) {
+  const { isAdmin } = useUserRoles();
+  const router = useRouter();
+  const cancelFn = useServerFn(cancelEventSeriesFuture);
+  const updateFn = useServerFn(updateEventSeriesFuture);
+  const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+
+  if (!isAdmin) return null;
+
+  async function cancelFuture() {
+    if (!confirm("Cancel this and ALL future occurrences in the series? RSVPs will be notified.")) return;
+    setBusy(true);
+    try {
+      const res = await cancelFn({ data: { series_key: seriesKey, from_event_id: eventId, reason: "Series canceled by host." } });
+      toast.success(`Canceled ${res.canceled} occurrence${res.canceled === 1 ? "" : "s"}`);
+      router.invalidate();
+    } catch (ex) {
+      toast.error((ex as Error).message);
+    } finally { setBusy(false); }
+  }
+
+  async function applyEdit() {
+    const patch: { title?: string; description?: string } = {};
+    if (title.trim()) patch.title = title.trim();
+    if (description.trim()) patch.description = description.trim();
+    if (Object.keys(patch).length === 0) { setEditing(false); return; }
+    setBusy(true);
+    try {
+      const res = await updateFn({ data: { series_key: seriesKey, from_event_id: eventId, patch } });
+      toast.success(`Updated ${res.updated} occurrence${res.updated === 1 ? "" : "s"}`);
+      setEditing(false);
+      router.invalidate();
+    } catch (ex) {
+      toast.error((ex as Error).message);
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="mt-5 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Repeat className="h-4 w-4 text-primary" />
+        <span className="font-medium text-ink">Part of a recurring series</span>
+        <span className="text-xs text-ink-muted">Admin actions affect this and all future occurrences.</span>
+        <div className="ml-auto flex items-center gap-1">
+          <Button size="sm" variant="ghost" className="h-7 rounded-full" disabled={busy} onClick={() => setEditing((e) => !e)}>
+            {editing ? "Close" : "Edit all future"}
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 rounded-full text-destructive" disabled={busy} onClick={cancelFuture}>
+            Cancel all future
+          </Button>
+        </div>
+      </div>
+      {editing && (
+        <div className="mt-3 space-y-2">
+          <input
+            type="text"
+            placeholder="New title (leave blank to keep)"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          />
+          <textarea
+            placeholder="New description (leave blank to keep)"
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+          />
+          <p className="text-[11px] text-ink-muted">
+            Time, date, and cadence stay unchanged. Edit individual occurrences for time shifts.
+          </p>
+          <Button size="sm" className="rounded-full" disabled={busy} onClick={applyEdit}>Apply to all future</Button>
+        </div>
+      )}
+    </div>
+  );
+}
