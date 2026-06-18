@@ -16,7 +16,7 @@ import { ShareCollabSheet } from "@/components/share-collab-sheet";
 import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { applyToCollab, listApplicants } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
@@ -79,7 +79,7 @@ function CollabDetail() {
   const router = useRouter();
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
-  const reopenFn = useServerFn(reopenCollab);
+  
   const extendFn = useServerFn(extendCollabDeadline);
   const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
@@ -181,11 +181,6 @@ function CollabDetail() {
   const closeMut = useMutation({
     mutationFn: () => closeFn({ data: { collabPostId: post!.id } }),
     onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
-    onError: (e: Error) => toast.error(e.message),
-  });
-  const reopenMut = useMutation({
-    mutationFn: () => reopenFn({ data: { collabPostId: post!.id } }),
-    onSuccess: () => { toast.success("Reopened"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
