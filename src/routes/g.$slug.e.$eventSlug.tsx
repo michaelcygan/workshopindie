@@ -16,6 +16,7 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
 import { ReportDialog } from "@/components/report-dialog";
+import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
