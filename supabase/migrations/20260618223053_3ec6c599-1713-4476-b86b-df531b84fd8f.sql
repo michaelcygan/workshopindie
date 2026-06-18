@@ -1,0 +1,1 @@
+ALTER TYPE public.tool_type ADD VALUE IF NOT EXISTS 'pip';
