@@ -327,7 +327,10 @@ function CollabDetail() {
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
             )}
+          </div>
         </div>
+
+
 
         {/* Owner activity meter (open state) */}
         {isOwner && post.status === "open" && activity && (activity.applicants > 0 || activity.shares > 0) && (
