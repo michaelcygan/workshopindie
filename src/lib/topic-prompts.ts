@@ -27,6 +27,48 @@ export const SUB_MEDIUMS: { id: Category; label: string }[] = [
   { id: "visual", label: "Visual" },
 ];
 
+/**
+ * Per-parent sub-topic options shown in the topic-row popover.
+ * Two kinds:
+ *  - "medium" overrides the picked medium entirely (Critique/Co-working pattern).
+ *  - "flavor" keeps the parent medium but pre-fills the room title — routes
+ *    through the same "use prompt" flow as the marquee.
+ */
+export type SubOption =
+  | { kind: "medium"; id: Category; label: string }
+  | { kind: "flavor"; label: string; title: string; medium: Category };
+
+const WORK_MEDIUM_SUBS: SubOption[] = SUB_MEDIUMS.map((m) => ({
+  kind: "medium",
+  id: m.id,
+  label: m.label,
+}));
+
+export const SUB_OPTIONS_BY_PARENT: Partial<Record<Category, SubOption[]>> = {
+  critique: WORK_MEDIUM_SUBS,
+  coworking: WORK_MEDIUM_SUBS,
+  office_hours: [
+    { kind: "flavor", label: "Distribution", title: "Office Hours · Distribution", medium: "office_hours" },
+    { kind: "flavor", label: "Editing", title: "Office Hours · Editing", medium: "office_hours" },
+    { kind: "flavor", label: "Pricing", title: "Office Hours · Pricing", medium: "office_hours" },
+    { kind: "flavor", label: "Story", title: "Office Hours · Story", medium: "office_hours" },
+    { kind: "flavor", label: "Code", title: "Office Hours · Code", medium: "office_hours" },
+    { kind: "flavor", label: "Marketing", title: "Office Hours · Marketing", medium: "office_hours" },
+  ],
+  open_mic: [
+    { kind: "flavor", label: "Comedy", title: "Open Mic · Comedy", medium: "open_mic" },
+    { kind: "flavor", label: "Music", title: "Open Mic · Music", medium: "open_mic" },
+    { kind: "flavor", label: "Poetry", title: "Open Mic · Poetry", medium: "open_mic" },
+    { kind: "flavor", label: "Storytelling", title: "Open Mic · Storytelling", medium: "open_mic" },
+  ],
+  jam: [
+    { kind: "flavor", label: "Music jam", title: "Music jam", medium: "jam" },
+    { kind: "flavor", label: "Writing jam", title: "Writing jam", medium: "jam" },
+    { kind: "flavor", label: "Visual jam", title: "Visual jam", medium: "jam" },
+    { kind: "flavor", label: "Build jam", title: "Build jam", medium: "jam" },
+  ],
+};
+
 export type PromptWeight = "obvious" | "wild";
 export type RoomPrompt = {
   title: string;
