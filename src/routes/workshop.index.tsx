@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, Video, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, Crown, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
@@ -38,6 +38,14 @@ function WorkshopPreflight() {
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [busyMedium, setBusyMedium] = useState<string | null>(null);
   const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
+  const [prefs, setPrefs] = useState<{ mic: boolean; cam: boolean }>(() => {
+    if (typeof window === "undefined") return { mic: true, cam: true };
+    try {
+      const raw = window.localStorage.getItem("workshop:av-prefs");
+      if (raw) return JSON.parse(raw);
+    } catch { /* noop */ }
+    return { mic: true, cam: true };
+  });
   const [liveCount, setLiveCount] = useState(0);
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
   const [hostMedium, setHostMedium] = useState<Category | null>(null);
@@ -140,24 +148,40 @@ function WorkshopPreflight() {
     return best ?? "writing";
   }, [liveByMedium]);
 
-  const canDrop = !!devices && (devices.mic || devices.cam);
+  const effMic = !!devices?.mic && prefs.mic;
+  const effCam = !!devices?.cam && prefs.cam;
+  const canDrop = effMic || effCam;
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify(prefs)); } catch { /* noop */ }
+  }, [prefs]);
+
+  const toggleMic = () => {
+    if (!devices?.mic) { toast.error("No microphone detected."); return; }
+    setPrefs((p) => ({ ...p, mic: !p.mic }));
+  };
+  const toggleCam = () => {
+    if (!devices?.cam) { toast.error("No camera detected."); return; }
+    setPrefs((p) => ({ ...p, cam: !p.cam }));
+  };
 
   const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
     if (!devices) return null;
+    if (!effMic && !effCam) return null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        audio: devices.mic,
-        video: devices.cam,
+        audio: effMic,
+        video: effCam,
       });
       for (const t of stream.getTracks()) t.stop();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Permission denied";
-      toast.error(`Couldn't access ${devices.cam && !devices.mic ? "camera" : "mic"}: ${msg}`);
+      toast.error(`Couldn't access ${effCam && !effMic ? "camera" : "mic"}: ${msg}`);
       return null;
     }
-    return devices.cam ? "video" : "voice";
-  }, [devices]);
+    return effCam ? "video" : "voice";
+  }, [devices, effMic, effCam]);
 
   async function handlePick(medium: Category | null) {
     if (busy) return;
@@ -295,24 +319,40 @@ function WorkshopPreflight() {
               <Loader2 className="h-3 w-3 animate-spin text-ink-muted" />
             ) : (
               <>
-                <span
-                  title={devices.mic ? "Mic ready" : "No mic"}
+                <button
+                  type="button"
+                  onClick={toggleMic}
+                  disabled={!devices.mic}
+                  title={!devices.mic ? "No mic detected" : effMic ? "Mic on — click to mute on join" : "Mic muted — click to unmute"}
+                  aria-pressed={effMic}
                   className={cn(
-                    "inline-flex items-center gap-1",
-                    devices.mic ? "text-ink" : "text-ink-muted/50",
+                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
+                    !devices.mic
+                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
+                      : effMic
+                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
+                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
                   )}
                 >
-                  <Mic className="h-3.5 w-3.5" />
-                </span>
-                <span
-                  title={devices.cam ? "Camera ready" : "No camera"}
+                  {effMic ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleCam}
+                  disabled={!devices.cam}
+                  title={!devices.cam ? "No camera detected" : effCam ? "Camera on — click to turn off on join" : "Camera off — click to turn on"}
+                  aria-pressed={effCam}
                   className={cn(
-                    "inline-flex items-center gap-1",
-                    devices.cam ? "text-ink" : "text-ink-muted/50",
+                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
+                    !devices.cam
+                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
+                      : effCam
+                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
+                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
                   )}
                 >
-                  <Video className="h-3.5 w-3.5" />
-                </span>
+                  {effCam ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
+                </button>
               </>
             )}
           </div>
