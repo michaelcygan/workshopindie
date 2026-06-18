@@ -17,7 +17,7 @@ import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
 import { SceneTicker } from "@/components/scene-ticker";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { GroupsJoinFeedCard } from "@/components/groups-join-feed-card";
+import { GroupsJoinFeedStrip } from "@/components/groups-join-feed-strip";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
@@ -195,28 +195,36 @@ function GroupsIndex() {
       {/* Discovery band: balanced 12-col grid so both columns share the same
           vertical rhythm — no orphaned space on either side. */}
       {showClusters && (
-        <div className="mt-4 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-          <div className="flex flex-col gap-6 lg:col-span-4">
-            <FeaturedEventsCompact />
-            {trending.length > 0 && (
-              <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
-            )}
-            <GroupsJoinFeedCard
+        <>
+          <div className="mt-4 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+            <div className="flex flex-col gap-6 lg:col-span-4">
+              <div className="flex-1">
+                <FeaturedEventsCompact />
+              </div>
+              {trending.length > 0 && (
+                <div className="flex-1">
+                  <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
+                </div>
+              )}
+            </div>
+            <div className="lg:col-span-8">
+              <GroupsBrowseByKind
+                groups={allGroups}
+                joinedIds={myIdSet}
+                onJump={(k) => setTab(k)}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <GroupsJoinFeedStrip
               hasGroups={myIds.length > 0}
               onBrowseAll={() =>
                 allGroupsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
               }
-              className="flex-1"
             />
           </div>
-          <div className="lg:col-span-8">
-            <GroupsBrowseByKind
-              groups={allGroups}
-              joinedIds={myIdSet}
-              onJump={(k) => setTab(k)}
-            />
-          </div>
-        </div>
+        </>
       )}
 
       <section ref={allGroupsRef} className="mt-8 scroll-mt-24">
