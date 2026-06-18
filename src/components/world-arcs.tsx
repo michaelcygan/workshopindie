@@ -34,21 +34,37 @@ const CITIES: Record<string, City> = {
   capetown: { name: "Cape Town", lon: 18.42, lat: -33.92 },
   buenosaires: { name: "Buenos Aires", lon: -58.38, lat: -34.6 },
   sydney: { name: "Sydney", lon: 151.21, lat: -33.87 },
+  london: { name: "London", lon: -0.13, lat: 51.51 },
+  la: { name: "Los Angeles", lon: -118.24, lat: 34.05 },
+  istanbul: { name: "Istanbul", lon: 28.98, lat: 41.01 },
+  bangkok: { name: "Bangkok", lon: 100.5, lat: 13.76 },
+  montreal: { name: "Montreal", lon: -73.57, lat: 45.5 },
+  accra: { name: "Accra", lon: -0.19, lat: 5.6 },
 };
 
 const PAIRS: Pair[] = [
   { from: CITIES.lagos, to: CITIES.berlin, verb: "Scoring a short film" },
   { from: CITIES.saopaulo, to: CITIES.tokyo, verb: "Co-writing a track" },
-  { from: CITIES.cdmx, to: CITIES.lisbon, verb: "Cover photography" },
-  { from: CITIES.nairobi, to: CITIES.toronto, verb: "Edit pass" },
-  { from: CITIES.seoul, to: CITIES.paris, verb: "Album artwork" },
+  { from: CITIES.cdmx, to: CITIES.lisbon, verb: "Cover-photo color study" },
+  { from: CITIES.nairobi, to: CITIES.toronto, verb: "Late-night edit pass" },
+  { from: CITIES.seoul, to: CITIES.paris, verb: "Album artwork crit" },
   { from: CITIES.mumbai, to: CITIES.nyc, verb: "Voice on a chorus" },
-  { from: CITIES.bali, to: CITIES.capetown, verb: "Doc footage" },
+  { from: CITIES.bali, to: CITIES.capetown, verb: "Doc footage trade" },
   { from: CITIES.buenosaires, to: CITIES.sydney, verb: "Mixing a single" },
-  { from: CITIES.toronto, to: CITIES.lagos, verb: "Beat trade" },
-  { from: CITIES.paris, to: CITIES.cdmx, verb: "Set design" },
-  { from: CITIES.tokyo, to: CITIES.nairobi, verb: "Animation cels" },
+  { from: CITIES.toronto, to: CITIES.lagos, verb: "Beat cook-off" },
+  { from: CITIES.paris, to: CITIES.cdmx, verb: "Set design pass" },
+  { from: CITIES.tokyo, to: CITIES.nairobi, verb: "Animation cel review" },
   { from: CITIES.berlin, to: CITIES.saopaulo, verb: "Remix swap" },
+  { from: CITIES.london, to: CITIES.accra, verb: "Screenplay table read" },
+  { from: CITIES.la, to: CITIES.seoul, verb: "Pitch your loglines" },
+  { from: CITIES.istanbul, to: CITIES.montreal, verb: "Poetry round" },
+  { from: CITIES.bangkok, to: CITIES.london, verb: "Type-spec crit" },
+  { from: CITIES.montreal, to: CITIES.bali, verb: "Synth patch trade" },
+  { from: CITIES.nyc, to: CITIES.istanbul, verb: "Story-edit pass" },
+  { from: CITIES.accra, to: CITIES.lisbon, verb: "Cover-art jam" },
+  { from: CITIES.sydney, to: CITIES.bangkok, verb: "Lyric workshop" },
+  { from: CITIES.capetown, to: CITIES.la, verb: "Stills review" },
+  { from: CITIES.lisbon, to: CITIES.mumbai, verb: "Foley swap" },
 ];
 
 const REDUCE_MOTION =
@@ -61,8 +77,10 @@ const HOLD_MS = 1600;
 const FADE_MS = 800;
 const COOL_MS = 600;
 const LIFE = DRAW_MS + HOLD_MS + FADE_MS + COOL_MS;
+// Pulse ring expands the moment an arc lands.
+const PULSE_MS = 1200;
 
-type ArcSlot = { pairIdx: number; start: number };
+type ArcSlot = { pairIdx: number; start: number; landedAt: number | null };
 
 export function WorldArcs({ className }: { className?: string }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
@@ -71,6 +89,7 @@ export function WorldArcs({ className }: { className?: string }) {
   const dotsRef = useRef<Array<[number, number]> | null>(null);
   const dotAlphaRef = useRef(0);
   const inViewRef = useRef(true);
+  const lastInteractionRef = useRef(0);
 
   // Build land dots after first paint, chunked so we never block the main thread.
   useEffect(() => {
@@ -110,6 +129,20 @@ export function WorldArcs({ className }: { className?: string }) {
     return () => io.disconnect();
   }, []);
 
+  // Interaction listener for idle-slowdown.
+  useEffect(() => {
+    lastInteractionRef.current = performance.now();
+    const bump = () => { lastInteractionRef.current = performance.now(); };
+    window.addEventListener("pointermove", bump, { passive: true });
+    window.addEventListener("scroll", bump, { passive: true });
+    window.addEventListener("keydown", bump);
+    return () => {
+      window.removeEventListener("pointermove", bump);
+      window.removeEventListener("scroll", bump);
+      window.removeEventListener("keydown", bump);
+    };
+  }, []);
+
   // Main animation loop — fully imperative, no React state per frame.
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -138,19 +171,18 @@ export function WorldArcs({ className }: { className?: string }) {
 
     const projection = geoOrthographic().clipAngle(90);
 
-    // Initialize arc slots, staggered
     let nextPair = 0;
     const t0 = performance.now();
     const slots: ArcSlot[] = Array.from({ length: ACTIVE_ARCS }, (_, i) => ({
       pairIdx: (nextPair++) % PAIRS.length,
       start: t0 + i * (LIFE / ACTIVE_ARCS),
+      landedAt: null,
     }));
 
     let lambda = 20;
     let last = t0;
     let raf = 0;
 
-    // Cache arc sample coords per slot (lon,lat) to avoid re-interpolating every frame
     const cachedSamples: Array<{ idx: number; samples: [number, number][] } | null> = slots.map(() => null);
 
     const sampleArc = (pair: Pair): [number, number][] => {
@@ -165,8 +197,10 @@ export function WorldArcs({ className }: { className?: string }) {
       const dt = now - last;
       last = now;
       if (inViewRef.current && !REDUCE_MOTION) {
-        lambda = (lambda + dt * 0.006) % 360;
-        // dot alpha fades in once dots are ready
+        // Idle slowdown: 40% slower after 30s with no input.
+        const idleMs = now - lastInteractionRef.current;
+        const speed = idleMs > 30_000 ? 0.0036 : 0.006;
+        lambda = (lambda + dt * speed) % 360;
         if (dotsRef.current && dotAlphaRef.current < 1) {
           dotAlphaRef.current = Math.min(1, dotAlphaRef.current + dt / 600);
         }
@@ -181,11 +215,39 @@ export function WorldArcs({ className }: { className?: string }) {
 
       ctx.clearRect(0, 0, w, h);
 
+      // Atmospheric halo — soft coral glow just outside the sphere edge.
+      {
+        const halo = ctx.createRadialGradient(w / 2, h / 2, radius * 0.98, w / 2, h / 2, radius * 1.18);
+        halo.addColorStop(0, "rgba(232,93,58,0.18)");
+        halo.addColorStop(0.6, "rgba(232,93,58,0.06)");
+        halo.addColorStop(1, "rgba(232,93,58,0)");
+        ctx.fillStyle = halo;
+        ctx.beginPath();
+        ctx.arc(w / 2, h / 2, radius * 1.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       // Sphere subtle fill
       ctx.beginPath();
       ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
       ctx.fillStyle = "rgba(255,255,255,0.32)";
       ctx.fill();
+
+      // Day/night terminator — diagonal soft gradient, cool overlay on the "night" side.
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
+      ctx.clip();
+      const term = ctx.createLinearGradient(
+        w / 2 - radius, h / 2 - radius,
+        w / 2 + radius, h / 2 + radius,
+      );
+      term.addColorStop(0, "rgba(255,240,220,0.14)");
+      term.addColorStop(0.5, "rgba(255,255,255,0)");
+      term.addColorStop(1, "rgba(40,30,60,0.18)");
+      ctx.fillStyle = term;
+      ctx.fillRect(w / 2 - radius, h / 2 - radius, radius * 2, radius * 2);
+      ctx.restore();
 
       // Land dots
       const dots = dotsRef.current;
@@ -205,8 +267,11 @@ export function WorldArcs({ className }: { className?: string }) {
           if (zr < 0.02) continue;
           const px = w / 2 + x3 * radius;
           const py = h / 2 - yr * radius;
-          const alpha = (0.4 + zr * 0.6) * dotA;
-          ctx.fillStyle = `rgba(190,70,40,${alpha})`;
+          // Lit side (upper-left, where the terminator gradient is warm) renders brighter.
+          const lit = (px - (w / 2 - radius) + (h / 2 + radius - py)) / (radius * 4);
+          const litBoost = 0.85 + lit * 0.3;
+          const alpha = (0.4 + zr * 0.6) * dotA * litBoost;
+          ctx.fillStyle = `rgba(190,70,40,${Math.min(1, alpha)})`;
           ctx.fillRect(px - 0.7, py - 0.7, 1.4, 1.4);
         }
       }
@@ -227,6 +292,7 @@ export function WorldArcs({ className }: { className?: string }) {
         if (local >= LIFE) {
           slot.pairIdx = nextPair++ % PAIRS.length;
           slot.start = now;
+          slot.landedAt = null;
           cachedSamples[s] = null;
           local = 0;
         }
@@ -236,21 +302,20 @@ export function WorldArcs({ className }: { className?: string }) {
         }
         const samples = cachedSamples[s]!.samples;
 
-        // progress
         let drawT = 0;
         let fade = 1;
         if (local < DRAW_MS) {
           drawT = local / DRAW_MS;
         } else if (local < DRAW_MS + HOLD_MS) {
           drawT = 1;
+          if (slot.landedAt == null) slot.landedAt = now;
         } else if (local < DRAW_MS + HOLD_MS + FADE_MS) {
           drawT = 1;
           fade = 1 - (local - DRAW_MS - HOLD_MS) / FADE_MS;
         } else {
-          continue; // cooldown — nothing to draw
+          continue;
         }
 
-        // Project samples, cull back-side, draw up to drawT
         const lastIdx = Math.floor(drawT * (samples.length - 1));
         ctx.beginPath();
         let started = false;
@@ -278,7 +343,6 @@ export function WorldArcs({ className }: { className?: string }) {
         ctx.lineCap = "round";
         ctx.stroke();
 
-        // From pin
         const project = (lon: number, lat: number) => {
           const l = (lon * Math.PI) / 180 - lam;
           const p = (lat * Math.PI) / 180;
@@ -301,10 +365,25 @@ export function WorldArcs({ className }: { className?: string }) {
           ctx.fillStyle = `rgba(232,93,58,${0.95 * fade})`;
           ctx.beginPath(); ctx.arc(from.x, from.y, 2.4, 0, Math.PI * 2); ctx.fill();
         }
-        // To pin (only once arc has reached it)
         if (drawT >= 1 && lastVisible) {
           const to = project(pair.to.lon, pair.to.lat);
           const tp = to ?? lastVisible;
+
+          // Landing pulse — expands once when the arc reaches the destination.
+          if (slot.landedAt != null) {
+            const since = now - slot.landedAt;
+            if (since >= 0 && since < PULSE_MS) {
+              const t = since / PULSE_MS;
+              const r = 4 + t * 22;
+              const a = (1 - t) * 0.55 * fade;
+              ctx.strokeStyle = `rgba(214,68,116,${a})`;
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
+
           const g = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, 11);
           g.addColorStop(0, `rgba(214,68,116,${0.6 * fade})`);
           g.addColorStop(1, "rgba(214,68,116,0)");
@@ -313,19 +392,26 @@ export function WorldArcs({ className }: { className?: string }) {
           ctx.fillStyle = `rgba(214,68,116,${0.95 * fade})`;
           ctx.beginPath(); ctx.arc(tp.x, tp.y, 3, 0, Math.PI * 2); ctx.fill();
 
-          // Pick the most recently-completed arc as the label
           if (!activeLabel || fade > activeLabel.opacity) {
             activeLabel = { pair, x: tp.x, y: tp.y, opacity: fade };
           }
         }
       }
 
-      // Update single label DOM imperatively
       if (label) {
         if (activeLabel) {
           label.style.opacity = String(activeLabel.opacity);
           label.style.transform = `translate(${activeLabel.x + 12}px, ${activeLabel.y - 30}px)`;
-          label.textContent = `${activeLabel.pair.from.name} → ${activeLabel.pair.to.name} · ${activeLabel.pair.verb}`;
+          // Hairline pill with pulsing dot + workshop name
+          label.innerHTML = `
+            <span class="relative inline-flex h-1.5 w-1.5 mr-1.5">
+              <span class="absolute inset-0 animate-ping rounded-full bg-primary opacity-70"></span>
+              <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
+            </span>
+            <span class="text-ink">${activeLabel.pair.from.name} → ${activeLabel.pair.to.name}</span>
+            <span class="mx-1 text-ink-muted/60">·</span>
+            <span class="text-ink-muted">${activeLabel.pair.verb}</span>
+          `;
         } else {
           label.style.opacity = "0";
         }
@@ -346,7 +432,7 @@ export function WorldArcs({ className }: { className?: string }) {
       <canvas ref={canvasRef} className="absolute inset-0" />
       <div
         ref={labelRef}
-        className="pointer-events-none absolute left-0 top-0 origin-top-left whitespace-nowrap rounded-full border border-border bg-surface/95 backdrop-blur px-2.5 py-1 text-[11px] text-ink shadow-soft transition-opacity duration-300"
+        className="pointer-events-none absolute left-0 top-0 inline-flex origin-top-left items-center whitespace-nowrap rounded-full border border-border bg-surface/95 px-2.5 py-1 text-[11px] shadow-soft backdrop-blur transition-opacity duration-300"
         style={{ opacity: 0 }}
       />
     </div>

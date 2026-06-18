@@ -7,6 +7,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { cn } from "@/lib/utils";
+import { PageHeaderCompact } from "@/components/page-header-compact";
+import { KickerChip } from "@/components/kicker-chip";
+import { RecapChip } from "@/components/recap-chip";
+import { EmptySpark } from "@/components/empty-spark";
 
 export const Route = createFileRoute("/groups/")({
   component: GroupsIndex,
@@ -90,15 +94,20 @@ function GroupsIndex() {
   );
 
   return (
-    <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
-      <div className="flex flex-col gap-2">
-        <h1 className="font-display text-4xl text-ink md:text-5xl">Groups</h1>
-        <p className="text-ink-muted">
+    <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      <PageHeaderCompact title="Groups" />
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <KickerChip live={myIds.length > 0}>
+          {myIds.length > 0 ? "Your scenes" : "Find your scene"}
+        </KickerChip>
+        <p className="text-sm text-ink-muted">
           Scenes, genres, cities. Join the rooms your work belongs in.
         </p>
+        <RecapChip count={allGroups.length} label="groups open" />
       </div>
 
-      <div className="mt-6 flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">
+      <div className="mt-5 flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">
         <Search className="h-4 w-4 text-ink-muted" />
         <input
           value={query}
@@ -111,6 +120,8 @@ function GroupsIndex() {
       <div className="mt-8">
         <FeaturedEventsCarousel />
       </div>
+
+
 
 
       <div className="mt-5 flex flex-wrap gap-1.5">
@@ -157,25 +168,25 @@ function GroupsIndex() {
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">
-              {tab === "for-you" ? "You haven't joined any Groups yet." : "No groups here yet."}
-            </h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-              {tab === "for-you"
+          <EmptySpark
+            title={tab === "for-you" ? "You haven't joined any Groups yet." : "No groups here yet."}
+            body={
+              tab === "for-you"
                 ? "Browse the catalog and join the scenes your work belongs in."
-                : "More launching soon — check back."}
-            </p>
-            {tab === "for-you" && (
-              <button
-                type="button"
-                onClick={() => setTab("all")}
-                className="mt-4 rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
-              >
-                Browse all Groups
-              </button>
-            )}
-          </div>
+                : "More launching soon — check back."
+            }
+            action={
+              tab === "for-you" ? (
+                <button
+                  type="button"
+                  onClick={() => setTab("all")}
+                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
+                >
+                  Browse all Groups
+                </button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {filtered.map((g) => (
