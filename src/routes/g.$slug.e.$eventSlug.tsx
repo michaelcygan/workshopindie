@@ -92,6 +92,7 @@ type EventRow = {
   maybe_count: number;
   waitlist_count: number;
   series_key: string | null;
+  created_by: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
 
