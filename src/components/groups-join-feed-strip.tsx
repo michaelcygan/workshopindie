@@ -93,30 +93,36 @@ export function GroupsJoinFeedStrip({ hasGroups, onBrowseAll }: Props) {
         </button>
       </div>
 
-      <div
-        className="group relative overflow-hidden"
-        style={{
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%)",
-          maskImage:
-            "linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%)",
-        }}
-      >
-        <div
-          className="flex w-max items-stretch gap-3 py-3 pl-4 group-hover:[animation-play-state:paused] motion-reduce:animation-none"
-          style={{ animation: "groups-join-strip 90s linear infinite" }}
-        >
-          {loop.map((item, i) => (
-            <StripItem key={`${item.kind}-${item.id}-${i}`} item={item} />
-          ))}
+      {items.length === 1 ? (
+        <div className="flex justify-center px-4 py-3">
+          <StripItem item={items[0]} />
         </div>
-        <style>{`
-          @keyframes groups-join-strip {
-            from { transform: translate3d(0, 0, 0); }
-            to   { transform: translate3d(-50%, 0, 0); }
-          }
-        `}</style>
-      </div>
+      ) : (
+        <div
+          className="group relative overflow-hidden"
+          style={{
+            WebkitMaskImage:
+              "linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to right, transparent 0, black 4%, black 96%, transparent 100%)",
+          }}
+        >
+          <div
+            className="flex w-max items-stretch gap-3 py-3 pl-4 group-hover:[animation-play-state:paused] motion-reduce:animation-none"
+            style={{ animation: "groups-join-strip 90s linear infinite" }}
+          >
+            {loop.map((item, i) => (
+              <StripItem key={`${item.kind}-${item.id}-${i}`} item={item} />
+            ))}
+          </div>
+          <style>{`
+            @keyframes groups-join-strip {
+              from { transform: translate3d(0, 0, 0); }
+              to   { transform: translate3d(-50%, 0, 0); }
+            }
+          `}</style>
+        </div>
+      )}
     </section>
   );
 }
