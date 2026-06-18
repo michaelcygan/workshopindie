@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Crown } from "lucide-react";
+import { RadioTower } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -29,7 +29,7 @@ export function HostedByLine({ hostUserId }: { hostUserId: string | null }) {
 
   const content = (
     <span className="inline-flex items-center gap-1.5 text-[11px] text-ink-muted">
-      <Crown className="h-3 w-3 text-violet" />
+      <RadioTower className="h-3 w-3 text-violet" />
       Hosted by
       <span className="inline-flex items-center gap-1 text-ink">
         {data?.avatar_url ? (

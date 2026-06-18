@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Crown, Globe2, Users, Link2, Loader2, Sparkles } from "lucide-react";
+import { RadioTower, Globe2, Users, Link2, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -50,7 +50,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Crown className="h-4 w-4 text-violet" /> Open your Workshop
+            <RadioTower className="h-4 w-4 text-violet" /> Open your Workshop
           </DialogTitle>
           <DialogDescription>
             Confirm who can find this room. You can change topic and title before it opens.
@@ -137,7 +137,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
 
           <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
             <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-ink-muted">
-              <Crown className="h-3 w-3 text-violet" /> You're the host
+              <RadioTower className="h-3 w-3 text-violet" /> You're the host
             </div>
             <ul className="mt-1.5 space-y-0.5 text-xs text-ink-soft leading-snug">
               <li>· Set a focus message everyone sees at the top</li>
@@ -161,7 +161,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
             disabled={busy}
             className="gap-2"
           >
-            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crown className="h-4 w-4" />}
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
             {busy ? "Opening…" : "Open Workshop"}
           </Button>
         </DialogFooter>
