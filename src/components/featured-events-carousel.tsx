@@ -7,7 +7,14 @@ import { EventCard, type EventCardData } from "@/components/event-card";
 import { Button } from "@/components/ui/button";
 import { useUserRoles } from "@/hooks/use-user-role";
 
-export function FeaturedEventsCarousel({ className }: { className?: string }) {
+export function FeaturedEventsCarousel({
+  className,
+  hideWhenEmpty = false,
+}: {
+  className?: string;
+  /** When true, render nothing if there are no featured events (no empty hero). */
+  hideWhenEmpty?: boolean;
+}) {
   const fetchFn = useServerFn(listFeaturedEvents);
   const { isAdmin } = useUserRoles();
   const { data } = useQuery({
@@ -16,6 +23,7 @@ export function FeaturedEventsCarousel({ className }: { className?: string }) {
     staleTime: 60_000,
   });
   const events = (data ?? []) as unknown as EventCardData[];
+  if (hideWhenEmpty && events.length === 0) return null;
 
   return (
     <section className={className}>

@@ -138,12 +138,8 @@ function GroupsIndex() {
         <RecapChip count={allGroups.length} label="groups open" />
       </div>
 
-      <div className="mt-8">
-        <FeaturedEventsCarousel />
-      </div>
-
-      {/* Sticky filter strip — tabs + search collapse together once the hero scrolls away. */}
-      <div className="sticky top-0 z-30 -mx-4 mt-6 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
+      {/* Sticky filter strip — placed directly under header so Groups content lands above the fold. */}
+      <div className="sticky top-0 z-30 -mx-4 mt-5 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
           <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {TABS.map((t) => (
@@ -184,20 +180,22 @@ function GroupsIndex() {
         </div>
       </div>
 
-      {showClusters && trending.length > 0 && (
-        <section className="mt-8">
-          <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
-        </section>
-      )}
-
+      {/* Above-the-fold on desktop: Trending list (narrow column) + Browse-by-kind clusters (wide column). */}
       {showClusters && (
-        <section className="mt-8">
-          <GroupsBrowseByKind
-            groups={allGroups}
-            joinedIds={myIdSet}
-            onJump={(k) => setTab(k)}
-          />
-        </section>
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {trending.length > 0 && (
+            <div className="lg:col-span-1">
+              <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
+            </div>
+          )}
+          <div className={cn(trending.length > 0 ? "lg:col-span-2" : "lg:col-span-3")}>
+            <GroupsBrowseByKind
+              groups={allGroups}
+              joinedIds={myIdSet}
+              onJump={(k) => setTab(k)}
+            />
+          </div>
+        </div>
       )}
 
       <section className="mt-8">
