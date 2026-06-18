@@ -30,7 +30,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
     staleTime: 60_000,
   });
   const events = (data ?? []) as unknown as EventLite[];
-  const upcoming = events.slice(0, 6);
+  const upcoming = events.slice(0, 3);
 
   return (
     <section className={className}>
