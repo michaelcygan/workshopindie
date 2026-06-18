@@ -285,7 +285,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
     const r = bulkResults?.[i];
     if (!r || !r.ok) return;
     setEditingBulk(i);
-    loadDraftIntoForm(r.draft, { url: r.url, host: r.host }, r.warnings);
+    loadDraftIntoForm(r.draft, { url: r.url, host: r.host, parser: r.parser }, r.warnings);
     setStep("review");
     setTab("single");
   }
