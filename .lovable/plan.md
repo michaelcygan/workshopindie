@@ -1,96 +1,68 @@
-## Audit of the import flow (v1 scope)
+# Event Import v1 Polish Pass (no external scrapers)
 
-Three additions, all small, all reusing existing tables (`group_events`, `reports`, `notifications`). No new tables — that keeps it durable at scale and reversible.
+Three targeted upgrades. Scraper stays in-house — no Firecrawl, no third-party APIs. Bulk cap stays at 25.
 
----
+## 1. Better in-house scraper
 
-### 1. Recurring events
+**Why:** Current scraper handles JSON-LD/OG well but misses Partiful/Eventbrite client-rendered pages.
 
-**Detection (server-side, in `event-import.functions.ts`):**
-- JSON-LD `EventSeries` / nested `subEvent` array → use those dates directly.
-- Plain-text heuristic on title + description: regex for `every (Sun|Mon|…)day`, `weekly`, `bi-?weekly`, `every other`, `monthly`, `first/last <weekday> of the month`.
-- If matched, return an extra field on the draft: `recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY", weekday: 0–6, hint: "every Sunday" } | null`.
+**Approach (all server-side, zero new deps):**
+- Add a real HTML parser pass in `src/lib/event-import.functions.ts` using `htmlparser2` (already transitively available; tiny, Worker-safe). No headless browser.
+- Expand extraction order: JSON-LD `Event` / `EventSeries` → `og:*` / `twitter:*` → `<meta itemprop="...">` microdata → Eventbrite-specific `__SERVER_DATA__` blob → Partiful-specific `__NEXT_DATA__` blob → text heuristics.
+- Both Eventbrite and Partiful ship full event payloads in inline `<script>` JSON (server-rendered, no JS execution needed). Parsing those gets us title, start/end, timezone, venue, cover, organizer, ticket URL on those two platforms.
+- Strengthen recurrence detector: also read JSON-LD `eventSchedule` (RRULE-ish) when present.
+- Show a "Source: eventbrite / partiful / generic" chip in the review dialog so I know which path ran.
 
-**UX in the review dialog:**
-- New "Repeats" row appears when recurrence is detected (or admin can toggle it on manually):
-  - Pattern dropdown: One-time / Weekly / Every 2 weeks / Monthly
-  - "Generate next N occurrences" number input (default 8, max 26)
-  - "Until" optional date
-- "Auto-filled" sparkle on the Repeats row if detection found it.
+## 2. Image rehosting
 
-**Storage approach (no schema change):**
-- On submit, generate N occurrence rows in one `createEvents` call (new server fn that loops `createEvent`'s insert logic in a single transaction). Each row gets a `series_key` stored in a new lightweight TEXT column `series_key` on `group_events` (small migration: add nullable column + index). That lets the admin filter/bulk-cancel a whole series later.
-- Drafts (`status='draft'`) just store the parent; series materializes on Publish.
+**Why:** External CDN URLs rot; published cards then 404.
 
-**Why this and not RRULE in one row:** every other page in the codebase (event detail, RSVP, ICS, sweep job, notifications) reads `starts_at`/`ends_at` as a single instant. Materializing rows means zero changes to those code paths. `series_key` is the only new field.
+**Approach:**
+- Migration: create public storage bucket `event-covers` (public read, authenticated insert, owner update/delete).
+- In `createEvent` and `createEventSeries`, when `cover_url` is external, server-side `fetch` → upload to `event-covers/<event-id>.<ext>` → swap `cover_url` to the storage public URL before insert.
+- 5MB cap; allowed: `image/jpeg|png|webp|gif`. On any failure, keep the original URL — never block publish.
+- Series: rehost once, share the storage URL across all N occurrences.
 
----
+## 3. Server-side auto-cancel sweep
 
-### 2. "Report non-event" + admin alert (with auto-cancel option)
+**Why:** Today the 3-report threshold only fires while an admin tab is open.
 
-**User side:**
-- On the event detail page, add a small "Report" link (uses existing `reports` table with `entity_type='group_event'`, new `reason='not_an_event'`). No new endpoint — `submitReport` already exists.
+**Approach:**
+- New server route `src/routes/api/public/events.report-sweep.ts`, secret-gated via `EVENT_SWEEP_SECRET` header (I'll prompt for the secret).
+- Query `reports` where `entity_type='group_event'`, `reason='not_an_event'`, `resolved_at IS NULL`; group by event; any with ≥3 reports → cancel event (reuse existing `cancelEvent` logic via service role inside the handler) and mark reports resolved.
+- Migration: pg_cron job hitting `https://project--<id>.lovable.app/api/public/events.report-sweep` every 15 min with the secret header.
+- Admin-side toggle stays as redundant insurance.
 
-**Admin side (top of `/admin/events`):**
-- A dismissible alert strip listing any event with ≥1 unresolved `not_an_event` report:
-  - "{title} — 3 reports" · [View] [Cancel event] [Dismiss reports]
-- "Dismiss reports" marks them resolved (existing `reports.status` column) without touching the event.
-- "Cancel event" calls existing `cancelEvent`.
+## 4. Edit-future-in-series
 
-**Auto mode (per-admin toggle, stored in `localStorage`):**
-- Checkbox in the alert header: "Auto-cancel after 3 reports."
-- When ON, the page-level effect runs once per event: if reports ≥ threshold and not yet canceled, call `cancelEvent` and toast "Auto-canceled {title}." Threshold (3) is hard-coded for v1.
-- Stays client-side for v1 — no cron, no server policy. Keeps the trust model: a human admin tab must be open for an auto-cancel to fire. We can promote it to a server cron later without changing the UI.
+**Why:** Editing one occurrence works; editing the whole future cadence requires cancel + re-import today.
 
----
-
-### 3. Bulk import from a list of links
-
-**UX:** In the Admin Events tab, the "Import from link" dialog gets a second tab: **Bulk**.
-- Textarea: paste one URL per line (also accepts comma- or newline-separated; trims/dedupes).
-- Optional: a single Group picker that applies to all (since you'll usually batch by group); per-row override available in the review step.
-- "Fetch all" → server function `importEventsFromUrls({ urls: string[] })` with:
-  - Zod cap at 25 URLs per call.
-  - Sequential fetch with 3-way concurrency (`Promise.all` over chunks of 3) to be polite.
-  - 10s timeout per URL (already in place); per-URL failures don't fail the batch — they come back as `{ url, error }`.
-- Result screen: a compact queue list, one row per URL with status chip (`Ready` / `Needs date` / `Failed`), the imported title, and an **Edit** button that opens the existing single-event review dialog pre-filled.
-- Group-level actions: **Publish all ready** (only rows with title + starts/ends + group), **Save all as drafts**, **Discard failed**.
-
-**Safety rails:**
-- Admin-only middleware (already enforced).
-- The same SSRF guard applies per URL.
-- Server fn returns drafts only — never writes. All inserts go through the existing reviewed `createEvent` so RLS, slug generation, and notifications stay consistent.
+**Approach:**
+- On `g.$slug.e.$eventSlug.tsx`, when event has `series_key` and viewer is admin: show "Part of a recurring series" strip with **Edit this occurrence** and **Edit all future** buttons (+ **Cancel all future**).
+- New server fns `updateEventSeriesFuture({ series_key, from_starts_at, patch })` and `cancelEventSeriesFuture({ series_key, from_starts_at })` — RLS-checked admin-only.
+- "Edit all future" patches non-time fields by default (title, tagline, description, venue, cover, capacity, promo_pass_months). Time edits stay per-occurrence to preserve cadence.
 
 ---
 
-### Files touched
+## Files
 
-**New**
-- `src/components/admin-import-bulk.tsx` — the bulk tab + queue list.
+**Edit:**
+- `src/lib/event-import.functions.ts` — htmlparser2 pass + Eventbrite/Partiful inline-JSON extractors + source chip
+- `src/lib/group-events-admin.functions.ts` — image rehost in `createEvent` / `createEventSeries`; add `updateEventSeriesFuture`, `cancelEventSeriesFuture`
+- `src/components/admin-import-event-dialog.tsx` — source chip
+- `src/routes/g.$slug.e.$eventSlug.tsx` — series admin strip
 
-**Edited**
-- `src/lib/event-import.functions.ts` — add recurrence detection, add `importEventsFromUrls`.
-- `src/lib/group-events-admin.functions.ts` — add `createEventSeries` (loops inserts with shared `series_key`).
-- `src/components/admin-import-event-dialog.tsx` — add tabs (Single / Bulk), add Repeats row in review step.
-- `src/routes/admin.events.tsx` — add the dismissible reports alert strip + auto-cancel toggle.
+**Create:**
+- `src/routes/api/public/events.report-sweep.ts`
+- Migration: `event-covers` bucket + policies + pg_cron job
 
-**Migration**
-- Add nullable `series_key text` to `group_events` + index. No RLS changes; grants unchanged.
+**Secret:** `EVENT_SWEEP_SECRET` (I'll request it via the secure form before wiring cron).
 
----
+## Out of scope
+- Headless browser scraping
+- Third-party scraping APIs
+- Bulk cap beyond 25
+- Time-shift edits across an entire series
+- Per-end-user OAuth
 
-### Explicitly out of scope (v1)
-
-- True RRULE engine / "edit this and all following" semantics.
-- Server-side auto-cancel cron (client-only for v1).
-- Image rehosting from source pages.
-- Importing tickets, prices, or attendee lists.
-- Auth-gated event pages (Eventbrite private, Facebook, Meetup behind login).
-- Bulk imports over 25 URLs in one shot (paginate by running it twice).
-
-### Why this is still v1-shaped
-
-- One new nullable column, no new tables.
-- Reuses existing `reports`, `notifications`, `cancelEvent`, `createEvent`.
-- All AI/heuristic work runs once at import time, then becomes plain rows — no runtime cost per page view.
-- The auto-cancel sits client-side so we avoid a cron + trust audit until the feature proves useful.
+Ready to build on approval.
