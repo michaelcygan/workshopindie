@@ -26,7 +26,7 @@ type Props = {
   featuredFooter?: React.ReactNode;
 };
 
-const SUB_PARENTS = new Set<Category>(Object.keys(SUB_OPTIONS_BY_PARENT) as Category[]);
+
 
 export function LiveTopicsList({
   busyKey,
