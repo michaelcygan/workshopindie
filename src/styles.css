@@ -154,6 +154,20 @@
   --cat-business-ink: oklch(0.38 0.14 145);
   --cat-coworking: oklch(0.93 0.05 60);  /* amber */
   --cat-coworking-ink: oklch(0.42 0.16 55);
+  --cat-office-hours: oklch(0.93 0.05 280);  /* lavender-violet */
+  --cat-office-hours-ink: oklch(0.40 0.16 290);
+  --cat-roundtable: oklch(0.93 0.05 200);    /* teal */
+  --cat-roundtable-ink: oklch(0.38 0.14 205);
+  --cat-pitch: oklch(0.93 0.06 30);          /* coral */
+  --cat-pitch-ink: oklch(0.44 0.18 30);
+  --cat-listen-party: oklch(0.93 0.06 330);  /* magenta */
+  --cat-listen-party-ink: oklch(0.42 0.18 335);
+  --cat-open-mic: oklch(0.93 0.06 15);       /* warm red */
+  --cat-open-mic-ink: oklch(0.44 0.18 20);
+  --cat-jam: oklch(0.93 0.06 110);           /* chartreuse */
+  --cat-jam-ink: oklch(0.42 0.16 115);
+  --cat-standup: oklch(0.93 0.05 250);       /* periwinkle */
+  --cat-standup-ink: oklch(0.40 0.16 260);
 
   --chart-1: oklch(0.68 0.17 32);
   --chart-2: oklch(0.62 0.24 295);
