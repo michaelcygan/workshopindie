@@ -1744,6 +1744,7 @@ export type Database = {
           host_user_id: string | null
           id: string
           kind: string
+          link_token: string | null
           locked: boolean
           medium: Database["public"]["Enums"]["category"] | null
           participant_cap: number
@@ -1768,6 +1769,7 @@ export type Database = {
           host_user_id?: string | null
           id?: string
           kind?: string
+          link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
@@ -1792,6 +1794,7 @@ export type Database = {
           host_user_id?: string | null
           id?: string
           kind?: string
+          link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
           participant_cap?: number
@@ -3789,6 +3792,48 @@ export type Database = {
           },
         ]
       }
+      workshop_links: {
+        Row: {
+          category: Database["public"]["Enums"]["category"] | null
+          cover_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          participant_cap: number
+          prompt: string | null
+          title: string
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["category"] | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          participant_cap?: number
+          prompt?: string | null
+          title: string
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["category"] | null
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          participant_cap?: number
+          prompt?: string | null
+          title?: string
+          token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       workshop_messages: {
         Row: {
           body: string
@@ -4599,6 +4644,10 @@ export type Database = {
       is_workshop_room_member: {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
+      }
+      join_link_workshop: {
+        Args: { _exclude_room_ids?: string[]; _token: string; _user_id: string }
+        Returns: string
       }
       join_lounge:
         | { Args: { _user_id: string }; Returns: string }

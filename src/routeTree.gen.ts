@@ -40,6 +40,7 @@ import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
+import { Route as WTokenRouteImport } from './routes/w.$token'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
@@ -52,6 +53,7 @@ import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
@@ -224,6 +226,11 @@ const WorksSlugRoute = WorksSlugRouteImport.update({
   path: '/works/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WTokenRoute = WTokenRouteImport.update({
+  id: '/w/$token',
+  path: '/w/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const UUsernameRoute = UUsernameRouteImport.update({
   id: '/u/$username',
   path: '/u/$username',
@@ -283,6 +290,11 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLinksRoute = AdminLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminGroupsRoute = AdminGroupsRouteImport.update({
   id: '/groups',
@@ -389,6 +401,7 @@ export interface FileRoutesByFullPath {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -401,6 +414,7 @@ export interface FileRoutesByFullPath {
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
+  '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
   '/workshop/$id': typeof WorkshopIdRoute
@@ -444,6 +458,7 @@ export interface FileRoutesByTo {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -456,6 +471,7 @@ export interface FileRoutesByTo {
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
+  '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
   '/workshop/$id': typeof WorkshopIdRoute
@@ -506,6 +522,7 @@ export interface FileRoutesById {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -518,6 +535,7 @@ export interface FileRoutesById {
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
+  '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
   '/workshop/$id': typeof WorkshopIdRoute
@@ -569,6 +587,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -581,6 +600,7 @@ export interface FileRouteTypes {
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
+    | '/w/$token'
     | '/works/$slug'
     | '/works/new'
     | '/workshop/$id'
@@ -624,6 +644,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -636,6 +657,7 @@ export interface FileRouteTypes {
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
+    | '/w/$token'
     | '/works/$slug'
     | '/works/new'
     | '/workshop/$id'
@@ -685,6 +707,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -697,6 +720,7 @@ export interface FileRouteTypes {
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
+    | '/w/$token'
     | '/works/$slug'
     | '/works/new'
     | '/workshop/$id'
@@ -752,6 +776,7 @@ export interface RootRouteChildren {
   MeTicketsRoute: typeof MeTicketsRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
+  WTokenRoute: typeof WTokenRoute
   WorksSlugRoute: typeof WorksSlugRoute
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
@@ -984,6 +1009,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorksSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/w/$token': {
+      id: '/w/$token'
+      path: '/w/$token'
+      fullPath: '/w/$token'
+      preLoaderRoute: typeof WTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/u/$username': {
       id: '/u/$username'
       path: '/u/$username'
@@ -1067,6 +1099,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/checkout/return'
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/links': {
+      id: '/admin/links'
+      path: '/links'
+      fullPath: '/admin/links'
+      preLoaderRoute: typeof AdminLinksRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/groups': {
       id: '/admin/groups'
@@ -1187,6 +1226,7 @@ interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
   AdminEventsRoute: typeof AdminEventsRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminLinksRoute: typeof AdminLinksRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1194,6 +1234,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
   AdminEventsRoute: AdminEventsRoute,
   AdminGroupsRoute: AdminGroupsRoute,
+  AdminLinksRoute: AdminLinksRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
@@ -1344,6 +1385,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeTicketsRoute: MeTicketsRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
+  WTokenRoute: WTokenRoute,
   WorksSlugRoute: WorksSlugRoute,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
