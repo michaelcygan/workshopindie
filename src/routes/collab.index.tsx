@@ -290,12 +290,15 @@ function CollabPage() {
     [],
   );
 
-  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean };
+  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean; view: "all" | "open" | "shipped" };
   function setCat(next: WorkCategory | "all") {
     navigate({ search: (prev: SearchShape) => ({ ...prev, cat: next }) });
   }
   function setCity(next: { id?: string; name?: string }) {
     navigate({ search: (prev: SearchShape) => ({ ...prev, city: next.id, cityName: next.name }) });
+  }
+  function setView(next: "all" | "open" | "shipped") {
+    navigate({ search: (prev: SearchShape) => ({ ...prev, view: next }) });
   }
   function toggleOnline() {
     navigate({
