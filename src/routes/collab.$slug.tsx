@@ -327,8 +327,29 @@ function CollabDetail() {
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
             )}
-          </div>
         </div>
+
+        {/* Owner activity meter (open state) */}
+        {isOwner && post.status === "open" && activity && (activity.applicants > 0 || activity.shares > 0) && (
+          <p className="mb-3 text-xs text-ink-muted">
+            {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
+            {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
+            {activity.applicants >= 3 && <span className="ml-2 text-primary">· Picking up steam</span>}
+            {activity.applicants === 0 && openedDays >= 3 && <span className="ml-2">· Quiet so far — try sharing</span>}
+          </p>
+        )}
+
+        {/* Visitor signal (open state, non-owner) */}
+        {!isOwner && post.status === "open" && (
+          <p className="mb-3 text-xs text-ink-muted">
+            {publicCounts && publicCounts.applicants > 0
+              ? <>Cast so far: <span className="text-ink">{publicCounts.applicants}</span> · </>
+              : <>Open to applications · </>}
+            posted {openedDays === 0 ? "today" : `${openedDays}d ago`}
+          </p>
+        )}
+
+
 
         {/* Owner: single next-best-action strip */}
         {isOwner && post.status === "open" && !deadlinePassed && (
