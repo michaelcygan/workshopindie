@@ -321,7 +321,7 @@ function CollabPage() {
             {user && (
               <Link to="/me/collabs">
                 <Button variant="outline" size="sm" className="rounded-full gap-2">
-                  <Briefcase className="h-4 w-4" /> Mine
+                  <Briefcase className="h-4 w-4" /> My Collabs
                 </Button>
               </Link>
             )}
