@@ -3,15 +3,15 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Clock, CheckCircle2, Sparkles, ExternalLink, MapPin, Radio, X, Inbox } from "lucide-react";
+import { Megaphone, Clock, Sparkles, ExternalLink, MapPin, Radio, X, Inbox, Trash2, Archive } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
+import { StateBadge } from "@/components/state-badge";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import {
   closeCollab,
-  reopenCollab,
   extendCollabDeadline,
   dismissPublishNudge,
 } from "@/lib/collab-publish.functions";
@@ -30,15 +30,18 @@ export const Route = createFileRoute("/me/collabs")({
   }),
 });
 
-type Tab = "hosting" | "wrapup" | "published" | "applied";
+type Tab = "hosting" | "published" | "applied";
 
 type HostingRow = {
   id: string;
   title: string;
   slug: string;
+  description: string | null;
   category: Category;
   status: string;
   ends_on: string | null;
+  closed_at: string | null;
+  resulting_work_id: string | null;
   created_at: string;
   live_workshop_id: string | null;
   city: { name: string } | null;
