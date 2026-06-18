@@ -4,6 +4,10 @@ import { MessageCircle, Search } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/require-auth";
+import { PageHeaderCompact } from "@/components/page-header-compact";
+import { KickerChip } from "@/components/kicker-chip";
+import { EmptySpark } from "@/components/empty-spark";
+import { Button } from "@/components/ui/button";
 
 type ConversationRow = {
   id: string;
@@ -135,9 +139,18 @@ function DmsIndex() {
   ];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="font-display text-3xl text-ink">Messages</h1>
-      <p className="mt-1 text-sm text-ink-muted">DM mutuals — or anyone connected to your collabs and workshops.</p>
+    <main className="mx-auto max-w-2xl px-4 py-6 md:py-8">
+      <PageHeaderCompact title="Messages" />
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <KickerChip live={counts.unread > 0}>
+          {counts.unread > 0 ? `${counts.unread} unread` : "Inbox"}
+        </KickerChip>
+        <p className="text-sm text-ink-muted">
+          {counts.all > 0
+            ? `${counts.all} thread${counts.all === 1 ? "" : "s"} · DM mutuals and anyone connected to your collabs.`
+            : "DM mutuals — or anyone connected to your collabs and workshops."}
+        </p>
+      </div>
 
       {!busy && rows.length > 0 && (
         <>
@@ -174,19 +187,27 @@ function DmsIndex() {
       )}
 
       {busy ? (
-        <div className="mt-8 text-sm text-ink-muted">Loading…</div>
+        <div className="mt-8 space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-14 animate-pulse rounded-2xl bg-surface-2" />
+          ))}
+        </div>
       ) : rows.length === 0 ? (
-        <div className="mt-12 rounded-2xl border border-border bg-surface p-8 text-center">
-          <MessageCircle className="mx-auto h-8 w-8 text-ink-muted" />
-          <p className="mt-3 text-sm text-ink-muted">No conversations yet. Find people on the Collab Board or in a Group and message them.</p>
-          <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <Link to="/collab" className="inline-flex items-center justify-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-background hover:opacity-90">
-              Browse the Collab Board
-            </Link>
-            <Link to="/groups" className="inline-flex items-center justify-center rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-muted">
-              Find your groups
-            </Link>
-          </div>
+        <div className="mt-6">
+          <EmptySpark
+            title="No conversations yet."
+            body="Find people on the Collab Board or in a Group and message them."
+            action={
+              <div className="flex flex-wrap justify-center gap-2">
+                <Link to="/collab">
+                  <Button className="rounded-full">Browse the Collab Board</Button>
+                </Link>
+                <Link to="/groups">
+                  <Button variant="outline" className="rounded-full">Find your groups</Button>
+                </Link>
+              </div>
+            }
+          />
         </div>
       ) : filtered.length === 0 ? (
         <div className="mt-8 rounded-2xl border border-border bg-surface p-6 text-center text-sm text-ink-muted">

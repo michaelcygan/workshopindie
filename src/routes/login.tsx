@@ -1,11 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { KickerChip } from "@/components/kicker-chip";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
@@ -38,10 +38,15 @@ function Login() {
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
-        <h1 className="font-display text-3xl text-ink">Welcome back</h1>
-        <p className="mt-1 text-sm text-ink-muted">Sign in to make something today.</p>
-        <div className="mt-6 space-y-3">
+      <div className="mb-4 flex items-center gap-2">
+        <KickerChip>Welcome back</KickerChip>
+        <span className="text-xs text-ink-muted">Sign in to keep going</span>
+      </div>
+      <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
+        Make something tonight.
+      </h1>
+      <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
+        <div className="space-y-3">
           <GoogleSignIn />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
@@ -66,7 +71,7 @@ function Login() {
         <p className="mt-6 text-center text-sm text-ink-muted">
           New to Workshop? <Link to="/signup" className="text-gradient-motion hover:underline">Create an account</Link>
         </p>
-      </motion.div>
+      </div>
     </div>
   );
 }
