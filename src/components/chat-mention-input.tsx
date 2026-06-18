@@ -201,6 +201,7 @@ export function ChatMentionInput({
         size="icon"
         className="rounded-full shrink-0"
         disabled={!draft.trim() || sending || disabled}
+        aria-label="Send message"
       >
         <Send className="h-4 w-4" />
       </Button>
