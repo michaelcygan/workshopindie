@@ -125,6 +125,17 @@ function CollabDetail() {
   });
   const isLive = !!liveWorkshop && (liveWorkshop.status === "active" || liveWorkshop.status === "check_in");
 
+  const isOwnerEarly = user?.id === post?.user_id;
+  const fetchApplicants = useServerFn(listApplicants);
+  const { data: applicantsData } = useQuery({
+    queryKey: ["collab-applicants", post?.id],
+    queryFn: () => fetchApplicants({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!isOwnerEarly,
+  });
+  const applicantCount =
+    (applicantsData?.members.length ?? 0) + (applicantsData?.guests.length ?? 0);
+
+
   const openWorkshopMut = useMutation({
     mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
     onSuccess: ({ slug: wsSlug }) => {
