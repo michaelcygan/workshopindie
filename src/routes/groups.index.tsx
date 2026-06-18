@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import { Search } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
@@ -17,6 +17,7 @@ import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
 import { SceneTicker } from "@/components/scene-ticker";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
+import { GroupsSparkCard } from "@/components/groups-spark-card";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
@@ -54,6 +55,7 @@ function GroupsIndex() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab: Tab = search.t;
   const query = search.q;
+  const allGroupsRef = useRef<HTMLElement>(null);
 
   const setTab = (t: Tab) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, t }), replace: true });
@@ -199,6 +201,14 @@ function GroupsIndex() {
             {trending.length > 0 && (
               <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
             )}
+            <GroupsSparkCard
+              totalGroups={allGroups.length}
+              cityCount={allGroups.filter((g) => g.kind === "city").length}
+              microCount={allGroups.filter((g) => g.kind === "micro").length}
+              onBrowseAll={() =>
+                allGroupsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+            />
           </div>
           <div className="lg:col-span-8">
             <GroupsBrowseByKind
@@ -210,7 +220,8 @@ function GroupsIndex() {
         </div>
       )}
 
-      <section className="mt-8">
+      <section ref={allGroupsRef} className="mt-8 scroll-mt-24">
+
         {tab === "for-you" && !user ? (
           <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
             <h3 className="font-display text-2xl text-ink">Sign in to see your Groups.</h3>
