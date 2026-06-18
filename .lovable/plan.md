@@ -1,23 +1,29 @@
-# Swap Crown → Beacon (RadioTower) for "Host"
+# Replace "spin up" with "Start a Workshop" copy
 
-Lucide doesn't ship a literal "Beacon" icon. The closest beacon-feeling glyph in the set is **`RadioTower`** — a small tower with signal arcs radiating out. It reads as "I'm the signal everyone tunes into," which matches host without the monarchy baggage. (Fallback if you prefer a different silhouette: `Antenna` or `Radar` — say the word and I'll swap.)
+Brand language: live rooms are **Workshops**. Swap the lingering "spin up [a] room" phrasing everywhere it refers to creating a Workshop.
 
-## Change
+## Edits
 
-Find/replace `Crown` → `RadioTower` in the 7 files below. Same sizing, same color classes (`text-violet`, etc.), same placement — purely an icon swap, no layout or copy changes.
+1. **`src/routes/workshop.index.tsx:509`** (the button in the screenshot)
+   - `hostLabel ? \`Spin up ${hostLabel}\` : "Spin up your room"` → `hostLabel ? \`Start a ${hostLabel} Workshop\` : "Start a Workshop"`
 
-## Files
+2. **`src/routes/workshop.index.tsx:430`** ("be first" nudge)
+   - `Be first — spin up a {label} room.` → `Be first — start a {label} Workshop.`
 
-1. `src/routes/workshop.$id.tsx` — import + "Hosting" pill in the title row
-2. `src/routes/workshop.index.tsx` — import + two "Host this" buttons
-3. `src/components/host-menu.tsx` — import + host menu header glyph
-4. `src/components/host-first-run-tour.tsx` — import + tour step icon
-5. `src/components/hosted-by-line.tsx` — import + "Hosted by" inline glyph
-6. `src/components/host-privacy-dialog.tsx` — import + 3 usages (title, "You're the host" chip, submit button spinner sibling)
-7. (sanity sweep) `rg "Crown"` after the edit to confirm zero remaining references
+3. **`src/components/host-menu.tsx:482`** (end-workshop confirmation)
+   - `You can always spin up a new one.` → `You can always start a new Workshop.`
 
-## Notes
+4. **`src/routes/collab.new.tsx:535`** (Workshop card body)
+   - `Spin up a live Workshop the moment you post…` → `Start a live Workshop the moment you post…`
 
-- No copy changes ("Hosting", "You're the host", etc. stay).
-- No color changes — `text-violet` still reads well on the new glyph.
-- No new dependencies; `RadioTower` is already in `lucide-react`.
+5. **`src/routes/workshops.lobby.new.tsx:26`** (meta description)
+   - `Spin up a private Draft Workshop…` → `Start a private Draft Workshop…`
+
+6. **`src/lib/instant.functions.ts:94`** (code comment, for consistency)
+   - `Spin up a brand-new live Workshop room…` → `Start a brand-new live Workshop…`
+
+## Intentionally left alone
+
+- **`src/components/workshop-tools-panel.tsx:183`** — "Spin up a shared tool" refers to creating a Doc/Board/Pinboard tool inside a Workshop, not creating a Workshop itself. Different concept, keep as-is unless you want it changed too.
+
+No layout, icon, or component-structure changes — copy-only pass.
