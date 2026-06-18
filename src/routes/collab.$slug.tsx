@@ -288,6 +288,11 @@ function CollabDetail() {
               {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
             </span>
           )}
+          {post.status === "open" && closingSoon && daysToDeadline !== null && (
+            <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+              Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <ShareCollabSheet
               postId={post.id}
