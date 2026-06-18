@@ -414,17 +414,71 @@ export function ChannelView({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitChat(mentions: string[]) {
     if (!user || !draft.trim()) return;
     setSending(true);
     const body = draft.trim().slice(0, 1000);
     setDraft("");
-    const { error } = await supabase
-      .from("instant_messages")
-      .insert({ room_id: roomId, user_id: user.id, body });
-    setSending(false);
-    if (error) toast.error(error.message);
+    try {
+      await sendMessage({ data: { roomId, body, mentions } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send message");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // Fullscreen chat panel still uses a plain form signature; extract mentions
+  // by re-parsing the current draft against the live presence list.
+  async function sendFromForm(e: React.FormEvent) {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    const ids = new Set<string>();
+    const re = /(?:^|\s)@([A-Za-z0-9_]{1,30})/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text))) {
+      const handle = m[1].toLowerCase();
+      const p = presence.find((pp) => (pp.profile?.username ?? "").toLowerCase() === handle);
+      if (p) ids.add(p.user_id);
+    }
+    await submitChat(Array.from(ids));
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    if (!user) return;
+    const mine = reactions.find(
+      (r) => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji,
+    );
+    if (mine) {
+      // Optimistic remove
+      setReactions((prev) => prev.filter((r) => r.id !== mine.id));
+      const { error } = await supabase
+        .from("instant_message_reactions")
+        .delete()
+        .eq("id", mine.id);
+      if (error) {
+        setReactions((prev) => [...prev, mine]);
+        toast.error(error.message);
+      }
+    } else {
+      const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+      const optimistic: ReactionRow = { id: tempId, message_id: messageId, user_id: user.id, emoji };
+      setReactions((prev) => [...prev, optimistic]);
+      const { data, error } = await supabase
+        .from("instant_message_reactions")
+        .insert({ message_id: messageId, room_id: roomId, user_id: user.id, emoji })
+        .select("id,message_id,user_id,emoji")
+        .single();
+      setReactions((prev) => prev.filter((r) => r.id !== tempId));
+      if (error) {
+        toast.error(error.message);
+      } else if (data) {
+        setReactions((prev) =>
+          prev.some((r) => r.id === (data as any).id) ? prev : [...prev, data as ReactionRow],
+        );
+      }
+    }
   }
 
   const profileLookup = useMemo(
