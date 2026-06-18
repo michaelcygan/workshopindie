@@ -51,21 +51,13 @@ function GroupsIndex() {
   const { user } = useAuth();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
-
-  // Default to "for-you" only when signed in AND no explicit tab in URL.
-  const tab: Tab = useMemo(() => {
-    if (search.t === "all" && user) {
-      // Honor URL exactly — "all" means all. Sign-in default handled on first land
-      // by leaving the URL clean and letting this stay "all".
-    }
-    return search.t;
-  }, [search.t, user]);
+  const tab: Tab = search.t;
   const query = search.q;
 
   const setTab = (t: Tab) =>
-    navigate({ search: (prev) => ({ ...prev, t }), replace: true });
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, t }), replace: true });
   const setQuery = (q: string) =>
-    navigate({ search: (prev) => ({ ...prev, q }), replace: true });
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q }), replace: true });
 
   const { data: allGroups = [], isLoading } = useQuery({
     queryKey: ["groups", "all"],
