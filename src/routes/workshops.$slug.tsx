@@ -33,6 +33,20 @@ export const Route = createFileRoute("/workshops/$slug")({
     const data = await getWorkshopSeo({ data: { slug: params.slug } });
     return { seo: data };
   },
+  errorComponent: ({ error, reset }) => (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">Couldn't load this Workshop</h1>
+      <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
+      <button onClick={reset} className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Try again</button>
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">Workshop not found</h1>
+      <p className="mt-2 text-ink-muted">This Workshop doesn't exist or was archived.</p>
+      <Link to="/workshops" className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Back to Workshops</Link>
+    </main>
+  ),
   head: ({ params, loaderData }) => {
     const w = loaderData?.seo;
     const url = `https://workshopindie.com/workshops/${params.slug}`;
