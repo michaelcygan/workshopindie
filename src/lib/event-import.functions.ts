@@ -200,9 +200,81 @@ function detectRecurrence(title: string, desc: string, startsAt: string | null):
   return null;
 }
 
-async function parseEventFromHtml(url: string, html: string): Promise<{ draft: Draft; warnings: string[]; parser: "json-ld" | "og" | "fallback" }> {
+type ParserSource = "json-ld" | "eventbrite" | "partiful" | "luma" | "og" | "fallback";
+
+function extractInlineScriptJson(html: string, idAttr: string): unknown | null {
+  // Matches <script id="..." type="application/json|application/ld+json|text/javascript">...</script>
+  const re = new RegExp(`<script[^>]+id=["']${idAttr}["'][^>]*>([\\s\\S]*?)<\\/script>`, "i");
+  const m = html.match(re);
+  if (!m) return null;
+  try { return JSON.parse(m[1].trim()); } catch { return null; }
+}
+
+function extractAssignedJson(html: string, varName: string): unknown | null {
+  // e.g. window.__SERVER_DATA__ = { ... };
+  const re = new RegExp(`${varName.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\s*=\\s*(\\{[\\s\\S]*?\\})\\s*;`);
+  const m = html.match(re);
+  if (!m) return null;
+  try { return JSON.parse(m[1]); } catch { return null; }
+}
+
+function digPath(obj: unknown, path: (string | number)[]): unknown {
+  let cur: unknown = obj;
+  for (const k of path) {
+    if (cur && typeof cur === "object") cur = (cur as Record<string | number, unknown>)[k as never];
+    else return undefined;
+  }
+  return cur;
+}
+
+function findFirstEventbriteEvent(html: string): {
+  title: string | null; description: string | null; startsAt: string | null; endsAt: string | null;
+  coverUrl: string | null; venueName: string | null; venueAddress: string | null; onlineUrl: string | null;
+} | null {
+  const data = extractAssignedJson(html, "window.__SERVER_DATA__");
+  if (!data) return null;
+  // Eventbrite's payload puts the event under `view_data.event` or `event`.
+  const ev = (digPath(data, ["view_data", "event"]) ?? digPath(data, ["event"])) as Record<string, unknown> | undefined;
+  if (!ev || typeof ev !== "object") return null;
+  const name = asString((ev.name as Record<string, unknown> | undefined)?.text) ?? asString(ev.name);
+  const desc = asString((ev.description as Record<string, unknown> | undefined)?.text) ?? asString(ev.summary);
+  const start = asString((ev.start as Record<string, unknown> | undefined)?.utc) ?? asString(ev.start_date);
+  const end = asString((ev.end as Record<string, unknown> | undefined)?.utc) ?? asString(ev.end_date);
+  const logo = ev.logo as Record<string, unknown> | undefined;
+  const cover = asString((logo?.original as Record<string, unknown> | undefined)?.url) ?? asString(logo?.url);
+  const venue = ev.venue as Record<string, unknown> | undefined;
+  const venueName = venue ? asString(venue.name) : null;
+  const addr = venue?.address as Record<string, unknown> | undefined;
+  const venueAddress = addr
+    ? [addr.address_1, addr.address_2, addr.city, addr.region, addr.postal_code, addr.country].map(asString).filter(Boolean).join(", ") || null
+    : null;
+  const onlineUrl = asString(ev.online_event_url) ?? null;
+  return { title: name, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress, onlineUrl };
+}
+
+function findFirstPartifulEvent(html: string): {
+  title: string | null; description: string | null; startsAt: string | null; endsAt: string | null;
+  coverUrl: string | null; venueName: string | null; venueAddress: string | null;
+} | null {
+  const data = extractInlineScriptJson(html, "__NEXT_DATA__");
+  if (!data) return null;
+  const ev =
+    (digPath(data, ["props", "pageProps", "event"]) ??
+      digPath(data, ["props", "pageProps", "initialState", "event"])) as Record<string, unknown> | undefined;
+  if (!ev || typeof ev !== "object") return null;
+  const title = asString(ev.title) ?? asString(ev.name);
+  const desc = asString(ev.description) ?? asString(ev.summary);
+  const start = asString(ev.startDate) ?? asString(ev.start) ?? asString(ev.startTime);
+  const end = asString(ev.endDate) ?? asString(ev.end) ?? asString(ev.endTime);
+  const cover = asString(ev.coverImage) ?? asString(ev.image) ?? asString((ev.cover as Record<string, unknown> | undefined)?.url);
+  const venueName = asString(ev.location) ?? asString((ev.venue as Record<string, unknown> | undefined)?.name);
+  const venueAddress = asString(ev.address) ?? asString((ev.venue as Record<string, unknown> | undefined)?.address);
+  return { title, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress, onlineUrl: null } as never;
+}
+
+async function parseEventFromHtml(url: string, html: string): Promise<{ draft: Draft; warnings: string[]; parser: ParserSource }> {
   const warnings: string[] = [];
-  let parser: "json-ld" | "og" | "fallback" = "fallback";
+  let parser: ParserSource = "fallback";
 
   const ld = extractJsonLd(html);
   const ev = findEventNode(ld);
