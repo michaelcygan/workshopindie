@@ -506,7 +506,7 @@ function WorkshopPreflight() {
           className="shrink-0 rounded-full h-9 gap-2 px-4"
         >
           {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
-          {busy === "host" ? "Opening…" : hostLabel ? `Spin up ${hostLabel}` : "Spin up your room"}
+          {busy === "host" ? "Opening…" : hostLabel ? `Start a ${hostLabel} Workshop` : "Start a Workshop"}
         </Button>
       </div>
 
