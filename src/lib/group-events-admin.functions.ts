@@ -391,3 +391,101 @@ export const adminDismissReports = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// ---------- Series-wide edits (future occurrences only) ----------
+
+const seriesPatchSchema = z.object({
+  series_key: z.string().min(3).max(60),
+  from_event_id: z.string().uuid(),
+  patch: z.object({
+    title: z.string().min(2).max(120).optional(),
+    tagline: z.string().max(140).nullable().optional(),
+    description: z.string().max(6000).nullable().optional(),
+    venue_name: z.string().max(140).nullable().optional(),
+    venue_address: z.string().max(300).nullable().optional(),
+    online_url: z.string().url().nullable().optional(),
+    cover_url: z.string().url().nullable().optional(),
+    capacity: z.number().int().min(1).max(10000).nullable().optional(),
+    promo_pass_months: z.number().int().min(0).max(36).optional(),
+  }),
+});
+
+export const updateEventSeriesFuture = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => seriesPatchSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: anchor, error: anchorErr } = await supabase
+      .from("group_events")
+      .select("starts_at,series_key")
+      .eq("id", data.from_event_id)
+      .maybeSingle();
+    if (anchorErr || !anchor) throw new Error("Anchor event not found");
+    if (anchor.series_key !== data.series_key) throw new Error("Anchor is not in this series");
+
+    const patch: Record<string, unknown> = { ...data.patch };
+    if (typeof patch.cover_url === "string") {
+      patch.cover_url = await rehostCoverIfExternal(patch.cover_url as string, `series_${data.series_key}`);
+    }
+    const { error, count } = await supabase
+      .from("group_events")
+      .update(patch as never, { count: "exact" })
+      .eq("series_key", data.series_key)
+      .gte("starts_at", anchor.starts_at as string);
+    if (error) throw new Error(error.message);
+    return { ok: true, updated: count ?? 0 };
+  });
+
+export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({
+    series_key: z.string().min(3).max(60),
+    from_event_id: z.string().uuid(),
+    reason: z.string().max(500).optional(),
+  }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: anchor } = await supabase
+      .from("group_events")
+      .select("starts_at,series_key")
+      .eq("id", data.from_event_id)
+      .maybeSingle();
+    if (!anchor || anchor.series_key !== data.series_key) throw new Error("Anchor is not in this series");
+    const { data: rows, error } = await supabase
+      .from("group_events")
+      .update({ status: "canceled" })
+      .eq("series_key", data.series_key)
+      .gte("starts_at", anchor.starts_at as string)
+      .neq("status", "canceled")
+      .select("id,title,slug,group:groups!inner(slug)");
+    if (error) throw new Error(error.message);
+    type R = { id: string; title: string; slug: string; group: { slug: string } };
+    const canceled = (rows ?? []) as unknown as R[];
+
+    // Best-effort RSVP notifications
+    for (const ev of canceled) {
+      try {
+        const { data: rsvps } = await supabase
+          .from("group_event_rsvps")
+          .select("user_id")
+          .eq("event_id", ev.id)
+          .in("status", ["going", "maybe", "waitlist"]);
+        if (rsvps && rsvps.length > 0) {
+          const payload = { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug, reason: data.reason ?? null };
+          await supabase.from("notifications").insert(
+            rsvps.map((r) => ({
+              user_id: r.user_id as string,
+              kind: "event_canceled",
+              actor_user_id: userId,
+              entity_type: "group_event",
+              entity_id: ev.id,
+              payload,
+            })),
+          );
+        }
+      } catch { /* notifications are best-effort */ }
+    }
+    return { ok: true, canceled: canceled.length };
+  });
