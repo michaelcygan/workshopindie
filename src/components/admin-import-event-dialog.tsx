@@ -20,6 +20,7 @@ import {
   createEventSeries,
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 type Kind = "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
 type Format = "in_person" | "online" | "hybrid";
@@ -76,7 +77,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
   const [url, setUrl] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [source, setSource] = useState<{ url: string; host: string } | null>(null);
+  const [source, setSource] = useState<{ url: string; host: string; parser?: string } | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [edited, setEdited] = useState<Set<keyof FormState>>(new Set());
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -124,10 +125,10 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
 
   function loadDraftIntoForm(
     draft: { title: string; tagline: string | null; description: string | null; kind: Kind; format: Format; cover_url: string | null; starts_at: string | null; ends_at: string | null; venue_name: string | null; venue_address: string | null; online_url: string | null; capacity: number | null; recurrence: { rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY"; hint: string } | null },
-    src: { url: string; host: string },
+    src: { url: string; host: string; parser?: string },
     warn: string[],
   ) {
-    setSource({ url: src.url, host: src.host });
+    setSource({ url: src.url, host: src.host, parser: src.parser });
     setWarnings(warn);
     setEdited(new Set());
     setForm({
@@ -284,7 +285,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
     const r = bulkResults?.[i];
     if (!r || !r.ok) return;
     setEditingBulk(i);
-    loadDraftIntoForm(r.draft, { url: r.url, host: r.host }, r.warnings);
+    loadDraftIntoForm(r.draft, { url: r.url, host: r.host, parser: r.parser }, r.warnings);
     setStep("review");
     setTab("single");
   }
@@ -418,8 +419,18 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
         {step === "review" && (
           <div className="space-y-3">
             {source && (
-              <div className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2 text-xs text-ink-soft">
-                <span>Imported from <span className="font-medium text-ink">{source.host}</span></span>
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-muted/50 px-3 py-2 text-xs text-ink-soft">
+                <span className="flex items-center gap-2">
+                  <span>Imported from <span className="font-medium text-ink">{source.host}</span></span>
+                  {source.parser && (
+                    <span className={cn(
+                      "rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide",
+                      source.parser === "fallback" ? "bg-amber-500/15 text-amber-700 dark:text-amber-300" : "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+                    )}>
+                      {source.parser === "json-ld" ? "structured" : source.parser}
+                    </span>
+                  )}
+                </span>
                 <a href={source.url} target="_blank" rel="noreferrer" className="text-primary hover:underline">View source</a>
               </div>
             )}

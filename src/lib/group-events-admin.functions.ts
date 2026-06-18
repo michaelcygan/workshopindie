@@ -9,6 +9,49 @@ async function assertAdmin(supabase: SupabaseClient<Database>, userId: string) {
   if (!data) throw new Error("Admin only");
 }
 
+const MAX_COVER_BYTES = 5 * 1024 * 1024;
+const ALLOWED_COVER_MIMES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+const SIGNED_URL_TTL = 60 * 60 * 24 * 365 * 5; // 5 years
+
+/**
+ * If cover_url points at an external host, download it server-side and re-upload
+ * to our private `event-covers` bucket, then swap to a long-lived signed URL.
+ * Returns the original URL on any failure — image rehost must never block publish.
+ */
+async function rehostCoverIfExternal(coverUrl: string | null | undefined, idHint: string): Promise<string | null> {
+  if (!coverUrl) return coverUrl ?? null;
+  let parsed: URL;
+  try { parsed = new URL(coverUrl); } catch { return coverUrl; }
+  if (!/^https?:$/.test(parsed.protocol)) return coverUrl;
+  // Already on our storage? Skip.
+  if (parsed.hostname.includes("supabase.co") && parsed.pathname.includes("/storage/v1/")) return coverUrl;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10_000);
+    let res: Response;
+    try {
+      res = await fetch(coverUrl, { signal: ctrl.signal, redirect: "follow" });
+    } finally { clearTimeout(timer); }
+    if (!res.ok) return coverUrl;
+    const mime = (res.headers.get("content-type") || "").toLowerCase().split(";")[0].trim();
+    if (!ALLOWED_COVER_MIMES.has(mime)) return coverUrl;
+    const len = Number(res.headers.get("content-length") || "0");
+    if (len > MAX_COVER_BYTES) return coverUrl;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.byteLength === 0 || buf.byteLength > MAX_COVER_BYTES) return coverUrl;
+    const ext = mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/webp" ? "webp" : "gif";
+    const path = `${idHint}/${Date.now().toString(36)}.${ext}`;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const up = await supabaseAdmin.storage.from("event-covers").upload(path, buf, { contentType: mime, upsert: false });
+    if (up.error) return coverUrl;
+    const signed = await supabaseAdmin.storage.from("event-covers").createSignedUrl(path, SIGNED_URL_TTL);
+    if (signed.error || !signed.data?.signedUrl) return coverUrl;
+    return signed.data.signedUrl;
+  } catch {
+    return coverUrl;
+  }
+}
+
 const baseSchema = z.object({
   group_id: z.string().uuid(),
   title: z.string().min(2).max(120),
@@ -44,9 +87,11 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, ...rest } = data;
+    const { featured, status, cover_url, ...rest } = data;
+    const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const insertRow = {
       ...rest,
+      cover_url: rehostedCover,
       slug: "",
       created_by: userId,
       featured_at: featured ? new Date().toISOString() : null,
@@ -260,18 +305,21 @@ export const createEventSeries = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { recurrence_rule, occurrence_count, featured, status, ...rest } = data;
+    const { recurrence_rule, occurrence_count, featured, status, cover_url, ...rest } = data;
     const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const baseStart = new Date(rest.starts_at);
     const baseEnd = new Date(rest.ends_at);
     if (Number.isNaN(baseStart.getTime()) || Number.isNaN(baseEnd.getTime())) {
       throw new Error("Invalid start or end time");
     }
+    // Rehost once and share across the series.
+    const sharedCover = await rehostCoverIfExternal(cover_url, `series_${seriesKey}`);
     const rows = Array.from({ length: occurrence_count }, (_, i) => {
       const s = addOccurrence(baseStart, recurrence_rule, i);
       const e = addOccurrence(baseEnd, recurrence_rule, i);
       return {
         ...rest,
+        cover_url: sharedCover,
         slug: "",
         created_by: userId,
         featured_at: i === 0 && featured ? new Date().toISOString() : null,
@@ -342,4 +390,102 @@ export const adminDismissReports = createServerFn({ method: "POST" })
       .in("id", data.report_ids);
     if (error) throw new Error(error.message);
     return { ok: true };
+  });
+
+// ---------- Series-wide edits (future occurrences only) ----------
+
+const seriesPatchSchema = z.object({
+  series_key: z.string().min(3).max(60),
+  from_event_id: z.string().uuid(),
+  patch: z.object({
+    title: z.string().min(2).max(120).optional(),
+    tagline: z.string().max(140).nullable().optional(),
+    description: z.string().max(6000).nullable().optional(),
+    venue_name: z.string().max(140).nullable().optional(),
+    venue_address: z.string().max(300).nullable().optional(),
+    online_url: z.string().url().nullable().optional(),
+    cover_url: z.string().url().nullable().optional(),
+    capacity: z.number().int().min(1).max(10000).nullable().optional(),
+    promo_pass_months: z.number().int().min(0).max(36).optional(),
+  }),
+});
+
+export const updateEventSeriesFuture = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => seriesPatchSchema.parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: anchor, error: anchorErr } = await supabase
+      .from("group_events")
+      .select("starts_at,series_key")
+      .eq("id", data.from_event_id)
+      .maybeSingle();
+    if (anchorErr || !anchor) throw new Error("Anchor event not found");
+    if (anchor.series_key !== data.series_key) throw new Error("Anchor is not in this series");
+
+    const patch: Record<string, unknown> = { ...data.patch };
+    if (typeof patch.cover_url === "string") {
+      patch.cover_url = await rehostCoverIfExternal(patch.cover_url as string, `series_${data.series_key}`);
+    }
+    const { error, count } = await supabase
+      .from("group_events")
+      .update(patch as never, { count: "exact" })
+      .eq("series_key", data.series_key)
+      .gte("starts_at", anchor.starts_at as string);
+    if (error) throw new Error(error.message);
+    return { ok: true, updated: count ?? 0 };
+  });
+
+export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({
+    series_key: z.string().min(3).max(60),
+    from_event_id: z.string().uuid(),
+    reason: z.string().max(500).optional(),
+  }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: anchor } = await supabase
+      .from("group_events")
+      .select("starts_at,series_key")
+      .eq("id", data.from_event_id)
+      .maybeSingle();
+    if (!anchor || anchor.series_key !== data.series_key) throw new Error("Anchor is not in this series");
+    const { data: rows, error } = await supabase
+      .from("group_events")
+      .update({ status: "canceled" })
+      .eq("series_key", data.series_key)
+      .gte("starts_at", anchor.starts_at as string)
+      .neq("status", "canceled")
+      .select("id,title,slug,group:groups!inner(slug)");
+    if (error) throw new Error(error.message);
+    type R = { id: string; title: string; slug: string; group: { slug: string } };
+    const canceled = (rows ?? []) as unknown as R[];
+
+    // Best-effort RSVP notifications
+    for (const ev of canceled) {
+      try {
+        const { data: rsvps } = await supabase
+          .from("group_event_rsvps")
+          .select("user_id")
+          .eq("event_id", ev.id)
+          .in("status", ["going", "maybe", "waitlist"]);
+        if (rsvps && rsvps.length > 0) {
+          const payload = { event_title: ev.title, event_slug: ev.slug, group_slug: ev.group.slug, reason: data.reason ?? null };
+          await supabase.from("notifications").insert(
+            rsvps.map((r) => ({
+              user_id: r.user_id as string,
+              kind: "event_canceled",
+              actor_user_id: userId,
+              entity_type: "group_event",
+              entity_id: ev.id,
+              payload,
+            })),
+          );
+        }
+      } catch { /* notifications are best-effort */ }
+    }
+    return { ok: true, canceled: canceled.length };
   });
