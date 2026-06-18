@@ -61,7 +61,7 @@ export const getCollabSeo = createServerFn({ method: "GET" })
     setResponseHeader("cache-control", PUBLIC_CACHE);
     const { data: row } = await supabaseAdmin
       .from("collab_posts")
-      .select("title,description,category,status")
+      .select("title,description,category,status,resulting_work_id")
       .eq("slug", data.slug)
       .maybeSingle();
     return row ?? null;
