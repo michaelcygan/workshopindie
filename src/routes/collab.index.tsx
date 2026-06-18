@@ -321,13 +321,13 @@ function CollabPage() {
             {user && (
               <Link to="/me/collabs">
                 <Button variant="outline" size="sm" className="rounded-full gap-2">
-                  <Briefcase className="h-4 w-4" /> Mine
+                  <Briefcase className="h-4 w-4" /> My Collabs
                 </Button>
               </Link>
             )}
             <Link to="/collab/new">
               <Button size="sm" className="rounded-full gap-2">
-                <Megaphone className="h-4 w-4" /> Post
+                <Megaphone className="h-4 w-4" /> Post Collab
               </Button>
             </Link>
           </div>
