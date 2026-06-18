@@ -114,7 +114,7 @@ function GroupsIndex() {
     () =>
       [...allGroups]
         .sort((a, b) => b.member_count - a.member_count)
-        .slice(0, 8),
+        .slice(0, 5),
     [allGroups],
   );
 
