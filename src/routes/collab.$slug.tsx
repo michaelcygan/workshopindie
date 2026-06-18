@@ -467,21 +467,30 @@ function CollabDetail() {
         )}
 
 
-        {/* Public "this collab produced →" card, shown to everyone once linked */}
-        {resultingWork && (
-          <Link to="/works/$slug" params={{ slug: resultingWork.slug }} className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-lift">
+        {/* Shipped hero — promotes the Work as the answer */}
+        {isShipped && resultingWork && (
+          <Link
+            to="/works/$slug"
+            params={{ slug: resultingWork.slug }}
+            className="mb-6 block overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:shadow-lift"
+          >
             {resultingWork.cover_url ? (
-              <img src={resultingWork.cover_url} alt="" className="h-16 w-14 rounded-xl object-cover" />
+              <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
             ) : (
-              <div className="h-16 w-14 rounded-xl gradient-motion" />
+              <div className="aspect-video w-full gradient-motion" />
             )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide text-ink-muted">This collab produced</p>
-              <p className="truncate font-display text-lg text-ink">{resultingWork.title}</p>
+            <div className="flex items-center gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-ink-muted">From this Collab</p>
+                <p className="truncate font-display text-xl text-ink">{resultingWork.title}</p>
+              </div>
+              <Button size="sm" className="rounded-full gap-1 shrink-0">
+                View the Work <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            <ExternalLink className="h-4 w-4 text-ink-muted" />
           </Link>
         )}
+
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
