@@ -251,7 +251,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as typeof form.kind })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other"].map((k) => (
+                  {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "lineup", "other"].map((k) => (
                     <SelectItem key={k} value={k}>{k.replace(/_/g, " ")}</SelectItem>
                   ))}
                 </SelectContent>
