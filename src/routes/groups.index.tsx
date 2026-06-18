@@ -181,15 +181,23 @@ function GroupsIndex() {
         </div>
       </div>
 
-      {/* Above-the-fold on desktop: Trending list (narrow column) + Browse-by-kind clusters (wide column). */}
+      {/* Ambient scene ticker — drifts slowly, pauses on hover. */}
+      {allGroups.length > 0 && (
+        <div className="mt-4">
+          <SceneTicker groups={trending.length > 0 ? trending : allGroups.slice(0, 12)} />
+        </div>
+      )}
+
+      {/* Above-the-fold on desktop: left = Events + Trending. Right = Browse-by-kind. */}
       {showClusters && (
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {trending.length > 0 && (
-            <div className="lg:col-span-1">
+        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="space-y-8 lg:col-span-1">
+            <FeaturedEventsCompact />
+            {trending.length > 0 && (
               <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
-            </div>
-          )}
-          <div className={cn(trending.length > 0 ? "lg:col-span-2" : "lg:col-span-3")}>
+            )}
+          </div>
+          <div className="lg:col-span-2">
             <GroupsBrowseByKind
               groups={allGroups}
               joinedIds={myIdSet}
@@ -259,11 +267,6 @@ function GroupsIndex() {
             </div>
           </>
         )}
-      </section>
-
-      {/* Featured events appears only when there's something to show — no empty hero. */}
-      <section className="mt-10">
-        <FeaturedEventsCarousel hideWhenEmpty />
       </section>
     </main>
   );
