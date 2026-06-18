@@ -1,7 +1,6 @@
 import { MapPin, Sparkles, Zap, Flame, ArrowRight } from "lucide-react";
 import { GroupCardCompact } from "@/components/group-card-compact";
 import type { GroupCardData } from "@/components/group-card";
-import { cn } from "@/lib/utils";
 
 type Kind = GroupCardData["kind"];
 
@@ -30,14 +29,13 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
         {kinds.map((k) => {
           const meta = KIND_META[k];
           const KIcon = meta.icon;
-          const sample = groups.filter((g) => g.kind === k).slice(0, 4);
+          const all = groups.filter((g) => g.kind === k);
+          const sample = all.slice(0, 6);
           if (sample.length === 0) return null;
           return (
             <div
               key={k}
-              className={cn(
-                "flex flex-col gap-3 rounded-3xl border border-border bg-surface p-4 shadow-soft",
-              )}
+              className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-4 shadow-soft"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-2.5">
@@ -54,10 +52,10 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
                   onClick={() => onJump(k)}
                   className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-ink-muted transition hover:bg-muted hover:text-ink"
                 >
-                  See all <ArrowRight className="h-3 w-3" />
+                  See all {all.length} <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-2">
                 {sample.map((g) => (
                   <GroupCardCompact key={g.id} group={g} joined={joinedIds.has(g.id)} />
                 ))}

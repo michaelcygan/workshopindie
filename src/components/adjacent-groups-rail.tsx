@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GroupCardCompact } from "@/components/group-card-compact";
 import type { GroupCardData } from "@/components/group-card";
+import { RecapChip } from "@/components/recap-chip";
 
 type Props = { groupId: string; className?: string };
 
@@ -11,7 +12,6 @@ export function AdjacentGroupsRail({ groupId, className }: Props) {
     queryKey: ["group", groupId, "adjacent"],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GroupCardData[]> => {
-      // Members of this group
       const { data: members } = await supabase
         .from("group_members")
         .select("user_id")
@@ -20,7 +20,6 @@ export function AdjacentGroupsRail({ groupId, className }: Props) {
       const memberIds = (members ?? []).map((m) => m.user_id as string);
       if (memberIds.length === 0) return [];
 
-      // Other group ids those members belong to
       const { data: others } = await supabase
         .from("group_members")
         .select("group_id")
@@ -55,8 +54,11 @@ export function AdjacentGroupsRail({ groupId, className }: Props) {
   if (!data || data.length === 0) return null;
   return (
     <section className={className}>
-      <div className="mb-3 flex items-baseline justify-between px-1">
-        <h2 className="font-display text-xl text-ink md:text-2xl">Adjacent scenes</h2>
+      <div className="mb-3 flex items-baseline justify-between gap-3 border-t border-border pt-6 px-1">
+        <div className="flex items-center gap-2">
+          <h2 className="font-display text-xl text-ink md:text-2xl">Adjacent scenes</h2>
+          <RecapChip count={data.length} label="related" />
+        </div>
         <span className="text-xs text-ink-muted">Members of this group also joined</span>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
