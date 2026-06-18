@@ -5058,6 +5058,7 @@ export type Database = {
         | "board"
         | "screen_share"
         | "recorder"
+        | "pip"
       visibility: "public" | "unlisted" | "invite_only" | "private"
       work_license:
         | "cc_by"
@@ -5324,6 +5325,7 @@ export const Constants = {
         "board",
         "screen_share",
         "recorder",
+        "pip",
       ],
       visibility: ["public", "unlisted", "invite_only", "private"],
       work_license: [

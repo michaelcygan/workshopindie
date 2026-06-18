@@ -515,6 +515,12 @@ export function ChannelView({
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
   const pip = useWorkshopPip({ media, meDisplay, profileLookup });
+  // Allow the Pop-out tool (and anywhere else) to trigger PiP via a global event.
+  useEffect(() => {
+    function onOpen() { pip.open(); }
+    window.addEventListener("workshop:pip-open", onOpen);
+    return () => window.removeEventListener("workshop:pip-open", onOpen);
+  }, [pip]);
   const others = useMemo(
     () => presence.filter((p) => p.user_id !== user?.id),
     [presence, user?.id],

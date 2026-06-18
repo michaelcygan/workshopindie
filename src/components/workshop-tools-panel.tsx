@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic,
+  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic, PictureInPicture2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -21,7 +21,7 @@ import { WorkshopRecordingLink } from "@/components/workshop-recording-link";
 
 // Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
 // Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player";
+type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player" | "pip";
 // Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
 type ComingSoonToolType = never;
 type ToolType = ShippedToolType | ComingSoonToolType;
@@ -45,6 +45,7 @@ type Preset = {
 const PRESETS: Record<ToolType, Preset> = {
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
   recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
+  pip:          { label: "Pop-out",      icon: PictureInPicture2, blurb: "Float the room in a Picture-in-Picture window so you can keep working in other tabs.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard for images, text, links, and reference pins.", fields: [] },
   list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
@@ -54,7 +55,7 @@ const PRESETS: Record<ToolType, Preset> = {
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
 };
 
-const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "outline", "board", "list", "drive", "player", "repo_links"];
+const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "pip", "outline", "board", "list", "drive", "player", "repo_links"];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
@@ -364,6 +365,9 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
+  if (tool.tool_type === "pip") {
+    return <PipBody />;
+  }
   if (tool.tool_type === "board") {
     return <BoardBody scope={scope} />;
   }
@@ -393,6 +397,44 @@ function BoardBody({ scope }: { scope: ToolsScope }) {
     </div>
   );
 }
+
+function PipBody() {
+  const supported = typeof window !== "undefined" && (
+    "documentPictureInPicture" in window || "pictureInPictureEnabled" in document
+  );
+  function openPip() {
+    if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("workshop:pip-open"));
+  }
+  return (
+    <div className="p-4">
+      <div className="rounded-2xl border border-border bg-surface p-4">
+        <div className="flex items-start gap-3">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet/10 text-violet">
+            <PictureInPicture2 className="h-4 w-4" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Picture-in-Picture</div>
+            <h3 className="mt-0.5 font-display text-lg text-ink">Float the room above any tab</h3>
+            <p className="mt-1 text-sm text-ink-soft">
+              Pop the Workshop into a small always-on-top window so you can keep working in other apps without leaving the room.
+            </p>
+            <div className="mt-3 flex items-center gap-2">
+              <Button onClick={openPip} disabled={!supported} size="sm" className="rounded-full gap-1.5">
+                <PictureInPicture2 className="h-3.5 w-3.5" /> Pop out
+              </Button>
+              {!supported && (
+                <span className="text-xs text-ink-muted">Not supported in this browser</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 
 
 function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType } }) {
