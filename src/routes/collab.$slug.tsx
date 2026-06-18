@@ -254,7 +254,12 @@ function CollabDetail() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="mb-4 flex items-center gap-2">
           <CategoryChip category={post.category as Category} />
-          <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] capitalize text-ink-soft">{post.status}</span>
+          {stateBadge}
+          {post.status === "open" && (
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
+              {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <ShareCollabSheet
               postId={post.id}
