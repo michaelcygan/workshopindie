@@ -415,17 +415,17 @@ function SplitOpenButton({
       onClick={onPickAny}
       disabled={disabled || busyAny}
       className={cn(
-        "group/btn inline-flex items-center gap-2 rounded-l-full bg-ink text-background",
-        "pl-5 pr-4 py-2.5 text-[13px] font-medium tracking-tight",
-        "transition hover:bg-ink/90 disabled:opacity-60",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+        "group/btn inline-flex flex-1 items-center justify-between gap-2 rounded-l-2xl bg-primary text-primary-foreground",
+        "pl-5 pr-4 py-3.5 text-[14px] font-semibold tracking-tight",
+        "transition hover:bg-primary/90 disabled:opacity-60",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
       )}
     >
       {busyAny ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
         <>
-          {primaryLabel}
+          <span>{primaryLabel}</span>
           <span aria-hidden className="transition-transform group-hover/btn:translate-x-0.5">→</span>
         </>
       )}
@@ -433,7 +433,7 @@ function SplitOpenButton({
   );
 
   return (
-    <div className="inline-flex items-stretch shadow-halo-sm rounded-full">
+    <div className="flex items-stretch rounded-2xl overflow-hidden border border-ink/10 shadow-halo-sm">
       {primary}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
@@ -442,10 +442,10 @@ function SplitOpenButton({
             aria-label="Pick a topic"
             disabled={disabled}
             className={cn(
-              "inline-flex items-center justify-center rounded-r-full bg-ink text-background",
-              "border-l border-background/20 px-3 py-2.5",
-              "transition hover:bg-ink/90 disabled:opacity-60",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+              "inline-flex items-center justify-center bg-primary text-primary-foreground",
+              "border-l border-primary-foreground/20 px-4",
+              "transition hover:bg-primary/90 disabled:opacity-60",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
             )}
           >
             <motion.span
