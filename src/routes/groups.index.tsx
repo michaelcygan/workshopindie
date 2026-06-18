@@ -17,7 +17,7 @@ import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
 import { SceneTicker } from "@/components/scene-ticker";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { GroupsJoinFeedCard } from "@/components/groups-join-feed-card";
+import { GroupsJoinFeedStrip } from "@/components/groups-join-feed-strip";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
