@@ -25,6 +25,20 @@ export const Route = createFileRoute("/cities/$slug")({
     const data = await getCitySeo({ data: { slug: params.slug } });
     return { seo: data };
   },
+  errorComponent: ({ error, reset }) => (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">Couldn't load this city</h1>
+      <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
+      <button onClick={reset} className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Try again</button>
+    </main>
+  ),
+  notFoundComponent: () => (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">City not found</h1>
+      <p className="mt-2 text-ink-muted">No city matches that name yet.</p>
+      <Link to="/cities" className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Browse Cities</Link>
+    </main>
+  ),
   head: ({ params, loaderData }) => {
     const c = loaderData?.seo;
     const url = `https://workshopindie.com/cities/${params.slug}`;
