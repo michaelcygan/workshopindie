@@ -25,9 +25,11 @@ export function useWorkshopPip(opts: {
   profileLookup: ProfileLookup;
 }) {
   const [pipWindow, setPipWindow] = useState<Window | null>(null);
+  const [initialSource, setInitialSource] = useState<Source | "director" | undefined>(undefined);
   const supported = useMemo(() => isDocPipSupported(), []);
 
-  const open = useCallback(async () => {
+  const open = useCallback(async (openOpts?: { initialSource?: Source | "director" }) => {
+    setInitialSource(openOpts?.initialSource);
     if (!supported) return;
     if (window.documentPictureInPicture?.window) {
       window.documentPictureInPicture.window.focus();
@@ -94,6 +96,7 @@ export function useWorkshopPip(opts: {
           meDisplay={opts.meDisplay}
           profileLookup={opts.profileLookup}
           onClose={close}
+          initialSource={initialSource}
         />,
         pipWindow.document.getElementById("pip-root")!,
       )
@@ -107,18 +110,30 @@ function PipBody({
   meDisplay,
   profileLookup,
   onClose,
+  initialSource,
 }: {
   media: Media;
   meDisplay: string;
   profileLookup: ProfileLookup;
   onClose: () => void;
+  initialSource?: Source | "director";
 }) {
   // When a screen share is active, render Director mode. We branch at the very
   // top via a child component swap so each branch keeps a stable hook order.
   if (media.screenSharerId) {
     return <DirectorBody media={media} profileLookup={profileLookup} onClose={onClose} />;
   }
-  return <StandardPipBody media={media} meDisplay={meDisplay} profileLookup={profileLookup} onClose={onClose} />;
+  const standardInitial: Source = initialSource && initialSource !== "director" ? initialSource : "me";
+  return (
+    <StandardPipBody
+      media={media}
+      meDisplay={meDisplay}
+      profileLookup={profileLookup}
+      onClose={onClose}
+      initialSource={standardInitial}
+      waitingForShare={initialSource === "director"}
+    />
+  );
 }
 
 function StandardPipBody({
@@ -126,13 +141,17 @@ function StandardPipBody({
   meDisplay,
   profileLookup,
   onClose,
+  initialSource = "me",
+  waitingForShare = false,
 }: {
   media: Media;
   meDisplay: string;
   profileLookup: ProfileLookup;
   onClose: () => void;
+  initialSource?: Source;
+  waitingForShare?: boolean;
 }) {
-  const [source, setSource] = useState<Source>("me");
+  const [source, setSource] = useState<Source>(initialSource);
   const [followSpeaker, setFollowSpeaker] = useState(true);
   const videoRef = useRef<HTMLVideoElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -242,6 +261,16 @@ function StandardPipBody({
             {source === "me" ? "Camera off" :
              source === "speaker" ? (speaker ? "Speaker audio only" : "Waiting for speaker…") :
              "No shared screen yet"}
+          </div>
+        )}
+        {waitingForShare && (
+          <div style={{
+            position: "absolute", top: 8, left: 8, right: 8,
+            padding: "4px 10px", borderRadius: 999,
+            background: "rgba(0,0,0,0.6)", color: "#fff",
+            fontSize: 11, textAlign: "center",
+          }}>
+            Waiting for a screen share to start Director mode…
           </div>
         )}
         <div

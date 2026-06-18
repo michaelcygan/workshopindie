@@ -517,7 +517,10 @@ export function ChannelView({
   const pip = useWorkshopPip({ media, meDisplay, profileLookup });
   // Allow the Pop-out tool (and anywhere else) to trigger PiP via a global event.
   useEffect(() => {
-    function onOpen() { pip.open(); }
+    function onOpen(e: Event) {
+      const detail = (e as CustomEvent<{ source?: "me" | "speaker" | "tool" | "director" }>).detail;
+      pip.open({ initialSource: detail?.source });
+    }
     window.addEventListener("workshop:pip-open", onOpen);
     return () => window.removeEventListener("workshop:pip-open", onOpen);
   }, [pip]);
