@@ -198,11 +198,36 @@ function CollabDetail() {
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
+  const isArchived = post.status === "closed" && !post.resulting_work_id;
+  const isShipped = post.status === "closed" && !!post.resulting_work_id;
+
+  // Archived posts are owner-only. Anyone else gets the standard not-found surface.
+  if (isArchived && !isOwner) {
+    return (
+      <main className="mx-auto max-w-2xl p-10 text-center">
+        <h1 className="font-display text-3xl">Not found</h1>
+        <p className="mt-2 text-ink-muted">This collab isn't available.</p>
+        <Link to="/collab" className="mt-4 inline-block text-ink-soft underline">Back to Collab Board</Link>
+      </main>
+    );
+  }
+
   const roles = (post.roles ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
   const hostUser = post.user;
   const cityName = post.city?.name;
   const today = new Date().toISOString().slice(0, 10);
   const deadlinePassed = !!post.ends_on && post.ends_on < today && post.status === "open";
+  const openedDays = Math.max(0, Math.floor((Date.now() - new Date(post.created_at).getTime()) / 86400000));
+  const daysToDeadline = post.ends_on
+    ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
+    : null;
+  const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
+  const stateBadge = post.status === "open"
+    ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
+    : isShipped
+      ? <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
+      : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
+
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
   function openContact(roleId: string | null) {
