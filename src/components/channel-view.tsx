@@ -497,6 +497,19 @@ export function ChannelView({
     [presence],
   );
 
+  const mentionCandidates = useMemo<MentionCandidate[]>(
+    () =>
+      presence
+        .filter((p) => !!p.profile?.username)
+        .map((p) => ({
+          user_id: p.user_id,
+          display_name: p.profile?.display_name ?? null,
+          username: p.profile?.username ?? null,
+          avatar_url: p.profile?.avatar_url ?? null,
+        })),
+    [presence],
+  );
+
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
