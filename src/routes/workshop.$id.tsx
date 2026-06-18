@@ -92,14 +92,14 @@ function LiveRoomPage() {
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
-      if (!data) throw notFound();
-      return data as Room;
+      return (data as Room | null) ?? null;
     },
     refetchInterval: 5000,
   });
 
-  // Trigger notFound boundary if the room disappears between polls (avoids blank UI).
+  // Bad room ID → trigger the notFound boundary instead of a blank live-room shell.
   if (isFetched && room === null) throw notFound();
+
 
 
   // Pending opt-in invite for the persistent fork
