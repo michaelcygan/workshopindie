@@ -26,6 +26,7 @@ import {
 } from "@/lib/groups.functions";
 import { toast } from "sonner";
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
+import { GroupSparkBar } from "@/components/group-spark-bar";
 
 type GroupRow = {
   id: string;
@@ -105,7 +106,19 @@ type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
-  const [tab, setTab] = useState<Tab>("work");
+  // Default to the tab most likely to have content: events > work > collab > workshops.
+  const defaultTab: Tab = useMemo(() => {
+    if (group.work_count > 0) return "work";
+    if (group.collab_count > 0) return "collab";
+    if (group.workshop_count > 0) return "workshops";
+    return "events";
+  }, [group.work_count, group.collab_count, group.workshop_count]);
+  const [tab, setTab] = useState<Tab>("events");
+  // Promote to a smarter default once on mount if events tab will be empty.
+  useEffect(() => {
+    if (defaultTab !== "events") setTab(defaultTab);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const qc = useQueryClient();
   const { data: nextEvent } = useQuery({
     queryKey: ["group", group.id, "next-event"],
@@ -205,30 +218,33 @@ function GroupPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 md:pb-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="rounded-full gap-1.5">
-                  <Plus className="h-4 w-4" /> Post here
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem asChild>
-                  <Link to="/works/new" search={{ group: group.slug }}>New Work</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/collab/new" search={{ group: group.slug }}>New Collab</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/workshops/new" search={{ group: group.slug }}>New Workshop</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <GroupSparkBar slug={group.slug} />
+            <div className="md:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+                    <Plus className="h-4 w-4" /> Post here
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuItem asChild>
+                    <Link to="/works/new" search={{ group: group.slug }}>New Work</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/collab/new" search={{ group: group.slug }}>New Collab</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/workshops/new" search={{ group: group.slug }}>New Workshop</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
             <JoinGroupButton groupId={group.id} />
           </div>
         </div>
 
         {/* Tabs */}
-        <div className="mt-8 flex flex-wrap gap-1.5 border-b border-border">
+        <div className="sticky top-0 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:flex-wrap md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
             { id: "events" as const, label: "Events", icon: Calendar, count: null },
             { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
