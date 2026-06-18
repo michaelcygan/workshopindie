@@ -23,7 +23,7 @@ export const Route = createFileRoute("/workshops/lobby/new")({
   head: () => ({
     meta: [
       { title: "Start a Draft Workshop — invite the people you mutually follow" },
-      { name: "description", content: "Spin up a private Draft Workshop for an idea and pull in the people you mutually follow." },
+      { name: "description", content: "Start a private Draft Workshop for an idea and pull in the people you mutually follow." },
     ],
   }),
   component: NewLobbyPage,
