@@ -48,14 +48,6 @@ type HostingRow = {
   applicant_count: number;
 };
 
-type WrapupRow = {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  category: Category;
-  closed_at: string | null;
-};
 
 type PublishedRow = {
   id: string;
@@ -91,21 +83,24 @@ function MyCollabsPage() {
   }, [user, loading, navigate]);
 
   const closeFn = useServerFn(closeCollab);
-  const reopenFn = useServerFn(reopenCollab);
+  
   const extendFn = useServerFn(extendCollabDeadline);
   const dismissFn = useServerFn(dismissPublishNudge);
 
   const today = new Date().toISOString().slice(0, 10);
 
+  // Hosting includes everything the user owns that hasn't shipped a Work yet:
+  // open posts AND archived (closed-no-Work) posts — archived shows inline with a muted badge.
   const { data: hosting = [] } = useQuery({
     queryKey: ["my-collabs-hosting", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<HostingRow[]> => {
       const { data } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,status,ends_on,created_at,live_workshop_id,city:cities!collab_posts_city_id_fkey(name)")
+        .select("id,title,slug,description,category,status,ends_on,closed_at,resulting_work_id,created_at,live_workshop_id,city:cities!collab_posts_city_id_fkey(name)")
         .eq("user_id", user!.id)
-        .eq("status", "open")
+        .is("resulting_work_id", null)
+        .in("status", ["open", "closed"])
         .order("created_at", { ascending: false });
       const rows = (data ?? []) as unknown as Omit<HostingRow, "applicant_count">[];
       // Applicant counts — small N, one query per post is fine here.
@@ -120,21 +115,6 @@ function MyCollabsPage() {
     },
   });
 
-  const { data: wrapup = [] } = useQuery({
-    queryKey: ["my-collabs-wrapup", user?.id],
-    enabled: !!user,
-    queryFn: async (): Promise<WrapupRow[]> => {
-      const { data } = await supabase
-        .from("collab_posts")
-        .select("id,title,slug,description,category,closed_at")
-        .eq("user_id", user!.id)
-        .eq("status", "closed")
-        .is("resulting_work_id", null)
-        .is("close_nudge_dismissed_at", null)
-        .order("closed_at", { ascending: false });
-      return (data ?? []) as unknown as WrapupRow[];
-    },
-  });
 
   const { data: published = [] } = useQuery({
     queryKey: ["my-collabs-published", user?.id],
