@@ -1,67 +1,85 @@
-# Collab: tighten the post flow, the detail page, and the board
+# Collab Lifecycle: three states, told well (v4)
 
-Three surfaces, three different problems. The post form is long and intimidating; the detail page buries the ongoing relationship under a stack of pills; the board is already close to the Workshop/Groups pattern but could lose a row of vertical space.
+Keep the three statuses already in the schema — **creation → open → closed** — and design each as its own moment. No new statuses, no new tables, no migrations. A **Work** remains the only public final product; a closed Collab without a Work is **owner-only** and appears inline in the owner's own feed.
 
-## 1. `/collab/new` — make posting feel light, get to submit faster
+```
+creation ──post──→ open ──publish Work──→ closed + Work   (public, gallery/profile)
+                       └─close, no Work──→ closed         (archived, owner-only)
+```
 
-Today it's a 689-line single-column form with ~12 sections at uniform weight. Required-vs-optional is invisible, the page is ~3 screens tall on desktop, and the primary CTA only shows at the very bottom. Optimization mirrors what Workshop new-flow does: group, defer, and float the action.
+## Vocabulary
+Users only ever see **Open** or **Closed**. A sublabel does the nuance:
+- `● Open` — sublabel `Casting` when there's time on the clock, `Closing soon` inside 7 days of `ends_on`.
+- `● Closed` — sublabel `Shipped` when a Work exists, `Archived` (owner-only view) when none.
 
-### Layout
-- Keep the form one column (familiar), but split into **three grouped cards** with quiet headers, same `rounded-2xl border bg-surface` rhythm used on the Workshop pages:
-  1. **The pitch** — Title, Medium chips, "What's the idea" textarea.
-  2. **The shape** — Timeline, Where (+ also-cities), Pay, Rights. Pay + Rights compress into a 2-col grid on `md+`.
-  3. **The team** — Roles (with quick-add chips), Groups, How people contact you.
-- **Workshop pairing** moves out of the form body into a **collapsed "Add a Workshop" toggle** under "The team" (closed by default, since `none` is the dominant pick). Selecting `now` or `scheduled` expands the existing `WorkshopOption` block inline. Removes ~80px of always-visible chrome for the 90% case.
-- **Sticky action bar** on `md+` at the bottom of the viewport: Cancel · primary submit · subtle "All set" / "Add a title" hint that mirrors which required field is still empty. On mobile it stays inline at the form bottom (current behavior) — sticky on mobile fights the keyboard.
+No "in production", no new state names. The dot color + sublabel carry the meaning.
 
-### Encourage completion
-- Add a tiny **progress dot row** in the header (3 dots, one per card, fill as the card's required fields are valid). No numbers, no percentage — just a sense of momentum, same energy as the Workshop tour pips.
-- Replace the bare `*` markers with a quieter "Required" label only on the first empty required field per card, so the form stops looking like a checklist of demands.
-- Submit button copy adapts the same way it does today (`Post Collab` / `Post & open Workshop` / `Post & schedule Workshop`), but also turns from outline → filled the moment all required fields are valid, so the user can see they're "ready" before scrolling.
+## State 1 — Creation (`/collab/new`)
+One small addition so the form reads as the start of a lifecycle:
+- **"What happens next" footnote** under the sticky bar: three steps — `Post → People apply → Publish a Work (or archive it)`.
 
-### Out of scope for `/collab/new`
-- No change to validation rules, server payload, Plus gate, or the post-submit dialog.
-- No multi-step wizard — the user already chose a single-screen form; we're just grouping it.
+## State 2 — Open (`/collab/$slug`, `status = 'open'`)
+Make "open" feel **active**, not static.
 
-## 2. `/collab/$slug` — make the ongoing relationship the spine of the page
+**Owner view**
+- "Open for X days" pill in the header.
+- **Activity meter** in the owner strip: `12 views · 3 applicants · 1 share` (from `collab_share_events`, `collab_contact_events`, applicant counts — no new schema).
+- **Heat hint** in strip copy, derived from those numbers: `3 applicants in 48h — strike while it's hot` / `Quiet so far — share it once more?`.
+- Per-role line shows a quiet **"N interested"** count when `collab_contact_events.role_id` is set; silent at 0.
 
-The owner side of this page is where Collabs live or die. Right now the owner controls are a row of small ghost/outline buttons next to Share, and applicant momentum is hidden below the fold in `ApplicantsPanel`. We surface the relationship up top.
+**Visitor view**
+- "Cast so far" line: `3 people have applied · posted 4 days ago` (no names).
+- "Closes in N days" chip when `ends_on` is within 7 days.
 
-### Owner: a single "Run this Collab" strip under the title
-A compact card (same look as the existing amber/primary banners) that shows the current state of the post and the single next best action:
-- **Open, 0 applicants, <72h old:** "Share it — that's how applicants find you" with the existing Share button promoted into the card.
-- **Open, has applicants:** "N people are in. Reply to keep momentum." → jumps to `ApplicantsPanel` (anchor scroll) and shows the count badge.
-- **Open, Workshop running:** "Your Workshop is live — N seats taken" → Rejoin button (replaces today's small Rejoin pill).
-- **Deadline passed:** existing amber banner, unchanged.
-- **Closed, no Work yet:** existing primary banner, unchanged.
+**Both**: header state badge `● Open` (sublabel `Casting` / `Closing soon`).
 
-This collapses the "I posted, now what?" question into one prompt at all times instead of asking the owner to read the page to find it.
+## State 3 — Closed
+Two flavors with very different surfaces — same `Closed` label, different sublabel.
 
-### Applicants panel: lift the most important signal
-- Promote unanswered applicants count into a small chip ("3 waiting on you") on the panel header, with a subtle pulse if any are >48h old. No new data — uses what `ApplicantsPanel` already loads.
+### 3a. Closed **with** a Work → PUBLIC, sublabel `Shipped`
+- Header state badge: `● Closed · Shipped`.
+- Hero block at top: **Work cover + title + Listen/Watch/Read CTA**, treated as the answer to the question the Collab asked. Description and roles drop below the fold.
+- Roles section collapses to `Cast · 3 collaborators` chip linking to the Work's credits.
+- Owner strip → celebratory one-liner + "View the Work" button.
+- Indexable, stays on the board, appears on participant profiles.
 
-### Visitor side: tighten the header
-- Move Share / Report / Live-join into one right-aligned cluster on `md+` and stack them under the title on mobile, so the title and category get full width on small screens.
-- The per-role "I'm in" / "Reach out" buttons stay exactly as they are — they're the conversion point, don't touch them.
+### 3b. Closed **without** a Work → ARCHIVED, owner-only, sublabel `Archived`
+A Collab without a Work isn't a public artifact — it's a private record kept in the owner's own feed.
 
-## 3. `/collab/` board — small polish only
+**Public surfaces hide it:**
+- `/collab/$slug` returns `notFound()` for non-owners; `head()` sets `noindex`.
+- `/collab` board filters it out — query becomes `status = 'open' OR resulting_work_id IS NOT NULL`.
+- Profile pages, OG previews, search, share cards — nothing.
 
-Already uses `PageHeaderCompact` / `KickerChip` / `RecapChip` like Workshop & Groups. Two small tweaks:
-- Drop the standalone description sentence (`What people are trying to make…`) into the `PageHeaderCompact` subtitle so the kicker row reclaims that line.
-- The filter cluster (`mt-8`) is overspaced for what's above it — drop to `mt-5` to match Workshops index density.
+**Owner surfaces keep it inline:**
+- `/me/collabs` shows the post **in the same list as the rest of the owner's collabs**, wearing a `● Closed · Archived` badge and a muted style. No separate tab, no separate section — same row, same layout.
+- Opening it routes to the regular `/collab/$slug` (owner-only render branch) with an "Archived on Mar 4" line.
+- Owner-only actions on the archived view: **"Publish a Work from this"** (primary, existing flow) and **"Delete permanently"**. No reopen action in v1 — that's a deliberate future call.
 
-No changes to fetch logic, sorting, or strips.
+### Access control
+- `getCollabBySlug` (or equivalent server fn) returns `notFound()` when `status = 'closed' AND resulting_work_id IS NULL AND caller !== owner`.
+- Board / profile / search / group-feed queries filter to `status = 'open' OR resulting_work_id IS NOT NULL`.
+- Owner's own queries (used by `/me/collabs` and the owner branch of the detail page) skip that filter so archived posts show up in their personal feed.
+- No RLS migration in v1 — owner-only visibility is enforced at the route + server-fn layer. (Tighter SELECT policy is a v2 hardening pass.)
 
-## Files
+## Cross-state design glue
+- **`<StateBadge />`** (new ~15-LOC component): dot + `Open`/`Closed` label + optional sublabel. Used in the detail header, `/me/collabs` rows, and `CollabCard`. Sublabels: `Casting`, `Closing soon`, `Shipped`, `Archived`.
+- Detail page reuses the same card stack rhythm as `/collab/new` so the journey reads as one continuous object — form → live post → resolution.
+- Owner strip = status console in every state: states what's true now and the next reasonable action.
 
-- `src/routes/collab.new.tsx` — group sections into 3 cards, collapse Workshop pairing, sticky action bar (desktop), progress dots, validation-aware submit.
-- `src/routes/collab.$slug.tsx` — owner "next action" strip under the title, applicant-count chip, header reflow.
-- `src/components/applicants-panel.tsx` — expose unanswered count via a tiny header chip (read-only addition, no data changes).
-- `src/routes/collab.index.tsx` — subtitle into `PageHeaderCompact`, spacing nudge.
+## Files this touches
+- `src/routes/collab.new.tsx` — "what happens next" footnote.
+- `src/routes/collab.$slug.tsx` — header state badge; open-state activity meter + heat hint + per-role interest; visitor "cast so far" + closes-soon chip; closed-shipped hero with Work; closed-no-Work → owner-only render branch, `notFound()` + `noindex` for everyone else.
+- `src/routes/collab.index.tsx` — board filter: `status = 'open' OR resulting_work_id IS NOT NULL`.
+- `src/routes/me.collabs.tsx` — archived posts render inline in the same list with the `● Closed · Archived` badge and muted style; no separate tab.
+- `src/components/collab-card.tsx` — use `<StateBadge />`; muted variant for archived; hide from public surfaces when `closed + no Work`.
+- `src/components/state-badge.tsx` — new.
+- Server-fn list/get callers — add the public visibility carve-out; owner queries opt out.
 
-## Out of scope
+## Out of scope (v1)
+- **Reopen.** Deliberately deferred — archived posts can be republished as a Work or deleted, not revived as a Collab. Revisit when we have data on how often archives get retried.
+- No new DB columns, tables, statuses, RLS migrations, or server-fn additions.
+- No production updates, team space, per-role fill counts, or notification fan-out.
 
-- No schema changes, no new server functions, no changes to the post payload.
-- No redesign of `CollabCard`, `ShareCollabSheet`, `GuestApplyDialog`, or `PublishFromCollabSheet`.
-- No new "draft" / autosave behavior on the post form.
-- No changes to the Plus gate copy or thresholds.
+## One open decision
+**Activity meter visibility** — owner-only numbers, with visitors getting only the softer "3 people have applied" line? (My default: yes, owner-only — share counts and view counts feel like backstage data.)
