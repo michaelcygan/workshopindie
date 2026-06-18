@@ -145,6 +145,34 @@ function CollabDetail() {
   const applicantCount =
     (applicantsData?.members.length ?? 0) + (applicantsData?.guests.length ?? 0);
 
+  const fetchActivity = useServerFn(getCollabActivity);
+  const { data: activity } = useQuery({
+    queryKey: ["collab-activity", post?.id],
+    queryFn: () => fetchActivity({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!isOwnerEarly && post?.status === "open",
+    staleTime: 30_000,
+  });
+
+  const fetchPublicCounts = useServerFn(getCollabPublicCounts);
+  const { data: publicCounts } = useQuery({
+    queryKey: ["collab-public-counts", post?.id],
+    queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !isOwnerEarly && post?.status === "open",
+    staleTime: 60_000,
+  });
+
+  const { data: workCollabCount } = useQuery({
+    queryKey: ["work-collab-count", post?.resulting_work_id],
+    enabled: !!post?.resulting_work_id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("work_collaborators")
+        .select("id", { count: "exact", head: true })
+        .eq("work_id", post!.resulting_work_id!);
+      return count ?? 0;
+    },
+  });
+
 
   const openWorkshopMut = useMutation({
     mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
