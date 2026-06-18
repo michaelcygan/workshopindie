@@ -17,7 +17,7 @@ import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
 import { SceneTicker } from "@/components/scene-ticker";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { GroupsSparkCard } from "@/components/groups-spark-card";
+import { GroupsJoinFeedCard } from "@/components/groups-join-feed-card";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
@@ -195,19 +195,18 @@ function GroupsIndex() {
       {/* Discovery band: balanced 12-col grid so both columns share the same
           vertical rhythm — no orphaned space on either side. */}
       {showClusters && (
-        <div className="mt-4 grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="space-y-6 lg:col-span-4">
+        <div className="mt-4 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
+          <div className="flex flex-col gap-6 lg:col-span-4">
             <FeaturedEventsCompact />
             {trending.length > 0 && (
               <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
             )}
-            <GroupsSparkCard
-              totalGroups={allGroups.length}
-              cityCount={allGroups.filter((g) => g.kind === "city").length}
-              microCount={allGroups.filter((g) => g.kind === "micro").length}
+            <GroupsJoinFeedCard
+              hasGroups={myIds.length > 0}
               onBrowseAll={() =>
                 allGroupsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
               }
+              className="flex-1"
             />
           </div>
           <div className="lg:col-span-8">

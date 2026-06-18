@@ -1,35 +1,60 @@
-## Problem
+## Replace SparkCard with "Join the room" shuffle card
 
-In the discovery band, the left column (Events + Trending 1–8) now ends well above the right column (Browse by kind, 4 clusters). On a 1024–1280px viewport that leaves a tall blank rectangle between the trending list and "All groups".
+Reframe the left-column card from manifesto/stats into a **personalized opportunity feed** — drawn from the user's groups, shuffling through collabs + workshops you can join. Keep the left column the same width and align its bottom edge with the right-side `Browse by kind` grid.
 
-## Fix — add a "Spark" card under Trending
+### New component: `src/components/groups-join-feed-card.tsx`
 
-A single component, `GroupsSparkCard`, slotted into the left column right after `GroupsTrendingList`. It does three jobs at once so the space earns its keep:
+A single card with:
+- **Header row** — kicker "From your groups" + small `Shuffle` button (cycles to next item) + an index pill like `2 / 7`.
+- **Body** — one item at a time, cross-faded:
+  - Kind chip (`Collab` / `Workshop`) + originating group name (chip → links to `/g/$slug`)
+  - Title (font-display, 2-line clamp)
+  - One-line subtitle (collab summary or workshop tagline)
+  - Tiny meta row (e.g. `3 roles open` / `starts Fri` when available, else member/host avatars)
+- **Footer** — primary CTA "Open" → routes to `/collab/$slug` or `/workshops/$slug`; secondary text-button "Skip" advances to next.
+- **Auto-shuffle** every ~7s, paused on hover/focus. Manual shuffle resets timer.
+- **Empty / signed-out states**:
+  - Signed out → "Sign in to see opportunities from your groups" + Sign in link.
+  - Signed in, 0 groups → "Join a group to unlock this feed" + scroll-to-clusters button.
+  - Signed in, 0 open items → "All quiet in your groups. Browse all" → calls existing `onBrowseAll`.
 
-1. **Manifesto** — one short editorial line that tells people what Groups are for.
-   > "Groups are the rooms your work belongs in. Scenes, cities, sprints — find the one that pulls you in."
-2. **Stat strip** — three tiny numbers pulled from data already loaded on the page:
-   - `{allGroups.length}` rooms open
-   - `{cityCount}` cities
-   - `{microCount}` micro-sprints
-3. **CTAs** — three buttons stacked, each with a small icon + label + sub-label:
-   - **Start a Group** → `/groups/new` (primary, dark fill)
-   - **Suggest a Scene** → `mailto:` or `/feedback?topic=group` (outline)
-   - **Browse all** → scrolls to the All-groups grid (ghost, with arrow)
+### New server fn: `listOpenForMyGroups` in `src/lib/group-events.functions.ts` (or a new `src/lib/my-groups-feed.functions.ts`)
 
-Visual treatment matches the existing Trending card — `rounded-3xl border border-border bg-surface shadow-soft`, accent dot, same heading scale — so it reads as a sibling, not a new section.
+Authenticated (`requireSupabaseAuth`). Returns up to 24 items of shape:
 
-## Files
+```ts
+type FeedItem = {
+  id: string;
+  kind: "collab" | "workshop";
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  group: { id: string; slug: string; name: string };
+  meta: { rolesOpen?: number; startsAt?: string | null } | null;
+};
+```
 
-- **New** `src/components/groups-spark-card.tsx` — the component above. Takes `{ totalGroups, cityCount, microCount, onBrowseAll }` so it stays presentational.
-- **Edit** `src/routes/groups.index.tsx` — render `<GroupsSparkCard>` inside the `lg:col-span-4` stack, after `GroupsTrendingList`. Pass derived counts from `allGroups`. Wire `onBrowseAll` to scroll the `<section>` that holds the All-groups grid into view (add a ref).
+Query plan: read `group_members.group_id` for caller, then in parallel:
+- `group_collabs` join `collab_posts` (only `status='open'` / not deleted, future or no deadline) filtered to those group ids.
+- `group_workshops` join `workshops` (only `visibility='public'` and not ended) filtered to those group ids.
 
-## Out of scope
+Merge, de-dup by `(kind, id)`, sort by recency, cap at 24. No schema changes.
 
-- No new routes, no schema changes.
-- "Start a Group" links to existing `/groups/new` if present; if not, falls back to opening the existing Create flow.
-- No changes to the right column or to the All-groups grid below.
+### `src/routes/groups.index.tsx` edits
 
-## Why this and not more clusters / a marquee
+- Swap `GroupsSparkCard` import for `GroupsJoinFeedCard`.
+- Left column becomes a flex column with the feed card as the **last child set to `flex-1`**, so it stretches to match the right column's height (which is driven by `GroupsBrowseByKind`). Wrap the right column in `lg:h-full` and add `lg:items-stretch` to the grid so heights equalize.
+- Keep `onBrowseAll` / `allGroupsRef` wiring for the empty-state CTA.
+- Remove `GroupsSparkCard` import only after the new card renders.
 
-We already tried a vertical marquee (felt unconsidered) and stacking more clusters (made the right side feel orphaned). A Spark card is finite-height by design — it sizes to its content, balances the column visually, and converts dead space into an explicit invitation to act (start, suggest, browse) plus the only place on the page that says *what Groups are*.
+### Out of scope
+
+- No new routes, no schema migrations, no changes to `GroupsBrowseByKind` or the All-groups grid.
+- "Start a Group" / "Suggest a scene" / stats are removed from this surface (they were the manifesto card's job; the discovery clusters + header copy already cover the "what is a Group" framing).
+
+### Technical notes
+
+- Auto-rotate via `useEffect` + `setInterval`, cleared on unmount and on hover (track with `onMouseEnter`/`Leave`, `onFocus`/`Blur`).
+- Cross-fade with a keyed inner div + Tailwind `transition-opacity` (no extra deps).
+- Query: `useQuery({ queryKey: ["my-groups-feed", user.id], enabled: !!user, staleTime: 60_000 })`.
+- Height alignment relies on CSS grid `items-stretch` (default) — the existing `lg:grid-cols-12` already does this; just make sure neither column has a fixed height and the feed card uses `h-full flex flex-col` with `flex-1` body.
