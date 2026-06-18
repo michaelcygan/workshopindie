@@ -131,11 +131,18 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
 
   type FormState = {
     group_id: string; title: string; tagline: string; description: string;
-    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other";
+    kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
     capacity: string; promo_pass_months: number; featured: boolean;
+    lineup_slot_count: number;
+    lineup_mode: "open_claim" | "host_approval";
+    lineup_field_act_type: boolean;
+    lineup_field_link: boolean;
+    lineup_field_notes: boolean;
+    lineup_allow_switch: boolean;
+    lineup_lock_minutes_before: number;
   };
   const [form, setForm] = useState<FormState>({
     group_id: "",
@@ -153,6 +160,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     capacity: "",
     promo_pass_months: 1,
     featured: false,
+    lineup_slot_count: 10,
+    lineup_mode: "open_claim",
+    lineup_field_act_type: true,
+    lineup_field_link: true,
+    lineup_field_notes: true,
+    lineup_allow_switch: true,
+    lineup_lock_minutes_before: 60,
   });
 
   async function submit(e: React.FormEvent) {
@@ -181,6 +195,15 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           promo_pass_months: form.promo_pass_months,
           featured: form.featured,
           is_official: true,
+          ...(form.kind === "lineup" ? {
+            lineup_slot_count: form.lineup_slot_count,
+            lineup_mode: form.lineup_mode,
+            lineup_field_act_type: form.lineup_field_act_type,
+            lineup_field_link: form.lineup_field_link,
+            lineup_field_notes: form.lineup_field_notes,
+            lineup_allow_switch: form.lineup_allow_switch,
+            lineup_lock_minutes_before: form.lineup_lock_minutes_before,
+          } : {}),
         },
       });
       toast.success("Event created");
@@ -228,7 +251,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Select value={form.kind} onValueChange={(v) => setForm({ ...form, kind: v as typeof form.kind })}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other"].map((k) => (
+                  {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "lineup", "other"].map((k) => (
                     <SelectItem key={k} value={k}>{k.replace(/_/g, " ")}</SelectItem>
                   ))}
                 </SelectContent>
@@ -292,6 +315,37 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
             Feature on homepage
           </label>
+          {form.kind === "lineup" && (
+            <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-3">
+              <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">Lineup setup</div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label>Number of slots</Label>
+                  <Input type="number" min={1} max={50} value={form.lineup_slot_count} onChange={(e) => setForm({ ...form, lineup_slot_count: Math.max(1, Math.min(50, Number(e.target.value) || 1)) })} />
+                </div>
+                <div>
+                  <Label>Claim mode</Label>
+                  <Select value={form.lineup_mode} onValueChange={(v) => setForm({ ...form, lineup_mode: v as "open_claim" | "host_approval" })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="open_claim">Open — first come</SelectItem>
+                      <SelectItem value="host_approval">Host approval required</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-1.5 text-sm">
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.lineup_field_act_type} onChange={(e) => setForm({ ...form, lineup_field_act_type: e.target.checked })} /> Ask for act type (Comedian / Band / DJ / Other)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.lineup_field_link} onChange={(e) => setForm({ ...form, lineup_field_link: e.target.checked })} /> Ask for a link (Instagram / Spotify / set list)</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.lineup_field_notes} onChange={(e) => setForm({ ...form, lineup_field_notes: e.target.checked })} /> Allow private notes to host</label>
+                <label className="flex items-center gap-2"><input type="checkbox" checked={form.lineup_allow_switch} onChange={(e) => setForm({ ...form, lineup_allow_switch: e.target.checked })} /> Allow performers to switch slots themselves</label>
+              </div>
+              <div>
+                <Label>Lock changes (minutes before start)</Label>
+                <Input type="number" min={0} max={1440} value={form.lineup_lock_minutes_before} onChange={(e) => setForm({ ...form, lineup_lock_minutes_before: Math.max(0, Number(e.target.value) || 0) })} />
+              </div>
+            </div>
+          )}
           <Button type="submit" className="w-full rounded-full">Create event</Button>
         </form>
       </DialogContent>

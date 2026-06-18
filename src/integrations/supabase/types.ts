@@ -801,6 +801,123 @@ export type Database = {
           },
         ]
       }
+      group_event_lineup_audit: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          metadata: Json
+          slot_id: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          metadata?: Json
+          slot_id?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          metadata?: Json
+          slot_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_lineup_audit_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_lineup_audit_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "group_event_lineup_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_event_lineup_audit_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "group_event_lineup_slots_public"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_event_lineup_slots: {
+        Row: {
+          act_type: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          event_id: string
+          hold_email: string | null
+          hold_expires_at: string | null
+          id: string
+          link_url: string | null
+          manual_performer_name: string | null
+          notes_to_host: string | null
+          position: number
+          stage_name: string | null
+          status: Database["public"]["Enums"]["lineup_claim_status"]
+          updated_at: string
+        }
+        Insert: {
+          act_type?: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          event_id: string
+          hold_email?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          link_url?: string | null
+          manual_performer_name?: string | null
+          notes_to_host?: string | null
+          position: number
+          stage_name?: string | null
+          status?: Database["public"]["Enums"]["lineup_claim_status"]
+          updated_at?: string
+        }
+        Update: {
+          act_type?: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          event_id?: string
+          hold_email?: string | null
+          hold_expires_at?: string | null
+          id?: string
+          link_url?: string | null
+          manual_performer_name?: string | null
+          notes_to_host?: string | null
+          position?: number
+          stage_name?: string | null
+          status?: Database["public"]["Enums"]["lineup_claim_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_lineup_slots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_event_rsvps: {
         Row: {
           created_at: string
@@ -891,6 +1008,12 @@ export type Database = {
           id: string
           is_official: boolean
           kind: Database["public"]["Enums"]["group_event_kind"]
+          lineup_allow_switch: boolean
+          lineup_field_act_type: boolean
+          lineup_field_link: boolean
+          lineup_field_notes: boolean
+          lineup_lock_minutes_before: number
+          lineup_mode: Database["public"]["Enums"]["lineup_slot_mode"]
           maybe_count: number
           notified_24h_at: string | null
           notified_2h_at: string | null
@@ -931,6 +1054,12 @@ export type Database = {
           id?: string
           is_official?: boolean
           kind?: Database["public"]["Enums"]["group_event_kind"]
+          lineup_allow_switch?: boolean
+          lineup_field_act_type?: boolean
+          lineup_field_link?: boolean
+          lineup_field_notes?: boolean
+          lineup_lock_minutes_before?: number
+          lineup_mode?: Database["public"]["Enums"]["lineup_slot_mode"]
           maybe_count?: number
           notified_24h_at?: string | null
           notified_2h_at?: string | null
@@ -971,6 +1100,12 @@ export type Database = {
           id?: string
           is_official?: boolean
           kind?: Database["public"]["Enums"]["group_event_kind"]
+          lineup_allow_switch?: boolean
+          lineup_field_act_type?: boolean
+          lineup_field_link?: boolean
+          lineup_field_notes?: boolean
+          lineup_lock_minutes_before?: number
+          lineup_mode?: Database["public"]["Enums"]["lineup_slot_mode"]
           maybe_count?: number
           notified_24h_at?: string | null
           notified_2h_at?: string | null
@@ -4604,7 +4739,62 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      group_event_lineup_slots_public: {
+        Row: {
+          act_type: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string | null
+          event_id: string | null
+          hold_expires_at: string | null
+          id: string | null
+          link_url: string | null
+          manual_performer_name: string | null
+          position: number | null
+          stage_name: string | null
+          status: Database["public"]["Enums"]["lineup_claim_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          act_type?: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hold_expires_at?: string | null
+          id?: string | null
+          link_url?: string | null
+          manual_performer_name?: string | null
+          position?: number | null
+          stage_name?: string | null
+          status?: Database["public"]["Enums"]["lineup_claim_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          act_type?: Database["public"]["Enums"]["lineup_act_type"] | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string | null
+          event_id?: string | null
+          hold_expires_at?: string | null
+          id?: string | null
+          link_url?: string | null
+          manual_performer_name?: string | null
+          position?: number | null
+          stage_name?: string | null
+          status?: Database["public"]["Enums"]["lineup_claim_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_lineup_slots_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
@@ -4784,6 +4974,7 @@ export type Database = {
         | "workshop_irl"
         | "online"
         | "other"
+        | "lineup"
       group_event_rsvp_mode: "open" | "approval" | "invite_only"
       group_event_rsvp_status:
         | "going"
@@ -4803,6 +4994,9 @@ export type Database = {
       group_member_role: "member" | "steward" | "owner"
       group_visibility: "public" | "unlisted"
       instant_status: "active" | "archived"
+      lineup_act_type: "comedian" | "band" | "dj" | "other"
+      lineup_claim_status: "open" | "soft_hold" | "requested" | "confirmed"
+      lineup_slot_mode: "open_claim" | "host_approval"
       location_type: "online" | "in_person" | "hybrid"
       meetup_status: "active" | "paused" | "archived"
       participant_status:
@@ -5034,6 +5228,7 @@ export const Constants = {
         "workshop_irl",
         "online",
         "other",
+        "lineup",
       ],
       group_event_rsvp_mode: ["open", "approval", "invite_only"],
       group_event_rsvp_status: [
@@ -5056,6 +5251,9 @@ export const Constants = {
       group_member_role: ["member", "steward", "owner"],
       group_visibility: ["public", "unlisted"],
       instant_status: ["active", "archived"],
+      lineup_act_type: ["comedian", "band", "dj", "other"],
+      lineup_claim_status: ["open", "soft_hold", "requested", "confirmed"],
+      lineup_slot_mode: ["open_claim", "host_approval"],
       location_type: ["online", "in_person", "hybrid"],
       meetup_status: ["active", "paused", "archived"],
       participant_status: [

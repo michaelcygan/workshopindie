@@ -57,7 +57,7 @@ const baseSchema = z.object({
   title: z.string().min(2).max(120),
   tagline: z.string().max(140).nullable().optional(),
   description: z.string().max(6000).nullable().optional(),
-  kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other"]),
+  kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other", "lineup"]),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: z.string().url().nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),
@@ -79,6 +79,14 @@ const baseSchema = z.object({
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
   series_key: z.string().max(60).nullable().optional(),
+  // Lineup config (only used when kind === "lineup")
+  lineup_slot_count: z.number().int().min(1).max(50).optional(),
+  lineup_mode: z.enum(["open_claim", "host_approval"]).optional(),
+  lineup_field_act_type: z.boolean().optional(),
+  lineup_field_link: z.boolean().optional(),
+  lineup_field_notes: z.boolean().optional(),
+  lineup_allow_switch: z.boolean().optional(),
+  lineup_lock_minutes_before: z.number().int().min(0).max(1440).optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
@@ -87,7 +95,7 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, cover_url, ...rest } = data;
+    const { featured, status, cover_url, lineup_slot_count, ...rest } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const insertRow = {
       ...rest,
@@ -104,6 +112,15 @@ export const createEvent = createServerFn({ method: "POST" })
       .select("id,slug,group_id")
       .single();
     if (error) throw new Error(error.message);
+
+    // Seed lineup slots when creating a lineup event
+    if (data.kind === "lineup" && lineup_slot_count && lineup_slot_count > 0) {
+      const slots = Array.from({ length: lineup_slot_count }, (_, i) => ({
+        event_id: row.id,
+        position: i + 1,
+      }));
+      await supabase.from("group_event_lineup_slots").insert(slots as never);
+    }
 
     // Notify all group members (except the creator) of the new event. Skip for drafts.
     if (insertRow.status !== "draft") try {
@@ -152,7 +169,8 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { id, featured, ...rest } = data;
+    const { id, featured, lineup_slot_count: _lsc, ...rest } = data;
+    void _lsc;
     const patch: Record<string, unknown> = { ...rest };
     if (typeof featured === "boolean") {
       patch.featured_at = featured ? new Date().toISOString() : null;

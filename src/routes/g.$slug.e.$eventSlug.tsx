@@ -16,6 +16,7 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
 import { ReportDialog } from "@/components/report-dialog";
+import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -91,6 +92,7 @@ type EventRow = {
   maybe_count: number;
   waitlist_count: number;
   series_key: string | null;
+  created_by: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
 
@@ -246,6 +248,11 @@ function EventPage() {
             city={ev.venue_name ?? null}
           />
         </div>
+
+        {/* Lineup (for lineup events) */}
+        {ev.kind === "lineup" && (
+          <LineupPanel eventId={ev.id} isHostOrAdmin={!!user && (user.id === ev.created_by)} />
+        )}
 
         {/* RSVP */}
         <div className="mt-5">

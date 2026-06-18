@@ -54,6 +54,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
+import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
@@ -296,6 +297,11 @@ const AdminLinksRoute = AdminLinksRouteImport.update({
   path: '/links',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminLineupsRoute = AdminLineupsRouteImport.update({
+  id: '/lineups',
+  path: '/lineups',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGroupsRoute = AdminGroupsRouteImport.update({
   id: '/groups',
   path: '/groups',
@@ -401,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -458,6 +465,7 @@ export interface FileRoutesByTo {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -522,6 +530,7 @@ export interface FileRoutesById {
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -587,6 +596,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/lineups'
     | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
@@ -644,6 +654,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/lineups'
     | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
@@ -707,6 +718,7 @@ export interface FileRouteTypes {
     | '/admin/badges'
     | '/admin/events'
     | '/admin/groups'
+    | '/admin/lineups'
     | '/admin/links'
     | '/checkout/return'
     | '/cities/$slug'
@@ -1107,6 +1119,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLinksRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/lineups': {
+      id: '/admin/lineups'
+      path: '/lineups'
+      fullPath: '/admin/lineups'
+      preLoaderRoute: typeof AdminLineupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/groups': {
       id: '/admin/groups'
       path: '/groups'
@@ -1226,6 +1245,7 @@ interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
   AdminEventsRoute: typeof AdminEventsRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -1234,6 +1254,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
   AdminEventsRoute: AdminEventsRoute,
   AdminGroupsRoute: AdminGroupsRoute,
+  AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
