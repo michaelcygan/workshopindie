@@ -312,27 +312,33 @@ export function LiveTopicsList({
     <div
       ref={listRef}
       onKeyDown={handleListKeyDown}
-      className="rounded-3xl bg-surface shadow-halo overflow-hidden"
+      className="rounded-[1.75rem] bg-surface shadow-halo border border-border/50 overflow-hidden"
     >
-      <div className="relative p-5 pb-4">
-        <div className="absolute inset-x-0 top-0 h-px gradient-motion opacity-60 pointer-events-none" />
+      <div className="p-6 pb-5 bg-background/40">
         {eyebrow}
-        <h2 className="mt-3 font-display text-[26px] leading-[1.05] text-ink tracking-tight">
-          Lounge
+        <h2 className="mt-5 font-display text-[34px] leading-[0.95] text-ink tracking-tight">
+          The Lounge
         </h2>
-        <p className="mt-1.5 text-[13px] text-ink-muted/90">
+        <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
           {noneLive
             ? "Open the room — the night starts here."
-            : "Drop in where the conversation's already going."}
+            : "Drop in, grab a seat, see where the conversation leads."}
         </p>
-        <div className="mt-4">{splitCTA}</div>
+        <div className="mt-5">{splitCTA}</div>
       </div>
       <div className="border-t border-border/50">
-        <div className="flex items-center justify-between px-4 pt-3 pb-1.5">
-          <div className="text-[10.5px] uppercase tracking-[0.14em] text-ink-muted/80">By topic</div>
-          <div className="text-[10.5px] text-ink-muted tabular-nums">{liveCount} live</div>
+        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/50">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+            Select a topic to enter
+          </div>
+          <div className={cn(
+            "text-[10.5px] font-semibold tabular-nums",
+            liveCount > 0 ? "text-primary" : "text-ink-muted/50",
+          )}>
+            {liveCount} live
+          </div>
         </div>
-        <ul className="divide-y divide-border/40">
+        <ul className="flex flex-col gap-0.5 p-2.5">
           {loungeRow}
           {sorted.map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
@@ -355,7 +361,7 @@ export function LiveTopicsList({
         </ul>
       </div>
       {featuredFooter && (
-        <div className="border-t border-border/50 px-4 py-3">{featuredFooter}</div>
+        <div className="border-t border-border/50 bg-background/40">{featuredFooter}</div>
       )}
     </div>
   );
