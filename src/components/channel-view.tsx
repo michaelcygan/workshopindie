@@ -112,6 +112,7 @@ export function ChannelView({
   };
   const dropNew = useServerFn(joinLounge);
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
+  const sendMessage = useServerFn(sendChatMessage);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
