@@ -31,6 +31,7 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
   workshop_live: Radio,
+  chat_mention: MessageCircle,
   referral_joined: UserPlus,
   referral_reward_earned: Gift,
   first_work_shipped: Sparkles,
@@ -121,6 +122,15 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
         subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Workshop while there's a seat.",
+        href: roomId ? `/workshop/${roomId}` : "/workshop",
+      };
+    }
+    case "chat_mention": {
+      const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "a Workshop";
+      return {
+        title: `${actor} mentioned you in ${roomTitle}`,
+        subtitle: (n.payload?.preview as string) ?? "",
         href: roomId ? `/workshop/${roomId}` : "/workshop",
       };
     }

@@ -2,14 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, UserPlus, X, Maximize2 } from "lucide-react";
+import { UserPlus, X, Maximize2 } from "lucide-react";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   MediaPanel,
   VideoStage,
@@ -20,12 +18,23 @@ import {
 } from "@/components/media-panel";
 import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
+import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 import { ChatPolls } from "@/components/chat-polls";
+import {
+  ChatMentionInput,
+  MessageBody,
+  type MentionCandidate,
+} from "@/components/chat-mention-input";
+import {
+  ReactionAddButton,
+  ReactionPills,
+  type ReactionRow,
+} from "@/components/chat-message-reactions";
 
 // Board moved to Workshop Tools; live room no longer mounts RoomBoard.
 import {
@@ -40,7 +49,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-type Message = { id: string; user_id: string; body: string; created_at: string };
+type Message = {
+  id: string;
+  user_id: string;
+  body: string;
+  created_at: string;
+  mentions?: string[] | null;
+};
 type Presence = {
   user_id: string;
   last_seen_at: string;
@@ -77,6 +92,7 @@ export function ChannelView({
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [presence, setPresence] = useState<Presence[]>([]);
+  const [reactions, setReactions] = useState<ReactionRow[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
@@ -96,6 +112,7 @@ export function ChannelView({
   };
   const dropNew = useServerFn(joinLounge);
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
+  const sendMessage = useServerFn(sendChatMessage);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const media = useMediaRoom(roomId);
@@ -267,10 +284,10 @@ export function ChannelView({
         status: "active",
         last_seen_at: new Date().toISOString(),
       });
-      const [msgs, pres] = await Promise.all([
+      const [msgs, pres, reax] = await Promise.all([
         supabase
           .from("instant_messages")
-          .select("id,user_id,body,created_at")
+          .select("id,user_id,body,created_at,mentions")
           .eq("room_id", roomId)
           .order("created_at", { ascending: true })
           .limit(200),
@@ -280,10 +297,15 @@ export function ChannelView({
             "user_id,last_seen_at,profile:profiles!instant_presence_user_id_fkey(display_name,username,avatar_url)",
           )
           .eq("room_id", roomId),
+        supabase
+          .from("instant_message_reactions")
+          .select("id,message_id,user_id,emoji")
+          .eq("room_id", roomId),
       ]);
       if (cancelled) return;
       setMessages((msgs.data ?? []) as Message[]);
       setPresence((pres.data ?? []) as unknown as Presence[]);
+      setReactions((reax.data ?? []) as ReactionRow[]);
     }
     join();
 
@@ -298,6 +320,31 @@ export function ChannelView({
           filter: `room_id=eq.${roomId}`,
         },
         (p) => setMessages((prev) => [...prev, p.new as Message]),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "instant_message_reactions",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) =>
+          setReactions((prev) => {
+            const next = p.new as ReactionRow;
+            if (prev.some((r) => r.id === next.id)) return prev;
+            return [...prev, next];
+          }),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "instant_message_reactions",
+          filter: `room_id=eq.${roomId}`,
+        },
+        (p) => setReactions((prev) => prev.filter((r) => r.id !== (p.old as ReactionRow).id)),
       )
       .on(
         "postgres_changes",
@@ -367,17 +414,71 @@ export function ChannelView({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
 
-  async function send(e: React.FormEvent) {
-    e.preventDefault();
+  async function submitChat(mentions: string[]) {
     if (!user || !draft.trim()) return;
     setSending(true);
     const body = draft.trim().slice(0, 1000);
     setDraft("");
-    const { error } = await supabase
-      .from("instant_messages")
-      .insert({ room_id: roomId, user_id: user.id, body });
-    setSending(false);
-    if (error) toast.error(error.message);
+    try {
+      await sendMessage({ data: { roomId, body, mentions } });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Couldn't send message");
+    } finally {
+      setSending(false);
+    }
+  }
+
+  // Fullscreen chat panel still uses a plain form signature; extract mentions
+  // by re-parsing the current draft against the live presence list.
+  async function sendFromForm(e: React.FormEvent) {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    const ids = new Set<string>();
+    const re = /(?:^|\s)@([A-Za-z0-9_]{1,30})/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(text))) {
+      const handle = m[1].toLowerCase();
+      const p = presence.find((pp) => (pp.profile?.username ?? "").toLowerCase() === handle);
+      if (p) ids.add(p.user_id);
+    }
+    await submitChat(Array.from(ids));
+  }
+
+  async function toggleReaction(messageId: string, emoji: string) {
+    if (!user) return;
+    const mine = reactions.find(
+      (r) => r.message_id === messageId && r.user_id === user.id && r.emoji === emoji,
+    );
+    if (mine) {
+      // Optimistic remove
+      setReactions((prev) => prev.filter((r) => r.id !== mine.id));
+      const { error } = await supabase
+        .from("instant_message_reactions")
+        .delete()
+        .eq("id", mine.id);
+      if (error) {
+        setReactions((prev) => [...prev, mine]);
+        toast.error(error.message);
+      }
+    } else {
+      const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+      const optimistic: ReactionRow = { id: tempId, message_id: messageId, user_id: user.id, emoji };
+      setReactions((prev) => [...prev, optimistic]);
+      const { data, error } = await supabase
+        .from("instant_message_reactions")
+        .insert({ message_id: messageId, room_id: roomId, user_id: user.id, emoji })
+        .select("id,message_id,user_id,emoji")
+        .single();
+      setReactions((prev) => prev.filter((r) => r.id !== tempId));
+      if (error) {
+        toast.error(error.message);
+      } else if (data) {
+        setReactions((prev) =>
+          prev.some((r) => r.id === (data as any).id) ? prev : [...prev, data as ReactionRow],
+        );
+      }
+    }
   }
 
   const profileLookup = useMemo(
@@ -393,6 +494,19 @@ export function ChannelView({
           },
         ]),
       ),
+    [presence],
+  );
+
+  const mentionCandidates = useMemo<MentionCandidate[]>(
+    () =>
+      presence
+        .filter((p) => !!p.profile?.username)
+        .map((p) => ({
+          user_id: p.user_id,
+          display_name: p.profile?.display_name ?? null,
+          username: p.profile?.username ?? null,
+          avatar_url: p.profile?.avatar_url ?? null,
+        })),
     [presence],
   );
 
@@ -497,7 +611,7 @@ export function ChannelView({
           messages={messages}
           draft={draft}
           setDraft={setDraft}
-          onSend={send}
+          onSend={sendFromForm}
           sending={sending}
           onExit={handleExit}
           onMinimize={() => setFsView(null)}
@@ -614,12 +728,14 @@ export function ChannelView({
                       {messages.map((m) => {
                         const p = presence.find((pp) => pp.user_id === m.user_id)?.profile;
                         const mine = m.user_id === user?.id;
+                        const mentionsMe = !!user && (m.mentions ?? []).includes(user.id);
+                        const msgReactions = reactions.filter((r) => r.message_id === m.id);
                         return (
                           <motion.li
                             key={m.id}
                             initial={{ opacity: 0, y: 6 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className={`flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
+                            className={`group flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
                           >
                             <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
                               {p?.avatar_url ? (
@@ -632,15 +748,35 @@ export function ChannelView({
                                 p?.display_name?.[0] || "?"
                               )}
                             </div>
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${mine ? "bg-ink text-background" : "bg-muted text-ink"}`}
-                            >
-                              {!mine && p && (
-                                <div className="text-[10px] font-medium opacity-70 mb-0.5">
-                                  {p.display_name || p.username}
-                                </div>
-                              )}
-                              <div className="whitespace-pre-wrap break-words">{m.body}</div>
+                            <div className={`flex max-w-[75%] flex-col ${mine ? "items-end" : "items-start"}`}>
+                              <div
+                                className={`rounded-2xl px-3 py-2 text-sm ${
+                                  mentionsMe && !mine
+                                    ? "bg-primary/10 ring-1 ring-primary/40 text-ink"
+                                    : mine
+                                      ? "bg-ink text-background"
+                                      : "bg-muted text-ink"
+                                }`}
+                              >
+                                {!mine && p && (
+                                  <div className="text-[10px] font-medium opacity-70 mb-0.5">
+                                    {p.display_name || p.username}
+                                  </div>
+                                )}
+                                <MessageBody
+                                  body={m.body}
+                                  participants={mentionCandidates}
+                                  meUsername={me?.username ?? null}
+                                />
+                              </div>
+                              <div className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}>
+                                <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
+                                <ReactionPills
+                                  reactions={msgReactions}
+                                  meUserId={user?.id}
+                                  onToggle={(e) => toggleReaction(m.id, e)}
+                                />
+                              </div>
                             </div>
                           </motion.li>
                         );
@@ -649,22 +785,15 @@ export function ChannelView({
                   </ul>
                 )}
               </div>
-              <form onSubmit={send} className="flex items-center gap-2 border-t border-border p-3">
-                <Input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder={`Say something in ${title}…`}
-                  maxLength={1000}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="rounded-full"
-                  disabled={!draft.trim() || sending}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </form>
+              <ChatMentionInput
+                draft={draft}
+                setDraft={setDraft}
+                onSubmit={submitChat}
+                sending={sending}
+                placeholder={`Say something in ${title}…`}
+                participants={mentionCandidates}
+                className="border-t border-border p-3"
+              />
             </>
           )}
         </div>
