@@ -92,6 +92,7 @@ export function ChannelView({
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [presence, setPresence] = useState<Presence[]>([]);
+  const [reactions, setReactions] = useState<ReactionRow[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
