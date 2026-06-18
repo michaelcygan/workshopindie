@@ -269,6 +269,10 @@ function GroupPage() {
           {tab === "members" && <GroupMembersTab group={group} />}
           {tab === "about" && <GroupAboutTab group={group} />}
         </div>
+
+        <div className="mt-16">
+          <AdjacentGroupsRail groupId={group.id} />
+        </div>
       </div>
     </main>
   );
