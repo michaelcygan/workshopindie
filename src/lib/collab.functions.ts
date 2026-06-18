@@ -410,3 +410,64 @@ export const claimGuestApplication = createServerFn({ method: "POST" })
 
     return { ok: true as const, conversationId };
   });
+
+// ──────────────────────────────────────────────────────────────────────
+// Activity meter (owner-only) + public applicant count
+// ──────────────────────────────────────────────────────────────────────
+
+export const getCollabActivity = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post || post.user_id !== userId) {
+      throw new Error("Only the post owner can view activity.");
+    }
+    const [memberRes, guestRes, shareRes] = await Promise.all([
+      supabaseAdmin
+        .from("collab_contact_events")
+        .select("collab_role_id")
+        .eq("collab_post_id", data.collabPostId),
+      supabaseAdmin
+        .from("collab_guest_applications")
+        .select("collab_role_id")
+        .eq("collab_post_id", data.collabPostId),
+      supabaseAdmin
+        .from("collab_share_events")
+        .select("id", { count: "exact", head: true })
+        .eq("collab_post_id", data.collabPostId),
+    ]);
+    const perRole: Record<string, number> = {};
+    let total = 0;
+    for (const row of [...(memberRes.data ?? []), ...(guestRes.data ?? [])]) {
+      total++;
+      const rid = (row as { collab_role_id: string | null }).collab_role_id;
+      if (rid) perRole[rid] = (perRole[rid] ?? 0) + 1;
+    }
+    return {
+      applicants: total,
+      shares: shareRes.count ?? 0,
+      perRole,
+    };
+  });
+
+export const getCollabPublicCounts = createServerFn({ method: "POST" })
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data }) => {
+    const [memberRes, guestRes] = await Promise.all([
+      supabaseAdmin
+        .from("collab_contact_events")
+        .select("id", { count: "exact", head: true })
+        .eq("collab_post_id", data.collabPostId),
+      supabaseAdmin
+        .from("collab_guest_applications")
+        .select("id", { count: "exact", head: true })
+        .eq("collab_post_id", data.collabPostId),
+    ]);
+    return { applicants: (memberRes.count ?? 0) + (guestRes.count ?? 0) };
+  });
