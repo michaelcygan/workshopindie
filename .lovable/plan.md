@@ -1,70 +1,35 @@
-## Goal
-No new surfaces. Tighten what's there — denser cards, faster filtering, better space utilization, more groups, and one-tap creation.
+## Problem
 
----
+In the discovery band, the left column (Events + Trending 1–8) now ends well above the right column (Browse by kind, 4 clusters). On a 1024–1280px viewport that leaves a tall blank rectangle between the trending list and "All groups".
 
-## 1) +20 more groups (depth)
+## Fix — add a "Spark" card under Trending
 
-The current 45 cover the obvious lanes. Add a second wave so search almost always returns something and "For you" stays interesting after a few joins. All seeded idempotently like last round.
+A single component, `GroupsSparkCard`, slotted into the left column right after `GroupsTrendingList`. It does three jobs at once so the space earns its keep:
 
-- **Genres**: Podcasters, Ceramicists, Type Designers, Tattoo Artists, Knitwear Designers, Drag Performers, Food Vloggers, Voice Actors, TTRPG GMs, K-pop Dance Cover.
-- **Scenes**: Queer Cinema, Climate Fiction, Latin Trap, Drill, Jazz Revival, Cosplay, Sneakerheads.
-- **Micro**: Reel-a-Day, RPG One-Shot Crew, Podcast Pilot Week.
+1. **Manifesto** — one short editorial line that tells people what Groups are for.
+   > "Groups are the rooms your work belongs in. Scenes, cities, sprints — find the one that pulls you in."
+2. **Stat strip** — three tiny numbers pulled from data already loaded on the page:
+   - `{allGroups.length}` rooms open
+   - `{cityCount}` cities
+   - `{microCount}` micro-sprints
+3. **CTAs** — three buttons stacked, each with a small icon + label + sub-label:
+   - **Start a Group** → `/groups/new` (primary, dark fill)
+   - **Suggest a Scene** → `mailto:` or `/feedback?topic=group` (outline)
+   - **Browse all** → scrolls to the All-groups grid (ghost, with arrow)
 
----
+Visual treatment matches the existing Trending card — `rounded-3xl border border-border bg-surface shadow-soft`, accent dot, same heading scale — so it reads as a sibling, not a new section.
 
-## 2) `/groups` polish
+## Files
 
-**Persist tab + search in the URL** (`?t=genre&q=sleaze`) so people can share filtered links and back-button works. Uses TanStack `validateSearch`.
+- **New** `src/components/groups-spark-card.tsx` — the component above. Takes `{ totalGroups, cityCount, microCount, onBrowseAll }` so it stays presentational.
+- **Edit** `src/routes/groups.index.tsx` — render `<GroupsSparkCard>` inside the `lg:col-span-4` stack, after `GroupsTrendingList`. Pass derived counts from `allGroups`. Wire `onBrowseAll` to scroll the `<section>` that holds the All-groups grid into view (add a ref).
 
-**Sticky filter bar.** After scrolling past the hero, the tab row + search collapse into a single sticky strip at the top of the viewport so you can change scope without scrolling back up. Hairline border, surface background, blur.
+## Out of scope
 
-**Tighter rhythm.** Drop the duplicated bottom "Featured" rail (Featured groups already surface via the gradient cards being sorted-first; the Featured events carousel stays). Reduce vertical gaps from 10/12 to 8 between sections so the page reads as one continuous browse instead of four stacked pages.
+- No new routes, no schema changes.
+- "Start a Group" links to existing `/groups/new` if present; if not, falls back to opening the existing Create flow.
+- No changes to the right column or to the All-groups grid below.
 
-**Trending rail visual upgrade.** Right now it's a row of identical pill cards. Restyle as a numbered editorial list (01, 02, 03…) with the kind glyph + accent stripe so it feels like a chart, not another grid.
+## Why this and not more clusters / a marquee
 
-**Browse-by-kind density.** Each panel shows 4 samples and a "See all → kind tab" link. Bump to 6 samples on `xl` (two columns inside the panel) since there's room.
-
----
-
-## 3) `GroupCard` level-up
-
-- **Member avatar stack** (3 overlapping circles) above the count row — instant social proof. Fetched via a single batched `group_members` query keyed by visible group ids; cached.
-- **Hover quick-actions** (desktop) and bottom overflow (mobile): `+ Workshop` / `+ Collab` route to `/workshops/new?group=<slug>` and `/collab/new?group=<slug>`. Same plumbing we already shipped.
-- **Accent treatment**: replace flat gradient with a soft top-light sheen + 1px inner ring tinted by accent — keeps the dialect, looks less synthetic.
-- **Joined affordance**: tiny `In` pill on the cover replaces the corner badge so it doesn't fight with the kind chip.
-
----
-
-## 4) `/g/$slug` polish
-
-- **Promote the "Post here" dropdown to a visible 3-button Spark Bar** under the title on `md+`: `Start a Workshop`, `Post a Collab`, `Share Work`. On mobile, keep the dropdown to save space.
-- **Sticky sub-nav.** Tab row becomes sticky once it leaves the viewport — same pattern as `/groups`.
-- **Tab order.** Default to `events` (or fall back to whichever tab has content) instead of `work`, so the first thing visitors see is "what's happening here" not "what's been posted".
-- **Hairline divider + count chip** on the Adjacent Scenes rail to match the rest of the dialect.
-
----
-
-## 5) Mobile pass (1 round)
-
-- Tab pills wrap onto one row with horizontal scroll instead of two stacked rows.
-- Browse-by-kind goes 1-up under `sm`, panels lose their inner gap to feel like accordions.
-- Group cards: cover band trimmed from h-24 to h-20 so two cards fit above the fold on a 375px screen.
-- Sticky filter strip respects the bottom mobile nav (z-index + safe-area).
-
----
-
-## Technical Notes
-
-- **Files added**: `src/components/groups-trending-list.tsx` (replaces rail), `src/components/group-card-actions.tsx` (hover/menu quick-actions), `src/components/group-spark-bar.tsx`, `src/hooks/use-group-member-avatars.ts`.
-- **Files edited**: `src/routes/groups.index.tsx` (URL search, sticky bar, layout), `src/routes/g.$slug.tsx` (spark bar, sticky tabs, default tab), `src/components/group-card.tsx` (avatars, sheen, hover actions), `src/components/groups-browse-by-kind.tsx` (6 samples on xl).
-- **DB**: one `supabase--insert` to seed the 20 new groups, idempotent on slug.
-- **No new server functions, no schema changes.**
-
----
-
-## Out of scope (for this pass)
-
-- Group creation flow (users-create-their-own). Worth a dedicated pass later.
-- Per-group cover photography — sticking with accent gradients keeps the editorial dialect.
-- Notifications when a Group you're in sparks a new Workshop / Collab — that's a real feature, not polish; flag for after launch.
+We already tried a vertical marquee (felt unconsidered) and stacking more clusters (made the right side feel orphaned). A Spark card is finite-height by design — it sizes to its content, balances the column visually, and converts dead space into an explicit invitation to act (start, suggest, browse) plus the only place on the page that says *what Groups are*.
