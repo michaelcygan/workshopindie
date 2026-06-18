@@ -524,25 +524,39 @@ function CollabDetail() {
 
         <section className="mt-10">
           <h2 className="font-display text-2xl text-ink">Roles</h2>
-          <div className="mt-3 space-y-2">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {roles.map((r: any) => (
-              <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="font-medium text-ink">{r.role_name}</h3>
-                    <span className="text-xs text-ink-muted">×{r.quantity}</span>
+          {isShipped ? (
+            <p className="mt-3 text-sm text-ink-muted">
+              Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+            </p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {roles.map((r: any) => {
+                const interested = activity?.perRole?.[r.id] ?? 0;
+                return (
+                  <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <h3 className="font-medium text-ink">{r.role_name}</h3>
+                        <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                        {isOwner && interested > 0 && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            {interested} interested
+                          </span>
+                        )}
+                      </div>
+                      {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                    </div>
+                    {!isOwner && post.status === "open" && (
+                      <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
+                        {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
+                      </Button>
+                    )}
                   </div>
-                  {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
-                </div>
-                {!isOwner && post.status === "open" && (
-                  <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
-                    {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {!isOwner && post.status === "open" && (
             <div className="mt-6 flex justify-center">
@@ -552,6 +566,7 @@ function CollabDetail() {
             </div>
           )}
         </section>
+
 
         {isOwner && <ApplicantsPanel postId={post.id} />}
       </motion.div>
