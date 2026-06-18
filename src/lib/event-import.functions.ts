@@ -269,7 +269,7 @@ function findFirstPartifulEvent(html: string): {
   const cover = asString(ev.coverImage) ?? asString(ev.image) ?? asString((ev.cover as Record<string, unknown> | undefined)?.url);
   const venueName = asString(ev.location) ?? asString((ev.venue as Record<string, unknown> | undefined)?.name);
   const venueAddress = asString(ev.address) ?? asString((ev.venue as Record<string, unknown> | undefined)?.address);
-  return { title, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress, onlineUrl: null } as never;
+  return { title, description: desc, startsAt: start, endsAt: end, coverUrl: cover, venueName, venueAddress };
 }
 
 async function parseEventFromHtml(url: string, html: string): Promise<{ draft: Draft; warnings: string[]; parser: ParserSource }> {
