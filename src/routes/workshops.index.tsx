@@ -101,10 +101,7 @@ function WorkshopsPage() {
 
   const tabs: { id: Category | "all"; label: string }[] = [{ id: "all", label: "All" }, ...CATEGORIES.map((c) => ({ id: c.id, label: c.label }))];
 
-  const happeningCount = (rawWorkshops ?? []).filter((w) => {
-    const now = Date.now();
-    return w.starts_at && new Date(w.starts_at).getTime() <= now && w.ends_at && new Date(w.ends_at).getTime() >= now;
-  }).length;
+  const happeningCount = (rawWorkshops ?? []).filter((w) => w.status === "active" || w.status === "check_in").length;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
