@@ -427,7 +427,7 @@ function WorkshopPreflight() {
       {idleNudge && liveCount === 0 && devices && canDrop && (
         <div className="mt-3 flex items-center gap-2 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-xs text-ink-soft">
           <Sparkles className="h-3 w-3 text-primary shrink-0" />
-          <span>Be first — spin up a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} room.</span>
+          <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Workshop.</span>
           <button
             type="button"
             onClick={() => {
