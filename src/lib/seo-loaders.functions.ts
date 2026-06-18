@@ -64,5 +64,15 @@ export const getCollabSeo = createServerFn({ method: "GET" })
       .select("title,description,category,status,resulting_work_id")
       .eq("slug", data.slug)
       .maybeSingle();
-    return row ?? null;
+    if (!row) return null;
+    let workCover: string | null = null;
+    if (row.status === "closed" && row.resulting_work_id) {
+      const { data: w } = await supabaseAdmin
+        .from("works")
+        .select("cover_url")
+        .eq("id", row.resulting_work_id)
+        .maybeSingle();
+      workCover = w?.cover_url ?? null;
+    }
+    return { ...row, workCover };
   });
