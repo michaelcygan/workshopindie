@@ -5,7 +5,7 @@ import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ChevronDown, Loader2 } from "lucide-react";
 import { listActiveInstantRooms, type ActiveInstantRoom } from "@/lib/instant.functions";
-import { CATEGORIES, type Category } from "@/lib/categories";
+import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TOPIC_DESCRIPTIONS, SUB_MEDIUMS } from "@/lib/topic-prompts";
