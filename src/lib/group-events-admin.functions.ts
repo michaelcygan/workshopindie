@@ -95,7 +95,7 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, cover_url, ...rest } = data;
+    const { featured, status, cover_url, lineup_slot_count, ...rest } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const insertRow = {
       ...rest,
@@ -112,6 +112,15 @@ export const createEvent = createServerFn({ method: "POST" })
       .select("id,slug,group_id")
       .single();
     if (error) throw new Error(error.message);
+
+    // Seed lineup slots when creating a lineup event
+    if (data.kind === "lineup" && lineup_slot_count && lineup_slot_count > 0) {
+      const slots = Array.from({ length: lineup_slot_count }, (_, i) => ({
+        event_id: row.id,
+        position: i + 1,
+      }));
+      await supabase.from("group_event_lineup_slots").insert(slots as never);
+    }
 
     // Notify all group members (except the creator) of the new event. Skip for drafts.
     if (insertRow.status !== "draft") try {
