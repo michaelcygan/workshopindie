@@ -295,277 +295,330 @@ function NewCollab() {
     }
   }
 
+  // Validation snapshots for progress dots + submit affordance.
+  const pitchValid = title.trim().length > 0 && description.trim().length >= 20;
+  const shapeValid = !!rights && (locationMode === "online" || !!city);
+  const cleanRolesCount = roles.filter((r) => r.role_name.trim() && r.quantity > 0).length;
+  const teamValid = cleanRolesCount > 0 && (contactMode === "email_relay" || externalUrl.trim().length > 0);
+  const workshopValid = workshopMode !== "scheduled" || !!scheduledAt;
+  const allValid = pitchValid && shapeValid && teamValid && workshopValid;
+
+  const dots: { ok: boolean; label: string }[] = [
+    { ok: pitchValid, label: "The pitch" },
+    { ok: shapeValid, label: "The shape" },
+    { ok: teamValid, label: "The team" },
+  ];
+
+  const [workshopExpanded, setWorkshopExpanded] = useState(false);
+
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
+    <main className="mx-auto max-w-2xl px-4 py-10 pb-32 md:py-14 md:pb-32">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Post a Collab</h1>
         <p className="mt-1 text-ink-muted">Share what you're making and the roles you need. People reach out — you pick your team.</p>
+        <div className="mt-4 flex items-center gap-2" aria-label="Form progress">
+          {dots.map((d, i) => (
+            <div key={i} className="flex items-center gap-1.5">
+              <span
+                className={cn(
+                  "h-2 w-2 rounded-full transition",
+                  d.ok ? "bg-ink" : "bg-border",
+                )}
+                aria-label={`${d.label} ${d.ok ? "complete" : "incomplete"}`}
+              />
+              <span className={cn("text-[11px]", d.ok ? "text-ink" : "text-ink-muted")}>{d.label}</span>
+              {i < dots.length - 1 && <span className="mx-1 h-px w-4 bg-border" />}
+            </div>
+          ))}
+        </div>
       </motion.div>
 
-      <form onSubmit={onSubmit} className="mt-8 space-y-7">
-        <section className="space-y-1.5">
-          <Label htmlFor="title">Title <span className="text-destructive">*</span></Label>
-          <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
-        </section>
+      <form onSubmit={onSubmit} className="mt-6 space-y-5">
+        {/* Card 1 — The pitch */}
+        <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
+          <section className="space-y-1.5">
+            <Label htmlFor="title">Title</Label>
+            <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
+          </section>
 
-        <section className="space-y-2">
-          <Label>Medium <span className="text-destructive">*</span></Label>
-          <div className="flex flex-wrap gap-2">
-            {WORK_CATEGORIES.map((c) => (
-              <button type="button" key={c.id} onClick={() => setCategory(c.id)}
-                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                  category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="space-y-1.5">
-          <Label htmlFor="desc">What's the idea <span className="text-destructive">*</span></Label>
-          <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
-            placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
-        </section>
-
-        <section className="space-y-2">
-          <Label>Timeline <span className="text-destructive">*</span></Label>
-          <TimelinePicker value={timeline} onChange={setTimeline} />
-          <div className="space-y-1.5 pt-1">
-            <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
-            <Input id="tlnote" maxLength={120} value={timelineNote} onChange={(e) => setTimelineNote(e.target.value)} placeholder="Evenings only, async OK" />
-          </div>
-        </section>
-
-        <section className="space-y-2">
-          <Label>Where <span className="text-destructive">*</span></Label>
-          <div className="flex flex-wrap gap-2">
-            {(["online", "in_person", "hybrid"] as LocationMode[]).map((t) => (
-              <button key={t} type="button" onClick={() => setLocationMode(t)}
-                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                  locationMode === t ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-                {LOCATION_LABELS[t]}
-              </button>
-            ))}
-          </div>
-          {locationMode !== "online" && (
-            <div className="space-y-2 pt-2">
-              <Label className="text-xs text-ink-muted">Primary city</Label>
-              <CityCombobox value={city} onChange={setCity} />
-
-              {!showAlsoCities && alsoCities.length === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAlsoCities(true)}
-                  className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink"
-                >
-                  <Globe2 className="h-3.5 w-3.5" /> + Open to other cities
-                </button>
-              )}
-
-              {(showAlsoCities || alsoCities.length > 0) && (
-                <div className="space-y-2 rounded-xl border border-dashed border-border bg-surface/40 p-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-ink-muted">Also open to (up to 4)</Label>
-                    {alsoCities.length === 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setShowAlsoCities(false)}
-                        className="text-xs text-ink-muted hover:text-ink"
-                      >
-                        Hide
-                      </button>
-                    )}
-                  </div>
-                  {alsoCities.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">
-                      {alsoCities.map((c) => (
-                        <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
-                          {c.name}
-                          <button
-                            type="button"
-                            onClick={() => setAlsoCities((cs) => cs.filter((x) => x.id !== c.id))}
-                            className="text-ink-muted hover:text-ink"
-                            aria-label={`Remove ${c.name}`}
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  {alsoCities.length < 4 && (
-                    <CityCombobox
-                      value={null}
-                      onChange={(v) => v && setPendingAlso(v)}
-                      placeholder="Add another city"
-                    />
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-
-        <section className="space-y-2">
-          <Label>Pay <span className="text-destructive">*</span></Label>
-          <div className="flex flex-wrap gap-2">
-            {COMP_OPTIONS.map((c) => (
-              <button key={c.id} type="button" onClick={() => setComp(c.id)}
-                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                  comp === c.id ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-                {c.label}
-              </button>
-            ))}
-          </div>
-          <p className="text-xs text-ink-muted">Set expectations up front — it makes better matches.</p>
-        </section>
-
-        <section className="space-y-2">
-          <Label className="flex items-center gap-1.5">
-            <Scale className="h-4 w-4 text-ink-muted" /> Rights <span className="text-destructive">*</span>
-          </Label>
-          <div className="space-y-2">
-            {RIGHTS_OPTIONS.map((o) => (
-              <label
-                key={o.id}
-                className={cn(
-                  "flex cursor-pointer items-start gap-3 rounded-xl border bg-background/60 p-3 transition",
-                  rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
-                )}
-              >
-                <input
-                  type="radio"
-                  name="rights"
-                  className="mt-1 accent-ink"
-                  checked={rights === o.id}
-                  onChange={() => setRights(o.id)}
-                />
-                <span className="flex-1">
-                  <span className="block text-sm font-medium text-ink">{o.label}</span>
-                  <span className="block text-xs text-ink-muted">{o.body}</span>
-                </span>
-              </label>
-            ))}
-          </div>
-          <p className="text-xs text-ink-muted">Sets expectations now to avoid friction later. You can change this while the post is open.</p>
-        </section>
-
-        <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
-
-
-
-
-        <section className="space-y-2">
-          <Label>How people contact you <span className="text-destructive">*</span></Label>
-          <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => setContactMode("email_relay")}
-              className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                contactMode === "email_relay" ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-              In-app message
-            </button>
-            <button type="button" onClick={() => setContactMode("external_link")}
-              className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                contactMode === "external_link" ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
-              External link
-            </button>
-          </div>
-          {contactMode === "external_link" && (
-            <Input className="mt-2" type="url" placeholder="https://… (your contact form, IG, email, etc.)"
-              value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
-          )}
-        </section>
-
-        <section className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Roles you need <span className="text-destructive">*</span></Label>
-            <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={() => addRole()}>
-              <Plus className="h-3.5 w-3.5" /> Add role
-            </Button>
-          </div>
-          {presetSuggestions.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-ink-muted">Quick add:</span>
-              {presetSuggestions.map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => addPresetRole(p)}
-                  className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-surface px-2.5 py-1 text-xs text-ink-soft hover:bg-muted hover:text-ink"
-                >
-                  <Plus className="h-3 w-3" /> {p}
+          <section className="space-y-2">
+            <Label>Medium</Label>
+            <div className="flex flex-wrap gap-2">
+              {WORK_CATEGORIES.map((c) => (
+                <button type="button" key={c.id} onClick={() => setCategory(c.id)}
+                  className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                    category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                  {c.label}
                 </button>
               ))}
             </div>
-          )}
-          <div className="space-y-2">
-            {roles.map((r, i) => (
-              <div key={i} className="space-y-2 rounded-xl border border-border bg-surface p-3">
-                <div className="flex items-center gap-2">
-                  <Input className="flex-1" placeholder="Role (e.g. Vocalist)" value={r.role_name} onChange={(e) => updateRole(i, { role_name: e.target.value })} />
-                  <Input type="number" min={1} max={20} className="w-20" value={r.quantity} onChange={(e) => updateRole(i, { quantity: Math.max(1, Number(e.target.value)) })} />
-                  <button type="button" onClick={() => removeRole(i)} className="rounded-full p-1.5 text-ink-muted hover:bg-muted">
-                    <X className="h-4 w-4" />
+          </section>
+
+          <section className="space-y-1.5">
+            <Label htmlFor="desc">What's the idea</Label>
+            <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+              placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
+            <p className="text-[11px] text-ink-muted">{description.trim().length < 20 ? `${20 - description.trim().length} more characters to go` : "Looks good."}</p>
+          </section>
+        </div>
+
+        {/* Card 2 — The shape */}
+        <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
+          <section className="space-y-2">
+            <Label>Timeline</Label>
+            <TimelinePicker value={timeline} onChange={setTimeline} />
+            <div className="space-y-1.5 pt-1">
+              <Label htmlFor="tlnote" className="text-xs text-ink-muted">Anything else about timing? (optional)</Label>
+              <Input id="tlnote" maxLength={120} value={timelineNote} onChange={(e) => setTimelineNote(e.target.value)} placeholder="Evenings only, async OK" />
+            </div>
+          </section>
+
+          <section className="space-y-2">
+            <Label>Where</Label>
+            <div className="flex flex-wrap gap-2">
+              {(["online", "in_person", "hybrid"] as LocationMode[]).map((t) => (
+                <button key={t} type="button" onClick={() => setLocationMode(t)}
+                  className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                    locationMode === t ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                  {LOCATION_LABELS[t]}
+                </button>
+              ))}
+            </div>
+            {locationMode !== "online" && (
+              <div className="space-y-2 pt-2">
+                <Label className="text-xs text-ink-muted">Primary city</Label>
+                <CityCombobox value={city} onChange={setCity} />
+
+                {!showAlsoCities && alsoCities.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAlsoCities(true)}
+                    className="inline-flex items-center gap-1.5 text-xs text-ink-muted hover:text-ink"
+                  >
+                    <Globe2 className="h-3.5 w-3.5" /> + Open to other cities
                   </button>
-                </div>
-                <Textarea rows={2} placeholder="What you're looking for in this role (optional)" value={r.description} onChange={(e) => updateRole(i, { description: e.target.value })} />
+                )}
+
+                {(showAlsoCities || alsoCities.length > 0) && (
+                  <div className="space-y-2 rounded-xl border border-dashed border-border bg-background/40 p-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-ink-muted">Also open to (up to 4)</Label>
+                      {alsoCities.length === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAlsoCities(false)}
+                          className="text-xs text-ink-muted hover:text-ink"
+                        >
+                          Hide
+                        </button>
+                      )}
+                    </div>
+                    {alsoCities.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {alsoCities.map((c) => (
+                          <span key={c.id} className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs text-ink">
+                            {c.name}
+                            <button
+                              type="button"
+                              onClick={() => setAlsoCities((cs) => cs.filter((x) => x.id !== c.id))}
+                              className="text-ink-muted hover:text-ink"
+                              aria-label={`Remove ${c.name}`}
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {alsoCities.length < 4 && (
+                      <CityCombobox
+                        value={null}
+                        onChange={(v) => v && setPendingAlso(v)}
+                        placeholder="Add another city"
+                      />
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
-          </div>
-        </section>
+            )}
+          </section>
 
-        <section className="space-y-3 rounded-2xl border border-dashed border-border bg-surface/40 p-4">
-          <div>
-            <Label>Workshop on this Collab</Label>
-            <p className="text-xs text-ink-muted">A Workshop is a live space of up to 5 — voice or video — for meeting collaborators, brainstorming the idea, and casting roles.</p>
-          </div>
+          <div className="grid gap-5 md:grid-cols-2">
+            <section className="space-y-2">
+              <Label>Pay</Label>
+              <div className="flex flex-wrap gap-2">
+                {COMP_OPTIONS.map((c) => (
+                  <button key={c.id} type="button" onClick={() => setComp(c.id)}
+                    className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                      comp === c.id ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-ink-muted">Set expectations up front — better matches.</p>
+            </section>
 
-          <div className="space-y-2">
-            <WorkshopOption
-              selected={workshopMode === "none"}
-              onClick={() => setWorkshopMode("none")}
-              icon={<MinusCircle className="h-4 w-4" />}
-              title="Not yet — just post it"
-              body="Post the Collab on its own. You can open a Workshop on it any time."
-            />
-            <WorkshopOption
-              selected={workshopMode === "now"}
-              onClick={() => setWorkshopMode("now")}
-              icon={<Sparkles className="h-4 w-4" />}
-              title="Open a Workshop right now"
-              body="Start a live Workshop the moment you post — meet collaborators, brainstorm the idea, and audition roles on the spot. Up to 5 seats."
-            >
-              {workshopMode === "now" && (
-                <p className="rounded-lg bg-background/60 px-3 py-2 text-[11px] text-ink-muted">
-                  After you post, we'll drop you straight into the Workshop.
-                </p>
-              )}
-            </WorkshopOption>
-            <WorkshopOption
-              selected={workshopMode === "scheduled"}
-              onClick={() => setWorkshopMode("scheduled")}
-              icon={<CalendarClock className="h-4 w-4" />}
-              title="Schedule a Workshop"
-              body="Pick a date and time. Applicants get the invite and can RSVP. Everyone drops in when it starts."
-            >
-              {workshopMode === "scheduled" && (
-                <div className="space-y-1.5">
-                  <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
-                  <Input
-                    id="starts-at"
-                    type="datetime-local"
-                    value={scheduledAt}
-                    onChange={(e) => setScheduledAt(e.target.value)}
-                    min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
-                    required
-                  />
-                  <p className="text-[11px] text-ink-muted">If nobody shows in the first 15 minutes, the Workshop flips to drop-in mode. Nothing dies quietly.</p>
+            <section className="space-y-2">
+              <Label className="flex items-center gap-1.5">
+                <Scale className="h-4 w-4 text-ink-muted" /> Rights
+              </Label>
+              <div className="space-y-1.5">
+                {RIGHTS_OPTIONS.map((o) => (
+                  <label
+                    key={o.id}
+                    className={cn(
+                      "flex cursor-pointer items-start gap-2 rounded-xl border bg-background/60 p-2.5 transition",
+                      rights === o.id ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="rights"
+                      className="mt-1 accent-ink"
+                      checked={rights === o.id}
+                      onChange={() => setRights(o.id)}
+                    />
+                    <span className="flex-1">
+                      <span className="block text-sm font-medium text-ink">{o.label}</span>
+                      <span className="block text-[11px] text-ink-muted">{o.body}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* Card 3 — The team */}
+        <div className="space-y-5 rounded-2xl border border-border bg-surface p-4 md:p-5">
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Roles you need</Label>
+              <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={() => addRole()}>
+                <Plus className="h-3.5 w-3.5" /> Add role
+              </Button>
+            </div>
+            {presetSuggestions.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-ink-muted">Quick add:</span>
+                {presetSuggestions.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => addPresetRole(p)}
+                    className="inline-flex items-center gap-1 rounded-full border border-dashed border-border bg-background px-2.5 py-1 text-xs text-ink-soft hover:bg-muted hover:text-ink"
+                  >
+                    <Plus className="h-3 w-3" /> {p}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="space-y-2">
+              {roles.map((r, i) => (
+                <div key={i} className="space-y-2 rounded-xl border border-border bg-background p-3">
+                  <div className="flex items-center gap-2">
+                    <Input className="flex-1" placeholder="Role (e.g. Vocalist)" value={r.role_name} onChange={(e) => updateRole(i, { role_name: e.target.value })} />
+                    <Input type="number" min={1} max={20} className="w-20" value={r.quantity} onChange={(e) => updateRole(i, { quantity: Math.max(1, Number(e.target.value)) })} />
+                    <button type="button" onClick={() => removeRole(i)} className="rounded-full p-1.5 text-ink-muted hover:bg-muted">
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Textarea rows={2} placeholder="What you're looking for in this role (optional)" value={r.description} onChange={(e) => updateRole(i, { description: e.target.value })} />
                 </div>
-              )}
-            </WorkshopOption>
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
 
-        <div className="flex justify-end gap-2">
+          <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+
+          <section className="space-y-2">
+            <Label>How people contact you</Label>
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => setContactMode("email_relay")}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  contactMode === "email_relay" ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                In-app message
+              </button>
+              <button type="button" onClick={() => setContactMode("external_link")}
+                className={cn("rounded-full border px-3 py-1.5 text-sm transition",
+                  contactMode === "external_link" ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
+                External link
+              </button>
+            </div>
+            {contactMode === "external_link" && (
+              <Input className="mt-2" type="url" placeholder="https://… (your contact form, IG, email, etc.)"
+                value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
+            )}
+          </section>
+        </div>
+
+        {/* Collapsed Workshop pairing */}
+        <div className="rounded-2xl border border-dashed border-border bg-surface/40">
+          <button
+            type="button"
+            onClick={() => setWorkshopExpanded((v) => !v)}
+            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
+            aria-expanded={workshopExpanded}
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-ink-muted" />
+              <span className="text-sm font-medium text-ink">
+                {workshopMode === "none" ? "Add a Workshop" : workshopMode === "now" ? "Workshop: open now" : "Workshop: scheduled"}
+              </span>
+            </div>
+            <span className="text-xs text-ink-muted">{workshopExpanded ? "Hide" : "Optional"}</span>
+          </button>
+          {workshopExpanded && (
+            <div className="space-y-3 px-4 pb-4">
+              <p className="text-xs text-ink-muted">A Workshop is a live space of up to 5 — voice or video — for meeting collaborators, brainstorming, and casting roles.</p>
+              <WorkshopOption
+                selected={workshopMode === "none"}
+                onClick={() => setWorkshopMode("none")}
+                icon={<MinusCircle className="h-4 w-4" />}
+                title="Not yet — just post it"
+                body="Post the Collab on its own. You can open a Workshop on it any time."
+              />
+              <WorkshopOption
+                selected={workshopMode === "now"}
+                onClick={() => setWorkshopMode("now")}
+                icon={<Sparkles className="h-4 w-4" />}
+                title="Open a Workshop right now"
+                body="Start a live Workshop the moment you post — meet collaborators on the spot. Up to 5 seats."
+              >
+                {workshopMode === "now" && (
+                  <p className="rounded-lg bg-background/60 px-3 py-2 text-[11px] text-ink-muted">
+                    After you post, we'll drop you straight into the Workshop.
+                  </p>
+                )}
+              </WorkshopOption>
+              <WorkshopOption
+                selected={workshopMode === "scheduled"}
+                onClick={() => setWorkshopMode("scheduled")}
+                icon={<CalendarClock className="h-4 w-4" />}
+                title="Schedule a Workshop"
+                body="Pick a date and time. Applicants get the invite and can RSVP."
+              >
+                {workshopMode === "scheduled" && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
+                    <Input
+                      id="starts-at"
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
+                      required
+                    />
+                    <p className="text-[11px] text-ink-muted">If nobody shows in the first 15 minutes, the Workshop flips to drop-in mode.</p>
+                  </div>
+                )}
+              </WorkshopOption>
+            </div>
+          )}
+        </div>
+
+        {/* Mobile inline action */}
+        <div className="flex justify-end gap-2 md:hidden">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
           <Button type="submit" disabled={submitting} className="rounded-full">
             {submitting
@@ -578,6 +631,46 @@ function NewCollab() {
           </Button>
         </div>
       </form>
+
+      {/* Desktop sticky action bar */}
+      <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-border bg-background/95 backdrop-blur md:block">
+        <div className="mx-auto flex max-w-2xl items-center justify-between gap-3 px-4 py-3">
+          <p className="text-xs text-ink-muted">
+            {allValid
+              ? "All set — post when you're ready."
+              : !pitchValid
+                ? "Add a title and a short description to continue."
+                : !shapeValid
+                  ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
+                  : !teamValid
+                    ? (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")
+                    : "Pick a date and time for the Workshop."}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+            <Button
+              type="button"
+              disabled={submitting}
+              variant={allValid ? "default" : "outline"}
+              className="rounded-full"
+              onClick={(e) => {
+                const form = document.querySelector("form");
+                if (form) form.requestSubmit();
+                else onSubmit(e as unknown as React.FormEvent);
+              }}
+            >
+              {submitting
+                ? "Posting…"
+                : workshopMode === "now"
+                  ? "Post & open Workshop"
+                  : workshopMode === "scheduled"
+                    ? "Post & schedule Workshop"
+                    : "Post Collab"}
+            </Button>
+          </div>
+        </div>
+      </div>
+
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}

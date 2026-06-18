@@ -344,9 +344,9 @@ function CollabPage() {
         <RecapChip count={rawPosts?.length ?? 0} label="open" />
       </div>
 
-
       {/* Unified filter cluster — medium + location on one line */}
-      <div className="mx-auto mt-8 max-w-5xl space-y-2.5">
+      <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
+
         <div className="flex flex-wrap items-center gap-2">
           <div className="shrink-0">
             <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />

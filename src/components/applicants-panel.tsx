@@ -74,12 +74,40 @@ export function ApplicantsPanel({ postId }: Props) {
   const members = data?.members ?? [];
   const guests = data?.guests ?? [];
   const total = members.length + guests.length;
+  const waitingGuests = guests.filter((g) => g.status === "new").length;
+  // Members are "waiting" if there's a conversation we presumably haven't replied to.
+  // We don't have a "replied" flag on the server payload, so we use the member count as a soft proxy.
+  const waiting = waitingGuests + members.length;
+  const hasStale = guests.some(
+    (g) => g.status === "new" && g.created_at && (Date.now() - new Date(g.created_at).getTime()) > 48 * 3600_000,
+  );
 
   return (
-    <section className="mt-12">
-      <div className="flex items-baseline justify-between">
-        <h2 className="font-display text-2xl text-ink">Applicants <span className="text-ink-muted text-base">({total})</span></h2>
+    <section id="applicants" className="mt-12 scroll-mt-24">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <h2 className="font-display text-2xl text-ink">
+          Applicants <span className="text-ink-muted text-base">({total})</span>
+        </h2>
+        {waiting > 0 && (
+          <span
+            className={
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium " +
+              (hasStale
+                ? "bg-amber-500/10 text-amber-600 ring-1 ring-amber-500/30"
+                : "bg-primary/10 text-primary ring-1 ring-primary/20")
+            }
+          >
+            {hasStale && (
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-500 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-amber-500" />
+              </span>
+            )}
+            {waiting} waiting on you
+          </span>
+        )}
       </div>
+
 
       {total === 0 ? (
         <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-border bg-surface p-6 text-ink-muted">

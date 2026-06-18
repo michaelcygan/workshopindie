@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw, Radio, Scale } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, RotateCcw, Radio, Scale, Share2, Users, Inbox } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,14 @@ import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, reopenCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
-import { applyToCollab } from "@/lib/collab.functions";
+import { applyToCollab, listApplicants } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/collab/$slug")({
   component: CollabDetail,
@@ -123,6 +124,17 @@ function CollabDetail() {
     },
   });
   const isLive = !!liveWorkshop && (liveWorkshop.status === "active" || liveWorkshop.status === "check_in");
+
+  const isOwnerEarly = user?.id === post?.user_id;
+  const fetchApplicants = useServerFn(listApplicants);
+  const { data: applicantsData } = useQuery({
+    queryKey: ["collab-applicants", post?.id],
+    queryFn: () => fetchApplicants({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!isOwnerEarly,
+  });
+  const applicantCount =
+    (applicantsData?.members.length ?? 0) + (applicantsData?.guests.length ?? 0);
+
 
   const openWorkshopMut = useMutation({
     mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
@@ -228,17 +240,6 @@ function CollabDetail() {
             {isOwner ? (
               <>
                 {post.status === "open" && (
-                  isLive ? (
-                    <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
-                      <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
-                    </Button>
-                  ) : (
-                    <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
-                      <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open a Workshop on this"}
-                    </Button>
-                  )
-                )}
-                {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
                   </Button>
@@ -260,6 +261,76 @@ function CollabDetail() {
             )}
           </div>
         </div>
+
+        {/* Owner: single next-best-action strip */}
+        {isOwner && post.status === "open" && !deadlinePassed && (
+          (() => {
+            const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
+            if (isLive) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <Radio className="h-5 w-5 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">Your Workshop is live.</p>
+                    <p className="text-xs text-ink-muted">Drop back in — applicants can join from this page.</p>
+                  </div>
+                  <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
+                    <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
+                  </Button>
+                </div>
+              );
+            }
+            if (applicantCount > 0) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+                  <Users className="h-5 w-5 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">
+                      {applicantCount} {applicantCount === 1 ? "person is" : "people are"} in. Reply to keep momentum.
+                    </p>
+                    <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                    <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
+                  </Button>
+                  <Button size="sm" className="rounded-full gap-1" asChild>
+                    <a href="#applicants">
+                      <Inbox className="h-3.5 w-3.5" /> Review applicants
+                    </a>
+                  </Button>
+                </div>
+              );
+            }
+            if (ageHours < 72) {
+              return (
+                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+                  <Share2 className="h-5 w-5 text-ink-muted" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
+                    <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                    <Radio className="h-3.5 w-3.5" /> Open Workshop
+                  </Button>
+                </div>
+              );
+            }
+            return (
+              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
+                <Sparkles className="h-5 w-5 text-ink-muted" />
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-ink">Quiet so far. Try a Workshop or another share.</p>
+                  <p className="text-xs text-ink-muted">Live sessions and one fresh share usually unstick a post.</p>
+                </div>
+                <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
+                  <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
+                </Button>
+              </div>
+            );
+          })()
+        )}
+
+
 
         {/* Owner-only: deadline passed but post still open — never auto-acts, just prompts */}
         {isOwner && deadlinePassed && (
