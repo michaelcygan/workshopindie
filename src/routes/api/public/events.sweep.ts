@@ -65,11 +65,11 @@ export const Route = createFileRoute("/api/public/events/sweep")({
         }
 
         await notifyWindow("notified_24h_at", "event_starts_soon_24h", 24);
-        await notifyWindow("notified_2h_at", "event_starts_soon_2h", 2);
+        // T-2h ping retired in v1 — keeping it simple: one before, one after.
 
-        // Recap (24h after end)
-        const recapWindowStart = new Date(now.getTime() - 25 * 3600 * 1000).toISOString();
-        const recapWindowEnd = new Date(now.getTime() - 23 * 3600 * 1000).toISOString();
+        // Post-event "see what everyone brought" — 2h after end (was 24h).
+        const recapWindowStart = new Date(now.getTime() - 2.1 * 3600 * 1000).toISOString();
+        const recapWindowEnd = new Date(now.getTime() - 1.9 * 3600 * 1000).toISOString();
         const { data: recapEvents } = await supabaseAdmin
           .from("group_events")
           .select("id,title,slug,group:groups!inner(slug)")
