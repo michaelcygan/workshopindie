@@ -116,10 +116,10 @@ export function RoomNoteBanner({ roomId }: Props) {
     setEditing(false);
   }
 
-  // Empty + can edit → "+" pill
+  // Empty + can edit → "+" pill with ambient CC whisper
   if (!note && canEdit && !editing) {
     return (
-      <div className="mx-3 mt-3 sm:mx-6">
+      <div className="mx-3 mt-3 flex flex-wrap items-center gap-2 sm:mx-6">
         <button
           type="button"
           onClick={startEdit}
@@ -127,6 +127,7 @@ export function RoomNoteBanner({ roomId }: Props) {
         >
           <Plus className="h-3.5 w-3.5" /> Set the room's first thought
         </button>
+        <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted/70">· CC BY-SA</span>
       </div>
     );
   }
