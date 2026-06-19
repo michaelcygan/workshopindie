@@ -248,7 +248,7 @@ function bucketAndFair(
     remaining: Math.max(0, b.total - b.items.length),
   }));
   // Round-robin fair list: one item per user per pass.
-  const fair: T[] = [];
+  const fair: AnyRow[] = [];
   let pass = 0;
   while (fair.length < fairSize) {
     let added = false;
