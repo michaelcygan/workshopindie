@@ -24,7 +24,7 @@ import { startHostClaim, setRoomTitle } from "@/lib/host-room.functions";
 import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
-import { getPurposeSuggestions } from "@/lib/topic-prompts";
+import { getPurposeSuggestions, getPurposePool, type PurposeSuggestion } from "@/lib/topic-prompts";
 import { formatRoomTitle } from "@/lib/instant";
 import { useQueryClient } from "@tanstack/react-query";
 
