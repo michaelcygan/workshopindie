@@ -342,6 +342,9 @@ function EventPage() {
           </div>
         )}
 
+        {/* What attendees are working on */}
+        <EventAttendeeWork eventId={ev.id} />
+
         {/* Wall */}
         <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
           <EventWall eventId={ev.id} canPost={myRsvp?.status === "going" || myRsvp?.status === "maybe"} />
