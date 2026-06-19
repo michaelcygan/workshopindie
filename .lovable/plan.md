@@ -1,73 +1,77 @@
+## Problem
+
+Current `listEventAttendeeCollabs` / `listEventAttendeeWorks` sort by `created_at desc` and cap at 12 (or 48 expanded). A few prolific attendees can fill the entire grid, hiding everyone else — exactly the wrong outcome for "scan the room before you arrive."
+
 ## Goal
 
-On every event page (`/g/$slug/e/$eventSlug`), publicly surface what the RSVP'd attendees are currently working on — their open **Collabs** and recent **Works** — so visitors (logged-out included) can scan the room before they arrive, prep questions, and apply to collab in advance. The section stays on the page during the event as a live conversation guide.
+Guarantee every RSVP'd attendee with shareable content gets surfaced, regardless of how busy others have been, while still featuring fresh activity prominently.
+
+## Algorithm — fair round-robin
+
+Server-side, after fetching attendee IDs:
+
+1. Pull a wider pool: up to **300 items** (`works` or `collab_posts`) for the attendee set, ordered `created_at desc`.
+2. Bucket items by `user_id` / `created_by` in memory.
+3. For each user, sort their items by recency and cap at `perUserCap` (3 default, 6 expanded).
+4. Build the **fair list** with round-robin interleaving: rotate through users in order of "most recent item first", take 1 item per pass, repeat until the cap is hit or all users exhausted. This guarantees the first N slots show N distinct people.
+5. Return both the fair list and the per-user buckets, plus `totalAttendeesWithContent` and `totalItems`.
+
+Return shape:
+```ts
+{
+  fair: Row[],                 // interleaved one-per-person rotation
+  byPerson: { user: Attendee, items: Row[], remaining: number }[],
+  totalAttendees: number,      // attendees with at least one item
+  totalItems: number,
+}
+```
+
+Both fns share the bucketing helper.
 
 ## UX
 
-New section on the event page, placed **below "Who's going"** and above the comments/wall:
+Collapsed (default — 12 slots):
+- Show **fair list** — 12 distinct attendees, one item each, ordered by most-recent activity.
+- Subtitle becomes: *"12 of {N} attendees sharing work · See everyone →"*
 
-```text
-At this event — what people are working on
-[ Open collabs (12) ] [ Recent work (18) ]
-─────────────────────────────────────────
-<grid of CollabCard / WorkCard, each with a small "— @username going" footer chip>
+Expanded ("See everyone"):
+- Switch to **By-person grouped view**, not a flat 48-card grid.
+- Each person rendered as a small section:
+  ```
+  [avatar] @username · going          View profile →
+  ─────────────────────────────────────────────────
+  [card] [card] [card]   ← up to 3 collabs / 6 works visible
+                          +N more on profile (if remaining > 0)
+  ```
+- People sorted by: most-recent activity first (same order as fair list seed).
+- Horizontal carousel on mobile (snap-x scroll), 2–3 column grid on desktop.
+- Tabs (Collabs / Recent work) stay, each with their own counts.
+
+This guarantees: in the expanded view, **everyone with shareable content gets a row**. No one is invisible behind power posters.
+
+## Empty-bucket attendees
+
+Attendees who RSVP'd but have no public works or open collabs are still listed in the "Who's going" block above. They're omitted here by design — this section is *only* people with something to discuss. We surface the gap count with a soft prompt under the empty state: *"{N} attendees haven't shared work yet — they're listed above."*
+
+## Tunables
+
+```ts
+const POOL_SIZE = 300;
+const PER_USER_CAP_DEFAULT = { collabs: 2, works: 3 };
+const PER_USER_CAP_EXPANDED = { collabs: 3, works: 6 };
+const FAIR_LIST_SIZE = 12;
 ```
-
-- Two-tab toggle (Collabs default).
-- Cards re-use existing `CollabCard` / `WorkCard` — adds one footer line linking to the attendee's profile + an "RSVP'd: Going / Maybe" pill.
-- 12 per tab, "See all (N)" expands to 48.
-- Empty state: "No one's shared what they're working on yet. [Share a collab →]" (CTA only when signed-in + going).
-- Visible to logged-out users (public read). No auth gate.
-- Honors `profiles.event_visibility` — attendees set to `hidden` are excluded; `group_only` shows only when the viewer is a member of the host group (server-side check).
-- Respects collab/work visibility — only `public` (and not deleted/closed) items appear in the public-client query.
-
-## Server functions (in `src/lib/group-events.functions.ts`)
-
-Two new public server fns using `publicClient()`:
-
-1. `listEventAttendeeCollabs({ event_id, limit?, viewer_group_member? })`
-   - Get user_ids from `group_event_rsvps` where status in (going, maybe) and joined `profiles.event_visibility != 'hidden'` (+ `group_only` filter as above).
-   - Query `collab_posts` where `created_by in (...)`, `visibility = 'public'`, `status` in (open/active), not deleted, order by `featured_at desc nulls last, created_at desc`, limit.
-   - Return rows shaped for `CollabCard` + `{ rsvp_user_id, rsvp_status, attendee: { username, display_name, avatar_url } }`.
-
-2. `listEventAttendeeWorks({ event_id, limit? })`
-   - Same attendee scoping. Query `works` (public, not deleted), order by `created_at desc`, limit.
-   - Return rows shaped for `WorkCard` + attendee footer fields.
-
-Both cap attendee set to first 500 to stay cheap, and cap output (default 12, max 48). Counts returned alongside rows for the tab badges.
-
-The viewer-is-group-member determination for `group_only` profiles is done server-side: if a bearer token is attached, also check `group_members` membership; otherwise treat as non-member (safe default).
-
-## Client wiring
-
-New component `src/components/event-attendee-work.tsx`:
-- Two `useQuery` calls (collabs + works), `staleTime: 60_000`.
-- Tab switcher, "See all" expand, empty state.
-- Reuses `CollabCard` / `WorkCard` with an extra `footerSlot` prop (or wrapper div) for the attendee chip — small, non-invasive change.
-
-Mount inside `src/routes/g.$slug.e.$eventSlug.tsx` directly after the "Who's going" block. No loader changes (queries run client-side; SEO impact minimal, and counts aren't critical for OG).
-
-## Privacy & data hygiene
-
-- Reuses existing `profiles.event_visibility` (already in schema) — no new column.
-- No new tables, no migration.
-- `collab_posts` / `works` public SELECT policies already cover anon reads of public rows (same policies used on home & city pages). If the linter flags a gap during build, add narrow `TO anon` SELECT (public, not deleted) — but expected to already exist.
-- Attendee user_ids are never exposed beyond what `listAttendees` already returns.
-
-## Out of scope (v1)
-
-- "Ask a question to this attendee at the event" inline DM CTA (defer; existing collab-apply + profile DM already cover the path).
-- Realtime updates when new RSVPs happen (60s staleTime is enough).
-- Filtering by tag/role within the section (can add if engagement warrants).
 
 ## Files
 
 **Edit**
-- `src/lib/group-events.functions.ts` — add `listEventAttendeeCollabs`, `listEventAttendeeWorks`.
-- `src/routes/g.$slug.e.$eventSlug.tsx` — mount new section.
-- `src/components/collab-card.tsx` / `src/components/work-card.tsx` — accept optional `footerSlot?: ReactNode` (small additive prop).
+- `src/lib/group-events.functions.ts` — rewrite `listEventAttendeeCollabs` / `listEventAttendeeWorks` to return `{ fair, byPerson, totalAttendees, totalItems }`. Add `mode: "fair" | "byPerson"` and `perUserCap` to validator.
+- `src/components/event-attendee-work.tsx` — split into two render modes (`FairGrid` and `ByPersonGroups`), CTA label changes to "See everyone (N attendees) →", subtitle copy updated.
 
-**Create**
-- `src/components/event-attendee-work.tsx` — the tabbed section.
+**No DB changes. No new routes.**
 
-No DB migration. No new routes. Ship-ready for v1.
+## Out of scope
+
+- Pagination beyond expanded view (group views with 100+ attendees stay scrollable; if engagement warrants, add infinite scroll later).
+- Per-attendee featured/pinned item override (could be a profile-level setting later).
+- "Sort by category" inside the section (the parent event already implies a focus).
