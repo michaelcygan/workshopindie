@@ -10,7 +10,7 @@ export const getMyPrivacy = createServerFn({ method: "GET" })
     const { userId } = context;
     const { data, error } = await supabaseAdmin
       .from("profiles")
-      .select("dm_policy, discoverable, indexable")
+      .select("dm_policy, discoverable, indexable, show_online")
       .eq("id", userId)
       .maybeSingle();
     if (error) throw new Error(error.message);
@@ -18,6 +18,7 @@ export const getMyPrivacy = createServerFn({ method: "GET" })
       dmPolicy: (data?.dm_policy as "mutuals" | "everyone" | "nobody" | null) ?? "mutuals",
       discoverable: data?.discoverable ?? true,
       indexable: data?.indexable ?? true,
+      showOnline: data?.show_online ?? true,
     };
   });
 
@@ -30,6 +31,7 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
         dmPolicy: z.enum(["mutuals", "everyone", "nobody"]).optional(),
         discoverable: z.boolean().optional(),
         indexable: z.boolean().optional(),
+        showOnline: z.boolean().optional(),
       })
       .parse(input),
   )
@@ -39,10 +41,12 @@ export const updateMyPrivacy = createServerFn({ method: "POST" })
       dm_policy?: string;
       discoverable?: boolean;
       indexable?: boolean;
+      show_online?: boolean;
     } = {};
     if (data.dmPolicy !== undefined) patch.dm_policy = data.dmPolicy;
     if (data.discoverable !== undefined) patch.discoverable = data.discoverable;
     if (data.indexable !== undefined) patch.indexable = data.indexable;
+    if (data.showOnline !== undefined) patch.show_online = data.showOnline;
     if (Object.keys(patch).length === 0) return { ok: true };
     const { error } = await supabaseAdmin
       .from("profiles")

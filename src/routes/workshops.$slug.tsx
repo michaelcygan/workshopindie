@@ -9,6 +9,7 @@ import { WorkshopProgressBar } from "@/components/workshop-progress-bar";
 import { VenueMap } from "@/components/venue-map";
 import { ChannelView } from "@/components/channel-view";
 import { ensureWorkshopRoom } from "@/lib/workshop-room.functions";
+import { InviteFriendsPanel } from "@/components/invite-friends-panel";
 import { scheduleDraft } from "@/lib/lobby.functions";
 import { rsvpToWorkshop, cancelRsvp } from "@/lib/collab-workshop.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
@@ -228,6 +229,9 @@ function WorkshopDetail() {
       <RolesAndApply ws={ws} />
 
       {isHost && <HostApplications ws={ws} />}
+
+      {isHost && ws.status !== "shipped" && <InviteFriendsPanel workshopId={ws.id} />}
+
 
       {(isLive || isHost || ws.is_lobby) && <Room ws={ws} />}
 

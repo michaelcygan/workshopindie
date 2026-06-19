@@ -60,6 +60,9 @@ export function MobileNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                 <Briefcase className="mr-2 h-4 w-4" /> My Collabs
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/me/friends" })}>
+                <Users className="mr-2 h-4 w-4" /> Friends
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
                 <Ticket className="mr-2 h-4 w-4" /> My Events
               </DropdownMenuItem>

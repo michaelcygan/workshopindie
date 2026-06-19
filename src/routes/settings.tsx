@@ -412,7 +412,7 @@ function PrivacySection() {
     queryFn: () => getAgeFn(),
   });
 
-  async function update(patch: { dmPolicy?: "mutuals" | "everyone" | "nobody"; discoverable?: boolean; indexable?: boolean }) {
+  async function update(patch: { dmPolicy?: "mutuals" | "everyone" | "nobody"; discoverable?: boolean; indexable?: boolean; showOnline?: boolean }) {
     try {
       await updatePrivacyFn({ data: patch });
       qc.invalidateQueries({ queryKey: ["my-privacy"] });
@@ -494,6 +494,15 @@ function PrivacySection() {
         loading={pLoading}
         checked={privacy?.indexable ?? true}
         onChange={(on) => update({ indexable: on })}
+      />
+
+      {/* Online presence */}
+      <ToggleCard
+        label="Show me as 'online' to mutual follows"
+        description="When on, your friends see a green dot when you've been active in the last couple of minutes. Turn off to stay invisible."
+        loading={pLoading}
+        checked={privacy?.showOnline ?? true}
+        onChange={(on) => update({ showOnline: on })}
       />
 
       {/* Age filter */}
