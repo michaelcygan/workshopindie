@@ -78,6 +78,7 @@ export function ChannelView({
   initialMode = "voice",
   workshopId,
   hostUserId,
+  medium,
   toolsSlot,
 }: {
   roomId: string;
@@ -86,8 +87,10 @@ export function ChannelView({
   initialMode?: MediaMode;
   workshopId?: string;
   hostUserId?: string | null;
+  medium?: string | null;
   toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
+
 
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
