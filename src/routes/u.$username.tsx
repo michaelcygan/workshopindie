@@ -190,6 +190,42 @@ async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
   return [...seen.values()];
 }
 
+async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
+  const { data, error } = await supabase
+    .from("work_credits")
+    .select("pinned_at, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username,avatar_url)))")
+    .eq("user_id", userId)
+    .not("pinned_at", "is", null)
+    .order("pinned_at", { ascending: false })
+    .limit(6);
+  if (error) throw error;
+  type Row = {
+    pinned_at: string;
+    work: {
+      id: string; title: string; slug: string; category: Category;
+      cover_url: string | null; embed_url: string | null; source_type: string;
+      like_count: number; save_count: number; view_count: number;
+      published_at: string | null; status: string; visibility: string;
+      work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
+    };
+  };
+  return ((data as unknown as Row[]) ?? [])
+    .filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"))
+    .map<WorkCardData>((r) => ({
+      id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
+      cover_url: r.work.cover_url, embed_url: r.work.embed_url, source_type: r.work.source_type,
+      like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
+      published_at: r.work.published_at,
+      credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order).map((c) => ({
+        id: c.profiles?.id ?? null,
+        display_name: c.profiles?.display_name ?? null,
+        username: c.profiles?.username ?? null,
+        avatar_url: c.profiles?.avatar_url ?? null,
+      })),
+    }));
+}
+
+
 type CollabRow = { id: string; title: string; slug: string; category: Category; description: string | null; created_at: string };
 async function fetchOpenCollabs(userId: string): Promise<CollabRow[]> {
   const { data } = await supabase
