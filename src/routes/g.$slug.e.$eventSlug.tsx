@@ -344,6 +344,9 @@ function EventPage() {
           </div>
         )}
 
+        {/* Bringing tonight */}
+        <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
+
         {/* What attendees are working on */}
         <EventAttendeeWork eventId={ev.id} />
 
