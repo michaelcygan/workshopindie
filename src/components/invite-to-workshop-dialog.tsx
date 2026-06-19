@@ -96,7 +96,7 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate({ to: "/workshops/new", search: { invitee: invitee.id } as never });
+                navigate({ to: "/workshops/new" });
               }}
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
