@@ -51,7 +51,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
       sb
         .from("group_collabs")
         .select(
-          "collab_post_id,groups!inner(id,slug,name,accent_color,deleted_at),collab_posts!inner(id,slug,title,description,status,created_at)",
+          "collab_post_id,groups!inner(id,slug,name,accent_color,deleted_at),collab_posts!inner(id,slug,title,description,status,resulting_work_id,created_at)",
         )
         .in("group_id", ids),
       sb
