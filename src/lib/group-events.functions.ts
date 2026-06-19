@@ -196,3 +196,60 @@ export const listEventUpdates = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+// --- Attendee activity surface (collabs & works of RSVPs, public) ---
+
+async function attendeeUserIds(eventId: string): Promise<string[]> {
+  const supabase = publicClient();
+  const { data: rsvps } = await supabase
+    .from("group_event_rsvps")
+    .select("user_id,profile:profiles!inner(event_visibility)")
+    .eq("event_id", eventId)
+    .in("status", ["going", "maybe", "waitlist"])
+    .limit(500);
+  type R = { user_id: string; profile: { event_visibility: string } | null };
+  return ((rsvps ?? []) as unknown as R[])
+    .filter((r) => r.profile && r.profile.event_visibility === "public")
+    .map((r) => r.user_id);
+}
+
+export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
+  .inputValidator((i) => z.object({ event_id: z.string().uuid(), limit: z.number().int().min(1).max(48).optional() }).parse(i))
+  .handler(async ({ data }) => {
+    const ids = await attendeeUserIds(data.event_id);
+    if (ids.length === 0) return { rows: [], total: 0 };
+    const supabase = publicClient();
+    const limit = data.limit ?? 12;
+    const select = "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id,vouch_count,boost_count, user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)";
+    const { data: rows, error, count } = await supabase
+      .from("collab_posts")
+      .select(select, { count: "exact" })
+      .in("user_id", ids)
+      .eq("visibility", "public")
+      .or("status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    return { rows: rows ?? [], total: count ?? (rows?.length ?? 0) };
+  });
+
+export const listEventAttendeeWorks = createServerFn({ method: "POST" })
+  .inputValidator((i) => z.object({ event_id: z.string().uuid(), limit: z.number().int().min(1).max(48).optional() }).parse(i))
+  .handler(async ({ data }) => {
+    const ids = await attendeeUserIds(data.event_id);
+    if (ids.length === 0) return { rows: [], total: 0 };
+    const supabase = publicClient();
+    const limit = data.limit ?? 12;
+    const select = "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username)), author:profiles!works_created_by_fkey(display_name,username,avatar_url)";
+    const { data: rows, error, count } = await supabase
+      .from("works")
+      .select(select, { count: "exact" })
+      .in("created_by", ids)
+      .eq("status", "published")
+      .eq("visibility", "public")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    if (error) throw new Error(error.message);
+    return { rows: rows ?? [], total: count ?? (rows?.length ?? 0) };
+  });
