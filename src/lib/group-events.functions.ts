@@ -228,7 +228,7 @@ function bucketAndFair(
   fairSize: number,
 ) {
   // Bucket by owner, preserve incoming order (already recency-sorted).
-  const buckets = new Map<string, { user: Attendee | null; items: T[]; total: number }>();
+  const buckets = new Map<string, { user: Attendee | null; items: AnyRow[]; total: number }>();
   for (const r of rows) {
     const uid = r[ownerKey] as string | null;
     if (!uid) continue;
