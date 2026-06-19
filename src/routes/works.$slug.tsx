@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Eye, ArrowLeft, ExternalLink, Calendar } from "lucide-react";
+import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { CategoryChip } from "@/components/category-chip";
 import { WorkActions } from "@/components/work-actions";
@@ -17,9 +19,12 @@ import { WorkCard } from "@/components/work-card";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 import { WorkSocialProof } from "@/components/work-social-proof";
 import { getCoCreditedWorks } from "@/lib/network.functions";
+import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { toast } from "sonner";
 import { format } from "date-fns";
+
 
 export const Route = createFileRoute("/works/$slug")({
   component: WorkDetail,
@@ -180,7 +185,11 @@ function WorkDetail() {
           {credits.length > 0 && (
             <Byline credits={credits} />
           )}
+
+          {/* Date line — the only temporal chrome */}
+          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} />
         </motion.header>
+
 
         {/* Embedded player (YouTube, Vimeo, SoundCloud, Spotify, Bandcamp…) or cover */}
         {work.embed_url ? (
@@ -198,13 +207,9 @@ function WorkDetail() {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
           <div className="flex items-center gap-3 text-sm text-ink-muted">
             <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4" /> {work.view_count} views</span>
-            {work.published_at && (
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" /> {format(new Date(work.published_at), "MMM d, yyyy")}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1">
+            <PinToProfileButton workId={work.id} credits={credits} />
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
             <ShareSheet
               entity={{
@@ -218,6 +223,7 @@ function WorkDetail() {
             <ReportDialog entityType="work" entityId={work.id} />
           </div>
         </div>
+
 
         {/* Social proof — Vouch + Boost */}
         <WorkSocialProof
@@ -331,8 +337,102 @@ function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: 
       <h2 className="font-display text-2xl text-ink">Also made together</h2>
       <p className="mt-1 text-sm text-ink-muted">Other Works these collaborators have shipped as a group.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} />)}
+        {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} showAvatars />)}
       </div>
     </section>
   );
 }
+
+function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | null; sourceWorkshopId: string | null }) {
+  const { data: workshop } = useQuery({
+    queryKey: ["work-source-workshop", sourceWorkshopId],
+    enabled: !!sourceWorkshopId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workshops")
+        .select("slug,title,visibility")
+        .eq("id", sourceWorkshopId!)
+        .maybeSingle();
+      if (!data) return null;
+      if (data.visibility !== "public" && data.visibility !== "unlisted") return null;
+      return data as { slug: string; title: string; visibility: string };
+    },
+    staleTime: 5 * 60_000,
+  });
+  if (!publishedAt && !workshop) return null;
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
+      <Calendar className="h-4 w-4" />
+      {publishedAt && <span>Published {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
+      {workshop && (
+        <>
+          <span aria-hidden>·</span>
+          <span>
+            from Workshop{" "}
+            <Link
+              to="/workshops/$slug"
+              params={{ slug: workshop.slug }}
+              className="font-medium text-ink hover:underline underline-offset-2"
+            >
+              {workshop.title}
+            </Link>
+          </span>
+        </>
+      )}
+    </p>
+  );
+}
+
+function PinToProfileButton({
+  workId,
+  credits,
+}: {
+  workId: string;
+  credits: WorkRow["work_credits"];
+}) {
+  const { user } = useAuth();
+  const myCredit = useMemo(
+    () => credits.find((c) => c.profiles?.id === user?.id),
+    [credits, user?.id],
+  );
+  const fetchPin = useServerFn(getMyPinForWork);
+  const togglePin = useServerFn(togglePinCredit);
+  const [busy, setBusy] = useState(false);
+  const { data, refetch } = useQuery({
+    queryKey: ["my-pin", workId, user?.id],
+    enabled: !!user && !!myCredit,
+    queryFn: () => fetchPin({ data: { workId } }),
+    staleTime: 30_000,
+  });
+
+  if (!user || !myCredit || !data?.creditId) return null;
+
+  const pinned = data.pinned;
+  const onClick = async () => {
+    setBusy(true);
+    try {
+      const res = await togglePin({ data: { creditId: data.creditId! } });
+      toast.success(res.pinned ? "Pinned to your profile" : "Unpinned");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't update pin");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const Icon = pinned ? PinOff : Pin;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      disabled={busy}
+      className="rounded-full gap-1.5 text-ink-muted hover:text-ink"
+      title={pinned ? "Unpin from your profile" : `Pin to your profile (${data.totalPinned}/${data.maxPins})`}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="hidden sm:inline">{pinned ? "Pinned" : "Pin"}</span>
+    </Button>
+  );
+}
+

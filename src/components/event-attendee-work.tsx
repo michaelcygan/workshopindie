@@ -166,7 +166,7 @@ function FairWorks({ items, loading }: { items: (WorkCardData & { author?: Atten
     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
       {items.map((r) => (
         <div key={r.id} className="relative flex flex-col gap-2">
-          <WorkCard work={r} />
+          <WorkCard work={r} showAvatars />
           <div className="px-1"><AttendeeChip a={r.author ?? null} /></div>
         </div>
       ))}
@@ -203,7 +203,7 @@ function ByPersonWorks({ groups, loading }: { groups: Group<WorkCardData>[]; loa
         <div key={g.uid} className="rounded-2xl border border-border bg-surface-2/30 p-4">
           <PersonHeader user={g.user} />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {g.items.map((r) => <WorkCard key={r.id} work={r} />)}
+            {g.items.map((r) => <WorkCard key={r.id} work={r} showAvatars />)}
           </div>
           {g.remaining > 0 && g.user?.username && (
             <Link to="/u/$username" params={{ username: g.user.username }} className="mt-3 inline-block text-xs text-primary hover:underline">

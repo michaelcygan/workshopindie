@@ -190,6 +190,42 @@ async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
   return [...seen.values()];
 }
 
+async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
+  const { data, error } = await supabase
+    .from("work_credits")
+    .select("pinned_at, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username,avatar_url)))")
+    .eq("user_id", userId)
+    .not("pinned_at", "is", null)
+    .order("pinned_at", { ascending: false })
+    .limit(6);
+  if (error) throw error;
+  type Row = {
+    pinned_at: string;
+    work: {
+      id: string; title: string; slug: string; category: Category;
+      cover_url: string | null; embed_url: string | null; source_type: string;
+      like_count: number; save_count: number; view_count: number;
+      published_at: string | null; status: string; visibility: string;
+      work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
+    };
+  };
+  return ((data as unknown as Row[]) ?? [])
+    .filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"))
+    .map<WorkCardData>((r) => ({
+      id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
+      cover_url: r.work.cover_url, embed_url: r.work.embed_url, source_type: r.work.source_type,
+      like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
+      published_at: r.work.published_at,
+      credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order).map((c) => ({
+        id: c.profiles?.id ?? null,
+        display_name: c.profiles?.display_name ?? null,
+        username: c.profiles?.username ?? null,
+        avatar_url: c.profiles?.avatar_url ?? null,
+      })),
+    }));
+}
+
+
 type CollabRow = { id: string; title: string; slug: string; category: Category; description: string | null; created_at: string };
 async function fetchOpenCollabs(userId: string): Promise<CollabRow[]> {
   const { data } = await supabase
@@ -242,11 +278,17 @@ function ProfilePage() {
     queryFn: () => fetchOpenCollabs(profile!.id),
     enabled: !!profile?.id,
   });
+  const { data: pinnedWorks } = useQuery({
+    queryKey: ["profile-pinned", profile?.id],
+    queryFn: () => fetchPinnedWorks(profile!.id),
+    enabled: !!profile?.id,
+  });
   const { data: workshops } = useQuery({
     queryKey: ["profile-workshops", profile?.id],
     queryFn: () => fetchWorkshops(profile!.id),
     enabled: !!profile?.id,
   });
+
 
   // Owner-only data (drafts, applied + participating workshops, closed-collab nudges)
   const isOwnEarly = !!user && !!profile && user.id === profile.id;
@@ -579,12 +621,13 @@ function ProfilePage() {
           {defaultTab === "works" && (
             <WorksTab
               works={ownedWorks ?? []}
-              pinnedIds={profile.pinned_work_ids ?? []}
+              pinnedWorks={pinnedWorks ?? []}
               isOwn={isOwn}
               ownerName={name}
               isLoading={!ownedWorks}
             />
           )}
+
           {defaultTab === "credits" && (
             <CreditsTab works={creditedWorks ?? []} isLoading={!creditedWorks} ownerName={name} isOwn={isOwn} />
           )}
@@ -628,17 +671,17 @@ function Stat({ label, value }: { label: string; value: number }) {
 /* ---------------- WORKS TAB ---------------- */
 
 function WorksTab({
-  works, pinnedIds, isOwn, ownerName, isLoading,
+  works, pinnedWorks, isOwn, ownerName, isLoading,
 }: {
   works: OwnedWork[];
-  pinnedIds: string[];
+  pinnedWorks: WorkCardData[];
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
 }) {
   const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  const pinned = pinnedIds.map((id) => works.find((w) => w.id === id)).filter(Boolean) as OwnedWork[];
-  const rest = works.filter((w) => !pinnedIds.includes(w.id));
+  // Pinned grid is its own hero row — keep grid below chronological & complete.
+  const rest = works;
 
   const catCounts = useMemo(() => {
     const m = new Map<Category, number>();
@@ -653,7 +696,7 @@ function WorksTab({
     return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
   }
 
-  if (works.length === 0) {
+  if (works.length === 0 && pinnedWorks.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
@@ -669,14 +712,23 @@ function WorksTab({
 
   return (
     <>
-      {pinned.length > 0 && activeCat === "all" && (
+      {pinnedWorks.length > 0 && activeCat === "all" && (
         <section className="mb-10">
           <h2 className="font-display text-xl text-ink">Pinned</h2>
-          <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {pinned.map((w) => <WorkCard key={w.id} work={w} />)}
+          <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
+          <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
+            {pinnedWorks.map((w) => (
+              <WorkCard key={w.id} work={w} density="hero" showAvatars showCounters />
+            ))}
           </div>
         </section>
       )}
+      {pinnedWorks.length === 0 && isOwn && works.length > 0 && (
+        <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+          <p className="text-sm text-ink-muted">No pinned Work yet. Open a Work you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
+        </section>
+      )}
+
 
       {availableCats.length > 1 && (
         <div className="mb-5 flex flex-wrap gap-1.5">

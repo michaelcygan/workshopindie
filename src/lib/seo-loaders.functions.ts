@@ -6,18 +6,40 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 const PUBLIC_CACHE = "public, s-maxage=60, stale-while-revalidate=600";
 const slug = z.string().trim().min(1).max(200);
 
+function youtubeIdFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const host = u.hostname.replace(/^www\./, "");
+    if (host === "youtu.be") return u.pathname.slice(1).split("/")[0] || null;
+    if (host.endsWith("youtube.com") || host.endsWith("youtube-nocookie.com")) {
+      const v = u.searchParams.get("v");
+      if (v) return v;
+      const m = u.pathname.match(/\/(?:embed|shorts|v)\/([^/?#]+)/);
+      if (m) return m[1];
+    }
+  } catch { /* noop */ }
+  return null;
+}
+
 export const getWorkSeo = createServerFn({ method: "GET" })
   .inputValidator((d: { slug: string }) => ({ slug: slug.parse(d.slug) }))
   .handler(async ({ data }) => {
     setResponseHeader("cache-control", PUBLIC_CACHE);
     const { data: row } = await supabaseAdmin
       .from("works")
-      .select("title,excerpt,description,cover_url,published_at")
+      .select("title,excerpt,description,cover_url,embed_url,published_at")
       .eq("slug", data.slug)
       .eq("status", "published")
       .maybeSingle();
-    return row ?? null;
+    if (!row) return null;
+    let posterUrl: string | null = row.cover_url ?? null;
+    if (!posterUrl && row.embed_url) {
+      const ytId = youtubeIdFromUrl(row.embed_url);
+      if (ytId) posterUrl = `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`;
+    }
+    return { ...row, cover_url: posterUrl };
   });
+
 
 export const getProfileSeo = createServerFn({ method: "GET" })
   .inputValidator((d: { username: string }) => ({ username: slug.parse(d.username) }))
