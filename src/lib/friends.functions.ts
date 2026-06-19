@@ -94,7 +94,7 @@ export const listMyHostableWorkshops = createServerFn({ method: "GET" })
       .from("workshops")
       .select("id, slug, title, is_lobby, starts_at, status, ends_at")
       .eq("host_user_id", userId)
-      .in("status", ["draft", "open", "live", "scheduled"])
+      .in("status", ["draft", "open", "active", "check_in"])
       .order("starts_at", { ascending: true, nullsFirst: true })
       .limit(30);
     const now = Date.now();
