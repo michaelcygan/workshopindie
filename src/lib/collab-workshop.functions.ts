@@ -283,11 +283,20 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       roomId: z.string().uuid(),
       title: z.string().trim().min(1).max(120),
       pitch: z.string().trim().max(2000).optional(),
+      license: z.enum(["cc_by", "rights_managed_externally", "portfolio_credit_only", "private"]).optional(),
+      licenseCustom: z.string().trim().max(400).optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { roomId, title, pitch } = data;
+    const { roomId, title, pitch, license, licenseCustom } = data;
+    const licenseLabel =
+      license === "rights_managed_externally" ? "Rights managed externally"
+      : license === "portfolio_credit_only" ? (licenseCustom?.trim() ? `Credit only — ${licenseCustom.trim()}` : "Credit only")
+      : license === "private" ? "Closed circle (private)"
+      : "CC BY 4.0";
+    const promptBody = pitch || `Forked from a live Workshop: ${room?.title ?? title}`;
+    const composedPrompt = `License: ${licenseLabel}\n\n${promptBody}`;
 
     // 1. Load the source room.
     const { data: room, error: roomErr } = await supabaseAdmin
