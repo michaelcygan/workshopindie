@@ -1107,6 +1107,18 @@ function EmptyLaunchpad({
             No one's hosting yet — anyone here for 60s can claim it.
           </p>
         )}
+
+        {launchpadOn && showPurpose && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={setLaunchpadOff}
+              className="text-[11px] text-ink-muted/70 hover:text-ink underline-offset-2 hover:underline transition"
+            >
+              Quieter starts? Hide this prompt
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
