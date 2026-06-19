@@ -626,3 +626,101 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
     </div>
   );
 }
+
+/**
+ * Tiny `+` button for the chat composer. Opens a small menu of available tools
+ * and inserts the chosen tool into the room's tools — mirroring the picker
+ * inside `WorkshopToolsPanel` so users can add a tool without leaving chat.
+ */
+export function ComposerToolButton({ scope }: { scope: ToolsScope }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const t = tables(scope);
+
+  const { data: tools = [] } = useQuery({
+    queryKey: ["ws-tools", scope.kind, t.parentId],
+    enabled: !!user,
+    queryFn: async () => {
+      const selectCols = scope.kind === "instant"
+        ? "id,tool_type,enabled,created_by_user_id"
+        : "id,tool_type,enabled";
+      const { data } = await (supabase.from(t.toolsTable) as any)
+        .select(selectCols).eq(t.parentCol, t.parentId);
+      return (data ?? []) as { id: string; tool_type: StoredToolType; enabled: boolean }[];
+    },
+  });
+
+  if (!user) return null;
+  const isHost = scope.hostUserId !== null && user.id === scope.hostUserId;
+  const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
+  if (!canEnable) return null;
+
+  const occupied = new Set<StoredToolType>(
+    tools.filter((tt) => tt.enabled).map((tt) => (tt.tool_type === "shot_list" || tt.tool_type === "track_list" ? "list" : tt.tool_type)),
+  );
+  const available = TOOL_ORDER.filter((tp) => !occupied.has(tp as StoredToolType));
+  if (available.length === 0) return null;
+
+  async function add(type: ShippedToolType) {
+    const payload: any = { [t.parentCol]: t.parentId, tool_type: type, enabled: true };
+    if (scope.kind === "instant") payload.created_by_user_id = user!.id;
+    const { error } = await (supabase.from(t.toolsTable) as any).insert(payload);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
+    setOpen(false);
+    toast.success(`${PRESETS[type].label} added`);
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Add a tool"
+        title="Add a tool"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink transition"
+      >
+        <Plus className="h-4 w-4" />
+      </button>
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-hidden
+            tabIndex={-1}
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-20 cursor-default bg-transparent"
+          />
+          <div className="absolute bottom-full left-0 z-30 mb-2 w-60 rounded-xl border border-border bg-popover p-1 shadow-lift">
+            <div className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+              Add a tool
+            </div>
+            {available.map((type) => {
+              const P = PRESETS[type];
+              const Icon = P.icon;
+              if (P.comingSoon) {
+                return (
+                  <div key={type} className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-muted opacity-60">
+                    <Icon className="h-3.5 w-3.5" /> {P.label}
+                  </div>
+                );
+              }
+              return (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => add(type as ShippedToolType)}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm text-ink-soft hover:bg-muted"
+                >
+                  <Icon className="h-3.5 w-3.5" /> {P.label}
+                  <span className="ml-auto text-[10px] text-ink-muted/70 truncate max-w-[140px]">{P.blurb}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
