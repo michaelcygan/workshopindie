@@ -27,6 +27,7 @@ const searchSchema = z.object({
   city: fallback(z.string().uuid().optional(), undefined),
   cityName: fallback(z.string().optional(), undefined),
   online: fallback(z.boolean(), false).default(false),
+  view: fallback(z.enum(["all", "open", "shipped"]), "all").default("all"),
 });
 
 export const Route = createFileRoute("/collab/")({
@@ -44,21 +45,29 @@ type Filters = {
   cat: WorkCategory | "all";
   city?: string;
   online: boolean;
+  view: "all" | "open" | "shipped";
 };
 
-async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blockedIds: string[] }) {
+async function fetchPosts({ cat, city, online, view, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
     .select(
-      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,vouch_count,boost_count," +
+      "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,live_workshop_id,resulting_work_id,vouch_count,boost_count," +
         "user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url)," +
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
-    .eq("status", "open")
-    .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);
+
+  if (view === "open") {
+    q = q.eq("status", "open").or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`);
+  } else if (view === "shipped") {
+    q = q.eq("status", "closed").not("resulting_work_id", "is", null);
+  } else {
+    // all = open + shipped
+    q = q.or(`and(status.eq.open,or(ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)})),and(status.eq.closed,resulting_work_id.not.is.null)`);
+  }
 
   if (cat !== "all") q = q.eq("category", cat);
   if (online) {
@@ -193,8 +202,8 @@ function CollabPage() {
   const navigate = useNavigate({ from: "/collab" });
 
   const filters: Filters = useMemo(
-    () => ({ cat: search.cat, city: search.city, online: search.online }),
-    [search.cat, search.city, search.online],
+    () => ({ cat: search.cat, city: search.city, online: search.online, view: search.view }),
+    [search.cat, search.city, search.online, search.view],
   );
 
   const { ids: blockedIds } = useBlockedIds();
@@ -281,12 +290,15 @@ function CollabPage() {
     [],
   );
 
-  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean };
+  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean; view: "all" | "open" | "shipped" };
   function setCat(next: WorkCategory | "all") {
     navigate({ search: (prev: SearchShape) => ({ ...prev, cat: next }) });
   }
   function setCity(next: { id?: string; name?: string }) {
     navigate({ search: (prev: SearchShape) => ({ ...prev, city: next.id, cityName: next.name }) });
+  }
+  function setView(next: "all" | "open" | "shipped") {
+    navigate({ search: (prev: SearchShape) => ({ ...prev, view: next }) });
   }
   function toggleOnline() {
     navigate({
@@ -344,8 +356,30 @@ function CollabPage() {
         <RecapChip count={rawPosts?.length ?? 0} label="open" />
       </div>
 
+      {/* View filter: All / Open / Shipped */}
+      <div className="mt-4 flex flex-wrap items-center gap-1.5">
+        {(["all", "open", "shipped"] as const).map((v) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setView(v)}
+            className={cn(
+              "h-8 rounded-full border px-3 text-xs font-medium transition",
+              filters.view === v
+                ? "border-transparent bg-ink text-background"
+                : "border-border bg-surface text-ink-soft hover:bg-muted",
+            )}
+            aria-pressed={filters.view === v}
+          >
+            {v === "all" ? "All" : v === "open" ? "Open" : "Shipped"}
+          </button>
+        ))}
+      </div>
+
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
+
+
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="shrink-0">

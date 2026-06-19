@@ -14,7 +14,7 @@ export type MyGroupsFeedItem = {
 type CollabRow = {
   collab_post_id: string;
   groups: { id: string; slug: string; name: string; accent_color: string | null; deleted_at: string | null } | null;
-  collab_posts: { id: string; slug: string; title: string; description: string | null; status: string; created_at: string } | null;
+  collab_posts: { id: string; slug: string; title: string; description: string | null; status: string; resulting_work_id: string | null; created_at: string } | null;
 };
 
 type WorkshopRow = {
@@ -51,7 +51,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
       sb
         .from("group_collabs")
         .select(
-          "collab_post_id,groups!inner(id,slug,name,accent_color,deleted_at),collab_posts!inner(id,slug,title,description,status,created_at)",
+          "collab_post_id,groups!inner(id,slug,name,accent_color,deleted_at),collab_posts!inner(id,slug,title,description,status,resulting_work_id,created_at)",
         )
         .in("group_id", ids),
       sb
@@ -70,7 +70,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
       const g = row.groups;
       const c = row.collab_posts;
       if (!g || g.deleted_at || !c) continue;
-      if (c.status !== "open") continue;
+      if (c.status === "closed" && !c.resulting_work_id) continue;
       const key = `collab:${c.id}`;
       if (seen.has(key)) continue;
       seen.add(key);

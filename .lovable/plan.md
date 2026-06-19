@@ -1,85 +1,87 @@
-# Collab Lifecycle: three states, told well (v4)
+# Finish Collab Lifecycle v4 — items 1–6
 
-Keep the three statuses already in the schema — **creation → open → closed** — and design each as its own moment. No new statuses, no new tables, no migrations. A **Work** remains the only public final product; a closed Collab without a Work is **owner-only** and appears inline in the owner's own feed.
+Goal: round out Open / Closed-Shipped / Closed-Archived so every state feels alive and complete, then ship.
+
+## 1. Open-state owner activity meter
+
+In `src/routes/collab.$slug.tsx`, when viewer is owner and `status === 'open'`, add a single-line meter below the existing "Open Xd" pill:
 
 ```
-creation ──post──→ open ──publish Work──→ closed + Work   (public, gallery/profile)
-                       └─close, no Work──→ closed         (archived, owner-only)
+12 views · 3 applicants · 1 share
 ```
 
-## Vocabulary
-Users only ever see **Open** or **Closed**. A sublabel does the nuance:
-- `● Open` — sublabel `Casting` when there's time on the clock, `Closing soon` inside 7 days of `ends_on`.
-- `● Closed` — sublabel `Shipped` when a Work exists, `Archived` (owner-only view) when none.
+Sources (no new tables):
+- views → `count` of `collab_share_events` rows with `kind = 'view'` for this `collab_post_id` (fallback: omit if 0).
+- applicants → `count` of `collab_guest_applications` for this post (any status).
+- shares → `count` of `collab_share_events` with `kind in ('share','copy_link')` + `collab_contact_events` rows.
 
-No "in production", no new state names. The dot color + sublabel carry the meaning.
+Add one server fn `getCollabActivity({ collabId })` in `src/lib/collab.functions.ts` (owner-gated via `requireSupabaseAuth` + `user_id` check). Returns `{ views, applicants, shares }`. Called via `useQuery` only when owner.
 
-## State 1 — Creation (`/collab/new`)
-One small addition so the form reads as the start of a lifecycle:
-- **"What happens next" footnote** under the sticky bar: three steps — `Post → People apply → Publish a Work (or archive it)`.
+Heat hint: if `applicants >= 3` append a muted "Picking up steam" line; if `applicants === 0 && ageDays >= 3` append "Quiet so far — try sharing".
 
-## State 2 — Open (`/collab/$slug`, `status = 'open'`)
-Make "open" feel **active**, not static.
+## 2. Per-role "N interested" counts
 
-**Owner view**
-- "Open for X days" pill in the header.
-- **Activity meter** in the owner strip: `12 views · 3 applicants · 1 share` (from `collab_share_events`, `collab_contact_events`, applicant counts — no new schema).
-- **Heat hint** in strip copy, derived from those numbers: `3 applicants in 48h — strike while it's hot` / `Quiet so far — share it once more?`.
-- Per-role line shows a quiet **"N interested"** count when `collab_contact_events.role_id` is set; silent at 0.
+In the same server fn, also return `perRole: Record<roleId, number>` from `collab_guest_applications` grouped by `role_id`. Render under each role row in the Roles card as a small muted chip: `3 interested`. Visible to owner only (keeps visitor side clean).
 
-**Visitor view**
-- "Cast so far" line: `3 people have applied · posted 4 days ago` (no names).
-- "Closes in N days" chip when `ends_on` is within 7 days.
+## 3. Visitor signals on open Collabs
 
-**Both**: header state badge `● Open` (sublabel `Casting` / `Closing soon`).
+In `src/routes/collab.$slug.tsx`, visitor view (`status === 'open'` and not owner):
+- Replace/augment the meta line with: `Cast so far · posted Nd ago` (cast = total applicants, fetched via the public-safe count; if 0, show `Open to applications · posted Nd ago`).
+- When `ends_on` exists and is within 7 days, render a `<StateBadge state="open" sublabel="Closing soon" />` instead of the `Casting` variant, and add a small chip `Closes in Nd` next to the title.
 
-## State 3 — Closed
-Two flavors with very different surfaces — same `Closed` label, different sublabel.
+Counts for visitors come from a separate public server fn `getCollabPublicCounts({ collabId })` returning just `{ applicants }` (single integer, no PII). Keep it on the publishable client.
 
-### 3a. Closed **with** a Work → PUBLIC, sublabel `Shipped`
-- Header state badge: `● Closed · Shipped`.
-- Hero block at top: **Work cover + title + Listen/Watch/Read CTA**, treated as the answer to the question the Collab asked. Description and roles drop below the fold.
-- Roles section collapses to `Cast · 3 collaborators` chip linking to the Work's credits.
-- Owner strip → celebratory one-liner + "View the Work" button.
-- Indexable, stays on the board, appears on participant profiles.
+## 4. Closed-shipped hero treatment
 
-### 3b. Closed **without** a Work → ARCHIVED, owner-only, sublabel `Archived`
-A Collab without a Work isn't a public artifact — it's a private record kept in the owner's own feed.
+When `status === 'closed' && resulting_work_id` (public view), promote the Work into the page header:
+- Hero block at the top: Work cover image (16:9 rounded), Work title, byline "From the Collab: <collab title>", primary CTA `View the Work` → `/work/$slug`.
+- Collapse the Roles card to a single muted line: `Cast · N collaborators` (count from `work_collaborators` for that work; reuse existing query if present, otherwise add to the loader).
+- Keep the existing description + city/timeline meta below for context.
+- Owner strip becomes celebratory: `Shipped Nd ago · view the Work` button only (drop the publish CTA).
 
-**Public surfaces hide it:**
-- `/collab/$slug` returns `notFound()` for non-owners; `head()` sets `noindex`.
-- `/collab` board filters it out — query becomes `status = 'open' OR resulting_work_id IS NOT NULL`.
-- Profile pages, OG previews, search, share cards — nothing.
+Loader changes in `src/routes/collab.$slug.tsx`: when `resulting_work_id` is set, also fetch `{ id, slug, title, cover_url }` from `works` and `count` from `work_collaborators`. Surface in head() as `og:image` + `twitter:image` (replaces any current OG image for shipped Collabs).
 
-**Owner surfaces keep it inline:**
-- `/me/collabs` shows the post **in the same list as the rest of the owner's collabs**, wearing a `● Closed · Archived` badge and a muted style. No separate tab, no separate section — same row, same layout.
-- Opening it routes to the regular `/collab/$slug` (owner-only render branch) with an "Archived on Mar 4" line.
-- Owner-only actions on the archived view: **"Publish a Work from this"** (primary, existing flow) and **"Delete permanently"**. No reopen action in v1 — that's a deliberate future call.
+## 5. StateBadge on CollabCard
 
-### Access control
-- `getCollabBySlug` (or equivalent server fn) returns `notFound()` when `status = 'closed' AND resulting_work_id IS NULL AND caller !== owner`.
-- Board / profile / search / group-feed queries filter to `status = 'open' OR resulting_work_id IS NOT NULL`.
-- Owner's own queries (used by `/me/collabs` and the owner branch of the detail page) skip that filter so archived posts show up in their personal feed.
-- No RLS migration in v1 — owner-only visibility is enforced at the route + server-fn layer. (Tighter SELECT policy is a v2 hardening pass.)
+In `src/components/collab-card.tsx`, replace the current "live"-style pill with the shared `<StateBadge />`:
+- `open` → `Open · Casting` (or `Closing soon` when ends_on within 7 days)
+- `closed && resulting_work_id` → `Closed · Shipped`
+- archived variant never appears on cards (filtered out of public feeds).
 
-## Cross-state design glue
-- **`<StateBadge />`** (new ~15-LOC component): dot + `Open`/`Closed` label + optional sublabel. Used in the detail header, `/me/collabs` rows, and `CollabCard`. Sublabels: `Casting`, `Closing soon`, `Shipped`, `Archived`.
-- Detail page reuses the same card stack rhythm as `/collab/new` so the journey reads as one continuous object — form → live post → resolution.
-- Owner strip = status console in every state: states what's true now and the next reasonable action.
+Card visual: badge sits top-left of the card header where the current pill is; keep the rest of the card unchanged.
 
-## Files this touches
-- `src/routes/collab.new.tsx` — "what happens next" footnote.
-- `src/routes/collab.$slug.tsx` — header state badge; open-state activity meter + heat hint + per-role interest; visitor "cast so far" + closes-soon chip; closed-shipped hero with Work; closed-no-Work → owner-only render branch, `notFound()` + `noindex` for everyone else.
-- `src/routes/collab.index.tsx` — board filter: `status = 'open' OR resulting_work_id IS NOT NULL`.
-- `src/routes/me.collabs.tsx` — archived posts render inline in the same list with the `● Closed · Archived` badge and muted style; no separate tab.
-- `src/components/collab-card.tsx` — use `<StateBadge />`; muted variant for archived; hide from public surfaces when `closed + no Work`.
-- `src/components/state-badge.tsx` — new.
-- Server-fn list/get callers — add the public visibility carve-out; owner queries opt out.
+## 6. Surface shipped Collabs on the board
 
-## Out of scope (v1)
-- **Reopen.** Deliberately deferred — archived posts can be republished as a Work or deleted, not revived as a Collab. Revisit when we have data on how often archives get retried.
-- No new DB columns, tables, statuses, RLS migrations, or server-fn additions.
-- No production updates, team space, per-role fill counts, or notification fan-out.
+In `src/routes/collab.index.tsx`, change the primary list query from `.eq('status','open')` to:
 
-## One open decision
-**Activity meter visibility** — owner-only numbers, with visitors getting only the softer "3 people have applied" line? (My default: yes, owner-only — share counts and view counts feel like backstage data.)
+```ts
+.or('status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)')
+```
+
+Apply the same change to:
+- `src/routes/index.tsx` (home "Open Collab calls" section) — keep the section title; shipped cards still belong here because they're proof the system works.
+- `src/routes/cities.$slug.tsx` city Collab list.
+- `src/lib/my-groups-feed.functions.ts` (drop the `c.status !== 'open'` filter; replace with `if (c.status === 'closed' && !c.resulting_work_id) continue;` and add `resulting_work_id` to the select).
+- `src/routes/g.$slug.tsx` GroupCollabTab.
+
+`u.$username.tsx` `fetchOpenCollabs` stays Open-only (separate "Shipped" surface is the Works tab there).
+
+Sort: keep `created_at desc` for now — mixing shipped + open chronologically is fine for v1; revisit if owners ask for "shipped pinned".
+
+Add a tiny filter pill row at the top of `/collab` board: `All · Open · Shipped` (URL search param `view=all|open|shipped`, default `all`). Wires into the same query with conditional `.eq('status','open')` or the shipped half of the OR.
+
+## Files touched
+
+- `src/lib/collab.functions.ts` — add `getCollabActivity`, `getCollabPublicCounts`.
+- `src/routes/collab.$slug.tsx` — owner meter, per-role chips, visitor signals, shipped hero, loader work fetch, OG image.
+- `src/components/collab-card.tsx` — StateBadge integration.
+- `src/routes/collab.index.tsx` — query change + view filter pills.
+- `src/routes/index.tsx`, `src/routes/cities.$slug.tsx`, `src/routes/g.$slug.tsx`, `src/lib/my-groups-feed.functions.ts` — query carve-out for shipped.
+
+## Out of scope (still v1.1+)
+
+Reopen, notifications fan-out on shipped, "shipped pinned" sort, profile "Shipped Collabs" tab, applicant funnel analytics, owner email digest of activity.
+
+## Launch step
+
+After items 1–6 land and the preview looks clean, call `preview_ui--publish` with updated site metadata so the deploy goes out.

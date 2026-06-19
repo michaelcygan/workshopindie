@@ -18,7 +18,7 @@ import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
-import { applyToCollab, listApplicants } from "@/lib/collab.functions";
+import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/collab/$slug")({
       ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
     // Archived (closed + no Work) collabs are owner-only — keep them out of search.
     const isArchived = s?.status === "closed" && !s?.resulting_work_id;
+    const ogImage = s?.workCover ?? undefined;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -53,6 +54,10 @@ export const Route = createFileRoute("/collab/$slug")({
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
     ];
+    if (ogImage) {
+      meta.push({ property: "og:image", content: ogImage });
+      meta.push({ name: "twitter:image", content: ogImage });
+    }
     if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
     return {
       meta,
@@ -139,6 +144,34 @@ function CollabDetail() {
   });
   const applicantCount =
     (applicantsData?.members.length ?? 0) + (applicantsData?.guests.length ?? 0);
+
+  const fetchActivity = useServerFn(getCollabActivity);
+  const { data: activity } = useQuery({
+    queryKey: ["collab-activity", post?.id],
+    queryFn: () => fetchActivity({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!isOwnerEarly && post?.status === "open",
+    staleTime: 30_000,
+  });
+
+  const fetchPublicCounts = useServerFn(getCollabPublicCounts);
+  const { data: publicCounts } = useQuery({
+    queryKey: ["collab-public-counts", post?.id],
+    queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !isOwnerEarly && post?.status === "open",
+    staleTime: 60_000,
+  });
+
+  const { data: workCollabCount } = useQuery({
+    queryKey: ["work-collab-count", post?.resulting_work_id],
+    enabled: !!post?.resulting_work_id,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("work_collaborators")
+        .select("id", { count: "exact", head: true })
+        .eq("work_id", post!.resulting_work_id!);
+      return count ?? 0;
+    },
+  });
 
 
   const openWorkshopMut = useMutation({
@@ -255,6 +288,11 @@ function CollabDetail() {
               {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
             </span>
           )}
+          {post.status === "open" && closingSoon && daysToDeadline !== null && (
+            <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+              Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
+            </span>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <ShareCollabSheet
               postId={post.id}
@@ -291,6 +329,30 @@ function CollabDetail() {
             )}
           </div>
         </div>
+
+
+
+        {/* Owner activity meter (open state) */}
+        {isOwner && post.status === "open" && activity && (activity.applicants > 0 || activity.shares > 0) && (
+          <p className="mb-3 text-xs text-ink-muted">
+            {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
+            {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
+            {activity.applicants >= 3 && <span className="ml-2 text-primary">· Picking up steam</span>}
+            {activity.applicants === 0 && openedDays >= 3 && <span className="ml-2">· Quiet so far — try sharing</span>}
+          </p>
+        )}
+
+        {/* Visitor signal (open state, non-owner) */}
+        {!isOwner && post.status === "open" && (
+          <p className="mb-3 text-xs text-ink-muted">
+            {publicCounts && publicCounts.applicants > 0
+              ? <>Cast so far: <span className="text-ink">{publicCounts.applicants}</span> · </>
+              : <>Open to applications · </>}
+            posted {openedDays === 0 ? "today" : `${openedDays}d ago`}
+          </p>
+        )}
+
+
 
         {/* Owner: single next-best-action strip */}
         {isOwner && post.status === "open" && !deadlinePassed && (
@@ -405,21 +467,30 @@ function CollabDetail() {
         )}
 
 
-        {/* Public "this collab produced →" card, shown to everyone once linked */}
-        {resultingWork && (
-          <Link to="/works/$slug" params={{ slug: resultingWork.slug }} className="mb-6 flex items-center gap-4 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-lift">
+        {/* Shipped hero — promotes the Work as the answer */}
+        {isShipped && resultingWork && (
+          <Link
+            to="/works/$slug"
+            params={{ slug: resultingWork.slug }}
+            className="mb-6 block overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:shadow-lift"
+          >
             {resultingWork.cover_url ? (
-              <img src={resultingWork.cover_url} alt="" className="h-16 w-14 rounded-xl object-cover" />
+              <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
             ) : (
-              <div className="h-16 w-14 rounded-xl gradient-motion" />
+              <div className="aspect-video w-full gradient-motion" />
             )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[11px] uppercase tracking-wide text-ink-muted">This collab produced</p>
-              <p className="truncate font-display text-lg text-ink">{resultingWork.title}</p>
+            <div className="flex items-center gap-3 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-[11px] uppercase tracking-wide text-ink-muted">From this Collab</p>
+                <p className="truncate font-display text-xl text-ink">{resultingWork.title}</p>
+              </div>
+              <Button size="sm" className="rounded-full gap-1 shrink-0">
+                View the Work <ExternalLink className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            <ExternalLink className="h-4 w-4 text-ink-muted" />
           </Link>
         )}
+
         <h1 className="font-display text-4xl text-ink md:text-5xl">{post.title}</h1>
         <div className="mt-3 flex flex-wrap gap-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-1"><DollarSign className="h-4 w-4" /> {COMP_LABEL[post.compensation_type] ?? post.compensation_type}</span>
@@ -453,25 +524,39 @@ function CollabDetail() {
 
         <section className="mt-10">
           <h2 className="font-display text-2xl text-ink">Roles</h2>
-          <div className="mt-3 space-y-2">
-            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-            {roles.map((r: any) => (
-              <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                <div className="flex-1">
-                  <div className="flex items-baseline gap-2">
-                    <h3 className="font-medium text-ink">{r.role_name}</h3>
-                    <span className="text-xs text-ink-muted">×{r.quantity}</span>
+          {isShipped ? (
+            <p className="mt-3 text-sm text-ink-muted">
+              Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+            </p>
+          ) : (
+            <div className="mt-3 space-y-2">
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+              {roles.map((r: any) => {
+                const interested = activity?.perRole?.[r.id] ?? 0;
+                return (
+                  <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-baseline gap-2">
+                        <h3 className="font-medium text-ink">{r.role_name}</h3>
+                        <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                        {isOwner && interested > 0 && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                            {interested} interested
+                          </span>
+                        )}
+                      </div>
+                      {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                    </div>
+                    {!isOwner && post.status === "open" && (
+                      <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
+                        {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
+                      </Button>
+                    )}
                   </div>
-                  {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
-                </div>
-                {!isOwner && post.status === "open" && (
-                  <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
-                    {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
 
           {!isOwner && post.status === "open" && (
             <div className="mt-6 flex justify-center">
@@ -481,6 +566,7 @@ function CollabDetail() {
             </div>
           )}
         </section>
+
 
         {isOwner && <ApplicantsPanel postId={post.id} />}
       </motion.div>
