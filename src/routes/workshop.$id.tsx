@@ -1,7 +1,9 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, Coffee, RadioTower, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
+import { mediumIcon } from "@/lib/medium-icons";
+import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
