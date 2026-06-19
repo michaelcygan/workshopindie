@@ -21,7 +21,10 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/workshops/new")({
   component: NewWorkshop,
-  validateSearch: z.object({ group: z.string().optional() }),
+  validateSearch: z.object({
+    group: z.string().optional(),
+    inviteUserId: z.string().uuid().optional(),
+  }),
 });
 
 type LocationType = "online" | "in_person" | "hybrid";

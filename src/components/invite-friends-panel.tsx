@@ -24,6 +24,7 @@ export function InviteFriendsPanel({ workshopId, sourceRoomId }: Props) {
   const { data: friends } = useQuery({
     queryKey: ["my-friends"],
     queryFn: () => getFriendsFn(),
+    refetchInterval: 30_000,
   });
 
   const excludesKey = ["workshop-invite-excludes", workshopId] as const;

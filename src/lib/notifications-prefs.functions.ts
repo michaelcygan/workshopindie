@@ -9,12 +9,14 @@ const PREF_KEYS = [
   "email_workshop_updates",
   "email_follows",
   "email_credits",
+  "email_friend_online",
   "email_product_news",
   "inapp_messages",
   "inapp_collab_activity",
   "inapp_workshop_updates",
   "inapp_follows",
   "inapp_credits",
+  "inapp_friend_online",
 ] as const;
 
 export type NotifPrefKey = (typeof PREF_KEYS)[number];
@@ -27,12 +29,14 @@ const DEFAULTS: NotifPrefs = {
   email_workshop_updates: true,
   email_follows: true,
   email_credits: true,
+  email_friend_online: false,
   email_product_news: false,
   inapp_messages: true,
   inapp_collab_activity: true,
   inapp_workshop_updates: true,
   inapp_follows: true,
   inapp_credits: true,
+  inapp_friend_online: false,
 };
 
 export const getMyNotifPrefs = createServerFn({ method: "GET" })
