@@ -661,6 +661,58 @@ export type Database = {
           },
         ]
       }
+      event_showcase_items: {
+        Row: {
+          collab_id: string | null
+          created_at: string
+          event_id: string
+          id: string
+          note: string | null
+          user_id: string
+          work_id: string | null
+        }
+        Insert: {
+          collab_id?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          note?: string | null
+          user_id: string
+          work_id?: string | null
+        }
+        Update: {
+          collab_id?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          note?: string | null
+          user_id?: string
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_showcase_items_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_showcase_items_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_showcase_items_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           created_at: string
@@ -1022,6 +1074,7 @@ export type Database = {
           promo_pass_months: number
           rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key: string | null
+          short_code: string | null
           slug: string
           starts_at: string
           status: Database["public"]["Enums"]["group_event_status"]
@@ -1068,6 +1121,7 @@ export type Database = {
           promo_pass_months?: number
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
+          short_code?: string | null
           slug: string
           starts_at: string
           status?: Database["public"]["Enums"]["group_event_status"]
@@ -1114,6 +1168,7 @@ export type Database = {
           promo_pass_months?: number
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
+          short_code?: string | null
           slug?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["group_event_status"]
@@ -4875,6 +4930,7 @@ export type Database = {
       }
       contains_blocked_term: { Args: { _text: string }; Returns: string }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      gen_event_short_code: { Args: never; Returns: string }
       get_referral_stats: {
         Args: { _user_id: string }
         Returns: {
