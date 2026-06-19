@@ -1,102 +1,60 @@
-# Workshop 2027 Polish — Header, Dock, Tools, Drive, Nudges
+# Plan
 
-Six scoped changes. All UI/presentation except item 5 (small data shape add for Drive link icons). No DB migration required.
+## 1. "Become host" entry point that is always available
 
----
+The claim-host flow today is only surfaced in narrow states (the launchpad CTA, the room-note banner when leaderless). Add an always-on entry point next to "Create a Collab".
 
-## 1. "Create a Collab" reminder (2-min nudge)
+- `src/components/create-collab-nudge.tsx`: add optional props `onClaimHost?: () => void` and `canClaimHost?: boolean`. When `canClaimHost`, render a secondary "Become host" pill beside "Create a Collab". The standalone host pill shows ~20s after entering a leaderless room (independent of the 2-min Collab timer) so the flow is always reachable. Dismissal stored as `cc-host:{roomId}` in localStorage.
+- `src/routes/workshop.$id.tsx`: at the existing `<CreateCollabNudge>` mount, pass `onClaimHost` (existing handler used by `EmptyLaunchpad`) and `canClaimHost = !room.host_user_id && !!session.userId && !isHost`.
 
-New component `src/components/create-collab-nudge.tsx`, mounted in `workshop.$id.tsx` next to `BecomeHostNudge`.
+## 2. Add the "+" tool picker to the chat composer (open flow)
 
-- Fires once per room session at **120s dwell** (single `setTimeout`, cleared on unmount).
-- Conditions: not promoted, viewer is host OR room is leaderless, ≥1 message OR ≥2 attendees (room actually has signal — avoid nagging dead rooms), not previously dismissed (`localStorage` key `cc-nudge:{roomId}`).
-- UI: small floating glass pill anchored bottom-right above mobile nav, motion fade-up, copy: **"Worth making this a Collab? Lock it in so people can find it later."** Two actions: `Create a Collab` (opens existing `CreateCollabSheet`) and a soft `×` dismiss.
-- Auto-hides after 25s if no interaction.
+The "+ Tool" affordance currently lives only inside `WorkshopToolsPanel`. Put the same entry point on the chat composer so users can attach a tool without leaving chat — present in the empty/open flow too.
 
-## 2. Header de-duplication + icon-per-medium
+- `src/components/chat-mention-input.tsx`: add an optional `leadingAction?: ReactNode` slot rendered inside the input row (left of the textarea). Keep it presentation-only.
+- New small subcomponent `ComposerToolButton` co-located in `workshop-tools-panel.tsx` (exported) — a 28×28 ghost pill with `<Plus />` that opens the same tools menu used by `AddToolMenu`. Reuses `TOOL_ORDER`/`PRESETS` so behavior is identical.
+- `src/components/channel-view.tsx`: pass `<ComposerToolButton enabled={enabledTools} onAdd={addTool} />` as `leadingAction` on `ChatMentionInput`. Source `enabledTools`/`addTool` from the same props/handlers the parent already feeds to `WorkshopToolsPanel` (lift via new props on `ChannelView` if not already threaded; `workshop.$id.tsx` already owns both).
+- Visible in every state, including the empty launchpad composer in the screenshot.
 
-Edit `src/routes/workshop.$id.tsx` (lines ~277–315):
+## 3. Rotate the 4 purpose tiles every 3–5s in a random sequential pattern
 
-- **Drop the redundant `<h1>Workshop</h1>`** when the room title equals the FALLBACK_TITLE on desktop (md+). Keep the meta row (Live · count · Hosting/Claim · License). On mobile, keep a compact title for context.
-- When the room has a real custom name (after a purpose pick or rename), the H1 stays — that's the actual content title, not redundant.
-- Remove the back-link "← Workshop" on desktop (the top nav already shows Workshop as the active tab); keep it on mobile.
-- **Medium icon**: replace hardcoded `<Coffee />` with a `mediumIcon(medium)` helper in a new tiny module `src/lib/medium-icons.ts` returning lucide icons per medium/category: film → `Clapperboard`, music → `Music`, writing → `PenLine`, build → `Wrench`, visual → `Palette`, critique → `MessagesSquare`, business → `Briefcase`, coworking → `Coffee` (default). Use across header, ChannelView empty-state aurora, and workshop cards (header only in this change).
+- `src/lib/topic-prompts.ts`: add `getPurposePool(seed, medium, size = 16)` returning a deterministic deduped pool (matched-medium first, then mix), so the rotation has fresh candidates without ever repeating one currently on screen.
+- `src/components/channel-view.tsx` (`EmptyLaunchpad`):
+  - Hold `visible: PurposeSuggestion[]` (length 4, seeded initial pick) plus a `pool` from `getPurposePool`.
+  - Interval that randomizes between 3000–5000 ms; each tick replaces exactly one tile, cycling the slot index 0→1→2→3→0 (sequential slot, random new prompt drawn from unused pool).
+  - Animate with `framer-motion` `AnimatePresence mode="popLayout"` keyed by `s.title` (220ms fade + 4px slide).
+  - Pause rotation while `renaming` is true or the tile grid is hovered. Disable entirely under `prefers-reduced-motion`.
 
-## 3. Side dock redesign (2027 elegance)
+## 4. Redesign the "share to fill the room" card
 
-Edit the right rail in `src/routes/workshop.$id.tsx` / wherever the dock JSX lives (the WORKSHOP / Chat·Tools·Work·Collabs · Mute / Camera off / New / Exit / "IN THE WORKSHOP" card visible in the screenshot — locate via `rg "IN THE WORKSHOP"`).
+`src/components/waiting-for-others-card.tsx`:
 
-- One glass card (`bg-surface/60 backdrop-blur-md border-border/60 rounded-3xl`) replacing the current stacked blocks.
-- Header row: subtle live-dot + "Workshop · 1/5" small-caps, no big "WORKSHOP" all-caps title.
-- Tab row → segmented control: pill background with sliding indicator (framer-motion layoutId), 4 tabs Chat/Tools/Work/Collabs, tighter padding, single-row.
-- Action grid: Mute / Camera as **icon-first chips** (smaller, equal-weight, not orange-filled by default; orange only when actively recording/muted as a status). New / Exit move into a smaller secondary row with ghost styling. Exit becomes a danger-ghost (red text only, no border).
-- Attendees: switch "IN THE WORKSHOP · 1" to a dotted-row "Here now · 1" with stacked avatars + overflow chip, hover reveals names; click expands the full list inline.
-- Add small "⚙︎ Customize" affordance opening the Settings link from item 7 below.
+- Visuals: replace dashed pale border with `border-border/60 + bg-surface/80 backdrop-blur + shadow-lift` (matches the 2027 surfaces). Inline the live red dot beside the title (not floating).
+- Seat-row visual: 5 small circles directly under the title — first as viewer's avatar/initials, rest as faint dotted placeholders — to literally show "1 of 5 filled". Adds new optional props `filledSeats?: number` (default 1) and `viewerInitials?: string`; parent in `workshop.$id.tsx` passes presence count and the viewer's initials.
+- Copy: title "You're first in — invite a few people"; subtitle "Up to 5 seats. Mutuals who follow you back will see this in Live now."
+- Actions: primary filled "Copy link"; secondary outline "Ping mutuals" (only when `canPingMutuals`); new tertiary text-link "Share to X" / "Bluesky" opening prefilled web-intent URLs (`window.open`, no server work).
+- Inline Tooltip on a small "?" replaces the long subtitle once seats visual is present.
+- Motion: stagger seat dots in on mount (60ms each); pulse the first dot once when a new presence joins. Auto-fade when `filledSeats >= 2` (parent already toggles `visible`; keep that contract, just animate out cleanly).
 
-## 4. Empty/welcome state polish + "turn off in Settings"
+## 5. Small polish in the same pass
 
-`channel-view.tsx` EmptyLaunchpad:
+- Drop the now-duplicate "No one's hosting yet — anyone here for 60s can claim it." line from the bottom of `EmptyLaunchpad`; the persistent "Become host" pill (Section 1) and `RoomNoteBanner` cover it.
+- Demote "Quieter starts? Hide this prompt" to a single small eye-off icon-button in the top-right of the launchpad area so it stops competing visually with the purpose tiles.
+- All new motion (aurora, tile swap, seat-dot stagger) respects `prefers-reduced-motion`.
+- Mobile: share a single fixed bottom-right container with `gap-2` so the new "Become host" pill stacks cleanly above the Collab nudge without overlap.
 
-- Increase aurora subtlety (reduce conic-gradient opacity, slow rotation to 60s), tighten purpose-tile typography (display font for title at `text-[15px]`, hint at `text-[11px]` muted).
-- Add a small footer link below the starter chips: **"Quieter starts?  Turn this off in Settings →"** linking to `/settings#workshop`.
-- New user pref: add to `src/routes/settings.tsx` a "Workshop · Welcome launchpad" toggle (default on). Stored on `profiles.show_workshop_launchpad` (boolean, default true) via a small migration — **OR**, to keep this change UI-only, store in `localStorage` key `pref:workshop-launchpad` keyed per user. Defaulting to **localStorage-only** to keep scope tight; can promote to DB later.
-- ChannelView reads the pref; when off, renders a minimal "Quiet in Workshop." line + the starter chip row only (no purpose tiles, no aurora).
+## Files
 
-## 5. Docs → Drive consolidation + per-link object icons
+- Edit `src/components/create-collab-nudge.tsx`
+- Edit `src/components/chat-mention-input.tsx` (new `leadingAction` prop)
+- Edit `src/components/workshop-tools-panel.tsx` (export `ComposerToolButton`)
+- Edit `src/components/channel-view.tsx` (`EmptyLaunchpad` rotation + composer button wiring + small polish)
+- Edit `src/lib/topic-prompts.ts` (`getPurposePool`)
+- Edit `src/components/waiting-for-others-card.tsx` (redesign + seat row)
+- Edit `src/routes/workshop.$id.tsx` (pass new props)
 
-- **Demote "Docs" tool** to a Drive provider type. Remove the `outline`/Docs chip from `TOOL_ORDER` in `workshop-tools-panel.tsx`. The existing `WorkshopDocsEditor` stays mounted only for legacy rows that already have `outline` enabled (read-only view + "Move to Drive" CTA, or just hidden behind a "Legacy doc" disclosure). No data loss.
-- **Drive object-link icons**: extend `WorkshopDrivePanel` so each saved link picks an icon + label based on its provider + URL shape. Detection in a new helper `src/lib/drive-link-kinds.ts`:
-  - `docs.google.com/document` → Google Doc (blue doc icon)
-  - `docs.google.com/spreadsheets` → Sheet (green grid icon)
-  - `docs.google.com/presentation` → Slides (orange play icon)
-  - `drive.google.com/file` → Drive file (folder icon)
-  - `figma.com/file|design` → Figma frame
-  - `figma.com/board` → FigJam
-  - `notion.so` → Notion page
-  - `dropbox.com` → Dropbox file
-  - `box.com` → Box file
-  - `github.com/.../blob` → Code file; `/pull/` → PR; root → Repo
-  - `youtube.com|youtu.be` → Video
-  - `loom.com` → Loom
-  - Fallback → generic Link icon
-- Render: small colored circle + provider+kind label ("Google · Slides") on each link row; click still opens externally. Pure presentation — no schema change, all derived from `url`.
+## Out of scope
 
-## 6. Tools audit — lean toward link-abstractions + browser-native realtime
-
-Keep the **light** primitives; demote heavy/build tools.
-
-**Keep (and polish):**
-- **Screen Share** — already browser-native (getDisplayMedia).
-- **Pop-out (PiP)** — Document PiP, already in.
-- **Recording link** — pure link abstraction.
-- **Player** — embed wrapper, link-driven.
-- **Drive** — becomes the central link-abstraction surface (see #5).
-- **List** — minimal real collab primitive, lightweight.
-- **Board** — keep but mark **Beta** until v1.1; it's the heaviest realtime surface. Cap items, lazy-mount.
-
-**Demote / hide at v1 (still readable if legacy data exists, but not in picker):**
-- **Docs (outline)** → folded into Drive as a Google Doc link (item 5).
-- **Pinboard** → already retired; remove leftover preset from picker.
-- **Repo & Demo** → fold into Drive (GitHub link kind already detected).
-
-**New light primitives (link-abstractions + browser realtime):**
-- **"Shared Tab"** — paste any URL; everyone gets a 1-click open + a small "n viewing" badge driven by presence (no iframe, no proxy, just a shared "look at this" object). Stored as a Drive link with `kind:focus`.
-- **"Timer"** — shared countdown for sprints/jams. Just `started_at + duration_seconds` in `instant_tools` config; everyone derives the same clock locally. No server tick. Add presets: 5/15/25/50.
-- **"Hand-off"** — shared cursor/turn token: one person at a time holds the "mic" for screen narration. Pure presence-channel field, no media.
-- **"Vote"** — quick thumbs/multi-choice on a Drive link, expires when host closes. Reuses `chat-polls` infra scoped to a link.
-
-All four are <150 LOC each, no new tables — config lives in `instant_tools.config jsonb` + presence channel.
-
-**Picker UX:** group tools into two strips — `Realtime` (Screen Share, PiP, Hand-off, Timer) and `Objects` (Drive, List, Board, Vote, Player, Recording). Drops the long single row.
-
----
-
-## Out of scope (call out, save for later)
-- Real Google Docs co-editing (would need OAuth + Drive API).
-- Persisting launchpad pref to DB.
-- Cross-medium icon rollout to workshop cards / index page (header only here).
-- Migrating existing `outline` rows into `drive` rows (left as-is, read-only).
-
-## Files touched
-- **New**: `src/components/create-collab-nudge.tsx`, `src/lib/medium-icons.ts`, `src/lib/drive-link-kinds.ts`, `src/components/tools/timer-tool.tsx`, `src/components/tools/handoff-tool.tsx`, `src/components/tools/shared-tab-tool.tsx`, `src/components/tools/link-vote-tool.tsx`
-- **Edited**: `src/routes/workshop.$id.tsx` (header + nudge mount + side dock), `src/components/channel-view.tsx` (dock + launchpad pref), `src/components/workshop-tools-panel.tsx` (picker reorg, demote Docs/Pinboard/Repo), `src/components/workshop-drive-panel.tsx` (per-link icon rendering), `src/routes/settings.tsx` (launchpad toggle)
+- No DB or server-function changes.
+- No changes to the claim-host RPC or the Create-Collab flow itself — only new entry points to existing flows.
+- No new prompt copy added — reuses existing `ROOM_PROMPTS`.
