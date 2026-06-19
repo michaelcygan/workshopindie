@@ -276,8 +276,16 @@ function LiveRoomPage() {
               <RadioTower className="h-3 w-3" /> Hosting
             </span>
           )}
-          {isLeaderless && !isPromoted && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-ink-soft">Leaderless</span>
+          {isLeaderless && !isPromoted && user && (
+            <ClaimHostPill
+              roomId={id}
+              viewerId={user.id}
+              unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
+              claimUserId={room?.claim_user_id ?? null}
+              claimStartedAt={room?.claim_started_at ?? null}
+              claimantName={claimantName}
+              onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+            />
           )}
         </div>
 
