@@ -21,6 +21,7 @@ import { HostedByLine } from "@/components/hosted-by-line";
 import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
+import { ClaimHostPill } from "@/components/claim-host-pill";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
