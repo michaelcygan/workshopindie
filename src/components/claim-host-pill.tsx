@@ -49,11 +49,11 @@ export function ClaimHostPill({
     queryFn: async () => {
       const { data } = await supabase
         .from("instant_presence")
-        .select("created_at")
+        .select("first_seen_at")
         .eq("room_id", roomId)
         .eq("user_id", viewerId)
         .maybeSingle();
-      return data?.created_at ? new Date(data.created_at).getTime() : null;
+      return data?.first_seen_at ? new Date(data.first_seen_at as string).getTime() : null;
     },
     refetchInterval: 15_000,
   });
