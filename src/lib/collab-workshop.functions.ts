@@ -295,8 +295,6 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
       : license === "portfolio_credit_only" ? (licenseCustom?.trim() ? `Credit only — ${licenseCustom.trim()}` : "Credit only")
       : license === "private" ? "Closed circle (private)"
       : "CC BY 4.0";
-    const promptBody = pitch || `Forked from a live Workshop: ${room?.title ?? title}`;
-    const composedPrompt = `License: ${licenseLabel}\n\n${promptBody}`;
 
     // 1. Load the source room.
     const { data: room, error: roomErr } = await supabaseAdmin
