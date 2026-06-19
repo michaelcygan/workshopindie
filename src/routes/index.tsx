@@ -82,9 +82,9 @@ function Hero() {
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
-          className="font-display mt-4 text-4xl leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl"
+          className="font-display mt-4 text-4xl leading-[1.15] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl pb-2"
         >
-          Build your network. <span className="italic text-gradient-motion">Create together.</span>
+          Build your network. <span className="italic text-gradient-motion inline-block pr-1 pb-1">Create together.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
