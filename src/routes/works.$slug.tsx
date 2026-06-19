@@ -337,8 +337,102 @@ function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: 
       <h2 className="font-display text-2xl text-ink">Also made together</h2>
       <p className="mt-1 text-sm text-ink-muted">Other Works these collaborators have shipped as a group.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} />)}
+        {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} showAvatars />)}
       </div>
     </section>
   );
 }
+
+function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | null; sourceWorkshopId: string | null }) {
+  const { data: workshop } = useQuery({
+    queryKey: ["work-source-workshop", sourceWorkshopId],
+    enabled: !!sourceWorkshopId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workshops")
+        .select("slug,title,visibility")
+        .eq("id", sourceWorkshopId!)
+        .maybeSingle();
+      if (!data) return null;
+      if (data.visibility !== "public" && data.visibility !== "unlisted") return null;
+      return data as { slug: string; title: string; visibility: string };
+    },
+    staleTime: 5 * 60_000,
+  });
+  if (!publishedAt && !workshop) return null;
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
+      <Calendar className="h-4 w-4" />
+      {publishedAt && <span>Published {format(new Date(publishedAt), "MMM d, yyyy")}</span>}
+      {workshop && (
+        <>
+          <span aria-hidden>·</span>
+          <span>
+            from Workshop{" "}
+            <Link
+              to="/workshops/$slug"
+              params={{ slug: workshop.slug }}
+              className="font-medium text-ink hover:underline underline-offset-2"
+            >
+              {workshop.title}
+            </Link>
+          </span>
+        </>
+      )}
+    </p>
+  );
+}
+
+function PinToProfileButton({
+  workId,
+  credits,
+}: {
+  workId: string;
+  credits: WorkRow["work_credits"];
+}) {
+  const { user } = useAuth();
+  const myCredit = useMemo(
+    () => credits.find((c) => c.profiles?.id === user?.id),
+    [credits, user?.id],
+  );
+  const fetchPin = useServerFn(getMyPinForWork);
+  const togglePin = useServerFn(togglePinCredit);
+  const [busy, setBusy] = useState(false);
+  const { data, refetch } = useQuery({
+    queryKey: ["my-pin", workId, user?.id],
+    enabled: !!user && !!myCredit,
+    queryFn: () => fetchPin({ data: { workId } }),
+    staleTime: 30_000,
+  });
+
+  if (!user || !myCredit || !data?.creditId) return null;
+
+  const pinned = data.pinned;
+  const onClick = async () => {
+    setBusy(true);
+    try {
+      const res = await togglePin({ data: { creditId: data.creditId! } });
+      toast.success(res.pinned ? "Pinned to your profile" : "Unpinned");
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't update pin");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const Icon = pinned ? PinOff : Pin;
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={onClick}
+      disabled={busy}
+      className="rounded-full gap-1.5 text-ink-muted hover:text-ink"
+      title={pinned ? "Unpin from your profile" : `Pin to your profile (${data.totalPinned}/${data.maxPins})`}
+    >
+      <Icon className="h-4 w-4" />
+      <span className="hidden sm:inline">{pinned ? "Pinned" : "Pin"}</span>
+    </Button>
+  );
+}
+
