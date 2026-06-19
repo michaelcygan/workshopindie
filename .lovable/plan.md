@@ -1,45 +1,116 @@
-# Workshop: 2027 UI Refresh + Rights Awareness
+# Welcome pin "+" + "Become the Host" nudge + visible Host-claim flow
 
-Combined build pass. Pure UI/presentation + one tiny optional column on the workshop's `prompt` (no schema change). Designed to ship in one shot.
+Three connected fixes for leaderless Workshops. The whole point: make it obvious that anyone can host, anyone can pin a welcome, and a soft nudge prompts someone to step up if the room idles.
 
-## What ships
+---
 
-### A. Visual refresh (audit)
-1. **Header meta row, unified.** Title row keeps the serif `Workshop: Build` + coffee glyph. Below it (or inline at sm+), a single quiet meta strip:
-   `● Live · 1/5  ·  No Host → Claim  ·  CC BY-SA`
-   - Live dot becomes a real pulsing dot (primary, 6px).
-   - `Live · up to 5` → `Live · {liveCount}/5`.
-   - Claim pill keeps its existing behavior; just lives in the meta row.
-   - License chip lives here too (new — see §B).
-2. **CTA hierarchy.** Only `Create a Collab` stays filled orange. `Hosting` indicator demoted to a soft outline pill. No visual change to HostMenu/HopButton.
-3. **Empty chat state.** Replace bare "Quiet in {title}" with:
-   - Subtle ambient radial bloom in the background (`bg-[radial-gradient(...)]`, no new asset).
-   - Three starter chips below the line that pre-fill the chat draft: `Say hi 👋`, `Drop a link`, `What's everyone on?`.
-4. **Stage tile.** No structural change; the rail card already uses `rounded-3xl`. Soften the rail header label spacing and demote the `1/5` chip to match the meta row tone.
+## Part 1 — Welcome pin "+" (open by default)
 
-### B. Rights awareness (ambient, never blocking)
-5. **`LicenseChip` (new).** Tiny `CC BY-SA` chip with a Popover explaining: "Anything in this Workshop is CC BY-SA 4.0 until it becomes a Collab. Then co-creators set their terms." Link to creativecommons.org.
-   - Mounted in the meta row above (§1).
-6. **Room note banner — append CC whisper.** When empty + canEdit, the dashed pill reads `+ Set the room's first thought` with a tiny muted `· CC BY-SA` suffix. When populated, no change (the note is the thought; the chip in the header carries the license cue).
-7. **Create-a-Collab sheet — License step.** Add a small license radio group in `CreateCollabSheet`. Options use the existing `work_license` enum vocabulary so nothing new in the DB:
-   - `cc_by` — Creative Commons (BY 4.0) *(default — matches Workshop spirit, looser than BY-SA so re-mixers aren't forced to share-alike on a new project)*
-   - `portfolio_credit_only` — Credit only / custom (free-text appears)
-   - `rights_managed_externally` — Rights handled outside the platform
-   - `private` — Closed circle
-   - Below: a copyable one-line attribution preview, e.g. *"{title} · {host} · CC BY 4.0"*.
-8. **Server pass-through.** `createCollabFromRoom` accepts optional `license` + `licenseCustom` and prepends one tidy line to the new workshop's `prompt`:
-   `License: CC BY 4.0\n\n{pitch}` — no new column, no migration. The public Workshop page already renders `prompt`, so the rights surface on the artifact without any other code change. Future pass can promote this to a real column.
+### Problem
+The "+ Set the room's first thought" pill never shows in unhosted Workshops. `canEdit` in `src/components/room-note-banner.tsx` requires `workshopHostId === user.id` whenever the room is workshop-paired — so leaderless = nobody can edit.
 
-## Files touched
-- `src/components/license-chip.tsx` *(new)* — chip + Popover.
-- `src/routes/workshop.$id.tsx` — meta row refresh, mount LicenseChip, add License step to `CreateCollabSheet`, pass to server fn.
-- `src/components/channel-view.tsx` — empty-state bloom + starter chips that setDraft.
-- `src/components/room-note-banner.tsx` — append `· CC BY-SA` suffix on the empty pill.
-- `src/lib/collab-workshop.functions.ts` — extend `createCollabFromRoom` input schema with `license?` + `licenseCustom?`, format prompt prefix.
+### Fix
+**Permission flip** in `src/components/room-note-banner.tsx`:
+- `workshopHostId` set → only that host edits.
+- `workshopHostId` null → any present attendee edits (matches lounge rule).
 
-## Out of scope (deliberate)
-- No DB migration. License lives in `prompt` for this pass.
-- No changes to the global top nav, HostMenu, or rail tabs.
-- No per-message license overrides, no Collab public-page chip yet (will fall out naturally once we promote `license` to a real workshop column in a follow-up).
+**Pin-flavored UX:**
+- Pill: `📌 + Pin a welcome for new arrivals · CC BY-SA`.
+- Editor label "First thought" → "Welcome pin". Placeholder → "What should new arrivals see when they drop in?"
 
-Ready to build on approval.
+**Ambient nudge tooltip** at 3500ms after mount, when `canEdit && !note`, dismissed via `localStorage` `room-note-nudge:{roomId}`:
+> "Pin a welcome message so new arrivals know what this room is about."
+Auto-dismiss on pill click, Escape, or 12s.
+
+### Files
+- `src/components/room-note-banner.tsx`
+
+---
+
+## Part 2 — Surface the Host-claim flow in Workshops
+
+### Problem
+`ClaimHostPill` is mounted in `src/routes/workshop.$id.tsx` but immediately short-circuits to a passive `No Host` badge because of:
+```ts
+unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || ...}
+```
+Workshop-paired rooms always show "No Host" with no affordance — no claim button anywhere. Even the empty state has no path to host.
+
+### Fix
+
+**1. Unlock claim in workshop rooms.** In `src/routes/workshop.$id.tsx` change the `unclaimable` prop to only block on status, not on `workshop_id` or `kind`:
+```ts
+unclaimable={room?.status !== "active"}
+```
+The server-side guards (`startHostClaim`, dwell, cooldown, object/finalize) already work room-agnostic — no server change needed.
+
+**2. Promote the claim affordance from chip to action.** Today it lives as a tiny pill in the meta row that reads "No Host · Claim". Two changes:
+- **In the meta row**, when leaderless: keep the pill but make the verb dominant — `👑 Claim Host` (primary tone instead of muted), so it reads as an offer, not status.
+- **In the empty chat state** (`src/components/channel-view.tsx`), when room is leaderless and viewer dwell ≥ 60s, add a fourth starter chip alongside `Say hi 👋 / Drop a link / What's everyone working on?`:
+  ```
+  ✨  Claim Host & set a direction
+  ```
+  Click → fires the same `startHostClaim` server fn the pill uses (via `useServerFn`). Hidden once anyone is mid-claim, once dwell isn't met, or in hosted rooms.
+
+**3. Empty-room hero hint.** When `liveCount <= 1` and leaderless, append a one-liner to the empty state:
+> "No one's hosting yet — anyone here for 60s can claim it."
+Disappears the moment a 2nd person joins, a claim starts, or a host is set.
+
+### Files
+- `src/routes/workshop.$id.tsx` (unclaimable prop + meta-row tone)
+- `src/components/claim-host-pill.tsx` (variant tone for the active claim CTA — `primary` border/text when ready)
+- `src/components/channel-view.tsx` (leaderless starter chip + hero hint)
+
+---
+
+## Part 3 — "Become the Host" whisper to a random non-last-actor
+
+### Trigger
+All must hold:
+- Room is leaderless (no `host_user_id`, no in-flight `claim_user_id`).
+- ≥ 2 present attendees (`instant_presence`, 60s cutoff).
+- Viewer is not the **last actor** (most recent of: last `workshop_messages` author, or freshest joiner in last 5 min).
+- Viewer hasn't dismissed it this session (`sessionStorage` `host-nudge:{roomId}`).
+- Viewer's own dwell ≥ 60s (matches `DWELL_REQUIRED_MS` so the click can actually claim).
+
+### Random pick (no server coordinator)
+Each eligible viewer computes a deterministic delay between **10s and 250s** using `seedrandom(userId + roomId + epochBucket)` where `epochBucket = Math.floor(Date.now() / 600_000)`. Same seed → consistent picks within a 10-min window. Timer cancels if any condition flips.
+
+### The prompt
+A small floating card, bottom-right of the workshop column, `surface-2/70`:
+
+```
+✨  Have an idea?
+    Become the Host to start working on it.
+    [ Become the Host ]   [ Not now ]
+```
+
+- **Become the Host** → calls `startHostClaim` (same server fn as the pill), then closes. The existing 10s object/finalize flow takes over.
+- **Not now** → `sessionStorage` dismiss for the room.
+- Auto-dismiss after 20s untouched.
+
+### Component
+New `src/components/become-host-nudge.tsx`. Mounted in `src/routes/workshop.$id.tsx` alongside the header, fed by:
+- Existing `room` query.
+- New `presentAttendees` query (`instant_presence` 60s cutoff, 30s refresh).
+- New `lastActor` query (last message author + newest joiner, 15s refresh).
+
+### Does NOT
+- Auto-promote anyone.
+- Fire to the last actor, the claimant, or in hosted/ended/solo rooms.
+- Persist dismissal across tabs.
+
+### Files
+- `src/components/become-host-nudge.tsx` (new)
+- `src/routes/workshop.$id.tsx` (mount + 2 new queries)
+
+---
+
+## Out of scope
+- Server-side "one nudge per room" enforcement.
+- Per-message pinning.
+- Push/notification system.
+- Changes to claim mechanics (dwell, 10s object window, cooldown) — reuse as-is.
+
+## No DB changes
+All three parts read existing tables: `instant_rooms`, `instant_presence`, `workshop_messages`, `instant_room_claim_cooldowns`.
