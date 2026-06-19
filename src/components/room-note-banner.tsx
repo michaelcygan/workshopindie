@@ -203,7 +203,7 @@ export function RoomNoteBanner({ roomId }: Props) {
       {editing ? (
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">First thought</div>
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-ink-muted"><Pin className="h-3 w-3 text-primary/70" /> Welcome pin</div>
             <textarea
               ref={taRef}
               value={draft}
@@ -213,7 +213,7 @@ export function RoomNoteBanner({ roomId }: Props) {
                 if (e.key === "Escape") { e.preventDefault(); setEditing(false); }
               }}
               rows={2}
-              placeholder="Set the tone for whoever drops in…"
+              placeholder="What should new arrivals see when they drop in?"
               className="mt-1 w-full resize-none bg-transparent text-sm text-ink placeholder:text-ink-muted focus:outline-none"
             />
             <div className="mt-1 flex items-center justify-between">
