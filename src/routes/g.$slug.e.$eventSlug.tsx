@@ -15,6 +15,7 @@ import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
+import { EventAttendeeWork } from "@/components/event-attendee-work";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
@@ -341,6 +342,9 @@ function EventPage() {
             </ul>
           </div>
         )}
+
+        {/* What attendees are working on */}
+        <EventAttendeeWork eventId={ev.id} />
 
         {/* Wall */}
         <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
