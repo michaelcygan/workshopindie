@@ -1,55 +1,45 @@
-# Editable room note — first thought / instant context
+# Workshop: 2027 UI Refresh + Rights Awareness
 
-## Concept
-Repurpose the per-user "Welcome" banner above chat (`src/components/workshop-chat-welcome.tsx`) as the room's **first thought** — a shared, in-room editable note that sets context for everyone filtering in.
+Combined build pass. Pure UI/presentation + one tiny optional column on the workshop's `prompt` (no schema change). Designed to ship in one shot.
 
-- **No Host room** (`host_user_id IS NULL`, `kind = 'lounge'`, no `workshop_id`): any present participant can edit / clear.
-- **Hosted room** (host present, or workshop-paired): only the host can edit.
-- **Closed/empty state**: a tiny `+ Set the first thought` chip for whoever can edit; nothing at all for read-only viewers.
+## What ships
 
-## What replaces the current welcome
-The greeting copy ("This is your Workshop. Talk shop…") goes away — it was a one-time welcome and is the same on every room. The first-run education can move to a Workshop docs/intro surface later (out of scope here). The new banner reads as content, not chrome:
-- empty: a soft `+ Set the first thought` pill, full-width-but-restrained, in the same slot above chat.
-- set: avatar of who wrote it · the note · subtle edit/clear affordance if you can edit.
+### A. Visual refresh (audit)
+1. **Header meta row, unified.** Title row keeps the serif `Workshop: Build` + coffee glyph. Below it (or inline at sm+), a single quiet meta strip:
+   `● Live · 1/5  ·  No Host → Claim  ·  CC BY-SA`
+   - Live dot becomes a real pulsing dot (primary, 6px).
+   - `Live · up to 5` → `Live · {liveCount}/5`.
+   - Claim pill keeps its existing behavior; just lives in the meta row.
+   - License chip lives here too (new — see §B).
+2. **CTA hierarchy.** Only `Create a Collab` stays filled orange. `Hosting` indicator demoted to a soft outline pill. No visual change to HostMenu/HopButton.
+3. **Empty chat state.** Replace bare "Quiet in {title}" with:
+   - Subtle ambient radial bloom in the background (`bg-[radial-gradient(...)]`, no new asset).
+   - Three starter chips below the line that pre-fill the chat draft: `Say hi 👋`, `Drop a link`, `What's everyone on?`.
+4. **Stage tile.** No structural change; the rail card already uses `rounded-3xl`. Soften the rail header label spacing and demote the `1/5` chip to match the meta row tone.
 
-## States
+### B. Rights awareness (ambient, never blocking)
+5. **`LicenseChip` (new).** Tiny `CC BY-SA` chip with a Popover explaining: "Anything in this Workshop is CC BY-SA 4.0 until it becomes a Collab. Then co-creators set their terms." Link to creativecommons.org.
+   - Mounted in the meta row above (§1).
+6. **Room note banner — append CC whisper.** When empty + canEdit, the dashed pill reads `+ Set the room's first thought` with a tiny muted `· CC BY-SA` suffix. When populated, no change (the note is the thought; the chip in the header carries the license cue).
+7. **Create-a-Collab sheet — License step.** Add a small license radio group in `CreateCollabSheet`. Options use the existing `work_license` enum vocabulary so nothing new in the DB:
+   - `cc_by` — Creative Commons (BY 4.0) *(default — matches Workshop spirit, looser than BY-SA so re-mixers aren't forced to share-alike on a new project)*
+   - `portfolio_credit_only` — Credit only / custom (free-text appears)
+   - `rights_managed_externally` — Rights handled outside the platform
+   - `private` — Closed circle
+   - Below: a copyable one-line attribution preview, e.g. *"{title} · {host} · CC BY 4.0"*.
+8. **Server pass-through.** `createCollabFromRoom` accepts optional `license` + `licenseCustom` and prepends one tidy line to the new workshop's `prompt`:
+   `License: CC BY 4.0\n\n{pitch}` — no new column, no migration. The public Workshop page already renders `prompt`, so the rights surface on the artifact without any other code change. Future pass can promote this to a real column.
 
-| Viewer | Note empty | Note set |
-|---|---|---|
-| Can edit | `+ Set the first thought` chip | Note visible · pencil + clear on hover |
-| Read-only | nothing rendered | Note visible · no controls |
+## Files touched
+- `src/components/license-chip.tsx` *(new)* — chip + Popover.
+- `src/routes/workshop.$id.tsx` — meta row refresh, mount LicenseChip, add License step to `CreateCollabSheet`, pass to server fn.
+- `src/components/channel-view.tsx` — empty-state bloom + starter chips that setDraft.
+- `src/components/room-note-banner.tsx` — append `· CC BY-SA` suffix on the empty pill.
+- `src/lib/collab-workshop.functions.ts` — extend `createCollabFromRoom` input schema with `license?` + `licenseCustom?`, format prompt prefix.
 
-Inline editing — click the chip or pencil → textarea swap with `Save` / `Cancel`. 280-char max, single short paragraph, no formatting. Optimistic save with rollback on error.
+## Out of scope (deliberate)
+- No DB migration. License lives in `prompt` for this pass.
+- No changes to the global top nav, HostMenu, or rail tabs.
+- No per-message license overrides, no Collab public-page chip yet (will fall out naturally once we promote `license` to a real workshop column in a follow-up).
 
-## Data
-
-Add to `instant_rooms`:
-- `note text` (nullable)
-- `note_updated_at timestamptz`
-- `note_updated_by uuid references auth.users(id) on delete set null`
-
-Two security-definer RPCs (so we can keep RLS strict and centralize the open-vs-hosted rule):
-- `set_room_note(_room_id uuid, _text text)` —
-  - if `host_user_id IS NOT NULL` → caller must be host
-  - else (No Host lounge, no `workshop_id`) → caller must be present in the room (heartbeat < 60s)
-  - workshop-paired rooms: caller must be the Workshop's host
-  - writes `note`, `note_updated_at = now()`, `note_updated_by = caller`; empty/whitespace clears the note
-- (No separate "clear" RPC — passing empty/null to `set_room_note` clears it.)
-
-No RLS policy change needed for direct writes; the column update goes only through the RPC, which is `SECURITY DEFINER` with explicit auth checks. The column is read via the existing `["instant-room", id]` query (already polled every 5s), so other participants see changes within a few seconds without realtime wiring.
-
-## Files
-
-- **Migration** — add the three columns, create `set_room_note`, GRANT EXECUTE to `authenticated`, REVOKE from `PUBLIC`/`anon`.
-- **`src/lib/host-room.functions.ts`** — new server fn `setRoomNote({ roomId, text })` calling the RPC via `context.supabase`.
-- **`src/components/workshop-chat-welcome.tsx`** — rename internally / repurpose, or replace with a new `room-note-banner.tsx`. Recommend the latter for clean diff; remove the old import sites and the localStorage dismiss key.
-- **`src/routes/workshop.$id.tsx`** — extend the `instant-room` query to select `note`, `note_updated_at`, `note_updated_by`; render `<RoomNoteBanner roomId={id} room={room} canEdit={…} />` where the welcome banner used to live; compute `canEdit` as `isHost || (isLeaderless && !room.workshop_id && viewerIsPresent)`.
-
-## Out of scope
-- No edit history / audit feed.
-- No realtime subscription — relies on the existing 5s poll.
-- No moderation/profanity check beyond the existing client-side trim/length cap (matches current `setRoomFocusMessage`).
-- Existing `focus_message` (header strip, host-only) stays as-is — different surface, different purpose (an active focus prompt vs. a passive context note). They can coexist; we can merge later if you decide they're redundant.
-
-## Open question
-Should I leave `focus_message` (the host-only header strip from `setRoomFocusMessage` / `FocusStrip`) alone, or fold it into this new "first thought" so there's only one editable string per room? I recommend leaving it for this pass — they target different moments (header pin vs. above-chat context) and merging is reversible later.
+Ready to build on approval.
