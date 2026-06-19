@@ -3224,6 +3224,7 @@ export type Database = {
           created_at: string
           hidden_from_profile: boolean
           id: string
+          pinned_at: string | null
           role_label: string
           sort_order: number
           user_id: string
@@ -3233,6 +3234,7 @@ export type Database = {
           created_at?: string
           hidden_from_profile?: boolean
           id?: string
+          pinned_at?: string | null
           role_label: string
           sort_order?: number
           user_id: string
@@ -3242,6 +3244,7 @@ export type Database = {
           created_at?: string
           hidden_from_profile?: boolean
           id?: string
+          pinned_at?: string | null
           role_label?: string
           sort_order?: number
           user_id?: string
