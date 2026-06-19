@@ -70,7 +70,7 @@ export const listOpenForMyGroups = createServerFn({ method: "GET" })
       const g = row.groups;
       const c = row.collab_posts;
       if (!g || g.deleted_at || !c) continue;
-      if (c.status !== "open") continue;
+      if (c.status === "closed" && !c.resulting_work_id) continue;
       const key = `collab:${c.id}`;
       if (seen.has(key)) continue;
       seen.add(key);
