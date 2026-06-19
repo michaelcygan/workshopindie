@@ -39,7 +39,7 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       .from("event_showcase_items")
       .select(
         "id,user_id,work_id,collab_id,created_at," +
-          "bringer:profiles!event_showcase_items_user_id_fkey(display_name,username,avatar_url)," +
+          "bringer:profiles(id,display_name,username,avatar_url)," +
           "work:works(id,title,slug,cover_url,visibility,status,created_by," +
           "author:profiles!works_created_by_fkey(display_name,username,avatar_url))," +
           "collab:collab_posts(id,title,slug,status,user_id," +
