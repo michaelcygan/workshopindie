@@ -225,7 +225,6 @@ export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
       .from("collab_posts")
       .select(select, { count: "exact" })
       .in("user_id", ids)
-      .eq("visibility", "public")
       .or("status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)")
       .order("created_at", { ascending: false })
       .limit(limit);
