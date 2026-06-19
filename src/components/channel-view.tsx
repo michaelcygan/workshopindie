@@ -739,7 +739,7 @@ export function ChannelView({
                         {[
                           "Say hi 👋",
                           "Drop a link",
-                          "What's everyone on?",
+                          "What's everyone working on?",
                         ].map((s) => (
                           <button
                             key={s}
