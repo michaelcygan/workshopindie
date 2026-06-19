@@ -1755,18 +1755,21 @@ export type Database = {
       }
       instant_presence: {
         Row: {
+          first_seen_at: string
           last_seen_at: string
           room_id: string
           status: string
           user_id: string
         }
         Insert: {
+          first_seen_at?: string
           last_seen_at?: string
           room_id: string
           status?: string
           user_id: string
         }
         Update: {
+          first_seen_at?: string
           last_seen_at?: string
           room_id?: string
           status?: string
