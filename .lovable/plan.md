@@ -1,110 +1,96 @@
+# No Host — claim flow (revised)
 
-# Work as a three-state object
+## 1. Rename the label
+- `src/routes/workshop.$id.tsx` line 276: `Leaderless` → `No Host`
+- `rg -i "leaderless"` audit to catch any future copy.
 
-Goal: make a Work behave like a clean, public gallery page that compiles cleanly into a portfolio. Minimal in time, rich in attribution. Three states stay coherent: **URL → Thumbnail → Page**.
+## 2. How a room becomes "No Host"
+Already implicit: `instant_rooms.host_user_id` is nullable with `ON DELETE SET NULL`, and host abdication / account deletion leaves it null. No new "abdicate" action in this pass — we just make the resulting state recoverable.
 
----
+## 3. Claim model — "consent-or-lapse, single objector vetoes"
 
-## 1. The Page (`/works/$slug`) — templated and simple
+**Claimant: 1 click.** The pill flips from a static `No Host` badge into a button **`No Host · Claim`** for anyone present in the room for ≥ 60 s. Clicking opens a 10-second confirmation window:
+- Claimant sees `Confirming… (8s)` and nothing else.
+- Every *other present participant* sees an inline toast `Alex wants to host — Object` with the same countdown.
 
-Keep the page lean. Same layout for every Work. The variable surface is **who made it, what it is, when it shipped** — nothing more on the chrome.
+**Result rules:**
+- **Any single Object** within the window → claim reverts, `host_user_id` stays NULL, 5-minute cooldown on a fresh claim by the same user on the same room.
+- **Timer lapses with zero objections** → `host_user_id = claimant`, room now has a host. Silent participants and offline participants count as consent.
 
-**Header (top to bottom):**
-- Category chip · source-type chip · license chip *(today)*
-- Title (display, large)
-- Excerpt
-- **Byline** — first 3 collaborators inline, `+N more` (today)
-- **Date line** (NEW, minimal) — single row: `Published Jun 19, 2026 · from Workshop "Late Night Cuts"` (or `· from Collab post`, or no source clause if solo). This replaces the duplicated date in the meta strip below the embed.
+This matches your "all users must consent or lapse" rule literally: every present participant has 10 s to veto; saying nothing = consent; not being there = lapsed = consent.
 
-**Media** — cover or embed (unchanged).
+**Guards (kept minimal):**
+- Viewer must be present (heartbeat within 60 s) AND have ≥ 60 s of dwell time.
+- 5-minute per-room cooldown after a reverted claim against the same claimant.
+- Workshop-paired rooms (`kind = 'workshop'`, `workshop_id IS NOT NULL`) are **not claimable** — the Workshop has its own canonical host record; pill stays as a muted `No Host` until that host returns. (Recommendation: keep this strict; making them claimable would conflict with the Workshop's RLS owner.)
 
-**Meta strip** — keep views + actions (Like / Save / Share / Report). Remove the duplicated date (now in header).
+## 4. UI surfaces
 
-**Social proof** — Vouch + Boost (unchanged).
+`src/routes/workshop.$id.tsx` header pill becomes `<ClaimHostPill />` (new component, `src/components/claim-host-pill.tsx`) with these states:
 
-**Description** — long-form body (unchanged).
+| Viewer state | Renders |
+|---|---|
+| Not eligible (dwell < 60s, or cooldown) | `No Host` (muted, no action) |
+| Eligible, no pending claim | `No Host · Claim` button |
+| Pending claim, you are claimant | `Confirming… (8s)` muted pill |
+| Pending claim, you are someone else | `Alex wants to host · Object (8s)` button |
+| Workshop-paired room | `No Host` (muted, no action, no claim) |
 
-**Credits — cast strip** (unchanged, this is the heart of the page).
+After a successful claim the existing `Hosting` pill + `HostMenu` light up for the new host via cache invalidation of `["instant-room", id]`.
 
-**Also made together** (unchanged).
+## 5. Technical details
 
-**Comments** (unchanged).
+**Migration (`supabase/migrations/<new>.sql`):**
 
-That's it. No timeline, no provenance section, no "history" block. The single date line + optional `from Workshop X` link is the entire temporal story.
+Columns added to `instant_rooms`:
+- `claim_user_id uuid references auth.users(id) on delete set null`
+- `claim_started_at timestamptz`
+- `claim_vetoed boolean default false` (set true the moment any Object lands; client/RPC reads this to know the claim died)
+- `last_claim_reverted_at timestamptz` (used only for per-claimant cooldown on the same room — stored on a side table `instant_room_claim_cooldowns(room_id, user_id, until)` so cooldowns are per-user, not per-room)
 
----
+RPCs (security definer, search_path = public):
 
-## 2. The Thumbnail (`WorkCard`) — modular slots
+- `start_host_claim(_room_id uuid)` →
+  - Reject if `host_user_id IS NOT NULL`, if `kind <> 'lounge'`, if `workshop_id IS NOT NULL`, if room not active.
+  - Reject if viewer not present ≥ 60 s, or has a row in `instant_room_claim_cooldowns` with `until > now()`.
+  - Reject if there's already a pending claim within the last 10 s.
+  - Set `claim_user_id = viewer`, `claim_started_at = now()`, `claim_vetoed = false`.
+- `object_host_claim(_room_id uuid)` →
+  - Reject if viewer is the claimant, not present, or window has lapsed (`now() - claim_started_at > '10 seconds'`).
+  - Set `claim_vetoed = true`; insert cooldown row `(room_id, claim_user_id, now() + interval '5 minutes')`; clear `claim_user_id`/`claim_started_at`.
+- `finalize_host_claim(_room_id uuid)` →
+  - Called by the claimant's client when the timer ends.
+  - If `claim_vetoed` is false AND `claim_user_id` is still set AND `now() - claim_started_at >= '10 seconds'` AND `host_user_id IS NULL`, set `host_user_id = claim_user_id`, clear claim fields.
+  - Otherwise no-op (idempotent).
 
-Today's `WorkCard` shows cover + title + category. Make it **modular** so it can fill different spaces (gallery grid, profile portfolio, event-attendee rail, "also made together", related works) without rewriting it.
+A small sweeper isn't required — `finalize_host_claim` is called by whoever ran the claim, and other clients see the state through the existing `["instant-room", id]` poll. If the claimant disconnects mid-window, the next call to `start_host_claim` by anyone is allowed once 10 s has passed (since the previous `claim_started_at` is stale and the room is still leaderless).
 
-New `WorkCard` props (all optional, default to today's behavior):
-- `showAvatars?: boolean` — overlay up to 3 collaborator avatars bottom-left of the cover (stacked, ring-bordered). Pulls from existing `work.credits`.
-- `showCounters?: boolean` — micro-row under title: `· 1.2k views · 24 ♥ · 3 vouches`. Already have the data on `WorkCardData`.
-- `density?: "compact" | "default" | "hero"` — controls padding, title size, and which slots render. `hero` reserved for pinned portfolio slot.
-- `showCategory?: boolean` (default true).
+**Server functions (append to `src/lib/host-room.functions.ts`):**
+`startHostClaim`, `objectHostClaim`, `finalizeHostClaim` — thin `requireSupabaseAuth` wrappers around the three RPCs.
 
-**Defaults per surface:**
-- Gallery grid: cover + title + category (today).
-- Profile portfolio grid: cover + title + category + counters.
-- Profile portfolio **pinned hero**: cover + title + avatars + counters, larger.
-- Event-attendee rail: cover + title + avatars (the "who's here" payoff).
-- Also-made-together: cover + title + avatars.
+**Component (`src/components/claim-host-pill.tsx`, new):**
+- Reads `room` from the existing `["instant-room", id]` query (already polled).
+- Local 1 Hz `setInterval` to drive the countdown.
+- Calls `finalizeHostClaim` once when the claimant's timer hits 0.
+- Invalidates `["instant-room", id]` on any state transition.
 
-No source badge ("from Workshop") on the card — keep it for the page only. The card is for scanning Work; the page tells the story.
+**Cooldown table migration:**
+```sql
+CREATE TABLE public.instant_room_claim_cooldowns (
+  room_id uuid NOT NULL REFERENCES public.instant_rooms(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  until timestamptz NOT NULL,
+  PRIMARY KEY (room_id, user_id)
+);
+GRANT SELECT ON public.instant_room_claim_cooldowns TO authenticated;
+GRANT ALL ON public.instant_room_claim_cooldowns TO service_role;
+ALTER TABLE public.instant_room_claim_cooldowns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "self read cooldown" ON public.instant_room_claim_cooldowns
+  FOR SELECT TO authenticated USING (user_id = auth.uid());
+-- writes happen via SECURITY DEFINER RPCs only; no INSERT/UPDATE/DELETE policy
+```
 
----
-
-## 3. The URL (share/unfurl) — cover-first OG
-
-`works.$slug.tsx` already wires `og:image` to `cover_url`. Tighten:
-- When `cover_url` is missing but `embed_url` is a YouTube/Vimeo link, derive a poster (YouTube `hqdefault`, Vimeo oEmbed thumbnail) at loader time and use that for `og:image`. Many video-only Works currently unfurl with no preview.
-- Keep `twitter:card = summary_large_image` when any image resolves; fall back to `summary` only when truly none.
-- Confirm `canonical` and `og:url` self-reference `https://workshopindie.com/works/${slug}` (already correct — verify after edit).
-
-No generated "cast card" OG image in this pass. Cover-first as you chose.
-
----
-
-## 4. Portfolio compile (profile page `/u/$username`) — pinned + grid
-
-Today `/u/$username` lists a user's Works. Add **pinning** so the profile reads like a curated portfolio.
-
-**Data:** add `pinned_at TIMESTAMPTZ NULL` on `work_credits` (per-user pin — the same Work can be pinned on each collaborator's profile independently). Cap at **6 pins per user**, enforced in the server fn.
-
-**Work page — pin control:** small "Pin to my profile" button in the meta strip, visible only when the viewer is a credited collaborator. Toggles `pinned_at` on their own `work_credits` row. Shows current count `(3/6 pinned)`.
-
-**Profile page layout:**
-1. **Pinned row** — up to 6 Works, rendered with `<WorkCard density="hero" showAvatars showCounters />`. Two-column on desktop, single column on mobile. Sorted by `pinned_at desc`.
-2. **All work grid** — chronological (published_at desc), `<WorkCard showCounters />`, includes pinned Works again (don't hide — pinned is a spotlight, not a filter).
-
-Empty state for pinned row: "No pinned work yet. Open a Work you're credited on and tap Pin." (shown only on the viewer's own profile.)
-
----
-
-## Technical section
-
-**Files touched:**
-
-- `supabase/migrations/<new>.sql` — add `pinned_at timestamptz null` to `public.work_credits`; index `(user_id, pinned_at desc nulls last)`; no policy change needed (existing `work_credits` policies cover own-row updates via `user_id = auth.uid()`; verify and add a narrow UPDATE policy if missing).
-- `src/lib/works.functions.ts` — add `togglePinCredit({ creditId })` server fn: validates caller owns the credit, enforces 6-pin cap, sets/clears `pinned_at`.
-- `src/lib/works.functions.ts` or `src/lib/seo-loaders.functions.ts` — extend `getWorkSeo` to derive a YouTube/Vimeo poster URL when `cover_url` is null and `embed_url` is set, so `head()` can pass it as `og:image`.
-- `src/routes/works.$slug.tsx` —
-  - Replace duplicated date in meta strip with single header date line: `Published {date} · from <Link>Workshop {name}</Link>` (fetch workshop title via existing `source_workshop_id` join in `fetchWork`).
-  - Add `PinToProfileButton` in meta strip (renders only for credited viewer).
-  - Update `head()` to use the derived poster fallback from the loader.
-- `src/components/work-card.tsx` — add `showAvatars`, `showCounters`, `density`, `showCategory` props; render avatar stack overlay using existing `credits` shape; render counter micro-row.
-- `src/routes/u.$username.tsx` — split list into "Pinned" row (query `work_credits` where `user_id = profile.id and pinned_at is not null` ordered desc, hydrate Works) and "All work" grid (existing query). Use `density="hero"` for pinned.
-- `src/components/work-card.tsx` consumers that should opt into new slots: `EventAttendeeWork` (add `showAvatars`), `AlsoWorkedTogether` in `works.$slug.tsx` (add `showAvatars`).
-
-**Out of scope (deferred):**
-- Timeline / provenance section, version history, remix tree.
-- Generated cast-card OG image, dynamic OG endpoints.
-- Role-grouped portfolio ("Directed" / "Edited"), case-study long-form mode, drag-to-reorder pins.
-- Pin animations and pin-from-card (pinning is page-only this pass).
-
-**Risks / verifications:**
-- Confirm `work_credits` has an existing UPDATE-own-row RLS policy; add one if not (this is the only DB-side gotcha).
-- YouTube `hqdefault.jpg` works for public videos; for unlisted, fall back to no image.
-- Cap enforcement is server-side; UI shows count but trusts server.
-
+## 6. Out of scope (intentional)
+- No explicit "Abdicate host" button.
+- No notification fan-out.
+- No analytics events yet.
