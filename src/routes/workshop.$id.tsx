@@ -273,40 +273,48 @@ function LiveRoomPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <Link to="/workshop" className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink">
-          <ArrowLeft className="h-3.5 w-3.5" /> Workshop
-        </Link>
-
-        <h1 className="font-display text-xl md:text-2xl text-ink flex items-center gap-2 min-w-0">
-          <span className="gradient-motion inline-flex h-7 w-7 items-center justify-center rounded-full text-primary-foreground shrink-0">
-            <Coffee className="h-3.5 w-3.5" />
-          </span>
-          <span className="truncate">{title}</span>
-        </h1>
-
-        <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-          <span>Live · up to 5</span>
-          {isHost && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 px-1.5 py-0.5 font-medium text-violet">
-              <RadioTower className="h-3 w-3" /> Hosting
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+        <div className="min-w-0">
+          <Link to="/workshop" className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink">
+            <ArrowLeft className="h-3 w-3" /> Workshop
+          </Link>
+          <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
+            <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
+              <Coffee className="h-3.5 w-3.5" />
             </span>
-          )}
-          {isLeaderless && !isPromoted && user && (
-            <ClaimHostPill
-              roomId={id}
-              viewerId={user.id}
-              unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
-              claimUserId={room?.claim_user_id ?? null}
-              claimStartedAt={room?.claim_started_at ?? null}
-              claimantName={claimantName}
-              onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-            />
-          )}
+            <span className="truncate">{title}</span>
+          </h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted">
+            <span className="inline-flex items-center gap-1">
+              <span className="relative inline-flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+              </span>
+              Live · {liveCount}/5
+            </span>
+            <span className="text-ink-muted/40">·</span>
+            {isHost ? (
+              <span className="inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-1.5 py-0.5 font-medium text-violet">
+                <RadioTower className="h-3 w-3" /> Hosting
+              </span>
+            ) : isLeaderless && !isPromoted && user ? (
+              <ClaimHostPill
+                roomId={id}
+                viewerId={user.id}
+                unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
+                claimUserId={room?.claim_user_id ?? null}
+                claimStartedAt={room?.claim_started_at ?? null}
+                claimantName={claimantName}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+              />
+            ) : null}
+            <span className="text-ink-muted/40">·</span>
+            <LicenseChip />
+          </div>
         </div>
 
         {!isPromoted && user && (
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-2">
             {!isHost && room?.status === "active" && (
               <HopButton
                 roomId={id}
