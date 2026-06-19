@@ -217,10 +217,13 @@ const POOL_SIZE = 300;
 
 type Attendee = { display_name: string | null; username: string | null; avatar_url: string | null };
 
-function bucketAndFair<T extends Record<string, unknown>>(
-  rows: T[],
-  ownerKey: keyof T,
-  attendeeKey: keyof T,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnyRow = any;
+
+function bucketAndFair(
+  rows: AnyRow[],
+  ownerKey: string,
+  attendeeKey: string,
   perUserCap: number,
   fairSize: number,
 ) {
