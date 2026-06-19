@@ -73,7 +73,7 @@ function Hero() {
       </div>
       <div className="absolute inset-0 -z-[4] bg-gradient-to-b from-background/30 via-transparent to-background/50" />
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-20 md:px-6 md:py-28 text-center">
+      <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
@@ -82,20 +82,20 @@ function Hero() {
         </motion.div>
         <motion.h1
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
-          className="font-display mt-5 text-5xl leading-[1.05] tracking-tight text-ink md:text-7xl"
+          className="font-display mt-4 text-4xl leading-[1.05] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl"
         >
           Build your network. <span className="italic text-gradient-motion">Create together.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
-          className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
+          className="mx-auto mt-4 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Drop into live Workshops with other artists and creators. Post a Collab and join a Group of makers in your area or interest.
+          Drop into a live Workshop with other artists and creators. Post a Collab and join a Group of makers in your area or interest.
         </motion.p>
 
         <motion.div
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.18 }}
-          className="mx-auto mt-10 grid max-w-3xl gap-4 md:grid-cols-2"
+          className="mx-auto mt-6 grid max-w-3xl gap-4 md:grid-cols-2"
         >
           <Link
             to="/workshop"
