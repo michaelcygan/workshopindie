@@ -429,6 +429,19 @@ function LiveRoomPage() {
       />
 
       <HostFirstRunTour active={isHost && !isPromoted} />
+
+      {user && !isPromoted && (
+        <BecomeHostNudge
+          roomId={id}
+          viewerId={user.id}
+          isEligibleRoom={
+            !!room &&
+            room.status === "active" &&
+            !room.host_user_id &&
+            !room.claim_user_id
+          }
+        />
+      )}
     </main>
   );
 }
