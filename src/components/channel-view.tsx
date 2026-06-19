@@ -947,3 +947,157 @@ export function ChannelView({
     </>
   );
 }
+
+/** Empty-state launchpad: rename pills, starter chips, claim host, browse live. */
+function EmptyLaunchpad({
+  title,
+  medium,
+  roomId,
+  hostUserId,
+  canSignedIn,
+  presenceCount,
+  renaming,
+  onSetDraft,
+  onClaimHost,
+  onRename,
+  onLeaveForLobby,
+}: {
+  title: string;
+  medium: string | null;
+  roomId: string;
+  hostUserId: string | null;
+  canSignedIn: boolean;
+  presenceCount: number;
+  renaming: boolean;
+  onSetDraft: (s: string) => void;
+  onClaimHost: () => void | Promise<void>;
+  onRename: (newTitle: string) => void | Promise<void>;
+  onLeaveForLobby: () => void;
+}) {
+  // Generic title = matches formatRoomTitle's fallback for this medium.
+  const genericTitle = useMemo(
+    () => formatRoomTitle(null, medium ?? undefined),
+    [medium],
+  );
+  const isGenericTitle = title.trim() === genericTitle.trim();
+
+  const canRename = canSignedIn && !renaming;
+  const showPurpose = isGenericTitle && canRename;
+
+  const suggestions = useMemo(
+    () => getPurposeSuggestions(roomId, (medium as any) ?? null, 4),
+    [roomId, medium],
+  );
+
+  return (
+    <div className="relative flex h-full items-center justify-center text-center">
+      {/* Aurora bloom */}
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, rotate: 360 }}
+        transition={{ opacity: { duration: 1.2 }, rotate: { duration: 60, repeat: Infinity, ease: "linear" } }}
+        className="pointer-events-none absolute inset-0 [background:conic-gradient(from_0deg_at_50%_45%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_30%,color-mix(in_oklab,var(--violet,#7c5cff)_10%,transparent),transparent_70%,color-mix(in_oklab,var(--primary)_12%,transparent))] blur-3xl opacity-60"
+      />
+      <div className="relative w-full max-w-2xl px-4">
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="font-display text-2xl md:text-3xl text-ink tracking-tight"
+        >
+          Quiet in {title}.
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mt-1 text-sm text-ink-muted"
+        >
+          {showPurpose
+            ? "Pick a purpose — it becomes the room's name."
+            : "Be the first to say hi. Messages vanish after 24h."}
+        </motion.p>
+
+        {showPurpose && (
+          <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {suggestions.map((s, i) => (
+              <motion.button
+                key={s.title}
+                type="button"
+                onClick={() => onRename(s.title)}
+                disabled={renaming}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.05, duration: 0.35 }}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm px-4 py-3 text-left transition hover:border-primary/40 hover:bg-primary/[0.04] hover:ring-1 hover:ring-primary/30 hover:shadow-soft disabled:opacity-50"
+              >
+                <span className="absolute right-3 top-3 text-ink-muted opacity-0 transition group-hover:opacity-100">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                </span>
+                <span className="block font-display text-base leading-tight text-ink">
+                  {s.title}
+                </span>
+                <span className="mt-0.5 block text-[11px] text-ink-muted">
+                  {s.hint}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25, duration: 0.4 }}
+          className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
+        >
+          {["Say hi 👋", "Drop a link", "What's everyone working on?"].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onSetDraft(s)}
+              className="rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-[11px] text-ink-soft hover:border-border-strong hover:text-ink hover:shadow-soft transition"
+            >
+              {s}
+            </button>
+          ))}
+          {!hostUserId && canSignedIn && (
+            <button
+              type="button"
+              onClick={onClaimHost}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
+            >
+              ✨ Claim Host &amp; set a direction
+            </button>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35, duration: 0.4 }}
+          className="mt-4 flex items-center justify-center"
+        >
+          <button
+            type="button"
+            onClick={onLeaveForLobby}
+            className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-ink-muted hover:text-ink transition"
+          >
+            or browse what's live now
+            <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
+          </button>
+        </motion.div>
+
+        {!hostUserId && presenceCount <= 1 && (
+          <p className="mt-3 text-[11px] text-ink-muted/80">
+            No one's hosting yet — anyone here for 60s can claim it.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
