@@ -432,6 +432,15 @@ function LiveRoomPage() {
   );
 }
 
+type LicenseChoice = "cc_by" | "rights_managed_externally" | "portfolio_credit_only" | "private";
+
+const LICENSE_OPTIONS: Array<{ id: LicenseChoice; label: string; hint: string }> = [
+  { id: "cc_by", label: "Creative Commons (BY 4.0)", hint: "Free to use with credit. Matches the Workshop spirit." },
+  { id: "portfolio_credit_only", label: "Credit only / custom", hint: "Anyone may reference with attribution." },
+  { id: "rights_managed_externally", label: "Rights managed externally", hint: "Terms handled outside the platform." },
+  { id: "private", label: "Closed circle", hint: "Just the co-creators. Nothing public." },
+];
+
 function CreateCollabSheet({
   open, onOpenChange, roomId, defaultTitle, onCreated,
 }: {
@@ -441,18 +450,51 @@ function CreateCollabSheet({
   defaultTitle: string;
   onCreated: (workshopSlug: string) => void;
 }) {
+  const { user } = useAuth();
   const [title, setTitle] = useState(defaultTitle);
   const [pitch, setPitch] = useState("");
+  const [license, setLicense] = useState<LicenseChoice>("cc_by");
+  const [licenseCustom, setLicenseCustom] = useState("");
   const [busy, setBusy] = useState(false);
   const create = useServerFn(createCollabFromRoom);
 
-  useEffect(() => { if (open) { setTitle(defaultTitle); setPitch(""); } }, [open, defaultTitle]);
+  const { data: meName } = useQuery({
+    queryKey: ["create-collab-me-name", user?.id],
+    enabled: !!user?.id && open,
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("display_name, username").eq("id", user!.id).maybeSingle();
+      return (data?.display_name as string | null) ?? (data?.username as string | null) ?? "Host";
+    },
+  });
+
+  useEffect(() => {
+    if (open) {
+      setTitle(defaultTitle);
+      setPitch("");
+      setLicense("cc_by");
+      setLicenseCustom("");
+    }
+  }, [open, defaultTitle]);
+
+  const attributionLabel =
+    license === "rights_managed_externally" ? "Rights managed externally"
+    : license === "portfolio_credit_only" ? (licenseCustom.trim() ? `Credit — ${licenseCustom.trim()}` : "Credit only")
+    : license === "private" ? "Closed circle"
+    : "CC BY 4.0";
 
   async function submit() {
     if (!title.trim()) return toast.error("Give it a title");
     setBusy(true);
     try {
-      const { workshopSlug } = await create({ data: { roomId, title: title.trim(), pitch: pitch.trim() || undefined } });
+      const { workshopSlug } = await create({
+        data: {
+          roomId,
+          title: title.trim(),
+          pitch: pitch.trim() || undefined,
+          license,
+          licenseCustom: license === "portfolio_credit_only" && licenseCustom.trim() ? licenseCustom.trim() : undefined,
+        },
+      });
       if (!workshopSlug) throw new Error("Couldn't create the Collab");
       toast.success("Collab created — everyone in the room got an opt-in invite.");
       onOpenChange(false);
@@ -466,7 +508,7 @@ function CreateCollabSheet({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Rocket className="h-4 w-4 text-violet" /> Create a Collab
@@ -475,16 +517,58 @@ function CreateCollabSheet({
             Fork this live Workshop into a persistent one. You'll be the host. Everyone currently in the room gets a one-tap invite — no one is auto-added.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
             <label className="text-xs font-medium text-ink-soft">Title</label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className="mt-1" />
           </div>
           <div>
             <label className="text-xs font-medium text-ink-soft">What is this Collab about?</label>
-            <Textarea value={pitch} onChange={(e) => setPitch(e.target.value)} rows={4} maxLength={2000}
+            <Textarea value={pitch} onChange={(e) => setPitch(e.target.value)} rows={3} maxLength={2000}
               placeholder="A sentence or two so newcomers know what they're walking into."
               className="mt-1" />
+          </div>
+
+          <div className="rounded-2xl border border-border bg-surface-2/40 p-3">
+            <div className="flex items-baseline justify-between">
+              <label className="text-xs font-medium text-ink-soft">Rights</label>
+              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">Default · CC BY 4.0</span>
+            </div>
+            <div className="mt-2 space-y-1.5">
+              {LICENSE_OPTIONS.map((opt) => (
+                <label
+                  key={opt.id}
+                  className={`flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2 transition ${
+                    license === opt.id ? "border-primary/60 bg-primary/5" : "border-border hover:bg-surface"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="license"
+                    className="mt-1 accent-primary"
+                    checked={license === opt.id}
+                    onChange={() => setLicense(opt.id)}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm text-ink">{opt.label}</span>
+                    <span className="block text-[11px] text-ink-muted">{opt.hint}</span>
+                  </span>
+                </label>
+              ))}
+              {license === "portfolio_credit_only" && (
+                <Input
+                  value={licenseCustom}
+                  onChange={(e) => setLicenseCustom(e.target.value)}
+                  placeholder="e.g. Free for personal use, ask for commercial"
+                  maxLength={400}
+                  className="mt-2"
+                />
+              )}
+            </div>
+            <p className="mt-3 truncate rounded-lg bg-surface px-2 py-1.5 text-[11px] text-ink-soft">
+              <span className="text-ink-muted">Attribution preview · </span>
+              <span className="text-ink">“{title || "Untitled"}” by {meName ?? "Host"} · {attributionLabel}</span>
+            </p>
           </div>
         </div>
         <DialogFooter>
