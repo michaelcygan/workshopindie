@@ -241,7 +241,7 @@ export function RoomNoteBanner({ roomId }: Props) {
       ) : (
         <div className="group flex items-start gap-3">
           <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">First thought</div>
+            <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-ink-muted"><Pin className="h-3 w-3 text-primary/70" /> Welcome pin</div>
             <p className="mt-0.5 whitespace-pre-wrap text-sm text-ink">{note}</p>
           </div>
           {canEdit && (
