@@ -190,3 +190,25 @@ export const finalizeHostClaim = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Set or clear the room's shared "first thought" note.
+ * Hosted rooms: only host. No-Host lounges: any present participant.
+ * Workshop-paired rooms: only the Workshop's host. Pass empty/null to clear.
+ */
+export const setRoomNote = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; text: string | null }) =>
+    z.object({
+      roomId: z.string().uuid(),
+      text: z.string().max(2000).nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("set_room_note", {
+      _room_id: data.roomId,
+      _text: data.text,
+    } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

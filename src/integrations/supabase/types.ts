@@ -1959,6 +1959,9 @@ export type Database = {
           link_token: string | null
           locked: boolean
           medium: Database["public"]["Enums"]["category"] | null
+          note: string | null
+          note_updated_at: string | null
+          note_updated_by: string | null
           participant_cap: number
           promoted_at: string | null
           prompt: string | null
@@ -1987,6 +1990,9 @@ export type Database = {
           link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
+          note?: string | null
+          note_updated_at?: string | null
+          note_updated_by?: string | null
           participant_cap?: number
           promoted_at?: string | null
           prompt?: string | null
@@ -2015,6 +2021,9 @@ export type Database = {
           link_token?: string | null
           locked?: boolean
           medium?: Database["public"]["Enums"]["category"] | null
+          note?: string | null
+          note_updated_at?: string | null
+          note_updated_by?: string | null
           participant_cap?: number
           promoted_at?: string | null
           prompt?: string | null
@@ -4993,6 +5002,10 @@ export type Database = {
         Returns: boolean
       }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
+      set_room_note: {
+        Args: { _room_id: string; _text: string }
+        Returns: undefined
+      }
       slugify: { Args: { _in: string }; Returns: string }
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       toggle_work_reaction: {

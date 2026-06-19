@@ -20,7 +20,7 @@ import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
-import { WorkshopChatWelcome } from "@/components/workshop-chat-welcome";
+import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { FullscreenShell } from "@/components/fullscreen-shell";
@@ -722,7 +722,7 @@ export function ChannelView({
           ) : (
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
-              <WorkshopChatWelcome roomKey={workshopId ?? roomId ?? "default"} />
+              {roomId && <RoomNoteBanner roomId={roomId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center text-center">
