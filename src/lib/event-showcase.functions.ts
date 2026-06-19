@@ -39,7 +39,6 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       .from("event_showcase_items")
       .select(
         "id,user_id,work_id,collab_id,created_at," +
-          "bringer:profiles(id,display_name,username,avatar_url)," +
           "work:works(id,title,slug,cover_url,visibility,status,created_by," +
           "author:profiles!works_created_by_fkey(display_name,username,avatar_url))," +
           "collab:collab_posts(id,title,slug,status,user_id," +
@@ -54,7 +53,6 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       user_id: string;
       work_id: string | null;
       collab_id: string | null;
-      bringer: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
       work: {
         id: string; title: string; slug: string | null; cover_url: string | null;
         visibility: string; status: string; created_by: string;
@@ -66,12 +64,30 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       } | null;
     };
 
+    const raw = (rows ?? []) as unknown as R[];
+    // Fetch bringer profiles in one batch
+    const bringerIds = Array.from(new Set(raw.map((r) => r.user_id)));
+    const bringerMap = new Map<string, Bringer>();
+    if (bringerIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,display_name,username,avatar_url")
+        .in("id", bringerIds);
+      for (const p of (profs ?? []) as Array<{ id: string; display_name: string | null; username: string | null; avatar_url: string | null }>) {
+        bringerMap.set(p.id, {
+          user_id: p.id,
+          display_name: p.display_name,
+          username: p.username,
+          avatar_url: p.avatar_url,
+        });
+      }
+    }
+
     const groups = new Map<string, ShowcaseEntry>();
-    for (const r of (rows ?? []) as unknown as R[]) {
+    for (const r of raw) {
       let key: string | null = null;
       let entry: Omit<ShowcaseEntry, "bringers"> | null = null;
       if (r.work_id && r.work) {
-        // Only surface works the open web can see.
         if (r.work.visibility !== "public" || r.work.status !== "published") continue;
         key = `w:${r.work_id}`;
         entry = {
@@ -96,11 +112,8 @@ export const listEventShowcase = createServerFn({ method: "POST" })
       }
       if (!key || !entry) continue;
 
-      const bringer: Bringer = {
-        user_id: r.user_id,
-        display_name: r.bringer?.display_name ?? null,
-        username: r.bringer?.username ?? null,
-        avatar_url: r.bringer?.avatar_url ?? null,
+      const bringer = bringerMap.get(r.user_id) ?? {
+        user_id: r.user_id, display_name: null, username: null, avatar_url: null,
       };
       const existing = groups.get(key);
       if (existing) {
@@ -111,7 +124,6 @@ export const listEventShowcase = createServerFn({ method: "POST" })
         groups.set(key, { ...entry, bringers: [bringer] });
       }
     }
-    // Sort by bringer count desc, then most recent (insertion order roughly preserves recency tiebreak)
     return Array.from(groups.values()).sort((a, b) => b.bringers.length - a.bringers.length);
   });
 
