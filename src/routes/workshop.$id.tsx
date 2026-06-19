@@ -22,6 +22,7 @@ import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
 import { ClaimHostPill } from "@/components/claim-host-pill";
+import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
@@ -301,7 +302,7 @@ function LiveRoomPage() {
               <ClaimHostPill
                 roomId={id}
                 viewerId={user.id}
-                unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
+                unclaimable={room?.status !== "active"}
                 claimUserId={room?.claim_user_id ?? null}
                 claimStartedAt={room?.claim_started_at ?? null}
                 claimantName={claimantName}
@@ -428,6 +429,19 @@ function LiveRoomPage() {
       />
 
       <HostFirstRunTour active={isHost && !isPromoted} />
+
+      {user && !isPromoted && (
+        <BecomeHostNudge
+          roomId={id}
+          viewerId={user.id}
+          isEligibleRoom={
+            !!room &&
+            room.status === "active" &&
+            !room.host_user_id &&
+            !room.claim_user_id
+          }
+        />
+      )}
     </main>
   );
 }
