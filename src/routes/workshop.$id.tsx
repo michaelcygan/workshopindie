@@ -146,6 +146,18 @@ function LiveRoomPage() {
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status !== "active";
+  const claimHostFn = useServerFn(startHostClaim);
+  const canClaimHost = !!user && !!room && room.status === "active" && !room.host_user_id && !isHost;
+  async function handleClaimHost() {
+    if (!room) return;
+    try {
+      await claimHostFn({ data: { roomId: id } });
+      toast("Claiming host — others have 10s to object.");
+      qc.invalidateQueries({ queryKey: ["instant-room", id] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't claim host");
+    }
+  }
 
   // If the room is ended/archived and you're not the host, bounce home.
   // Host stays so they can wrap up gracefully.
