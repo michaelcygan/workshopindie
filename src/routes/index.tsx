@@ -84,14 +84,13 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
           className="font-display mt-5 text-5xl leading-[1.05] tracking-tight text-ink md:text-7xl"
         >
-          Find people. <span className="italic text-gradient-motion">Make the thing.</span> <br className="hidden md:block" />
-          Show your Work.
+          Build your network. <span className="italic text-gradient-motion">Create together.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-5 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Walk into a live Workshop of artists. Or post a Collab and pull a Workshop together around it.
+          Drop into live Workshops with other artists and creators. Post a Collab and join a Group of makers in your area or interest.
         </motion.p>
 
         <motion.div
