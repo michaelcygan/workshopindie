@@ -69,6 +69,10 @@ type Room = {
   focus_message: string | null;
   locked: boolean;
   ended_by_user_id: string | null;
+  workshop_id: string | null;
+  claim_user_id: string | null;
+  claim_started_at: string | null;
+  claim_vetoed: boolean | null;
 };
 
 function LiveRoomPage() {
@@ -88,7 +92,7 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
