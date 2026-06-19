@@ -55,7 +55,13 @@ const PRESETS: Record<ToolType, Preset> = {
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
 };
 
-const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "pip", "outline", "board", "list", "drive", "player", "repo_links"];
+// Picker is now grouped into Realtime + Objects strips. Docs (outline), Pinboard,
+// and Repo & Demo are intentionally removed from the picker for v1 launch — folded
+// into Drive as link kinds (Google Doc / GitHub Repo). Legacy enabled rows still
+// render via presetFor() so nothing disappears for existing rooms.
+const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
+const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player", "recorder"];
+const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
