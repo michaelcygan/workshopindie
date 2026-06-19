@@ -23,19 +23,90 @@ export type HostableWorkshop = {
   starts_at: string | null;
 };
 
+const COME_ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
+
 /**
  * Lightweight presence heartbeat. Touches profiles.last_active_at for the
  * signed-in user. Called every ~60s from the root while the tab is visible.
+ *
+ * Also fires "friend came online" notifications to mutuals who opted in,
+ * but only when the user has been away for >10 minutes — so the per-minute
+ * heartbeat doesn't spam anyone.
  */
 export const pingPresence = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { userId } = context;
+
+    const { data: prev } = await supabaseAdmin
+      .from("profiles")
+      .select("last_active_at, show_online, display_name, username")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const now = new Date();
     await supabaseAdmin
       .from("profiles")
-      .update({ last_active_at: new Date().toISOString() })
+      .update({ last_active_at: now.toISOString() })
       .eq("id", userId);
-    return { ok: true };
+
+    const wasAway =
+      !prev?.last_active_at ||
+      now.getTime() - new Date(prev.last_active_at).getTime() > COME_ONLINE_THRESHOLD_MS;
+    if (!wasAway || !prev?.show_online) return { ok: true, cameOnline: false };
+
+    // Find mutuals
+    const [{ data: iFollow }, { data: followMe }] = await Promise.all([
+      supabaseAdmin.from("follows").select("followed_user_id").eq("follower_user_id", userId),
+      supabaseAdmin.from("follows").select("follower_user_id").eq("followed_user_id", userId),
+    ]);
+    const iFollowSet = new Set((iFollow ?? []).map((r) => r.followed_user_id));
+    const mutualIds = (followMe ?? [])
+      .map((r) => r.follower_user_id)
+      .filter((id) => iFollowSet.has(id));
+    if (mutualIds.length === 0) return { ok: true, cameOnline: true };
+
+    // Respect blocks both ways
+    const { data: blocks } = await supabaseAdmin
+      .from("user_blocks")
+      .select("blocker_user_id, blocked_user_id")
+      .or(
+        `and(blocker_user_id.eq.${userId},blocked_user_id.in.(${mutualIds.join(",")})),and(blocked_user_id.eq.${userId},blocker_user_id.in.(${mutualIds.join(",")}))`,
+      );
+    const blocked = new Set<string>();
+    for (const b of blocks ?? []) {
+      blocked.add(b.blocker_user_id === userId ? b.blocked_user_id : b.blocker_user_id);
+    }
+    const targets = mutualIds.filter((id) => !blocked.has(id));
+    if (targets.length === 0) return { ok: true, cameOnline: true };
+
+    // Only notify mutuals who opted in (default false)
+    const { data: prefs } = await supabaseAdmin
+      .from("notification_preferences")
+      .select("user_id, inapp_friend_online")
+      .in("user_id", targets)
+      .eq("inapp_friend_online", true);
+    const optedIn = (prefs ?? []).map((p) => p.user_id);
+    if (optedIn.length === 0) return { ok: true, cameOnline: true };
+
+    await supabaseAdmin
+      .from("notifications")
+      .insert(
+        optedIn.map((uid) => ({
+          user_id: uid,
+          kind: "friend_online",
+          actor_user_id: userId,
+          entity_type: "profile",
+          entity_id: userId,
+          payload: {
+            display_name: prev.display_name,
+            username: prev.username,
+          },
+        })),
+      )
+      .then(() => null, () => null);
+
+    return { ok: true, cameOnline: true };
   });
 
 /**
@@ -46,14 +117,20 @@ export const getFriends = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<Friend[]> => {
     const { userId } = context;
-    const [{ data: iFollow }, { data: followMe }] = await Promise.all([
+    const [{ data: iFollow }, { data: followMe }, { data: blocksMine }, { data: blocksOnMe }] = await Promise.all([
       supabaseAdmin.from("follows").select("followed_user_id").eq("follower_user_id", userId),
       supabaseAdmin.from("follows").select("follower_user_id").eq("followed_user_id", userId),
+      supabaseAdmin.from("user_blocks").select("blocked_user_id").eq("blocker_user_id", userId),
+      supabaseAdmin.from("user_blocks").select("blocker_user_id").eq("blocked_user_id", userId),
     ]);
     const iFollowSet = new Set((iFollow ?? []).map((r) => r.followed_user_id));
+    const blocked = new Set<string>([
+      ...(blocksMine ?? []).map((r) => r.blocked_user_id),
+      ...(blocksOnMe ?? []).map((r) => r.blocker_user_id),
+    ]);
     const mutualIds = (followMe ?? [])
       .map((r) => r.follower_user_id)
-      .filter((id) => iFollowSet.has(id));
+      .filter((id) => iFollowSet.has(id) && !blocked.has(id));
     if (mutualIds.length === 0) return [];
 
     const { data: rows } = await supabaseAdmin
