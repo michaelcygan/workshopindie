@@ -348,7 +348,7 @@ export const createCollabFromRoom = createServerFn({ method: "POST" })
         status: "active",
         location_type: "online",
         participant_cap: 12,
-        prompt: pitch || `Forked from a live Workshop: ${room.title}`,
+        prompt: `License: ${licenseLabel}\n\n${pitch || `Forked from a live Workshop: ${room.title}`}`,
         visibility: "public",
         source_instant_room_id: roomId,
       })
