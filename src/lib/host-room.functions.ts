@@ -154,3 +154,39 @@ export const endRoom = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/** Anyone present ≥60s: open a 10s claim window on a leaderless lounge. */
+export const startHostClaim = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("start_host_claim", { _room_id: data.roomId } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Any participant other than the claimant: veto the in-flight claim. */
+export const objectHostClaim = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("object_host_claim", { _room_id: data.roomId } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Claimant's client calls this when the 10s window ends; idempotent no-op otherwise. */
+export const finalizeHostClaim = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("finalize_host_claim", { _room_id: data.roomId } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

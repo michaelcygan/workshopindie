@@ -1755,18 +1755,21 @@ export type Database = {
       }
       instant_presence: {
         Row: {
+          first_seen_at: string
           last_seen_at: string
           room_id: string
           status: string
           user_id: string
         }
         Insert: {
+          first_seen_at?: string
           last_seen_at?: string
           room_id: string
           status?: string
           user_id: string
         }
         Update: {
+          first_seen_at?: string
           last_seen_at?: string
           room_id?: string
           status?: string
@@ -1785,6 +1788,32 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      instant_room_claim_cooldowns: {
+        Row: {
+          room_id: string
+          until: string
+          user_id: string
+        }
+        Insert: {
+          room_id: string
+          until: string
+          user_id: string
+        }
+        Update: {
+          room_id?: string
+          until?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "instant_room_claim_cooldowns_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
             referencedColumns: ["id"]
           },
         ]
@@ -1915,6 +1944,9 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["category"] | null
           city_id: string | null
+          claim_started_at: string | null
+          claim_user_id: string | null
+          claim_vetoed: boolean
           created_at: string
           creator_id: string | null
           description: string | null
@@ -1940,6 +1972,9 @@ export type Database = {
         Insert: {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
+          claim_started_at?: string | null
+          claim_user_id?: string | null
+          claim_vetoed?: boolean
           created_at?: string
           creator_id?: string | null
           description?: string | null
@@ -1965,6 +2000,9 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["category"] | null
           city_id?: string | null
+          claim_started_at?: string | null
+          claim_user_id?: string | null
+          claim_vetoed?: boolean
           created_at?: string
           creator_id?: string | null
           description?: string | null
@@ -4827,6 +4865,7 @@ export type Database = {
         Returns: boolean
       }
       contains_blocked_term: { Args: { _text: string }; Returns: string }
+      finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       get_referral_stats: {
         Args: { _user_id: string }
         Returns: {
@@ -4932,6 +4971,7 @@ export type Database = {
         }[]
       }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      object_host_claim: { Args: { _room_id: string }; Returns: undefined }
       realtime_can_access_dm: {
         Args: { _conversation_id: string }
         Returns: boolean
@@ -4954,6 +4994,7 @@ export type Database = {
       }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
       slugify: { Args: { _in: string }; Returns: string }
+      start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
         Returns: {

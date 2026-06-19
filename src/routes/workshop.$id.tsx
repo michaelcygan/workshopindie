@@ -21,6 +21,7 @@ import { HostedByLine } from "@/components/hosted-by-line";
 import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
+import { ClaimHostPill } from "@/components/claim-host-pill";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
@@ -69,6 +70,10 @@ type Room = {
   focus_message: string | null;
   locked: boolean;
   ended_by_user_id: string | null;
+  workshop_id: string | null;
+  claim_user_id: string | null;
+  claim_started_at: string | null;
+  claim_vetoed: boolean | null;
 };
 
 function LiveRoomPage() {
@@ -88,7 +93,7 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
+        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed")
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -233,6 +238,20 @@ function LiveRoomPage() {
     },
   });
 
+  const { data: claimantName = null } = useQuery({
+    queryKey: ["claim-host-name", room?.claim_user_id],
+    enabled: !!room?.claim_user_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, username")
+        .eq("id", room!.claim_user_id!)
+        .maybeSingle();
+      return (data?.display_name as string | null) ?? (data?.username as string | null) ?? null;
+    },
+  });
+
+
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
 
@@ -272,8 +291,16 @@ function LiveRoomPage() {
               <RadioTower className="h-3 w-3" /> Hosting
             </span>
           )}
-          {isLeaderless && !isPromoted && (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-ink-soft">Leaderless</span>
+          {isLeaderless && !isPromoted && user && (
+            <ClaimHostPill
+              roomId={id}
+              viewerId={user.id}
+              unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
+              claimUserId={room?.claim_user_id ?? null}
+              claimStartedAt={room?.claim_started_at ?? null}
+              claimantName={claimantName}
+              onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+            />
           )}
         </div>
 
