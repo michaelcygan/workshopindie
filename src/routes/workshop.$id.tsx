@@ -439,12 +439,24 @@ function LiveRoomPage() {
           />
         )}
 
+        composerLeading={
+          <ComposerToolButton
+            scope={{
+              kind: "instant",
+              roomId: id,
+              hostUserId: room?.host_user_id ?? null,
+              category: (room?.category as any) ?? (room?.medium as any) ?? null,
+            }}
+          />
+        }
       />
 
       <WaitingForOthersCard
         roomId={id}
         visible={!isPromoted && liveCount <= 1}
         canPingMutuals={isHost}
+        filledSeats={Math.max(1, liveCount)}
+        viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
       />
 
       <CreateCollabSheet
@@ -477,6 +489,8 @@ function LiveRoomPage() {
           roomId={id}
           visible={!!user && (isHost || isLeaderless) && liveCount >= 1}
           onCreate={() => setCollabOpen(true)}
+          onClaimHost={handleClaimHost}
+          canClaimHost={canClaimHost}
         />
       )}
     </main>
