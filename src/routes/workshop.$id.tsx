@@ -301,7 +301,7 @@ function LiveRoomPage() {
               <ClaimHostPill
                 roomId={id}
                 viewerId={user.id}
-                unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || room?.status !== "active"}
+                unclaimable={room?.status !== "active"}
                 claimUserId={room?.claim_user_id ?? null}
                 claimStartedAt={room?.claim_started_at ?? null}
                 claimantName={claimantName}
