@@ -207,13 +207,9 @@ function WorkDetail() {
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-y border-border py-4">
           <div className="flex items-center gap-3 text-sm text-ink-muted">
             <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4" /> {work.view_count} views</span>
-            {work.published_at && (
-              <span className="inline-flex items-center gap-1.5">
-                <Calendar className="h-4 w-4" /> {format(new Date(work.published_at), "MMM d, yyyy")}
-              </span>
-            )}
           </div>
           <div className="flex items-center gap-1">
+            <PinToProfileButton workId={work.id} credits={credits} />
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
             <ShareSheet
               entity={{
@@ -227,6 +223,7 @@ function WorkDetail() {
             <ReportDialog entityType="work" entityId={work.id} />
           </div>
         </div>
+
 
         {/* Social proof — Vouch + Boost */}
         <WorkSocialProof
