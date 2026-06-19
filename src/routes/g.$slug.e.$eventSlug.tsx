@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-rout
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Calendar, Users, Share2, ArrowLeft, Tag, Repeat } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Tag, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +16,8 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
+import { EventShareSheet } from "@/components/event-share-sheet";
+import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
