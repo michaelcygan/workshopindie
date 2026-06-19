@@ -6,6 +6,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { detectLinkKind } from "@/lib/drive-link-kinds";
+import { cn } from "@/lib/utils";
 
 /**
  * Polymorphic Drive panel — links only for v1. Backs onto either:
