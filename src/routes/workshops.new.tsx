@@ -16,6 +16,7 @@ import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
 import { resolveVenueAndCity } from "@/lib/venues.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkshopInGroup } from "@/lib/groups.functions";
+import { inviteFriendToWorkshop } from "@/lib/friends.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -43,8 +44,23 @@ function NewWorkshop() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/workshops/new" });
   const tagGroup = useServerFn(tagWorkshopInGroup);
+  const inviteFriend = useServerFn(inviteFriendToWorkshop);
   const preselect = usePreselectGroup(search.group);
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+
+  // Optional friend prefilled from /me/friends → "Start a Workshop"
+  const [inviteProfile, setInviteProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  useEffect(() => {
+    if (!search.inviteUserId) return;
+    let active = true;
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", search.inviteUserId)
+      .maybeSingle()
+      .then(({ data }) => { if (active) setInviteProfile(data ?? null); });
+    return () => { active = false; };
+  }, [search.inviteUserId]);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
       setSelectedGroups(preselect.data);
