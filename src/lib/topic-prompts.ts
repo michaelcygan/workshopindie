@@ -212,6 +212,40 @@ export function getPurposeSuggestions(
   }));
 }
 
+/**
+ * Deterministic, deduped pool of up to `size` purpose suggestions for a seed.
+ * Matched-medium first, then a wider mix. Used to drive the slow rotation
+ * in the empty launchpad without repeats.
+ */
+export function getPurposePool(
+  seed: string,
+  medium: Category | null | undefined,
+  size = 16,
+): PurposeSuggestion[] {
+  const matched = medium ? ROOM_PROMPTS.filter((p) => p.medium === medium) : [];
+  const matchedSet = new Set(matched);
+  const others = ROOM_PROMPTS.filter((p) => !matchedSet.has(p));
+  const ordered = [
+    ...seededShuffle(matched, `${seed}:m:${medium ?? "any"}`),
+    ...seededShuffle(others, `${seed}:o:${medium ?? "any"}`),
+  ];
+  // De-dupe by title (defensive — prompts are unique today).
+  const seen = new Set<string>();
+  const out: PurposeSuggestion[] = [];
+  for (const p of ordered) {
+    if (seen.has(p.title)) continue;
+    seen.add(p.title);
+    out.push({
+      title: p.title,
+      hint:
+        (p.medium && TOPIC_DESCRIPTIONS[p.medium]) ||
+        "Set a direction for the room.",
+    });
+    if (out.length >= size) break;
+  }
+  return out;
+}
+
 
 /**
  * Deal prompts into N rows so each row has a similar mix of "obvious" vs "wild"

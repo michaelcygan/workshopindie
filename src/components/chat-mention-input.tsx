@@ -26,6 +26,7 @@ export function ChatMentionInput({
   disabled,
   className,
   tone = "light",
+  leadingAction,
 }: {
   draft: string;
   setDraft: (s: string) => void;
@@ -36,6 +37,8 @@ export function ChatMentionInput({
   disabled?: boolean;
   className?: string;
   tone?: "light" | "dark";
+  /** Optional control rendered to the left of the textarea (e.g. "+ Tool"). */
+  leadingAction?: React.ReactNode;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [active, setActive] = useState<number>(0);
@@ -178,6 +181,7 @@ export function ChatMentionInput({
           </ul>
         </div>
       )}
+      {leadingAction && <div className="shrink-0">{leadingAction}</div>}
       <Input
         ref={inputRef}
         value={draft}

@@ -15,7 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvite } from "@/lib/collab-workshop.functions";
-import { WorkshopToolsPanel } from "@/components/workshop-tools-panel";
+import { startHostClaim } from "@/lib/host-room.functions";
+import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
@@ -145,6 +146,18 @@ function LiveRoomPage() {
   const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status !== "active";
+  const claimHostFn = useServerFn(startHostClaim);
+  const canClaimHost = !!user && !!room && room.status === "active" && !room.host_user_id && !isHost;
+  async function handleClaimHost() {
+    if (!room) return;
+    try {
+      await claimHostFn({ data: { roomId: id } });
+      toast("Claiming host — others have 10s to object.");
+      qc.invalidateQueries({ queryKey: ["instant-room", id] });
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't claim host");
+    }
+  }
 
   // If the room is ended/archived and you're not the host, bounce home.
   // Host stays so they can wrap up gracefully.
@@ -426,12 +439,24 @@ function LiveRoomPage() {
           />
         )}
 
+        composerLeading={
+          <ComposerToolButton
+            scope={{
+              kind: "instant",
+              roomId: id,
+              hostUserId: room?.host_user_id ?? null,
+              category: (room?.category as any) ?? (room?.medium as any) ?? null,
+            }}
+          />
+        }
       />
 
       <WaitingForOthersCard
         roomId={id}
         visible={!isPromoted && liveCount <= 1}
         canPingMutuals={isHost}
+        filledSeats={Math.max(1, liveCount)}
+        viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
       />
 
       <CreateCollabSheet
@@ -464,6 +489,8 @@ function LiveRoomPage() {
           roomId={id}
           visible={!!user && (isHost || isLeaderless) && liveCount >= 1}
           onCreate={() => setCollabOpen(true)}
+          onClaimHost={handleClaimHost}
+          canClaimHost={canClaimHost}
         />
       )}
     </main>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff } from "lucide-react";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +24,7 @@ import { startHostClaim, setRoomTitle } from "@/lib/host-room.functions";
 import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
-import { getPurposeSuggestions } from "@/lib/topic-prompts";
+import { getPurposeSuggestions, getPurposePool, type PurposeSuggestion } from "@/lib/topic-prompts";
 import { formatRoomTitle } from "@/lib/instant";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -84,6 +84,7 @@ export function ChannelView({
   hostUserId,
   medium,
   toolsSlot,
+  composerLeading,
 }: {
   roomId: string;
   title: string;
@@ -93,6 +94,8 @@ export function ChannelView({
   hostUserId?: string | null;
   medium?: string | null;
   toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
+  /** Optional control rendered to the left of the chat textarea (e.g. "+ Tool"). */
+  composerLeading?: React.ReactNode;
 }) {
 
 
@@ -857,6 +860,7 @@ export function ChannelView({
                 sending={sending}
                 placeholder={`Say something in ${title}…`}
                 participants={mentionCandidates}
+                leadingAction={composerLeading}
                 className="border-t border-border p-3"
               />
             </>
@@ -995,10 +999,51 @@ function EmptyLaunchpad({
   const canRename = canSignedIn && !renaming;
   const showPurpose = isGenericTitle && canRename && launchpadOn;
 
-  const suggestions = useMemo(
+  const initialPicks = useMemo(
     () => getPurposeSuggestions(roomId, (medium as any) ?? null, 4),
     [roomId, medium],
   );
+  const pool = useMemo(
+    () => getPurposePool(roomId, (medium as any) ?? null, 16),
+    [roomId, medium],
+  );
+
+  // Live, rotating 4-tile set. Replace one slot every 3–5s with a fresh prompt
+  // drawn from the pool; never repeat a prompt currently visible.
+  const [visibleTiles, setVisibleTiles] = useState<PurposeSuggestion[]>(initialPicks);
+  const [paused, setPaused] = useState(false);
+  const slotRef = useRef(0);
+
+  // Reseed when the room/medium changes.
+  useEffect(() => { setVisibleTiles(initialPicks); slotRef.current = 0; }, [initialPicks]);
+
+  useEffect(() => {
+    if (!showPurpose) return;
+    if (paused || renaming) return;
+    if (typeof window === "undefined") return;
+    if (pool.length <= 4) return;
+    const reduce = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) return;
+    let cancelled = false;
+    let timer: number | undefined;
+    function tick() {
+      if (cancelled) return;
+      setVisibleTiles((prev) => {
+        const slot = slotRef.current % 4;
+        slotRef.current = slot + 1;
+        const onScreen = new Set(prev.map((p) => p.title));
+        const candidates = pool.filter((p) => !onScreen.has(p.title));
+        if (candidates.length === 0) return prev;
+        const next = candidates[Math.floor(Math.random() * candidates.length)];
+        const updated = prev.slice();
+        updated[slot] = next;
+        return updated;
+      });
+      timer = window.setTimeout(tick, 3000 + Math.random() * 2000);
+    }
+    timer = window.setTimeout(tick, 3000 + Math.random() * 2000);
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
+  }, [showPurpose, paused, renaming, pool]);
 
   return (
     <div className="relative flex h-full items-center justify-center text-center">
@@ -1008,8 +1053,22 @@ function EmptyLaunchpad({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1, rotate: 360 }}
         transition={{ opacity: { duration: 1.2 }, rotate: { duration: 60, repeat: Infinity, ease: "linear" } }}
-        className="pointer-events-none absolute inset-0 [background:conic-gradient(from_0deg_at_50%_45%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_30%,color-mix(in_oklab,var(--violet,#7c5cff)_10%,transparent),transparent_70%,color-mix(in_oklab,var(--primary)_12%,transparent))] blur-3xl opacity-60"
+        className="pointer-events-none absolute inset-0 [background:conic-gradient(from_0deg_at_50%_45%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_30%,color-mix(in_oklab,var(--violet,#7c5cff)_10%,transparent),transparent_70%,color-mix(in_oklab,var(--primary)_12%,transparent))] blur-3xl opacity-60 motion-reduce:animate-none"
       />
+
+      {/* Quieter-starts opt-out, demoted to a small icon button in the top-right. */}
+      {launchpadOn && showPurpose && (
+        <button
+          type="button"
+          onClick={setLaunchpadOff}
+          aria-label="Hide purpose prompts (quieter starts)"
+          title="Quieter starts? Hide this prompt"
+          className="absolute right-3 top-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted/60 hover:text-ink hover:bg-muted/60 transition"
+        >
+          <EyeOff className="h-3.5 w-3.5" />
+        </button>
+      )}
+
       <div className="relative w-full max-w-2xl px-4">
         <motion.p
           initial={{ opacity: 0, y: 6 }}
@@ -1031,30 +1090,39 @@ function EmptyLaunchpad({
         </motion.p>
 
         {showPurpose && (
-          <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            {suggestions.map((s, i) => (
-              <motion.button
-                key={s.title}
-                type="button"
-                onClick={() => onRename(s.title)}
-                disabled={renaming}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 + i * 0.05, duration: 0.35 }}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.98 }}
-                className="group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm px-4 py-3 text-left transition hover:border-primary/40 hover:bg-primary/[0.04] hover:ring-1 hover:ring-primary/30 hover:shadow-soft disabled:opacity-50"
-              >
-                <span className="absolute right-3 top-3 text-ink-muted opacity-0 transition group-hover:opacity-100">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                </span>
-                <span className="block font-display text-base leading-tight text-ink">
-                  {s.title}
-                </span>
-                <span className="mt-0.5 block text-[11px] text-ink-muted">
-                  {s.hint}
-                </span>
-              </motion.button>
+          <div
+            className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            {visibleTiles.map((s, i) => (
+              <div key={`slot-${i}`} className="relative min-h-[78px]">
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.button
+                    key={s.title}
+                    type="button"
+                    onClick={() => onRename(s.title)}
+                    disabled={renaming}
+                    initial={{ opacity: 0, y: 4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.22, ease: "easeOut" }}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    className="group absolute inset-0 overflow-hidden rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm px-4 py-3 text-left transition hover:border-primary/40 hover:bg-primary/[0.04] hover:ring-1 hover:ring-primary/30 hover:shadow-soft disabled:opacity-50"
+                  >
+                    <span className="absolute right-3 top-3 text-ink-muted opacity-0 transition group-hover:opacity-100">
+                      <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    </span>
+                    <span className="block font-display text-base leading-tight text-ink">
+                      {s.title}
+                    </span>
+                    <span className="mt-0.5 block text-[11px] text-ink-muted">
+                      {s.hint}
+                    </span>
+                  </motion.button>
+                </AnimatePresence>
+              </div>
             ))}
           </div>
         )}
@@ -1101,24 +1169,6 @@ function EmptyLaunchpad({
             <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
           </button>
         </motion.div>
-
-        {!hostUserId && presenceCount <= 1 && (
-          <p className="mt-3 text-[11px] text-ink-muted/80">
-            No one's hosting yet — anyone here for 60s can claim it.
-          </p>
-        )}
-
-        {launchpadOn && showPurpose && (
-          <div className="mt-3">
-            <button
-              type="button"
-              onClick={setLaunchpadOff}
-              className="text-[11px] text-ink-muted/70 hover:text-ink underline-offset-2 hover:underline transition"
-            >
-              Quieter starts? Hide this prompt
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
