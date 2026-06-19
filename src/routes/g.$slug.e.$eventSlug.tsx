@@ -95,6 +95,7 @@ type EventRow = {
   maybe_count: number;
   waitlist_count: number;
   series_key: string | null;
+  short_code: string | null;
   created_by: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
@@ -151,15 +152,10 @@ function EventPage() {
 
   const going = (attendees ?? []).filter((a) => a.status === "going");
 
-  function share() {
-    const url = `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`;
-    if (navigator.share) {
-      navigator.share({ title: ev.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied");
-    }
-  }
+  const canonicalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
+    : `/g/${ev.group.slug}/e/${ev.slug}`;
+  const canBring = myRsvp?.status === "going" || myRsvp?.status === "maybe";
 
   return (
     <main className="pb-20">
@@ -231,9 +227,12 @@ function EventPage() {
             </Link>
             <div className="flex items-center gap-1">
               <ReportDialog entityType="group_event" entityId={ev.id} />
-              <Button variant="ghost" size="sm" onClick={share} className="rounded-full">
-                <Share2 className="mr-1 h-4 w-4" /> Share
-              </Button>
+              <EventShareSheet
+                shortCode={ev.short_code}
+                eventTitle={ev.title}
+                startsAt={ev.starts_at}
+                canonicalUrl={canonicalUrl}
+              />
             </div>
           </div>
         </div>
