@@ -170,7 +170,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const evTitle = (n.payload?.event_title as string) || "the event";
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
-      return { title: `How was ${evTitle}?`, subtitle: "Drop a thought on the wall.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/" };
+      return { title: `See what everyone brought to ${evTitle}`, subtitle: "Collabs and works from the night.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/" };
     }
     case "event_new_in_my_group": {
       const evTitle = (n.payload?.event_title as string) || "A new event";
