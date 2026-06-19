@@ -26,6 +26,8 @@ function MyFriendsPage() {
     queryKey: ["my-friends"],
     queryFn: () => getFriendsFn(),
     enabled: !!user,
+    refetchInterval: 30_000,
+    refetchOnWindowFocus: true,
   });
   const [invitee, setInvitee] = useState<{ id: string; displayName: string | null; username: string | null } | null>(null);
 

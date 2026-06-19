@@ -16,12 +16,16 @@ import { VenueSearch, type SelectedVenue } from "@/components/venue-search";
 import { resolveVenueAndCity } from "@/lib/venues.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkshopInGroup } from "@/lib/groups.functions";
+import { inviteFriendToWorkshop } from "@/lib/friends.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/workshops/new")({
   component: NewWorkshop,
-  validateSearch: z.object({ group: z.string().optional() }),
+  validateSearch: z.object({
+    group: z.string().optional(),
+    inviteUserId: z.string().uuid().optional(),
+  }),
 });
 
 type LocationType = "online" | "in_person" | "hybrid";
@@ -40,8 +44,23 @@ function NewWorkshop() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/workshops/new" });
   const tagGroup = useServerFn(tagWorkshopInGroup);
+  const inviteFriend = useServerFn(inviteFriendToWorkshop);
   const preselect = usePreselectGroup(search.group);
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
+
+  // Optional friend prefilled from /me/friends → "Start a Workshop"
+  const [inviteProfile, setInviteProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  useEffect(() => {
+    if (!search.inviteUserId) return;
+    let active = true;
+    supabase
+      .from("profiles")
+      .select("display_name, username")
+      .eq("id", search.inviteUserId)
+      .maybeSingle()
+      .then(({ data }) => { if (active) setInviteProfile(data ?? null); });
+    return () => { active = false; };
+  }, [search.inviteUserId]);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
       setSelectedGroups(preselect.data);
@@ -205,6 +224,16 @@ function NewWorkshop() {
       });
     }
 
+    // Auto-invite the prefilled friend, if any. Best-effort — failure
+    // shouldn't block the schedule confirmation.
+    if (search.inviteUserId) {
+      try {
+        await inviteFriend({ data: { workshopId: ws.id, inviteeId: search.inviteUserId } });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Scheduled, but couldn't send the invite.");
+      }
+    }
+
     setSubmitting(false);
     toast.success("Workshop scheduled");
     navigate({ to: "/workshops/$slug", params: { slug: ws.slug } });
@@ -215,6 +244,11 @@ function NewWorkshop() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Schedule a Workshop</h1>
         <p className="mt-1 text-ink-muted">A Workshop with a start time. People RSVP. They show up.</p>
+        {search.inviteUserId && (
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-ink">
+            We'll invite <span className="font-medium">{inviteProfile?.display_name ?? inviteProfile?.username ?? "your friend"}</span> as soon as this Workshop is scheduled.
+          </div>
+        )}
       </motion.div>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-7">

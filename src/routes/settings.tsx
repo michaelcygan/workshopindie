@@ -773,6 +773,7 @@ const NOTIF_GROUPS: { key: string; label: string; description: string; email: No
   { key: "workshop", label: "Workshop updates", description: "Check-in reminders, status changes, and host announcements.", email: "email_workshop_updates", inapp: "inapp_workshop_updates" },
   { key: "follows", label: "New followers", description: "When someone follows your profile.", email: "email_follows", inapp: "inapp_follows" },
   { key: "credits", label: "Credit requests", description: "When someone credits you on a work, or asks you to confirm one.", email: "email_credits", inapp: "inapp_credits" },
+  { key: "friend_online", label: "Friend comes online", description: "When a mutual follow becomes active after being away. Off by default — turn on if you want to know.", email: "email_friend_online", inapp: "inapp_friend_online" },
 ];
 
 function NotificationsSection() {
