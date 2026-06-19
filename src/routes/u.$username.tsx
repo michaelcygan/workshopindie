@@ -242,11 +242,17 @@ function ProfilePage() {
     queryFn: () => fetchOpenCollabs(profile!.id),
     enabled: !!profile?.id,
   });
+  const { data: pinnedWorks } = useQuery({
+    queryKey: ["profile-pinned", profile?.id],
+    queryFn: () => fetchPinnedWorks(profile!.id),
+    enabled: !!profile?.id,
+  });
   const { data: workshops } = useQuery({
     queryKey: ["profile-workshops", profile?.id],
     queryFn: () => fetchWorkshops(profile!.id),
     enabled: !!profile?.id,
   });
+
 
   // Owner-only data (drafts, applied + participating workshops, closed-collab nudges)
   const isOwnEarly = !!user && !!profile && user.id === profile.id;
