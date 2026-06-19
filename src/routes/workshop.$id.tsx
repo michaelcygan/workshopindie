@@ -278,15 +278,28 @@ function LiveRoomPage() {
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="min-w-0">
-          <Link to="/workshop" className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink">
+          <Link to="/workshop" className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden">
             <ArrowLeft className="h-3 w-3" /> Workshop
           </Link>
-          <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
-            <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
-              <Coffee className="h-3.5 w-3.5" />
-            </span>
-            <span className="truncate">{title}</span>
-          </h1>
+          {/* Hide the redundant fallback "Workshop" title on desktop — top nav already shows it.
+              When the room has a custom name (after a purpose pick), the title stays. */}
+          {(() => {
+            const MediumIcon = mediumIcon(room?.medium ?? room?.category ?? null);
+            const isFallback = title === FALLBACK_TITLE;
+            return (
+              <h1
+                className={
+                  "mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl" +
+                  (isFallback ? " md:hidden" : "")
+                }
+              >
+                <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
+                  <MediumIcon className="h-3.5 w-3.5" />
+                </span>
+                <span className="truncate">{title}</span>
+              </h1>
+            );
+          })()}
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted">
             <span className="inline-flex items-center gap-1">
               <span className="relative inline-flex h-1.5 w-1.5">
