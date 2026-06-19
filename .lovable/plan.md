@@ -1,60 +1,104 @@
-# Plan
 
-## 1. "Become host" entry point that is always available
+# Event page as the activity engine — v1
 
-The claim-host flow today is only surfaced in narrow states (the launchpad CTA, the room-note banner when leaderless). Add an always-on entry point next to "Create a Collab".
+The event is the only place on Workshop where intent (RSVP), identity (who's coming), and output (collabs + works) collide. Re-cast the page so RSVP changes framing and depth, but never gates work the creator chose to publish to the open web. Add one well-timed in-app nudge before and one after. Give every event a short URL + QR so it survives outside the app.
 
-- `src/components/create-collab-nudge.tsx`: add optional props `onClaimHost?: () => void` and `canClaimHost?: boolean`. When `canClaimHost`, render a secondary "Become host" pill beside "Create a Collab". The standalone host pill shows ~20s after entering a leaderless room (independent of the 2-min Collab timer) so the flow is always reachable. Dismissal stored as `cc-host:{roomId}` in localStorage.
-- `src/routes/workshop.$id.tsx`: at the existing `<CreateCollabNudge>` mount, pass `onClaimHost` (existing handler used by `EmptyLaunchpad`) and `canClaimHost = !room.host_user_id && !!session.userId && !isHost`.
+v1 simplicity: no emails, no new privacy flags, no recap view.
 
-## 2. Add the "+" tool picker to the chat composer (open flow)
+## 1. RSVP-aware event page (open-web first)
 
-The "+ Tool" affordance currently lives only inside `WorkshopToolsPanel`. Put the same entry point on the chat composer so users can attach a tool without leaving chat — present in the empty/open flow too.
+Default principle: **public works stay public.** A work's visibility is whatever the creator already set — the event page surfaces what's public to logged-out visitors and adds attendee context on top for RSVPs. No new "attendees only" flag.
 
-- `src/components/chat-mention-input.tsx`: add an optional `leadingAction?: ReactNode` slot rendered inside the input row (left of the textarea). Keep it presentation-only.
-- New small subcomponent `ComposerToolButton` co-located in `workshop-tools-panel.tsx` (exported) — a 28×28 ghost pill with `<Plus />` that opens the same tools menu used by `AddToolMenu`. Reuses `TOOL_ORDER`/`PRESETS` so behavior is identical.
-- `src/components/channel-view.tsx`: pass `<ComposerToolButton enabled={enabledTools} onAdd={addTool} />` as `leadingAction` on `ChatMentionInput`. Source `enabledTools`/`addTool` from the same props/handlers the parent already feeds to `WorkshopToolsPanel` (lift via new props on `ChannelView` if not already threaded; `workshop.$id.tsx` already owns both).
-- Visible in every state, including the empty launchpad composer in the screenshot.
+One header strip mirrors the viewer's state. No separate RSVP card on desktop until they engage.
 
-## 3. Rotate the 4 purpose tiles every 3–5s in a random sequential pattern
+```text
+┌─────────────────────────────────────────────────────────┐
+│ [cover]  Title · Fri 7pm · Venue          [RSVP ▾] [⋯] │
+│         Hosted by @anna · 12 going · 3 maybe            │
+└─────────────────────────────────────────────────────────┘
+```
 
-- `src/lib/topic-prompts.ts`: add `getPurposePool(seed, medium, size = 16)` returning a deterministic deduped pool (matched-medium first, then mix), so the rotation has fresh candidates without ever repeating one currently on screen.
-- `src/components/channel-view.tsx` (`EmptyLaunchpad`):
-  - Hold `visible: PurposeSuggestion[]` (length 4, seeded initial pick) plus a `pool` from `getPurposePool`.
-  - Interval that randomizes between 3000–5000 ms; each tick replaces exactly one tile, cycling the slot index 0→1→2→3→0 (sequential slot, random new prompt drawn from unused pool).
-  - Animate with `framer-motion` `AnimatePresence mode="popLayout"` keyed by `s.title` (220ms fade + 4px slide).
-  - Pause rotation while `renaming` is true or the tile grid is hovered. Disable entirely under `prefers-reduced-motion`.
+State drives the body:
 
-## 4. Redesign the "share to fill the room" card
+- **Logged out / no RSVP** → Full "What people are bringing" rail of attendees' **public** works + open collabs, fully visible and crawlable. Soft CTA: "RSVP to see who else is coming and follow along live." No blur, no paywall.
+- **Going / Maybe** → "Your night" panel pinned to top: 3 attendees you don't follow yet + their open collab or freshest public work, "Add to calendar", "Get the link" (short URL + QR), "Bring a +1". Below: the same grid, defaulted to **by-person**, with the in-context "Bring this Friday" / "I'm in" affordances enabled.
+- **Declined / waitlist** → quiet view + "We'll text you if a spot opens".
 
-`src/components/waiting-for-others-card.tsx`:
+Implementation:
+- Promote `EventRsvpBlock` into a compact header pill.
+- `g.$slug.e.$eventSlug.tsx` branches on `myRsvp?.status`.
+- Server fns `listEventAttendeeCollabs` / `listEventAttendeeWorks` always filter by each row's existing visibility (public-only for the open-web caller; same plus the viewer's own private/limited items when authed). No new visibility column.
 
-- Visuals: replace dashed pale border with `border-border/60 + bg-surface/80 backdrop-blur + shadow-lift` (matches the 2027 surfaces). Inline the live red dot beside the title (not floating).
-- Seat-row visual: 5 small circles directly under the title — first as viewer's avatar/initials, rest as faint dotted placeholders — to literally show "1 of 5 filled". Adds new optional props `filledSeats?: number` (default 1) and `viewerInitials?: string`; parent in `workshop.$id.tsx` passes presence count and the viewer's initials.
-- Copy: title "You're first in — invite a few people"; subtitle "Up to 5 seats. Mutuals who follow you back will see this in Live now."
-- Actions: primary filled "Copy link"; secondary outline "Ping mutuals" (only when `canPingMutuals`); new tertiary text-link "Share to X" / "Bluesky" opening prefilled web-intent URLs (`window.open`, no server work).
-- Inline Tooltip on a small "?" replaces the long subtitle once seats visual is present.
-- Motion: stagger seat dots in on mount (60ms each); pulse the first dot once when a new presence joins. Auto-fade when `filledSeats >= 2` (parent already toggles `visible`; keep that contract, just animate out cleanly).
+## 2. Make collabs/works actionable from the event
 
-## 5. Small polish in the same pass
+Today cards are read-only. Add two inline affordances on each card *in the event context only*, visible to signed-in RSVPs:
 
-- Drop the now-duplicate "No one's hosting yet — anyone here for 60s can claim it." line from the bottom of `EmptyLaunchpad`; the persistent "Become host" pill (Section 1) and `RoomNoteBanner` cover it.
-- Demote "Quieter starts? Hide this prompt" to a single small eye-off icon-button in the top-right of the launchpad area so it stops competing visually with the purpose tiles.
-- All new motion (aurora, tile swap, seat-dot stagger) respects `prefers-reduced-motion`.
-- Mobile: share a single fixed bottom-right container with `gap-2` so the new "Become host" pill stacks cleanly above the Collab nudge without overlap.
+- On an **open collab card** owned by an attendee → "I'm in for this Friday" quick-apply, pre-filled with "Met at {event title}".
+- On a **work card** → "Bring this Friday" → adds it to the attendee's `event_showcase` list, which renders as a tiny "Bringing tonight" strip on the event page once ≥1 person opts in.
 
-## Files
+**Showcase chip dedup = social signal.** If multiple people Bring the same work, render **one chip with stacked avatars** (first 3, then "+N"). The chip becomes a real signal about the event itself: people here know each other's work, and conversations will happen because of it. Hovering / tapping a stack expands to the full list of bringers and acts as a soft intro vector ("3 people are bringing this — say hi").
 
-- Edit `src/components/create-collab-nudge.tsx`
-- Edit `src/components/chat-mention-input.tsx` (new `leadingAction` prop)
-- Edit `src/components/workshop-tools-panel.tsx` (export `ComposerToolButton`)
-- Edit `src/components/channel-view.tsx` (`EmptyLaunchpad` rotation + composer button wiring + small polish)
-- Edit `src/lib/topic-prompts.ts` (`getPurposePool`)
-- Edit `src/components/waiting-for-others-card.tsx` (redesign + seat row)
-- Edit `src/routes/workshop.$id.tsx` (pass new props)
+For logged-out viewers the card stays the regular open-web card with no extra chrome, and stacked-avatar chips stay visible — they're public social proof of the event.
 
-## Out of scope
+New table: `event_showcase_items (event_id, user_id, work_id | collab_id, note, created_at)`. RLS: INSERT by attendee with going/maybe RSVP; SELECT by anyone (visibility ultimately enforced by the joined work/collab row). GRANTs: SELECT to `anon` + `authenticated`, INSERT/DELETE to `authenticated`, ALL to `service_role`.
 
-- No DB or server-function changes.
-- No changes to the claim-host RPC or the Create-Collab flow itself — only new entry points to existing flows.
-- No new prompt copy added — reuses existing `ROOM_PROMPTS`.
+## 3. Notifications — two in-app pings, no email
+
+In-app only. No email templates, no email infra changes.
+
+1. **T-24h "Who you'll see"** — for every `going` RSVP: notification linking to the event page, copy mentions 2–3 attendees you don't already follow.
+2. **T+2h "See what everyone brought"** — single post-event notification linking back to the event page, where the attendee collabs + works grid is now the primary view. No new recap UI — the event page itself is the recap.
+
+Implementation:
+- Extend `notifications.kind` with `event_pre_24h` and `event_post_2h`.
+- New cron route `src/routes/api/public/events.digest.ts` (mirrors `events.sweep.ts`), runs every 15 min, idempotent per `(user_id, event_id, kind)` so a row is never inserted twice.
+- Respect existing `notification_preferences`; no new pref keys for v1.
+
+## 4. One short URL + QR per event
+
+- New short route `src/routes/e.$code.tsx` → resolves a 6-char base32 code and server-redirects to `/g/$slug/e/$eventSlug` (canonical URL preserved for SEO).
+- Code stored as `group_events.short_code text unique`, generated on insert via trigger.
+- Final URL: `workshopindie.com/e/AB12CD` — short enough for QR v2 at high error correction, prints crisp at 1".
+- QR generation: client-side via `qrcode` (~6KB), rendered into a downloadable PNG/SVG inside a "Get the link" sheet alongside copy-link.
+- Same code keeps resolving after the event, so flyers and QR codes remain useful as "what happened" pointers.
+- Because public works are visible to logged-out visitors, a printed QR works as expected: scan → see the event + what people are bringing, no account required.
+
+## 5. Other places this flow could live (deferred)
+
+Not in v1, listed so we don't forget:
+
+- Group page "Coming up" strip mirroring the event header.
+- Workshop room ended state: "Share to the group's next event" CTA.
+- DM header chip: "You're both going to {event}".
+
+## 6. 2027 simplicity moves
+
+- **One control, many states.** The RSVP button is the page's only fixed chrome; everything below recomposes around it.
+- **Inline social proof, no badges.** Status pills replaced by a single live avatar row that animates a new face in on RSVP via `framer-motion layoutId`. Showcase chips use the same stacked-avatar primitive — one component, two contexts.
+- **Public-by-default everywhere.** No blur, no "sign up to see" walls over content the creator opened to the web. Sign-in CTAs sit *next to* content, not *over* it.
+- **Print-native.** Short link + QR + a single-line caption ("Workshop · Fri 7pm · workshopindie.com/e/AB12CD") render as a downloadable 1080×1080 share card and a print-ready 4×6 PDF — generated client-side from the same data.
+
+## Technical surface
+
+- **DB migrations:**
+  - `group_events.short_code text unique` + before-insert trigger that fills it with a 6-char base32 code (retries on collision).
+  - `event_showcase_items` table + RLS + GRANTs per public-schema rules.
+- **Server fns:**
+  - `getEventByShortCode` (public read via server publishable client; only safe columns).
+  - `listEventAttendeeCollabs` / `listEventAttendeeWorks` extended to always filter by the underlying row's visibility; no new flag.
+  - `addShowcaseItem`, `removeShowcaseItem`, `listShowcaseItems` (auth, RSVP-checked). `listShowcaseItems` returns rows grouped by `work_id`/`collab_id` with an aggregated `bringers: [{user_id, avatar_url, display_name}]` array so the client renders the stacked-avatar chip directly.
+  - `listSuggestedAttendeesForViewer` (auth) for the "Your night" panel.
+- **Routes:**
+  - `src/routes/e.$code.tsx` (resolves + 308s to canonical URL).
+  - `src/routes/api/public/events.digest.ts` (15-min cron, idempotent inserts into `notifications`).
+- **Components:**
+  - `EventHeaderRsvpStrip`, `EventYourNightPanel`, `EventShareSheet` (QR + copy + print), `EventBringChip` on `WorkCard`/`CollabCard` when `eventContext` prop is set.
+  - `StackedBringersChip` — single primitive used for the showcase chip; reused for the live attendee avatar row.
+- **No edits** to `src/integrations/supabase/*`. No email templates. No new privacy column.
+
+## Suggested build order
+
+1. Short code + `/e/$code` route + QR/share sheet.
+2. Public-first event page layout (logged-out + RSVP'd branches; attendee-work fns honor existing visibility).
+3. `event_showcase_items` + inline "Bring this" / "I'm in" affordances + `StackedBringersChip`.
+4. Notifications cron + two in-app kinds.
