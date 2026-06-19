@@ -738,56 +738,56 @@ export function ChannelView({
               {roomId && <RoomNoteBanner roomId={roomId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
-                  <div className="relative flex h-full items-center justify-center text-center">
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 [background:radial-gradient(60%_55%_at_50%_45%,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_70%)]"
-                    />
-                    <div className="relative">
-                      <p className="font-display text-xl text-ink">Quiet in {title}.</p>
-                      <p className="mt-1 text-sm text-ink-muted">
-                        Be the first to say hi. Messages vanish after 24h.
-                      </p>
-                      <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-                        {[
-                          "Say hi 👋",
-                          "Drop a link",
-                          "What's everyone working on?",
-                        ].map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => setDraft(s)}
-                            className="rounded-full border border-border/70 bg-surface px-2.5 py-1 text-[11px] text-ink-soft hover:border-border-strong hover:text-ink hover:shadow-soft transition"
-                          >
-                            {s}
-                          </button>
-                        ))}
-                        {!hostUserId && user && (
-                          <button
-                            type="button"
-                            onClick={async () => {
+                  <EmptyLaunchpad
+                    title={title}
+                    medium={medium ?? null}
+                    roomId={roomId}
+                    hostUserId={hostUserId ?? null}
+                    canSignedIn={!!user}
+                    presenceCount={presence.length}
+                    renaming={renaming}
+                    onSetDraft={setDraft}
+                    onClaimHost={async () => {
+                      try {
+                        await claimHost({ data: { roomId } });
+                        toast("Claiming host — others have 10s to object.");
+                      } catch (e: any) {
+                        toast.error(e?.message ?? "Couldn't claim");
+                      }
+                    }}
+                    onRename={async (newTitle) => {
+                      const prev = title;
+                      setRenaming(true);
+                      try {
+                        await renameRoom({ data: { roomId, title: newTitle } });
+                        qc.invalidateQueries({ queryKey: ["instant-room", roomId] });
+                        toast.success(`Renamed to "${newTitle}"`, {
+                          action: {
+                            label: "Undo",
+                            onClick: async () => {
                               try {
-                                await claimHost({ data: { roomId } });
-                                toast("Claiming host — others have 10s to object.");
+                                await renameRoom({ data: { roomId, title: prev } });
+                                qc.invalidateQueries({ queryKey: ["instant-room", roomId] });
                               } catch (e: any) {
-                                toast.error(e?.message ?? "Couldn't claim");
+                                toast.error(e?.message ?? "Couldn't undo");
                               }
-                            }}
-                            className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
-                          >
-                            ✨ Claim Host &amp; set a direction
-                          </button>
-                        )}
-                      </div>
-                      {!hostUserId && presence.length <= 1 && (
-                        <p className="mt-3 text-[11px] text-ink-muted/80">
-                          No one's hosting yet — anyone here for 60s can claim it.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                            },
+                          },
+                          duration: 5000,
+                        });
+                      } catch (e: any) {
+                        toast.error(e?.message ?? "Couldn't rename");
+                      } finally {
+                        setRenaming(false);
+                      }
+                    }}
+                    onLeaveForLobby={() => {
+                      media.leave();
+                      router.navigate({ to: "/workshop" });
+                    }}
+                  />
                 ) : (
+
                   <ul className="space-y-3">
                     <AnimatePresence initial={false}>
                       {messages.map((m) => {
