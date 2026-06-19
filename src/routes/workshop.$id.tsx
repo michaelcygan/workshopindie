@@ -22,6 +22,7 @@ import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
 import { ClaimHostPill } from "@/components/claim-host-pill";
+import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
