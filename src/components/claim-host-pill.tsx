@@ -164,9 +164,9 @@ export function ClaimHostPill({
           onChanged?.();
         }
       }}
-      className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] font-medium text-ink hover:shadow-soft transition"
+      className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
     >
-      <Crown className="h-3 w-3" /> No Host · Claim
+      <Crown className="h-3 w-3" /> Claim Host
     </button>
   );
 }
