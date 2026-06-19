@@ -459,6 +459,13 @@ function LiveRoomPage() {
           }
         />
       )}
+      {!isPromoted && (
+        <CreateCollabNudge
+          roomId={id}
+          visible={!!user && (isHost || isLeaderless) && liveCount >= 1}
+          onCreate={() => setCollabOpen(true)}
+        />
+      )}
     </main>
   );
 }
