@@ -725,12 +725,32 @@ export function ChannelView({
               {roomId && <RoomNoteBanner roomId={roomId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-center">
-                    <div>
+                  <div className="relative flex h-full items-center justify-center text-center">
+                    <div
+                      aria-hidden
+                      className="pointer-events-none absolute inset-0 [background:radial-gradient(60%_55%_at_50%_45%,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_70%)]"
+                    />
+                    <div className="relative">
                       <p className="font-display text-xl text-ink">Quiet in {title}.</p>
                       <p className="mt-1 text-sm text-ink-muted">
                         Be the first to say hi. Messages vanish after 24h.
                       </p>
+                      <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+                        {[
+                          "Say hi 👋",
+                          "Drop a link",
+                          "What's everyone on?",
+                        ].map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setDraft(s)}
+                            className="rounded-full border border-border/70 bg-surface px-2.5 py-1 text-[11px] text-ink-soft hover:border-border-strong hover:text-ink hover:shadow-soft transition"
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 ) : (
