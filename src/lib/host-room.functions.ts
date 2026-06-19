@@ -162,8 +162,7 @@ export const startHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.rpc("start_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("start_host_claim", { _room_id: data.roomId } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -175,8 +174,7 @@ export const objectHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.rpc("object_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("object_host_claim", { _room_id: data.roomId } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -188,8 +186,7 @@ export const finalizeHostClaim = createServerFn({ method: "POST" })
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.rpc("finalize_host_claim", { _room_id: data.roomId } as any);
+    const { error } = await context.supabase.rpc("finalize_host_claim", { _room_id: data.roomId } as any);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
