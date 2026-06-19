@@ -1,46 +1,73 @@
-# Friends + Online Presence (v1)
+## Goal
 
-A low-key sticky-loop feature: a "Friends" list of mutual follows with an online dot, used to invite people into Workshops — both as a "start a Workshop with…" entry point and as an in-Workshop "invite mutuals who are online".
+On every event page (`/g/$slug/e/$eventSlug`), publicly surface what the RSVP'd attendees are currently working on — their open **Collabs** and recent **Works** — so visitors (logged-out included) can scan the room before they arrive, prep questions, and apply to collab in advance. The section stays on the page during the event as a live conversation guide.
 
-## Scope (build)
+## UX
 
-### 1. Mutual-follow friends list
-- New helper `getFriends()` in `src/lib/network.functions.ts` (auth'd server fn). Returns mutuals: users where `follows(a→b)` AND `follows(b→a)` exist for `auth.uid()`. Hydrates profile (name, username, avatar, headline) + `online` boolean + `last_active_at`.
-- New route `src/routes/me.friends.tsx` (under `_authenticated`): simple list, online dot, "Invite to Workshop" button per row, empty state ("Follow people back to build your friends list").
-- Surface entry: small "Friends" link in the existing `me.*` nav / profile menu. Not promoted to primary nav.
+New section on the event page, placed **below "Who's going"** and above the comments/wall:
 
-### 2. Global online signal
-- Add `profiles.last_active_at timestamptz` (migration).
-- Lightweight heartbeat: a `pingPresence()` server fn called every 60s from `__root.tsx` while a session exists (visibility-aware: pause when tab hidden).
-- "Online" = `last_active_at > now() - 2 minutes`. Reuse for the friends list and for any future "online" badges.
-- Privacy: a `profiles.show_online` boolean (default true) with a toggle in `settings.tsx`. When false, `getFriends` returns `online: false` for that user and skips the dot.
+```text
+At this event — what people are working on
+[ Open collabs (12) ] [ Recent work (18) ]
+─────────────────────────────────────────
+<grid of CollabCard / WorkCard, each with a small "— @username going" footer chip>
+```
 
-### 3. "Start a Workshop with…" invite from friends list
-- Each friend row has an "Invite to Workshop" button → opens a small picker of the current user's active/upcoming Workshops they host (reuses existing host query). Pick one → inserts into `workshop_join_invites` (already exists) and fires the existing notification path.
-- If the user has no hostable Workshop, button becomes "Start a Workshop" → routes to `/workshops/new` with the invitee id in search params; on create, auto-issue the invite.
+- Two-tab toggle (Collabs default).
+- Cards re-use existing `CollabCard` / `WorkCard` — adds one footer line linking to the attendee's profile + an "RSVP'd: Going / Maybe" pill.
+- 12 per tab, "See all (N)" expands to 48.
+- Empty state: "No one's shared what they're working on yet. [Share a collab →]" (CTA only when signed-in + going).
+- Visible to logged-out users (public read). No auth gate.
+- Honors `profiles.event_visibility` — attendees set to `hidden` are excluded; `group_only` shows only when the viewer is a member of the host group (server-side check).
+- Respects collab/work visibility — only `public` (and not deleted/closed) items appear in the public-client query.
 
-### 4. In-Workshop "Invite mutuals" panel
-- Inside `src/routes/workshop.$slug.tsx` host controls, add an "Invite friends" section: list of mutual follows sorted online-first, with a one-tap invite button per row that writes to `workshop_join_invites` (with `source_room_id` if invoked from a lobby room).
-- Filter out users already invited / participants. Show a subtle "Online now" cluster at the top.
+## Server functions (in `src/lib/group-events.functions.ts`)
 
-## Out of scope (deferred)
+Two new public server fns using `publicClient()`:
 
-- Friend requests / acceptances (we're piggy-backing on mutual follows; no new relationship type).
-- DM / chat threads between friends.
-- Push or email notifications for "friend just came online" — only the existing workshop-invite notification fires.
-- Group invite flows (Workshops only for v1).
-- Per-friend muting or blocking beyond the existing `user_blocks` table.
+1. `listEventAttendeeCollabs({ event_id, limit?, viewer_group_member? })`
+   - Get user_ids from `group_event_rsvps` where status in (going, maybe) and joined `profiles.event_visibility != 'hidden'` (+ `group_only` filter as above).
+   - Query `collab_posts` where `created_by in (...)`, `visibility = 'public'`, `status` in (open/active), not deleted, order by `featured_at desc nulls last, created_at desc`, limit.
+   - Return rows shaped for `CollabCard` + `{ rsvp_user_id, rsvp_status, attendee: { username, display_name, avatar_url } }`.
 
-## Technical notes
+2. `listEventAttendeeWorks({ event_id, limit? })`
+   - Same attendee scoping. Query `works` (public, not deleted), order by `created_at desc`, limit.
+   - Return rows shaped for `WorkCard` + attendee footer fields.
 
-- Migration: `ALTER TABLE profiles ADD COLUMN last_active_at timestamptz, ADD COLUMN show_online boolean NOT NULL DEFAULT true;` + index on `last_active_at`. No new tables, no new RLS surface — `profiles` already has public-read for these safe columns.
-- `pingPresence` writes `last_active_at = now()` for `auth.uid()` only; cheap UPDATE, no upsert needed.
-- `getFriends` does one query for mutuals (self-join on `follows`) then one `profiles` hydrate; capped at 200 friends for v1, sorted online-first then by display name.
-- Workshop invite insert reuses `workshop_join_invites` unique `(workshop_id, invitee_user_id)` constraint — duplicate clicks are no-ops.
-- No realtime subscription on presence in v1: page-load freshness is fine. Workshop panel can poll every 30s while open.
+Both cap attendee set to first 500 to stay cheap, and cap output (default 12, max 48). Counts returned alongside rows for the tab badges.
 
-## Files touched
+The viewer-is-group-member determination for `group_only` profiles is done server-side: if a bearer token is attached, also check `group_members` membership; otherwise treat as non-member (safe default).
 
-- new: `src/routes/me.friends.tsx`, `src/components/friend-row.tsx`, `src/components/invite-to-workshop-dialog.tsx`
-- edited: `src/lib/network.functions.ts` (getFriends, pingPresence, inviteFriendToWorkshop), `src/routes/__root.tsx` (heartbeat), `src/routes/settings.tsx` (show_online toggle), `src/routes/workshop.$slug.tsx` (Invite friends panel), `src/components/app-nav` or profile menu (Friends link)
-- migration: add `profiles.last_active_at`, `profiles.show_online`
+## Client wiring
+
+New component `src/components/event-attendee-work.tsx`:
+- Two `useQuery` calls (collabs + works), `staleTime: 60_000`.
+- Tab switcher, "See all" expand, empty state.
+- Reuses `CollabCard` / `WorkCard` with an extra `footerSlot` prop (or wrapper div) for the attendee chip — small, non-invasive change.
+
+Mount inside `src/routes/g.$slug.e.$eventSlug.tsx` directly after the "Who's going" block. No loader changes (queries run client-side; SEO impact minimal, and counts aren't critical for OG).
+
+## Privacy & data hygiene
+
+- Reuses existing `profiles.event_visibility` (already in schema) — no new column.
+- No new tables, no migration.
+- `collab_posts` / `works` public SELECT policies already cover anon reads of public rows (same policies used on home & city pages). If the linter flags a gap during build, add narrow `TO anon` SELECT (public, not deleted) — but expected to already exist.
+- Attendee user_ids are never exposed beyond what `listAttendees` already returns.
+
+## Out of scope (v1)
+
+- "Ask a question to this attendee at the event" inline DM CTA (defer; existing collab-apply + profile DM already cover the path).
+- Realtime updates when new RSVPs happen (60s staleTime is enough).
+- Filtering by tag/role within the section (can add if engagement warrants).
+
+## Files
+
+**Edit**
+- `src/lib/group-events.functions.ts` — add `listEventAttendeeCollabs`, `listEventAttendeeWorks`.
+- `src/routes/g.$slug.e.$eventSlug.tsx` — mount new section.
+- `src/components/collab-card.tsx` / `src/components/work-card.tsx` — accept optional `footerSlot?: ReactNode` (small additive prop).
+
+**Create**
+- `src/components/event-attendee-work.tsx` — the tabbed section.
+
+No DB migration. No new routes. Ship-ready for v1.
