@@ -181,6 +181,7 @@ export function ChatMentionInput({
           </ul>
         </div>
       )}
+      {leadingAction && <div className="shrink-0">{leadingAction}</div>}
       <Input
         ref={inputRef}
         value={draft}
