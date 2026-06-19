@@ -671,17 +671,17 @@ function Stat({ label, value }: { label: string; value: number }) {
 /* ---------------- WORKS TAB ---------------- */
 
 function WorksTab({
-  works, pinnedIds, isOwn, ownerName, isLoading,
+  works, pinnedWorks, isOwn, ownerName, isLoading,
 }: {
   works: OwnedWork[];
-  pinnedIds: string[];
+  pinnedWorks: WorkCardData[];
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
 }) {
   const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  const pinned = pinnedIds.map((id) => works.find((w) => w.id === id)).filter(Boolean) as OwnedWork[];
-  const rest = works.filter((w) => !pinnedIds.includes(w.id));
+  // Pinned grid is its own hero row — keep grid below chronological & complete.
+  const rest = works;
 
   const catCounts = useMemo(() => {
     const m = new Map<Category, number>();
@@ -696,7 +696,7 @@ function WorksTab({
     return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
   }
 
-  if (works.length === 0) {
+  if (works.length === 0 && pinnedWorks.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
@@ -712,14 +712,23 @@ function WorksTab({
 
   return (
     <>
-      {pinned.length > 0 && activeCat === "all" && (
+      {pinnedWorks.length > 0 && activeCat === "all" && (
         <section className="mb-10">
           <h2 className="font-display text-xl text-ink">Pinned</h2>
-          <div className="mt-3 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {pinned.map((w) => <WorkCard key={w.id} work={w} />)}
+          <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
+          <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
+            {pinnedWorks.map((w) => (
+              <WorkCard key={w.id} work={w} density="hero" showAvatars showCounters />
+            ))}
           </div>
         </section>
       )}
+      {pinnedWorks.length === 0 && isOwn && works.length > 0 && (
+        <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
+          <p className="text-sm text-ink-muted">No pinned Work yet. Open a Work you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
+        </section>
+      )}
+
 
       {availableCats.length > 1 && (
         <div className="mb-5 flex flex-wrap gap-1.5">
