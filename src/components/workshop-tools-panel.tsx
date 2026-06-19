@@ -243,6 +243,67 @@ export function WorkshopToolsPanel(props: Props) {
   );
 }
 
+function ToolGroup({
+  label,
+  types,
+  suggested,
+  onEnable,
+}: {
+  label: string;
+  types: ToolType[];
+  suggested: ShippedToolType;
+  onEnable: (t: ShippedToolType) => void;
+}) {
+  return (
+    <div className="mt-4">
+      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">{label}</div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {types.map((type) => {
+          const P = PRESETS[type];
+          const Icon = P.icon;
+          const isSuggested = type === suggested;
+          if (P.comingSoon) {
+            return (
+              <button
+                key={type}
+                disabled
+                title="Coming soon"
+                className="group flex flex-col items-start gap-1 rounded-2xl border border-border/60 bg-surface-2/40 p-3 text-left opacity-60 cursor-not-allowed"
+              >
+                <div className="flex w-full items-center gap-2">
+                  <Icon className="h-4 w-4 text-ink-muted" />
+                  <span className="text-sm font-medium text-ink-soft">{P.label}</span>
+                  <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink-muted">Soon</span>
+                </div>
+                <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+              </button>
+            );
+          }
+          return (
+            <button
+              key={type}
+              onClick={() => onEnable(type as ShippedToolType)}
+              className={
+                "group flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-soft " +
+                (isSuggested ? "border-primary/40 bg-primary/5" : "border-border/60 bg-surface")
+              }
+            >
+              <div className="flex w-full items-center gap-2">
+                <Icon className="h-4 w-4 text-ink" />
+                <span className="text-sm font-medium text-ink">{P.label}</span>
+                {isSuggested && (
+                  <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary">Suggested</span>
+                )}
+              </div>
+              <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function AddToolMenu({ enabled, onAdd }: { enabled: StoredToolType[]; onAdd: (t: ShippedToolType) => void }) {
   const [open, setOpen] = useState(false);
   // Treat any legacy shot_list/track_list as occupying the "list" slot.
