@@ -123,7 +123,11 @@ export function ChannelView({
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const sendMessage = useServerFn(sendChatMessage);
   const claimHost = useServerFn(startHostClaim);
+  const renameRoom = useServerFn(setRoomTitle);
+  const qc = useQueryClient();
+  const [renaming, setRenaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
 
   const media = useMediaRoom(roomId);
 
