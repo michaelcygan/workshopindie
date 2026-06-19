@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2 } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles } from "lucide-react";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,10 +20,14 @@ import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
-import { startHostClaim } from "@/lib/host-room.functions";
+import { startHostClaim, setRoomTitle } from "@/lib/host-room.functions";
 import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
+import { getPurposeSuggestions } from "@/lib/topic-prompts";
+import { formatRoomTitle } from "@/lib/instant";
+import { useQueryClient } from "@tanstack/react-query";
+
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 import { ChatPolls } from "@/components/chat-polls";
@@ -78,6 +82,7 @@ export function ChannelView({
   initialMode = "voice",
   workshopId,
   hostUserId,
+  medium,
   toolsSlot,
 }: {
   roomId: string;
@@ -86,8 +91,10 @@ export function ChannelView({
   initialMode?: MediaMode;
   workshopId?: string;
   hostUserId?: string | null;
+  medium?: string | null;
   toolsSlot?: React.ReactNode | ((media: ReturnType<typeof useMediaRoom>) => React.ReactNode);
 }) {
+
 
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
@@ -116,7 +123,11 @@ export function ChannelView({
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const sendMessage = useServerFn(sendChatMessage);
   const claimHost = useServerFn(startHostClaim);
+  const renameRoom = useServerFn(setRoomTitle);
+  const qc = useQueryClient();
+  const [renaming, setRenaming] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
 
   const media = useMediaRoom(roomId);
 
@@ -727,56 +738,56 @@ export function ChannelView({
               {roomId && <RoomNoteBanner roomId={roomId} />}
               <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
                 {messages.length === 0 ? (
-                  <div className="relative flex h-full items-center justify-center text-center">
-                    <div
-                      aria-hidden
-                      className="pointer-events-none absolute inset-0 [background:radial-gradient(60%_55%_at_50%_45%,color-mix(in_oklab,var(--primary)_10%,transparent),transparent_70%)]"
-                    />
-                    <div className="relative">
-                      <p className="font-display text-xl text-ink">Quiet in {title}.</p>
-                      <p className="mt-1 text-sm text-ink-muted">
-                        Be the first to say hi. Messages vanish after 24h.
-                      </p>
-                      <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-                        {[
-                          "Say hi 👋",
-                          "Drop a link",
-                          "What's everyone working on?",
-                        ].map((s) => (
-                          <button
-                            key={s}
-                            type="button"
-                            onClick={() => setDraft(s)}
-                            className="rounded-full border border-border/70 bg-surface px-2.5 py-1 text-[11px] text-ink-soft hover:border-border-strong hover:text-ink hover:shadow-soft transition"
-                          >
-                            {s}
-                          </button>
-                        ))}
-                        {!hostUserId && user && (
-                          <button
-                            type="button"
-                            onClick={async () => {
+                  <EmptyLaunchpad
+                    title={title}
+                    medium={medium ?? null}
+                    roomId={roomId}
+                    hostUserId={hostUserId ?? null}
+                    canSignedIn={!!user}
+                    presenceCount={presence.length}
+                    renaming={renaming}
+                    onSetDraft={setDraft}
+                    onClaimHost={async () => {
+                      try {
+                        await claimHost({ data: { roomId } });
+                        toast("Claiming host — others have 10s to object.");
+                      } catch (e: any) {
+                        toast.error(e?.message ?? "Couldn't claim");
+                      }
+                    }}
+                    onRename={async (newTitle) => {
+                      const prev = title;
+                      setRenaming(true);
+                      try {
+                        await renameRoom({ data: { roomId, title: newTitle } });
+                        qc.invalidateQueries({ queryKey: ["instant-room", roomId] });
+                        toast.success(`Renamed to "${newTitle}"`, {
+                          action: {
+                            label: "Undo",
+                            onClick: async () => {
                               try {
-                                await claimHost({ data: { roomId } });
-                                toast("Claiming host — others have 10s to object.");
+                                await renameRoom({ data: { roomId, title: prev } });
+                                qc.invalidateQueries({ queryKey: ["instant-room", roomId] });
                               } catch (e: any) {
-                                toast.error(e?.message ?? "Couldn't claim");
+                                toast.error(e?.message ?? "Couldn't undo");
                               }
-                            }}
-                            className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
-                          >
-                            ✨ Claim Host &amp; set a direction
-                          </button>
-                        )}
-                      </div>
-                      {!hostUserId && presence.length <= 1 && (
-                        <p className="mt-3 text-[11px] text-ink-muted/80">
-                          No one's hosting yet — anyone here for 60s can claim it.
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                            },
+                          },
+                          duration: 5000,
+                        });
+                      } catch (e: any) {
+                        toast.error(e?.message ?? "Couldn't rename");
+                      } finally {
+                        setRenaming(false);
+                      }
+                    }}
+                    onLeaveForLobby={() => {
+                      media.leave();
+                      router.navigate({ to: "/workshop" });
+                    }}
+                  />
                 ) : (
+
                   <ul className="space-y-3">
                     <AnimatePresence initial={false}>
                       {messages.map((m) => {
@@ -936,3 +947,157 @@ export function ChannelView({
     </>
   );
 }
+
+/** Empty-state launchpad: rename pills, starter chips, claim host, browse live. */
+function EmptyLaunchpad({
+  title,
+  medium,
+  roomId,
+  hostUserId,
+  canSignedIn,
+  presenceCount,
+  renaming,
+  onSetDraft,
+  onClaimHost,
+  onRename,
+  onLeaveForLobby,
+}: {
+  title: string;
+  medium: string | null;
+  roomId: string;
+  hostUserId: string | null;
+  canSignedIn: boolean;
+  presenceCount: number;
+  renaming: boolean;
+  onSetDraft: (s: string) => void;
+  onClaimHost: () => void | Promise<void>;
+  onRename: (newTitle: string) => void | Promise<void>;
+  onLeaveForLobby: () => void;
+}) {
+  // Generic title = matches formatRoomTitle's fallback for this medium.
+  const genericTitle = useMemo(
+    () => formatRoomTitle(null, medium ?? undefined),
+    [medium],
+  );
+  const isGenericTitle = title.trim() === genericTitle.trim();
+
+  const canRename = canSignedIn && !renaming;
+  const showPurpose = isGenericTitle && canRename;
+
+  const suggestions = useMemo(
+    () => getPurposeSuggestions(roomId, (medium as any) ?? null, 4),
+    [roomId, medium],
+  );
+
+  return (
+    <div className="relative flex h-full items-center justify-center text-center">
+      {/* Aurora bloom */}
+      <motion.div
+        aria-hidden
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1, rotate: 360 }}
+        transition={{ opacity: { duration: 1.2 }, rotate: { duration: 60, repeat: Infinity, ease: "linear" } }}
+        className="pointer-events-none absolute inset-0 [background:conic-gradient(from_0deg_at_50%_45%,color-mix(in_oklab,var(--primary)_14%,transparent),transparent_30%,color-mix(in_oklab,var(--violet,#7c5cff)_10%,transparent),transparent_70%,color-mix(in_oklab,var(--primary)_12%,transparent))] blur-3xl opacity-60"
+      />
+      <div className="relative w-full max-w-2xl px-4">
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="font-display text-2xl md:text-3xl text-ink tracking-tight"
+        >
+          Quiet in {title}.
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.4 }}
+          className="mt-1 text-sm text-ink-muted"
+        >
+          {showPurpose
+            ? "Pick a purpose — it becomes the room's name."
+            : "Be the first to say hi. Messages vanish after 24h."}
+        </motion.p>
+
+        {showPurpose && (
+          <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {suggestions.map((s, i) => (
+              <motion.button
+                key={s.title}
+                type="button"
+                onClick={() => onRename(s.title)}
+                disabled={renaming}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.05, duration: 0.35 }}
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
+                className="group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm px-4 py-3 text-left transition hover:border-primary/40 hover:bg-primary/[0.04] hover:ring-1 hover:ring-primary/30 hover:shadow-soft disabled:opacity-50"
+              >
+                <span className="absolute right-3 top-3 text-ink-muted opacity-0 transition group-hover:opacity-100">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                </span>
+                <span className="block font-display text-base leading-tight text-ink">
+                  {s.title}
+                </span>
+                <span className="mt-0.5 block text-[11px] text-ink-muted">
+                  {s.hint}
+                </span>
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.25, duration: 0.4 }}
+          className="mt-5 flex flex-wrap items-center justify-center gap-1.5"
+        >
+          {["Say hi 👋", "Drop a link", "What's everyone working on?"].map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => onSetDraft(s)}
+              className="rounded-full border border-border/60 bg-surface/60 px-2.5 py-1 text-[11px] text-ink-soft hover:border-border-strong hover:text-ink hover:shadow-soft transition"
+            >
+              {s}
+            </button>
+          ))}
+          {!hostUserId && canSignedIn && (
+            <button
+              type="button"
+              onClick={onClaimHost}
+              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
+            >
+              ✨ Claim Host &amp; set a direction
+            </button>
+          )}
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.35, duration: 0.4 }}
+          className="mt-4 flex items-center justify-center"
+        >
+          <button
+            type="button"
+            onClick={onLeaveForLobby}
+            className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] text-ink-muted hover:text-ink transition"
+          >
+            or browse what's live now
+            <ArrowRight className="h-3 w-3 transition group-hover:translate-x-0.5" />
+          </button>
+        </motion.div>
+
+        {!hostUserId && presenceCount <= 1 && (
+          <p className="mt-3 text-[11px] text-ink-muted/80">
+            No one's hosting yet — anyone here for 60s can claim it.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+

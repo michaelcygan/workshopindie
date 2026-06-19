@@ -38,7 +38,7 @@ export const setRoomFocusMessage = createServerFn({ method: "POST" })
     return { ok: true, focus_message: text };
   });
 
-/** Host: rename the room mid-Workshop. */
+/** Host (or any present attendee in a leaderless room): rename the room. */
 export const setRoomTitle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string; title: string }) =>
@@ -48,15 +48,39 @@ export const setRoomTitle = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    await assertHost(data.roomId, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin
+    const { data: room, error } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, host_user_id, status")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!room) throw new Error("Room not found");
+    if ((room as any).status !== "active") throw new Error("Room isn't active");
+    const hostId = (room as any).host_user_id as string | null;
+    if (hostId && hostId !== context.userId) {
+      throw new Error("Only the host can rename");
+    }
+    if (!hostId) {
+      // Leaderless: caller must be present in the room.
+      const cutoff = new Date(Date.now() - 60_000).toISOString();
+      const { data: pres } = await supabaseAdmin
+        .from("instant_presence")
+        .select("user_id")
+        .eq("room_id", data.roomId)
+        .eq("user_id", context.userId)
+        .gt("last_seen_at", cutoff)
+        .maybeSingle();
+      if (!pres) throw new Error("Join the room first");
+    }
+    const { error: upErr } = await supabaseAdmin
       .from("instant_rooms")
       .update({ title: data.title })
       .eq("id", data.roomId);
-    if (error) throw new Error(error.message);
+    if (upErr) throw new Error(upErr.message);
     return { ok: true, title: data.title };
   });
+
 
 /** Host: hand off the crown to another live participant. */
 export const transferHost = createServerFn({ method: "POST" })

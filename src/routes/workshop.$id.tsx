@@ -396,7 +396,9 @@ function LiveRoomPage() {
         roomId={id}
         title={title}
         hostUserId={room?.host_user_id ?? null}
+        medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
+
         toolsSlot={(media) => (
           <WorkshopToolsPanel
             scope={{

@@ -168,6 +168,51 @@ export function shuffle<T>(arr: readonly T[]): T[] {
   return a;
 }
 
+/** Tiny deterministic string hash → uint32. */
+function hashStr(s: string): number {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619) >>> 0;
+  }
+  return h;
+}
+
+/** Deterministic shuffle seeded by `seed` (stable across re-renders). */
+function seededShuffle<T>(arr: readonly T[], seed: string): T[] {
+  const a = arr.slice();
+  let s = hashStr(seed) || 1;
+  for (let i = a.length - 1; i > 0; i--) {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+    const j = s % (i + 1);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+export type PurposeSuggestion = { title: string; hint: string };
+
+/**
+ * Return N purpose suggestions for a leaderless/generic room, stable per `seed`.
+ * Prefers prompts matching `medium`; falls back to a wide mix.
+ */
+export function getPurposeSuggestions(
+  seed: string,
+  medium: Category | null | undefined,
+  count = 4,
+): PurposeSuggestion[] {
+  const matched = medium ? ROOM_PROMPTS.filter((p) => p.medium === medium) : [];
+  const pool = matched.length >= count ? matched : ROOM_PROMPTS;
+  const picked = seededShuffle(pool, `${seed}:${medium ?? "any"}`).slice(0, count);
+  return picked.map((p) => ({
+    title: p.title,
+    hint:
+      (p.medium && TOPIC_DESCRIPTIONS[p.medium]) ||
+      "Set a direction for the room.",
+  }));
+}
+
+
 /**
  * Deal prompts into N rows so each row has a similar mix of "obvious" vs "wild"
  * and no row is dominated by one medium. Returns N arrays of length ~perRow.
