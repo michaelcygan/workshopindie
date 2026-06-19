@@ -224,6 +224,16 @@ function NewWorkshop() {
       });
     }
 
+    // Auto-invite the prefilled friend, if any. Best-effort — failure
+    // shouldn't block the schedule confirmation.
+    if (search.inviteUserId) {
+      try {
+        await inviteFriend({ data: { workshopId: ws.id, inviteeId: search.inviteUserId } });
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Scheduled, but couldn't send the invite.");
+      }
+    }
+
     setSubmitting(false);
     toast.success("Workshop scheduled");
     navigate({ to: "/workshops/$slug", params: { slug: ws.slug } });
@@ -234,6 +244,11 @@ function NewWorkshop() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Schedule a Workshop</h1>
         <p className="mt-1 text-ink-muted">A Workshop with a start time. People RSVP. They show up.</p>
+        {search.inviteUserId && (
+          <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-ink">
+            We'll invite <span className="font-medium">{inviteProfile?.display_name ?? inviteProfile?.username ?? "your friend"}</span> as soon as this Workshop is scheduled.
+          </div>
+        )}
       </motion.div>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-7">
