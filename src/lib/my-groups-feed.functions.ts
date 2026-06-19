@@ -14,7 +14,7 @@ export type MyGroupsFeedItem = {
 type CollabRow = {
   collab_post_id: string;
   groups: { id: string; slug: string; name: string; accent_color: string | null; deleted_at: string | null } | null;
-  collab_posts: { id: string; slug: string; title: string; description: string | null; status: string; created_at: string } | null;
+  collab_posts: { id: string; slug: string; title: string; description: string | null; status: string; resulting_work_id: string | null; created_at: string } | null;
 };
 
 type WorkshopRow = {
