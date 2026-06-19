@@ -185,7 +185,11 @@ function WorkDetail() {
           {credits.length > 0 && (
             <Byline credits={credits} />
           )}
+
+          {/* Date line — the only temporal chrome */}
+          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} />
         </motion.header>
+
 
         {/* Embedded player (YouTube, Vimeo, SoundCloud, Spotify, Bandcamp…) or cover */}
         {work.embed_url ? (
