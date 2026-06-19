@@ -860,6 +860,7 @@ export function ChannelView({
                 sending={sending}
                 placeholder={`Say something in ${title}…`}
                 participants={mentionCandidates}
+                leadingAction={composerLeading}
                 className="border-t border-border p-3"
               />
             </>
