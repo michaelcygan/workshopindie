@@ -56,7 +56,7 @@ export function BecomeHostNudge({ roomId, viewerId, isEligibleRoom }: Props) {
     refetchInterval: 15_000,
     queryFn: async () => {
       const { data: msg } = await supabase
-        .from("workshop_messages")
+        .from("instant_messages")
         .select("user_id, created_at")
         .eq("room_id", roomId)
         .order("created_at", { ascending: false })
