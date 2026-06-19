@@ -82,19 +82,22 @@ export function MediaPanel({
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
   return (
-    <section className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
+    <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
-        <Radio className="h-3.5 w-3.5 text-primary" />
-        <h3 className="text-xs font-medium uppercase tracking-wide text-ink-muted">
-          {channelTitle}
+        <span className="relative inline-flex h-1.5 w-1.5">
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+        </span>
+        <h3 className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted truncate">
+          Workshop
         </h3>
-        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
+        <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] text-ink-soft">
           {totalHere}/{m.cap}
         </span>
       </header>
 
       {viewMode && onViewModeChange && (
-        <div className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-muted p-1">
+        <div className="mt-3 grid grid-cols-4 gap-1 rounded-full bg-muted/60 p-1">
           <ViewPill active={viewMode === "chat"} onClick={() => onViewModeChange("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
           <ViewPill active={viewMode === "tools"} onClick={() => onViewModeChange("tools")} icon={<Wrench className="h-3.5 w-3.5" />} label="Tools" />
           <ViewPill active={viewMode === "gallery"} onClick={() => onViewModeChange("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Work" />
@@ -108,44 +111,51 @@ export function MediaPanel({
           {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
         </p>
       ) : (
-        <div className="mt-3 space-y-3">
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              variant={m.muted ? "outline" : "secondary"}
-              size="sm"
+        <div className="mt-3 space-y-2">
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
               onClick={m.toggleMute}
-              className="rounded-full gap-1.5"
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                m.muted
+                  ? "bg-destructive/10 text-destructive ring-1 ring-destructive/30 hover:bg-destructive/15"
+                  : "bg-muted/60 text-ink hover:bg-muted",
+              )}
             >
               {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
               {m.muted ? "Unmute" : "Mute"}
-            </Button>
-            <Button
-              variant={m.cameraOn ? "secondary" : "outline"}
-              size="sm"
+            </button>
+            <button
+              type="button"
               onClick={() => m.setCameraEnabled(!m.cameraOn)}
               disabled={m.busy}
-              className="rounded-full gap-1.5"
+              className={cn(
+                "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50",
+                m.cameraOn
+                  ? "bg-muted/60 text-ink hover:bg-muted"
+                  : "bg-muted/40 text-ink-soft hover:bg-muted/70",
+              )}
             >
               {m.cameraOn ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
               {m.cameraOn ? "Camera off" : "Camera on"}
-            </Button>
+            </button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-1.5">
             {dockExtra ? (
-              <div className="flex items-center justify-center [&_button]:w-full [&_button]:rounded-full">
+              <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
                 {dockExtra}
               </div>
             ) : (
               <span />
             )}
-            <Button
-              variant="outline"
-              size="sm"
+            <button
+              type="button"
               onClick={onExit}
-              className="rounded-full gap-1.5 text-destructive hover:text-destructive"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
             >
               <LogOut className="h-3.5 w-3.5" /> Exit
-            </Button>
+            </button>
           </div>
 
           {m.screenSharerId && (
@@ -159,9 +169,9 @@ export function MediaPanel({
 
 
 
-          <div className="border-t border-border pt-3">
-            <h4 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
-              In the Workshop · {totalHere}
+          <div className="border-t border-border/50 pt-3 mt-1">
+            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+              Here now · {totalHere}
             </h4>
             <ul className="space-y-2">
               <SpeakerRow
