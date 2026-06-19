@@ -49,6 +49,7 @@ import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
+import { Route as ECodeRouteImport } from './routes/e.$code'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
@@ -273,6 +274,11 @@ const GSlugRoute = GSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => GRoute,
 } as any)
+const ECodeRoute = ECodeRouteImport.update({
+  id: '/e/$code',
+  path: '/e/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
   id: '/dms/$conversationId',
   path: '/dms/$conversationId',
@@ -420,6 +426,7 @@ export interface FileRoutesByFullPath {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
@@ -479,6 +486,7 @@ export interface FileRoutesByTo {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
@@ -545,6 +553,7 @@ export interface FileRoutesById {
   '/collab/$slug': typeof CollabSlugRoute
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
+  '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
@@ -612,6 +621,7 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/e/$code'
     | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
@@ -671,6 +681,7 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/e/$code'
     | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
@@ -736,6 +747,7 @@ export interface FileRouteTypes {
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
+    | '/e/$code'
     | '/g/$slug'
     | '/me/blocked'
     | '/me/collabs'
@@ -794,6 +806,7 @@ export interface RootRouteChildren {
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
+  ECodeRoute: typeof ECodeRoute
   MeBlockedRoute: typeof MeBlockedRoute
   MeCollabsRoute: typeof MeCollabsRoute
   MeEditRoute: typeof MeEditRoute
@@ -1096,6 +1109,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/g/$slug'
       preLoaderRoute: typeof GSlugRouteImport
       parentRoute: typeof GRoute
+    }
+    '/e/$code': {
+      id: '/e/$code'
+      path: '/e/$code'
+      fullPath: '/e/$code'
+      preLoaderRoute: typeof ECodeRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dms/$conversationId': {
       id: '/dms/$conversationId'
@@ -1420,6 +1440,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
+  ECodeRoute: ECodeRoute,
   MeBlockedRoute: MeBlockedRoute,
   MeCollabsRoute: MeCollabsRoute,
   MeEditRoute: MeEditRoute,
