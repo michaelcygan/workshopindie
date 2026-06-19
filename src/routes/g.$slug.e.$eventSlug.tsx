@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-rout
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Calendar, Users, Share2, ArrowLeft, Tag, Repeat } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Tag, Repeat } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -16,6 +16,8 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
 import { EventWall } from "@/components/event-wall";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
+import { EventShareSheet } from "@/components/event-share-sheet";
+import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { cn } from "@/lib/utils";
@@ -93,6 +95,7 @@ type EventRow = {
   maybe_count: number;
   waitlist_count: number;
   series_key: string | null;
+  short_code: string | null;
   created_by: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
@@ -149,15 +152,10 @@ function EventPage() {
 
   const going = (attendees ?? []).filter((a) => a.status === "going");
 
-  function share() {
-    const url = `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`;
-    if (navigator.share) {
-      navigator.share({ title: ev.title, url }).catch(() => {});
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success("Link copied");
-    }
-  }
+  const canonicalUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
+    : `/g/${ev.group.slug}/e/${ev.slug}`;
+  const canBring = myRsvp?.status === "going" || myRsvp?.status === "maybe";
 
   return (
     <main className="pb-20">
@@ -229,9 +227,12 @@ function EventPage() {
             </Link>
             <div className="flex items-center gap-1">
               <ReportDialog entityType="group_event" entityId={ev.id} />
-              <Button variant="ghost" size="sm" onClick={share} className="rounded-full">
-                <Share2 className="mr-1 h-4 w-4" /> Share
-              </Button>
+              <EventShareSheet
+                shortCode={ev.short_code}
+                eventTitle={ev.title}
+                startsAt={ev.starts_at}
+                canonicalUrl={canonicalUrl}
+              />
             </div>
           </div>
         </div>
@@ -342,6 +343,9 @@ function EventPage() {
             </ul>
           </div>
         )}
+
+        {/* Bringing tonight */}
+        <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
 
         {/* What attendees are working on */}
         <EventAttendeeWork eventId={ev.id} />
