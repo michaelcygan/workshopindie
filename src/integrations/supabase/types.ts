@@ -2303,12 +2303,14 @@ export type Database = {
           email_collab_activity: boolean
           email_credits: boolean
           email_follows: boolean
+          email_friend_online: boolean
           email_messages: boolean
           email_product_news: boolean
           email_workshop_updates: boolean
           inapp_collab_activity: boolean
           inapp_credits: boolean
           inapp_follows: boolean
+          inapp_friend_online: boolean
           inapp_messages: boolean
           inapp_workshop_updates: boolean
           updated_at: string
@@ -2319,12 +2321,14 @@ export type Database = {
           email_collab_activity?: boolean
           email_credits?: boolean
           email_follows?: boolean
+          email_friend_online?: boolean
           email_messages?: boolean
           email_product_news?: boolean
           email_workshop_updates?: boolean
           inapp_collab_activity?: boolean
           inapp_credits?: boolean
           inapp_follows?: boolean
+          inapp_friend_online?: boolean
           inapp_messages?: boolean
           inapp_workshop_updates?: boolean
           updated_at?: string
@@ -2335,12 +2339,14 @@ export type Database = {
           email_collab_activity?: boolean
           email_credits?: boolean
           email_follows?: boolean
+          email_friend_online?: boolean
           email_messages?: boolean
           email_product_news?: boolean
           email_workshop_updates?: boolean
           inapp_collab_activity?: boolean
           inapp_credits?: boolean
           inapp_follows?: boolean
+          inapp_friend_online?: boolean
           inapp_messages?: boolean
           inapp_workshop_updates?: boolean
           updated_at?: string
