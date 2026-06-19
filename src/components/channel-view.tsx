@@ -974,6 +974,17 @@ function EmptyLaunchpad({
   onRename: (newTitle: string) => void | Promise<void>;
   onLeaveForLobby: () => void;
 }) {
+  // Per-user (localStorage) preference — when off, render a quieter empty state.
+  const [launchpadOn, setLaunchpadOn] = useState(() => {
+    if (typeof window === "undefined") return true;
+    try { return localStorage.getItem("pref:workshop-launchpad") !== "0"; } catch { return true; }
+  });
+  function setLaunchpadOff() {
+    setLaunchpadOn(false);
+    try { localStorage.setItem("pref:workshop-launchpad", "0"); } catch {}
+    toast("Quieter starts. Re-enable from Settings later.");
+  }
+
   // Generic title = matches formatRoomTitle's fallback for this medium.
   const genericTitle = useMemo(
     () => formatRoomTitle(null, medium ?? undefined),
@@ -982,7 +993,7 @@ function EmptyLaunchpad({
   const isGenericTitle = title.trim() === genericTitle.trim();
 
   const canRename = canSignedIn && !renaming;
-  const showPurpose = isGenericTitle && canRename;
+  const showPurpose = isGenericTitle && canRename && launchpadOn;
 
   const suggestions = useMemo(
     () => getPurposeSuggestions(roomId, (medium as any) ?? null, 4),
@@ -1095,6 +1106,18 @@ function EmptyLaunchpad({
           <p className="mt-3 text-[11px] text-ink-muted/80">
             No one's hosting yet — anyone here for 60s can claim it.
           </p>
+        )}
+
+        {launchpadOn && showPurpose && (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={setLaunchpadOff}
+              className="text-[11px] text-ink-muted/70 hover:text-ink underline-offset-2 hover:underline transition"
+            >
+              Quieter starts? Hide this prompt
+            </button>
+          </div>
         )}
       </div>
     </div>

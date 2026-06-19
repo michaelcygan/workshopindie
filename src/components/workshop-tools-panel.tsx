@@ -55,14 +55,20 @@ const PRESETS: Record<ToolType, Preset> = {
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
 };
 
-const TOOL_ORDER: ToolType[] = ["screen_share", "recorder", "pip", "outline", "board", "list", "drive", "player", "repo_links"];
+// Picker is now grouped into Realtime + Objects strips. Docs (outline), Pinboard,
+// and Repo & Demo are intentionally removed from the picker for v1 launch — folded
+// into Drive as link kinds (Google Doc / GitHub Repo). Legacy enabled rows still
+// render via presetFor() so nothing disappears for existing rooms.
+const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
+const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player", "recorder"];
+const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
-  film: "list", music: "list", writing: "outline", build: "repo_links", visual: "board",
-  critique: "outline", business: "outline", coworking: "outline",
-  office_hours: "outline", roundtable: "outline", pitch: "outline",
-  listen_party: "list", open_mic: "list", jam: "outline", standup: "outline",
+  film: "list", music: "list", writing: "drive", build: "drive", visual: "board",
+  critique: "drive", business: "drive", coworking: "drive",
+  office_hours: "drive", roundtable: "drive", pitch: "drive",
+  listen_party: "list", open_mic: "list", jam: "drive", standup: "drive",
 };
 
 // Stored value mapping — UI label "List" stores tool_type='list'.
@@ -182,53 +188,12 @@ export function WorkshopToolsPanel(props: Props) {
       );
     }
     return (
-      <div className="mt-4 rounded-2xl border border-dashed border-border p-4">
-        <p className="text-sm text-ink-muted text-center">
-          Spin up a shared tool — Screen Share, Recording, Docs, Board, List, Drive. Add as many as you need.
+      <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm p-4">
+        <p className="text-sm text-ink-soft text-center">
+          Spin up a shared surface. Realtime for live moments, Objects for things you keep.
         </p>
-        <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {TOOL_ORDER.map((type) => {
-            const P = PRESETS[type];
-            const Icon = P.icon;
-            const isSuggested = type === suggested;
-            if (P.comingSoon) {
-              return (
-                <button
-                  key={type}
-                  disabled
-                  title="Coming soon"
-                  className="group flex flex-col items-start gap-1 rounded-xl border border-border bg-surface-2/50 p-3 text-left opacity-60 cursor-not-allowed"
-                >
-                  <div className="flex w-full items-center gap-2">
-                    <Icon className="h-4 w-4 text-ink-muted" />
-                    <span className="text-sm font-medium text-ink-soft">{P.label}</span>
-                    <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink-muted">Soon</span>
-                  </div>
-                  <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
-                </button>
-              );
-            }
-            return (
-              <button
-                key={type}
-                onClick={() => enableTool(type as ShippedToolType)}
-                className={
-                  "group flex flex-col items-start gap-1 rounded-xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-soft " +
-                  (isSuggested ? "border-primary/40 bg-primary/5" : "border-border bg-surface")
-                }
-              >
-                <div className="flex w-full items-center gap-2">
-                  <Icon className="h-4 w-4 text-ink" />
-                  <span className="text-sm font-medium text-ink">{P.label}</span>
-                  {isSuggested && (
-                    <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary">Suggested</span>
-                  )}
-                </div>
-                <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
-              </button>
-            );
-          })}
-        </div>
+        <ToolGroup label="Realtime" types={TOOL_REALTIME} suggested={suggested} onEnable={enableTool} />
+        <ToolGroup label="Objects" types={TOOL_OBJECTS} suggested={suggested} onEnable={enableTool} />
       </div>
     );
   }
@@ -274,6 +239,67 @@ export function WorkshopToolsPanel(props: Props) {
         )}
       </div>
       {currentTool && <ActiveToolBody scope={scope} tool={currentTool} media={media} />}
+    </div>
+  );
+}
+
+function ToolGroup({
+  label,
+  types,
+  suggested,
+  onEnable,
+}: {
+  label: string;
+  types: ToolType[];
+  suggested: ShippedToolType;
+  onEnable: (t: ShippedToolType) => void;
+}) {
+  return (
+    <div className="mt-4">
+      <div className="mb-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">{label}</div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        {types.map((type) => {
+          const P = PRESETS[type];
+          const Icon = P.icon;
+          const isSuggested = type === suggested;
+          if (P.comingSoon) {
+            return (
+              <button
+                key={type}
+                disabled
+                title="Coming soon"
+                className="group flex flex-col items-start gap-1 rounded-2xl border border-border/60 bg-surface-2/40 p-3 text-left opacity-60 cursor-not-allowed"
+              >
+                <div className="flex w-full items-center gap-2">
+                  <Icon className="h-4 w-4 text-ink-muted" />
+                  <span className="text-sm font-medium text-ink-soft">{P.label}</span>
+                  <span className="ml-auto rounded-full bg-muted px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-ink-muted">Soon</span>
+                </div>
+                <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+              </button>
+            );
+          }
+          return (
+            <button
+              key={type}
+              onClick={() => onEnable(type as ShippedToolType)}
+              className={
+                "group flex flex-col items-start gap-1 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-soft " +
+                (isSuggested ? "border-primary/40 bg-primary/5" : "border-border/60 bg-surface")
+              }
+            >
+              <div className="flex w-full items-center gap-2">
+                <Icon className="h-4 w-4 text-ink" />
+                <span className="text-sm font-medium text-ink">{P.label}</span>
+                {isSuggested && (
+                  <span className="ml-auto rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-primary">Suggested</span>
+                )}
+              </div>
+              <p className="text-[11px] leading-tight text-ink-muted">{P.blurb}</p>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
