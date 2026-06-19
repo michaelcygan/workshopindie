@@ -1,116 +1,77 @@
-# Welcome pin "+" + "Become the Host" nudge + visible Host-claim flow
 
-Three connected fixes for leaderless Workshops. The whole point: make it obvious that anyone can host, anyone can pin a welcome, and a soft nudge prompts someone to step up if the room idles.
+# Empty-state as a launchpad: Purpose pills + Live Now jump
 
----
-
-## Part 1 — Welcome pin "+" (open by default)
-
-### Problem
-The "+ Set the room's first thought" pill never shows in unhosted Workshops. `canEdit` in `src/components/room-note-banner.tsx` requires `workshopHostId === user.id` whenever the room is workshop-paired — so leaderless = nobody can edit.
-
-### Fix
-**Permission flip** in `src/components/room-note-banner.tsx`:
-- `workshopHostId` set → only that host edits.
-- `workshopHostId` null → any present attendee edits (matches lounge rule).
-
-**Pin-flavored UX:**
-- Pill: `📌 + Pin a welcome for new arrivals · CC BY-SA`.
-- Editor label "First thought" → "Welcome pin". Placeholder → "What should new arrivals see when they drop in?"
-
-**Ambient nudge tooltip** at 3500ms after mount, when `canEdit && !note`, dismissed via `localStorage` `room-note-nudge:{roomId}`:
-> "Pin a welcome message so new arrivals know what this room is about."
-Auto-dismiss on pill click, Escape, or 12s.
-
-### Files
-- `src/components/room-note-banner.tsx`
+Reuse the dead space in the Quiet empty state (`channel-view.tsx`, lines ~730–778) as a 2027-feel "set a direction" surface. Three additions, one permission tweak, no DB schema change.
 
 ---
 
-## Part 2 — Surface the Host-claim flow in Workshops
+## Part 1 — Purpose pills (one-click rename)
 
-### Problem
-`ClaimHostPill` is mounted in `src/routes/workshop.$id.tsx` but immediately short-circuits to a passive `No Host` badge because of:
-```ts
-unclaimable={!!room?.workshop_id || room?.kind !== "lounge" || ...}
+### Behavior
+When the room has its default/generic name (matches `formatRoomTitle` fallback like "Workshop" or `Workshop: <category>`), surface 4 large, motion-animated pills that each ARE the suggested name. Click → renames the live room (and the paired workshop if any).
+
+Layout: a 2×2 grid of soft "purpose tiles" — large enough to read as a statement, not chips. Each pill shows the full proposed title as bold display text + a one-line hint underneath.
+
 ```
-Workshop-paired rooms always show "No Host" with no affordance — no claim button anywhere. Even the empty state has no path to host.
-
-### Fix
-
-**1. Unlock claim in workshop rooms.** In `src/routes/workshop.$id.tsx` change the `unclaimable` prop to only block on status, not on `workshop_id` or `kind`:
-```ts
-unclaimable={room?.status !== "active"}
+┌────────────────────────────┐  ┌────────────────────────────┐
+│ Songwriting jam            │  │ Critique my draft          │
+│ trade hooks · 60 min       │  │ share a WIP · get notes    │
+└────────────────────────────┘  └────────────────────────────┘
+┌────────────────────────────┐  ┌────────────────────────────┐
+│ Co-working                 │  │ Pitch & polish             │
+│ heads down · soft chat     │  │ workshop a pitch deck      │
+└────────────────────────────┘  └────────────────────────────┘
 ```
-The server-side guards (`startHostClaim`, dwell, cooldown, object/finalize) already work room-agnostic — no server change needed.
 
-**2. Promote the claim affordance from chip to action.** Today it lives as a tiny pill in the meta row that reads "No Host · Claim". Two changes:
-- **In the meta row**, when leaderless: keep the pill but make the verb dominant — `👑 Claim Host` (primary tone instead of muted), so it reads as an offer, not status.
-- **In the empty chat state** (`src/components/channel-view.tsx`), when room is leaderless and viewer dwell ≥ 60s, add a fourth starter chip alongside `Say hi 👋 / Drop a link / What's everyone working on?`:
-  ```
-  ✨  Claim Host & set a direction
-  ```
-  Click → fires the same `startHostClaim` server fn the pill uses (via `useServerFn`). Hidden once anyone is mid-claim, once dwell isn't met, or in hosted rooms.
+### Suggestion source
+Derive 4 from `room.medium` / `room.category` via a small map in `src/lib/topic-prompts.ts` (file exists — extend it). Each entry: `{ title, hint }`. Generic fallback set when no category. Shuffle deterministically by `roomId` so it's stable per room, not jittery on re-render.
 
-**3. Empty-room hero hint.** When `liveCount <= 1` and leaderless, append a one-liner to the empty state:
-> "No one's hosting yet — anyone here for 60s can claim it."
-Disappears the moment a 2nd person joins, a claim starts, or a host is set.
+### Rename action
+Reuse `setRoomTitle` (host RPC) AND extend permission: in `host-room.functions.ts → setRoomTitle`, allow the rename when `host_user_id IS NULL AND status='active'` (matches the leaderless-edit rule already used for the room note). Hosted rooms unchanged — only the host can rename.
 
-### Files
-- `src/routes/workshop.$id.tsx` (unclaimable prop + meta-row tone)
-- `src/components/claim-host-pill.tsx` (variant tone for the active claim CTA — `primary` border/text when ready)
-- `src/components/channel-view.tsx` (leaderless starter chip + hero hint)
+When the live room is workshop-paired (`workshop_id` not null), also update `workshops.title` in the same handler, but only if the caller is the workshop host (skip otherwise — live room rename alone is fine).
+
+On success: optimistic title swap, invalidate `["instant-room", id]`, the pills collapse into a small "Renamed to …" toast with an Undo (5s, calls `setRoomTitle` with prior title).
+
+### Visibility rules
+Show purpose pills only when ALL hold:
+- `messages.length === 0` (already the empty-state branch).
+- Current title is the generic fallback (no purposeful rename yet) — detected by comparing against `formatRoomTitle(null, room.medium)` output.
+- Viewer is host OR room is leaderless.
+
+Hide once renamed or once first message lands.
 
 ---
 
-## Part 3 — "Become the Host" whisper to a random non-last-actor
+## Part 2 — "Live Now" jump
 
-### Trigger
-All must hold:
-- Room is leaderless (no `host_user_id`, no in-flight `claim_user_id`).
-- ≥ 2 present attendees (`instant_presence`, 60s cutoff).
-- Viewer is not the **last actor** (most recent of: last `workshop_messages` author, or freshest joiner in last 5 min).
-- Viewer hasn't dismissed it this session (`sessionStorage` `host-nudge:{roomId}`).
-- Viewer's own dwell ≥ 60s (matches `DWELL_REQUIRED_MS` so the click can actually claim).
+Add a fourth row under the purpose pills: a quiet pill row containing one CTA — `↻ Browse Live Workshops` — that navigates to `/workshop` (the index with `LiveWorkshopsRail`). Uses `<Link>` from `@tanstack/react-router`. On hover: subtle arrow translate. No `media.leave()` call here — `/workshop` index is the lobby; leaving is implicit when they Drop in elsewhere. We DO call `media.leave()` before navigating so they're not ghost-present in the abandoned room.
 
-### Random pick (no server coordinator)
-Each eligible viewer computes a deterministic delay between **10s and 250s** using `seedrandom(userId + roomId + epochBucket)` where `epochBucket = Math.floor(Date.now() / 600_000)`. Same seed → consistent picks within a 10-min window. Timer cancels if any condition flips.
-
-### The prompt
-A small floating card, bottom-right of the workshop column, `surface-2/70`:
-
-```
-✨  Have an idea?
-    Become the Host to start working on it.
-    [ Become the Host ]   [ Not now ]
-```
-
-- **Become the Host** → calls `startHostClaim` (same server fn as the pill), then closes. The existing 10s object/finalize flow takes over.
-- **Not now** → `sessionStorage` dismiss for the room.
-- Auto-dismiss after 20s untouched.
-
-### Component
-New `src/components/become-host-nudge.tsx`. Mounted in `src/routes/workshop.$id.tsx` alongside the header, fed by:
-- Existing `room` query.
-- New `presentAttendees` query (`instant_presence` 60s cutoff, 30s refresh).
-- New `lastActor` query (last message author + newest joiner, 15s refresh).
-
-### Does NOT
-- Auto-promote anyone.
-- Fire to the last actor, the claimant, or in hosted/ended/solo rooms.
-- Persist dismissal across tabs.
-
-### Files
-- `src/components/become-host-nudge.tsx` (new)
-- `src/routes/workshop.$id.tsx` (mount + 2 new queries)
+Sits below the purpose grid as a subtle "or explore what else is live →" affordance — not competing with the rename CTA.
 
 ---
+
+## Part 3 — 2027 motion polish
+
+Replace the current radial-gradient + static chips with:
+- **Aurora bloom**: a slow-pulsing conic-gradient halo behind the title (`motion.div` with `animate={{ rotate: 360 }}` 40s linear, opacity 0.15).
+- **Pill stagger**: each purpose pill enters with `framer-motion` `whileInView` opacity/y stagger (40ms gap), `whileHover` lift `y:-2` + ring glow via `ring-1 ring-primary/30`.
+- **Magnetic press**: `whileTap={{ scale: 0.98 }}`.
+- **Type treatment**: pill title uses `font-display` at `text-base/tight`, hint at `text-[11px] text-ink-muted`. Pill bg: `bg-surface/60 backdrop-blur-sm` + dashed `border-border/60`, hover → solid `border-primary/40 bg-primary/[0.04]`.
+- Existing starter chips ("Say hi", "Drop a link", "What's everyone working on?") demote to a smaller row beneath the purpose grid — keep them, just lighter weight. Claim Host chip stays prominent (already is).
+
+---
+
+## Files
+
+- `src/components/channel-view.tsx` — rewrite the empty-state block (lines ~729–778): aurora bloom, purpose-pill grid, Live Now jump, demoted starter chips. New small subcomponent `PurposePills` co-located in the same file (or extracted to `src/components/purpose-pills.tsx` if it grows past ~80 lines).
+- `src/lib/topic-prompts.ts` — extend with `WORKSHOP_PURPOSES: Record<category, Array<{title, hint}>>` + `getPurposeSuggestions(roomId, category)` (deterministic shuffle, returns 4).
+- `src/lib/host-room.functions.ts` — relax `setRoomTitle`: allow when room is leaderless; when workshop-paired, only update `workshops.title` if caller is workshop host.
+- No migration. No new component if kept inline.
 
 ## Out of scope
-- Server-side "one nudge per room" enforcement.
-- Per-message pinning.
-- Push/notification system.
-- Changes to claim mechanics (dwell, 10s object window, cooldown) — reuse as-is.
 
-## No DB changes
-All three parts read existing tables: `instant_rooms`, `instant_presence`, `workshop_messages`, `instant_room_claim_cooldowns`.
+- Free-form rename input (already exists via the existing host menu / collab sheet).
+- AI-generated topic suggestions (static map is enough for now; can swap later).
+- Persisting "dismissed pills" — they auto-hide on first message or rename.
+- Changes to the Live Now page itself.
