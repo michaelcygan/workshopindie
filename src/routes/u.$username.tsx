@@ -621,12 +621,13 @@ function ProfilePage() {
           {defaultTab === "works" && (
             <WorksTab
               works={ownedWorks ?? []}
-              pinnedIds={profile.pinned_work_ids ?? []}
+              pinnedWorks={pinnedWorks ?? []}
               isOwn={isOwn}
               ownerName={name}
               isLoading={!ownedWorks}
             />
           )}
+
           {defaultTab === "credits" && (
             <CreditsTab works={creditedWorks ?? []} isLoading={!creditedWorks} ownerName={name} isOwn={isOwn} />
           )}
