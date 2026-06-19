@@ -2450,11 +2450,13 @@ export type Database = {
           id: string
           indexable: boolean
           instagram_handle: string | null
+          last_active_at: string | null
           last_name: string | null
           mediums: string[]
           onboarded: boolean
           pinned_work_ids: string[]
           referred_by: string | null
+          show_online: boolean
           tools: string[]
           tour_completed_at: string | null
           updated_at: string
@@ -2489,11 +2491,13 @@ export type Database = {
           id: string
           indexable?: boolean
           instagram_handle?: string | null
+          last_active_at?: string | null
           last_name?: string | null
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
           referred_by?: string | null
+          show_online?: boolean
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string
@@ -2528,11 +2532,13 @@ export type Database = {
           id?: string
           indexable?: boolean
           instagram_handle?: string | null
+          last_active_at?: string | null
           last_name?: string | null
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
           referred_by?: string | null
+          show_online?: boolean
           tools?: string[]
           tour_completed_at?: string | null
           updated_at?: string

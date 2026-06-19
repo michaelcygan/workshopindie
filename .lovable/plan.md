@@ -1,87 +1,46 @@
-# Finish Collab Lifecycle v4 — items 1–6
+# Friends + Online Presence (v1)
 
-Goal: round out Open / Closed-Shipped / Closed-Archived so every state feels alive and complete, then ship.
+A low-key sticky-loop feature: a "Friends" list of mutual follows with an online dot, used to invite people into Workshops — both as a "start a Workshop with…" entry point and as an in-Workshop "invite mutuals who are online".
 
-## 1. Open-state owner activity meter
+## Scope (build)
 
-In `src/routes/collab.$slug.tsx`, when viewer is owner and `status === 'open'`, add a single-line meter below the existing "Open Xd" pill:
+### 1. Mutual-follow friends list
+- New helper `getFriends()` in `src/lib/network.functions.ts` (auth'd server fn). Returns mutuals: users where `follows(a→b)` AND `follows(b→a)` exist for `auth.uid()`. Hydrates profile (name, username, avatar, headline) + `online` boolean + `last_active_at`.
+- New route `src/routes/me.friends.tsx` (under `_authenticated`): simple list, online dot, "Invite to Workshop" button per row, empty state ("Follow people back to build your friends list").
+- Surface entry: small "Friends" link in the existing `me.*` nav / profile menu. Not promoted to primary nav.
 
-```
-12 views · 3 applicants · 1 share
-```
+### 2. Global online signal
+- Add `profiles.last_active_at timestamptz` (migration).
+- Lightweight heartbeat: a `pingPresence()` server fn called every 60s from `__root.tsx` while a session exists (visibility-aware: pause when tab hidden).
+- "Online" = `last_active_at > now() - 2 minutes`. Reuse for the friends list and for any future "online" badges.
+- Privacy: a `profiles.show_online` boolean (default true) with a toggle in `settings.tsx`. When false, `getFriends` returns `online: false` for that user and skips the dot.
 
-Sources (no new tables):
-- views → `count` of `collab_share_events` rows with `kind = 'view'` for this `collab_post_id` (fallback: omit if 0).
-- applicants → `count` of `collab_guest_applications` for this post (any status).
-- shares → `count` of `collab_share_events` with `kind in ('share','copy_link')` + `collab_contact_events` rows.
+### 3. "Start a Workshop with…" invite from friends list
+- Each friend row has an "Invite to Workshop" button → opens a small picker of the current user's active/upcoming Workshops they host (reuses existing host query). Pick one → inserts into `workshop_join_invites` (already exists) and fires the existing notification path.
+- If the user has no hostable Workshop, button becomes "Start a Workshop" → routes to `/workshops/new` with the invitee id in search params; on create, auto-issue the invite.
 
-Add one server fn `getCollabActivity({ collabId })` in `src/lib/collab.functions.ts` (owner-gated via `requireSupabaseAuth` + `user_id` check). Returns `{ views, applicants, shares }`. Called via `useQuery` only when owner.
+### 4. In-Workshop "Invite mutuals" panel
+- Inside `src/routes/workshop.$slug.tsx` host controls, add an "Invite friends" section: list of mutual follows sorted online-first, with a one-tap invite button per row that writes to `workshop_join_invites` (with `source_room_id` if invoked from a lobby room).
+- Filter out users already invited / participants. Show a subtle "Online now" cluster at the top.
 
-Heat hint: if `applicants >= 3` append a muted "Picking up steam" line; if `applicants === 0 && ageDays >= 3` append "Quiet so far — try sharing".
+## Out of scope (deferred)
 
-## 2. Per-role "N interested" counts
+- Friend requests / acceptances (we're piggy-backing on mutual follows; no new relationship type).
+- DM / chat threads between friends.
+- Push or email notifications for "friend just came online" — only the existing workshop-invite notification fires.
+- Group invite flows (Workshops only for v1).
+- Per-friend muting or blocking beyond the existing `user_blocks` table.
 
-In the same server fn, also return `perRole: Record<roleId, number>` from `collab_guest_applications` grouped by `role_id`. Render under each role row in the Roles card as a small muted chip: `3 interested`. Visible to owner only (keeps visitor side clean).
+## Technical notes
 
-## 3. Visitor signals on open Collabs
-
-In `src/routes/collab.$slug.tsx`, visitor view (`status === 'open'` and not owner):
-- Replace/augment the meta line with: `Cast so far · posted Nd ago` (cast = total applicants, fetched via the public-safe count; if 0, show `Open to applications · posted Nd ago`).
-- When `ends_on` exists and is within 7 days, render a `<StateBadge state="open" sublabel="Closing soon" />` instead of the `Casting` variant, and add a small chip `Closes in Nd` next to the title.
-
-Counts for visitors come from a separate public server fn `getCollabPublicCounts({ collabId })` returning just `{ applicants }` (single integer, no PII). Keep it on the publishable client.
-
-## 4. Closed-shipped hero treatment
-
-When `status === 'closed' && resulting_work_id` (public view), promote the Work into the page header:
-- Hero block at the top: Work cover image (16:9 rounded), Work title, byline "From the Collab: <collab title>", primary CTA `View the Work` → `/work/$slug`.
-- Collapse the Roles card to a single muted line: `Cast · N collaborators` (count from `work_collaborators` for that work; reuse existing query if present, otherwise add to the loader).
-- Keep the existing description + city/timeline meta below for context.
-- Owner strip becomes celebratory: `Shipped Nd ago · view the Work` button only (drop the publish CTA).
-
-Loader changes in `src/routes/collab.$slug.tsx`: when `resulting_work_id` is set, also fetch `{ id, slug, title, cover_url }` from `works` and `count` from `work_collaborators`. Surface in head() as `og:image` + `twitter:image` (replaces any current OG image for shipped Collabs).
-
-## 5. StateBadge on CollabCard
-
-In `src/components/collab-card.tsx`, replace the current "live"-style pill with the shared `<StateBadge />`:
-- `open` → `Open · Casting` (or `Closing soon` when ends_on within 7 days)
-- `closed && resulting_work_id` → `Closed · Shipped`
-- archived variant never appears on cards (filtered out of public feeds).
-
-Card visual: badge sits top-left of the card header where the current pill is; keep the rest of the card unchanged.
-
-## 6. Surface shipped Collabs on the board
-
-In `src/routes/collab.index.tsx`, change the primary list query from `.eq('status','open')` to:
-
-```ts
-.or('status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)')
-```
-
-Apply the same change to:
-- `src/routes/index.tsx` (home "Open Collab calls" section) — keep the section title; shipped cards still belong here because they're proof the system works.
-- `src/routes/cities.$slug.tsx` city Collab list.
-- `src/lib/my-groups-feed.functions.ts` (drop the `c.status !== 'open'` filter; replace with `if (c.status === 'closed' && !c.resulting_work_id) continue;` and add `resulting_work_id` to the select).
-- `src/routes/g.$slug.tsx` GroupCollabTab.
-
-`u.$username.tsx` `fetchOpenCollabs` stays Open-only (separate "Shipped" surface is the Works tab there).
-
-Sort: keep `created_at desc` for now — mixing shipped + open chronologically is fine for v1; revisit if owners ask for "shipped pinned".
-
-Add a tiny filter pill row at the top of `/collab` board: `All · Open · Shipped` (URL search param `view=all|open|shipped`, default `all`). Wires into the same query with conditional `.eq('status','open')` or the shipped half of the OR.
+- Migration: `ALTER TABLE profiles ADD COLUMN last_active_at timestamptz, ADD COLUMN show_online boolean NOT NULL DEFAULT true;` + index on `last_active_at`. No new tables, no new RLS surface — `profiles` already has public-read for these safe columns.
+- `pingPresence` writes `last_active_at = now()` for `auth.uid()` only; cheap UPDATE, no upsert needed.
+- `getFriends` does one query for mutuals (self-join on `follows`) then one `profiles` hydrate; capped at 200 friends for v1, sorted online-first then by display name.
+- Workshop invite insert reuses `workshop_join_invites` unique `(workshop_id, invitee_user_id)` constraint — duplicate clicks are no-ops.
+- No realtime subscription on presence in v1: page-load freshness is fine. Workshop panel can poll every 30s while open.
 
 ## Files touched
 
-- `src/lib/collab.functions.ts` — add `getCollabActivity`, `getCollabPublicCounts`.
-- `src/routes/collab.$slug.tsx` — owner meter, per-role chips, visitor signals, shipped hero, loader work fetch, OG image.
-- `src/components/collab-card.tsx` — StateBadge integration.
-- `src/routes/collab.index.tsx` — query change + view filter pills.
-- `src/routes/index.tsx`, `src/routes/cities.$slug.tsx`, `src/routes/g.$slug.tsx`, `src/lib/my-groups-feed.functions.ts` — query carve-out for shipped.
-
-## Out of scope (still v1.1+)
-
-Reopen, notifications fan-out on shipped, "shipped pinned" sort, profile "Shipped Collabs" tab, applicant funnel analytics, owner email digest of activity.
-
-## Launch step
-
-After items 1–6 land and the preview looks clean, call `preview_ui--publish` with updated site metadata so the deploy goes out.
+- new: `src/routes/me.friends.tsx`, `src/components/friend-row.tsx`, `src/components/invite-to-workshop-dialog.tsx`
+- edited: `src/lib/network.functions.ts` (getFriends, pingPresence, inviteFriendToWorkshop), `src/routes/__root.tsx` (heartbeat), `src/routes/settings.tsx` (show_online toggle), `src/routes/workshop.$slug.tsx` (Invite friends panel), `src/components/app-nav` or profile menu (Friends link)
+- migration: add `profiles.last_active_at`, `profiles.show_online`
