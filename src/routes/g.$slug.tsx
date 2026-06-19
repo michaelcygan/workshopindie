@@ -485,13 +485,15 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
     queryFn: async (): Promise<CollabRow[]> => {
       const { data } = await supabase
         .from("group_collabs")
-        .select("collab:collab_posts(id,title,slug,description,status)")
+        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id)")
         .eq("group_id", group.id)
         .limit(48);
       return (data ?? [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.collab)
-        .filter((c: (CollabRow & { status?: string }) | null) => !!c && c.status === "open") as CollabRow[];
+        .filter((c: (CollabRow & { status?: string; resulting_work_id?: string | null }) | null) =>
+          !!c && (c.status === "open" || (c.status === "closed" && !!c.resulting_work_id)),
+        ) as CollabRow[];
     },
   });
 
