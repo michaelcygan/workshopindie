@@ -213,42 +213,114 @@ async function attendeeUserIds(eventId: string): Promise<string[]> {
     .map((r) => r.user_id);
 }
 
+const POOL_SIZE = 300;
+
+type Attendee = { display_name: string | null; username: string | null; avatar_url: string | null };
+
+function bucketAndFair<T extends Record<string, unknown>>(
+  rows: T[],
+  ownerKey: keyof T,
+  attendeeKey: keyof T,
+  perUserCap: number,
+  fairSize: number,
+) {
+  // Bucket by owner, preserve incoming order (already recency-sorted).
+  const buckets = new Map<string, { user: Attendee | null; items: T[]; total: number }>();
+  for (const r of rows) {
+    const uid = r[ownerKey] as string | null;
+    if (!uid) continue;
+    let b = buckets.get(uid);
+    if (!b) {
+      b = { user: (r[attendeeKey] as Attendee | null) ?? null, items: [], total: 0 };
+      buckets.set(uid, b);
+    }
+    b.total += 1;
+    if (b.items.length < perUserCap) b.items.push(r);
+  }
+  // Ordered by most-recent activity (first appearance of user in `rows`).
+  const ordered = Array.from(buckets.entries()).map(([uid, b]) => ({
+    uid,
+    user: b.user,
+    items: b.items,
+    remaining: Math.max(0, b.total - b.items.length),
+  }));
+  // Round-robin fair list: one item per user per pass.
+  const fair: T[] = [];
+  let pass = 0;
+  while (fair.length < fairSize) {
+    let added = false;
+    for (const g of ordered) {
+      if (pass < g.items.length) {
+        fair.push(g.items[pass]);
+        added = true;
+        if (fair.length >= fairSize) break;
+      }
+    }
+    if (!added) break;
+    pass += 1;
+  }
+  return { fair, byPerson: ordered, totalAttendees: ordered.length };
+}
+
 export const listEventAttendeeCollabs = createServerFn({ method: "POST" })
-  .inputValidator((i) => z.object({ event_id: z.string().uuid(), limit: z.number().int().min(1).max(48).optional() }).parse(i))
+  .inputValidator((i) =>
+    z.object({
+      event_id: z.string().uuid(),
+      mode: z.enum(["fair", "byPerson"]).optional(),
+      perUserCap: z.number().int().min(1).max(6).optional(),
+      fairSize: z.number().int().min(1).max(48).optional(),
+    }).parse(i),
+  )
   .handler(async ({ data }) => {
     const ids = await attendeeUserIds(data.event_id);
-    if (ids.length === 0) return { rows: [], total: 0 };
+    if (ids.length === 0) return { fair: [], byPerson: [], totalAttendees: 0, totalItems: 0 };
     const supabase = publicClient();
-    const limit = data.limit ?? 12;
+    const mode = data.mode ?? "fair";
+    const perUserCap = data.perUserCap ?? (mode === "byPerson" ? 3 : 2);
+    const fairSize = data.fairSize ?? 12;
     const select = "id,user_id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id,vouch_count,boost_count, user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)";
-    const { data: rows, error, count } = await supabase
+    const { data: rows, error } = await supabase
       .from("collab_posts")
-      .select(select, { count: "exact" })
+      .select(select)
       .in("user_id", ids)
       .or("status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)")
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(POOL_SIZE);
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [], total: count ?? (rows?.length ?? 0) };
+    const pool = (rows ?? []) as unknown as Record<string, unknown>[];
+    const { fair, byPerson, totalAttendees } = bucketAndFair(pool, "user_id", "user", perUserCap, fairSize);
+    return { fair, byPerson, totalAttendees, totalItems: pool.length };
   });
 
 export const listEventAttendeeWorks = createServerFn({ method: "POST" })
-  .inputValidator((i) => z.object({ event_id: z.string().uuid(), limit: z.number().int().min(1).max(48).optional() }).parse(i))
+  .inputValidator((i) =>
+    z.object({
+      event_id: z.string().uuid(),
+      mode: z.enum(["fair", "byPerson"]).optional(),
+      perUserCap: z.number().int().min(1).max(12).optional(),
+      fairSize: z.number().int().min(1).max(48).optional(),
+    }).parse(i),
+  )
   .handler(async ({ data }) => {
     const ids = await attendeeUserIds(data.event_id);
-    if (ids.length === 0) return { rows: [], total: 0 };
+    if (ids.length === 0) return { fair: [], byPerson: [], totalAttendees: 0, totalItems: 0 };
     const supabase = publicClient();
-    const limit = data.limit ?? 12;
+    const mode = data.mode ?? "fair";
+    const perUserCap = data.perUserCap ?? (mode === "byPerson" ? 6 : 3);
+    const fairSize = data.fairSize ?? 12;
     const select = "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username)), author:profiles!works_created_by_fkey(display_name,username,avatar_url)";
-    const { data: rows, error, count } = await supabase
+    const { data: rows, error } = await supabase
       .from("works")
-      .select(select, { count: "exact" })
+      .select(select)
       .in("created_by", ids)
       .eq("status", "published")
       .eq("visibility", "public")
       .order("published_at", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
-      .limit(limit);
+      .limit(POOL_SIZE);
     if (error) throw new Error(error.message);
-    return { rows: rows ?? [], total: count ?? (rows?.length ?? 0) };
+    const pool = (rows ?? []) as unknown as Record<string, unknown>[];
+    const { fair, byPerson, totalAttendees } = bucketAndFair(pool, "created_by", "author", perUserCap, fairSize);
+    return { fair, byPerson, totalAttendees, totalItems: pool.length };
   });
+
