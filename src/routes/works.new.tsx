@@ -23,6 +23,7 @@ import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
+import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
