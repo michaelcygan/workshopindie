@@ -13,7 +13,7 @@ export function EventPromoPassBanner({ months, alreadyPlus }: { months: number; 
           <div className="font-display text-base text-ink">
             {alreadyPlus
               ? "You already have Plus — see you there."
-              : `RSVP → ${months} month${months === 1 ? "" : "s"} free Workshop Pass`}
+              : `RSVP → ${months} month${months === 1 ? "" : "s"} free trial`}
           </div>
           {!alreadyPlus && (
             <p className="mt-1 text-sm text-ink-soft">

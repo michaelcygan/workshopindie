@@ -18,7 +18,7 @@ type EventLite = {
 
 /**
  * Compact, sidebar-friendly events card. Always renders something —
- * empty state shows the RSVP / Workshop Pass promise as a slim panel,
+ * empty state shows the RSVP / free trial promise as a slim panel,
  * populated state shows a stacked list of up to 4 upcoming events.
  */
 export function FeaturedEventsCompact({ className }: { className?: string }) {
@@ -39,7 +39,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
           <LiveDot live />
           <h2 className="font-display text-lg text-ink">Featured events</h2>
         </div>
-        <span className="text-[11px] text-ink-muted">RSVP = free Pass</span>
+        <span className="text-[11px] text-ink-muted">RSVP = free trial</span>
       </div>
 
       {upcoming.length === 0 ? (
@@ -52,7 +52,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
               Live events are coming.
             </h3>
             <p className="mt-1 text-xs text-ink-muted">
-              Workshops, open mics, listening parties — RSVP unlocks a free Workshop Pass.
+              Workshops, open mics, listening parties — RSVP unlocks a free trial.
             </p>
             {isAdmin ? (
               <Link
