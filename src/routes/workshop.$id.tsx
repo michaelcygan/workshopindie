@@ -290,6 +290,7 @@ function LiveRoomPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+      <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="min-w-0">
           <Link to="/workshop" className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden">
