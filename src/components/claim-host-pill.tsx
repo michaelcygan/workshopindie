@@ -76,7 +76,9 @@ export function ClaimHostPill({
   const now = useNow(500);
   const claimStartMs = claimStartedAt ? new Date(claimStartedAt).getTime() : null;
   const inWindow = !!claimStartMs && now - claimStartMs < CLAIM_WINDOW_MS;
-  const remainingSec = claimStartMs ? Math.max(0, Math.ceil((CLAIM_WINDOW_MS - (now - claimStartMs)) / 1000)) : 0;
+  const remainingSec = claimStartMs
+    ? Math.max(0, Math.ceil((CLAIM_WINDOW_MS - (now - claimStartMs)) / 1000))
+    : 0;
 
   const isClaimant = !!claimUserId && claimUserId === viewerId;
   const dwellOk = !!firstSeen && now - firstSeen >= DWELL_REQUIRED_MS;
