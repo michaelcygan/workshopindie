@@ -2,6 +2,7 @@ export type Category =
   | "film"
   | "music"
   | "writing"
+  | "writing_book"
   | "build"
   | "visual"
   | "critique"
@@ -16,13 +17,14 @@ export type Category =
   | "standup";
 
 /** Categories that can be published as a Work (excludes discussion-style topics). */
-export const WORK_CATEGORY_IDS = ["film", "music", "writing", "build", "visual"] as const;
+export const WORK_CATEGORY_IDS = ["film", "music", "writing", "writing_book", "build", "visual"] as const;
 export type WorkCategory = (typeof WORK_CATEGORY_IDS)[number];
 
 export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "film", label: "Film" },
   { id: "music", label: "Music" },
   { id: "writing", label: "Writing" },
+  { id: "writing_book", label: "Book" },
   { id: "build", label: "Build" },
   { id: "visual", label: "Visual" },
   { id: "critique", label: "Critique" },
@@ -37,6 +39,10 @@ export const CATEGORIES: { id: Category; label: string }[] = [
   { id: "standup", label: "Stand-up" },
 ];
 
+export const CATEGORY_LABELS: Record<Category, string> = Object.fromEntries(
+  CATEGORIES.map((c) => [c.id, c.label]),
+) as Record<Category, string>;
+
 export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
   (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
 );
@@ -46,6 +52,16 @@ export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
   film: ["Short film", "Music video", "Trailer", "Documentary", "Animation", "Reel"],
   music: ["Single", "EP / Album", "Live set", "Remix", "Beat", "Demo"],
   writing: ["Essay", "Poem", "Short story", "Screenplay", "Newsletter", "Article"],
+  writing_book: [
+    "Novel",
+    "Novella",
+    "Short story collection",
+    "Poetry",
+    "Memoir / Nonfiction",
+    "Anthology",
+    "Zine",
+    "Serial",
+  ],
   build: ["App", "Site", "Tool", "Plugin", "Hardware", "Game"],
   visual: ["Photo", "Illustration", "Design", "Painting", "Collage", "3D"],
 };
@@ -63,6 +79,7 @@ export const categoryClass = (c: Category) =>
     film: "bg-cat-film text-cat-film-ink",
     music: "bg-cat-music text-cat-music-ink",
     writing: "bg-cat-writing text-cat-writing-ink",
+    writing_book: "bg-cat-book text-cat-book-ink",
     build: "bg-cat-build text-cat-build-ink",
     visual: "bg-cat-visual text-cat-visual-ink",
     critique: "bg-cat-critique text-cat-critique-ink",
