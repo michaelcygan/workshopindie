@@ -144,7 +144,7 @@ function WorkDetail() {
       { "@type": "InteractionCounter", interactionType: "https://schema.org/LikeAction", userInteractionCount: work.like_count },
       { "@type": "InteractionCounter", interactionType: "https://schema.org/ViewAction", userInteractionCount: work.view_count },
     ],
-    creator: credits.map((c) => ({ "@type": "Person", name: c.profiles?.display_name ?? c.profiles?.username ?? "Anon" })),
+    creator: credits.map((c) => ({ "@type": "Person", name: c.profiles?.display_name ?? c.profiles?.username ?? c.display_name ?? "Anon" })),
   } : null);
 
   if (isLoading) {
