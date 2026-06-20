@@ -82,6 +82,8 @@ function DmsThread() {
   // (the unread divider is computed from each message's read_at inside groupMessages)
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [otherOnline, setOtherOnline] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
 
   const send = useServerFn(sendMessage);
   const markRead = useServerFn(markConversationRead);
@@ -93,6 +95,10 @@ function DmsThread() {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const bufferedRef = useRef<Message[]>([]);
   const readyRef = useRef(false);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastTypingSentRef = useRef(0);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   // Auto-grow textarea
   useEffect(() => {
@@ -213,6 +219,50 @@ function DmsThread() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [user?.id, conversationId, navigate]);
+
+  // Presence + typing broadcast — scoped to this conversation
+  useEffect(() => {
+    if (!user) return;
+    const uid = user.id;
+    const ch = supabase.channel(`dm-presence:${conversationId}`, {
+      config: { presence: { key: uid } },
+    });
+    presenceChannelRef.current = ch;
+
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      const otherKeys = Object.keys(state).filter((k) => k !== uid);
+      setOtherOnline(otherKeys.length > 0);
+    })
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const from = (payload.payload as { from?: string } | undefined)?.from;
+        if (!from || from === uid) return;
+        setOtherTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3500);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await ch.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      supabase.removeChannel(ch);
+      presenceChannelRef.current = null;
+    };
+  }, [user?.id, conversationId]);
+
+  function emitTyping() {
+    const ch = presenceChannelRef.current;
+    if (!ch || !user) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 1500) return;
+    lastTypingSentRef.current = now;
+    ch.send({ type: "broadcast", event: "typing", payload: { from: user.id } }).catch(() => {});
+  }
+
 
   // Smooth scroll on new messages, but only if user is near bottom
   const lastCount = useRef(0);
@@ -348,17 +398,30 @@ function DmsThread() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <Avatar className="h-10 w-10 ring-1 ring-border">
-          {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
-          <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
-            {initials(other)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-10 w-10 ring-1 ring-border">
+            {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
+            <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+              {initials(other)}
+            </AvatarFallback>
+          </Avatar>
+          {otherOnline && (
+            <span
+              aria-label="Online"
+              className="absolute bottom-0 right-0 inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+            />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-ink">
             {other?.display_name ?? other?.username ?? "Conversation"}
           </p>
-          {other?.username && <p className="truncate text-xs text-ink-muted">@{other.username}</p>}
+          {otherTyping ? (
+            <p className="truncate text-xs text-primary">typing…</p>
+          ) : other?.username ? (
+            <p className="truncate text-xs text-ink-muted">@{other.username}</p>
+          ) : null}
+
           {(collab || workshop) && (
             <div className="mt-1">
               {collab ? (
@@ -489,7 +552,7 @@ function DmsThread() {
             id="dm-composer"
             ref={composerRef}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => { setBody(e.target.value); emitTyping(); }}
             onKeyDown={onComposerKey}
             placeholder="Message…"
             rows={1}
