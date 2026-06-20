@@ -119,6 +119,22 @@ export function ChannelView({
   const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
+  const [videoFocus, setVideoFocus] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem(`ws:focus:${roomId}`) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(`ws:focus:${roomId}`, videoFocus ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [videoFocus, roomId]);
   const openWork = (id: string) => {
     setPeekWorkId(id);
     setWorkPeekOpen(true);
