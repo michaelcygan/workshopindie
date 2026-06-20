@@ -254,6 +254,7 @@ function WorkDetail() {
               credits={credits.map<CreditChip>((c) => ({
                 id: c.id,
                 role_label: c.role_label,
+                display_name: c.display_name,
                 profiles: c.profiles
                   ? {
                       id: c.profiles.id,
