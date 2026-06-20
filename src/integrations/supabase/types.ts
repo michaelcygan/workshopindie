@@ -3552,32 +3552,35 @@ export type Database = {
       work_credits: {
         Row: {
           created_at: string
+          display_name: string | null
           hidden_from_profile: boolean
           id: string
           pinned_at: string | null
           role_label: string
           sort_order: number
-          user_id: string
+          user_id: string | null
           work_id: string
         }
         Insert: {
           created_at?: string
+          display_name?: string | null
           hidden_from_profile?: boolean
           id?: string
           pinned_at?: string | null
           role_label: string
           sort_order?: number
-          user_id: string
+          user_id?: string | null
           work_id: string
         }
         Update: {
           created_at?: string
+          display_name?: string | null
           hidden_from_profile?: boolean
           id?: string
           pinned_at?: string | null
           role_label?: string
           sort_order?: number
-          user_id?: string
+          user_id?: string | null
           work_id?: string
         }
         Relationships: [
@@ -3787,6 +3790,7 @@ export type Database = {
           is_collaborative: boolean
           license_type: Database["public"]["Enums"]["work_license"]
           like_count: number
+          ownership_certified_at: string | null
           popularity_score: number
           primary_url: string | null
           published_at: string | null
@@ -3798,6 +3802,7 @@ export type Database = {
           source_workshop_id: string | null
           status: Database["public"]["Enums"]["work_status"]
           subcategories: string[]
+          subtype: string | null
           title: string
           updated_at: string
           view_count: number
@@ -3822,6 +3827,7 @@ export type Database = {
           is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
+          ownership_certified_at?: string | null
           popularity_score?: number
           primary_url?: string | null
           published_at?: string | null
@@ -3833,6 +3839,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["work_status"]
           subcategories?: string[]
+          subtype?: string | null
           title: string
           updated_at?: string
           view_count?: number
@@ -3857,6 +3864,7 @@ export type Database = {
           is_collaborative?: boolean
           license_type?: Database["public"]["Enums"]["work_license"]
           like_count?: number
+          ownership_certified_at?: string | null
           popularity_score?: number
           primary_url?: string | null
           published_at?: string | null
@@ -3868,6 +3876,7 @@ export type Database = {
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["work_status"]
           subcategories?: string[]
+          subtype?: string | null
           title?: string
           updated_at?: string
           view_count?: number

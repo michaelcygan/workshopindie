@@ -277,5 +277,21 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
     // 3) Build provider embed even when oEmbed didn't run
     if (!base.embed_url) base.embed_url = buildEmbedUrl(provider, u);
 
+    // 4) Upgrade YouTube thumbnails to maxresdefault (no letterboxing).
+    // oEmbed returns hqdefault (480×360) which has black bars baked in for 16:9 videos.
+    // maxresdefault is 1280×720 with no letterbox. Fall back to sddefault if it 404s.
+    if (provider === "youtube") {
+      const id = youtubeId(u);
+      if (id) {
+        const maxres = `https://i.ytimg.com/vi/${id}/maxresdefault.jpg`;
+        const head = await fetchWithTimeout(maxres, { method: "HEAD" }, 2000);
+        if (head && head.ok) {
+          base.cover_url = maxres;
+        } else {
+          base.cover_url = `https://i.ytimg.com/vi/${id}/sddefault.jpg`;
+        }
+      }
+    }
+
     return base;
   });

@@ -1,0 +1,1 @@
+ALTER TABLE public.work_credits ALTER COLUMN user_id DROP NOT NULL;

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { motion } from "framer-motion";
-import { Link2, Loader2, Sparkles, ArrowRight, Play } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Link2, Loader2, Sparkles, ArrowRight, Play, ChevronDown } from "lucide-react";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
 import { VideoUploadButton, type StreamUploadResult } from "@/components/video-upload-button";
+import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
-import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { WORK_CATEGORIES, WORK_SUBTYPES, type Category, type WorkCategory, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
@@ -32,13 +34,6 @@ export const Route = createFileRoute("/works/new")({
   component: NewWork,
   validateSearch: newWorkSearch,
 });
-
-const LICENSES = [
-  { id: "cc_by", label: "CC BY — credit required" },
-  { id: "portfolio_credit_only", label: "Portfolio + credit only" },
-  { id: "rights_managed_externally", label: "Rights managed externally" },
-  { id: "private", label: "Private (you only)" },
-] as const;
 
 const EXAMPLES = [
   { label: "YouTube", value: "https://www.youtube.com/watch?v=" },
@@ -72,14 +67,17 @@ function NewWork() {
 
   // form state
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Category>("visual");
+  const [category, setCategory] = useState<WorkCategory>("visual");
+  const [subtype, setSubtype] = useState<string | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [primaryUrl, setPrimaryUrl] = useState("");
   const [embedUrl, setEmbedUrl] = useState<string | null>(null);
   const [provider, setProvider] = useState<string | null>(null);
-  const [license, setLicense] = useState<typeof LICENSES[number]["id"]>("cc_by");
+  const [ownsRights, setOwnsRights] = useState(false);
+  const [coCreators, setCoCreators] = useState<CoCreator[]>([]);
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [streamUid, setStreamUid] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
@@ -105,7 +103,7 @@ function NewWork() {
   function applyExtracted(e: ExtractedWork) {
     setExtracted(e);
     setTitle(e.title ?? "");
-    if (e.suggested_category) setCategory(e.suggested_category);
+    if (e.suggested_category) setCategory(e.suggested_category as WorkCategory);
     setExcerpt(e.description ? e.description.slice(0, 180) : "");
     setDescription(e.description ?? "");
     setCoverUrl(e.cover_url ?? null);
@@ -133,8 +131,6 @@ function NewWork() {
     setStep("confirm");
   }
 
-
-
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
     if (!url) return toast.error("Paste a link first.");
@@ -159,7 +155,8 @@ function NewWork() {
 
   async function publish(opts: { thenAddAnother?: boolean } = {}) {
     if (!user) return;
-    if (!title.trim()) return toast.error("Title is required");
+    if (!title.trim()) return toast.error("Give it a title.");
+    if (!ownsRights) return toast.error("Confirm this is your work, or you have the rights to share it.");
 
     // Free tier cap on published works
     if (!isPlus) {
@@ -181,14 +178,16 @@ function NewWork() {
       .insert({
         title: title.trim(),
         slug: "",
-        category,
+        category: category as Category,
+        subtype: subtype,
         excerpt: excerpt || null,
         description: description || null,
         cover_url: coverUrl,
         primary_url: primaryUrl || null,
         embed_url: embedUrl,
         source_type: "manual",
-        license_type: license,
+        license_type: "portfolio_credit_only",
+        ownership_certified_at: new Date().toISOString(),
         status: "published",
         visibility: "public",
         created_by: user.id,
@@ -201,12 +200,32 @@ function NewWork() {
       return toast.error(error?.message ?? "Failed to publish");
     }
 
-    await supabase.from("work_credits").insert({
-      work_id: work.id,
-      user_id: user.id,
-      role_label: "Creator",
-      sort_order: 0,
+    // Creator credit (self)
+    const credits: Array<{
+      work_id: string;
+      user_id: string | null;
+      display_name: string | null;
+      role_label: string;
+      sort_order: number;
+    }> = [
+      {
+        work_id: work.id,
+        user_id: user.id,
+        display_name: null,
+        role_label: "Creator",
+        sort_order: 0,
+      },
+    ];
+    coCreators.forEach((c, i) => {
+      credits.push({
+        work_id: work.id,
+        user_id: c.user_id,
+        display_name: c.user_id ? null : c.display_name,
+        role_label: "Co-creator",
+        sort_order: i + 1,
+      });
     });
+    await supabase.from("work_credits").insert(credits);
 
     // Link uploaded Cloudflare Stream asset (if any) to this work
     if (streamUid) {
@@ -218,7 +237,7 @@ function NewWork() {
         .eq("owner_id", user.id);
     }
 
-    // Tag into selected Groups (best-effort, non-blocking)
+    // Tag into selected Groups (best-effort)
     if (selectedGroups.length > 0) {
       const results = await Promise.allSettled(
         selectedGroups.map((g) =>
@@ -236,11 +255,11 @@ function NewWork() {
     toast.success("Work published");
 
     if (opts.thenAddAnother) {
-      // reset and return to drop state
       setExtracted(null);
       setTitle(""); setExcerpt(""); setDescription("");
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
-      setProvider(null); setLicense("cc_by");
+      setProvider(null); setSubtype(null); setOwnsRights(false);
+      setCoCreators([]); setDetailsOpen(false);
       setStreamUid(null);
       setUrlInput("");
       setStep("drop");
@@ -250,12 +269,14 @@ function NewWork() {
     }
   }
 
+  const subtypeOptions = WORK_SUBTYPES[category] ?? [];
+
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Publish a Work</h1>
         <p className="mt-1 text-ink-muted">
-          Drop a link to something you've made — we'll fill in the rest.
+          Drop a link, upload a file, or start from scratch — we'll do the rest.
         </p>
         <a
           href="/works/collab/new"
@@ -264,7 +285,6 @@ function NewWork() {
           Or start a collaborative Work — invite people to ship it with you →
         </a>
       </motion.div>
-
 
       {step === "drop" && (
         <DropStep
@@ -280,17 +300,17 @@ function NewWork() {
       {(step === "confirm" || step === "manual") && (
         <form
           onSubmit={(e) => { e.preventDefault(); void publish(); }}
-          className="mt-8 space-y-7"
+          className="mt-8 space-y-6"
         >
-          {step === "confirm" && extracted && (
+          {step === "confirm" && extracted && embedUrl && (
             <PreviewCard
               extracted={extracted}
               embedUrl={embedUrl}
-              coverUrl={coverUrl}
               title={title}
             />
           )}
 
+          {/* Cover */}
           <section className="space-y-2">
             <Label>Cover</Label>
             <ImageUpload
@@ -301,61 +321,165 @@ function NewWork() {
               label={extracted?.cover_url ? "Replace cover image" : "Upload a 4:5 cover image"}
             />
             {extracted?.cover_url && coverUrl === extracted.cover_url && (
-              <p className="text-xs text-ink-muted">Pulled from {providerLabel(extracted.provider) ?? "the link"}.</p>
+              <p className="text-xs text-ink-muted">
+                Pulled from {providerLabel(extracted.provider) ?? "the link"}. Upload your own to replace it.
+              </p>
             )}
           </section>
 
+          {/* Title */}
           <section className="space-y-1.5">
             <Label htmlFor="title">Title</Label>
-            <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="What is it called?" />
+            <Input
+              id="title"
+              required
+              maxLength={140}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What is it called?"
+            />
           </section>
 
+          {/* Category */}
           <section className="space-y-2">
             <Label>Category</Label>
             <div className="flex flex-wrap gap-2">
               {WORK_CATEGORIES.map((c) => (
-                <button type="button" key={c.id} onClick={() => setCategory(c.id)}
-                  className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                    category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                <button
+                  type="button"
+                  key={c.id}
+                  onClick={() => { setCategory(c.id as WorkCategory); setSubtype(null); }}
+                  className={cn(
+                    "rounded-full border px-3 py-1.5 text-sm transition",
+                    category === c.id
+                      ? cn("border-transparent", categoryClass(c.id))
+                      : "border-border bg-surface text-ink-soft hover:bg-muted",
+                  )}
+                >
                   {c.label}
                 </button>
               ))}
             </div>
+            {subtypeOptions.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {subtypeOptions.map((s) => (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setSubtype(subtype === s ? null : s)}
+                    className={cn(
+                      "rounded-full border px-2.5 py-1 text-xs transition",
+                      subtype === s
+                        ? "border-ink bg-ink text-background"
+                        : "border-border bg-background text-ink-soft hover:bg-muted",
+                    )}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-ink-muted">Subtype is optional — helps people find your work.</p>
           </section>
 
-          <section className="space-y-1.5">
-            <Label htmlFor="excerpt">One-line excerpt</Label>
-            <Input id="excerpt" maxLength={180} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="A short tagline." />
+          {/* Ownership self-cert */}
+          <section className="rounded-2xl border border-border bg-surface p-4">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={ownsRights}
+                onCheckedChange={(v) => setOwnsRights(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm text-ink">
+                <span className="font-medium">I made this, or I have the rights to share it.</span>
+                <span className="mt-1 block text-xs text-ink-muted">
+                  You can fine-tune rights and add downloads later from the Work page.
+                </span>
+              </span>
+            </label>
           </section>
 
-          <section className="space-y-1.5">
-            <Label htmlFor="desc">Description</Label>
-            <Textarea id="desc" rows={6} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What is it? Who is it for? How was it made?" />
+          {/* Add details (collapsed) */}
+          <section className="rounded-2xl border border-border bg-surface">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen((v) => !v)}
+              className="flex w-full items-center justify-between gap-2 px-4 py-3 text-sm text-ink-soft hover:text-ink"
+            >
+              <span className="font-medium">Add details</span>
+              <span className="flex items-center gap-2 text-xs text-ink-muted">
+                {coCreators.length > 0 && <span>{coCreators.length} co-creator{coCreators.length === 1 ? "" : "s"}</span>}
+                {selectedGroups.length > 0 && <span>{selectedGroups.length} group{selectedGroups.length === 1 ? "" : "s"}</span>}
+                <ChevronDown className={cn("h-4 w-4 transition-transform", detailsOpen && "rotate-180")} />
+              </span>
+            </button>
+            <AnimatePresence initial={false}>
+              {detailsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="overflow-hidden"
+                >
+                  <div className="space-y-5 border-t border-border px-4 py-5">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="excerpt">One-line excerpt</Label>
+                      <Input
+                        id="excerpt"
+                        maxLength={180}
+                        value={excerpt}
+                        onChange={(e) => setExcerpt(e.target.value)}
+                        placeholder="A short tagline."
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="desc">Description</Label>
+                      <Textarea
+                        id="desc"
+                        rows={5}
+                        maxLength={3000}
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="What is it? Who is it for? How was it made?"
+                      />
+                    </div>
+
+                    <CoCreatorPicker
+                      value={coCreators}
+                      onChange={setCoCreators}
+                      excludeUserIds={user ? [user.id] : []}
+                    />
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor="url">Source URL</Label>
+                      <Input
+                        id="url"
+                        type="url"
+                        value={primaryUrl}
+                        onChange={(e) => setPrimaryUrl(e.target.value)}
+                        placeholder="https://…"
+                      />
+                      <p className="text-xs text-ink-muted">Where the original lives — Vimeo, Bandcamp, GitHub, your site.</p>
+                    </div>
+
+                    <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </section>
 
-          <section className="space-y-1.5">
-            <Label htmlFor="url">Source URL</Label>
-            <Input id="url" type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} placeholder="https://…" />
-            <p className="text-xs text-ink-muted">Where the original lives — Vimeo, Bandcamp, GitHub, your site.</p>
-          </section>
-
-          <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
-
-
-
-          <section className="space-y-1.5">
-            <Label htmlFor="lic">License</Label>
-            <select id="lic" value={license} onChange={(e) => setLicense(e.target.value as typeof license)}
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
-              {LICENSES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
-            </select>
-          </section>
-
-          <div className="rounded-2xl border border-border bg-surface p-4 text-sm text-ink-muted">
-            You'll be credited as <span className="text-ink">{myProfile?.display_name || myProfile?.username || "yourself"}</span>.
-            Co-creator credits open up when you publish through a Workshop.
+          {/* Credit summary */}
+          <div className="text-sm text-ink-muted">
+            You'll be credited as <span className="text-ink">{myProfile?.display_name || myProfile?.username || "yourself"}</span>
+            {coCreators.length > 0 && (
+              <> with {coCreators.map((c) => c.display_name).join(", ")}</>
+            )}.
           </div>
 
+          {/* Sticky publish bar */}
           <div className="sticky bottom-4 z-10 flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-border bg-background/95 backdrop-blur p-3 shadow-lift">
             <Button
               type="button"
@@ -411,7 +535,7 @@ function DropStep({
       <div className="rounded-3xl border border-border bg-surface p-6 shadow-soft md:p-8">
         <div className="flex items-center gap-2 text-sm text-ink-muted">
           <Sparkles className="h-4 w-4 text-primary" />
-          Paste a SoundCloud, YouTube, Vimeo, Bandcamp, Spotify, or any link
+          Paste a link — we'll pull the cover, title, and embed
         </div>
         <form
           onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
@@ -446,7 +570,7 @@ function DropStep({
           ))}
         </div>
         <p className="mt-4 text-xs text-ink-muted">
-          Drop links to work you made or co-made. We honor what you claim — misuse can be reported from the Work page.
+          For photos, illustrations, or anything without a link — start from scratch and upload below.
         </p>
       </div>
 
@@ -465,23 +589,16 @@ function DropStep({
 }
 
 function PreviewCard({
-  extracted, embedUrl, coverUrl, title,
+  extracted, embedUrl, title,
 }: {
   extracted: ExtractedWork;
-  embedUrl: string | null;
-  coverUrl: string | null;
+  embedUrl: string;
   title: string;
 }) {
   const label = providerLabel(extracted.provider);
   return (
     <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-soft">
-      {embedUrl ? (
-        <EmbedPlayer url={embedUrl} provider={extracted.provider} title={title} className="rounded-none border-0" />
-      ) : coverUrl ? (
-        <img src={coverUrl} alt="" className="w-full aspect-video object-cover" />
-      ) : (
-        <div className="aspect-video w-full gradient-soft" />
-      )}
+      <EmbedPlayer url={embedUrl} provider={extracted.provider} title={title} className="rounded-none border-0" />
       <div className="p-4">
         <div className="flex items-center gap-2 text-xs text-ink-muted">
           {label && (
