@@ -1,13 +1,15 @@
-# Two card descriptions — final copy
+# Rename top-nav entry: "Start a Draft Workshop" → "Create a Workshop"
 
-Edit `src/routes/index.tsx`. Two string swaps. Headings, icons, and CTAs unchanged.
+The screenshot is the top-nav create menu item (`src/components/top-nav.tsx:69`). The "Draft" status lives inside the create page itself and shouldn't bleed into the entry point — it dilutes the "Workshop" brand term.
 
-## Drop into a Workshop (line 110)
-**From:** Five seats. Voice or video. Whoever's around, right now.
-**To:** A live, five-seat workshop with shared tools. Start a jam session, a critique, office hours, or just to work alongside other people.
+## Change
+- `src/components/top-nav.tsx:69` — `Start a Draft Workshop` → `Create a Workshop`. Icon (Coffee), link, and surrounding items unchanged.
 
-## Post a Collab (line 128)
-**From:** The thing you keep meaning to make. Post it. Open a Workshop on it when you're ready.
-**To:** Describe what you're working on and accept applications from people who want in. Make your project and showcase it on your profile.
+## Out of scope (intentionally untouched)
+The phrase "Draft Workshop" still appears in places where it describes the actual draft state, which is correct there:
+- `src/routes/workshops.lobby.new.tsx` — page H1 + `<head>` title/description (the create page itself, where draft status is explained)
+- `src/routes/workshops.$slug.tsx:717` — in-room banner ("This is a Draft Workshop")
+- `src/components/lobbies-section.tsx:90` — "Draft Workshops" rail header (lists drafts specifically)
+- `src/lib/lobby.functions.ts` — code comment
 
-No other changes.
+If you also want the create page H1 and the rail header renamed, say so and I'll extend the patch.

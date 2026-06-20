@@ -66,7 +66,7 @@ export function TopNav() {
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/workshops/lobby/new" })}>
-                <Coffee className="mr-2 h-4 w-4" /> Start a Draft Workshop
+                <Coffee className="mr-2 h-4 w-4" /> Create a Workshop
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
