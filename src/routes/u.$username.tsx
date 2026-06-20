@@ -193,7 +193,7 @@ async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
 async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("pinned_at, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order, profiles(id,display_name,username,avatar_url)))")
+    .select("pinned_at, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url)))")
     .eq("user_id", userId)
     .not("pinned_at", "is", null)
     .order("pinned_at", { ascending: false })
@@ -206,7 +206,7 @@ async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
       cover_url: string | null; embed_url: string | null; source_type: string;
       like_count: number; save_count: number; view_count: number;
       published_at: string | null; status: string; visibility: string;
-      work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
+      work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
     };
   };
   return ((data as unknown as Row[]) ?? [])
@@ -218,7 +218,7 @@ async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
       published_at: r.work.published_at,
       credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order).map((c) => ({
         id: c.profiles?.id ?? null,
-        display_name: c.profiles?.display_name ?? null,
+        display_name: c.profiles?.display_name ?? c.display_name ?? null,
         username: c.profiles?.username ?? null,
         avatar_url: c.profiles?.avatar_url ?? null,
       })),
