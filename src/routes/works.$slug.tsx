@@ -295,7 +295,7 @@ function Byline({ credits }: { credits: WorkRow["work_credits"] }) {
       by{" "}
       {shown.map((c, i) => {
         const p = c.profiles;
-        const name = p?.display_name || p?.username || "Anon";
+        const name = p?.display_name || p?.username || c.display_name || "Anon";
         const sep = i < shown.length - 1 ? ", " : extra > 0 ? `, +${extra} more` : "";
         const inner = (
           <span className="font-medium text-ink hover:text-gradient-motion hover:underline underline-offset-2 transition">
