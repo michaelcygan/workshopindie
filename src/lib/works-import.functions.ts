@@ -22,7 +22,14 @@ export type Provider =
   | "arena"
   | "substack"
   | "medium"
+  | "amazon"
+  | "goodreads"
+  | "bookshop"
+  | "apple_books"
+  | "google_books"
   | "generic";
+
+export type BookBuyLink = { label: string; url: string };
 
 export type ExtractedWork = {
   provider: Provider;
@@ -33,7 +40,13 @@ export type ExtractedWork = {
   primary_url: string;
   suggested_category: Category | null;
   author_name: string | null;
+  /** Populated only when the link is recognized as a book source. */
+  book?: {
+    author: string | null;
+    buy_links: BookBuyLink[];
+  };
 };
+
 
 const TRACKING_PARAMS = [
   "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
