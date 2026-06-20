@@ -368,18 +368,6 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="flex items-center gap-2">
-            {isLeaderless && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={room?.status !== "active" || !!room?.workshop_id || !!room?.claim_user_id}
-                onClick={handleClaimHost}
-                className="rounded-full gap-1.5"
-              >
-                <Crown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Claim Host</span>
-              </Button>
-            )}
             {!isHost && room?.status === "active" && (
               <HopButton
                 roomId={id}
@@ -397,6 +385,18 @@ function LiveRoomPage() {
                 participants={participants}
                 onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
               />
+            )}
+            {isLeaderless && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={room?.status !== "active" || !!room?.workshop_id || !!room?.claim_user_id}
+                onClick={handleClaimHost}
+                className="rounded-full gap-1.5"
+              >
+                <Crown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Claim Host</span>
+              </Button>
             )}
             <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
               <Rocket className="h-3.5 w-3.5" />{" "}
