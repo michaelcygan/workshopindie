@@ -11,9 +11,12 @@ export function FollowButton({
   /** When set, broadcasts a follow notification on `instant:{roomId}` so the
    * followed user sees a live toast inside the workshop. */
   roomId,
+  /** Optional label override, e.g. "Follow back" when the target already follows you. */
+  followLabel,
 }: {
   targetUserId: string;
   roomId?: string;
+  followLabel?: string;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -87,7 +90,7 @@ export function FollowButton({
       className="rounded-full gap-1.5"
     >
       {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-      {following ? "Following" : "Follow"}
+      {following ? "Following" : (followLabel ?? "Follow")}
     </Button>
   );
 }

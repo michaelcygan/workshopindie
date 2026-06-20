@@ -1,13 +1,19 @@
-import { type ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { ExternalLink, MessageCircle, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { FollowButton } from "@/components/follow-button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { openOrCreateConversation } from "@/lib/dms.functions";
+import { toast } from "sonner";
 import { cn, formatCount } from "@/lib/utils";
 
 export type PeekProfile = {
@@ -112,6 +118,39 @@ function PeekBody({
   roomId?: string;
 }) {
   const { data, isLoading } = useQuery(profilePeekQueryOptions(userId));
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const openConvo = useServerFn(openOrCreateConversation);
+  const isSelf = user?.id === userId;
+
+  const { data: mutual } = useQuery({
+    queryKey: ["profile-peek-mutual", user?.id, userId] as const,
+    enabled: !!user && !isSelf,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const [iFollow, theyFollow] = await Promise.all([
+        supabase.from("follows").select("follower_user_id")
+          .eq("follower_user_id", user!.id).eq("followed_user_id", userId).maybeSingle(),
+        supabase.from("follows").select("follower_user_id")
+          .eq("follower_user_id", userId).eq("followed_user_id", user!.id).maybeSingle(),
+      ]);
+      return { iFollow: !!iFollow.data, theyFollow: !!theyFollow.data };
+    },
+  });
+
+  const [opening, setOpening] = useState(false);
+  async function handleMessage() {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const res = await openConvo({ data: { otherUserId: userId } });
+      navigate({ to: "/dms/$conversationId", params: { conversationId: res.conversationId } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't open conversation");
+    } finally {
+      setOpening(false);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -180,8 +219,34 @@ function PeekBody({
           <span><b className="text-ink">{formatCount(profile.work_count)}</b> works</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <FollowButton targetUserId={profile.id} roomId={roomId} />
+        <div className="flex items-center gap-2 flex-wrap">
+          {isSelf ? (
+            <Button
+              variant="outline"
+              className="rounded-full gap-1.5"
+              onClick={() => navigate({ to: "/settings" })}
+            >
+              <Pencil className="h-4 w-4" /> Edit profile
+            </Button>
+          ) : (
+            <>
+              <FollowButton
+                targetUserId={profile.id}
+                roomId={roomId}
+                followLabel={mutual?.theyFollow && !mutual?.iFollow ? "Follow back" : undefined}
+              />
+              {mutual?.iFollow && mutual?.theyFollow && (
+                <Button
+                  variant="outline"
+                  className="rounded-full gap-1.5"
+                  onClick={handleMessage}
+                  disabled={opening}
+                >
+                  <MessageCircle className="h-4 w-4" /> Message
+                </Button>
+              )}
+            </>
+          )}
           {profile.username && (
             <a
               href={`/u/${profile.username}`}
