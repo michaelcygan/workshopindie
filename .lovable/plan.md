@@ -1,109 +1,79 @@
-## Goal
-Make publishing a Work fast and elegant for the 90% case — paste a link, confirm, publish — while keeping advanced fields one click away. Fix the cover-image letterbox issue, replace the confusing License with a simple ownership self-cert, and add optional co-creator credits and category subtypes.
+## Profile 2027 — portfolio-grade redesign
 
-## The new flow (v1)
+Reframe `/u/:username` from a generic tabbed dashboard into a portfolio surface the user actually wants to share. Tighter IA, richer Works grid, in-page lightbox, and a hero that does work.
 
-```
-Paste a link (or upload image / video / file)
-        │
-        ▼
-We auto-fill: cover, title, category guess, embed
-        │
-        ▼
-Confirm card (one screen)
- ─ Cover (cropped, square, no letterbox)
- ─ Title
- ─ Category + optional subtype chip
- ─ [☑] This is my work (or I have rights to share it)   ← required
- ─ ▾ Add details (collapsed)
-       • One-line excerpt
-       • Description
-       • Co-creators (tag users or type a name)
-       • Source URL (prefilled)
-       • Groups
-        │
-        ▼
-   Publish Work
-```
+### 1. Information architecture (tabs)
 
-Everything inside "Add details" is optional. Title + category + ownership check are the only required fields. Source URL stays prefilled from the paste, hidden under details.
+Collapse 8 tabs → **4**:
 
-## What changes
+| New tab | Folds in | Notes |
+|---|---|---|
+| **Works** | Works + **Credits** | One unified portfolio. Role filter chip: *All · Created · Credited*. Credits are no longer a separate tab — they're Works you appear on, filterable. |
+| **Collabs** | Collabs | Unchanged. |
+| **Activity** *(own only)* | **Drafts** + **Workshops** + existing Activity (applied / participating) | Single chronological feed grouped by section: *Drafts · Workshops · Applied · Participating*. Private — never shown to visitors. |
+| **About** | About + **Groups** | Groups become a subsection of About (city/home chips inline with bio). |
 
-### 1. Cover image — fix the YouTube letterbox
-- For YouTube thumbnails (and any source we know is 16:9), auto-crop to a centered square / 4:5 before showing as cover.
-- Prefer YouTube's `maxresdefault.jpg` (1280×720) cropped to 4:5 around the center, instead of `hqdefault` (which has the black bars baked in).
-- Add an "Adjust crop" affordance on the cover preview — simple drag-to-reposition on a square canvas, save the cropped result to the `work-covers` bucket. (Use existing `ImageUpload` + a small crop overlay; no new library needed — CSS object-position + a "Use this frame" button is enough for v1.)
-- If the source is a video the user uploaded via Cloudflare Stream, allow "Pick frame from video" later (out of scope for v1, leave a stub).
+Visitor sees only: Works · Collabs · About. Owner additionally sees: Activity.
 
-### 2. Ownership instead of License
-- Remove the License dropdown from the v1 flow.
-- Replace with a required checkbox: **"I made this, or I have the rights to share it."** Single line, plain language.
-- Keep `license_type` in the DB; default new manual works to `portfolio_credit_only`. Editable later in a future "Advanced" panel on the Work edit page.
-- Footnote (small, muted): "You can change rights and add a downloadable version later." Sets us up for public-domain / downloads tab in the future without putting it in front of the user now.
+Default tab: **Works** for everyone (own and visitor). Drop the "first non-empty visitor tab" logic — a portfolio always opens on Works.
 
-### 3. Co-creators (optional)
-- New collapsed section "Co-creators" under Add details.
-- Combobox that searches `profiles` by display_name / username (reuse the pattern from `GroupPicker` / collab invites).
-- If no match, allow "Add as plain name" — stores a free-text credit (no user_id), shown as a non-clickable chip.
-- On publish, insert rows into `work_credits`:
-  - Creator (current user, sort_order 0, role_label "Creator")
-  - Each tagged user (sort_order n, role_label "Co-creator", user_id set)
-  - Each plain-name credit (sort_order n, role_label "Co-creator", user_id null, display_name stored in a new column — see schema note).
-- Replace the "Co-creator credits open up when you publish through a Workshop" disclaimer with: "You'll be credited as **Name**. Add co-creators below if you made this with others."
+### 2. Works tab — real portfolio grid
 
-### 4. Category subtypes (optional)
-- Add a lightweight subtype chip row that appears once a category is picked. Subtypes per category (v1 set):
-  - Film: Short film, Music video, Trailer, Doc, Animation, Reel
-  - Music: Single, EP/Album, Live set, Remix, Beat, Demo
-  - Writing: Essay, Poem, Short story, Screenplay, Newsletter, Article
-  - Build: App, Site, Tool, Plugin, Hardware, Game
-  - Visual: Photo, Illustration, Design, Painting, Collage, 3D
-- Subtype is optional, single-select, free-text "Other" allowed. Stored as a string on `works.subtype`.
-- These power better filtering and richer profile portfolios down the road.
+- **Pinned hero row** stays, but upgrade to a true masonry feel: 2-up on desktop with one optional "spotlight" slot (first pinned renders larger / 16:10).
+- **Filter bar** above the grid, single row:
+  - Role chips: *All · Created · Credited* (drives the merged Works+Credits dataset).
+  - Category chips (existing `MediumChip`), only render when >1 category present.
+  - Sort dropdown on the right: *Recent · Oldest · Most loved*.
+- **Card upgrades** (in `work-card.tsx`, not new component):
+  - Hover state reveals title + category + year overlay on the cover, Behance/Cargo style.
+  - "Credited" cards get a subtle corner badge with the owner's role (e.g. "Editor", "Co-writer").
+- **Empty filtered state**: clear copy + reset chip.
 
-### 5. Required vs optional (final list)
-Required: Title, Category, Ownership checkbox, Cover (auto-filled is fine).
-Optional, collapsed under "Add details ▾": Subtype, Excerpt, Description, Co-creators, Source URL, Groups.
-Removed from v1: License dropdown (kept in DB, edit later).
+### 3. Lightbox — open any Work in place
 
-### 6. Visual polish
-- Single confirm screen instead of the long scrolling form. Sticky publish bar stays.
-- "Add details" disclosure uses a thin chevron row, not a full card — keeps the page short for the quick path.
-- Cover preview becomes a true 4:5 frame with `object-cover` and a "Replace" + "Adjust" pair of small buttons.
-- Loosen the "Drop a link" step's helper copy: "Paste a link, upload a file, or start from scratch."
-- Mobile: same single-screen layout, sticky bar already handles small screens.
+New `<WorkLightbox>` component (Radix Dialog, full-viewport).
 
-## Files to touch
+- Click any card on the profile → opens lightbox instead of navigating.
+- Left/right arrow keys + on-screen chevrons cycle through the *currently filtered* Works list.
+- URL syncs via search param: `?w=<slug>` (deep-linkable, shareable, back button closes).
+- Contents: cover/embed at top (image, YouTube/Vimeo/Spotify/SoundCloud via existing `EmbedPlayer`, book cover for `writing_book`), title, byline, category chip, description, buy links for books, collaborators row, love/comment counts, "Open full page →" link to `/works/$slug`.
+- Mobile: full-screen sheet, swipe to dismiss.
+- Esc / backdrop click closes and clears `?w=`.
 
-- `src/routes/works.new.tsx` — restructure the form: required block + collapsed details, swap License for ownership checkbox, add co-creator picker, add subtype chips, prefill flow stays the same.
-- `src/lib/works-import.functions.ts` — switch YouTube thumb URL to `maxresdefault` with fallback, return `cover_aspect: "16:9"` so the client knows to crop.
-- New `src/components/cover-cropper.tsx` — small client component: shows the cover inside a 4:5 frame, drag to reposition, "Use this frame" uploads the cropped JPEG to `work-covers` and returns the new URL. Reuses `supabase.storage` directly.
-- New `src/components/cocreator-picker.tsx` — combobox over `profiles` with "Add name" fallback. Returns `{ user_id?: string; display_name: string }[]`.
-- `src/lib/categories.ts` — add `WORK_SUBTYPES: Record<WorkCategory, string[]>`.
+### 4. Hero refresh
 
-## Schema (one migration)
+The current hero (name + handle + city + 3 action buttons + completion chip + stat row) reads as a settings page. Tighten it:
 
-```sql
-ALTER TABLE public.works
-  ADD COLUMN IF NOT EXISTS subtype text,
-  ADD COLUMN IF NOT EXISTS ownership_certified_at timestamptz;
+- **Name** (display serif, unchanged) + **@handle** · **city** inline beneath.
+- **Bio one-liner** (first ~140 chars of about) rendered directly under handle when present — currently buried in About tab.
+- **Avatar** (40px) inline with handle row if `avatar_url` set; placeholder initial otherwise.
+- **Action row** condensed: primary CTA only (`Publish` for own, `Follow` for visitor), secondary actions in a `…` menu (Post Collab, Drop into Workshop, Share, Report).
+- **Stats row**: drop "Credits" as its own stat (now folded into Works count). Keep: *Works · Worked with · Followers · Following*. Numbers stay serif but tighter — currently feels like a counter strip, should feel like portfolio metadata.
+- **Completion chip** stays but moves to a dismissable inline note under stats (own only, only when <100%).
 
-ALTER TABLE public.work_credits
-  ADD COLUMN IF NOT EXISTS display_name text;  -- for plain-name co-creators (user_id null)
+### 5. Share affordance
 
--- existing GRANTs / RLS unchanged
-```
+- Add a small `Share` icon button in the hero (own + visitor) that copies the canonical URL (`workshopindie.com/u/<handle>`) and shows a toast. This is the "send a link" muscle memory.
+- Set `og:image` on the profile route using the user's `cover_image_url` (fall back to first pinned Work cover, then default).
 
-Defaults: `subtype` null, `ownership_certified_at` set on publish when the checkbox is true.
+### 6. Out of scope
 
-## Out of scope (intentional, for later)
-- Editable advanced panel (license picker, downloadable file, visibility) on the Work edit page.
-- Frame-picker from uploaded videos.
-- Public-domain / downloads tab.
-- Co-creator approval workflow (tagged users get notified but credit is shown immediately in v1).
+- No new DB fields. Credits already queryable; reusing `creditedWorks` dataset.
+- No edits to `/works/$slug` detail page — it remains the canonical permalink.
+- No changes to category color tokens.
+- Profile editing flow unchanged.
 
-## Technical notes
-- YouTube `maxresdefault` 404s for some videos — fall back to `hqdefault` and crop the top/bottom 12% before showing (that's exactly the letterbox band).
-- Subtype is a free string column, not an enum, so adding new subtypes later doesn't need a migration.
-- Co-creator plain-name rows have `user_id` null; existing reads of `work_credits.profiles` need a coalesce to `display_name` — update `listFollowingWorks` and any other readers in the same pass.
+### Files
+
+- `src/routes/u.$username.tsx` — tab reduction, hero refresh, share button, lightbox state + URL sync, merged Works+Credits dataset, Activity merge (Drafts + Workshops in).
+- `src/components/work-card.tsx` — hover overlay, credited badge variant.
+- `src/components/work-lightbox.tsx` — new.
+- `src/routes/__root.tsx` *(only if og:image needs leaf-level override pattern)* — likely untouched; head() lives on the profile route already.
+
+### Open question before build
+
+The Activity tab will grow long once Drafts + Workshops + Applied + Participating all live there. Want it as:
+- **(a)** one chronological mixed feed with type icons, or
+- **(b)** four collapsible sections in fixed order (Drafts → Workshops → Applied → Participating)?
+
+I'd lean **(b)** — easier to scan, matches how the user actually thinks about each pile. Confirm or override before I build.

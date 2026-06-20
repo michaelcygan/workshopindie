@@ -39,6 +39,8 @@ export function WorkCard({
   showCounters = true,
   showCategory = true,
   density = "default",
+  onOpen,
+  creditBadge,
 }: {
   work: WorkCardData;
   groups?: GroupTag[];
@@ -48,6 +50,8 @@ export function WorkCard({
   showCounters?: boolean;
   showCategory?: boolean;
   density?: Density;
+  onOpen?: (work: WorkCardData) => void;
+  creditBadge?: string | null;
 }) {
   const credits = work.credits ?? [];
   const shown = credits.slice(0, 3);
@@ -73,7 +77,16 @@ export function WorkCard({
         className,
       )}
     >
-      <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={() => onOpen(work)}
+          aria-label={`Open ${work.title}`}
+          className="absolute inset-0 z-10 cursor-zoom-in"
+        />
+      ) : (
+        <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
+      )}
       <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : "aspect-[4/5]")}>
         {work.cover_url ? (
           <img
@@ -99,6 +112,11 @@ export function WorkCard({
           <div className="rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
             {SOURCE_LABELS[work.source_type] ?? work.source_type}
           </div>
+          {creditBadge && (
+            <div className="rounded-full bg-ink/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background shadow-soft">
+              as {creditBadge}
+            </div>
+          )}
           {boostCount > 0 && (
             <div className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-soft">
               <Rocket className="h-2.5 w-2.5" /> Boosted

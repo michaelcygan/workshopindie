@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
+import { WorkLightbox } from "@/components/work-lightbox";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/message-button";
@@ -28,12 +29,13 @@ import { cn } from "@/lib/utils";
 import { CATEGORIES, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
-const TAB_VALUES = ["works", "drafts", "credits", "collabs", "workshops", "activity", "groups", "about"] as const;
+const TAB_VALUES = ["works", "collabs", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
+  w: z.string().optional(),
 });
 
 export const Route = createFileRoute("/u/$username")({
@@ -383,39 +385,26 @@ function ProfilePage() {
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
 
-  const activityCount = (applied?.length ?? 0) + (participating?.length ?? 0);
+  const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
+  // Works tab is unified: owned + credited (visitor-visible).
+  const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
   const counts: Record<ProfileTab, number> = {
-    works: ownedWorks?.length ?? 0,
-    drafts: drafts?.length ?? 0,
-    credits: creditedWorks?.length ?? 0,
+    works: worksTotal,
     collabs: openCollabs?.length ?? 0,
-    workshops: workshops?.length ?? 0,
     activity: activityCount,
-    groups: (profile.home_city ? 1 : 0) + (profile.city && profile.city.slug !== profile.home_city?.slug ? 1 : 0),
     about: 1,
   };
 
-  // Default tab: own → works; other → first non-empty visitor tab
-  const defaultTab: ProfileTab = (() => {
-    if (search.tab) return search.tab;
-    if (isOwn) return "works";
-    const order: ProfileTab[] = ["works", "credits", "collabs", "workshops", "groups", "about"];
-    return order.find((t) => counts[t] > 0) ?? "about";
-  })();
+  // Default tab: always Works for a portfolio surface.
+  const defaultTab: ProfileTab = search.tab ?? "works";
 
   const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
 
-  const visibleTabs: ProfileTab[] = isOwn
-    ? [...TAB_VALUES]
-    : TAB_VALUES.filter((t) => {
-      if (t === "drafts" || t === "activity") return false; // owner-only
-      if (t === "works" || t === "about") return true;
-      if (t === "credits") return counts.credits > 0;
-      if (t === "collabs") return counts.collabs > 0;
-      if (t === "workshops") return counts.workshops > 0;
-      if (t === "groups") return counts.groups > 0;
-      return true;
-    });
+  const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
+    if (t === "activity") return isOwn; // owner-only
+    if (t === "collabs") return isOwn || counts.collabs > 0;
+    return true; // works, about always
+  });
 
 
   return (
@@ -587,7 +576,6 @@ function ProfilePage() {
         {/* Stats strip */}
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
           <Stat label="Works" value={counts.works} />
-          <Stat label="Credits" value={counts.credits} />
           <Stat label="Worked with" value={profile.worked_with_count} />
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
@@ -606,7 +594,7 @@ function ProfilePage() {
                   defaultTab === t ? "text-ink" : "text-ink-muted hover:text-ink",
                 )}
               >
-                {t}{t !== "about" && t !== "groups" && (
+                {t}{t !== "about" && (
                   <span className="ml-1.5 text-[11px] text-ink-muted">{counts[t]}</span>
                 )}
                 {defaultTab === t && (
@@ -620,35 +608,27 @@ function ProfilePage() {
         <div className="py-8 pb-20">
           {defaultTab === "works" && (
             <WorksTab
-              works={ownedWorks ?? []}
+              owned={ownedWorks ?? []}
+              credited={creditedWorks ?? []}
               pinnedWorks={pinnedWorks ?? []}
               isOwn={isOwn}
               ownerName={name}
-              isLoading={!ownedWorks}
+              isLoading={!ownedWorks || !creditedWorks}
+              activeLightbox={search.w ?? null}
+              setLightbox={(slug) => navigate({ to: "/u/$username", params: { username }, search: { ...search, w: slug ?? undefined }, replace: true })}
             />
-          )}
-
-          {defaultTab === "credits" && (
-            <CreditsTab works={creditedWorks ?? []} isLoading={!creditedWorks} ownerName={name} isOwn={isOwn} />
           )}
           {defaultTab === "collabs" && (
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
-          {defaultTab === "workshops" && (
-            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} isOwn={isOwn} />
-          )}
-          {defaultTab === "drafts" && isOwn && (
-            <DraftsTab items={(drafts ?? []) as DraftRow[]} isLoading={!drafts} />
-          )}
           {defaultTab === "activity" && isOwn && (
             <ActivityTab
+              drafts={(drafts ?? []) as DraftRow[]}
+              workshops={workshops ?? []}
               applied={(applied ?? []) as AppliedRow[]}
               participating={(participating ?? []) as ParticipatingRow[]}
-              isLoading={!applied || !participating}
+              isLoading={!applied || !participating || !drafts || !workshops}
             />
-          )}
-          {defaultTab === "groups" && (
-            <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
           )}
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
@@ -668,35 +648,65 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-/* ---------------- WORKS TAB ---------------- */
+/* ---------------- WORKS TAB (unified: created + credited) ---------------- */
+
+type MergedWork = WorkCardData & {
+  _role: "created" | "credited";
+  my_role?: string;
+  owner?: { id: string; display_name: string | null; username: string | null } | null;
+};
+
+type SortMode = "recent" | "oldest" | "loved";
 
 function WorksTab({
-  works, pinnedWorks, isOwn, ownerName, isLoading,
+  owned, credited, pinnedWorks, isOwn, ownerName, isLoading,
+  activeLightbox, setLightbox,
 }: {
-  works: OwnedWork[];
+  owned: OwnedWork[];
+  credited: CreditWork[];
   pinnedWorks: WorkCardData[];
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
+  activeLightbox: string | null;
+  setLightbox: (slug: string | null) => void;
 }) {
+  const [roleFilter, setRoleFilter] = useState<"all" | "created" | "credited">("all");
   const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  // Pinned grid is its own hero row — keep grid below chronological & complete.
-  const rest = works;
+  const [sort, setSort] = useState<SortMode>("recent");
+
+  const merged: MergedWork[] = useMemo(() => {
+    const created: MergedWork[] = owned.map((w) => ({ ...w, _role: "created" }));
+    const cred: MergedWork[] = credited.map((w) => ({ ...w, _role: "credited", my_role: w.my_role, owner: w.owner }));
+    return [...created, ...cred];
+  }, [owned, credited]);
+
+  const roleFiltered = useMemo(() => merged.filter((w) => roleFilter === "all" || w._role === roleFilter), [merged, roleFilter]);
 
   const catCounts = useMemo(() => {
     const m = new Map<Category, number>();
-    for (const w of works) m.set(w.category, (m.get(w.category) ?? 0) + 1);
+    for (const w of roleFiltered) m.set(w.category, (m.get(w.category) ?? 0) + 1);
     return m;
-  }, [works]);
+  }, [roleFiltered]);
   const availableCats = useMemo(() => CATEGORIES.filter((c) => catCounts.get(c.id as Category)), [catCounts]);
 
-  const filtered = activeCat === "all" ? rest : rest.filter((w) => w.category === activeCat);
+  const filtered = useMemo(() => {
+    const arr = activeCat === "all" ? roleFiltered : roleFiltered.filter((w) => w.category === activeCat);
+    const sorted = [...arr];
+    if (sort === "loved") {
+      sorted.sort((a, b) => b.like_count - a.like_count);
+    } else if (sort === "oldest") {
+      sorted.sort((a, b) => (a.published_at ?? "").localeCompare(b.published_at ?? ""));
+    }
+    // "recent" is the default order from fetchers (published_at desc).
+    return sorted;
+  }, [roleFiltered, activeCat, sort]);
 
   if (isLoading) {
     return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
   }
 
-  if (works.length === 0 && pinnedWorks.length === 0) {
+  if (merged.length === 0 && pinnedWorks.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
@@ -710,50 +720,100 @@ function WorksTab({
     );
   }
 
+  const createdCount = merged.filter((w) => w._role === "created").length;
+  const creditedCount = merged.filter((w) => w._role === "credited").length;
+
   return (
     <>
-      {pinnedWorks.length > 0 && activeCat === "all" && (
+      {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
         <section className="mb-10">
           <h2 className="font-display text-xl text-ink">Pinned</h2>
           <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {pinnedWorks.map((w) => (
-              <WorkCard key={w.id} work={w} density="hero" showAvatars showCounters />
+            {pinnedWorks.map((w, i) => (
+              <WorkCard
+                key={w.id}
+                work={w}
+                density={i === 0 && pinnedWorks.length > 1 ? "hero" : "hero"}
+                showAvatars
+                showCounters
+                onOpen={() => setLightbox(w.slug)}
+              />
             ))}
           </div>
         </section>
       )}
-      {pinnedWorks.length === 0 && isOwn && works.length > 0 && (
+      {pinnedWorks.length === 0 && isOwn && merged.length > 0 && (
         <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
           <p className="text-sm text-ink-muted">No pinned Work yet. Open a Work you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
         </section>
       )}
 
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {/* Role chips — only show when there's a mix */}
+        {createdCount > 0 && creditedCount > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <MediumChip active={roleFilter === "all"} onClick={() => setRoleFilter("all")} label="All" count={merged.length} />
+            <MediumChip active={roleFilter === "created"} onClick={() => setRoleFilter("created")} label="Created" count={createdCount} />
+            <MediumChip active={roleFilter === "credited"} onClick={() => setRoleFilter("credited")} label="Credited" count={creditedCount} />
+          </div>
+        )}
+        {availableCats.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {createdCount > 0 && creditedCount > 0 && <span className="mx-1 self-center text-ink-muted">·</span>}
+            <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All mediums" count={roleFiltered.length} />
+            {availableCats.map((c) => (
+              <MediumChip
+                key={c.id}
+                active={activeCat === c.id}
+                onClick={() => setActiveCat(c.id as Category)}
+                label={c.label}
+                count={catCounts.get(c.id as Category) ?? 0}
+              />
+            ))}
+          </div>
+        )}
+        <div className="ml-auto">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-soft focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Sort Works"
+          >
+            <option value="recent">Recent</option>
+            <option value="oldest">Oldest</option>
+            <option value="loved">Most loved</option>
+          </select>
+        </div>
+      </div>
 
-      {availableCats.length > 1 && (
-        <div className="mb-5 flex flex-wrap gap-1.5">
-          <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All" count={works.length} />
-          {availableCats.map((c) => (
-            <MediumChip
-              key={c.id}
-              active={activeCat === c.id}
-              onClick={() => setActiveCat(c.id as Category)}
-              label={c.label}
-              count={catCounts.get(c.id as Category) ?? 0}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+          {isOwn ? `Nothing here yet.` : "Nothing matches this filter."}{" "}
+          <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((w) => (
+            <WorkCard
+              key={`${w._role}-${w.id}`}
+              work={w}
+              onOpen={() => setLightbox(w.slug)}
+              creditBadge={w._role === "credited" ? w.my_role ?? null : null}
             />
           ))}
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
-          {isOwn ? `Nothing in ${activeCat} yet. Publish one →` : "Nothing in this medium."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((w) => <WorkCard key={w.id} work={w} />)}
-        </div>
-      )}
+      <WorkLightbox
+        works={[
+          ...pinnedWorks.filter((p) => !filtered.some((f) => f.id === p.id)),
+          ...filtered,
+        ]}
+        activeId={activeLightbox}
+        onChange={(slug) => setLightbox(slug)}
+        onClose={() => setLightbox(null)}
+      />
     </>
   );
 }
@@ -770,94 +830,6 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
     >
       {label} <span className="ml-1 opacity-70">{count}</span>
     </button>
-  );
-}
-
-/* ---------------- CREDITS TAB ---------------- */
-
-function CreditsTab({ works, isLoading, ownerName, isOwn }: { works: CreditWork[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
-  const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  const [activeRole, setActiveRole] = useState<string | "all">("all");
-
-  const catCounts = useMemo(() => {
-    const m = new Map<Category, number>();
-    for (const w of works) m.set(w.category, (m.get(w.category) ?? 0) + 1);
-    return m;
-  }, [works]);
-  const availableCats = useMemo(() => CATEGORIES.filter((c) => catCounts.get(c.id as Category)), [catCounts]);
-  const availableRoles = useMemo(() => Array.from(new Set(works.map((w) => w.my_role))).sort(), [works]);
-
-  const filtered = works.filter((w) =>
-    (activeCat === "all" || w.category === activeCat)
-    && (activeRole === "all" || w.my_role === activeRole),
-  );
-
-  if (isLoading) {
-    return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
-  }
-
-  if (works.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "Get credited by collaborating. Post a Collab to start." : `${ownerName} hasn't been credited on anyone's Work yet.`}</p>
-        {isOwn && (
-          <Link to="/collab/new" className="mt-4 inline-block">
-            <Button className="rounded-full">Post a Collab</Button>
-          </Link>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <p className="mb-4 text-sm text-ink-muted">Work by other people that credits {isOwn ? "you" : ownerName}.</p>
-
-      <div className="mb-3 space-y-2">
-        {availableCats.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All mediums" count={works.length} />
-            {availableCats.map((c) => (
-              <MediumChip
-                key={c.id}
-                active={activeCat === c.id}
-                onClick={() => setActiveCat(c.id as Category)}
-                label={c.label}
-                count={catCounts.get(c.id as Category) ?? 0}
-              />
-            ))}
-          </div>
-        )}
-        {availableRoles.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            <MediumChip active={activeRole === "all"} onClick={() => setActiveRole("all")} label="All roles" count={works.length} />
-            {availableRoles.map((r) => (
-              <MediumChip
-                key={r}
-                active={activeRole === r}
-                onClick={() => setActiveRole(r)}
-                label={`as ${r}`}
-                count={works.filter((w) => w.my_role === r).length}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((w) => (
-          <div key={w.id} className="space-y-1.5">
-            <WorkCard work={w} />
-            <p className="px-1 text-xs text-ink-muted">
-              as <span className="font-medium text-ink-soft">{w.my_role}</span>
-              {w.owner?.username && (
-                <> · by <Link to="/u/$username" params={{ username: w.owner.username }} className="hover:underline">@{w.owner.username}</Link></>
-              )}
-            </p>
-          </div>
-        ))}
-      </div>
-    </>
   );
 }
 
@@ -889,68 +861,17 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
   );
 }
 
-/* ---------------- WORKSHOPS TAB ---------------- */
+/* ---------------- GROUPS (inline in About) ---------------- */
 
-function WorkshopsTab({ items, isLoading, ownerName, isOwn }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
-  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (items.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "No Workshops yet. Drop into a live one or schedule your own." : `${ownerName} hasn't hosted or joined a Workshop yet.`}</p>
-        {isOwn && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
-            <Link to="/workshops/new"><Button variant="outline" className="rounded-full">Schedule a Workshop</Button></Link>
-          </div>
-        )}
-      </div>
-    );
-  }
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {items.map((w) => (
-        <Link key={w.id + w.role} to="/workshops/$slug" params={{ slug: w.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
-          <div className="flex items-center gap-2">
-            <CategoryChip category={w.category} />
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.role}</span>
-          </div>
-          <h3 className="mt-2 font-display text-lg text-ink line-clamp-2">{w.title}</h3>
-          {w.starts_at && (
-            <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-muted">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(w.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-            </p>
-          )}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- GROUPS TAB ---------------- */
-
-function GroupsTab({ home, city, isOwn }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null; isOwn: boolean }) {
+function GroupsSection({ home, city }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null }) {
   const groups: { kind: "home" | "current"; name: string; country: string; slug: string }[] = [];
   if (home) groups.push({ kind: "home", ...home });
   if (city && city.slug !== home?.slug) groups.push({ kind: "current", ...city });
-
-  if (groups.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
-        <p>Not in any city groups yet.</p>
-        {isOwn && (
-          <Link to="/me/edit" className="mt-3 inline-block">
-            <Button variant="outline" className="rounded-full">Add your city in Edit profile →</Button>
-          </Link>
-        )}
-      </div>
-    );
-  }
-
+  if (groups.length === 0) return null;
   return (
-    <>
-      <p className="mb-4 text-sm text-ink-muted">Cities they're part of.</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <section>
+      <h2 className="text-xs uppercase tracking-wider text-ink-muted">City groups</h2>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {groups.map((g) => (
           <Link key={g.slug} to="/cities/$slug" params={{ slug: g.slug }} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-ink"><Layers className="h-5 w-5" /></span>
@@ -962,7 +883,7 @@ function GroupsTab({ home, city, isOwn }: { home: { name: string; country: strin
           </Link>
         ))}
       </div>
-    </>
+    </section>
   );
 }
 
@@ -1034,6 +955,8 @@ function AboutTab({ profile }: { profile: Profile }) {
         </section>
       )}
 
+      <GroupsSection home={profile.home_city} city={profile.city} />
+
       <FrequentCollaborators userId={profile.id} />
     </div>
   );
@@ -1078,45 +1001,9 @@ function FrequentCollaborators({ userId }: { userId: string }) {
   );
 }
 
-/* ---------------- OWNER-ONLY: DRAFTS TAB ---------------- */
+/* ---------------- OWNER-ONLY: ACTIVITY TAB (drafts + workshops + applied + participating) ---------------- */
 
 type DraftRow = { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; updated_at: string };
-
-function DraftsTab({ items, isLoading }: { items: DraftRow[]; isLoading: boolean }) {
-  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (items.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">No drafts. Unfinished Works land here while you're still cooking.</p>
-        <Link to="/works/new" className="mt-4 inline-block">
-          <Button className="rounded-full">Publish a Work</Button>
-        </Link>
-      </div>
-    );
-  }
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {items.map((w) => (
-        <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
-          {w.cover_url ? (
-            <img src={w.cover_url} className="h-16 w-16 rounded-xl object-cover" alt="" />
-          ) : (
-            <div className="h-16 w-16 rounded-xl bg-surface-2" />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <CategoryChip category={w.category} />
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.status.replace("_", " ")}</span>
-            </div>
-            <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- OWNER-ONLY: ACTIVITY TAB ---------------- */
 
 type AppliedRow = {
   id: string;
@@ -1149,26 +1036,84 @@ function whenText(starts: string | null) {
     + " · " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRow[]; participating: ParticipatingRow[]; isLoading: boolean }) {
+function ActivityTab({
+  drafts, workshops, applied, participating, isLoading,
+}: {
+  drafts: DraftRow[];
+  workshops: WorkshopRow[];
+  applied: AppliedRow[];
+  participating: ParticipatingRow[];
+  isLoading: boolean;
+}) {
   if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (applied.length === 0 && participating.length === 0) {
+  const empty = drafts.length === 0 && workshops.length === 0 && applied.length === 0 && participating.length === 0;
+  if (empty) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">No Workshop activity yet. Apply to a Collab or drop into a live Workshop.</p>
+        <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Workshop, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <Link to="/collab"><Button variant="outline" className="rounded-full">Browse Collabs</Button></Link>
-          <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/works/new"><Button className="rounded-full">Start a Work</Button></Link>
+          <Link to="/workshop"><Button variant="outline" className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
         </div>
       </div>
     );
   }
   const now = Date.now();
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {drafts.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Drafts <span className="ml-1 text-ink-muted/60">{drafts.length}</span></h2>
+          <p className="mt-1 text-xs text-ink-muted">Unfinished Works — only you can see these.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {drafts.map((w) => (
+              <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+                {w.cover_url ? (
+                  <img src={w.cover_url} className="h-16 w-16 rounded-xl object-cover" alt="" />
+                ) : (
+                  <div className="h-16 w-16 rounded-xl bg-surface-2" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <CategoryChip category={w.category} />
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.status.replace("_", " ")}</span>
+                  </div>
+                  <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {workshops.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Workshops <span className="ml-1 text-ink-muted/60">{workshops.length}</span></h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {workshops.map((w) => (
+              <Link key={w.id + w.role} to="/workshops/$slug" params={{ slug: w.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
+                <div className="flex items-center gap-2">
+                  <CategoryChip category={w.category} />
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.role}</span>
+                </div>
+                <h3 className="mt-2 font-display text-lg text-ink line-clamp-2">{w.title}</h3>
+                {w.starts_at && (
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-muted">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {new Date(w.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {participating.length > 0 && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Participating</h2>
-          <div className="mt-2 space-y-2">
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Participating <span className="ml-1 text-ink-muted/60">{participating.length}</span></h2>
+          <div className="mt-3 space-y-2">
             {participating.map((p) => {
               const w = p.workshop;
               const ciOpen = w.check_in_opens_at && w.check_in_closes_at
@@ -1189,10 +1134,11 @@ function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRo
           </div>
         </section>
       )}
+
       {applied.length > 0 && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Applied</h2>
-          <div className="mt-2 space-y-2">
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Applied <span className="ml-1 text-ink-muted/60">{applied.length}</span></h2>
+          <div className="mt-3 space-y-2">
             {applied.map((a) => (
               <Link key={a.id} to="/workshops/$slug" params={{ slug: a.workshop.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
                 <CategoryChip category={a.workshop.category} />
