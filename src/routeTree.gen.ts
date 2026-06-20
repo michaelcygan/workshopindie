@@ -44,6 +44,7 @@ import { Route as WTokenRouteImport } from './routes/w.$token'
 import { Route as UUsernameRouteImport } from './routes/u.$username'
 import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
 import { Route as MeTicketsRouteImport } from './routes/me.tickets'
+import { Route as MeNetworkRouteImport } from './routes/me.network'
 import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
@@ -258,6 +259,11 @@ const RedeemCodeRoute = RedeemCodeRouteImport.update({
 const MeTicketsRoute = MeTicketsRouteImport.update({
   id: '/me/tickets',
   path: '/me/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeNetworkRoute = MeNetworkRouteImport.update({
+  id: '/me/network',
+  path: '/me/network',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeFriendsRoute = MeFriendsRouteImport.update({
@@ -508,6 +514,7 @@ export interface FileRoutesByFullPath {
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/me/friends': typeof MeFriendsRoute
+  '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -579,6 +586,7 @@ export interface FileRoutesByTo {
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/me/friends': typeof MeFriendsRoute
+  '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -657,6 +665,7 @@ export interface FileRoutesById {
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
   '/me/friends': typeof MeFriendsRoute
+  '/me/network': typeof MeNetworkRoute
   '/me/tickets': typeof MeTicketsRoute
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
@@ -736,6 +745,7 @@ export interface FileRouteTypes {
     | '/me/collabs'
     | '/me/edit'
     | '/me/friends'
+    | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
@@ -807,6 +817,7 @@ export interface FileRouteTypes {
     | '/me/collabs'
     | '/me/edit'
     | '/me/friends'
+    | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
@@ -884,6 +895,7 @@ export interface FileRouteTypes {
     | '/me/collabs'
     | '/me/edit'
     | '/me/friends'
+    | '/me/network'
     | '/me/tickets'
     | '/redeem/$code'
     | '/u/$username'
@@ -943,6 +955,7 @@ export interface RootRouteChildren {
   MeCollabsRoute: typeof MeCollabsRoute
   MeEditRoute: typeof MeEditRoute
   MeFriendsRoute: typeof MeFriendsRoute
+  MeNetworkRoute: typeof MeNetworkRoute
   MeTicketsRoute: typeof MeTicketsRoute
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
@@ -1205,6 +1218,13 @@ declare module '@tanstack/react-router' {
       path: '/me/tickets'
       fullPath: '/me/tickets'
       preLoaderRoute: typeof MeTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/network': {
+      id: '/me/network'
+      path: '/me/network'
+      fullPath: '/me/network'
+      preLoaderRoute: typeof MeNetworkRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/me/friends': {
@@ -1686,6 +1706,7 @@ const rootRouteChildren: RootRouteChildren = {
   MeCollabsRoute: MeCollabsRoute,
   MeEditRoute: MeEditRoute,
   MeFriendsRoute: MeFriendsRoute,
+  MeNetworkRoute: MeNetworkRoute,
   MeTicketsRoute: MeTicketsRoute,
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,

@@ -246,7 +246,7 @@ function NewWorkshop() {
         <p className="mt-1 text-ink-muted">A Workshop with a start time. People RSVP. They show up.</p>
         {search.inviteUserId && (
           <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-ink">
-            We'll invite <span className="font-medium">{inviteProfile?.display_name ?? inviteProfile?.username ?? "your friend"}</span> as soon as this Workshop is scheduled.
+            We'll invite <span className="font-medium">{inviteProfile?.display_name ?? inviteProfile?.username ?? "them"}</span> as soon as this Workshop is scheduled.
           </div>
         )}
       </motion.div>

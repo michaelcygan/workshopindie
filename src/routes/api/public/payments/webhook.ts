@@ -82,7 +82,7 @@ async function maybeGrantReferralReward(
   const actorName =
     (profile?.display_name as string | null) ||
     (profile?.username as string | null) ||
-    "A friend";
+    "Someone you referred";
   await supabaseAdmin.from("notifications").insert({
     user_id: referrerId,
     kind: "referral_reward_earned",

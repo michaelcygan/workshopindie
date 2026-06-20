@@ -12,7 +12,7 @@ export const Route = createFileRoute("/me/friends")({
   component: MyFriendsPage,
   head: () => ({
     meta: [
-      { title: "Friends — Workshop" },
+      { title: "Your Network — Workshop" },
       { name: "description", content: "Mutual follows, online status, and one-tap invites to Workshops." },
       { name: "robots", content: "noindex" },
     ],
@@ -36,7 +36,7 @@ function MyFriendsPage() {
   if (!user) {
     return (
       <main className="mx-auto max-w-2xl px-4 py-10">
-        <h1 className="font-display text-3xl text-ink">Friends</h1>
+        <h1 className="font-display text-3xl text-ink">Your Network</h1>
         <p className="mt-2 text-sm text-ink-muted">
           Sign in to see your mutual follows and invite them into Workshops.
         </p>
@@ -53,7 +53,7 @@ function MyFriendsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-6">
       <header className="mb-5">
-        <h1 className="font-display text-3xl text-ink">Friends</h1>
+        <h1 className="font-display text-3xl text-ink">Your Network</h1>
         <p className="mt-1 text-sm text-ink-muted">
           People you follow who follow you back. The green dot means online right now.
         </p>
@@ -68,9 +68,9 @@ function MyFriendsPage() {
       ) : (friends?.length ?? 0) === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
           <Users className="mx-auto h-8 w-8 text-ink-muted" />
-          <h2 className="mt-3 text-base font-medium text-ink">No friends yet</h2>
+          <h2 className="mt-3 text-base font-medium text-ink">Your network is empty</h2>
           <p className="mt-1 text-sm text-ink-muted">
-            Follow people back to build your friends list — invites flow from here.
+            Follow people back to grow your network — invites flow from here.
           </p>
         </div>
       ) : (

@@ -70,7 +70,7 @@ export function InviteFriendsPanel({ workshopId, sourceRoomId }: Props) {
     <section className="rounded-2xl border border-border bg-surface p-4">
       <div className="flex items-center gap-2">
         <Users className="h-4 w-4 text-violet" />
-        <h3 className="text-sm font-semibold text-ink">Invite friends</h3>
+        <h3 className="text-sm font-semibold text-ink">Invite from your network</h3>
         {online.length > 0 && (
           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-700">
             {online.length} online now

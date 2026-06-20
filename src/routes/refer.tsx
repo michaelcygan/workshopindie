@@ -20,7 +20,7 @@ export const Route = createFileRoute("/refer")({
       {
         name: "description",
         content:
-          "Give a month, get a month. Earn free Plus for every friend who upgrades.",
+          "Give a month, get a month. Earn free Plus for every person you refer who upgrades.",
       },
     ],
   }),
@@ -88,7 +88,7 @@ function ReferPage() {
         </h1>
         <p className="mx-auto mt-3 max-w-md text-ink-muted">
           Earn <span className="text-gradient-motion font-medium">1 free month of Plus</span> for
-          every friend who upgrades. Stack as many as you can.
+          every person you refer who upgrades. Stack as many as you can.
         </p>
       </div>
 
@@ -145,7 +145,7 @@ function ReferPage() {
             Drop it in your Instagram story, DMs, or anywhere your people hang out.
           </Step>
           <Step n={2} title="They sign up and go Plus">
-            When a friend upgrades through your link, you earn one free month.
+            When someone you refer upgrades through your link, you earn one free month.
           </Step>
           <Step n={3} title="We add it to your Plus automatically">
             Already on Plus? We extend your next bill. Not yet? We'll bank it for when you upgrade.
