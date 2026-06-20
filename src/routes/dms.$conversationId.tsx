@@ -79,7 +79,7 @@ function DmsThread() {
   const [hasMoreOlder, setHasMoreOlder] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const [oldestCursor, setOldestCursor] = useState<string | null>(null);
-  const [firstUnreadId, setFirstUnreadId] = useState<string | null>(null);
+  // (the unread divider is computed from each message's read_at inside groupMessages)
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
 
