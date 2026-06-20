@@ -63,12 +63,12 @@ export function HomeLiveWorkshopsRail() {
     <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
       <div className="mb-6 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-display text-3xl text-ink md:text-4xl flex items-center gap-2">
-            <span className="relative inline-flex h-2.5 w-2.5">
+          <h2 className="font-display text-3xl text-ink md:text-4xl">
+            Workshops
+            <span className="relative ml-3 inline-flex h-2.5 w-2.5 align-middle">
               <span className="absolute inset-0 rounded-full bg-coral animate-ping opacity-60" />
               <span className="relative inline-block h-2.5 w-2.5 rounded-full bg-coral" />
             </span>
-            Workshops
           </h2>
           <p className="mt-1 text-sm text-ink-muted">Live rooms with seats open. Walk right in.</p>
         </div>
