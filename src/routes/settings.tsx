@@ -499,7 +499,7 @@ function PrivacySection() {
       {/* Online presence */}
       <ToggleCard
         label="Show me as 'online' to mutual follows"
-        description="When on, your friends see a green dot when you've been active in the last couple of minutes. Turn off to stay invisible."
+        description="When on, people in your network see a green dot when you've been active in the last couple of minutes. Turn off to stay invisible."
         loading={pLoading}
         checked={privacy?.showOnline ?? true}
         onChange={(on) => update({ showOnline: on })}
@@ -773,7 +773,7 @@ const NOTIF_GROUPS: { key: string; label: string; description: string; email: No
   { key: "workshop", label: "Workshop updates", description: "Check-in reminders, status changes, and host announcements.", email: "email_workshop_updates", inapp: "inapp_workshop_updates" },
   { key: "follows", label: "New followers", description: "When someone follows your profile.", email: "email_follows", inapp: "inapp_follows" },
   { key: "credits", label: "Credit requests", description: "When someone credits you on a work, or asks you to confirm one.", email: "email_credits", inapp: "inapp_credits" },
-  { key: "friend_online", label: "Friend comes online", description: "When a mutual follow becomes active after being away. Off by default — turn on if you want to know.", email: "email_friend_online", inapp: "inapp_friend_online" },
+  { key: "friend_online", label: "Someone in your network comes online", description: "When a mutual follow becomes active after being away. Off by default — turn on if you want to know.", email: "email_friend_online", inapp: "inapp_friend_online" },
 ];
 
 function NotificationsSection() {

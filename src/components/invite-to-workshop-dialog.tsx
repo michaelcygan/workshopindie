@@ -29,7 +29,7 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
   const invite = useMutation({
     mutationFn: async (workshopId: string) => inviteFn({ data: { workshopId, inviteeId: invitee.id } }),
     onSuccess: () => {
-      toast.success(`Invited ${invitee.displayName ?? invitee.username ?? "friend"}`);
+      toast.success(`Invited ${invitee.displayName ?? invitee.username ?? "them"}`);
       onOpenChange(false);
       setPickedId(null);
     },
@@ -42,7 +42,7 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Invite {invitee.displayName ?? invitee.username ?? "friend"}</DialogTitle>
+          <DialogTitle>Invite {invitee.displayName ?? invitee.username ?? "them"}</DialogTitle>
           <DialogDescription>
             Pick one of your Workshops, or start a new one together.
           </DialogDescription>
