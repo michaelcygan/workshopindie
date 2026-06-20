@@ -295,6 +295,7 @@ function NewWork() {
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
       setStreamUid(null);
+      setBook(emptyBookDetails);
       setUrlInput("");
       setStep("drop");
       navigate({ to: "/works/new", search: {} });
