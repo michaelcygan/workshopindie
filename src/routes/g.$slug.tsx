@@ -225,6 +225,16 @@ function GroupPage() {
 
   return (
     <main className="mx-auto max-w-7xl pb-20">
+      {seedToken && !user && seedInfo && (
+        <div className="px-4 md:px-6">
+          <GroupSeedJoinPrompt
+            groupName={seedInfo.group_name}
+            groupSlug={seedInfo.group_slug}
+            token={seedToken}
+          />
+        </div>
+      )}
+
       {/* Hero */}
       <div
         className={cn(
