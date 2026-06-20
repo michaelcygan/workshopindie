@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users } from "lucide-react";
+import { ClaimHostPill } from "@/components/claim-host-pill";
+import { cn } from "@/lib/utils";
 import { WorkshopPresenceWorksRail } from "@/components/workshop-presence-works-rail";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
@@ -116,7 +118,18 @@ export function ChannelView({
   const aloneTimerRef = useRef<number | null>(null);
   const multiPartySinceRef = useRef<number | null>(null);
   const adminDismissedRef = useRef(false);
-  const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
+  const [viewMode, setViewModeState] = useState<RoomViewMode>(() => {
+    if (typeof window === "undefined") return "chat";
+    try {
+      const v = window.sessionStorage.getItem(`room-view:${roomId}`);
+      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs") return v;
+    } catch {}
+    return "chat";
+  });
+  const setViewMode = (v: RoomViewMode) => {
+    setViewModeState(v);
+    try { window.sessionStorage.setItem(`room-view:${roomId}`, v); } catch {}
+  };
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
   const [videoFocus, setVideoFocus] = useState<boolean>(() => {
@@ -720,6 +733,8 @@ export function ChannelView({
           </div>
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
+          <StageTabs value={viewMode} onChange={setViewMode} />
+
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               {(typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot) ?? (
@@ -909,8 +924,6 @@ export function ChannelView({
             profileLookup={profileLookup}
             others={others}
             onExit={handleExit}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             onOpenWork={openWork}
             roomId={roomId}
             dockExtra={
@@ -921,6 +934,32 @@ export function ChannelView({
               />
             }
           />
+
+          {!videoFocus && user && (
+            <div className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-3 shadow-soft">
+              {hostUserId === user.id ? (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("workshop:open-host-menu", { detail: { roomId } }))}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 transition"
+                  title="Open host settings"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Host · settings
+                </button>
+              ) : (
+                <div className="flex justify-center">
+                  <ClaimHostPill
+                    roomId={roomId}
+                    viewerId={user.id}
+                    unclaimable={!!workshopId}
+                    claimUserId={null}
+                    claimStartedAt={null}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
 
           {!videoFocus && user && (
             <WorkshopPresenceWorksRail
@@ -1187,15 +1226,6 @@ function EmptyLaunchpad({
               {s}
             </button>
           ))}
-          {!hostUserId && canSignedIn && (
-            <button
-              type="button"
-              onClick={onClaimHost}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
-            >
-              ✨ Claim Host &amp; set a direction
-            </button>
-          )}
         </motion.div>
 
         <motion.div
@@ -1217,4 +1247,49 @@ function EmptyLaunchpad({
     </div>
   );
 }
+
+function StageTabs({
+  value,
+  onChange,
+}: {
+  value: RoomViewMode;
+  onChange: (v: RoomViewMode) => void;
+}) {
+  const tabs: Array<{ id: RoomViewMode; label: string; icon: React.ReactNode }> = [
+    { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
+    { id: "tools", label: "Tools", icon: <Wrench className="h-3.5 w-3.5" /> },
+    { id: "gallery", label: "Work", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Workshop view"
+      className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
+    >
+      {tabs.map((t) => {
+        const active = value === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.id)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              active
+                ? "bg-ink text-background shadow-sm"
+                : "text-ink-muted hover:text-ink hover:bg-muted/60",
+            )}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 
