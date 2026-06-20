@@ -188,7 +188,7 @@ function LiveRoomPage() {
 
   // First-Workshop receipt — one-time gentle toast on the user's first join.
   useEffect(() => {
-    if (typeof window === "undefined" || !user || !room || isPromoted) return;
+    if (typeof window === "undefined" || !user || !room?.id || isPromoted) return;
     try {
       if (window.localStorage.getItem("ws:first_done") === "1") return;
       window.localStorage.setItem("ws:first_done", "1");
@@ -197,7 +197,7 @@ function LiveRoomPage() {
     } catch {
       // ignore
     }
-  }, [user, room, isPromoted]);
+  }, [user, room?.id, isPromoted]);
 
   // Keyboard shortcut: "N" hops to next Workshop (guests only).
   useEffect(() => {
