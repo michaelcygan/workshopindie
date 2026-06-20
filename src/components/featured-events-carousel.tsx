@@ -29,7 +29,7 @@ export function FeaturedEventsCarousel({
     <section className={className}>
       <div className="mb-3 flex items-baseline justify-between px-1">
         <h2 className="font-display text-xl text-ink md:text-2xl">Featured events</h2>
-        <span className="text-xs text-ink-muted">RSVP unlocks free Workshop Pass</span>
+        <span className="text-xs text-ink-muted">RSVP unlocks a free trial</span>
       </div>
 
       {events.length === 0 ? (
