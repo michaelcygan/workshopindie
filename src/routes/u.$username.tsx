@@ -996,45 +996,9 @@ function FrequentCollaborators({ userId }: { userId: string }) {
   );
 }
 
-/* ---------------- OWNER-ONLY: DRAFTS TAB ---------------- */
+/* ---------------- OWNER-ONLY: ACTIVITY TAB (drafts + workshops + applied + participating) ---------------- */
 
 type DraftRow = { id: string; title: string; slug: string; category: Category; cover_url: string | null; status: string; updated_at: string };
-
-function DraftsTab({ items, isLoading }: { items: DraftRow[]; isLoading: boolean }) {
-  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (items.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">No drafts. Unfinished Works land here while you're still cooking.</p>
-        <Link to="/works/new" className="mt-4 inline-block">
-          <Button className="rounded-full">Publish a Work</Button>
-        </Link>
-      </div>
-    );
-  }
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {items.map((w) => (
-        <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
-          {w.cover_url ? (
-            <img src={w.cover_url} className="h-16 w-16 rounded-xl object-cover" alt="" />
-          ) : (
-            <div className="h-16 w-16 rounded-xl bg-surface-2" />
-          )}
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <CategoryChip category={w.category} />
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.status.replace("_", " ")}</span>
-            </div>
-            <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
-          </div>
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- OWNER-ONLY: ACTIVITY TAB ---------------- */
 
 type AppliedRow = {
   id: string;
@@ -1067,26 +1031,84 @@ function whenText(starts: string | null) {
     + " · " + d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRow[]; participating: ParticipatingRow[]; isLoading: boolean }) {
+function ActivityTab({
+  drafts, workshops, applied, participating, isLoading,
+}: {
+  drafts: DraftRow[];
+  workshops: WorkshopRow[];
+  applied: AppliedRow[];
+  participating: ParticipatingRow[];
+  isLoading: boolean;
+}) {
   if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (applied.length === 0 && participating.length === 0) {
+  const empty = drafts.length === 0 && workshops.length === 0 && applied.length === 0 && participating.length === 0;
+  if (empty) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">No Workshop activity yet. Apply to a Collab or drop into a live Workshop.</p>
+        <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Workshop, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <Link to="/collab"><Button variant="outline" className="rounded-full">Browse Collabs</Button></Link>
-          <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/works/new"><Button className="rounded-full">Start a Work</Button></Link>
+          <Link to="/workshop"><Button variant="outline" className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
         </div>
       </div>
     );
   }
   const now = Date.now();
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {drafts.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Drafts <span className="ml-1 text-ink-muted/60">{drafts.length}</span></h2>
+          <p className="mt-1 text-xs text-ink-muted">Unfinished Works — only you can see these.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {drafts.map((w) => (
+              <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
+                {w.cover_url ? (
+                  <img src={w.cover_url} className="h-16 w-16 rounded-xl object-cover" alt="" />
+                ) : (
+                  <div className="h-16 w-16 rounded-xl bg-surface-2" />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    <CategoryChip category={w.category} />
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.status.replace("_", " ")}</span>
+                  </div>
+                  <h3 className="mt-1 truncate font-medium text-ink">{w.title}</h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {workshops.length > 0 && (
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Workshops <span className="ml-1 text-ink-muted/60">{workshops.length}</span></h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {workshops.map((w) => (
+              <Link key={w.id + w.role} to="/workshops/$slug" params={{ slug: w.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
+                <div className="flex items-center gap-2">
+                  <CategoryChip category={w.category} />
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.role}</span>
+                </div>
+                <h3 className="mt-2 font-display text-lg text-ink line-clamp-2">{w.title}</h3>
+                {w.starts_at && (
+                  <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-muted">
+                    <Calendar className="h-3.5 w-3.5" />
+                    {new Date(w.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {participating.length > 0 && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Participating</h2>
-          <div className="mt-2 space-y-2">
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Participating <span className="ml-1 text-ink-muted/60">{participating.length}</span></h2>
+          <div className="mt-3 space-y-2">
             {participating.map((p) => {
               const w = p.workshop;
               const ciOpen = w.check_in_opens_at && w.check_in_closes_at
@@ -1107,10 +1129,11 @@ function ActivityTab({ applied, participating, isLoading }: { applied: AppliedRo
           </div>
         </section>
       )}
+
       {applied.length > 0 && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Applied</h2>
-          <div className="mt-2 space-y-2">
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Applied <span className="ml-1 text-ink-muted/60">{applied.length}</span></h2>
+          <div className="mt-3 space-y-2">
             {applied.map((a) => (
               <Link key={a.id} to="/workshops/$slug" params={{ slug: a.workshop.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">
                 <CategoryChip category={a.workshop.category} />
