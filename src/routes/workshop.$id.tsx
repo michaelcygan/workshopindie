@@ -328,16 +328,6 @@ function LiveRoomPage() {
               <span className="inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-1.5 py-0.5 font-medium text-violet">
                 <RadioTower className="h-3 w-3" /> Hosting
               </span>
-            ) : isLeaderless && !isPromoted && user ? (
-              <ClaimHostPill
-                roomId={id}
-                viewerId={user.id}
-                unclaimable={room?.status !== "active"}
-                claimUserId={room?.claim_user_id ?? null}
-                claimStartedAt={room?.claim_started_at ?? null}
-                claimantName={claimantName}
-                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-              />
             ) : null}
             <span className="text-ink-muted/40">·</span>
             <LicenseChip />
@@ -346,6 +336,17 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="flex items-center gap-2">
+            {isLeaderless && room?.status === "active" && (
+              <ClaimHostPill
+                roomId={id}
+                viewerId={user.id}
+                unclaimable={!!room.workshop_id}
+                claimUserId={room.claim_user_id ?? null}
+                claimStartedAt={room.claim_started_at ?? null}
+                claimantName={claimantName}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
+              />
+            )}
             {!isHost && room?.status === "active" && (
               <HopButton
                 roomId={id}
@@ -375,9 +376,7 @@ function LiveRoomPage() {
         )}
       </div>
 
-      {/* Hosted by + lock badge — sits just under the title row. When the
-          room is leaderless we surface the persistent Claim Host pill here
-          so anyone present can step up without waiting for the nudge. */}
+      {/* Hosted by + lock badge — sits just under the title row. */}
       {!isPromoted && room?.host_user_id && (
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <HostedByLine hostUserId={room.host_user_id} />
@@ -386,20 +385,6 @@ function LiveRoomPage() {
               Locked
             </span>
           )}
-        </div>
-      )}
-      {!isPromoted && user && room && !room.host_user_id && room.status === "active" && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-ink-muted">No host yet —</span>
-          <ClaimHostPill
-            roomId={id}
-            viewerId={user.id}
-            unclaimable={!!room.workshop_id}
-            claimUserId={room.claim_user_id ?? null}
-            claimStartedAt={room.claim_started_at ?? null}
-            claimantName={claimantName}
-            onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-          />
         </div>
       )}
 
