@@ -30,7 +30,7 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
           const meta = KIND_META[k];
           const KIcon = meta.icon;
           const all = groups.filter((g) => g.kind === k);
-          const sample = all.slice(0, 6);
+          const sample = all.slice(0, 5);
           if (sample.length === 0) return null;
           return (
             <div
@@ -38,12 +38,12 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
               className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-4 shadow-soft"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-2.5">
-                  <span className="mt-0.5 inline-flex h-8 w-8 items-center justify-center rounded-full bg-muted text-ink-soft">
+                <div className="flex min-w-0 items-start gap-2.5">
+                  <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-ink-soft">
                     <KIcon className="h-4 w-4" />
                   </span>
-                  <div>
-                    <h3 className="font-display text-lg text-ink leading-none">{meta.label}</h3>
+                  <div className="min-w-0">
+                    <h3 className="truncate font-display text-lg text-ink leading-none">{meta.label}</h3>
                     <p className="mt-1 text-xs text-ink-muted">{meta.blurb}</p>
                   </div>
                 </div>
@@ -55,7 +55,7 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
                   See all {all.length} <ArrowRight className="h-3 w-3" />
                 </button>
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 2xl:grid-cols-2">
                 {sample.map((g) => (
                   <GroupCardCompact key={g.id} group={g} joined={joinedIds.has(g.id)} />
                 ))}
