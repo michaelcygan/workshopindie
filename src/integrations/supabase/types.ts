@@ -1332,6 +1332,65 @@ export type Database = {
           },
         ]
       }
+      group_seed_links: {
+        Row: {
+          click_count: number
+          created_at: string
+          created_by: string | null
+          group_id: string
+          id: string
+          is_active: boolean
+          join_count: number
+          label: string | null
+          signup_count: number
+          token: string
+          updated_at: string
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          group_id: string
+          id?: string
+          is_active?: boolean
+          join_count?: number
+          label?: string | null
+          signup_count?: number
+          token: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          click_count?: number
+          created_at?: string
+          created_by?: string | null
+          group_id?: string
+          id?: string
+          is_active?: boolean
+          join_count?: number
+          label?: string | null
+          signup_count?: number
+          token?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_seed_links_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_works: {
         Row: {
           added_by: string | null
@@ -5449,6 +5508,23 @@ export type Database = {
         Returns: boolean
       }
       realtime_topic_allowed: { Args: { _topic: string }; Returns: boolean }
+      redeem_group_seed_link: {
+        Args: { _token: string }
+        Returns: {
+          already_member: boolean
+          group_id: string
+          joined: boolean
+        }[]
+      }
+      resolve_group_seed_link: {
+        Args: { _token: string }
+        Returns: {
+          group_id: string
+          group_name: string
+          group_slug: string
+          is_active: boolean
+        }[]
+      }
       set_room_note: {
         Args: { _room_id: string; _text: string }
         Returns: undefined
