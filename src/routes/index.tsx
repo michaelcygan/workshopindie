@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
-import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
+import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
