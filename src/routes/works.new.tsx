@@ -82,6 +82,7 @@ function NewWork() {
   const [submitting, setSubmitting] = useState(false);
   const [streamUid, setStreamUid] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  const [book, setBook] = useState<BookDetails>(emptyBookDetails);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
