@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X, Crown } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
@@ -13,8 +13,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { createCollabFromRoom, acceptWorkshopJoinInvite, declineWorkshopJoinInvite } from "@/lib/collab-workshop.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  createCollabFromRoom,
+  acceptWorkshopJoinInvite,
+  declineWorkshopJoinInvite,
+} from "@/lib/collab-workshop.functions";
 import { startHostClaim } from "@/lib/host-room.functions";
 import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
 import { HostFirstRunTour } from "@/components/host-first-run-tour";
@@ -24,7 +35,6 @@ import { HostedByLine } from "@/components/hosted-by-line";
 import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
-import { ClaimHostPill } from "@/components/claim-host-pill";
 import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { LicenseChip } from "@/components/license-chip";
@@ -35,7 +45,11 @@ const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Workshop";
 
 export const Route = createFileRoute("/workshop/$id")({
-  component: () => <RequireAuth><LiveRoomPage /></RequireAuth>,
+  component: () => (
+    <RequireAuth>
+      <LiveRoomPage />
+    </RequireAuth>
+  ),
   validateSearch: searchSchema,
   head: () => ({
     meta: [
@@ -50,7 +64,15 @@ export const Route = createFileRoute("/workshop/$id")({
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
         <h1 className="font-display text-3xl text-ink">Couldn't load this Workshop</h1>
         <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
-        <button onClick={() => { router.invalidate(); reset(); }} className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Try again</button>
+        <button
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
+          className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
+        >
+          Try again
+        </button>
       </main>
     );
   },
@@ -58,7 +80,12 @@ export const Route = createFileRoute("/workshop/$id")({
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-ink">This Workshop isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
-      <Link to="/workshop" className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface">Back to Workshop</Link>
+      <Link
+        to="/workshop"
+        className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
+      >
+        Back to Workshop
+      </Link>
     </main>
   ),
 });
@@ -99,7 +126,9 @@ function LiveRoomPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("instant_rooms")
-        .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed")
+        .select(
+          "id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed",
+        )
         .eq("id", id)
         .maybeSingle();
       if (error) throw error;
@@ -110,8 +139,6 @@ function LiveRoomPage() {
 
   // Bad room ID → trigger the notFound boundary instead of a blank live-room shell.
   if (isFetched && room === null) throw notFound();
-
-
 
   // Pending opt-in invite for the persistent fork
   const { data: invite } = useQuery({
@@ -148,7 +175,8 @@ function LiveRoomPage() {
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status !== "active";
   const claimHostFn = useServerFn(startHostClaim);
-  const canClaimHost = !!user && !!room && room.status === "active" && !room.host_user_id && !isHost;
+  const canClaimHost =
+    !!user && !!room && room.status === "active" && !room.host_user_id && !isHost;
   async function handleClaimHost() {
     if (!room) return;
     try {
@@ -206,8 +234,13 @@ function LiveRoomPage() {
     function onKey(e: KeyboardEvent) {
       if (e.key !== "n" && e.key !== "N") return;
       const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (tag === "input" || tag === "textarea" || (e.target as HTMLElement | null)?.isContentEditable) return;
-      const btn = document.querySelector<HTMLButtonElement>('[data-hop-button]');
+      if (
+        tag === "input" ||
+        tag === "textarea" ||
+        (e.target as HTMLElement | null)?.isContentEditable
+      )
+        return;
+      const btn = document.querySelector<HTMLButtonElement>("[data-hop-button]");
       btn?.click();
     }
     window.addEventListener("keydown", onKey);
@@ -239,13 +272,21 @@ function LiveRoomPage() {
       const cutoff = new Date(Date.now() - 60_000).toISOString();
       const { data } = await supabase
         .from("instant_presence")
-        .select("user_id, profile:profiles!instant_presence_user_id_fkey(display_name, username, avatar_url)")
+        .select(
+          "user_id, profile:profiles!instant_presence_user_id_fkey(display_name, username, avatar_url)",
+        )
         .eq("room_id", id)
         .gt("last_seen_at", cutoff);
-      return ((data ?? []) as Array<{
-        user_id: string;
-        profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
-      }>)
+      return (
+        (data ?? []) as Array<{
+          user_id: string;
+          profile: {
+            display_name: string | null;
+            username: string | null;
+            avatar_url: string | null;
+          } | null;
+        }>
+      )
         .filter((p) => p.user_id !== user!.id)
         .map((p) => ({
           user_id: p.user_id,
@@ -256,27 +297,15 @@ function LiveRoomPage() {
     },
   });
 
-  const { data: claimantName = null } = useQuery({
-    queryKey: ["claim-host-name", room?.claim_user_id],
-    enabled: !!room?.claim_user_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, username")
-        .eq("id", room!.claim_user_id!)
-        .maybeSingle();
-      return (data?.display_name as string | null) ?? (data?.username as string | null) ?? null;
-    },
-  });
-
-
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
 
   async function onAcceptInvite() {
     if (!room?.source_workshop_id) return;
     try {
-      const { workshopSlug } = await acceptInvite({ data: { workshopId: room.source_workshop_id } });
+      const { workshopSlug } = await acceptInvite({
+        data: { workshopId: room.source_workshop_id },
+      });
       if (workshopSlug) router.navigate({ to: "/workshops/$slug", params: { slug: workshopSlug } });
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't accept");
@@ -293,7 +322,10 @@ function LiveRoomPage() {
       <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="min-w-0">
-          <Link to="/workshop" className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden">
+          <Link
+            to="/workshop"
+            className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
+          >
             <ArrowLeft className="h-3 w-3" /> Workshop
           </Link>
           {/* Hide the redundant fallback "Workshop" title on desktop — top nav already shows it.
@@ -328,16 +360,6 @@ function LiveRoomPage() {
               <span className="inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-1.5 py-0.5 font-medium text-violet">
                 <RadioTower className="h-3 w-3" /> Hosting
               </span>
-            ) : isLeaderless && !isPromoted && user ? (
-              <ClaimHostPill
-                roomId={id}
-                viewerId={user.id}
-                unclaimable={room?.status !== "active"}
-                claimUserId={room?.claim_user_id ?? null}
-                claimStartedAt={room?.claim_started_at ?? null}
-                claimantName={claimantName}
-                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-              />
             ) : null}
             <span className="text-ink-muted/40">·</span>
             <LicenseChip />
@@ -364,20 +386,27 @@ function LiveRoomPage() {
                 onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
               />
             )}
-            <Button
-              size="sm"
-              onClick={() => setCollabOpen(true)}
-              className="rounded-full gap-1.5"
-            >
-              <Rocket className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Create a Collab</span>
+            {isLeaderless && (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={room?.status !== "active" || !!room?.workshop_id || !!room?.claim_user_id}
+                onClick={handleClaimHost}
+                className="rounded-full gap-1.5"
+              >
+                <Crown className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Claim Host</span>
+              </Button>
+            )}
+            <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
+              <Rocket className="h-3.5 w-3.5" />{" "}
+              <span className="hidden sm:inline">Create a Collab</span>
             </Button>
           </div>
         )}
       </div>
 
-      {/* Hosted by + lock badge — sits just under the title row. When the
-          room is leaderless we surface the persistent Claim Host pill here
-          so anyone present can step up without waiting for the nudge. */}
+      {/* Hosted by + lock badge — sits just under the title row. */}
       {!isPromoted && room?.host_user_id && (
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <HostedByLine hostUserId={room.host_user_id} />
@@ -388,27 +417,15 @@ function LiveRoomPage() {
           )}
         </div>
       )}
-      {!isPromoted && user && room && !room.host_user_id && room.status === "active" && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-ink-muted">No host yet —</span>
-          <ClaimHostPill
-            roomId={id}
-            viewerId={user.id}
-            unclaimable={!!room.workshop_id}
-            claimUserId={room.claim_user_id ?? null}
-            claimStartedAt={room.claim_started_at ?? null}
-            claimantName={claimantName}
-            onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-          />
-        </div>
-      )}
 
       {/* Focus message — visible to everyone; host sees a ghost CTA when empty */}
       {!isPromoted && (
         <FocusStrip
           text={room?.focus_message ?? null}
           isHost={isHost}
-          onHostSet={() => window.dispatchEvent(new CustomEvent("workshop:open-focus", { detail: { roomId: id } }))}
+          onHostSet={() =>
+            window.dispatchEvent(new CustomEvent("workshop:open-focus", { detail: { roomId: id } }))
+          }
         />
       )}
 
@@ -420,7 +437,9 @@ function LiveRoomPage() {
         <div className="mt-3 rounded-xl border border-violet/30 bg-violet/5 px-3 py-2">
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Sparkles className="h-3.5 w-3.5 text-violet shrink-0" />
-            <span className="text-ink truncate">This Workshop became a Collab: "{forkedWs.title}".</span>
+            <span className="text-ink truncate">
+              This Workshop became a Collab: "{forkedWs.title}".
+            </span>
             <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }} className="ml-auto">
               <Button size="sm" variant="outline" className="rounded-full gap-1 h-7">
                 Open <ArrowRight className="h-3 w-3" />
@@ -429,9 +448,20 @@ function LiveRoomPage() {
           </div>
           {invite && invite.status === "pending" && (
             <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-2">
-              <span className="text-xs text-ink-soft">You've been invited to join the persistent Workshop.</span>
-              <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">Join</Button>
-              <Button size="sm" variant="ghost" onClick={onDeclineInvite} className="rounded-full h-7">No thanks</Button>
+              <span className="text-xs text-ink-soft">
+                You've been invited to join the persistent Workshop.
+              </span>
+              <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">
+                Join
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onDeclineInvite}
+                className="rounded-full h-7"
+              >
+                No thanks
+              </Button>
             </div>
           )}
         </div>
@@ -444,7 +474,6 @@ function LiveRoomPage() {
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
-
         toolsSlot={(media) => (
           <WorkshopToolsPanel
             scope={{
@@ -456,7 +485,6 @@ function LiveRoomPage() {
             media={media}
           />
         )}
-
         composerLeading={
           <ComposerToolButton
             scope={{
@@ -495,10 +523,7 @@ function LiveRoomPage() {
           roomId={id}
           viewerId={user.id}
           isEligibleRoom={
-            !!room &&
-            room.status === "active" &&
-            !room.host_user_id &&
-            !room.claim_user_id
+            !!room && room.status === "active" && !room.host_user_id && !room.claim_user_id
           }
         />
       )}
@@ -518,14 +543,30 @@ function LiveRoomPage() {
 type LicenseChoice = "cc_by" | "rights_managed_externally" | "portfolio_credit_only" | "private";
 
 const LICENSE_OPTIONS: Array<{ id: LicenseChoice; label: string; hint: string }> = [
-  { id: "cc_by", label: "Creative Commons (BY 4.0)", hint: "Free to use with credit. Matches the Workshop spirit." },
-  { id: "portfolio_credit_only", label: "Credit only / custom", hint: "Anyone may reference with attribution." },
-  { id: "rights_managed_externally", label: "Rights managed externally", hint: "Terms handled outside the platform." },
+  {
+    id: "cc_by",
+    label: "Creative Commons (BY 4.0)",
+    hint: "Free to use with credit. Matches the Workshop spirit.",
+  },
+  {
+    id: "portfolio_credit_only",
+    label: "Credit only / custom",
+    hint: "Anyone may reference with attribution.",
+  },
+  {
+    id: "rights_managed_externally",
+    label: "Rights managed externally",
+    hint: "Terms handled outside the platform.",
+  },
   { id: "private", label: "Closed circle", hint: "Just the co-creators. Nothing public." },
 ];
 
 function CreateCollabSheet({
-  open, onOpenChange, roomId, defaultTitle, onCreated,
+  open,
+  onOpenChange,
+  roomId,
+  defaultTitle,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -545,7 +586,11 @@ function CreateCollabSheet({
     queryKey: ["create-collab-me-name", user?.id],
     enabled: !!user?.id && open,
     queryFn: async () => {
-      const { data } = await supabase.from("profiles").select("display_name, username").eq("id", user!.id).maybeSingle();
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name, username")
+        .eq("id", user!.id)
+        .maybeSingle();
       return (data?.display_name as string | null) ?? (data?.username as string | null) ?? "Host";
     },
   });
@@ -560,10 +605,15 @@ function CreateCollabSheet({
   }, [open, defaultTitle]);
 
   const attributionLabel =
-    license === "rights_managed_externally" ? "Rights managed externally"
-    : license === "portfolio_credit_only" ? (licenseCustom.trim() ? `Credit — ${licenseCustom.trim()}` : "Credit only")
-    : license === "private" ? "Closed circle"
-    : "CC BY 4.0";
+    license === "rights_managed_externally"
+      ? "Rights managed externally"
+      : license === "portfolio_credit_only"
+        ? licenseCustom.trim()
+          ? `Credit — ${licenseCustom.trim()}`
+          : "Credit only"
+        : license === "private"
+          ? "Closed circle"
+          : "CC BY 4.0";
 
   async function submit() {
     if (!title.trim()) return toast.error("Give it a title");
@@ -575,7 +625,10 @@ function CreateCollabSheet({
           title: title.trim(),
           pitch: pitch.trim() || undefined,
           license,
-          licenseCustom: license === "portfolio_credit_only" && licenseCustom.trim() ? licenseCustom.trim() : undefined,
+          licenseCustom:
+            license === "portfolio_credit_only" && licenseCustom.trim()
+              ? licenseCustom.trim()
+              : undefined,
         },
       });
       if (!workshopSlug) throw new Error("Couldn't create the Collab");
@@ -597,32 +650,47 @@ function CreateCollabSheet({
             <Rocket className="h-4 w-4 text-violet" /> Create a Collab
           </DialogTitle>
           <DialogDescription>
-            Fork this live Workshop into a persistent one. You'll be the host. Everyone currently in the room gets a one-tap invite — no one is auto-added.
+            Fork this live Workshop into a persistent one. You'll be the host. Everyone currently in
+            the room gets a one-tap invite — no one is auto-added.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div>
             <label className="text-xs font-medium text-ink-soft">Title</label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} className="mt-1" />
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              maxLength={120}
+              className="mt-1"
+            />
           </div>
           <div>
             <label className="text-xs font-medium text-ink-soft">What is this Collab about?</label>
-            <Textarea value={pitch} onChange={(e) => setPitch(e.target.value)} rows={3} maxLength={2000}
+            <Textarea
+              value={pitch}
+              onChange={(e) => setPitch(e.target.value)}
+              rows={3}
+              maxLength={2000}
               placeholder="A sentence or two so newcomers know what they're walking into."
-              className="mt-1" />
+              className="mt-1"
+            />
           </div>
 
           <div className="rounded-2xl border border-border bg-surface-2/40 p-3">
             <div className="flex items-baseline justify-between">
               <label className="text-xs font-medium text-ink-soft">Rights</label>
-              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">{license === "cc_by" ? "Default · CC BY 4.0" : "Custom"}</span>
+              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+                {license === "cc_by" ? "Default · CC BY 4.0" : "Custom"}
+              </span>
             </div>
             <div className="mt-2 space-y-1.5">
               {LICENSE_OPTIONS.map((opt) => (
                 <label
                   key={opt.id}
                   className={`flex cursor-pointer items-start gap-2 rounded-xl border px-3 py-2 transition ${
-                    license === opt.id ? "border-primary/60 bg-primary/5" : "border-border hover:bg-surface"
+                    license === opt.id
+                      ? "border-primary/60 bg-primary/5"
+                      : "border-border hover:bg-surface"
                   }`}
                 >
                   <input
@@ -650,7 +718,9 @@ function CreateCollabSheet({
             </div>
             <p className="mt-3 truncate rounded-lg bg-surface px-2 py-1.5 text-[11px] text-ink-soft">
               <span className="text-ink-muted">Attribution preview · </span>
-              <span className="text-ink">“{title || "Untitled"}” by {meName ?? "Host"} · {attributionLabel}</span>
+              <span className="text-ink">
+                “{title || "Untitled"}” by {meName ?? "Host"} · {attributionLabel}
+              </span>
             </p>
           </div>
         </div>
