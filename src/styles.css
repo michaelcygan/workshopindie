@@ -78,6 +78,8 @@
   --color-cat-jam-ink: var(--cat-jam-ink);
   --color-cat-standup: var(--cat-standup);
   --color-cat-standup-ink: var(--cat-standup-ink);
+  --color-cat-book: var(--cat-book);
+  --color-cat-book-ink: var(--cat-book-ink);
 
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
