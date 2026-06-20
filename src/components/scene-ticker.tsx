@@ -29,11 +29,7 @@ export function SceneTicker({ groups }: Props) {
       aria-label="Scenes ticker"
     >
       <div
-        className="flex w-max items-center gap-6 whitespace-nowrap py-2 group-hover:[animation-play-state:paused] motion-reduce:animation-none"
-        style={{
-          animation: "scene-ticker 160s linear infinite",
-        }}
-
+        className="scene-ticker-track flex w-max items-center gap-6 whitespace-nowrap py-2 motion-reduce:animation-none"
       >
         {loop.map((g, i) => (
           <Link
@@ -53,6 +49,12 @@ export function SceneTicker({ groups }: Props) {
         ))}
       </div>
       <style>{`
+        .scene-ticker-track {
+          animation: scene-ticker 160s linear infinite;
+        }
+        .group:hover .scene-ticker-track {
+          animation-play-state: paused;
+        }
         @keyframes scene-ticker {
           from { transform: translate3d(0, 0, 0); }
           to   { transform: translate3d(-50%, 0, 0); }
