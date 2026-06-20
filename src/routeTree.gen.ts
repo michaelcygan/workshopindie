@@ -56,6 +56,7 @@ import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
 import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
@@ -312,6 +313,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLinksRoute = AdminLinksRouteImport.update({
   id: '/links',
   path: '/links',
@@ -441,6 +447,7 @@ export interface FileRoutesByFullPath {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -504,6 +511,7 @@ export interface FileRoutesByTo {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -574,6 +582,7 @@ export interface FileRoutesById {
   '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
@@ -645,6 +654,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
     | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
@@ -708,6 +718,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
     | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
@@ -777,6 +788,7 @@ export interface FileRouteTypes {
     | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
     | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
@@ -1195,6 +1207,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/marketplace': {
+      id: '/admin/marketplace'
+      path: '/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminMarketplaceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/links': {
       id: '/admin/links'
       path: '/links'
@@ -1346,6 +1365,7 @@ interface AdminRouteChildren {
   AdminGrowthRoute: typeof AdminGrowthRoute
   AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
+  AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
@@ -1358,6 +1378,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGrowthRoute: AdminGrowthRoute,
   AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
+  AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
