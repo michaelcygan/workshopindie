@@ -177,9 +177,8 @@ function DmsThread() {
       const hasMore = list.length > PAGE_SIZE;
       const sliced = hasMore ? list.slice(1) : list;
 
-      // Find first unread *inbound* message for the divider
-      const firstUnread = sliced.find((m) => m.sender_id !== uid && !m.read_at);
-      setFirstUnreadId(firstUnread?.id ?? null);
+      // (unread divider is computed per-message from read_at inside groupMessages)
+
 
       // Merge any messages that arrived while we were fetching.
       let merged = sliced;
