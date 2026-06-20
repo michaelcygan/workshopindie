@@ -1,26 +1,44 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
+import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: Login,
   validateSearch: (s: Record<string, unknown>) => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
+    join: typeof s.join === "string" ? s.join : undefined,
+    group: typeof s.group === "string" ? s.group : undefined,
   }),
 });
+
 
 function Login() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const redeemSeed = useServerFn(redeemGroupSeedLink);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Stash seed-link for OAuth round-trips.
+  useEffect(() => {
+    if (search.join && search.group && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "ws.pendingGroupJoin",
+          JSON.stringify({ token: search.join, slug: search.group }),
+        );
+      } catch { /* ignore */ }
+    }
+  }, [search.join, search.group]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,18 +48,28 @@ function Login() {
     if (error) return toast.error(error.message);
     if (search.claim) {
       navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-    } else {
-      navigate({ to: "/" });
+      return;
     }
+    if (search.join && search.group) {
+      try {
+        const r = await redeemSeed({ data: { token: search.join } });
+        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
+        if (r.joined) toast.success("Joined");
+      } catch { /* listener will retry */ }
+      navigate({ to: "/g/$slug", params: { slug: search.group } });
+      return;
+    }
+    navigate({ to: "/" });
   };
 
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip>Welcome back</KickerChip>
+        <KickerChip>{search.join && search.group ? `Joining ${search.group}` : "Welcome back"}</KickerChip>
         <span className="text-xs text-ink-muted">Sign in to keep going</span>
       </div>
+
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
         Make something tonight.
       </h1>

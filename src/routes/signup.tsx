@@ -9,6 +9,7 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
+import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
@@ -23,8 +24,11 @@ export const Route = createFileRoute("/signup")({
     from: typeof s.from === "string" ? s.from : undefined,
     ref: typeof s.ref === "string" ? s.ref : undefined,
     claim: typeof s.claim === "string" ? s.claim : undefined,
+    join: typeof s.join === "string" ? s.join : undefined,
+    group: typeof s.group === "string" ? s.group : undefined,
   }),
 });
+
 
 
 function Signup() {
@@ -39,6 +43,20 @@ function Signup() {
   const fromGuest = search.from === "guest_apply";
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
+  const redeemSeed = useServerFn(redeemGroupSeedLink);
+
+  // Stash seed-link token in sessionStorage so OAuth round-trips still join the group.
+  useEffect(() => {
+    if (search.join && search.group && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "ws.pendingGroupJoin",
+          JSON.stringify({ token: search.join, slug: search.group }),
+        );
+      } catch { /* ignore */ }
+    }
+  }, [search.join, search.group]);
+
 
   // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it
   useEffect(() => {
@@ -90,18 +108,31 @@ function Signup() {
     toast.success("Check your inbox to confirm your email.");
     if (search.claim) {
       navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-    } else {
-      navigate({ to: "/onboarding" });
+      return;
     }
+    // Seed-link auto-join: try to redeem immediately (works if email confirmation
+    // is off, i.e. session exists). Otherwise the __root.tsx auth listener will
+    // pick up sessionStorage on SIGNED_IN.
+    if (search.join && search.group) {
+      try {
+        await redeemSeed({ data: { token: search.join } });
+        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
+      } catch { /* listener will retry post-confirmation */ }
+      navigate({ to: "/g/$slug", params: { slug: search.group } });
+      return;
+    }
+    navigate({ to: "/onboarding" });
   };
+
 
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip live>Join the night</KickerChip>
+        <KickerChip live>{search.join && search.group ? `Joining ${search.group}` : "Join the night"}</KickerChip>
         <span className="text-xs text-ink-muted">{fromGuest ? "Finish your profile" : "Free to start"}</span>
       </div>
+
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
         {fromGuest ? "Boost your application." : "Find people. Make the thing."}
       </h1>

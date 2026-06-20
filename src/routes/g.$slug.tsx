@@ -1,12 +1,13 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { MapPin, Sparkles, Users, Star, LayoutGrid, Megaphone, Radio, Info, Plus, X, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton } from "@/components/join-group-button";
+import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageButton } from "@/components/message-button";
 import {
@@ -24,7 +25,9 @@ import {
   tagWorkshopInGroup,
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
+import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
+
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 import { GroupSparkBar } from "@/components/group-spark-bar";
 
@@ -61,8 +64,12 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 export const Route = createFileRoute("/g/$slug")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    j: typeof s.j === "string" ? s.j : undefined,
+  }),
   loader: async ({ params }) => fetchGroup(params.slug),
   component: GroupPage,
+
   errorComponent: ({ error, reset }) => {
     const router = useRouter();
     return (
@@ -106,6 +113,9 @@ type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   // Default to the tab most likely to have content: events > work > collab > workshops.
   const defaultTab: Tab = useMemo(() => {
     if (group.work_count > 0) return "work";
@@ -119,7 +129,61 @@ function GroupPage() {
     if (defaultTab !== "events") setTab(defaultTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const qc = useQueryClient();
+
+  // Admin seed-link flow (?j=<token>):
+  //  • Always call resolve once (records click, surfaces banner copy).
+  //  • Logged in → redeem immediately and strip ?j= from URL.
+  //  • Logged out → render <GroupSeedJoinPrompt /> and stash token in
+  //    sessionStorage so OAuth round-trips still complete the join.
+  const seedToken = search.j;
+  const resolveSeed = useServerFn(resolveGroupSeedLink);
+  const redeemSeed = useServerFn(redeemGroupSeedLink);
+  const [seedInfo, setSeedInfo] = useState<{ group_slug: string; group_name: string } | null>(null);
+  const resolveOnce = useRef(false);
+  const redeemOnce = useRef(false);
+
+  useEffect(() => {
+    if (!seedToken || resolveOnce.current) return;
+    resolveOnce.current = true;
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "ws.pendingGroupJoin",
+          JSON.stringify({ token: seedToken, slug: group.slug }),
+        );
+      } catch { /* ignore */ }
+    }
+    resolveSeed({ data: { token: seedToken } })
+      .then((info) => {
+        if (!info) return;
+        if (info.group_slug && info.group_slug !== group.slug) {
+          navigate({ to: "/g/$slug", params: { slug: info.group_slug }, search: { j: seedToken } });
+          return;
+        }
+        setSeedInfo({ group_slug: info.group_slug, group_name: info.group_name });
+      })
+      .catch(() => {});
+  }, [seedToken, group.slug, navigate, resolveSeed]);
+
+  useEffect(() => {
+    if (!seedToken || !user || redeemOnce.current) return;
+    redeemOnce.current = true;
+    redeemSeed({ data: { token: seedToken } })
+      .then((r) => {
+        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
+        if (r.joined) toast.success(`Joined ${group.name}`);
+        qc.invalidateQueries({ queryKey: ["group-membership", group.id] });
+        qc.invalidateQueries({ queryKey: ["my-group-ids"] });
+        qc.invalidateQueries({ queryKey: ["group", group.id] });
+        navigate({ to: "/g/$slug", params: { slug: group.slug }, search: {}, replace: true });
+      })
+      .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedToken, user]);
+
+
   const { data: nextEvent } = useQuery({
     queryKey: ["group", group.id, "next-event"],
     queryFn: async () => {
@@ -161,6 +225,16 @@ function GroupPage() {
 
   return (
     <main className="mx-auto max-w-7xl pb-20">
+      {seedToken && !user && seedInfo && (
+        <div className="px-4 md:px-6">
+          <GroupSeedJoinPrompt
+            groupName={seedInfo.group_name}
+            groupSlug={seedInfo.group_slug}
+            token={seedToken}
+          />
+        </div>
+      )}
+
       {/* Hero */}
       <div
         className={cn(
