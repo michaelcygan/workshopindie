@@ -115,7 +115,7 @@ function tables(scope: ToolsScope) {
 }
 
 type LegacyProps = { workshopId: string; hostUserId: string; category: Category };
-type NewProps = { scope: ToolsScope; media?: MediaForTools };
+type NewProps = { scope: ToolsScope; media?: MediaForTools; activeTool?: ShippedToolType | null; chromeless?: boolean };
 type Props = NewProps | LegacyProps;
 
 // Subset of useMediaRoom return shape — passed in optionally so the
