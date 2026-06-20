@@ -356,12 +356,6 @@ function LiveRoomPage() {
               Live · {liveCount}/5
             </span>
             <span className="text-ink-muted/40">·</span>
-            {isHost ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-1.5 py-0.5 font-medium text-violet">
-                <RadioTower className="h-3 w-3" /> Hosting
-              </span>
-            ) : null}
-            <span className="text-ink-muted/40">·</span>
             <LicenseChip />
           </div>
         </div>
@@ -390,12 +384,23 @@ function LiveRoomPage() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={room?.status !== "active" || !!room?.workshop_id || !!room?.claim_user_id}
+                disabled={
+                  room?.status !== "active" ||
+                  !!room?.workshop_id ||
+                  (!!room?.claim_user_id && room.claim_user_id !== user.id)
+                }
                 onClick={handleClaimHost}
                 className="rounded-full gap-1.5"
+                title={
+                  room?.claim_user_id && room.claim_user_id !== user.id
+                    ? "Someone is claiming host"
+                    : "Become host of this Workshop"
+                }
               >
                 <Crown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Claim Host</span>
+                <span className="hidden sm:inline">
+                  {room?.claim_user_id ? "Claiming…" : "Claim Host"}
+                </span>
               </Button>
             )}
             <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
