@@ -63,6 +63,15 @@ const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
 const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player", "recorder"];
 const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
+/** Exported for the Stage tab bar's Tools dropdown. */
+export const STAGE_TOOL_OPTIONS = TOOL_ORDER.map((type) => ({
+  type: type as ShippedToolType,
+  label: PRESETS[type].label,
+  icon: PRESETS[type].icon,
+  blurb: PRESETS[type].blurb,
+}));
+
+
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "list", music: "list", writing: "drive", writing_book: "drive", build: "drive", visual: "board",
