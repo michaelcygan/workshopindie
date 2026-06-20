@@ -10,7 +10,7 @@ export const Route = createFileRoute("/admin/users")({ component: UsersPage });
 
 function UsersPage() {
   const fn = useServerFn(searchAdminUsers);
-  void 0;
+  
   const [q, setQ] = useState("");
   const { data, mutate, isPending } = useMutation({
     mutationFn: (qq: string) => fn({ data: { q: qq } }),
