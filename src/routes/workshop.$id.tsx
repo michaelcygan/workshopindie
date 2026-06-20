@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X } from "lucide-react";
+import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X, Crown } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
@@ -35,7 +35,6 @@ import { HostedByLine } from "@/components/hosted-by-line";
 import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
 import { HostRoomEvents } from "@/components/host-room-events";
-import { ClaimHostPill } from "@/components/claim-host-pill";
 import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { LicenseChip } from "@/components/license-chip";
