@@ -9,6 +9,7 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
+import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
@@ -23,8 +24,11 @@ export const Route = createFileRoute("/signup")({
     from: typeof s.from === "string" ? s.from : undefined,
     ref: typeof s.ref === "string" ? s.ref : undefined,
     claim: typeof s.claim === "string" ? s.claim : undefined,
+    join: typeof s.join === "string" ? s.join : undefined,
+    group: typeof s.group === "string" ? s.group : undefined,
   }),
 });
+
 
 
 function Signup() {
