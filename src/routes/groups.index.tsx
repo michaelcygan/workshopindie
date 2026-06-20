@@ -124,6 +124,20 @@ function GroupsIndex() {
     [allGroups],
   );
 
+  // Ticker: randomized view of the top 25 groups by member count. Reshuffles
+  // when the underlying list changes so it feels alive across visits.
+  const tickerGroups = useMemo(() => {
+    const top = [...allGroups]
+      .sort((a, b) => b.member_count - a.member_count)
+      .slice(0, 25);
+    for (let i = top.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [top[i], top[j]] = [top[j], top[i]];
+    }
+    return top;
+  }, [allGroups]);
+
+
 
 
   const showClusters = (tab === "all" || tab === "for-you") && !query;
