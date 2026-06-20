@@ -130,6 +130,8 @@ function GroupPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const qc = useQueryClient();
+
   // Admin seed-link flow (?j=<token>):
   //  • Always call resolve once (records click, surfaces banner copy).
   //  • Logged in → redeem immediately and strip ?j= from URL.
@@ -178,12 +180,10 @@ function GroupPage() {
         navigate({ to: "/g/$slug", params: { slug: group.slug }, search: {}, replace: true });
       })
       .catch(() => {});
-    // qc is captured below; safe ref
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedToken, user]);
 
 
-  const qc = useQueryClient();
   const { data: nextEvent } = useQuery({
     queryKey: ["group", group.id, "next-event"],
     queryFn: async () => {
