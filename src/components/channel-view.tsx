@@ -922,6 +922,18 @@ export function ChannelView({
             }
           />
 
+          {!videoFocus && user && (
+            <WorkshopPresenceWorksRail
+              meUserId={user.id}
+              members={galleryMembers.map((m) => ({
+                user_id: m.user_id,
+                display_name: m.display_name ?? null,
+                username: m.username ?? null,
+                avatar_url: m.avatar_url ?? null,
+              }))}
+            />
+          )}
+
           {/* Collabs moved into the main view toggle — sidebar is media-only now. */}
         </div>
 
