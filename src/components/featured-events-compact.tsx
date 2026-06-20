@@ -18,7 +18,7 @@ type EventLite = {
 
 /**
  * Compact, sidebar-friendly events card. Always renders something —
- * empty state shows the RSVP / Workshop Pass promise as a slim panel,
+ * empty state shows the RSVP / free trial promise as a slim panel,
  * populated state shows a stacked list of up to 4 upcoming events.
  */
 export function FeaturedEventsCompact({ className }: { className?: string }) {
