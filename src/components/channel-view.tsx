@@ -132,6 +132,21 @@ export function ChannelView({
     setViewModeState(v);
     try { window.sessionStorage.setItem(`room-view:${roomId}`, v); } catch {}
   };
+  const [activeTool, setActiveToolState] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.sessionStorage.getItem(`room-tool:${roomId}`); } catch { return null; }
+  });
+  const setActiveTool = (t: string | null) => {
+    setActiveToolState(t);
+    try {
+      if (t) window.sessionStorage.setItem(`room-tool:${roomId}`, t);
+      else window.sessionStorage.removeItem(`room-tool:${roomId}`);
+    } catch {}
+  };
+  const pickTool = (t: string) => {
+    setActiveTool(t);
+    setViewMode("tools");
+  };
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
   const [videoFocus, setVideoFocus] = useState<boolean>(() => {
