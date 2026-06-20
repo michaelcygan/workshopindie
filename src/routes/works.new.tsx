@@ -167,6 +167,30 @@ function NewWork() {
     if (!title.trim()) return toast.error("Give it a title.");
     if (!ownsRights) return toast.error("Confirm this is your work, or you have the rights to share it.");
 
+    const isBook = category === "writing_book";
+    let bookFields: Record<string, unknown> = {};
+    if (isBook) {
+      const cleanLinks = book.buyLinks
+        .map((l) => ({ label: (l.label || "").trim(), url: (l.url || "").trim() }))
+        .filter((l) => l.url.length > 0);
+      // Validate URLs
+      for (const l of cleanLinks) {
+        try { new URL(l.url); } catch { return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`); }
+      }
+      if (book.excerptUrl) {
+        try { new URL(book.excerptUrl); } catch { return toast.error("Sample chapter link isn't a valid URL."); }
+      }
+      bookFields = {
+        book_author: book.author.trim() || null,
+        book_publisher: book.publisher.trim() || null,
+        book_isbn: book.isbn.trim() || null,
+        book_published_on: book.publishedOn || null,
+        book_page_count: book.pageCount ? Number(book.pageCount) || null : null,
+        book_buy_links: cleanLinks,
+        book_excerpt_url: book.excerptUrl.trim() || null,
+      };
+    }
+
     // Free tier cap on published works
     if (!isPlus) {
       const { count } = await supabase
@@ -193,13 +217,14 @@ function NewWork() {
         description: description || null,
         cover_url: coverUrl,
         primary_url: primaryUrl || null,
-        embed_url: embedUrl,
+        embed_url: isBook ? null : embedUrl,
         source_type: "manual",
         license_type: "portfolio_credit_only",
         ownership_certified_at: new Date().toISOString(),
         status: "published",
         visibility: "public",
         created_by: user.id,
+        ...bookFields,
       })
       .select("id,slug")
       .single();
