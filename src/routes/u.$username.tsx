@@ -952,6 +952,8 @@ function AboutTab({ profile }: { profile: Profile }) {
         </section>
       )}
 
+      <GroupsSection home={profile.home_city} city={profile.city} />
+
       <FrequentCollaborators userId={profile.id} />
     </div>
   );
