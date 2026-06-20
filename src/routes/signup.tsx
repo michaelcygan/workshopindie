@@ -129,9 +129,10 @@ function Signup() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip live>Join the night</KickerChip>
+        <KickerChip live>{search.join && search.group ? `Joining ${search.group}` : "Join the night"}</KickerChip>
         <span className="text-xs text-ink-muted">{fromGuest ? "Finish your profile" : "Free to start"}</span>
       </div>
+
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
         {fromGuest ? "Boost your application." : "Find people. Make the thing."}
       </h1>
