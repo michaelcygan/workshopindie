@@ -59,9 +59,63 @@ export const Route = createFileRoute("/collab/$slug")({
       meta.push({ name: "twitter:image", content: ogImage });
     }
     if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
+
+    // JSON-LD JobPosting for open Collabs — surfaces in Google Jobs and rich results.
+    const scripts: { type: string; children: string }[] = [];
+    if (s && s.status === "open" && !isArchived) {
+      const roleNames = (s.roles ?? [])
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((r) => r.role_name)
+        .filter(Boolean);
+      const validThrough = s.ends_on
+        ? new Date(s.ends_on).toISOString()
+        : new Date(Date.now() + 30 * 86400000).toISOString();
+      const hostName = s.user?.display_name || s.user?.username || "A Workshop creator";
+      const isOnline = s.location_mode === "online";
+      const cityName = s.city?.name;
+      const country = s.city?.country || "US";
+      const jobLocation = !isOnline && cityName
+        ? {
+            "@type": "Place",
+            address: { "@type": "PostalAddress", addressLocality: cityName, addressCountry: country },
+          }
+        : undefined;
+      const applicantLocationRequirements = isOnline
+        ? { "@type": "Country", name: "Anywhere" }
+        : undefined;
+
+      const ld: Record<string, unknown> = {
+        "@context": "https://schema.org/",
+        "@type": "JobPosting",
+        title: s.title ?? "Open Collab",
+        description: (s.description ?? "").slice(0, 5000) || `Open Collab call: ${s.title ?? ""}`,
+        datePosted: s.created_at ? new Date(s.created_at).toISOString() : new Date().toISOString(),
+        validThrough,
+        employmentType: s.compensation_type === "paid" ? "CONTRACTOR" : "VOLUNTEER",
+        hiringOrganization: {
+          "@type": "Organization",
+          name: hostName,
+          sameAs: s.user?.username ? `https://workshopindie.com/u/${s.user.username}` : "https://workshopindie.com",
+        },
+        directApply: true,
+        url,
+      };
+      if (jobLocation) ld.jobLocation = jobLocation;
+      if (isOnline) {
+        ld.jobLocationType = "TELECOMMUTE";
+        if (applicantLocationRequirements) ld.applicantLocationRequirements = applicantLocationRequirements;
+      }
+      if (roleNames.length) ld.industry = roleNames.join(", ");
+      if (s.category) ld.occupationalCategory = String(s.category);
+
+      scripts.push({ type: "application/ld+json", children: JSON.stringify(ld) });
+    }
+
     return {
       meta,
       links: [{ rel: "canonical", href: url }],
+      scripts,
     };
   },
   errorComponent: ({ error }) => <main className="mx-auto max-w-2xl p-10 text-center text-ink-muted">{error.message}</main>,
