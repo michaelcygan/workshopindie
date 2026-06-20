@@ -647,35 +647,65 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-/* ---------------- WORKS TAB ---------------- */
+/* ---------------- WORKS TAB (unified: created + credited) ---------------- */
+
+type MergedWork = WorkCardData & {
+  _role: "created" | "credited";
+  my_role?: string;
+  owner?: { id: string; display_name: string | null; username: string | null } | null;
+};
+
+type SortMode = "recent" | "oldest" | "loved";
 
 function WorksTab({
-  works, pinnedWorks, isOwn, ownerName, isLoading,
+  owned, credited, pinnedWorks, isOwn, ownerName, isLoading,
+  activeLightbox, setLightbox,
 }: {
-  works: OwnedWork[];
+  owned: OwnedWork[];
+  credited: CreditWork[];
   pinnedWorks: WorkCardData[];
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
+  activeLightbox: string | null;
+  setLightbox: (slug: string | null) => void;
 }) {
+  const [roleFilter, setRoleFilter] = useState<"all" | "created" | "credited">("all");
   const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  // Pinned grid is its own hero row — keep grid below chronological & complete.
-  const rest = works;
+  const [sort, setSort] = useState<SortMode>("recent");
+
+  const merged: MergedWork[] = useMemo(() => {
+    const created: MergedWork[] = owned.map((w) => ({ ...w, _role: "created" }));
+    const cred: MergedWork[] = credited.map((w) => ({ ...w, _role: "credited", my_role: w.my_role, owner: w.owner }));
+    return [...created, ...cred];
+  }, [owned, credited]);
+
+  const roleFiltered = useMemo(() => merged.filter((w) => roleFilter === "all" || w._role === roleFilter), [merged, roleFilter]);
 
   const catCounts = useMemo(() => {
     const m = new Map<Category, number>();
-    for (const w of works) m.set(w.category, (m.get(w.category) ?? 0) + 1);
+    for (const w of roleFiltered) m.set(w.category, (m.get(w.category) ?? 0) + 1);
     return m;
-  }, [works]);
+  }, [roleFiltered]);
   const availableCats = useMemo(() => CATEGORIES.filter((c) => catCounts.get(c.id as Category)), [catCounts]);
 
-  const filtered = activeCat === "all" ? rest : rest.filter((w) => w.category === activeCat);
+  const filtered = useMemo(() => {
+    const arr = activeCat === "all" ? roleFiltered : roleFiltered.filter((w) => w.category === activeCat);
+    const sorted = [...arr];
+    if (sort === "loved") {
+      sorted.sort((a, b) => b.like_count - a.like_count);
+    } else if (sort === "oldest") {
+      sorted.sort((a, b) => (a.published_at ?? "").localeCompare(b.published_at ?? ""));
+    }
+    // "recent" is the default order from fetchers (published_at desc).
+    return sorted;
+  }, [roleFiltered, activeCat, sort]);
 
   if (isLoading) {
     return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
   }
 
-  if (works.length === 0 && pinnedWorks.length === 0) {
+  if (merged.length === 0 && pinnedWorks.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
@@ -689,50 +719,97 @@ function WorksTab({
     );
   }
 
+  const createdCount = merged.filter((w) => w._role === "created").length;
+  const creditedCount = merged.filter((w) => w._role === "credited").length;
+
   return (
     <>
-      {pinnedWorks.length > 0 && activeCat === "all" && (
+      {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
         <section className="mb-10">
           <h2 className="font-display text-xl text-ink">Pinned</h2>
           <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {pinnedWorks.map((w) => (
-              <WorkCard key={w.id} work={w} density="hero" showAvatars showCounters />
+            {pinnedWorks.map((w, i) => (
+              <WorkCard
+                key={w.id}
+                work={w}
+                density={i === 0 && pinnedWorks.length > 1 ? "hero" : "hero"}
+                showAvatars
+                showCounters
+                onOpen={() => setLightbox(w.slug)}
+              />
             ))}
           </div>
         </section>
       )}
-      {pinnedWorks.length === 0 && isOwn && works.length > 0 && (
+      {pinnedWorks.length === 0 && isOwn && merged.length > 0 && (
         <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
           <p className="text-sm text-ink-muted">No pinned Work yet. Open a Work you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
         </section>
       )}
 
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {/* Role chips — only show when there's a mix */}
+        {createdCount > 0 && creditedCount > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <MediumChip active={roleFilter === "all"} onClick={() => setRoleFilter("all")} label="All" count={merged.length} />
+            <MediumChip active={roleFilter === "created"} onClick={() => setRoleFilter("created")} label="Created" count={createdCount} />
+            <MediumChip active={roleFilter === "credited"} onClick={() => setRoleFilter("credited")} label="Credited" count={creditedCount} />
+          </div>
+        )}
+        {availableCats.length > 1 && (
+          <div className="flex flex-wrap gap-1.5">
+            {createdCount > 0 && creditedCount > 0 && <span className="mx-1 self-center text-ink-muted">·</span>}
+            <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All mediums" count={roleFiltered.length} />
+            {availableCats.map((c) => (
+              <MediumChip
+                key={c.id}
+                active={activeCat === c.id}
+                onClick={() => setActiveCat(c.id as Category)}
+                label={c.label}
+                count={catCounts.get(c.id as Category) ?? 0}
+              />
+            ))}
+          </div>
+        )}
+        <div className="ml-auto">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortMode)}
+            className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-soft focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Sort Works"
+          >
+            <option value="recent">Recent</option>
+            <option value="oldest">Oldest</option>
+            <option value="loved">Most loved</option>
+          </select>
+        </div>
+      </div>
 
-      {availableCats.length > 1 && (
-        <div className="mb-5 flex flex-wrap gap-1.5">
-          <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All" count={works.length} />
-          {availableCats.map((c) => (
-            <MediumChip
-              key={c.id}
-              active={activeCat === c.id}
-              onClick={() => setActiveCat(c.id as Category)}
-              label={c.label}
-              count={catCounts.get(c.id as Category) ?? 0}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+          {isOwn ? `Nothing here yet.` : "Nothing matches this filter."}{" "}
+          <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((w) => (
+            <WorkCard
+              key={`${w._role}-${w.id}`}
+              work={w}
+              onOpen={() => setLightbox(w.slug)}
+              creditBadge={w._role === "credited" ? w.my_role ?? null : null}
             />
           ))}
         </div>
       )}
 
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
-          {isOwn ? `Nothing in ${activeCat} yet. Publish one →` : "Nothing in this medium."}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((w) => <WorkCard key={w.id} work={w} />)}
-        </div>
-      )}
+      <WorkLightbox
+        works={filtered}
+        activeId={activeLightbox}
+        onChange={(slug) => setLightbox(slug)}
+        onClose={() => setLightbox(null)}
+      />
     </>
   );
 }
@@ -749,94 +826,6 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
     >
       {label} <span className="ml-1 opacity-70">{count}</span>
     </button>
-  );
-}
-
-/* ---------------- CREDITS TAB ---------------- */
-
-function CreditsTab({ works, isLoading, ownerName, isOwn }: { works: CreditWork[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
-  const [activeCat, setActiveCat] = useState<Category | "all">("all");
-  const [activeRole, setActiveRole] = useState<string | "all">("all");
-
-  const catCounts = useMemo(() => {
-    const m = new Map<Category, number>();
-    for (const w of works) m.set(w.category, (m.get(w.category) ?? 0) + 1);
-    return m;
-  }, [works]);
-  const availableCats = useMemo(() => CATEGORIES.filter((c) => catCounts.get(c.id as Category)), [catCounts]);
-  const availableRoles = useMemo(() => Array.from(new Set(works.map((w) => w.my_role))).sort(), [works]);
-
-  const filtered = works.filter((w) =>
-    (activeCat === "all" || w.category === activeCat)
-    && (activeRole === "all" || w.my_role === activeRole),
-  );
-
-  if (isLoading) {
-    return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
-  }
-
-  if (works.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "Get credited by collaborating. Post a Collab to start." : `${ownerName} hasn't been credited on anyone's Work yet.`}</p>
-        {isOwn && (
-          <Link to="/collab/new" className="mt-4 inline-block">
-            <Button className="rounded-full">Post a Collab</Button>
-          </Link>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <p className="mb-4 text-sm text-ink-muted">Work by other people that credits {isOwn ? "you" : ownerName}.</p>
-
-      <div className="mb-3 space-y-2">
-        {availableCats.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            <MediumChip active={activeCat === "all"} onClick={() => setActiveCat("all")} label="All mediums" count={works.length} />
-            {availableCats.map((c) => (
-              <MediumChip
-                key={c.id}
-                active={activeCat === c.id}
-                onClick={() => setActiveCat(c.id as Category)}
-                label={c.label}
-                count={catCounts.get(c.id as Category) ?? 0}
-              />
-            ))}
-          </div>
-        )}
-        {availableRoles.length > 1 && (
-          <div className="flex flex-wrap gap-1.5">
-            <MediumChip active={activeRole === "all"} onClick={() => setActiveRole("all")} label="All roles" count={works.length} />
-            {availableRoles.map((r) => (
-              <MediumChip
-                key={r}
-                active={activeRole === r}
-                onClick={() => setActiveRole(r)}
-                label={`as ${r}`}
-                count={works.filter((w) => w.my_role === r).length}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((w) => (
-          <div key={w.id} className="space-y-1.5">
-            <WorkCard work={w} />
-            <p className="px-1 text-xs text-ink-muted">
-              as <span className="font-medium text-ink-soft">{w.my_role}</span>
-              {w.owner?.username && (
-                <> · by <Link to="/u/$username" params={{ username: w.owner.username }} className="hover:underline">@{w.owner.username}</Link></>
-              )}
-            </p>
-          </div>
-        ))}
-      </div>
-    </>
   );
 }
 
@@ -868,68 +857,17 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
   );
 }
 
-/* ---------------- WORKSHOPS TAB ---------------- */
+/* ---------------- GROUPS (inline in About) ---------------- */
 
-function WorkshopsTab({ items, isLoading, ownerName, isOwn }: { items: WorkshopRow[]; isLoading: boolean; ownerName: string; isOwn: boolean }) {
-  if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
-  if (items.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "No Workshops yet. Drop into a live one or schedule your own." : `${ownerName} hasn't hosted or joined a Workshop yet.`}</p>
-        {isOwn && (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
-            <Link to="/workshops/new"><Button variant="outline" className="rounded-full">Schedule a Workshop</Button></Link>
-          </div>
-        )}
-      </div>
-    );
-  }
-  return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {items.map((w) => (
-        <Link key={w.id + w.role} to="/workshops/$slug" params={{ slug: w.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
-          <div className="flex items-center gap-2">
-            <CategoryChip category={w.category} />
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">{w.role}</span>
-          </div>
-          <h3 className="mt-2 font-display text-lg text-ink line-clamp-2">{w.title}</h3>
-          {w.starts_at && (
-            <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-muted">
-              <Calendar className="h-3.5 w-3.5" />
-              {new Date(w.starts_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
-            </p>
-          )}
-        </Link>
-      ))}
-    </div>
-  );
-}
-
-/* ---------------- GROUPS TAB ---------------- */
-
-function GroupsTab({ home, city, isOwn }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null; isOwn: boolean }) {
+function GroupsSection({ home, city }: { home: { name: string; country: string; slug: string } | null; city: { name: string; country: string; slug: string } | null }) {
   const groups: { kind: "home" | "current"; name: string; country: string; slug: string }[] = [];
   if (home) groups.push({ kind: "home", ...home });
   if (city && city.slug !== home?.slug) groups.push({ kind: "current", ...city });
-
-  if (groups.length === 0) {
-    return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
-        <p>Not in any city groups yet.</p>
-        {isOwn && (
-          <Link to="/me/edit" className="mt-3 inline-block">
-            <Button variant="outline" className="rounded-full">Add your city in Edit profile →</Button>
-          </Link>
-        )}
-      </div>
-    );
-  }
-
+  if (groups.length === 0) return null;
   return (
-    <>
-      <p className="mb-4 text-sm text-ink-muted">Cities they're part of.</p>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <section>
+      <h2 className="text-xs uppercase tracking-wider text-ink-muted">City groups</h2>
+      <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {groups.map((g) => (
           <Link key={g.slug} to="/cities/$slug" params={{ slug: g.slug }} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-ink"><Layers className="h-5 w-5" /></span>
@@ -941,7 +879,7 @@ function GroupsTab({ home, city, isOwn }: { home: { name: string; country: strin
           </Link>
         ))}
       </div>
-    </>
+    </section>
   );
 }
 
