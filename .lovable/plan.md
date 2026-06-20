@@ -1,40 +1,29 @@
-## Plan: persistent Workshop host control
+## Fix: "Larger view" button widens the wrong column
 
-Build one clear host control in the action row beside `Create a Collab`:
+### Root cause
+In `src/components/channel-view.tsx` (line 690), the focus toggle swaps the grid template:
 
-```text
-[Claim Host] [Create a Collab]   // no host yet
-[Host]       [Create a Collab]   // you are host; opens host settings
+```tsx
+videoFocus
+  ? "md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]"  // ← second (sidebar) column gets 1.6fr
+  : "md:grid-cols-[1fr_260px]"
 ```
 
-### What will change
+The first column is the video stage and the second is the right-hand sidebar. The `1.6fr` is currently applied to the sidebar, which is why clicking the Columns2 icon makes the sidebar grow instead of the video area.
 
-1. **Replace the conditional host pill with a dedicated top action control**
-   - Add a small `WorkshopHostAction` component or inline equivalent in `src/routes/workshop.$id.tsx`.
-   - Render it immediately next to `Create a Collab`, in the exact space circled in the screenshot.
-   - Keep it visible whenever the Workshop is active and not promoted.
+### Change
+Swap the fractions so the video column gets the larger share when focused:
 
-2. **Use simple state rules**
-   - If `room.host_user_id === current user`: show `Host`, wired to the existing host settings dropdown/menu.
-   - If `room.host_user_id` is missing: show `Claim Host`, wired to the existing claim-host server action.
-   - If another user is host: do not show the button; keep the hosted-by line/status behavior.
-   - If a claim is already in progress: show a disabled/pending state such as `Claiming…` rather than disappearing.
+```tsx
+videoFocus
+  ? "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]"
+  : "md:grid-cols-[1fr_260px]"
+```
 
-3. **Fix the “not showing” root cause**
-   - Do not depend on the smaller `ClaimHostPill` visibility/dwell logic for this primary control.
-   - Keep the button rendered from the route-level room state, because that is the same row that owns `Create a Collab`.
-   - After claiming, invalidate and refetch the room query so the button naturally changes from `Claim Host` to `Host` when the claim is finalized.
+That single edit makes the "larger view" icon expand the video stage (and the row of artist tiles inside it) while the sidebar shrinks back to a reasonable width — matching the user's expectation.
 
-4. **Make `Host` the entry point to host settings**
-   - Reuse the existing `HostMenu` dropdown when the viewer is host.
-   - The label should be simply `Host`, not a separate “Hosting” status pill.
-   - Host settings remain the existing controls: focus, rename, copy link, mute, transfer, lock, remove, end.
+### Verify
+- Open a live Workshop, click the Columns2 icon: video stage widens, sidebar narrows.
+- Click again (MessageSquare icon): layout returns to the default `1fr_260px`.
 
-5. **Clean up duplicate/confusing host CTAs**
-   - Remove or suppress duplicate host controls from the header/meta area where they compete with the main action row.
-   - Keep the empty-state prompt only as secondary guidance, not the primary persistent action.
-
-6. **Verify visually**
-   - Open the live Workshop route at the current desktop viewport.
-   - Confirm the top action row shows `Claim Host` directly next to `Create a Collab` when hostless.
-   - Confirm after host state changes, the same location shows `Host` and opens the settings menu.
+No other files need to change.
