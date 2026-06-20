@@ -1248,3 +1248,48 @@ function EmptyLaunchpad({
   );
 }
 
+function StageTabs({
+  value,
+  onChange,
+}: {
+  value: RoomViewMode;
+  onChange: (v: RoomViewMode) => void;
+}) {
+  const tabs: Array<{ id: RoomViewMode; label: string; icon: React.ReactNode }> = [
+    { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
+    { id: "tools", label: "Tools", icon: <Wrench className="h-3.5 w-3.5" /> },
+    { id: "gallery", label: "Work", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
+  ];
+  return (
+    <div
+      role="tablist"
+      aria-label="Workshop view"
+      className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
+    >
+      {tabs.map((t) => {
+        const active = value === t.id;
+        return (
+          <button
+            key={t.id}
+            type="button"
+            role="tab"
+            aria-selected={active}
+            onClick={() => onChange(t.id)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+              active
+                ? "bg-ink text-background shadow-sm"
+                : "text-ink-muted hover:text-ink hover:bg-muted/60",
+            )}
+          >
+            {t.icon}
+            {t.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+
