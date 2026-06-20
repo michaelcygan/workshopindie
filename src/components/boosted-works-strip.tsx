@@ -14,7 +14,7 @@ async function fetchBoostedWorks(): Promise<WorkCardData[]> {
   const { data: works } = await supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label,sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))",
     )
     .in("id", ids)
     .eq("status", "published")
@@ -24,6 +24,7 @@ async function fetchBoostedWorks(): Promise<WorkCardData[]> {
     WorkCardData & {
       work_credits?: {
         sort_order: number;
+        display_name: string | null;
         profiles: {
           id: string;
           display_name: string | null;
@@ -39,7 +40,7 @@ async function fetchBoostedWorks(): Promise<WorkCardData[]> {
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((c) => ({
           id: c.profiles?.id ?? null,
-          display_name: c.profiles?.display_name ?? null,
+          display_name: c.profiles?.display_name ?? c.display_name ?? null,
           username: c.profiles?.username ?? null,
         })),
     });

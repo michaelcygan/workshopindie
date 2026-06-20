@@ -96,7 +96,7 @@ async function fetchForYouPage(params: {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username))",
+      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -132,7 +132,7 @@ async function fetchForYouPage(params: {
     vouch_count: number; boost_count: number;
     published_at: string | null;
     created_by: string;
-    work_credits?: { sort_order: number; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
   };
   const blocked = new Set(params.blockedIds);
   const rows = (data as Row[]).filter((r) => !blocked.has(r.created_by));
@@ -144,7 +144,7 @@ async function fetchForYouPage(params: {
     published_at: r.published_at, created_by: r.created_by,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
-      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+      .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
   }));
   const last = (data as Row[])[(data as Row[]).length - 1];
   const nextCursor =

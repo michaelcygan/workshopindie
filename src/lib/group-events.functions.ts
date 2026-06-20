@@ -311,7 +311,7 @@ export const listEventAttendeeWorks = createServerFn({ method: "POST" })
     const mode = data.mode ?? "fair";
     const perUserCap = data.perUserCap ?? (mode === "byPerson" ? 6 : 3);
     const fairSize = data.fairSize ?? 12;
-    const select = "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label, sort_order, profiles(id,display_name,username,avatar_url)), author:profiles!works_created_by_fkey(display_name,username,avatar_url)";
+    const select = "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username,avatar_url)), author:profiles!works_created_by_fkey(display_name,username,avatar_url)";
     const { data: rows, error } = await supabase
       .from("works")
       .select(select)

@@ -134,7 +134,7 @@ function CityPage() {
     enabled: !!city?.id,
     queryFn: async () => {
       const { data } = await supabase.from("works")
-        .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order, profiles(id,display_name,username))")
+        .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
         .eq("city_id", city!.id).eq("status", "published").in("visibility", ["public", "unlisted"])
         .order("published_at", { ascending: false, nullsFirst: false }).limit(6);
       type Row = {
@@ -142,7 +142,7 @@ function CityPage() {
         cover_url: string | null; source_type: WorkCardData["source_type"];
         like_count: number | null; save_count: number | null; view_count: number | null;
         work_credits: Array<{
-          role_label: string | null; sort_order: number | null;
+          role_label: string | null; sort_order: number | null; display_name: string | null;
           profiles: { id: string; display_name: string | null; username: string | null } | null;
         }> | null;
       };
@@ -150,7 +150,7 @@ function CityPage() {
         id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url, source_type: r.source_type,
         like_count: r.like_count ?? 0, save_count: r.save_count ?? 0, view_count: r.view_count ?? 0,
         credits: (r.work_credits ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-          .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? null, username: c.profiles?.username ?? null })),
+          .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
       }));
     },
   });
