@@ -43,6 +43,20 @@ function Signup() {
   const fromGuest = search.from === "guest_apply";
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
+  const redeemSeed = useServerFn(redeemGroupSeedLink);
+
+  // Stash seed-link token in sessionStorage so OAuth round-trips still join the group.
+  useEffect(() => {
+    if (search.join && search.group && typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "ws.pendingGroupJoin",
+          JSON.stringify({ token: search.join, slug: search.group }),
+        );
+      } catch { /* ignore */ }
+    }
+  }, [search.join, search.group]);
+
 
   // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it
   useEffect(() => {
