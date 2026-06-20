@@ -189,7 +189,7 @@ function Index() {
     <main>
       <Hero />
 
-      <LiveWorkshopsRail />
+      <HomeLiveWorkshopsRail />
 
       <YourGroupsStrip />
 
