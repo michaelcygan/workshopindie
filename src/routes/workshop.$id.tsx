@@ -384,12 +384,23 @@ function LiveRoomPage() {
               <Button
                 size="sm"
                 variant="outline"
-                disabled={room?.status !== "active" || !!room?.workshop_id || !!room?.claim_user_id}
+                disabled={
+                  room?.status !== "active" ||
+                  !!room?.workshop_id ||
+                  (!!room?.claim_user_id && room.claim_user_id !== user.id)
+                }
                 onClick={handleClaimHost}
                 className="rounded-full gap-1.5"
+                title={
+                  room?.claim_user_id && room.claim_user_id !== user.id
+                    ? "Someone is claiming host"
+                    : "Become host of this Workshop"
+                }
               >
                 <Crown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Claim Host</span>
+                <span className="hidden sm:inline">
+                  {room?.claim_user_id ? "Claiming…" : "Claim Host"}
+                </span>
               </Button>
             )}
             <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
