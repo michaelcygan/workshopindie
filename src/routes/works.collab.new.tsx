@@ -168,6 +168,9 @@ function NewCollaborativeWork() {
         <Card className="p-4 space-y-4">
           <div>
             <Label className="mb-2 block flex items-center gap-1.5">Rights <Info className="size-3.5 text-muted-foreground" /></Label>
+            <p className="-mt-1 mb-2 text-xs text-muted-foreground">
+              You're leaving the Workshop's default CC BY-SA. Pick the terms you and your co-creators want.
+            </p>
             <Select value={license} onValueChange={(v) => setLicense(v as typeof license)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>

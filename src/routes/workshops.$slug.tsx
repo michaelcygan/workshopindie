@@ -24,6 +24,7 @@ import { ImageUpload } from "@/components/image-upload";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
 import { MessageButton } from "@/components/message-button";
+import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -144,6 +145,7 @@ function WorkshopDetail() {
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 md:py-12">
+      <CcConsentDialog />
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <div className="flex flex-wrap items-center gap-2">
           <CategoryChip category={ws.category} />
