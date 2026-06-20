@@ -34,6 +34,7 @@ import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
@@ -198,6 +199,11 @@ const CitiesIndexRoute = CitiesIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => CitiesRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   id: '/new',
@@ -442,6 +448,7 @@ export interface FileRoutesByFullPath {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -465,7 +472,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -503,6 +509,7 @@ export interface FileRoutesByTo {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin': typeof AdminIndexRoute
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
@@ -570,6 +577,7 @@ export interface FileRoutesById {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
+  '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -638,6 +646,7 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -661,7 +670,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/admin'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -699,6 +707,7 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin'
     | '/cities'
     | '/collab'
     | '/dms'
@@ -765,6 +774,7 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
+    | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -1006,6 +1016,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/cities/'
       preLoaderRoute: typeof CitiesIndexRouteImport
       parentRoute: typeof CitiesRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/workshops/new': {
       id: '/workshops/new'
@@ -1290,6 +1307,7 @@ interface AdminRouteChildren {
   AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
   AdminReportsRoute: typeof AdminReportsRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1299,6 +1317,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
   AdminReportsRoute: AdminReportsRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
