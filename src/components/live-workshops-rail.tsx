@@ -1,187 +1,155 @@
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
+import { Link } from "@tanstack/react-router";
+import { Radio, Users, ArrowRight, MapPin, Target, Clock } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
-import { Radio, Share2, Loader2 } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
-import {
-  listActiveInstantRooms,
-  joinSpecificInstantRoom,
-  type ActiveInstantRoom,
-} from "@/lib/instant.functions";
-import { CATEGORIES, type Category } from "@/lib/categories";
-import { formatRoomTitle } from "@/lib/instant";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
-
-type Props = {
-  canJoin: boolean;
-  medium?: Category | null;
-  onTakeSeat: (roomId: string) => Promise<void> | void;
+type WorkshopRow = {
+  id: string;
+  slug: string;
+  title: string | null;
+  starts_at: string | null;
+  status: string | null;
+  participant_cap: number | null;
+  confirmed_count: number | null;
+  topic_collab_post_id: string | null;
+  city_id: string | null;
+  city: { name: string } | null;
 };
 
-function labelFor(medium: Category | null) {
-  if (!medium) return "Open topic";
-  return CATEGORIES.find((c) => c.id === medium)?.label ?? medium;
+function whenLabel(iso: string | null, status: string | null) {
+  if (status === "active") return "Live now";
+  if (status === "check_in") return "Doors open";
+  if (!iso) return "Soon";
+  const diff = new Date(iso).getTime() - Date.now();
+  const mins = Math.round(diff / 60_000);
+  if (mins <= 0) return "Live now";
+  if (mins < 60) return `Starts in ${mins}m`;
+  if (mins < 60 * 24) return `Starts in ${Math.round(mins / 60)}h`;
+  return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
 }
 
-export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
-  const fetchRooms = useServerFn(listActiveInstantRooms);
-  const joinRoom = useServerFn(joinSpecificInstantRoom);
-  const qc = useQueryClient();
-  const [busyRoom, setBusyRoom] = useState<string | null>(null);
-
-  const { data } = useQuery({
-    queryKey: ["instant-active-rooms"],
-    queryFn: () => fetchRooms(),
-    refetchInterval: 5000,
+export function LiveWorkshopsRail() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["home-live-workshops"],
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const soonIso = new Date(Date.now() + 6 * 60 * 60_000).toISOString();
+      const { data, error } = await supabase
+        .from("workshops")
+        .select(
+          "id,slug,title,starts_at,status,participant_cap,confirmed_count,topic_collab_post_id,city_id," +
+            "city:cities!workshops_city_id_fkey(name)",
+        )
+        .eq("mode", "scheduled")
+        .eq("visibility", "public")
+        .in("status", ["open", "check_in", "active"])
+        .lte("starts_at", soonIso)
+        .order("status", { ascending: false }) // active > open
+        .order("starts_at", { ascending: true })
+        .limit(24);
+      if (error) throw error;
+      const rows = (data ?? []) as unknown as WorkshopRow[];
+      // Only those that still need seats.
+      return rows
+        .filter((w) => (w.participant_cap ?? 0) === 0 || (w.confirmed_count ?? 0) < (w.participant_cap ?? 0))
+        .slice(0, 8);
+    },
   });
 
-  const allRooms = data?.rooms ?? [];
-  const scoped = medium ? allRooms.filter((r) => r.medium === medium) : allRooms;
-  const rooms = scoped.filter((r) => r.live_count < 5);
-  const fullRooms = scoped.filter((r) => r.live_count >= 5);
-  const mediumLabel = medium ? CATEGORIES.find((c) => c.id === medium)?.label ?? medium : null;
+  if (!isLoading && (!data || data.length === 0)) return null;
 
-  async function takeSeat(r: ActiveInstantRoom) {
-    if (busyRoom || !canJoin) return;
-    setBusyRoom(r.id);
-    try {
-      const { roomId } = await joinRoom({ data: { roomId: r.id } });
-      await onTakeSeat(roomId);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't take that seat");
-      qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
-      setBusyRoom(null);
-    }
-  }
+  return (
+    <section className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
+      <div className="mb-3 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="font-display text-2xl text-ink md:text-3xl flex items-center gap-2">
+            <span className="relative inline-flex h-2.5 w-2.5">
+              <span className="absolute inset-0 rounded-full bg-coral animate-ping opacity-60" />
+              <span className="relative inline-block h-2.5 w-2.5 rounded-full bg-coral" />
+            </span>
+            Live Workshops
+          </h2>
+          <p className="mt-1 text-sm text-ink-muted">Active rooms with seats open. Walk right in.</p>
+        </div>
+        <Link
+          to="/workshops"
+          className="hidden sm:inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft hover:bg-muted transition"
+        >
+          All workshops <ArrowRight className="h-3.5 w-3.5" />
+        </Link>
+      </div>
 
-  function copyLink(r: ActiveInstantRoom) {
-    const path = `/workshop/${r.id}`;
-    const url = typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
-    navigator.clipboard?.writeText(url).then(
-      () => toast.success("Link copied — share to fill the room"),
-      () => toast.error("Couldn't copy link"),
-    );
-  }
-
-  if (!data) {
-    return (
-      <section className="mt-10">
-        <RailHeader subtitle="Loading live rooms…" />
-        <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-36 animate-pulse rounded-2xl bg-surface-2" />
+      {isLoading ? (
+        <div className="flex gap-3 overflow-hidden">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-32 w-72 shrink-0 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
-      </section>
-    );
-  }
-
-  if (rooms.length === 0 && fullRooms.length === 0) {
-    return (
-      <section className="mt-10">
-        <RailHeader subtitle={mediumLabel ? `No ${mediumLabel} rooms live` : "No one's live right now."} />
-        <div className="mt-3 rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
-          <p className="text-sm text-ink-soft">
-            {mediumLabel
-              ? `Be the first ${mediumLabel} room — open one and others will see you live within seconds.`
-              : "Be the first — drop in and others will see you live within seconds."}
-          </p>
-        </div>
-      </section>
-    );
-  }
-
-  const total = rooms.length + fullRooms.length;
-  return (
-    <section className="mt-10">
-      <RailHeader subtitle={`${total} ${mediumLabel ? `${mediumLabel} ` : ""}room${total === 1 ? "" : "s"} live now`} />
-      <div className="mt-3 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-        {rooms.map((r) => (
-          <article
-            key={r.id}
-            className="group flex flex-col rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-          >
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-primary">
-                <span className="relative inline-flex h-1.5 w-1.5">
-                  <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
-                </span>
-                {labelFor(r.medium as Category | null)}
-              </span>
-              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">{r.live_count}/5</span>
-            </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
-
-            <div className="mt-3 flex items-center gap-2">
-              <div className="flex -space-x-2">
-                {r.participants.slice(0, 3).map((p) => {
-                  const name = p.display_name || p.username || "Anon";
-                  return (
-                    <Avatar key={p.user_id} className="h-7 w-7 ring-2 ring-surface">
-                      <AvatarImage src={p.avatar_url ?? undefined} />
-                      <AvatarFallback className="text-[10px]">{name[0]}</AvatarFallback>
-                    </Avatar>
-                  );
-                })}
-                {r.participants.length === 0 && (
-                  <div className="h-7 w-7 rounded-full bg-muted ring-2 ring-surface" />
-                )}
-              </div>
-              {r.live_count > 3 && (
-                <span className="text-[11px] text-ink-muted">+{r.live_count - 3} more</span>
-              )}
-              <button
-                type="button"
-                onClick={() => copyLink(r)}
-                className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink transition"
-                aria-label="Copy room link"
-                title="Copy share link"
+      ) : (
+        <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {data!.map((w) => {
+            const cap = w.participant_cap ?? 0;
+            const filled = w.confirmed_count ?? 0;
+            const seatsLeft = cap > 0 ? Math.max(0, cap - filled) : null;
+            const isLive = w.status === "active";
+            return (
+              <Link
+                key={w.id}
+                to="/workshops/$slug"
+                params={{ slug: w.slug }}
+                className="group relative flex w-72 shrink-0 snap-start flex-col gap-2 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-soft"
               >
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-
-            <Button
-              onClick={() => takeSeat(r)}
-              disabled={!canJoin || busyRoom !== null}
-              size="sm"
-              className="mt-4 w-full rounded-full gap-1.5"
-            >
-              {busyRoom === r.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Radio className="h-3.5 w-3.5" />}
-              {busyRoom === r.id ? "Taking your seat…" : "Take an open seat"}
-            </Button>
-          </article>
-        ))}
-
-        {fullRooms.map((r) => (
-          <article
-            key={r.id}
-            className="flex flex-col rounded-2xl border border-border bg-surface-2 p-4 opacity-75"
-          >
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted">
-                {labelFor(r.medium as Category | null)}
-              </span>
-              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">5/5 · full</span>
-            </div>
-            <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
-            <p className="mt-3 text-xs text-ink-muted">Full — try another room or open your own.</p>
-          </article>
-        ))}
-      </div>
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span
+                    className={
+                      isLive
+                        ? "inline-flex items-center gap-1 rounded-full bg-coral/15 px-2 py-0.5 font-semibold uppercase tracking-wider text-coral"
+                        : "inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wider text-primary"
+                    }
+                  >
+                    {isLive ? <Radio className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
+                    {whenLabel(w.starts_at, w.status)}
+                  </span>
+                  {seatsLeft !== null && (
+                    <span className="inline-flex items-center gap-1 text-ink-muted">
+                      <Users className="h-3 w-3" />
+                      {seatsLeft} seat{seatsLeft === 1 ? "" : "s"} left
+                    </span>
+                  )}
+                </div>
+                <p className="line-clamp-2 font-display text-base text-ink">
+                  {w.title ?? "Untitled workshop"}
+                </p>
+                <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-ink-muted">
+                  <span className="flex items-center gap-2 truncate">
+                    {w.topic_collab_post_id && (
+                      <span className="inline-flex items-center gap-1 text-primary">
+                        <Target className="h-3 w-3" /> Collab
+                      </span>
+                    )}
+                    {w.city?.name && (
+                      <span className="inline-flex items-center gap-1 truncate">
+                        <MapPin className="h-3 w-3" /> {w.city.name}
+                      </span>
+                    )}
+                  </span>
+                  <span className="inline-flex items-center gap-0.5 font-medium text-ink transition group-hover:gap-1.5">
+                    Join <ArrowRight className="h-3 w-3" />
+                  </span>
+                </div>
+                {cap > 0 && (
+                  <div className="absolute inset-x-4 bottom-1 h-0.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className={isLive ? "h-full bg-coral" : "h-full bg-primary"}
+                      style={{ width: `${Math.min(100, Math.round((filled / cap) * 100))}%` }}
+                    />
+                  </div>
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      )}
     </section>
-  );
-}
-
-function RailHeader({ subtitle }: { subtitle: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <h2 className="font-display text-xl text-ink">Live now</h2>
-      <span className="text-xs text-ink-muted">{subtitle}</span>
-    </div>
   );
 }
