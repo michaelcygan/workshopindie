@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -15,7 +15,7 @@ import {
 } from "@/lib/lineup.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { EventRsvpAuthSheet } from "@/components/event-rsvp-auth-sheet";
+
 
 type Signup = {
   id: string;
@@ -51,8 +51,8 @@ export function LineupPanel({
   const removeFn = useServerFn(hostRemoveFromLineup);
 
   const [noteDraft, setNoteDraft] = useState("");
-  const [authOpen, setAuthOpen] = useState(false);
   const [editing, setEditing] = useState(false);
+  const navigate = useNavigate();
 
   const { data } = useQuery({
     queryKey: ["lineup", eventId],
@@ -102,7 +102,7 @@ export function LineupPanel({
   async function handleSignUp() {
     if (!user) {
       if (typeof window !== "undefined") window.localStorage.setItem(PENDING_KEY, eventId);
-      setAuthOpen(true);
+      navigate({ to: "/auth", search: { redirect: `/g/${groupSlug}/e/${eventSlug}` } });
       return;
     }
     try {
@@ -233,11 +233,6 @@ export function LineupPanel({
         </ul>
       )}
 
-      <EventRsvpAuthSheet
-        open={authOpen}
-        onOpenChange={setAuthOpen}
-        redirectTo={`/g/${groupSlug}/e/${eventSlug}`}
-      />
     </div>
   );
 }
