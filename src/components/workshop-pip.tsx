@@ -407,10 +407,13 @@ export function PopOutButton({
   onClick,
   supported,
   isOpen,
+  inline = false,
 }: {
   onClick: () => void;
   supported: boolean;
   isOpen: boolean;
+  /** When true, render without absolute positioning so it can sit inside a control cluster. */
+  inline?: boolean;
 }) {
   const title = !supported
     ? "Pop-out isn't supported in this browser"
@@ -422,7 +425,10 @@ export function PopOutButton({
       type="button"
       onClick={onClick}
       disabled={!supported}
-      className="absolute right-12 top-3 z-20 rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background disabled:opacity-40 disabled:cursor-not-allowed"
+      className={
+        (inline ? "" : "absolute right-12 top-3 z-20 ") +
+        "rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background disabled:opacity-40 disabled:cursor-not-allowed transition"
+      }
       aria-label={title}
       title={title}
     >
