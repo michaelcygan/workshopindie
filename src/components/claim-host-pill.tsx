@@ -105,7 +105,14 @@ export function ClaimHostPill({
 
   if (unclaimable) {
     return (
-      <span className="rounded-full bg-muted px-1.5 py-0.5 text-ink-soft">No Host</span>
+      <button
+        type="button"
+        disabled
+        className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-ink-soft opacity-80"
+        title="This Workshop already has managed rights"
+      >
+        <Crown className="h-3 w-3" /> Claim Host
+      </button>
     );
   }
 
