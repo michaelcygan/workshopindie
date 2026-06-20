@@ -27,9 +27,12 @@ export function FeaturedEventsCarousel({
 
   return (
     <section className={className}>
-      <div className="mb-3 flex items-baseline justify-between px-1">
-        <h2 className="font-display text-xl text-ink md:text-2xl">Featured events</h2>
-        <span className="text-xs text-ink-muted">RSVP unlocks a free trial</span>
+      <div className="mb-6 flex items-end justify-between gap-3 px-1">
+        <div>
+          <h2 className="font-display text-3xl text-ink md:text-4xl">Events</h2>
+          <p className="mt-1 text-sm text-ink-muted">What's happening across the network.</p>
+        </div>
+        <span className="hidden sm:inline text-xs text-ink-muted">RSVP unlocks a free trial</span>
       </div>
 
       {events.length === 0 ? (
