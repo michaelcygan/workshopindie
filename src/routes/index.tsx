@@ -107,7 +107,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
               <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                A live, five-seat workshop with shared tools. Start a jam session, a critique, office hours, or just to work alongside other people.
+                A live, five-seat workshop with shared tools. Start a jam, a critique, a hackathon, office hours, or just work alongside other people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -125,7 +125,7 @@ function Hero() {
             <div>
               <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                Describe what you're working on and accept applications from people who want in. Make your project and showcase it on your profile.
+                Describe what you're working on and accept applications to collaborate. Make your project and showcase it in your portfolio.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
