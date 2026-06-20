@@ -219,8 +219,34 @@ function PeekBody({
           <span><b className="text-ink">{formatCount(profile.work_count)}</b> works</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <FollowButton targetUserId={profile.id} roomId={roomId} />
+        <div className="flex items-center gap-2 flex-wrap">
+          {isSelf ? (
+            <Button
+              variant="outline"
+              className="rounded-full gap-1.5"
+              onClick={() => navigate({ to: "/settings" })}
+            >
+              <Pencil className="h-4 w-4" /> Edit profile
+            </Button>
+          ) : (
+            <>
+              <FollowButton
+                targetUserId={profile.id}
+                roomId={roomId}
+                followLabel={mutual?.theyFollow && !mutual?.iFollow ? "Follow back" : undefined}
+              />
+              {mutual?.iFollow && mutual?.theyFollow && (
+                <Button
+                  variant="outline"
+                  className="rounded-full gap-1.5"
+                  onClick={handleMessage}
+                  disabled={opening}
+                >
+                  <MessageCircle className="h-4 w-4" /> Message
+                </Button>
+              )}
+            </>
+          )}
           {profile.username && (
             <a
               href={`/u/${profile.username}`}
