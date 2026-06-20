@@ -733,6 +733,8 @@ export function ChannelView({
           </div>
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
+          <StageTabs value={viewMode} onChange={setViewMode} />
+
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
               {(typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot) ?? (
