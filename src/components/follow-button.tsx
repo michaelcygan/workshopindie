@@ -90,7 +90,7 @@ export function FollowButton({
       className="rounded-full gap-1.5"
     >
       {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-      {following ? "Following" : "Follow"}
+      {following ? "Following" : (followLabel ?? "Follow")}
     </Button>
   );
 }
