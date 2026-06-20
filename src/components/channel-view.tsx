@@ -687,7 +687,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]" : "md:grid-cols-[1fr_260px]")}>
+      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
@@ -899,7 +899,7 @@ export function ChannelView({
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className={"space-y-4 " + (videoFocus ? "hidden" : "")}>
           <MediaPanel
             m={media}
             channelTitle={title}
