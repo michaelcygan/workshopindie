@@ -32,7 +32,9 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
     .from("work_credits")
     .select("user_id")
     .eq("work_id", workId);
-  const userIds = Array.from(new Set((creditRows ?? []).map((r) => r.user_id)));
+  const userIds = Array.from(
+    new Set((creditRows ?? []).map((r) => r.user_id).filter((v): v is string => !!v)),
+  );
   if (userIds.length < 2) return [];
 
   // 2) Find every other work any of these users are credited on.
@@ -45,6 +47,7 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
   // 3) Count overlapping credited users per other_work; keep ones with ≥2.
   const overlap = new Map<string, Set<string>>();
   for (const row of otherCredits ?? []) {
+    if (!row.user_id) continue;
     if (!overlap.has(row.work_id)) overlap.set(row.work_id, new Set());
     overlap.get(row.work_id)!.add(row.user_id);
   }
