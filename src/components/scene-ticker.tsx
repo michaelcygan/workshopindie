@@ -49,6 +49,12 @@ export function SceneTicker({ groups }: Props) {
         ))}
       </div>
       <style>{`
+        .scene-ticker-track {
+          animation: scene-ticker 160s linear infinite;
+        }
+        .group:hover .scene-ticker-track {
+          animation-play-state: paused;
+        }
         @keyframes scene-ticker {
           from { transform: translate3d(0, 0, 0); }
           to   { transform: translate3d(-50%, 0, 0); }
