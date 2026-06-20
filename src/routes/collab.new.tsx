@@ -60,6 +60,7 @@ const ROLE_PRESETS: Record<Category, string[]> = {
   film: ["Actor", "Director", "Cinematographer", "Editor", "Sound", "Producer", "Writer"],
   music: ["Vocalist", "Producer", "Instrumentalist", "Songwriter", "Mixer", "Featured artist"],
   writing: ["Co-writer", "Editor", "Beta reader", "Illustrator", "Researcher"],
+  writing_book: ["Co-author", "Editor", "Beta reader", "Cover designer", "Illustrator", "Audiobook narrator"],
   build: ["Designer", "Engineer", "Product", "Researcher", "Co-founder"],
   visual: ["Photographer", "Model", "Stylist", "MUA", "Hair", "Art director", "Retoucher"],
   critique: ["Reader", "Reviewer", "Listener"],
