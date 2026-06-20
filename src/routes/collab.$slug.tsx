@@ -72,7 +72,7 @@ export const Route = createFileRoute("/collab/$slug")({
         ? new Date(s.ends_on).toISOString()
         : new Date(Date.now() + 30 * 86400000).toISOString();
       const hostName = s.user?.display_name || s.user?.username || "A Workshop creator";
-      const isOnline = s.location_mode === "online" || s.location_mode === "remote";
+      const isOnline = s.location_mode === "online";
       const cityName = s.city?.name;
       const country = s.city?.country || "US";
       const jobLocation = !isOnline && cityName
