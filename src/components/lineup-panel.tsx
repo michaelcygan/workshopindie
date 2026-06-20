@@ -102,7 +102,7 @@ export function LineupPanel({
   async function handleSignUp() {
     if (!user) {
       if (typeof window !== "undefined") window.localStorage.setItem(PENDING_KEY, eventId);
-      navigate({ to: "/auth", search: { redirect: `/g/${groupSlug}/e/${eventSlug}` } });
+      navigate({ to: "/login", search: { redirect: `/g/${groupSlug}/e/${eventSlug}` } });
       return;
     }
     try {
