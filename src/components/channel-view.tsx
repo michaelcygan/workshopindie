@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare } from "lucide-react";
+import { WorkshopPresenceWorksRail } from "@/components/workshop-presence-works-rail";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,6 +119,22 @@ export function ChannelView({
   const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
+  const [videoFocus, setVideoFocus] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.sessionStorage.getItem(`ws:focus:${roomId}`) === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.sessionStorage.setItem(`ws:focus:${roomId}`, videoFocus ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [videoFocus, roomId]);
   const openWork = (id: string) => {
     setPeekWorkId(id);
     setWorkPeekOpen(true);
@@ -670,23 +687,38 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className="mt-4 grid gap-4 md:grid-cols-[1fr_260px]">
+      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]" : "md:grid-cols-[1fr_260px]")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
-          {/* Persistent contextual expand — always available, routes to the active surface. */}
-          <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} />
+          {/* Top-right icon cluster: focus / PiP / fullscreen — reads as one control group. */}
+          <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setVideoFocus((v) => !v)}
+              className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
+              aria-label={videoFocus ? "Show chat" : "Focus video"}
+              title={videoFocus ? "Show chat" : "Focus video"}
+            >
+              {videoFocus ? (
+                <MessageSquare className="h-3.5 w-3.5" />
+              ) : (
+                <Columns2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
+            <button
+              type="button"
+              onClick={() => setFsView(fsTarget)}
+              className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
+              aria-label={fsLabel}
+              title={fsLabel}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
           {pip.portal}
-          <button
-            type="button"
-            onClick={() => setFsView(fsTarget)}
-            className="absolute right-3 top-3 z-20 rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background"
-            aria-label={fsLabel}
-            title={fsLabel}
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
@@ -889,6 +921,18 @@ export function ChannelView({
               />
             }
           />
+
+          {!videoFocus && user && (
+            <WorkshopPresenceWorksRail
+              meUserId={user.id}
+              members={galleryMembers.map((m) => ({
+                user_id: m.user_id,
+                display_name: m.display_name ?? null,
+                username: m.username ?? null,
+                avatar_url: m.avatar_url ?? null,
+              }))}
+            />
+          )}
 
           {/* Collabs moved into the main view toggle — sidebar is media-only now. */}
         </div>

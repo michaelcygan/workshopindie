@@ -188,7 +188,7 @@ function LiveRoomPage() {
 
   // First-Workshop receipt — one-time gentle toast on the user's first join.
   useEffect(() => {
-    if (typeof window === "undefined" || !user || !room || isPromoted) return;
+    if (typeof window === "undefined" || !user || !room?.id || isPromoted) return;
     try {
       if (window.localStorage.getItem("ws:first_done") === "1") return;
       window.localStorage.setItem("ws:first_done", "1");
@@ -197,7 +197,7 @@ function LiveRoomPage() {
     } catch {
       // ignore
     }
-  }, [user, room, isPromoted]);
+  }, [user, room?.id, isPromoted]);
 
   // Keyboard shortcut: "N" hops to next Workshop (guests only).
   useEffect(() => {
@@ -597,7 +597,7 @@ function CreateCollabSheet({
           <div className="rounded-2xl border border-border bg-surface-2/40 p-3">
             <div className="flex items-baseline justify-between">
               <label className="text-xs font-medium text-ink-soft">Rights</label>
-              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">Default · CC BY 4.0</span>
+              <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">{license === "cc_by" ? "Default · CC BY 4.0" : "Custom"}</span>
             </div>
             <div className="mt-2 space-y-1.5">
               {LICENSE_OPTIONS.map((opt) => (
