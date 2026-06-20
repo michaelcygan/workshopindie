@@ -318,9 +318,10 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
       base.embed_url = buildEmbedUrl(provider, u, oembed.html ?? null);
     }
 
-    // 2) OG fallback / enrichment for everything else, or if oEmbed missed fields
-    if (!oembed || !base.cover_url || !base.description) {
-      const html = await scrapeOpenGraph(cleaned);
+    // 2) OG fallback / enrichment — also retained for book metadata below
+    let html: string | null = null;
+    if (!oembed || !base.cover_url || !base.description || isBookProvider(provider)) {
+      html = await scrapeOpenGraph(cleaned);
       if (html) {
         const ogTitle = pickMeta(html, "og:title") ?? pickMeta(html, "twitter:title") ?? pickTitle(html);
         const ogDesc = pickMeta(html, "og:description") ?? pickMeta(html, "twitter:description") ?? pickMeta(html, "description");
@@ -337,8 +338,6 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
     if (!base.embed_url) base.embed_url = buildEmbedUrl(provider, u);
 
     // 4) Upgrade YouTube thumbnails to maxresdefault (no letterboxing).
-    // oEmbed returns hqdefault (480×360) which has black bars baked in for 16:9 videos.
-    // maxresdefault is 1280×720 with no letterbox. Fall back to sddefault if it 404s.
     if (provider === "youtube") {
       const id = youtubeId(u);
       if (id) {
@@ -352,5 +351,34 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
       }
     }
 
+    // 5) Books — pull author + seed a buy link from the source URL.
+    if (isBookProvider(provider)) {
+      let author: string | null = null;
+      if (html) {
+        author = pickJsonLdAuthor(html)
+          ?? pickMeta(html, "books:author")
+          ?? pickMeta(html, "book:author")
+          ?? null;
+      }
+      // Goodreads OG title is "Title by Author" — split it if author still missing.
+      if (!author && provider === "goodreads" && base.title?.includes(" by ")) {
+        const parts = base.title.split(" by ");
+        base.title = parts[0].trim();
+        author = parts.slice(1).join(" by ").trim();
+      }
+      // Amazon often strips "Amazon.com: " prefix on og:title; tidy it up.
+      if (provider === "amazon" && base.title) {
+        base.title = base.title.replace(/^Amazon\.[a-z.]+:\s*/i, "").trim();
+      }
+      const buyLabel = BOOK_PROVIDER_LABELS[provider] ?? "Buy";
+      base.book = {
+        author: author ?? base.author_name,
+        buy_links: [{ label: buyLabel, url: cleaned }],
+      };
+      // Books don't embed.
+      base.embed_url = null;
+    }
+
     return base;
   });
+
