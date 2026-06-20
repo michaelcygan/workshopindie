@@ -2,7 +2,8 @@ import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-rout
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Calendar, Users, ArrowLeft, Tag, Repeat } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Tag, Repeat, Info, ListMusic, Sparkles, MessageSquare } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
