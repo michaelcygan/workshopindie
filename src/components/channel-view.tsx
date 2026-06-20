@@ -961,7 +961,7 @@ export function ChannelView({
                   className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 transition"
                   title="Open host settings"
                 >
-                  <Sparkles className="h-3.5 w-3.5" /> Host · settings
+                  <RadioTower className="h-3.5 w-3.5" /> Host · settings
                 </button>
               ) : (
                 <div className="flex justify-center">
