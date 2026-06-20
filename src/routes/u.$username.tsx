@@ -575,7 +575,6 @@ function ProfilePage() {
         {/* Stats strip */}
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
           <Stat label="Works" value={counts.works} />
-          <Stat label="Credits" value={counts.credits} />
           <Stat label="Worked with" value={profile.worked_with_count} />
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
@@ -594,7 +593,7 @@ function ProfilePage() {
                   defaultTab === t ? "text-ink" : "text-ink-muted hover:text-ink",
                 )}
               >
-                {t}{t !== "about" && t !== "groups" && (
+                {t}{t !== "about" && (
                   <span className="ml-1.5 text-[11px] text-ink-muted">{counts[t]}</span>
                 )}
                 {defaultTab === t && (
@@ -608,35 +607,27 @@ function ProfilePage() {
         <div className="py-8 pb-20">
           {defaultTab === "works" && (
             <WorksTab
-              works={ownedWorks ?? []}
+              owned={ownedWorks ?? []}
+              credited={creditedWorks ?? []}
               pinnedWorks={pinnedWorks ?? []}
               isOwn={isOwn}
               ownerName={name}
-              isLoading={!ownedWorks}
+              isLoading={!ownedWorks || !creditedWorks}
+              activeLightbox={search.w ?? null}
+              setLightbox={(slug) => navigate({ to: "/u/$username", params: { username }, search: { ...search, w: slug ?? undefined }, replace: true })}
             />
-          )}
-
-          {defaultTab === "credits" && (
-            <CreditsTab works={creditedWorks ?? []} isLoading={!creditedWorks} ownerName={name} isOwn={isOwn} />
           )}
           {defaultTab === "collabs" && (
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
-          {defaultTab === "workshops" && (
-            <WorkshopsTab items={workshops ?? []} isLoading={!workshops} ownerName={name} isOwn={isOwn} />
-          )}
-          {defaultTab === "drafts" && isOwn && (
-            <DraftsTab items={(drafts ?? []) as DraftRow[]} isLoading={!drafts} />
-          )}
           {defaultTab === "activity" && isOwn && (
             <ActivityTab
+              drafts={(drafts ?? []) as DraftRow[]}
+              workshops={workshops ?? []}
               applied={(applied ?? []) as AppliedRow[]}
               participating={(participating ?? []) as ParticipatingRow[]}
-              isLoading={!applied || !participating}
+              isLoading={!applied || !participating || !drafts || !workshops}
             />
-          )}
-          {defaultTab === "groups" && (
-            <GroupsTab home={profile.home_city} city={profile.city} isOwn={isOwn} />
           )}
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
