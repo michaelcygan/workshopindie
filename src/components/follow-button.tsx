@@ -11,9 +11,12 @@ export function FollowButton({
   /** When set, broadcasts a follow notification on `instant:{roomId}` so the
    * followed user sees a live toast inside the workshop. */
   roomId,
+  /** Optional label override, e.g. "Follow back" when the target already follows you. */
+  followLabel,
 }: {
   targetUserId: string;
   roomId?: string;
+  followLabel?: string;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
