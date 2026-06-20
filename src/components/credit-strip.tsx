@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 export type CreditChip = {
   id: string;
   role_label: string;
+  display_name?: string | null;
   profiles: {
     id: string;
     display_name: string | null;
@@ -16,8 +17,8 @@ export type CreditChip = {
 
 /**
  * Cast-strip view of credits. Dense, scannable, every chip links to a
- * profile. The whole point of the network primitive is that you can
- * click a name and land somewhere.
+ * profile when we have one. Plain-name credits (no platform account) render
+ * as a static chip — they still appear in the cast strip, just no link.
  */
 export function CreditStrip({ credits, className }: { credits: CreditChip[]; className?: string }) {
   if (credits.length === 0) return null;
@@ -25,7 +26,7 @@ export function CreditStrip({ credits, className }: { credits: CreditChip[]; cla
     <div className={cn("flex flex-wrap gap-2", className)}>
       {credits.map((c) => {
         const p = c.profiles;
-        const name = p?.display_name || p?.username || "Anon";
+        const name = p?.display_name || p?.username || c.display_name || "Anon";
         const chip = (
           <span className="group inline-flex items-center gap-2 rounded-full border border-border bg-surface px-2 py-1 text-sm text-ink transition hover:shadow-soft hover:border-ink/20">
             <Avatar className="h-6 w-6">
