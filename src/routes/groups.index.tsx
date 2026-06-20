@@ -124,6 +124,20 @@ function GroupsIndex() {
     [allGroups],
   );
 
+  // Ticker: randomized view of the top 25 groups by member count. Reshuffles
+  // when the underlying list changes so it feels alive across visits.
+  const tickerGroups = useMemo(() => {
+    const top = [...allGroups]
+      .sort((a, b) => b.member_count - a.member_count)
+      .slice(0, 25);
+    for (let i = top.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [top[i], top[j]] = [top[j], top[i]];
+    }
+    return top;
+  }, [allGroups]);
+
+
 
 
   const showClusters = (tab === "all" || tab === "for-you") && !query;
@@ -194,9 +208,10 @@ function GroupsIndex() {
       {/* Ambient scene ticker — drifts slowly, pauses on hover. */}
       {allGroups.length > 0 && (
         <div className="mt-4">
-          <SceneTicker groups={trending.length > 0 ? trending : allGroups.slice(0, 12)} />
+          <SceneTicker groups={tickerGroups.length > 0 ? tickerGroups : allGroups.slice(0, 12)} />
         </div>
       )}
+
 
       {/* Discovery band: balanced 12-col grid so both columns share the same
           vertical rhythm — no orphaned space on either side. */}
