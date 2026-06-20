@@ -689,7 +689,7 @@ export function ChannelView({
           onExit={handleExit}
           onMinimize={() => setFsView(null)}
           roomId={roomId}
-          stageSlot={typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot}
+          stageSlot={typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot}
           dockExtra={
             <HopButton
               roomId={roomId}
