@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
+import { WorkLightbox } from "@/components/work-lightbox";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/message-button";
