@@ -113,6 +113,9 @@ type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   // Default to the tab most likely to have content: events > work > collab > workshops.
   const defaultTab: Tab = useMemo(() => {
     if (group.work_count > 0) return "work";
@@ -126,6 +129,60 @@ function GroupPage() {
     if (defaultTab !== "events") setTab(defaultTab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Admin seed-link flow (?j=<token>):
+  //  • Always call resolve once (records click, surfaces banner copy).
+  //  • Logged in → redeem immediately and strip ?j= from URL.
+  //  • Logged out → render <GroupSeedJoinPrompt /> and stash token in
+  //    sessionStorage so OAuth round-trips still complete the join.
+  const seedToken = search.j;
+  const resolveSeed = useServerFn(resolveGroupSeedLink);
+  const redeemSeed = useServerFn(redeemGroupSeedLink);
+  const [seedInfo, setSeedInfo] = useState<{ group_slug: string; group_name: string } | null>(null);
+  const resolveOnce = useRef(false);
+  const redeemOnce = useRef(false);
+
+  useEffect(() => {
+    if (!seedToken || resolveOnce.current) return;
+    resolveOnce.current = true;
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(
+          "ws.pendingGroupJoin",
+          JSON.stringify({ token: seedToken, slug: group.slug }),
+        );
+      } catch { /* ignore */ }
+    }
+    resolveSeed({ data: { token: seedToken } })
+      .then((info) => {
+        if (!info) return;
+        if (info.group_slug && info.group_slug !== group.slug) {
+          navigate({ to: "/g/$slug", params: { slug: info.group_slug }, search: { j: seedToken } });
+          return;
+        }
+        setSeedInfo({ group_slug: info.group_slug, group_name: info.group_name });
+      })
+      .catch(() => {});
+  }, [seedToken, group.slug, navigate, resolveSeed]);
+
+  useEffect(() => {
+    if (!seedToken || !user || redeemOnce.current) return;
+    redeemOnce.current = true;
+    redeemSeed({ data: { token: seedToken } })
+      .then((r) => {
+        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
+        if (r.joined) toast.success(`Joined ${group.name}`);
+        qc.invalidateQueries({ queryKey: ["group-membership", group.id] });
+        qc.invalidateQueries({ queryKey: ["my-group-ids"] });
+        qc.invalidateQueries({ queryKey: ["group", group.id] });
+        navigate({ to: "/g/$slug", params: { slug: group.slug }, search: {}, replace: true });
+      })
+      .catch(() => {});
+    // qc is captured below; safe ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seedToken, user]);
+
+
   const qc = useQueryClient();
   const { data: nextEvent } = useQuery({
     queryKey: ["group", group.id, "next-event"],
