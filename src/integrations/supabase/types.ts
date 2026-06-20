@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string
+          created_at: string
+          id: string
+          payload: Json
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_user_id: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string
+          created_at?: string
+          id?: string
+          payload?: Json
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      admin_broadcasts: {
+        Row: {
+          audience: Json
+          body: string
+          id: string
+          recipients_count: number
+          sent_at: string
+          sent_by: string
+          title: string
+        }
+        Insert: {
+          audience?: Json
+          body: string
+          id?: string
+          recipients_count?: number
+          sent_at?: string
+          sent_by: string
+          title: string
+        }
+        Update: {
+          audience?: Json
+          body?: string
+          id?: string
+          recipients_count?: number
+          sent_at?: string
+          sent_by?: string
+          title?: string
+        }
+        Relationships: []
+      }
       cities: {
         Row: {
           country: string
@@ -389,6 +449,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "collab_posts_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "collab_posts_live_workshop_id_fkey"
             columns: ["live_workshop_id"]
             isOneToOne: false
@@ -712,6 +779,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      feature_flags: {
+        Row: {
+          enabled: boolean
+          key: string
+          notes: string | null
+          rollout_pct: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          enabled?: boolean
+          key: string
+          notes?: string | null
+          rollout_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          enabled?: boolean
+          key?: string
+          notes?: string | null
+          rollout_pct?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
       }
       follows: {
         Row: {
@@ -1200,6 +1294,13 @@ export type Database = {
             referencedRelation: "cities"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "group_events_venue_city_id_fkey"
+            columns: ["venue_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
         ]
       }
       group_members: {
@@ -1383,6 +1484,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "groups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
           },
         ]
       }
@@ -2098,6 +2206,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "instant_rooms_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "instant_rooms_source_workshop_id_fkey"
             columns: ["source_workshop_id"]
             isOneToOne: false
@@ -2371,6 +2486,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mod_rules: {
+        Row: {
+          action: string
+          enabled: boolean
+          id: string
+          key: string
+          notes: string | null
+          threshold: number | null
+          updated_at: string
+          window_seconds: number | null
+        }
+        Insert: {
+          action: string
+          enabled?: boolean
+          id?: string
+          key: string
+          notes?: string | null
+          threshold?: number | null
+          updated_at?: string
+          window_seconds?: number | null
+        }
+        Update: {
+          action?: string
+          enabled?: boolean
+          id?: string
+          key?: string
+          notes?: string | null
+          threshold?: number | null
+          updated_at?: string
+          window_seconds?: number | null
+        }
+        Relationships: []
       }
       moderation_terms: {
         Row: {
@@ -2663,11 +2811,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "profiles_home_city_id_fkey"
             columns: ["home_city_id"]
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
           },
         ]
       }
@@ -2975,6 +3137,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standing_meetups_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
           },
           {
             foreignKeyName: "standing_meetups_host_user_id_fkey"
@@ -3653,6 +3822,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cities"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "works_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
           },
           {
             foreignKeyName: "works_created_by_fkey"
@@ -4825,6 +5001,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workshops_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
             foreignKeyName: "workshops_host_user_id_fkey"
             columns: ["host_user_id"]
             isOneToOne: false
@@ -4912,8 +5095,216 @@ export type Database = {
           },
         ]
       }
+      vw_acquisition_funnel: {
+        Row: {
+          first_action: number | null
+          onboarded: number | null
+          retained_d7: number | null
+          share_clicks: number | null
+          signups: number | null
+        }
+        Relationships: []
+      }
+      vw_city_activity_7d: {
+        Row: {
+          active_users: number | null
+          city_id: string | null
+          collabs_7d: number | null
+          country: string | null
+          latitude: number | null
+          longitude: number | null
+          members: number | null
+          name: string | null
+          works_7d: number | null
+          workshops_7d: number | null
+        }
+        Insert: {
+          active_users?: never
+          city_id?: string | null
+          collabs_7d?: never
+          country?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          members?: never
+          name?: string | null
+          works_7d?: never
+          workshops_7d?: never
+        }
+        Update: {
+          active_users?: never
+          city_id?: string | null
+          collabs_7d?: never
+          country?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          members?: never
+          name?: string | null
+          works_7d?: never
+          workshops_7d?: never
+        }
+        Relationships: []
+      }
+      vw_collab_funnel: {
+        Row: {
+          applications_30d: number | null
+          closed_total: number | null
+          converted_to_work_90d: number | null
+          guest_applications_30d: number | null
+          open_now: number | null
+          posts_30d: number | null
+        }
+        Relationships: []
+      }
+      vw_country_activity_7d: {
+        Row: {
+          active_users: number | null
+          collabs_7d: number | null
+          country: string | null
+          members: number | null
+          works_7d: number | null
+          workshops_7d: number | null
+        }
+        Relationships: []
+      }
+      vw_daily_signups: {
+        Row: {
+          day: string | null
+          signups: number | null
+        }
+        Relationships: []
+      }
+      vw_dau_series: {
+        Row: {
+          dau: number | null
+          day: string | null
+        }
+        Relationships: []
+      }
+      vw_engagement_by_surface_7d: {
+        Row: {
+          actions: number | null
+          active_users: number | null
+          surface: string | null
+        }
+        Relationships: []
+      }
+      vw_failed_payments: {
+        Row: {
+          current_period_end: string | null
+          display_name: string | null
+          environment: string | null
+          id: string | null
+          status: string | null
+          stripe_customer_id: string | null
+          tier: string | null
+          updated_at: string | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
+      vw_kpi_now: {
+        Row: {
+          active_subs: number | null
+          collab_applications_7d: number | null
+          collab_guest_applications_7d: number | null
+          collabs_posted_7d: number | null
+          collabs_total: number | null
+          dau: number | null
+          event_rsvps_7d: number | null
+          follows_7d: number | null
+          mau: number | null
+          open_reports: number | null
+          signups_30d: number | null
+          signups_7d: number | null
+          total_users: number | null
+          wau: number | null
+          works_published_7d: number | null
+          works_total: number | null
+          workshop_apps_7d: number | null
+          workshops_created_7d: number | null
+          workshops_total: number | null
+        }
+        Relationships: []
+      }
+      vw_marketplace_health: {
+        Row: {
+          avg_time_to_close_days: number | null
+          avg_time_to_first_app_hours: number | null
+          collabs_closed: number | null
+          collabs_open: number | null
+          collabs_total: number | null
+          pct_with_vouches_90d: number | null
+        }
+        Relationships: []
+      }
+      vw_mrr_series: {
+        Row: {
+          active_subs: number | null
+          week: string | null
+        }
+        Relationships: []
+      }
+      vw_referral_leaderboard: {
+        Row: {
+          avatar_url: string | null
+          display_name: string | null
+          paid_conversions: number | null
+          signups: number | null
+          user_id: string | null
+          username: string | null
+        }
+        Relationships: []
+      }
+      vw_signup_cohort_retention: {
+        Row: {
+          cohort_size: number | null
+          cohort_week: string | null
+          retained: number | null
+          retained_pct: number | null
+          week_n: number | null
+        }
+        Relationships: []
+      }
+      vw_subscription_status_counts: {
+        Row: {
+          environment: string | null
+          n: number | null
+          status: string | null
+          tier: string | null
+        }
+        Relationships: []
+      }
+      vw_works_funnel: {
+        Row: {
+          collaborative_published_30d: number | null
+          drafts_30d: number | null
+          published_30d: number | null
+          works_created_30d: number | null
+        }
+        Relationships: []
+      }
+      vw_workshop_funnel: {
+        Row: {
+          apps_30d: number | null
+          avg_fill_pct_90d: number | null
+          confirmed_30d: number | null
+          created_30d: number | null
+          live_now: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      admin_log: {
+        Args: {
+          _action: string
+          _payload?: Json
+          _target_id: string
+          _target_type: string
+        }
+        Returns: string
+      }
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
       bump_work_view: {
         Args: { _key: string; _work_id: string }
