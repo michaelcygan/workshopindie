@@ -98,6 +98,7 @@ type EventRow = {
   series_key: string | null;
   short_code: string | null;
   created_by: string | null;
+  lineup_capacity: number | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
 

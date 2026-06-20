@@ -13,7 +13,7 @@ function publicClient() {
 }
 
 const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,promo_pass_months,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,promo_pass_months,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity";
 
 export const getEventBySlug = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupSlug: z.string(), eventSlug: z.string() }).parse(i))
