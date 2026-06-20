@@ -356,12 +356,6 @@ function LiveRoomPage() {
               Live · {liveCount}/5
             </span>
             <span className="text-ink-muted/40">·</span>
-            {isHost ? (
-              <span className="inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-1.5 py-0.5 font-medium text-violet">
-                <RadioTower className="h-3 w-3" /> Hosting
-              </span>
-            ) : null}
-            <span className="text-ink-muted/40">·</span>
             <LicenseChip />
           </div>
         </div>
