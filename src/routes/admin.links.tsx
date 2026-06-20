@@ -81,6 +81,10 @@ function AdminLinks() {
 
   return (
     <div className="space-y-8">
+      {/* Group seed links — auto-join Meta/ad traffic */}
+      <GroupSeedLinksPanel />
+
+
       {/* Builder */}
       <section className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
         <h2 className="font-display text-xl text-ink">New Workshop link</h2>
