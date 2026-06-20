@@ -14,16 +14,16 @@ export function GroupCardCompact({ group, joined }: { group: GroupCardData; join
     <Link
       to="/g/$slug"
       params={{ slug: group.slug }}
-      className="group flex items-center gap-2 rounded-2xl border border-border bg-surface p-2 pr-3 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+      className="group flex items-center gap-2 rounded-2xl border border-border bg-surface p-1.5 pr-2.5 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
     >
       <div
-        className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg text-white"
+        className="relative flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-lg text-white"
         style={accentBg(group.accent_color)}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        <h4 className="truncate font-display text-[13px] leading-tight text-ink">{group.name}</h4>
+        <h4 className="truncate font-display text-sm leading-tight text-ink">{group.name}</h4>
         {joined && (
           <span className="shrink-0 rounded-full bg-ink px-1 py-0.5 text-[9px] font-medium text-background">In</span>
         )}
