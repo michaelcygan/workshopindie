@@ -118,6 +118,39 @@ function PeekBody({
   roomId?: string;
 }) {
   const { data, isLoading } = useQuery(profilePeekQueryOptions(userId));
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const openConvo = useServerFn(openOrCreateConversation);
+  const isSelf = user?.id === userId;
+
+  const { data: mutual } = useQuery({
+    queryKey: ["profile-peek-mutual", user?.id, userId] as const,
+    enabled: !!user && !isSelf,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const [iFollow, theyFollow] = await Promise.all([
+        supabase.from("follows").select("follower_user_id")
+          .eq("follower_user_id", user!.id).eq("followed_user_id", userId).maybeSingle(),
+        supabase.from("follows").select("follower_user_id")
+          .eq("follower_user_id", userId).eq("followed_user_id", user!.id).maybeSingle(),
+      ]);
+      return { iFollow: !!iFollow.data, theyFollow: !!theyFollow.data };
+    },
+  });
+
+  const [opening, setOpening] = useState(false);
+  async function handleMessage() {
+    if (opening) return;
+    setOpening(true);
+    try {
+      const res = await openConvo({ data: { otherUserId: userId } });
+      navigate({ to: "/dms/$conversationId", params: { conversationId: res.conversationId } });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't open conversation");
+    } finally {
+      setOpening(false);
+    }
+  }
 
   if (isLoading) {
     return (
