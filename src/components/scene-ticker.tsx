@@ -31,8 +31,9 @@ export function SceneTicker({ groups }: Props) {
       <div
         className="flex w-max items-center gap-6 whitespace-nowrap py-2 group-hover:[animation-play-state:paused] motion-reduce:animation-none"
         style={{
-          animation: "scene-ticker 80s linear infinite",
+          animation: "scene-ticker 160s linear infinite",
         }}
+
       >
         {loop.map((g, i) => (
           <Link
