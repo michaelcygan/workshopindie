@@ -61,6 +61,7 @@ import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
 import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
+import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
@@ -336,6 +337,11 @@ const AdminEventsRoute = AdminEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEngagementRoute = AdminEngagementRouteImport.update({
+  id: '/engagement',
+  path: '/engagement',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBadgesRoute = AdminBadgesRouteImport.update({
   id: '/badges',
   path: '/badges',
@@ -429,6 +435,7 @@ export interface FileRoutesByFullPath {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -491,6 +498,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -560,6 +568,7 @@ export interface FileRoutesById {
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
@@ -630,6 +639,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/growth'
@@ -692,6 +702,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/growth'
@@ -760,6 +771,7 @@ export interface FileRouteTypes {
     | '/workshop'
     | '/workshops'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
     | '/admin/groups'
     | '/admin/growth'
@@ -1218,6 +1230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/engagement': {
+      id: '/admin/engagement'
+      path: '/engagement'
+      fullPath: '/admin/engagement'
+      preLoaderRoute: typeof AdminEngagementRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/badges': {
       id: '/admin/badges'
       path: '/badges'
@@ -1321,6 +1340,7 @@ declare module '@tanstack/react-router' {
 
 interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
+  AdminEngagementRoute: typeof AdminEngagementRoute
   AdminEventsRoute: typeof AdminEventsRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
@@ -1332,6 +1352,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminBadgesRoute: AdminBadgesRoute,
+  AdminEngagementRoute: AdminEngagementRoute,
   AdminEventsRoute: AdminEventsRoute,
   AdminGroupsRoute: AdminGroupsRoute,
   AdminGrowthRoute: AdminGrowthRoute,
