@@ -82,6 +82,8 @@ function DmsThread() {
   // (the unread divider is computed from each message's read_at inside groupMessages)
   const [reportOpen, setReportOpen] = useState(false);
   const [blockOpen, setBlockOpen] = useState(false);
+  const [otherOnline, setOtherOnline] = useState(false);
+  const [otherTyping, setOtherTyping] = useState(false);
 
   const send = useServerFn(sendMessage);
   const markRead = useServerFn(markConversationRead);
@@ -93,6 +95,10 @@ function DmsThread() {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const bufferedRef = useRef<Message[]>([]);
   const readyRef = useRef(false);
+  const presenceChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastTypingSentRef = useRef(0);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   // Auto-grow textarea
   useEffect(() => {
