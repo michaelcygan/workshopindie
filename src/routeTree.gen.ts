@@ -73,6 +73,7 @@ import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$sl
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
+import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
@@ -401,6 +402,11 @@ const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
   path: '/claim/$token',
   getParentRoute: () => CollabRoute,
 } as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
 const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   id: '/$tool',
   path: '/$tool',
@@ -469,7 +475,7 @@ export interface FileRoutesByFullPath {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -498,6 +504,7 @@ export interface FileRoutesByFullPath {
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -536,7 +543,7 @@ export interface FileRoutesByTo {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -565,6 +572,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -610,7 +618,7 @@ export interface FileRoutesById {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
-  '/admin/users': typeof AdminUsersRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -639,6 +647,7 @@ export interface FileRoutesById {
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -714,6 +723,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshop/'
     | '/workshops/'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -781,6 +791,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/workshop'
     | '/workshops'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -854,6 +865,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshop/'
     | '/workshops/'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -1362,6 +1374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabClaimTokenRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
     '/workshops/$slug/tools/$tool': {
       id: '/workshops/$slug/tools/$tool'
       path: '/$tool'
@@ -1414,6 +1433,18 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminUsersRouteChildren {
+  AdminUsersIdRoute: typeof AdminUsersIdRoute
+}
+
+const AdminUsersRouteChildren: AdminUsersRouteChildren = {
+  AdminUsersIdRoute: AdminUsersIdRoute,
+}
+
+const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
+  AdminUsersRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminBadgesRoute: typeof AdminBadgesRoute
   AdminEngagementRoute: typeof AdminEngagementRoute
@@ -1426,7 +1457,7 @@ interface AdminRouteChildren {
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRevenueRoute: typeof AdminRevenueRoute
-  AdminUsersRoute: typeof AdminUsersRoute
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1442,7 +1473,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRevenueRoute: AdminRevenueRoute,
-  AdminUsersRoute: AdminUsersRoute,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 
