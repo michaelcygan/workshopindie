@@ -52,7 +52,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
               Live events are coming.
             </h3>
             <p className="mt-1 text-xs text-ink-muted">
-              Workshops, open mics, listening parties — RSVP unlocks a free Workshop Pass.
+              Workshops, open mics, listening parties — RSVP unlocks a free trial.
             </p>
             {isAdmin ? (
               <Link
