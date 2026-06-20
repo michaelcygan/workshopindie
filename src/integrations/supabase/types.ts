@@ -2657,6 +2657,8 @@ export type Database = {
           bio: string | null
           birthdate: string | null
           categories: Database["public"]["Enums"]["category"][]
+          cc_consent_ack: boolean
+          cc_consent_ack_at: string | null
           city_id: string | null
           cover_url: string | null
           created_at: string
@@ -2698,6 +2700,8 @@ export type Database = {
           bio?: string | null
           birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          cc_consent_ack?: boolean
+          cc_consent_ack_at?: string | null
           city_id?: string | null
           cover_url?: string | null
           created_at?: string
@@ -2739,6 +2743,8 @@ export type Database = {
           bio?: string | null
           birthdate?: string | null
           categories?: Database["public"]["Enums"]["category"][]
+          cc_consent_ack?: boolean
+          cc_consent_ack_at?: string | null
           city_id?: string | null
           cover_url?: string | null
           created_at?: string
