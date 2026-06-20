@@ -10,8 +10,13 @@ type Props = { groups: GroupCardData[] };
  */
 export function SceneTicker({ groups }: Props) {
   if (groups.length === 0) return null;
-  // Double the list so the CSS-only marquee loops seamlessly.
-  const loop = [...groups, ...groups];
+  // Repeat enough copies that one half of the loop is always wider than the
+  // viewport, so the -50% translate restart is invisible. Must stay even.
+  const minItems = 40;
+  let copies = Math.max(2, Math.ceil(minItems / groups.length));
+  if (copies % 2 !== 0) copies += 1;
+  const loop = Array.from({ length: copies }).flatMap(() => groups);
+
   return (
     <div
       className="group relative overflow-hidden"
