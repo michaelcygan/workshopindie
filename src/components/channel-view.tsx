@@ -1226,15 +1226,6 @@ function EmptyLaunchpad({
               {s}
             </button>
           ))}
-          {!hostUserId && canSignedIn && (
-            <button
-              type="button"
-              onClick={onClaimHost}
-              className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-1 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
-            >
-              ✨ Claim Host &amp; set a direction
-            </button>
-          )}
         </motion.div>
 
         <motion.div
