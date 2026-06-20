@@ -58,6 +58,7 @@ import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
@@ -327,6 +328,11 @@ const AdminReportsRoute = AdminReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
   id: '/marketplace',
   path: '/marketplace',
@@ -473,6 +479,7 @@ export interface FileRoutesByFullPath {
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -541,6 +548,7 @@ export interface FileRoutesByTo {
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -616,6 +624,7 @@ export interface FileRoutesById {
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -692,6 +701,7 @@ export interface FileRouteTypes {
     | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
+    | '/admin/moderation'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -760,6 +770,7 @@ export interface FileRouteTypes {
     | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
+    | '/admin/moderation'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -834,6 +845,7 @@ export interface FileRouteTypes {
     | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
+    | '/admin/moderation'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -1269,6 +1281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReportsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/marketplace': {
       id: '/admin/marketplace'
       path: '/marketplace'
@@ -1455,6 +1474,7 @@ interface AdminRouteChildren {
   AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
+  AdminModerationRoute: typeof AdminModerationRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
@@ -1471,6 +1491,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
+  AdminModerationRoute: AdminModerationRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRevenueRoute: AdminRevenueRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
