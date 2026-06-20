@@ -899,7 +899,7 @@ export function ChannelView({
           )}
         </div>
 
-        <div className="space-y-4">
+        <div className={"space-y-4 " + (videoFocus ? "hidden" : "")}>
           <MediaPanel
             m={media}
             channelTitle={title}
