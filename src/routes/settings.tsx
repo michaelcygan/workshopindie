@@ -25,6 +25,7 @@ import { getStripeEnvironment } from "@/lib/stripe";
 import { createPortalSession } from "@/lib/payments.functions";
 import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
 import { getMyPrivacy, updateMyPrivacy, deleteMyAccount, exportMyData } from "@/lib/account.functions";
+import { getMyCcConsent, setMyCcConsent } from "@/lib/cc-consent.functions";
 import {
   getMyNotifPrefs,
   updateMyNotifPrefs,
@@ -67,7 +68,7 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof UserIcon }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "plus", label: "Plus membership", icon: Sparkles },
   { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "privacy", label: "Privacy", icon: Lock },
+  { id: "privacy", label: "Privacy & Rights", icon: Lock },
   { id: "blocked", label: "Blocked users", icon: Ban },
   { id: "reports", label: "My reports", icon: Flag },
   { id: "data", label: "Your data", icon: Download },
@@ -159,7 +160,7 @@ function SettingsPage() {
             <NotificationsSection />
           </Section>
 
-          <Section id="privacy" title="Privacy" subtitle="Control who can reach you and how you appear." refMap={sectionRefs}>
+          <Section id="privacy" title="Privacy & Rights" subtitle="Control who can reach you, how you appear, and how your Workshop contributions are licensed." refMap={sectionRefs}>
             <PrivacySection />
           </Section>
 
@@ -542,6 +543,73 @@ function PrivacySection() {
             to take effect.
           </p>
         )}
+      </div>
+
+      <CcConsentSection />
+    </div>
+  );
+}
+
+/* ----------------- Creative Commons consent ----------------- */
+
+function CcConsentSection() {
+  const qc = useQueryClient();
+  const getFn = useServerFn(getMyCcConsent);
+  const setFn = useServerFn(setMyCcConsent);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["my-cc-consent"],
+    queryFn: () => getFn(),
+  });
+
+  async function toggle(showReminder: boolean) {
+    // "Show reminder" = ack is false. Toggle off = ack true (perma-consent).
+    try {
+      await setFn({ data: { ack: !showReminder } });
+      qc.invalidateQueries({ queryKey: ["my-cc-consent"] });
+      if (showReminder && typeof window !== "undefined") {
+        // Clear the per-device dismissal so the dialog appears again.
+        window.localStorage.removeItem("wi.cc_ack.v1");
+      }
+      toast.success("Saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save.");
+    }
+  }
+
+  const showReminder = !(data?.ack ?? false);
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-4">
+      <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+        Workshop rights
+      </div>
+      <div className="mt-1 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-sm font-medium text-ink">
+            Show the Creative Commons reminder when I enter a Workshop
+          </div>
+          <p className="mt-1 text-xs text-ink-muted">
+            Workshop contributions are shared under{" "}
+            <a
+              href="https://creativecommons.org/licenses/by-sa/4.0/"
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-ink"
+            >
+              CC BY-SA 4.0
+            </a>{" "}
+            until a riff becomes a Collab, where co-creators set the terms. We show a
+            one-time notice the first time you enter a Workshop; turn it back on if you
+            want to see it again.
+          </p>
+        </div>
+        <Switch
+          checked={showReminder}
+          disabled={isLoading}
+          onCheckedChange={toggle}
+          aria-label="Show Creative Commons reminder"
+        />
       </div>
     </div>
   );
