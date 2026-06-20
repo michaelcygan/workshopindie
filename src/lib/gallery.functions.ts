@@ -56,7 +56,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
     let q = supabase
       .from("works")
       .select(
-        "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, profiles(id,display_name,username))",
+        "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
       )
       .eq("status", "published")
       .in("visibility", ["public", "unlisted"])
@@ -97,6 +97,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       published_at: string | null;
       work_credits?: {
         sort_order: number;
+        display_name: string | null;
         profiles: { id: string; display_name: string | null; username: string | null } | null;
       }[];
     };
@@ -115,7 +116,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((c) => ({
           id: c.profiles?.id ?? null,
-          display_name: c.profiles?.display_name ?? null,
+          display_name: c.profiles?.display_name ?? c.display_name ?? null,
           username: c.profiles?.username ?? null,
         })),
     }));
