@@ -297,19 +297,6 @@ function LiveRoomPage() {
     },
   });
 
-  const { data: claimantName = null } = useQuery({
-    queryKey: ["claim-host-name", room?.claim_user_id],
-    enabled: !!room?.claim_user_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("display_name, username")
-        .eq("id", room!.claim_user_id!)
-        .maybeSingle();
-      return (data?.display_name as string | null) ?? (data?.username as string | null) ?? null;
-    },
-  });
-
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
 
