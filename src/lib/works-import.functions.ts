@@ -79,6 +79,12 @@ function detectProvider(u: URL): Provider {
   if (h.endsWith("are.na")) return "arena";
   if (h.endsWith("substack.com")) return "substack";
   if (h.endsWith("medium.com")) return "medium";
+  // Books
+  if (h === "amazon.com" || h.endsWith(".amazon.com") || /(^|\.)amazon\.[a-z.]+$/.test(h) || h === "a.co") return "amazon";
+  if (h.endsWith("goodreads.com")) return "goodreads";
+  if (h.endsWith("bookshop.org")) return "bookshop";
+  if (h === "books.apple.com") return "apple_books";
+  if (h === "books.google.com" || h === "play.google.com") return "google_books";
   return "generic";
 }
 
@@ -89,9 +95,49 @@ function categoryFor(p: Provider): Category | null {
     case "github": return "build";
     case "behance": case "dribbble": case "instagram": case "arena": return "visual";
     case "substack": case "medium": return "writing";
+    case "amazon": case "goodreads": case "bookshop": case "apple_books": case "google_books":
+      return "writing_book";
     default: return null;
   }
 }
+
+const BOOK_PROVIDER_LABELS: Partial<Record<Provider, string>> = {
+  amazon: "Amazon",
+  goodreads: "Goodreads",
+  bookshop: "Bookshop",
+  apple_books: "Apple Books",
+  google_books: "Google Books",
+};
+
+function isBookProvider(p: Provider): boolean {
+  return p in BOOK_PROVIDER_LABELS;
+}
+
+function pickJsonLdAuthor(html: string): string | null {
+  // Find JSON-LD blocks and look for a Book entity's author.name
+  const blocks = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  if (!blocks) return null;
+  for (const block of blocks) {
+    const inner = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "");
+    try {
+      const parsed = JSON.parse(inner);
+      const items = Array.isArray(parsed) ? parsed : [parsed];
+      for (const item of items) {
+        const types = ([] as string[]).concat(item?.["@type"] ?? []);
+        if (types.some((t) => /book/i.test(t))) {
+          const a = item.author;
+          if (typeof a === "string" && a.trim()) return a.trim();
+          if (Array.isArray(a) && a[0]) {
+            return typeof a[0] === "string" ? a[0] : (a[0]?.name ?? null);
+          }
+          if (a?.name) return String(a.name);
+        }
+      }
+    } catch { /* skip malformed */ }
+  }
+  return null;
+}
+
 
 function youtubeId(u: URL): string | null {
   if (u.hostname === "youtu.be") return u.pathname.slice(1) || null;
