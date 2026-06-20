@@ -240,7 +240,6 @@ function EventPage() {
         {/* Series admin strip */}
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
 
-
         {/* Location */}
         <div className="mt-5">
           <EventLocationCard
@@ -251,11 +250,6 @@ function EventPage() {
             city={ev.venue_name ?? null}
           />
         </div>
-
-        {/* Lineup (for lineup events) */}
-        {ev.kind === "lineup" && (
-          <LineupPanel eventId={ev.id} isHostOrAdmin={!!user && (user.id === ev.created_by)} />
-        )}
 
         {/* RSVP */}
         <div className="mt-5">
@@ -277,13 +271,12 @@ function EventPage() {
           </div>
         )}
 
-        {/* Who's going */}
+        {/* Who's going (always visible, above tabs) */}
         <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="font-display text-lg text-ink">Who's going</h3>
             <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
               <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-              {ev.maybe_count > 0 && ` · ${ev.maybe_count} maybe`}
               {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
             </span>
           </div>
@@ -320,40 +313,68 @@ function EventPage() {
           )}
         </div>
 
-        {/* About */}
-        {ev.description && (
-          <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-            <h3 className="mb-2 font-display text-lg text-ink">About</h3>
-            <p className="whitespace-pre-wrap text-sm text-ink-soft">{ev.description}</p>
-          </div>
-        )}
+        {/* Tabs */}
+        <div className="mt-6">
+          <Tabs defaultValue="about">
+            <TabsList className="sticky top-2 z-10 grid w-full grid-cols-4 rounded-full bg-muted p-1 backdrop-blur">
+              <TabsTrigger value="about" className="rounded-full"><Info className="mr-1.5 h-3.5 w-3.5" /> About</TabsTrigger>
+              {ev.lineup_capacity != null && (
+                <TabsTrigger value="lineup" className="rounded-full"><ListMusic className="mr-1.5 h-3.5 w-3.5" /> Lineup</TabsTrigger>
+              )}
+              <TabsTrigger value="activity" className="rounded-full"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Activity</TabsTrigger>
+              <TabsTrigger value="wall" className="rounded-full"><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Wall</TabsTrigger>
+            </TabsList>
 
-        {/* Updates */}
-        {updates && updates.length > 0 && (
-          <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-            <h3 className="mb-3 font-display text-lg text-ink">Host updates</h3>
-            <ul className="space-y-3">
-              {updates.map((u) => (
-                <li key={u.id}>
-                  <div className="text-[11px] text-ink-muted">
-                    {new Date(u.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
-                  </div>
-                  <p className="whitespace-pre-wrap text-sm text-ink">{u.body}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+            <TabsContent value="about" className="mt-5 space-y-6">
+              {ev.description ? (
+                <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                  <h3 className="mb-2 font-display text-lg text-ink">About</h3>
+                  <p className="whitespace-pre-wrap text-sm text-ink-soft">{ev.description}</p>
+                </div>
+              ) : (
+                <p className="rounded-2xl border border-dashed border-border bg-background p-6 text-center text-sm text-ink-muted">
+                  No description yet.
+                </p>
+              )}
+              {updates && updates.length > 0 && (
+                <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                  <h3 className="mb-3 font-display text-lg text-ink">Host updates</h3>
+                  <ul className="space-y-3">
+                    {updates.map((u) => (
+                      <li key={u.id}>
+                        <div className="text-[11px] text-ink-muted">
+                          {new Date(u.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        </div>
+                        <p className="whitespace-pre-wrap text-sm text-ink">{u.body}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </TabsContent>
 
-        {/* Bringing tonight */}
-        <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
+            {ev.lineup_capacity != null && (
+              <TabsContent value="lineup" className="mt-5">
+                <LineupPanel
+                  eventId={ev.id}
+                  groupSlug={ev.group.slug}
+                  eventSlug={ev.slug}
+                  isHostOrAdmin={!!user && user.id === ev.created_by}
+                />
+              </TabsContent>
+            )}
 
-        {/* What attendees are working on */}
-        <EventAttendeeWork eventId={ev.id} />
+            <TabsContent value="activity" className="mt-5 space-y-6">
+              <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
+              <EventAttendeeWork eventId={ev.id} />
+            </TabsContent>
 
-        {/* Wall */}
-        <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-          <EventWall eventId={ev.id} canPost={myRsvp?.status === "going" || myRsvp?.status === "maybe"} />
+            <TabsContent value="wall" className="mt-5">
+              <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                <EventWall eventId={ev.id} canPost={myRsvp?.status === "going"} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </main>
