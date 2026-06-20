@@ -1,79 +1,40 @@
-## Profile 2027 — portfolio-grade redesign
+## Plan: persistent Workshop host control
 
-Reframe `/u/:username` from a generic tabbed dashboard into a portfolio surface the user actually wants to share. Tighter IA, richer Works grid, in-page lightbox, and a hero that does work.
+Build one clear host control in the action row beside `Create a Collab`:
 
-### 1. Information architecture (tabs)
+```text
+[Claim Host] [Create a Collab]   // no host yet
+[Host]       [Create a Collab]   // you are host; opens host settings
+```
 
-Collapse 8 tabs → **4**:
+### What will change
 
-| New tab | Folds in | Notes |
-|---|---|---|
-| **Works** | Works + **Credits** | One unified portfolio. Role filter chip: *All · Created · Credited*. Credits are no longer a separate tab — they're Works you appear on, filterable. |
-| **Collabs** | Collabs | Unchanged. |
-| **Activity** *(own only)* | **Drafts** + **Workshops** + existing Activity (applied / participating) | Single chronological feed grouped by section: *Drafts · Workshops · Applied · Participating*. Private — never shown to visitors. |
-| **About** | About + **Groups** | Groups become a subsection of About (city/home chips inline with bio). |
+1. **Replace the conditional host pill with a dedicated top action control**
+   - Add a small `WorkshopHostAction` component or inline equivalent in `src/routes/workshop.$id.tsx`.
+   - Render it immediately next to `Create a Collab`, in the exact space circled in the screenshot.
+   - Keep it visible whenever the Workshop is active and not promoted.
 
-Visitor sees only: Works · Collabs · About. Owner additionally sees: Activity.
+2. **Use simple state rules**
+   - If `room.host_user_id === current user`: show `Host`, wired to the existing host settings dropdown/menu.
+   - If `room.host_user_id` is missing: show `Claim Host`, wired to the existing claim-host server action.
+   - If another user is host: do not show the button; keep the hosted-by line/status behavior.
+   - If a claim is already in progress: show a disabled/pending state such as `Claiming…` rather than disappearing.
 
-Default tab: **Works** for everyone (own and visitor). Drop the "first non-empty visitor tab" logic — a portfolio always opens on Works.
+3. **Fix the “not showing” root cause**
+   - Do not depend on the smaller `ClaimHostPill` visibility/dwell logic for this primary control.
+   - Keep the button rendered from the route-level room state, because that is the same row that owns `Create a Collab`.
+   - After claiming, invalidate and refetch the room query so the button naturally changes from `Claim Host` to `Host` when the claim is finalized.
 
-### 2. Works tab — real portfolio grid
+4. **Make `Host` the entry point to host settings**
+   - Reuse the existing `HostMenu` dropdown when the viewer is host.
+   - The label should be simply `Host`, not a separate “Hosting” status pill.
+   - Host settings remain the existing controls: focus, rename, copy link, mute, transfer, lock, remove, end.
 
-- **Pinned hero row** stays, but upgrade to a true masonry feel: 2-up on desktop with one optional "spotlight" slot (first pinned renders larger / 16:10).
-- **Filter bar** above the grid, single row:
-  - Role chips: *All · Created · Credited* (drives the merged Works+Credits dataset).
-  - Category chips (existing `MediumChip`), only render when >1 category present.
-  - Sort dropdown on the right: *Recent · Oldest · Most loved*.
-- **Card upgrades** (in `work-card.tsx`, not new component):
-  - Hover state reveals title + category + year overlay on the cover, Behance/Cargo style.
-  - "Credited" cards get a subtle corner badge with the owner's role (e.g. "Editor", "Co-writer").
-- **Empty filtered state**: clear copy + reset chip.
+5. **Clean up duplicate/confusing host CTAs**
+   - Remove or suppress duplicate host controls from the header/meta area where they compete with the main action row.
+   - Keep the empty-state prompt only as secondary guidance, not the primary persistent action.
 
-### 3. Lightbox — open any Work in place
-
-New `<WorkLightbox>` component (Radix Dialog, full-viewport).
-
-- Click any card on the profile → opens lightbox instead of navigating.
-- Left/right arrow keys + on-screen chevrons cycle through the *currently filtered* Works list.
-- URL syncs via search param: `?w=<slug>` (deep-linkable, shareable, back button closes).
-- Contents: cover/embed at top (image, YouTube/Vimeo/Spotify/SoundCloud via existing `EmbedPlayer`, book cover for `writing_book`), title, byline, category chip, description, buy links for books, collaborators row, love/comment counts, "Open full page →" link to `/works/$slug`.
-- Mobile: full-screen sheet, swipe to dismiss.
-- Esc / backdrop click closes and clears `?w=`.
-
-### 4. Hero refresh
-
-The current hero (name + handle + city + 3 action buttons + completion chip + stat row) reads as a settings page. Tighten it:
-
-- **Name** (display serif, unchanged) + **@handle** · **city** inline beneath.
-- **Bio one-liner** (first ~140 chars of about) rendered directly under handle when present — currently buried in About tab.
-- **Avatar** (40px) inline with handle row if `avatar_url` set; placeholder initial otherwise.
-- **Action row** condensed: primary CTA only (`Publish` for own, `Follow` for visitor), secondary actions in a `…` menu (Post Collab, Drop into Workshop, Share, Report).
-- **Stats row**: drop "Credits" as its own stat (now folded into Works count). Keep: *Works · Worked with · Followers · Following*. Numbers stay serif but tighter — currently feels like a counter strip, should feel like portfolio metadata.
-- **Completion chip** stays but moves to a dismissable inline note under stats (own only, only when <100%).
-
-### 5. Share affordance
-
-- Add a small `Share` icon button in the hero (own + visitor) that copies the canonical URL (`workshopindie.com/u/<handle>`) and shows a toast. This is the "send a link" muscle memory.
-- Set `og:image` on the profile route using the user's `cover_image_url` (fall back to first pinned Work cover, then default).
-
-### 6. Out of scope
-
-- No new DB fields. Credits already queryable; reusing `creditedWorks` dataset.
-- No edits to `/works/$slug` detail page — it remains the canonical permalink.
-- No changes to category color tokens.
-- Profile editing flow unchanged.
-
-### Files
-
-- `src/routes/u.$username.tsx` — tab reduction, hero refresh, share button, lightbox state + URL sync, merged Works+Credits dataset, Activity merge (Drafts + Workshops in).
-- `src/components/work-card.tsx` — hover overlay, credited badge variant.
-- `src/components/work-lightbox.tsx` — new.
-- `src/routes/__root.tsx` *(only if og:image needs leaf-level override pattern)* — likely untouched; head() lives on the profile route already.
-
-### Open question before build
-
-The Activity tab will grow long once Drafts + Workshops + Applied + Participating all live there. Want it as:
-- **(a)** one chronological mixed feed with type icons, or
-- **(b)** four collapsible sections in fixed order (Drafts → Workshops → Applied → Participating)?
-
-I'd lean **(b)** — easier to scan, matches how the user actually thinks about each pile. Confirm or override before I build.
+6. **Verify visually**
+   - Open the live Workshop route at the current desktop viewport.
+   - Confirm the top action row shows `Claim Host` directly next to `Create a Collab` when hostless.
+   - Confirm after host state changes, the same location shows `Host` and opens the settings menu.
