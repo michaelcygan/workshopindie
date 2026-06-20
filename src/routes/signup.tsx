@@ -108,10 +108,22 @@ function Signup() {
     toast.success("Check your inbox to confirm your email.");
     if (search.claim) {
       navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-    } else {
-      navigate({ to: "/onboarding" });
+      return;
     }
+    // Seed-link auto-join: try to redeem immediately (works if email confirmation
+    // is off, i.e. session exists). Otherwise the __root.tsx auth listener will
+    // pick up sessionStorage on SIGNED_IN.
+    if (search.join && search.group) {
+      try {
+        await redeemSeed({ data: { token: search.join } });
+        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
+      } catch { /* listener will retry post-confirmation */ }
+      navigate({ to: "/g/$slug", params: { slug: search.group } });
+      return;
+    }
+    navigate({ to: "/onboarding" });
   };
+
 
 
   return (
