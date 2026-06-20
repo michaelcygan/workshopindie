@@ -1,62 +1,58 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Link as LinkIcon, X, Repeat, ShieldCheck, Clock, ExternalLink, MoreVertical, Trash2 } from "lucide-react";
+import { Link as LinkIcon, X, Pencil, Check, Trash2, MoreVertical } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  getLineupForEvent, getMySlotPrivate, convertMyHolds,
-  releaseSlot, switchSlot, approveClaim, declineClaim, removeFromSlot, updateMyPerformerInfo,
+  getLineupForEvent, signUpForLineup, releaseMyLineupSpot, updateMyLineupNote, hostRemoveFromLineup,
 } from "@/lib/lineup.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { ClaimSlotDialog } from "./claim-slot-dialog";
+import { EventRsvpAuthSheet } from "@/components/event-rsvp-auth-sheet";
 
-type Slot = {
+type Signup = {
   id: string;
   event_id: string;
+  user_id: string;
   position: number;
-  status: "open" | "soft_hold" | "requested" | "confirmed";
-  claimed_by: string | null;
-  claimed_at: string | null;
-  manual_performer_name: string | null;
-  stage_name: string | null;
-  act_type: "comedian" | "band" | "dj" | "other" | null;
-  link_url: string | null;
-  hold_expires_at: string | null;
+  status: "confirmed" | "waitlist";
+  note: string | null;
+  created_at: string;
 };
 
 type Profile = { id: string; username: string | null; display_name: string | null; avatar_url: string | null };
 
-const ACT_LABELS: Record<string, string> = {
-  comedian: "Comedian",
-  band: "Band",
-  dj: "DJ",
-  other: "Other",
-};
+const PENDING_KEY = "pendingLineupSignup";
 
-export function LineupPanel({ eventId, isHostOrAdmin }: { eventId: string; isHostOrAdmin: boolean }) {
+export function LineupPanel({
+  eventId,
+  groupSlug,
+  eventSlug,
+  isHostOrAdmin,
+}: {
+  eventId: string;
+  groupSlug: string;
+  eventSlug: string;
+  isHostOrAdmin: boolean;
+}) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const getFn = useServerFn(getLineupForEvent);
-  const mineFn = useServerFn(getMySlotPrivate);
-  const convertFn = useServerFn(convertMyHolds);
-  const releaseFn = useServerFn(releaseSlot);
-  const switchFn = useServerFn(switchSlot);
-  const approveFn = useServerFn(approveClaim);
-  const declineFn = useServerFn(declineClaim);
-  const removeFn = useServerFn(removeFromSlot);
-  const updateFn = useServerFn(updateMyPerformerInfo);
+  const signUpFn = useServerFn(signUpForLineup);
+  const releaseFn = useServerFn(releaseMyLineupSpot);
+  const updateFn = useServerFn(updateMyLineupNote);
+  const removeFn = useServerFn(hostRemoveFromLineup);
 
-  const [claimOpen, setClaimOpen] = useState(false);
-  const [claimSlotId, setClaimSlotId] = useState<string | null>(null);
-  const [claimPosition, setClaimPosition] = useState<number | null>(null);
-  const [switchMode, setSwitchMode] = useState(false);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [authOpen, setAuthOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["lineup", eventId],
@@ -64,307 +60,249 @@ export function LineupPanel({ eventId, isHostOrAdmin }: { eventId: string; isHos
     refetchInterval: 30_000,
   });
 
-  const { data: mine } = useQuery({
-    queryKey: ["lineup-mine", eventId, user?.id ?? null],
-    queryFn: () => mineFn({ data: { event_id: eventId } }),
-    enabled: !!user,
-  });
-
-  // Convert pending soft holds after signup
-  useEffect(() => {
-    if (!user) return;
-    if (typeof window === "undefined") return;
-    const marker = window.localStorage.getItem("pendingLineupHold");
-    if (!marker) return;
-    (async () => {
-      try {
-        const res = await convertFn({});
-        if (res.converted > 0) toast.success(`Confirmed ${res.converted} held spot${res.converted === 1 ? "" : "s"}.`);
-      } finally {
-        window.localStorage.removeItem("pendingLineupHold");
-        qc.invalidateQueries({ queryKey: ["lineup", eventId] });
-        qc.invalidateQueries({ queryKey: ["lineup-mine", eventId] });
-      }
-    })();
-  }, [user, convertFn, qc, eventId]);
-
   // Realtime
   useEffect(() => {
     const ch = supabase
       .channel(`lineup-${eventId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_event_lineup_slots", filter: `event_id=eq.${eventId}` }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "event_lineup_signups", filter: `event_id=eq.${eventId}` }, () => {
         qc.invalidateQueries({ queryKey: ["lineup", eventId] });
-        qc.invalidateQueries({ queryKey: ["lineup-mine", eventId] });
       })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [eventId, qc]);
 
-  const slots = useMemo(() => (data?.slots ?? []) as Slot[], [data]);
+  // Resume "I'm performing" tap after sign-in.
+  useEffect(() => {
+    if (!user) return;
+    if (typeof window === "undefined") return;
+    const marker = window.localStorage.getItem(PENDING_KEY);
+    if (marker !== eventId) return;
+    window.localStorage.removeItem(PENDING_KEY);
+    (async () => {
+      try {
+        await signUpFn({ data: { event_id: eventId, note: null } });
+        toast.success("You're on the list.");
+        qc.invalidateQueries({ queryKey: ["lineup", eventId] });
+      } catch (ex) {
+        const msg = (ex as Error).message;
+        if (!/already on this lineup/i.test(msg)) toast.error(msg);
+      }
+    })();
+  }, [user, eventId, signUpFn, qc]);
+
+  const signups = useMemo(() => (data?.signups ?? []) as Signup[], [data]);
   const profiles = (data?.profiles ?? {}) as Record<string, Profile>;
-  const ev = data?.event as { lineup_mode: "open_claim" | "host_approval"; lineup_field_act_type: boolean; lineup_field_link: boolean; lineup_field_notes: boolean; lineup_allow_switch: boolean } | undefined;
+  const ev = data?.event as { lineup_capacity: number | null; starts_at: string } | undefined;
 
-  const mySlot = slots.find((s) => user && s.claimed_by === user.id);
-  const openSlots = slots.filter((s) => s.status === "open");
+  const confirmed = signups.filter((s) => s.status === "confirmed");
+  const waitlist = signups.filter((s) => s.status === "waitlist");
+  const mine = user ? signups.find((s) => s.user_id === user.id) ?? null : null;
+  const cap = ev?.lineup_capacity ?? null;
 
-  function openClaim(slot: Slot) {
-    setClaimSlotId(slot.id);
-    setClaimPosition(slot.position);
-    setClaimOpen(true);
+  async function handleSignUp() {
+    if (!user) {
+      if (typeof window !== "undefined") window.localStorage.setItem(PENDING_KEY, eventId);
+      setAuthOpen(true);
+      return;
+    }
+    try {
+      await signUpFn({ data: { event_id: eventId, note: null } });
+      toast.success(cap !== null && confirmed.length >= cap ? "You're on the waitlist." : "You're on the list.");
+    } catch (ex) {
+      toast.error((ex as Error).message);
+    }
   }
 
-  async function doRelease(slotId: string) {
-    if (!confirm("Release your spot? It'll go back to the open pool.")) return;
-    try { await releaseFn({ data: { slot_id: slotId } }); toast.success("Released."); }
+  async function handleRelease() {
+    if (!confirm("Drop your spot? The next person on the waitlist will be moved up.")) return;
+    try { await releaseFn({ data: { event_id: eventId } }); toast.success("Spot released."); }
     catch (ex) { toast.error((ex as Error).message); }
   }
 
-  async function doSwitch(toSlotId: string) {
-    if (!mySlot) return;
+  async function saveNote() {
     try {
-      await switchFn({ data: { from_slot_id: mySlot.id, to_slot_id: toSlotId } });
-      toast.success("Switched.");
-      setSwitchMode(false);
+      await updateFn({ data: { event_id: eventId, note: noteDraft.trim() || null } });
+      setEditing(false);
+      toast.success("Saved.");
     } catch (ex) { toast.error((ex as Error).message); }
   }
 
   if (!ev) {
-    return (
-      <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-        <div className="h-20 animate-pulse rounded-xl bg-muted/30" />
-      </div>
-    );
+    return <div className="h-20 animate-pulse rounded-2xl bg-muted/30" />;
   }
 
   return (
-    <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <h3 className="font-display text-lg text-ink">Lineup</h3>
-        <div className="flex items-center gap-2 text-xs text-ink-muted">
-          {ev.lineup_mode === "host_approval" && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-amber-700 dark:text-amber-300">
-              <ShieldCheck className="h-3 w-3" /> Host approval
-            </span>
-          )}
-          <span>{slots.filter((s) => s.status === "confirmed" || s.status === "requested").length} / {slots.length} filled</span>
+    <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+      <div className="mb-4 flex items-end justify-between gap-2">
+        <div>
+          <h3 className="font-display text-lg text-ink">Lineup</h3>
+          <p className="text-xs text-ink-muted">
+            {cap !== null ? `${confirmed.length} / ${cap} on the list` : `${confirmed.length} signed up`}
+            {waitlist.length > 0 && ` · ${waitlist.length} on waitlist`}
+            <span className="ml-1">· first come, first served</span>
+          </p>
         </div>
+        {!mine ? (
+          <Button size="sm" className="rounded-full" onClick={handleSignUp}>
+            I'm performing
+          </Button>
+        ) : (
+          <Button size="sm" variant="ghost" className="rounded-full text-destructive" onClick={handleRelease}>
+            <X className="mr-1 h-3.5 w-3.5" /> Drop my spot
+          </Button>
+        )}
       </div>
 
-      {/* My slot card */}
-      {mySlot && (
-        <div className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 p-3">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">Your spot · #{mySlot.position}</span>
-            {mySlot.status === "requested" && <span className="text-xs text-amber-700 dark:text-amber-300">Pending host approval</span>}
-            {mine && (mine as { stage_name: string | null }).stage_name && (
-              <span className="text-ink-soft">as <span className="font-medium text-ink">{(mine as { stage_name: string }).stage_name}</span></span>
-            )}
-            <div className="ml-auto flex items-center gap-1">
-              {ev.lineup_allow_switch && openSlots.length > 0 && (
-                <Button size="sm" variant="ghost" className="h-7 rounded-full" onClick={() => setSwitchMode((v) => !v)}>
-                  <Repeat className="mr-1 h-3 w-3" /> {switchMode ? "Cancel switch" : "Switch slot"}
+      {/* My note editor */}
+      {mine && (
+        <div className="mb-4 rounded-2xl border border-primary/30 bg-primary/5 p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
+              {mine.status === "waitlist" ? `Waitlist · #${waitlist.findIndex((s) => s.id === mine.id) + 1}` : `Your spot · #${confirmed.findIndex((s) => s.id === mine.id) + 1}`}
+            </span>
+            {!editing ? (
+              <>
+                <span className="text-ink-soft">
+                  {mine.note ? <>doing <span className="font-medium text-ink">{mine.note}</span></> : <span className="text-ink-muted">add what you're doing (optional)</span>}
+                </span>
+                <Button size="sm" variant="ghost" className="ml-auto h-7 rounded-full" onClick={() => { setNoteDraft(mine.note ?? ""); setEditing(true); }}>
+                  <Pencil className="mr-1 h-3 w-3" /> {mine.note ? "Edit" : "Add"}
                 </Button>
-              )}
-              <EditMyInfoButton slotId={mySlot.id} eventId={eventId} fields={{ act_type: ev.lineup_field_act_type, link: ev.lineup_field_link, notes: ev.lineup_field_notes }} updateFn={updateFn} onSaved={() => qc.invalidateQueries({ queryKey: ["lineup-mine", eventId] })} initial={mine as never} />
-              <Button size="sm" variant="ghost" className="h-7 rounded-full text-destructive" onClick={() => doRelease(mySlot.id)}>
-                <X className="mr-1 h-3 w-3" /> Release
-              </Button>
-            </div>
+              </>
+            ) : (
+              <div className="flex w-full items-center gap-2">
+                <input
+                  autoFocus
+                  className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  maxLength={80}
+                  placeholder="e.g. 5 min standup, DJ set, instagram.com/me"
+                />
+                <Button size="sm" className="h-7 rounded-full" onClick={saveNote}><Check className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="h-7 rounded-full" onClick={() => setEditing(false)}><X className="h-3.5 w-3.5" /></Button>
+              </div>
+            )}
           </div>
-          {switchMode && (
-            <p className="mt-2 text-xs text-ink-muted">Pick an open slot below to move there.</p>
-          )}
         </div>
       )}
 
-      {/* Slots */}
-      {slots.length === 0 ? (
-        <p className="text-sm text-ink-muted">No slots yet.</p>
+      {/* The list */}
+      {signups.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-border bg-background p-6 text-center text-sm text-ink-muted">
+          Nobody's signed up yet. Be first.
+        </p>
       ) : (
         <ul className="divide-y divide-border rounded-2xl border border-border bg-background">
-          {slots.map((s) => {
-            const isMine = !!user && s.claimed_by === user.id;
-            const profile = s.claimed_by ? profiles[s.claimed_by] : null;
-            const performerName = s.stage_name || s.manual_performer_name || profile?.display_name || profile?.username || null;
-            return (
-              <li key={s.id} className="flex items-center gap-3 px-4 py-3">
-                <div className={cn(
-                  "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-medium",
-                  s.status === "confirmed" ? "bg-primary text-primary-foreground" :
-                  s.status === "requested" ? "bg-amber-500/20 text-amber-700 dark:text-amber-300" :
-                  s.status === "soft_hold" ? "bg-muted text-ink-muted" :
-                  "border border-dashed border-border text-ink-muted",
-                )}>
-                  {s.position}
-                </div>
-                <div className="min-w-0 flex-1">
-                  {s.status === "open" && (
-                    <span className="text-sm text-ink-muted">Open</span>
-                  )}
-                  {s.status === "soft_hold" && (
-                    <span className="inline-flex items-center gap-1 text-sm text-ink-muted">
-                      <Clock className="h-3 w-3" /> Holding…
-                    </span>
-                  )}
-                  {(s.status === "confirmed" || s.status === "requested") && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      {profile?.avatar_url && (
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage src={profile.avatar_url} />
-                          <AvatarFallback>{(performerName ?? "?").slice(0, 1)}</AvatarFallback>
-                        </Avatar>
-                      )}
-                      <span className="truncate text-sm font-medium text-ink">{performerName ?? "Performer"}</span>
-                      {s.act_type && (
-                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-wide text-ink-soft">{ACT_LABELS[s.act_type]}</span>
-                      )}
-                      {s.manual_performer_name && (
-                        <span className="text-[10px] text-ink-muted">(added by host)</span>
-                      )}
-                      {s.status === "requested" && (
-                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">Requested</span>
-                      )}
-                      {s.link_url && (
-                        <a href={s.link_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-xs text-primary hover:underline">
-                          <LinkIcon className="h-3 w-3" /> link <ExternalLink className="h-3 w-3" />
-                        </a>
-                      )}
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center gap-1">
-                  {s.status === "open" && !mySlot && !switchMode && (
-                    <Button size="sm" className="h-8 rounded-full" onClick={() => openClaim(s)}>
-                      Claim
-                    </Button>
-                  )}
-                  {s.status === "open" && switchMode && (
-                    <Button size="sm" variant="outline" className="h-8 rounded-full" onClick={() => doSwitch(s.id)}>
-                      Move here
-                    </Button>
-                  )}
-                  {isMine && s.status !== "open" && (
-                    <span className="text-[10px] text-primary">You</span>
-                  )}
-                  {isHostOrAdmin && (s.status === "requested" || s.status === "confirmed" || s.status === "soft_hold") && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="More slot actions"><MoreVertical className="h-3.5 w-3.5" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {s.status === "requested" && (
-                          <>
-                            <DropdownMenuItem onClick={async () => { await approveFn({ data: { event_id: eventId, slot_id: s.id } }); toast.success("Approved"); }}>
-                              <Check className="mr-2 h-3.5 w-3.5" /> Approve
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={async () => { await declineFn({ data: { event_id: eventId, slot_id: s.id } }); toast.success("Declined"); }}>
-                              <X className="mr-2 h-3.5 w-3.5" /> Decline
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        <DropdownMenuItem onClick={async () => { if (!confirm("Remove this performer?")) return; await removeFn({ data: { event_id: eventId, slot_id: s.id } }); toast.success("Removed"); }} className="text-destructive">
-                          <Trash2 className="mr-2 h-3.5 w-3.5" /> Remove
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                </div>
-              </li>
-            );
-          })}
+          {confirmed.map((s, i) => (
+            <SignupRow
+              key={s.id}
+              s={s}
+              index={i + 1}
+              profile={profiles[s.user_id] ?? null}
+              isMe={!!user && s.user_id === user.id}
+              isHostOrAdmin={isHostOrAdmin}
+              onRemove={async () => {
+                if (!confirm("Remove this performer from the lineup?")) return;
+                try { await removeFn({ data: { event_id: eventId, signup_id: s.id } }); toast.success("Removed."); }
+                catch (ex) { toast.error((ex as Error).message); }
+              }}
+            />
+          ))}
+          {waitlist.length > 0 && (
+            <li className="px-4 py-2 text-[10px] font-medium uppercase tracking-wide text-ink-muted">
+              Waitlist
+            </li>
+          )}
+          {waitlist.map((s, i) => (
+            <SignupRow
+              key={s.id}
+              s={s}
+              index={i + 1}
+              waitlist
+              profile={profiles[s.user_id] ?? null}
+              isMe={!!user && s.user_id === user.id}
+              isHostOrAdmin={isHostOrAdmin}
+              onRemove={async () => {
+                if (!confirm("Remove this performer from the lineup?")) return;
+                try { await removeFn({ data: { event_id: eventId, signup_id: s.id } }); toast.success("Removed."); }
+                catch (ex) { toast.error((ex as Error).message); }
+              }}
+            />
+          ))}
         </ul>
       )}
 
-      <ClaimSlotDialog
-        open={claimOpen}
-        onOpenChange={setClaimOpen}
-        slotId={claimSlotId}
-        position={claimPosition}
-        mode={ev.lineup_mode}
-        fields={{ act_type: ev.lineup_field_act_type, link: ev.lineup_field_link, notes: ev.lineup_field_notes }}
-        onClaimed={() => {
-          qc.invalidateQueries({ queryKey: ["lineup", eventId] });
-          qc.invalidateQueries({ queryKey: ["lineup-mine", eventId] });
-        }}
+      <EventRsvpAuthSheet
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        redirectTo={`/g/${groupSlug}/e/${eventSlug}`}
       />
     </div>
   );
 }
 
-function EditMyInfoButton({
-  slotId, eventId, fields, updateFn, onSaved, initial,
+function SignupRow({
+  s, index, waitlist, profile, isMe, isHostOrAdmin, onRemove,
 }: {
-  slotId: string;
-  eventId: string;
-  fields: LineupFieldsConfigLite;
-  updateFn: (args: { data: { slot_id: string; performer: { stage_name: string | null; act_type: "comedian" | "band" | "dj" | "other" | null; link_url: string | null; notes_to_host: string | null } } }) => Promise<unknown>;
-  onSaved: () => void;
-  initial: { stage_name: string | null; act_type: "comedian" | "band" | "dj" | "other" | null; link_url: string | null; notes_to_host: string | null } | null;
+  s: Signup;
+  index: number;
+  waitlist?: boolean;
+  profile: Profile | null;
+  isMe: boolean;
+  isHostOrAdmin: boolean;
+  onRemove: () => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [stage, setStage] = useState(initial?.stage_name ?? "");
-  const [actType, setActType] = useState<string>(initial?.act_type ?? "");
-  const [link, setLink] = useState(initial?.link_url ?? "");
-  const [notes, setNotes] = useState(initial?.notes_to_host ?? "");
-  void eventId;
+  const name = profile?.display_name || profile?.username || "Performer";
+  const linkLike = s.note && /^https?:\/\//i.test(s.note);
   return (
-    <>
-      <Button size="sm" variant="ghost" className="h-7 rounded-full" onClick={() => setOpen(true)}>Edit</Button>
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setOpen(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-surface p-5 shadow-lift" onClick={(e) => e.stopPropagation()}>
-            <h4 className="mb-3 font-display text-lg text-ink">Edit your info</h4>
-            <div className="space-y-2 text-sm">
-              <div>
-                <label className="text-xs text-ink-muted">Stage name</label>
-                <input className="w-full rounded-md border border-border bg-background px-2 py-1.5" value={stage} onChange={(e) => setStage(e.target.value)} maxLength={80} />
-              </div>
-              {fields.act_type && (
-                <div>
-                  <label className="text-xs text-ink-muted">Act type</label>
-                  <select className="w-full rounded-md border border-border bg-background px-2 py-1.5" value={actType} onChange={(e) => setActType(e.target.value)}>
-                    <option value="">—</option>
-                    <option value="comedian">Comedian</option>
-                    <option value="band">Band</option>
-                    <option value="dj">DJ</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-              )}
-              {fields.link && (
-                <div>
-                  <label className="text-xs text-ink-muted">Link</label>
-                  <input type="url" className="w-full rounded-md border border-border bg-background px-2 py-1.5" value={link} onChange={(e) => setLink(e.target.value)} />
-                </div>
-              )}
-              {fields.notes && (
-                <div>
-                  <label className="text-xs text-ink-muted">Notes to host (private)</label>
-                  <textarea rows={2} className="w-full rounded-md border border-border bg-background px-2 py-1.5" value={notes} onChange={(e) => setNotes(e.target.value)} maxLength={500} />
-                </div>
-              )}
-            </div>
-            <div className="mt-3 flex justify-end gap-2">
-              <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>Cancel</Button>
-              <Button size="sm" onClick={async () => {
-                try {
-                  await updateFn({ data: { slot_id: slotId, performer: {
-                    stage_name: stage || null,
-                    act_type: (actType || null) as "comedian" | "band" | "dj" | "other" | null,
-                    link_url: link || null,
-                    notes_to_host: notes || null,
-                  } } });
-                  toast.success("Updated");
-                  onSaved();
-                  setOpen(false);
-                } catch (ex) { toast.error((ex as Error).message); }
-              }}>Save</Button>
-            </div>
-          </div>
+    <li className="flex items-center gap-3 px-4 py-3">
+      <div className={cn(
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-medium",
+        waitlist ? "border border-dashed border-border text-ink-muted" : "bg-primary text-primary-foreground",
+      )}>
+        {index}
+      </div>
+      {profile?.username ? (
+        <Link to="/u/$username" params={{ username: profile.username }} className="flex items-center gap-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={profile.avatar_url ?? undefined} />
+            <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+          <span className="truncate text-sm font-medium text-ink">{name}</span>
+        </Link>
+      ) : (
+        <div className="flex items-center gap-2">
+          <Avatar className="h-7 w-7">
+            <AvatarImage src={profile?.avatar_url ?? undefined} />
+            <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
+          </Avatar>
+          <span className="truncate text-sm font-medium text-ink">{name}</span>
         </div>
       )}
-    </>
+      {s.note && (
+        linkLike ? (
+          <a href={s.note} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 truncate text-xs text-primary hover:underline">
+            <LinkIcon className="h-3 w-3" /> link
+          </a>
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-xs text-ink-soft">· {s.note}</span>
+        )
+      )}
+      {!s.note && <span className="min-w-0 flex-1" />}
+      {isMe && <span className="text-[10px] text-primary">You</span>}
+      {isHostOrAdmin && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button size="icon" variant="ghost" className="h-7 w-7" aria-label="Remove performer"><MoreVertical className="h-3.5 w-3.5" /></Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onRemove} className="text-destructive">
+              <Trash2 className="mr-2 h-3.5 w-3.5" /> Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </li>
   );
 }
-
-type LineupFieldsConfigLite = { act_type: boolean; link: boolean; notes: boolean };
