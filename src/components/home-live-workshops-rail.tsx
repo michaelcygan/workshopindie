@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Radio, Users, ArrowRight, MapPin, Target, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 type WorkshopRow = {
   id: string;
@@ -56,20 +57,20 @@ export function HomeLiveWorkshopsRail() {
     },
   });
 
-  if (!isLoading && (!data || data.length === 0)) return null;
+  const isEmpty = !isLoading && (!data || data.length === 0);
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-6 md:px-6 md:pt-8">
-      <div className="mb-3 flex items-end justify-between gap-3">
+    <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
+      <div className="mb-6 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="font-display text-2xl text-ink md:text-3xl flex items-center gap-2">
+          <h2 className="font-display text-3xl text-ink md:text-4xl flex items-center gap-2">
             <span className="relative inline-flex h-2.5 w-2.5">
               <span className="absolute inset-0 rounded-full bg-coral animate-ping opacity-60" />
               <span className="relative inline-block h-2.5 w-2.5 rounded-full bg-coral" />
             </span>
-            Live Workshops
+            Workshops
           </h2>
-          <p className="mt-1 text-sm text-ink-muted">Active rooms with seats open. Walk right in.</p>
+          <p className="mt-1 text-sm text-ink-muted">Live rooms with seats open. Walk right in.</p>
         </div>
         <Link
           to="/workshops"
@@ -84,6 +85,24 @@ export function HomeLiveWorkshopsRail() {
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-32 w-72 shrink-0 animate-pulse rounded-2xl bg-surface-2" />
           ))}
+        </div>
+      ) : isEmpty ? (
+        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+          <h3 className="font-display text-2xl text-ink">No live Workshops right now.</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
+            Start one — five seats, shared tools, anyone can drop in.
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-3">
+            <Link to="/workshop">
+              <Button className="rounded-full">Start a Workshop</Button>
+            </Link>
+            <Link
+              to="/workshops"
+              className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink transition"
+            >
+              Browse scheduled <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
