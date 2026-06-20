@@ -83,9 +83,8 @@ export function CcConsentDialog() {
           <DialogDescription className="text-sm leading-relaxed text-ink-soft">
             Anything you share in a Workshop — chat, sketches, notes, links — is shared under{" "}
             <span className="font-medium text-ink">CC BY-SA 4.0</span> so collaborators can riff
-            on it. When a riff becomes a{" "}
-            <span className="font-medium text-ink">Collab</span>, you and your co-creators pick
-            the terms together.
+            on it. Start a <span className="font-medium text-ink">Collab</span> to manage rights,
+            find additional collaborators, and continue working on the project.
           </DialogDescription>
         </DialogHeader>
 
