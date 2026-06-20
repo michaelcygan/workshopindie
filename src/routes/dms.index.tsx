@@ -143,7 +143,7 @@ function DmsIndex() {
     (async () => {
       setBusy(true);
       try {
-        const r = await load(user.id);
+        const r = await load(uid);
         if (!cancelled) {
           setRows(r);
           setBusy(false);
@@ -154,7 +154,7 @@ function DmsIndex() {
 
       // Realtime: refresh row order / unread counts on inbound activity.
       channel = supabase
-        .channel(`dms-index:${user.id}`)
+        .channel(`dms-index:${uid}`)
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "messages" },
@@ -162,16 +162,17 @@ function DmsIndex() {
         )
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "conversations", filter: `user_a=eq.${user.id}` },
+          { event: "*", schema: "public", table: "conversations", filter: `user_a=eq.${uid}` },
           () => scheduleReload(),
         )
         .on(
           "postgres_changes",
-          { event: "*", schema: "public", table: "conversations", filter: `user_b=eq.${user.id}` },
+          { event: "*", schema: "public", table: "conversations", filter: `user_b=eq.${uid}` },
           () => scheduleReload(),
         )
         .subscribe();
     })();
+
 
     function onFocus() { scheduleReload(); }
     document.addEventListener("visibilitychange", onFocus);
