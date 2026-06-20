@@ -18,6 +18,8 @@ import {
   updateWorkshopLink,
   deleteWorkshopLink,
 } from "@/lib/workshop-links.functions";
+import { GroupSeedLinksPanel } from "@/components/admin/group-seed-links-panel";
+
 
 export const Route = createFileRoute("/admin/links")({ component: AdminLinks });
 
