@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Eye, EyeOff, Check, X, Loader2, ExternalLink } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
-export const Route = createFileRoute("/admin/")({
+export const Route = createFileRoute("/admin/reports")({
   component: ReportsQueue,
 });
 
