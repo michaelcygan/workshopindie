@@ -552,7 +552,7 @@ function DmsThread() {
             id="dm-composer"
             ref={composerRef}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            onChange={(e) => { setBody(e.target.value); emitTyping(); }}
             onKeyDown={onComposerKey}
             placeholder="Message…"
             rows={1}
