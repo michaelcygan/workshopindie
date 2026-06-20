@@ -291,11 +291,11 @@ function CollabsRail() {
   );
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-10 pb-20 md:px-6 md:pt-14">
+    <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
 
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
-          <h2 className="font-display text-3xl text-ink md:text-4xl">Open Collab calls</h2>
+          <h2 className="font-display text-3xl text-ink md:text-4xl">Collabs</h2>
           <p className="mt-1 text-sm text-ink-muted">People building stuff now. Help out — or post your own.</p>
         </div>
         <Link to="/collab/new" className="hidden sm:block">
