@@ -220,6 +220,50 @@ function DmsThread() {
     };
   }, [user?.id, conversationId, navigate]);
 
+  // Presence + typing broadcast — scoped to this conversation
+  useEffect(() => {
+    if (!user) return;
+    const uid = user.id;
+    const ch = supabase.channel(`dm-presence:${conversationId}`, {
+      config: { presence: { key: uid } },
+    });
+    presenceChannelRef.current = ch;
+
+    ch.on("presence", { event: "sync" }, () => {
+      const state = ch.presenceState() as Record<string, unknown[]>;
+      const otherKeys = Object.keys(state).filter((k) => k !== uid);
+      setOtherOnline(otherKeys.length > 0);
+    })
+      .on("broadcast", { event: "typing" }, (payload) => {
+        const from = (payload.payload as { from?: string } | undefined)?.from;
+        if (!from || from === uid) return;
+        setOtherTyping(true);
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = setTimeout(() => setOtherTyping(false), 3500);
+      })
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await ch.track({ online_at: new Date().toISOString() });
+        }
+      });
+
+    return () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      supabase.removeChannel(ch);
+      presenceChannelRef.current = null;
+    };
+  }, [user?.id, conversationId]);
+
+  function emitTyping() {
+    const ch = presenceChannelRef.current;
+    if (!ch || !user) return;
+    const now = Date.now();
+    if (now - lastTypingSentRef.current < 1500) return;
+    lastTypingSentRef.current = now;
+    ch.send({ type: "broadcast", event: "typing", payload: { from: user.id } }).catch(() => {});
+  }
+
+
   // Smooth scroll on new messages, but only if user is near bottom
   const lastCount = useRef(0);
   useEffect(() => {
