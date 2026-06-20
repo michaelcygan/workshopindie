@@ -924,8 +924,6 @@ export function ChannelView({
             profileLookup={profileLookup}
             others={others}
             onExit={handleExit}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
             onOpenWork={openWork}
             roomId={roomId}
             dockExtra={
@@ -936,6 +934,32 @@ export function ChannelView({
               />
             }
           />
+
+          {!videoFocus && user && (
+            <div className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-3 shadow-soft">
+              {hostUserId === user.id ? (
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent("workshop:open-host-menu", { detail: { roomId } }))}
+                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 transition"
+                  title="Open host settings"
+                >
+                  <Sparkles className="h-3.5 w-3.5" /> Host · settings
+                </button>
+              ) : (
+                <div className="flex justify-center">
+                  <ClaimHostPill
+                    roomId={roomId}
+                    viewerId={user.id}
+                    unclaimable={!!workshopId}
+                    claimUserId={null}
+                    claimStartedAt={null}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
 
           {!videoFocus && user && (
             <WorkshopPresenceWorksRail
