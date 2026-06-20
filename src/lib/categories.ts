@@ -41,6 +41,15 @@ export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
   (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
 );
 
+/** Optional sub-category labels per work category. Stored as a free string on works.subtype. */
+export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
+  film: ["Short film", "Music video", "Trailer", "Documentary", "Animation", "Reel"],
+  music: ["Single", "EP / Album", "Live set", "Remix", "Beat", "Demo"],
+  writing: ["Essay", "Poem", "Short story", "Screenplay", "Newsletter", "Article"],
+  build: ["App", "Site", "Tool", "Plugin", "Hardware", "Game"],
+  visual: ["Photo", "Illustration", "Design", "Painting", "Collage", "3D"],
+};
+
 export const SOURCE_LABELS: Record<string, string> = {
   workshop: "Workshop",
   collab_board: "Collab",
