@@ -3558,7 +3558,7 @@ export type Database = {
           pinned_at: string | null
           role_label: string
           sort_order: number
-          user_id: string
+          user_id: string | null
           work_id: string
         }
         Insert: {
@@ -3569,7 +3569,7 @@ export type Database = {
           pinned_at?: string | null
           role_label: string
           sort_order?: number
-          user_id: string
+          user_id?: string | null
           work_id: string
         }
         Update: {
@@ -3580,7 +3580,7 @@ export type Database = {
           pinned_at?: string | null
           role_label?: string
           sort_order?: number
-          user_id?: string
+          user_id?: string | null
           work_id?: string
         }
         Relationships: [
