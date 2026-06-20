@@ -417,6 +417,13 @@ function NewWork() {
             <p className="text-xs text-ink-muted">Subtype is optional — helps people find your work.</p>
           </section>
 
+          {/* Book details — only when Book category is selected */}
+          {category === "writing_book" && (
+            <BookDetailsSection value={book} onChange={setBook} />
+          )}
+
+
+
           {/* Ownership self-cert */}
           <section className="rounded-2xl border border-border bg-surface p-4">
             <label className="flex items-start gap-3 cursor-pointer">
