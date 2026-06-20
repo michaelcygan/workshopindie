@@ -208,9 +208,10 @@ function GroupsIndex() {
       {/* Ambient scene ticker — drifts slowly, pauses on hover. */}
       {allGroups.length > 0 && (
         <div className="mt-4">
-          <SceneTicker groups={trending.length > 0 ? trending : allGroups.slice(0, 12)} />
+          <SceneTicker groups={tickerGroups.length > 0 ? tickerGroups : allGroups.slice(0, 12)} />
         </div>
       )}
+
 
       {/* Discovery band: balanced 12-col grid so both columns share the same
           vertical rhythm — no orphaned space on either side. */}
