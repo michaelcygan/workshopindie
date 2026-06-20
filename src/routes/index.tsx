@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
+import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -188,11 +189,14 @@ function Index() {
     <main>
       <Hero />
 
+      <HomeLiveWorkshopsRail />
+
       <YourGroupsStrip />
 
       <NetworkRail />
 
       <CollabsRail />
+
 
       <section className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
         <div className="mb-6 flex items-end justify-between gap-3">
@@ -287,7 +291,8 @@ function CollabsRail() {
   );
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+    <section className="mx-auto max-w-7xl px-4 pt-10 pb-20 md:px-6 md:pt-14">
+
       <div className="mb-6 flex items-end justify-between gap-3">
         <div>
           <h2 className="font-display text-3xl text-ink md:text-4xl">Open Collab calls</h2>
