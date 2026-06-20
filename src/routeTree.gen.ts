@@ -63,7 +63,6 @@ import { Route as AdminOpsRouteImport } from './routes/admin.ops'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
-import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
 import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
 import { Route as AdminGeoRouteImport } from './routes/admin.geo'
@@ -356,11 +355,6 @@ const AdminLinksRoute = AdminLinksRouteImport.update({
   path: '/links',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminLineupsRoute = AdminLineupsRouteImport.update({
-  id: '/lineups',
-  path: '/lineups',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminGrowthRoute = AdminGrowthRouteImport.update({
   id: '/growth',
   path: '/growth',
@@ -495,7 +489,6 @@ export interface FileRoutesByFullPath {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
-  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -567,7 +560,6 @@ export interface FileRoutesByTo {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
-  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -646,7 +638,6 @@ export interface FileRoutesById {
   '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/growth': typeof AdminGrowthRoute
-  '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
@@ -726,7 +717,6 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
-    | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -798,7 +788,6 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
-    | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -876,7 +865,6 @@ export interface FileRouteTypes {
     | '/admin/geo'
     | '/admin/groups'
     | '/admin/growth'
-    | '/admin/lineups'
     | '/admin/links'
     | '/admin/marketplace'
     | '/admin/moderation'
@@ -1353,13 +1341,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLinksRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/lineups': {
-      id: '/admin/lineups'
-      path: '/lineups'
-      fullPath: '/admin/lineups'
-      preLoaderRoute: typeof AdminLineupsRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/growth': {
       id: '/admin/growth'
       path: '/growth'
@@ -1530,7 +1511,6 @@ interface AdminRouteChildren {
   AdminGeoRoute: typeof AdminGeoRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminGrowthRoute: typeof AdminGrowthRoute
-  AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminModerationRoute: typeof AdminModerationRoute
@@ -1549,7 +1529,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGeoRoute: AdminGeoRoute,
   AdminGroupsRoute: AdminGroupsRoute,
   AdminGrowthRoute: AdminGrowthRoute,
-  AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminModerationRoute: AdminModerationRoute,
@@ -1726,3 +1705,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

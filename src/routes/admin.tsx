@@ -29,7 +29,7 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/admin/badges", label: "Badges" },
   { to: "/admin/groups", label: "Groups" },
   { to: "/admin/events", label: "Events" },
-  { to: "/admin/lineups", label: "Lineups" },
+  
   { to: "/admin/links", label: "Links" },
   { to: "/admin/ops", label: "Ops & Flags" },
   { to: "/admin/audit", label: "Audit Log" },
