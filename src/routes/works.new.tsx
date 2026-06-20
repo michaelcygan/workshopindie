@@ -112,6 +112,13 @@ function NewWork() {
     setPrimaryUrl(e.primary_url);
     setEmbedUrl(e.embed_url);
     setProvider(e.provider);
+    if (e.book) {
+      setBook({
+        ...emptyBookDetails,
+        author: e.book.author ?? myProfile?.display_name ?? "",
+        buyLinks: e.book.buy_links.length > 0 ? e.book.buy_links : emptyBookDetails.buyLinks,
+      });
+    }
     setStep("confirm");
   }
 
