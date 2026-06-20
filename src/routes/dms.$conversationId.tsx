@@ -398,17 +398,30 @@ function DmsThread() {
         >
           <ArrowLeft className="h-4 w-4" />
         </Link>
-        <Avatar className="h-10 w-10 ring-1 ring-border">
-          {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
-          <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
-            {initials(other)}
-          </AvatarFallback>
-        </Avatar>
+        <div className="relative">
+          <Avatar className="h-10 w-10 ring-1 ring-border">
+            {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
+            <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+              {initials(other)}
+            </AvatarFallback>
+          </Avatar>
+          {otherOnline && (
+            <span
+              aria-label="Online"
+              className="absolute bottom-0 right-0 inline-block h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-background"
+            />
+          )}
+        </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-ink">
             {other?.display_name ?? other?.username ?? "Conversation"}
           </p>
-          {other?.username && <p className="truncate text-xs text-ink-muted">@{other.username}</p>}
+          {otherTyping ? (
+            <p className="truncate text-xs text-primary">typing…</p>
+          ) : other?.username ? (
+            <p className="truncate text-xs text-ink-muted">@{other.username}</p>
+          ) : null}
+
           {(collab || workshop) && (
             <div className="mt-1">
               {collab ? (
