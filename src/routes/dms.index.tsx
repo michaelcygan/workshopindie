@@ -128,15 +128,17 @@ function DmsIndex() {
 
   useEffect(() => {
     if (!user) return;
+    const uid = user.id;
     let cancelled = false;
     let channel: ReturnType<typeof supabase.channel> | null = null;
 
     function scheduleReload() {
       if (reloadTimerRef.current) clearTimeout(reloadTimerRef.current);
       reloadTimerRef.current = setTimeout(() => {
-        load(user.id).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
+        load(uid).then((r) => { if (!cancelled) setRows(r); }).catch(() => {});
       }, 250);
     }
+
 
     (async () => {
       setBusy(true);
