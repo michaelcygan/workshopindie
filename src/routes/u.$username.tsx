@@ -806,7 +806,10 @@ function WorksTab({
       )}
 
       <WorkLightbox
-        works={filtered}
+        works={[
+          ...pinnedWorks.filter((p) => !filtered.some((f) => f.id === p.id)),
+          ...filtered,
+        ]}
         activeId={activeLightbox}
         onChange={(slug) => setLightbox(slug)}
         onClose={() => setLightbox(null)}
