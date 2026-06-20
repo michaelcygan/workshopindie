@@ -137,6 +137,8 @@ export function WorkshopToolsPanel(props: Props) {
     ? props.scope
     : { kind: "persistent", workshopId: props.workshopId, hostUserId: props.hostUserId, category: props.category };
   const media = "scope" in props ? props.media : undefined;
+  const externalActive = "scope" in props ? (props.activeTool ?? null) : null;
+  const chromeless = "scope" in props ? !!props.chromeless : false;
 
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -156,11 +158,10 @@ export function WorkshopToolsPanel(props: Props) {
     },
   });
 
-  if (!user) return null;
-  const isHost = scope.hostUserId !== null && user.id === scope.hostUserId;
+  const isHost = !!user && scope.hostUserId !== null && user.id === scope.hostUserId;
   const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
   const enabledTools = tools.filter((tool) => tool.enabled);
-  const currentType: StoredToolType | null = active ?? enabledTools[0]?.tool_type ?? null;
+  const currentType: StoredToolType | null = externalActive ?? active ?? enabledTools[0]?.tool_type ?? null;
   const currentTool = enabledTools.find((tool) => tool.tool_type === currentType);
 
   async function enableTool(type: ShippedToolType) {
@@ -171,6 +172,16 @@ export function WorkshopToolsPanel(props: Props) {
     setActive(type);
     qc.invalidateQueries({ queryKey: ["ws-tools", scope.kind, t.parentId] });
   }
+
+  // When an externally-controlled active tool is requested and not yet enabled,
+  // auto-enable it so the Stage's Tools dropdown can render it immediately.
+  useEffect(() => {
+    if (!user || !externalActive) return;
+    const already = tools.some((tt) => tt.tool_type === externalActive && tt.enabled);
+    if (already || !canEnable) return;
+    enableTool(externalActive);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalActive, tools, user, canEnable]);
 
   async function removeTool(toolId: string, toolType: StoredToolType) {
     const label = presetFor(toolType).label;
@@ -183,9 +194,31 @@ export function WorkshopToolsPanel(props: Props) {
     toast.success(`${label} removed`);
   }
 
+  if (!user) return null;
+
   const category: Category =
     scope.kind === "persistent" ? scope.category : (scope.category ?? "coworking");
   const suggested = CATEGORY_DEFAULTS[category];
+
+  // Chromeless mode: render only the active tool body, no header strip / picker.
+  // The Stage tab bar dropdown handles tool switching.
+  if (chromeless) {
+    if (currentTool) {
+      return <ActiveToolBody scope={scope} tool={currentTool} media={media} />;
+    }
+    if (externalActive && !canEnable) {
+      return (
+        <div className="rounded-2xl border border-dashed border-border p-4 text-center text-sm text-ink-muted">
+          The host hasn't enabled {PRESETS[externalActive].label} yet.
+        </div>
+      );
+    }
+    return (
+      <div className="rounded-2xl border border-dashed border-border p-4 text-center text-sm text-ink-muted">
+        Pick a tool from the dropdown above.
+      </div>
+    );
+  }
 
   // Empty state: full picker with every tool visible. Coming-soon ones are disabled.
   if (enabledTools.length === 0) {
@@ -251,6 +284,7 @@ export function WorkshopToolsPanel(props: Props) {
     </div>
   );
 }
+
 
 function ToolGroup({
   label,
