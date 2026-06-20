@@ -1,13 +1,18 @@
-import { type ReactNode } from "react";
-import { ExternalLink } from "lucide-react";
+import { type ReactNode, useState } from "react";
+import { ExternalLink, MessageCircle, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { useNavigate, useServerFn } from "@tanstack/react-router";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { FollowButton } from "@/components/follow-button";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { openOrCreateConversation } from "@/lib/dms.functions";
+import { toast } from "sonner";
 import { cn, formatCount } from "@/lib/utils";
 
 export type PeekProfile = {
