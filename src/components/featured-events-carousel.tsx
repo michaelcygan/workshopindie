@@ -39,7 +39,7 @@ export function FeaturedEventsCarousel({
           </div>
           <h3 className="font-display text-2xl text-ink">Live events are coming.</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-            Workshops, open mics, listening parties — RSVP unlocks a free Workshop Pass.
+            Workshops, open mics, listening parties — RSVP unlocks a free trial.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             {isAdmin ? (
