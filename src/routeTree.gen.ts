@@ -55,17 +55,28 @@ import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminOpsRouteImport } from './routes/admin.ops'
+import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
+import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
+import { Route as AdminGeoRouteImport } from './routes/admin.geo'
 import { Route as AdminEventsRouteImport } from './routes/admin.events'
+import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
+import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
@@ -304,6 +315,36 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRevenueRoute = AdminRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOpsRoute = AdminOpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminLinksRoute = AdminLinksRouteImport.update({
   id: '/links',
   path: '/links',
@@ -314,9 +355,19 @@ const AdminLineupsRoute = AdminLineupsRouteImport.update({
   path: '/lineups',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminGrowthRoute = AdminGrowthRouteImport.update({
+  id: '/growth',
+  path: '/growth',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminGroupsRoute = AdminGroupsRouteImport.update({
   id: '/groups',
   path: '/groups',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGeoRoute = AdminGeoRouteImport.update({
+  id: '/geo',
+  path: '/geo',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminEventsRoute = AdminEventsRouteImport.update({
@@ -324,9 +375,19 @@ const AdminEventsRoute = AdminEventsRouteImport.update({
   path: '/events',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminEngagementRoute = AdminEngagementRouteImport.update({
+  id: '/engagement',
+  path: '/engagement',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBadgesRoute = AdminBadgesRouteImport.update({
   id: '/badges',
   path: '/badges',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
 const WorkshopsLobbyNewRoute = WorkshopsLobbyNewRouteImport.update({
@@ -358,6 +419,11 @@ const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
   getParentRoute: () => CollabRoute,
+} as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsersRoute,
 } as any)
 const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   id: '/$tool',
@@ -416,11 +482,21 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/ops': typeof AdminOpsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -449,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -476,11 +553,21 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/ops': typeof AdminOpsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -509,6 +596,7 @@ export interface FileRoutesByTo {
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -543,11 +631,21 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
+  '/admin/engagement': typeof AdminEngagementRoute
   '/admin/events': typeof AdminEventsRoute
+  '/admin/geo': typeof AdminGeoRoute
   '/admin/groups': typeof AdminGroupsRoute
+  '/admin/growth': typeof AdminGrowthRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/marketplace': typeof AdminMarketplaceRoute
+  '/admin/moderation': typeof AdminModerationRoute
+  '/admin/ops': typeof AdminOpsRoute
+  '/admin/reports': typeof AdminReportsRoute
+  '/admin/revenue': typeof AdminRevenueRoute
+  '/admin/users': typeof AdminUsersRouteWithChildren
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -576,6 +674,7 @@ export interface FileRoutesById {
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -611,11 +710,21 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/workshop'
     | '/workshops'
+    | '/admin/audit'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
+    | '/admin/geo'
     | '/admin/groups'
+    | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
+    | '/admin/moderation'
+    | '/admin/ops'
+    | '/admin/reports'
+    | '/admin/revenue'
+    | '/admin/users'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -644,6 +753,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshop/'
     | '/workshops/'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -671,11 +781,21 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/admin/audit'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
+    | '/admin/geo'
     | '/admin/groups'
+    | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
+    | '/admin/moderation'
+    | '/admin/ops'
+    | '/admin/reports'
+    | '/admin/revenue'
+    | '/admin/users'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -704,6 +824,7 @@ export interface FileRouteTypes {
     | '/me'
     | '/workshop'
     | '/workshops'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -737,11 +858,21 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/workshop'
     | '/workshops'
+    | '/admin/audit'
     | '/admin/badges'
+    | '/admin/engagement'
     | '/admin/events'
+    | '/admin/geo'
     | '/admin/groups'
+    | '/admin/growth'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/marketplace'
+    | '/admin/moderation'
+    | '/admin/ops'
+    | '/admin/reports'
+    | '/admin/revenue'
+    | '/admin/users'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -770,6 +901,7 @@ export interface FileRouteTypes {
     | '/me/'
     | '/workshop/'
     | '/workshops/'
+    | '/admin/users/$id'
     | '/collab/claim/$token'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -1152,6 +1284,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/revenue': {
+      id: '/admin/revenue'
+      path: '/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ops': {
+      id: '/admin/ops'
+      path: '/ops'
+      fullPath: '/admin/ops'
+      preLoaderRoute: typeof AdminOpsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/marketplace': {
+      id: '/admin/marketplace'
+      path: '/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminMarketplaceRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/links': {
       id: '/admin/links'
       path: '/links'
@@ -1166,11 +1340,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLineupsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/growth': {
+      id: '/admin/growth'
+      path: '/growth'
+      fullPath: '/admin/growth'
+      preLoaderRoute: typeof AdminGrowthRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/groups': {
       id: '/admin/groups'
       path: '/groups'
       fullPath: '/admin/groups'
       preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/geo': {
+      id: '/admin/geo'
+      path: '/geo'
+      fullPath: '/admin/geo'
+      preLoaderRoute: typeof AdminGeoRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/events': {
@@ -1180,11 +1368,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEventsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/engagement': {
+      id: '/admin/engagement'
+      path: '/engagement'
+      fullPath: '/admin/engagement'
+      preLoaderRoute: typeof AdminEngagementRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/badges': {
       id: '/admin/badges'
       path: '/badges'
       fullPath: '/admin/badges'
       preLoaderRoute: typeof AdminBadgesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
     '/workshops/lobby/new': {
@@ -1228,6 +1430,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/collab/claim/$token'
       preLoaderRoute: typeof CollabClaimTokenRouteImport
       parentRoute: typeof CollabRoute
+    }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminUsersRoute
     }
     '/workshops/$slug/tools/$tool': {
       id: '/workshops/$slug/tools/$tool'
@@ -1281,21 +1490,53 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminUsersRouteChildren {
+  AdminUsersIdRoute: typeof AdminUsersIdRoute
+}
+
+const AdminUsersRouteChildren: AdminUsersRouteChildren = {
+  AdminUsersIdRoute: AdminUsersIdRoute,
+}
+
+const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
+  AdminUsersRouteChildren,
+)
+
 interface AdminRouteChildren {
+  AdminAuditRoute: typeof AdminAuditRoute
   AdminBadgesRoute: typeof AdminBadgesRoute
+  AdminEngagementRoute: typeof AdminEngagementRoute
   AdminEventsRoute: typeof AdminEventsRoute
+  AdminGeoRoute: typeof AdminGeoRoute
   AdminGroupsRoute: typeof AdminGroupsRoute
+  AdminGrowthRoute: typeof AdminGrowthRoute
   AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
+  AdminMarketplaceRoute: typeof AdminMarketplaceRoute
+  AdminModerationRoute: typeof AdminModerationRoute
+  AdminOpsRoute: typeof AdminOpsRoute
+  AdminReportsRoute: typeof AdminReportsRoute
+  AdminRevenueRoute: typeof AdminRevenueRoute
+  AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminAuditRoute: AdminAuditRoute,
   AdminBadgesRoute: AdminBadgesRoute,
+  AdminEngagementRoute: AdminEngagementRoute,
   AdminEventsRoute: AdminEventsRoute,
+  AdminGeoRoute: AdminGeoRoute,
   AdminGroupsRoute: AdminGroupsRoute,
+  AdminGrowthRoute: AdminGrowthRoute,
   AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
+  AdminMarketplaceRoute: AdminMarketplaceRoute,
+  AdminModerationRoute: AdminModerationRoute,
+  AdminOpsRoute: AdminOpsRoute,
+  AdminReportsRoute: AdminReportsRoute,
+  AdminRevenueRoute: AdminRevenueRoute,
+  AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
 }
 

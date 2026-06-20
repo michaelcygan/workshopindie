@@ -1,159 +1,95 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Eye, EyeOff, Check, X, Loader2, ExternalLink } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { getAdminOverview } from "@/lib/admin-analytics.functions";
+import { KpiTile } from "@/components/admin/kpi-tile";
+import { MetricChart } from "@/components/admin/metric-chart";
 
-export const Route = createFileRoute("/admin/")({
-  component: ReportsQueue,
-});
+export const Route = createFileRoute("/admin/")({ component: Overview });
 
-type Report = {
-  id: string;
-  reporter_user_id: string;
-  entity_type: string;
-  entity_id: string;
-  reason: string;
-  description: string | null;
-  status: "open" | "reviewed" | "dismissed" | "action_taken";
-  created_at: string;
-};
-
-const TABS: { value: Report["status"]; label: string }[] = [
-  { value: "open", label: "Open" },
-  { value: "reviewed", label: "Reviewed" },
-  { value: "action_taken", label: "Action taken" },
-  { value: "dismissed", label: "Dismissed" },
-];
-
-function entityLink(type: string, id: string): string | null {
-  // We don't have slugs cached; admin opens detail in raw form via the entity type lookup below.
-  return null;
+function fmt(n: number | null | undefined): string {
+  return (n ?? 0).toLocaleString();
 }
 
-function ReportsQueue() {
-  const [tab, setTab] = useState<Report["status"]>("open");
-  const [reports, setReports] = useState<Report[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [acting, setActing] = useState<string | null>(null);
+function Overview() {
+  const fn = useServerFn(getAdminOverview);
+  const { data, isLoading } = useQuery({ queryKey: ["admin", "overview"], queryFn: () => fn() });
 
-  async function load() {
-    setLoading(true);
-    const { data } = await supabase
-      .from("reports")
-      .select("*")
-      .eq("status", tab)
-      .order("created_at", { ascending: false })
-      .limit(100);
-    setReports((data ?? []) as Report[]);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); }, [tab]);
-
-  async function setStatus(id: string, status: Report["status"]) {
-    setActing(id);
-    const { error } = await supabase.from("reports").update({ status }).eq("id", id);
-    setActing(null);
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Marked ${status.replace("_", " ")}`);
-    setReports((rs) => rs.filter((r) => r.id !== id));
-  }
-
-  async function hideEntity(r: Report) {
-    setActing(r.id);
-    let error: any = null;
-    if (r.entity_type === "comment") {
-      ({ error } = await supabase.from("comments").update({ hidden: true }).eq("id", r.entity_id));
-    } else if (r.entity_type === "work") {
-      ({ error } = await supabase.from("works").update({ visibility: "private" }).eq("id", r.entity_id));
-    } else if (r.entity_type === "workshop") {
-      ({ error } = await supabase.from("workshops").update({ visibility: "private" }).eq("id", r.entity_id));
-    } else if (r.entity_type === "collab_post") {
-      ({ error } = await supabase.from("collab_posts").update({ status: "removed" }).eq("id", r.entity_id));
-    } else {
-      toast.message("No hide action available for this entity type.");
-      setActing(null);
-      return;
-    }
-    if (error) { toast.error(error.message); setActing(null); return; }
-    await supabase.from("reports").update({ status: "action_taken" }).eq("id", r.id);
-    setReports((rs) => rs.filter((x) => x.id !== r.id));
-    setActing(null);
-    toast.success("Hidden + report closed");
-  }
+  if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
+  const k = data?.kpi as any;
+  const stickiness = k?.mau ? Math.round((k.dau / k.mau) * 100) : 0;
 
   return (
-    <div>
-      <div className="mb-4 flex flex-wrap gap-1.5">
-        {TABS.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`rounded-full px-3 py-1.5 text-sm transition ${
-              tab === t.value
-                ? "bg-ink text-background"
-                : "border border-border bg-surface text-ink-soft hover:bg-muted"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center py-16 text-ink-muted"><Loader2 className="h-5 w-5 animate-spin" /></div>
-      ) : reports.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-10 text-center text-ink-muted">
-          Nothing in this queue.
+    <div className="space-y-8">
+      <section>
+        <h2 className="mb-3 font-display text-xl text-ink">North-star &amp; daily pulse</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+          <KpiTile label="Total users" value={fmt(k?.total_users)} />
+          <KpiTile label="Signups (7d)" value={fmt(k?.signups_7d)} sublabel={`${fmt(k?.signups_30d)} in 30d`} />
+          <KpiTile label="DAU" value={fmt(k?.dau)} />
+          <KpiTile label="WAU" value={fmt(k?.wau)} />
+          <KpiTile label="MAU" value={fmt(k?.mau)} />
+          <KpiTile label="DAU/MAU" value={`${stickiness}%`} sublabel="Stickiness" tone={stickiness >= 20 ? "good" : "warn"} />
         </div>
-      ) : (
-        <ul className="space-y-3">
-          {reports.map((r) => (
-            <li key={r.id} className="rounded-2xl border border-border bg-surface p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Badge variant="outline" className="rounded-full">{r.entity_type}</Badge>
-                    <Badge className="rounded-full bg-coral/10 text-coral hover:bg-coral/10">{r.reason}</Badge>
-                    <span className="text-xs text-ink-muted">{new Date(r.created_at).toLocaleString()}</span>
-                  </div>
-                  {r.description && (
-                    <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{r.description}</p>
-                  )}
-                  <p className="mt-2 break-all text-xs text-ink-muted">
-                    entity: <code className="rounded bg-muted px-1 py-0.5">{r.entity_id}</code>
-                  </p>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {r.status === "open" && (
-                    <>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => hideEntity(r)} disabled={acting === r.id}>
-                        <EyeOff className="h-3.5 w-3.5" /> Hide
-                      </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "reviewed")} disabled={acting === r.id}>
-                        <Eye className="h-3.5 w-3.5" /> Mark reviewed
-                      </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "dismissed")} disabled={acting === r.id}>
-                        <X className="h-3.5 w-3.5" /> Dismiss
-                      </Button>
-                      <Button size="sm" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "action_taken")} disabled={acting === r.id}>
-                        <Check className="h-3.5 w-3.5" /> Action taken
-                      </Button>
-                    </>
-                  )}
-                  {r.status !== "open" && (
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setStatus(r.id, "open")}>Reopen</Button>
-                  )}
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-xl text-ink">Creation &amp; marketplace (7d)</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+          <KpiTile label="Works shipped" value={fmt(k?.works_published_7d)} sublabel={`${fmt(k?.works_total)} all-time`} />
+          <KpiTile label="Collabs posted" value={fmt(k?.collabs_posted_7d)} sublabel={`${fmt(k?.collabs_total)} all-time`} />
+          <KpiTile label="Collab apps" value={fmt(k?.collab_applications_7d)} sublabel={`${fmt(k?.collab_guest_applications_7d)} guest`} />
+          <KpiTile label="Workshops created" value={fmt(k?.workshops_created_7d)} sublabel={`${fmt(k?.workshops_total)} all-time`} />
+          <KpiTile label="Workshop apps" value={fmt(k?.workshop_apps_7d)} />
+          <KpiTile label="Event RSVPs" value={fmt(k?.event_rsvps_7d)} />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-xl text-ink">Revenue &amp; trust</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <KpiTile label="Active Plus subs" value={fmt(k?.active_subs)} tone="good" />
+          <KpiTile label="New follows (7d)" value={fmt(k?.follows_7d)} />
+          <KpiTile label="Open reports" value={fmt(k?.open_reports)} tone={k?.open_reports ? "warn" : "default"} />
+        </div>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-2">
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-2 font-display text-lg text-ink">Daily signups (365d)</h3>
+          <MetricChart data={(data?.signups ?? []) as any} xKey="day" yKey="signups" />
+        </div>
+        <div className="rounded-2xl border border-border bg-surface p-4">
+          <h3 className="mb-2 font-display text-lg text-ink">DAU (90d)</h3>
+          <MetricChart data={(data?.dau ?? []) as any} xKey="day" yKey="dau" color="hsl(var(--accent))" />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 font-display text-xl text-ink">Engagement by surface (7d)</h2>
+        <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50 text-xs uppercase tracking-wide text-ink-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">Surface</th>
+                <th className="px-3 py-2 text-right">Active users</th>
+                <th className="px-3 py-2 text-right">Actions</th>
+                <th className="px-3 py-2 text-right">Per active</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(data?.surfaces ?? []).map((s: any) => (
+                <tr key={s.surface} className="border-t border-border">
+                  <td className="px-3 py-2 text-ink">{s.surface}</td>
+                  <td className="px-3 py-2 text-right">{fmt(s.active_users)}</td>
+                  <td className="px-3 py-2 text-right">{fmt(s.actions)}</td>
+                  <td className="px-3 py-2 text-right">{s.active_users > 0 ? (s.actions / s.active_users).toFixed(2) : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
   );
 }
