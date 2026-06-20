@@ -750,11 +750,11 @@ export function ChannelView({
           </div>
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
-          <StageTabs value={viewMode} onChange={setViewMode} />
+          <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} />
 
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
-              {(typeof toolsSlot === "function" ? toolsSlot(media) : toolsSlot) ?? (
+              {(typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot) ?? (
                 <div className="flex h-full items-center justify-center text-sm text-ink-muted">
                   No tools available in this room.
                 </div>
