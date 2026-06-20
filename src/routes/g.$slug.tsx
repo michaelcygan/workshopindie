@@ -64,8 +64,12 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 export const Route = createFileRoute("/g/$slug")({
+  validateSearch: (s: Record<string, unknown>) => ({
+    j: typeof s.j === "string" ? s.j : undefined,
+  }),
   loader: async ({ params }) => fetchGroup(params.slug),
   component: GroupPage,
+
   errorComponent: ({ error, reset }) => {
     const router = useRouter();
     return (
