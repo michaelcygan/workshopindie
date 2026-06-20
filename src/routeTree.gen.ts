@@ -34,7 +34,6 @@ import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
 import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
@@ -55,6 +54,7 @@ import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminLinksRouteImport } from './routes/admin.links'
 import { Route as AdminLineupsRouteImport } from './routes/admin.lineups'
 import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
@@ -199,11 +199,6 @@ const CitiesIndexRoute = CitiesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CitiesRoute,
 } as any)
-const AdminIndexRoute = AdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
 const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -303,6 +298,11 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   id: '/checkout/return',
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminLinksRoute = AdminLinksRouteImport.update({
   id: '/links',
@@ -421,6 +421,7 @@ export interface FileRoutesByFullPath {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -441,7 +442,6 @@ export interface FileRoutesByFullPath {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
-  '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -465,6 +465,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
@@ -481,6 +482,7 @@ export interface FileRoutesByTo {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -501,7 +503,6 @@ export interface FileRoutesByTo {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
-  '/admin': typeof AdminIndexRoute
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
@@ -548,6 +549,7 @@ export interface FileRoutesById {
   '/admin/groups': typeof AdminGroupsRoute
   '/admin/lineups': typeof AdminLineupsRoute
   '/admin/links': typeof AdminLinksRoute
+  '/admin/reports': typeof AdminReportsRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRoute
@@ -568,7 +570,6 @@ export interface FileRoutesById {
   '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
-  '/admin/': typeof AdminIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -616,6 +617,7 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -636,7 +638,6 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
-    | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -660,6 +661,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/g'
     | '/gallery'
@@ -676,6 +678,7 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -696,7 +699,6 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
-    | '/admin'
     | '/cities'
     | '/collab'
     | '/dms'
@@ -742,6 +744,7 @@ export interface FileRouteTypes {
     | '/admin/groups'
     | '/admin/lineups'
     | '/admin/links'
+    | '/admin/reports'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -762,7 +765,6 @@ export interface FileRouteTypes {
     | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
-    | '/admin/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -1005,13 +1007,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CitiesIndexRouteImport
       parentRoute: typeof CitiesRoute
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/workshops/new': {
       id: '/workshops/new'
       path: '/new'
@@ -1152,6 +1147,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/links': {
       id: '/admin/links'
       path: '/links'
@@ -1287,7 +1289,7 @@ interface AdminRouteChildren {
   AdminGroupsRoute: typeof AdminGroupsRoute
   AdminLineupsRoute: typeof AdminLineupsRoute
   AdminLinksRoute: typeof AdminLinksRoute
-  AdminIndexRoute: typeof AdminIndexRoute
+  AdminReportsRoute: typeof AdminReportsRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1296,7 +1298,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminGroupsRoute: AdminGroupsRoute,
   AdminLineupsRoute: AdminLineupsRoute,
   AdminLinksRoute: AdminLinksRoute,
-  AdminIndexRoute: AdminIndexRoute,
+  AdminReportsRoute: AdminReportsRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
