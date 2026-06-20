@@ -247,7 +247,7 @@ function Index() {
       <CityMeetupsStrip />
 
 
-      <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
         <FeaturedEventsCarousel />
       </section>
 
