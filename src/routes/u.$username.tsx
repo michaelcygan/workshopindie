@@ -384,39 +384,26 @@ function ProfilePage() {
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
 
-  const activityCount = (applied?.length ?? 0) + (participating?.length ?? 0);
+  const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
+  // Works tab is unified: owned + credited (visitor-visible).
+  const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
   const counts: Record<ProfileTab, number> = {
-    works: ownedWorks?.length ?? 0,
-    drafts: drafts?.length ?? 0,
-    credits: creditedWorks?.length ?? 0,
+    works: worksTotal,
     collabs: openCollabs?.length ?? 0,
-    workshops: workshops?.length ?? 0,
     activity: activityCount,
-    groups: (profile.home_city ? 1 : 0) + (profile.city && profile.city.slug !== profile.home_city?.slug ? 1 : 0),
     about: 1,
   };
 
-  // Default tab: own → works; other → first non-empty visitor tab
-  const defaultTab: ProfileTab = (() => {
-    if (search.tab) return search.tab;
-    if (isOwn) return "works";
-    const order: ProfileTab[] = ["works", "credits", "collabs", "workshops", "groups", "about"];
-    return order.find((t) => counts[t] > 0) ?? "about";
-  })();
+  // Default tab: always Works for a portfolio surface.
+  const defaultTab: ProfileTab = search.tab ?? "works";
 
   const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
 
-  const visibleTabs: ProfileTab[] = isOwn
-    ? [...TAB_VALUES]
-    : TAB_VALUES.filter((t) => {
-      if (t === "drafts" || t === "activity") return false; // owner-only
-      if (t === "works" || t === "about") return true;
-      if (t === "credits") return counts.credits > 0;
-      if (t === "collabs") return counts.collabs > 0;
-      if (t === "workshops") return counts.workshops > 0;
-      if (t === "groups") return counts.groups > 0;
-      return true;
-    });
+  const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
+    if (t === "activity") return isOwn; // owner-only
+    if (t === "collabs") return isOwn || counts.collabs > 0;
+    return true; // works, about always
+  });
 
 
   return (
