@@ -85,6 +85,14 @@ type WorkRow = {
   like_count: number; save_count: number; view_count: number; comment_count: number;
   vouch_count: number; boost_count: number;
   created_by: string;
+  // Book fields (only populated when category === 'writing_book')
+  book_author: string | null;
+  book_publisher: string | null;
+  book_isbn: string | null;
+  book_published_on: string | null;
+  book_page_count: number | null;
+  book_buy_links: { label: string; url: string }[] | null;
+  book_excerpt_url: string | null;
   work_credits: { id: string; role_label: string; sort_order: number; display_name: string | null;
     profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null; headline: string | null } | null;
   }[];
@@ -93,7 +101,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
