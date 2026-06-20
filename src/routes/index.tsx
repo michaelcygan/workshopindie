@@ -192,6 +192,8 @@ function Index() {
 
       <NetworkRail />
 
+      <CollabsRail />
+
       <section className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
@@ -240,7 +242,6 @@ function Index() {
 
       <CityMeetupsStrip />
 
-      <CollabsRail />
 
       <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
         <FeaturedEventsCarousel />
