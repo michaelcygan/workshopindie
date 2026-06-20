@@ -1,19 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
+import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
   component: Login,
   validateSearch: (s: Record<string, unknown>) => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
+    join: typeof s.join === "string" ? s.join : undefined,
+    group: typeof s.group === "string" ? s.group : undefined,
   }),
 });
+
 
 function Login() {
   const navigate = useNavigate();
