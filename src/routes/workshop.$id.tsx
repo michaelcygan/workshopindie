@@ -336,11 +336,11 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="flex items-center gap-2">
-            {isLeaderless && room?.status === "active" && (
+            {isLeaderless && room && (
               <ClaimHostPill
                 roomId={id}
                 viewerId={user.id}
-                unclaimable={!!room.workshop_id}
+                unclaimable={room.status !== "active" || !!room.workshop_id}
                 claimUserId={room.claim_user_id ?? null}
                 claimStartedAt={room.claim_started_at ?? null}
                 claimantName={claimantName}
