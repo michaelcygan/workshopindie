@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { Crown } from "lucide-react";
+import { RadioTower } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { startHostClaim, objectHostClaim, finalizeHostClaim } from "@/lib/host-room.functions";
 
@@ -113,7 +113,7 @@ export function ClaimHostPill({
         className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-ink-soft opacity-80"
         title="This Workshop already has managed rights"
       >
-        <Crown className="h-3 w-3" /> Claim Host
+        <RadioTower className="h-3 w-3" /> Claim Host
       </button>
     );
   }
@@ -123,7 +123,7 @@ export function ClaimHostPill({
     if (isClaimant) {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-violet/10 px-1.5 py-0.5 font-medium text-violet">
-          <Crown className="h-3 w-3" /> Confirming… ({remainingSec}s)
+          <RadioTower className="h-3 w-3" /> Confirming… ({remainingSec}s)
         </span>
       );
     }
@@ -156,7 +156,7 @@ export function ClaimHostPill({
         className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-[11px] font-medium text-ink-soft opacity-80"
         title={cooldownActive ? "Try again in a few minutes" : dwellHint}
       >
-        <Crown className="h-3 w-3" /> Claim Host
+        <RadioTower className="h-3 w-3" /> Claim Host
       </button>
     );
   }
@@ -177,7 +177,7 @@ export function ClaimHostPill({
       }}
       className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/5 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/10 hover:border-primary/60 hover:shadow-soft transition"
     >
-      <Crown className="h-3 w-3" /> Claim Host
+      <RadioTower className="h-3 w-3" /> Claim Host
     </button>
   );
 }
