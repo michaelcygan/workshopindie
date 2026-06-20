@@ -23,6 +23,7 @@ import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
+import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -81,6 +82,7 @@ function NewWork() {
   const [submitting, setSubmitting] = useState(false);
   const [streamUid, setStreamUid] = useState<string | null>(null);
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+  const [book, setBook] = useState<BookDetails>(emptyBookDetails);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -110,6 +112,13 @@ function NewWork() {
     setPrimaryUrl(e.primary_url);
     setEmbedUrl(e.embed_url);
     setProvider(e.provider);
+    if (e.book) {
+      setBook({
+        ...emptyBookDetails,
+        author: e.book.author ?? myProfile?.display_name ?? "",
+        buyLinks: e.book.buy_links.length > 0 ? e.book.buy_links : emptyBookDetails.buyLinks,
+      });
+    }
     setStep("confirm");
   }
 
@@ -158,6 +167,30 @@ function NewWork() {
     if (!title.trim()) return toast.error("Give it a title.");
     if (!ownsRights) return toast.error("Confirm this is your work, or you have the rights to share it.");
 
+    const isBook = category === "writing_book";
+    let bookFields: Record<string, unknown> = {};
+    if (isBook) {
+      const cleanLinks = book.buyLinks
+        .map((l) => ({ label: (l.label || "").trim(), url: (l.url || "").trim() }))
+        .filter((l) => l.url.length > 0);
+      // Validate URLs
+      for (const l of cleanLinks) {
+        try { new URL(l.url); } catch { return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`); }
+      }
+      if (book.excerptUrl) {
+        try { new URL(book.excerptUrl); } catch { return toast.error("Sample chapter link isn't a valid URL."); }
+      }
+      bookFields = {
+        book_author: book.author.trim() || null,
+        book_publisher: book.publisher.trim() || null,
+        book_isbn: book.isbn.trim() || null,
+        book_published_on: book.publishedOn || null,
+        book_page_count: book.pageCount ? Number(book.pageCount) || null : null,
+        book_buy_links: cleanLinks,
+        book_excerpt_url: book.excerptUrl.trim() || null,
+      };
+    }
+
     // Free tier cap on published works
     if (!isPlus) {
       const { count } = await supabase
@@ -184,13 +217,14 @@ function NewWork() {
         description: description || null,
         cover_url: coverUrl,
         primary_url: primaryUrl || null,
-        embed_url: embedUrl,
+        embed_url: isBook ? null : embedUrl,
         source_type: "manual",
         license_type: "portfolio_credit_only",
         ownership_certified_at: new Date().toISOString(),
         status: "published",
         visibility: "public",
         created_by: user.id,
+        ...bookFields,
       })
       .select("id,slug")
       .single();
@@ -261,6 +295,7 @@ function NewWork() {
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
       setStreamUid(null);
+      setBook(emptyBookDetails);
       setUrlInput("");
       setStep("drop");
       navigate({ to: "/works/new", search: {} });
@@ -381,6 +416,13 @@ function NewWork() {
             )}
             <p className="text-xs text-ink-muted">Subtype is optional — helps people find your work.</p>
           </section>
+
+          {/* Book details — only when Book category is selected */}
+          {category === "writing_book" && (
+            <BookDetailsSection value={book} onChange={setBook} />
+          )}
+
+
 
           {/* Ownership self-cert */}
           <section className="rounded-2xl border border-border bg-surface p-4">

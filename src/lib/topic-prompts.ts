@@ -4,6 +4,7 @@ export const TOPIC_DESCRIPTIONS: Record<Category, string> = {
   film: "Writers' rooms, edit jams, dailies critique.",
   music: "Beat cooks, vocal sessions, mix feedback.",
   writing: "Co-writing sprints, prose critique, lyric labs.",
+  writing_book: "Indie novels, novellas, poetry collections, memoirs.",
   build: "Pair-program, hackathons, design reviews.",
   visual: "Figure drawing, photo critique, illustration jams.",
   critique: "Drop a Work, get five sharp minds on it.",

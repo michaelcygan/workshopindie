@@ -65,7 +65,7 @@ const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
-  film: "list", music: "list", writing: "drive", build: "drive", visual: "board",
+  film: "list", music: "list", writing: "drive", writing_book: "drive", build: "drive", visual: "board",
   critique: "drive", business: "drive", coworking: "drive",
   office_hours: "drive", roundtable: "drive", pitch: "drive",
   listen_party: "list", open_mic: "list", jam: "drive", standup: "drive",

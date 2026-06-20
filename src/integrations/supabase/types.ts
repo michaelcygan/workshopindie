@@ -3685,6 +3685,13 @@ export type Database = {
       }
       works: {
         Row: {
+          book_author: string | null
+          book_buy_links: Json
+          book_excerpt_url: string | null
+          book_isbn: string | null
+          book_page_count: number | null
+          book_published_on: string | null
+          book_publisher: string | null
           boost_count: number
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
@@ -3722,6 +3729,13 @@ export type Database = {
           vouch_count: number
         }
         Insert: {
+          book_author?: string | null
+          book_buy_links?: Json
+          book_excerpt_url?: string | null
+          book_isbn?: string | null
+          book_page_count?: number | null
+          book_published_on?: string | null
+          book_publisher?: string | null
           boost_count?: number
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
@@ -3759,6 +3773,13 @@ export type Database = {
           vouch_count?: number
         }
         Update: {
+          book_author?: string | null
+          book_buy_links?: Json
+          book_excerpt_url?: string | null
+          book_isbn?: string | null
+          book_page_count?: number | null
+          book_published_on?: string | null
+          book_publisher?: string | null
           boost_count?: number
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
@@ -5434,6 +5455,7 @@ export type Database = {
         | "open_mic"
         | "jam"
         | "standup"
+        | "writing_book"
       collab_invite_status: "pending" | "accepted" | "declined" | "withdrawn"
       collab_post_status: "open" | "closed" | "archived" | "removed"
       compensation_type:
@@ -5691,6 +5713,7 @@ export const Constants = {
         "open_mic",
         "jam",
         "standup",
+        "writing_book",
       ],
       collab_invite_status: ["pending", "accepted", "declined", "withdrawn"],
       collab_post_status: ["open", "closed", "archived", "removed"],
