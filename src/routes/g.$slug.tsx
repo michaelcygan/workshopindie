@@ -1,12 +1,13 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { MapPin, Sparkles, Users, Star, LayoutGrid, Megaphone, Radio, Info, Plus, X, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton } from "@/components/join-group-button";
+import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageButton } from "@/components/message-button";
 import {
@@ -24,7 +25,9 @@ import {
   tagWorkshopInGroup,
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
+import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
+
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 import { GroupSparkBar } from "@/components/group-spark-bar";
 
