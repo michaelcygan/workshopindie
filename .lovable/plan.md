@@ -1,22 +1,13 @@
-# Fix: profile peek hover card renders behind the "Your recent work" rail
+# Two card descriptions — final copy
 
-## Root cause
-`src/components/ui/hover-card.tsx` renders `HoverCardPrimitive.Content` **without** a `HoverCardPrimitive.Portal` wrapper. Without the portal, the hover card mounts inline at the trigger's DOM position, so it inherits the participant strip's stacking context. Its `z-50` only competes with siblings inside that column — the rail in the right column wins the visual overlap.
+Edit `src/routes/index.tsx`. Two string swaps. Headings, icons, and CTAs unchanged.
 
-Radix's other floating primitives in this project (Popover, Dialog, Dropdown, Tooltip) all use `*.Portal`. HoverCard is the only one that doesn't, which is why this is the only popup that gets covered.
+## Drop into a Workshop (line 110)
+**From:** Five seats. Voice or video. Whoever's around, right now.
+**To:** A live, five-seat workshop with shared tools. Start a jam session, a critique, office hours, or just to work alongside other people.
 
-## Fix
-One file: `src/components/ui/hover-card.tsx`. Wrap `HoverCardPrimitive.Content` in `HoverCardPrimitive.Portal`. Keep the existing `z-50` and className. No API change for consumers — every existing `HoverCard` (profile peek, anywhere else) instantly floats above sibling UI including the works rail, sticky chat header, video tiles, etc.
+## Post a Collab (line 128)
+**From:** The thing you keep meaning to make. Post it. Open a Workshop on it when you're ready.
+**To:** Describe what you're working on and accept applications from people who want in. Make your project and showcase it on your profile.
 
-```tsx
-<HoverCardPrimitive.Portal>
-  <HoverCardPrimitive.Content ... />
-</HoverCardPrimitive.Portal>
-```
-
-## Scope guarantee
-- No behavior change to triggers, focus, or accessibility — Portal preserves all Radix semantics.
-- No styling/layout change other than correct z-stacking.
-- Affects every `HoverCard` usage in the project (audited: profile peek is the primary one). All should benefit.
-
-No other files, no schema, no deps.
+No other changes.
