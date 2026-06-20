@@ -16,6 +16,7 @@ export const Route = createFileRoute("/login")({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
   }),
 });
 
@@ -57,6 +58,10 @@ function Login() {
         if (r.joined) toast.success("Joined");
       } catch { /* listener will retry */ }
       navigate({ to: "/g/$slug", params: { slug: search.group } });
+      return;
+    }
+    if (search.redirect && search.redirect.startsWith("/")) {
+      window.location.assign(search.redirect);
       return;
     }
     navigate({ to: "/" });
