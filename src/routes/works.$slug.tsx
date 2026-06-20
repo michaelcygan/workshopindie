@@ -451,3 +451,76 @@ function PinToProfileButton({
   );
 }
 
+function BookHero({ work }: { work: WorkRow }) {
+  const links = (work.book_buy_links ?? []).filter((l) => l && l.url);
+  const primaryLink = links[0] ?? (work.primary_url ? { label: "Read it", url: work.primary_url } : null);
+  const restLinks = primaryLink && links.length > 0 ? links.slice(1) : [];
+  const meta: string[] = [];
+  if (work.book_published_on) {
+    try { meta.push(format(new Date(work.book_published_on), "MMM yyyy")); } catch { /* ignore */ }
+  }
+  if (work.book_page_count) meta.push(`${work.book_page_count} pages`);
+  if (work.book_publisher) meta.push(work.book_publisher);
+  if (work.book_isbn) meta.push(`ISBN ${work.book_isbn}`);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
+      className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-[minmax(0,200px)_1fr] md:gap-8"
+    >
+      <div className="mx-auto w-full max-w-[240px] sm:mx-0">
+        {work.cover_url ? (
+          <img
+            src={work.cover_url}
+            alt={`${work.title} cover`}
+            className="aspect-[2/3] w-full rounded-lg border border-border bg-cat-book object-cover shadow-lift"
+          />
+        ) : (
+          <div className="flex aspect-[2/3] w-full items-center justify-center rounded-lg border border-cat-book-ink/20 bg-cat-book text-3xl font-display text-cat-book-ink shadow-lift">
+            📖
+          </div>
+        )}
+      </div>
+      <div className="flex flex-col gap-4">
+        {primaryLink && (
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={primaryLink.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-background hover:opacity-90"
+            >
+              {primaryLink.label || "Read it"} <ExternalLink className="h-4 w-4" />
+            </a>
+            {restLinks.map((l, i) => (
+              <a
+                key={`${l.label}-${i}`}
+                href={l.url}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink hover:bg-muted"
+              >
+                {l.label || "Link"} <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            ))}
+          </div>
+        )}
+        {work.book_excerpt_url && (
+          <a
+            href={work.book_excerpt_url}
+            target="_blank"
+            rel="noreferrer noopener"
+            className="inline-flex w-fit items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-sm text-ink-soft hover:text-ink hover:bg-muted"
+          >
+            Read a sample <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        )}
+        {meta.length > 0 && (
+          <p className="text-sm text-ink-muted">{meta.join(" · ")}</p>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+
