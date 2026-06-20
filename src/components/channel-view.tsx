@@ -687,23 +687,38 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className="mt-4 grid gap-4 md:grid-cols-[1fr_260px]">
+      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[1fr_180px]" : "md:grid-cols-[1fr_260px]")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
-          {/* Persistent contextual expand — always available, routes to the active surface. */}
-          <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} />
+          {/* Top-right icon cluster: focus / PiP / fullscreen — reads as one control group. */}
+          <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => setVideoFocus((v) => !v)}
+              className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
+              aria-label={videoFocus ? "Show chat" : "Focus video"}
+              title={videoFocus ? "Show chat" : "Focus video"}
+            >
+              {videoFocus ? (
+                <MessageSquare className="h-3.5 w-3.5" />
+              ) : (
+                <Columns2 className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
+            <button
+              type="button"
+              onClick={() => setFsView(fsTarget)}
+              className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
+              aria-label={fsLabel}
+              title={fsLabel}
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
           {pip.portal}
-          <button
-            type="button"
-            onClick={() => setFsView(fsTarget)}
-            className="absolute right-3 top-3 z-20 rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background"
-            aria-label={fsLabel}
-            title={fsLabel}
-          >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </button>
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
