@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users } from "lucide-react";
+import { ClaimHostPill } from "@/components/claim-host-pill";
+import { cn } from "@/lib/utils";
 import { WorkshopPresenceWorksRail } from "@/components/workshop-presence-works-rail";
 import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
@@ -116,7 +118,18 @@ export function ChannelView({
   const aloneTimerRef = useRef<number | null>(null);
   const multiPartySinceRef = useRef<number | null>(null);
   const adminDismissedRef = useRef(false);
-  const [viewMode, setViewMode] = useState<RoomViewMode>("chat");
+  const [viewMode, setViewModeState] = useState<RoomViewMode>(() => {
+    if (typeof window === "undefined") return "chat";
+    try {
+      const v = window.sessionStorage.getItem(`room-view:${roomId}`);
+      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs") return v;
+    } catch {}
+    return "chat";
+  });
+  const setViewMode = (v: RoomViewMode) => {
+    setViewModeState(v);
+    try { window.sessionStorage.setItem(`room-view:${roomId}`, v); } catch {}
+  };
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
   const [videoFocus, setVideoFocus] = useState<boolean>(() => {
