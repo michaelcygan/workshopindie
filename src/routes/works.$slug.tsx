@@ -187,6 +187,9 @@ function WorkDetail() {
             </span>
           </div>
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
+          {work.category === "writing_book" && work.book_author && (
+            <p className="text-lg text-ink-soft">by <span className="text-ink">{work.book_author}</span></p>
+          )}
           {work.excerpt && <p className="text-lg text-ink-soft">{work.excerpt}</p>}
 
           {/* Byline — the cast, right under the title */}
@@ -199,8 +202,10 @@ function WorkDetail() {
         </motion.header>
 
 
-        {/* Embedded player (YouTube, Vimeo, SoundCloud, Spotify, Bandcamp…) or cover */}
-        {work.embed_url ? (
+        {/* Book hero — portrait cover + buy buttons */}
+        {work.category === "writing_book" ? (
+          <BookHero work={work} />
+        ) : work.embed_url ? (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="mt-8">
             <EmbedPlayer url={work.embed_url} provider={providerFromUrl(work.embed_url)} title={work.title} poster={work.cover_url} />
           </motion.div>
@@ -246,7 +251,8 @@ function WorkDetail() {
           <div className="prose-workshop mt-8 whitespace-pre-wrap text-base leading-relaxed text-ink-soft">{work.description}</div>
         )}
 
-        {work.primary_url && (
+        {/* Non-book "View original" CTA — books use the BookHero buy buttons instead */}
+        {work.category !== "writing_book" && work.primary_url && (
           <a href={work.primary_url} target="_blank" rel="noreferrer noopener"
             className="mt-6 inline-flex items-center gap-1.5 rounded-full bg-ink px-4 py-2 text-sm text-background hover:opacity-90">
             View original <ExternalLink className="h-4 w-4" />
