@@ -184,6 +184,11 @@ export function providerLabel(p?: Provider | string | null): string | null {
     case "arena": return "Are.na";
     case "substack": return "Substack";
     case "medium": return "Medium";
+    case "amazon": return "Amazon";
+    case "goodreads": return "Goodreads";
+    case "bookshop": return "Bookshop";
+    case "apple_books": return "Apple Books";
+    case "google_books": return "Google Books";
     default: return null;
   }
 }
