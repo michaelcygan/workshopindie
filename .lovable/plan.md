@@ -1,39 +1,90 @@
-## Goal
+# Tighten the avatar "more" menu + reorganize Settings
 
-Keep people inside the Workshop while they browse Work and Collabs. Work already opens in a `WorkPeek` lightbox — extend the same pattern to Collabs so clicking a Collab from the Stage doesn't navigate away.
+The avatar dropdown today mixes identity (My profile), top-level nav (Drop in, My Collabs, Network, My Events), a Create shortcut (Post a Collab — already in the orange **+ Create** next to it), upsell (Go Plus, Refer & Earn), and account utilities (Settings, Admin, Sign out). It's long and duplicates the Create button and the main nav.
 
-## What changes
+## Avatar dropdown — desktop (`top-nav.tsx`)
 
-### 1. New `CollabPeek` lightbox
+```text
+┌─────────────────────────────┐
+│  Greg Anderson              │   ← header row: avatar + name + @handle
+│  @gregando                  │      whole row links to /u/$username
+├─────────────────────────────┤
+│  ◐  My stuff           ▸    │   ← submenu: My Collabs, Network, My Events,
+│                                                  Refer & Earn
+├─────────────────────────────┤
+│  ✦  Go Plus / Plus ✓       │   ← label flips on usePlus(); → /pricing or /settings#plus
+│  ⚙  Settings                │
+├─────────────────────────────┤
+│  🛡  Admin                  │   ← only when isAdmin
+│     Sign out                │
+└─────────────────────────────┘
+```
 
-`src/components/collab-peek.tsx` — modeled on `work-peek.tsx`:
+Changes vs. screenshot:
+- Remove **My profile** row (header becomes the link).
+- Remove **Drop in** (Workshop is already in the main top nav).
+- Remove **Post a Collab** (lives in the adjacent **+ Create** menu).
+- Group **My Collabs / Network / My Events / Refer & Earn** under a single "My stuff" submenu (`DropdownMenuSub`).
+- Collapse Plus into one row: "Go Plus" for free, "Plus ✓ — Manage" for Plus users.
+- Settings → opens Account section by default.
 
-- Controlled `Dialog` (`open`, `onOpenChange`, `collabId`).
-- Fetches the collab on open via TanStack Query against `collab_posts` (id, title, slug, category, description, cover_url if present, user_id) plus `collab_roles` and the owner profile (display_name, username, avatar_url).
-- Body: cover/gradient, category chip, title, owner row (clickable → existing `ProfilePeek` flow if available, else link), description, open roles list.
-- Actions row:
-  - **Apply** buttons per role — call existing `applyToCollab` server fn (same as on the full page). Toast on success/error.
-  - **Open full Collab** → `<a href="/collab/{slug}" target="_blank" rel="noopener">` (matches WorkPeek's "Open full work").
-- Skeleton state while loading, identical sizing/styling to `WorkPeek` so the two feel like one family.
+## Avatar sheet — mobile (`mobile-nav.tsx`)
 
-### 2. Wire the peek in `workshop-collabs-panel.tsx`
+Flat list (no submenu):
 
-- Add local state `peekCollabId` + `peekOpen`, plus `openCollab(id)`.
-- Replace every `<Link to="/collab/$slug" params={{ slug }}>{c.title}</Link>` (two spots — pinned list + main list) with a `<button onClick={() => openCollab(c.id)}>` styled identically.
-- The "Post one" link in the empty state stays a real `Link` (it goes to a creation flow, not a peek target).
-- Render `<CollabPeek collabId={peekCollabId} open={peekOpen} onOpenChange={setPeekOpen} />` at the bottom of the panel.
+```text
+Greg Anderson  @gregando
+─────────────────────────
+My Collabs
+Network
+My Events
+Refer & Earn
+─────────────────────────
+Go Plus / Manage Plus
+Settings
+─────────────────────────
+Sign out
+```
 
-### 3. Confirm Work peek coverage
+Remove Post a Collab and the Drop-in equivalent. Keep Messages only if there's no other entry point on mobile (verify during build).
 
-Work already opens via `WorkPeek` from `channel-view.tsx` (`openWork` + `RoomGallery onOpenWork`) and from `WorkshopPresenceWorksRail`. No code change needed; just verify that the rail and any Work surface inside the Stage call `onOpenWork` rather than navigating. If a `<Link to="/works/$slug">` is found inside the Stage tabs, swap it for `openWork(id)`.
+## Settings reorganization (`src/routes/settings.tsx`)
 
-## Out of scope
+Collapse the sidebar from 8 → 6 rows:
 
-- No changes to routes, server functions, or schema. `applyToCollab` and the existing collab query patterns are reused as-is.
-- The full `/collab/$slug` and `/works/$slug` pages remain available via "Open full …" in each peek (new tab, so the Workshop session stays intact).
+```text
+Account          ← identity, email, password, connected sign-ins, language, default city
+Plus membership  ← plan, renewal, manage billing, cancel/resume, upgrade CTA
+Notifications
+Privacy          ← existing privacy + GDPR/age controls
+Safety           ← Blocked users + My reports (merged)
+Your data        ← Export data + Delete account (merged)
+```
+
+### Account section — add
+
+- **Change email** (Supabase `updateUser({ email })`, triggers confirmation).
+- **Change password** (existing `resetPasswordForEmail` flow or inline `updateUser({ password })`).
+- **Connected sign-in methods** (display Google if linked; read-only for now).
+- **Default city** — autocomplete using existing `cities.functions.ts`; persisted to `profiles.default_city_id` (verify column exists during build — if not, add a one-column migration with the standard GRANTs).
+- **Language** — single select (start with English; structure the field so future languages can plug in). Persisted to `profiles.preferred_language` (add column + GRANTs if missing). Will later feed a Workshop language filter.
+
+### Plus section — flesh out
+
+- Current plan + renewal/cancel-at date from `usePlus()`.
+- "Manage billing" → existing `createPortalSession`.
+- Cancel / Resume buttons (Stripe portal handles, but expose top-level buttons).
+- Upgrade CTA for free users → `/pricing`.
+
+### Safety + Your data
+
+- Just merges the existing `blocked`, `reports`, `data`, `danger` sections under two parent IDs. No new server functions.
 
 ## Files touched
 
-- **new** `src/components/collab-peek.tsx`
-- **edit** `src/components/workshop-collabs-panel.tsx` (state + button swap + peek mount)
-- **edit** (only if a stray Link is found) `src/components/channel-view.tsx` / `workshop-presence-works-rail.tsx`
+- `src/components/top-nav.tsx` — rewrite avatar `DropdownMenuContent`; add `DropdownMenuSub` for "My stuff".
+- `src/components/mobile-nav.tsx` — rewrite "You" dropdown rows.
+- `src/routes/settings.tsx` — collapse `SECTIONS` (8 → 6), add Account inline actions, expand Plus section, merge Safety + Your data.
+- Possibly a single migration adding `profiles.default_city_id` (FK → `cities.id`) and/or `profiles.preferred_language` (text, default `'en'`) **only if** those columns don't already exist. Standard `GRANT`s + RLS update for owner write.
+
+No route additions, no new server-function files (reuses `account.functions.ts`, `payments.functions.ts`, `cities.functions.ts`).
