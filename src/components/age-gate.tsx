@@ -48,7 +48,7 @@ export function AgeGate() {
     }
     let cancelled = false;
     setChecking(true);
-    fetchAge({})
+    fetchAge()
       .then((r) => {
         if (cancelled) return;
         setNeedsDob(!r.birthdate);
@@ -92,7 +92,7 @@ export function AgeGate() {
   async function onAcceptDeletion() {
     setSubmitting(true);
     try {
-      await deleteAccount({});
+      await deleteAccount();
       await supabase.auth.signOut();
       navigate({ to: "/goodbye", replace: true });
     } catch (err) {
