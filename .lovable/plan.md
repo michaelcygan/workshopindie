@@ -1,90 +1,68 @@
-# Tighten the avatar "more" menu + reorganize Settings
+# Workshop pre-launch audit — pores, SEO/AI, scale, cleanup
 
-The avatar dropdown today mixes identity (My profile), top-level nav (Drop in, My Collabs, Network, My Events), a Create shortcut (Post a Collab — already in the orange **+ Create** next to it), upsell (Go Plus, Refer & Earn), and account utilities (Settings, Admin, Sign out). It's long and duplicates the Create button and the main nav.
+This is a multi-track plan, not one feature. Pick which tracks to ship now and which to defer; I'll execute each separately.
 
-## Avatar dropdown — desktop (`top-nav.tsx`)
+## What's already strong (don't touch)
 
-```text
-┌─────────────────────────────┐
-│  Greg Anderson              │   ← header row: avatar + name + @handle
-│  @gregando                  │      whole row links to /u/$username
-├─────────────────────────────┤
-│  ◐  My stuff           ▸    │   ← submenu: My Collabs, Network, My Events,
-│                                                  Refer & Earn
-├─────────────────────────────┤
-│  ✦  Go Plus / Plus ✓       │   ← label flips on usePlus(); → /pricing or /settings#plus
-│  ⚙  Settings                │
-├─────────────────────────────┤
-│  🛡  Admin                  │   ← only when isAdmin
-│     Sign out                │
-└─────────────────────────────┘
-```
+- Logged-out posture per `.lovable/logged-out-strategy.md` is healthy: detail pages public, `JobPosting` JSON-LD on Collabs, `Event` on Workshops, `CreativeWork` on Works, `Person` on Profiles. `guest-apply-dialog` + `claim_token` + `backfill_guest_applications_on_signup` trigger already convert anonymous Collab applications.
+- `event-rsvp-auth-sheet` + `setPendingRsvp` already resumes RSVP after signup.
+- Sitemap covers works, profiles, workshops, collabs, cities. `robots.txt` correctly disallows private surfaces.
+- Per-route `head()` + JSON-LD on the major public types is in place.
 
-Changes vs. screenshot:
-- Remove **My profile** row (header becomes the link).
-- Remove **Drop in** (Workshop is already in the main top nav).
-- Remove **Post a Collab** (lives in the adjacent **+ Create** menu).
-- Group **My Collabs / Network / My Events / Refer & Earn** under a single "My stuff" submenu (`DropdownMenuSub`).
-- Collapse Plus into one row: "Go Plus" for free, "Plus ✓ — Manage" for Plus users.
-- Settings → opens Account section by default.
+## Track 1 — Logged-out conversion pores (highest ROI for launch)
 
-## Avatar sheet — mobile (`mobile-nav.tsx`)
+Tasteful prompts where value has been delivered. Each follows the canonical handoff: prefill, claim token where there's data, never block read.
 
-Flat list (no submenu):
+1. **Landing page logged-out variant** (`src/routes/index.tsx`). Today it renders the signed-in feed for everyone. Split into `LoggedOutHero` (currently only used on `/gallery`) + a curated **public rail set**: live Workshops, fresh Collabs, featured city. Replace `NetworkRail` / `UpcomingInMyGroupsRail` with social proof rails for guests. CTA card under each rail: "Follow @creator for new work" → opens `SignupGateModal` prefilled with the action.
+2. **Save / follow gates** — Works, Profiles, Collabs already have like/save/follow buttons but they require auth. Wire each to `SignupGateModal` with action-specific copy ("Save this work to your portfolio", "Get notified when {name} posts"). Persist the intent in sessionStorage and replay after signup (same pattern as `pending-rsvp`).
+3. **Workshop "remind me" guest flow** — `/workshops/$slug` has no analogue to RSVP for guests. Add a "Remind me" pill that captures email into a new `workshop_reminders(workshop_id, email, claim_token, created_at)` table, mirrors the Collab claim flow, and converts on signup via a trigger.
+4. **Inviter attribution everywhere** — `?via=<username>` is mentioned in the strategy doc but not consistently injected by share sheets. Audit `share-sheet.tsx`, `event-share-sheet.tsx`, `share-collab-sheet.tsx` to always append `via` when sharing, and surface "via @name" on the receiving page's signup CTA.
+5. **Empty-author conversion** — when a logged-in user lands on a Profile / Work / Collab they don't follow, show a one-line "+ Follow" inline; for guests the same surface reads "Sign up to follow."
 
-```text
-Greg Anderson  @gregando
-─────────────────────────
-My Collabs
-Network
-My Events
-Refer & Earn
-─────────────────────────
-Go Plus / Manage Plus
-Settings
-─────────────────────────
-Sign out
-```
+## Track 2 — SEO + AI findability
 
-Remove Post a Collab and the Drop-in equivalent. Keep Messages only if there's no other entry point on mobile (verify during build).
+1. **Sitemap index split**. `src/routes/sitemap[.]xml.ts` returns one file capped at 5K profiles + 5K works; at 100K DAU that truncates. Convert to a sitemap index pointing at `/sitemap-works.xml`, `/sitemap-profiles.xml`, `/sitemap-collabs.xml`, `/sitemap-workshops.xml`, `/sitemap-cities.xml`, each paginated 50K/file. Cache `s-maxage=3600`.
+2. **Switch sitemap from `supabaseAdmin` → publishable client** with `TO anon` SELECT on the columns used (`published_at`, `slug`, `username`). Same for `seo-loaders.functions.ts`. Service role at the request boundary for read-only public data is both a perf concern (no PostgREST caching) and a blast-radius concern.
+3. **JSON-LD coverage gaps**: add `CollectionPage` + `BreadcrumbList` on `/cities/$slug`, `/gallery`, `/collab` (list), `/workshops` (list); add `ItemList` to the rails on the city page. These are what Google uses to render rich list snippets.
+4. **`/llms.txt`** — a static `public/llms.txt` describing Workshop's primitives (Workshops, Collabs, Works, Profiles), key URLs, and how to query them. ChatGPT / Claude / Perplexity crawlers read this first. Cheap, high-leverage for AI search.
+5. **Verify canonical/og:url self-reference** on every public route (`head-meta` rule). One pass with a script.
+6. **OG image generation** — current public routes use the cover image when present, fall back to none. Confirm `og:image` is always set on Collab/Work/Workshop/Profile/City when one exists.
 
-## Settings reorganization (`src/routes/settings.tsx`)
+## Track 3 — Backend at 100K DAU
 
-Collapse the sidebar from 8 → 6 rows:
+1. **`profiles.last_active_at` write-hot path**. `PresenceHeartbeat` updates `profiles` on a timer — at 100K DAU that's profile-row contention and index bloat. Move to a thin `user_presence(user_id PK, last_seen_at)` table, write there, read joined where needed. Keep `last_active_at` as a backfilled denorm if anything reads it directly.
+2. **View / popularity counters** — `works.view_count` / `popularity_score` and `room_views` should be increment-batched (queue → trigger every N minutes) rather than per-pageview UPDATE. Confirm `popularity_score` has its own index and is recomputed by cron, not on read.
+3. **Index audit on hot read paths**. Verify composite indexes for:
+   - `collab_posts (status, created_at desc) where status='open'`
+   - `works (status, visibility, published_at desc)`
+   - `workshops (status, scheduled_start_at)`
+   - `profiles (lower(username))`, `(lower(email))` for guest-claim trigger
+   - `group_events (group_id, starts_at)`, `(starts_at) where status='published'`
+   - `follows (follower_user_id, followed_user_id)`
+4. **Realtime channel hygiene** — `use-media-room`, `channel-view`, `chat-polls` each open per-room channels (correct). Confirm we unsubscribe on unmount and don't re-subscribe on each render. Set Supabase Realtime quotas in plan.
+5. **`supabaseAdmin` audit** — 354 call sites. Tag each by category (admin tools, webhooks, public reads). The webhook + admin uses are correct; the public-read uses move to publishable + RLS in Track 2.
+6. **Edge caching headers** on every public GET route (`s-maxage=60, stale-while-revalidate=300` for detail pages; `60/600` for lists). The Worker honors these in front of Cloudflare's POP cache.
 
-```text
-Account          ← identity, email, password, connected sign-ins, language, default city
-Plus membership  ← plan, renewal, manage billing, cancel/resume, upgrade CTA
-Notifications
-Privacy          ← existing privacy + GDPR/age controls
-Safety           ← Blocked users + My reports (merged)
-Your data        ← Export data + Delete account (merged)
-```
+## Track 4 — Pre-launch cleanup
 
-### Account section — add
+1. Delete stale stub routes if no inbound links: `me.blocked.tsx` is now a `<Navigate>` to `/settings` — keep (stable URL). Audit `me.friends.tsx`, `workshop.tsx` / `workshop.index.tsx` overlap.
+2. Sweep `// eslint-disable-next-line @typescript-eslint/no-explicit-any` — most can be typed properly now that schemas are stable.
+3. Confirm Stripe environment is set to **live** for launch (`payment-test-mode-banner.tsx` should not appear on prod).
+4. Update `mem://security-memory` after Track 2/3 land (publishable-key reads + new presence table).
+5. Run an SEO scan via `seo_chat--trigger_scan` once Track 2 lands, then mark findings fixed.
+6. Verify every CTA reachable from the logged-out hero opens `SignupGateModal` (never a hard redirect to `/signup`) so the user keeps page context.
 
-- **Change email** (Supabase `updateUser({ email })`, triggers confirmation).
-- **Change password** (existing `resetPasswordForEmail` flow or inline `updateUser({ password })`).
-- **Connected sign-in methods** (display Google if linked; read-only for now).
-- **Default city** — autocomplete using existing `cities.functions.ts`; persisted to `profiles.default_city_id` (verify column exists during build — if not, add a one-column migration with the standard GRANTs).
-- **Language** — single select (start with English; structure the field so future languages can plug in). Persisted to `profiles.preferred_language` (add column + GRANTs if missing). Will later feed a Workshop language filter.
+## Suggested execution order
 
-### Plus section — flesh out
+1. Track 1 (#1, #2) — biggest conversion lift, ship first.
+2. Track 2 (#2, #1, #4) — switch admin→publishable for sitemap + loaders, split sitemap, add llms.txt.
+3. Track 3 (#1, #3) — presence table + index audit.
+4. Track 1 (#3, #4, #5) + Track 4 polish + SEO scan.
 
-- Current plan + renewal/cancel-at date from `usePlus()`.
-- "Manage billing" → existing `createPortalSession`.
-- Cancel / Resume buttons (Stripe portal handles, but expose top-level buttons).
-- Upgrade CTA for free users → `/pricing`.
+## What I need from you
 
-### Safety + Your data
+Which tracks do you want me to start with? Reasonable defaults if you say "go":
+- **Track 1 #1 + #2** (landing page logged-out variant + save/follow gates) this turn
+- **Track 2 #4** (llms.txt) bundled in — it's a one-file add
 
-- Just merges the existing `blocked`, `reports`, `data`, `danger` sections under two parent IDs. No new server functions.
-
-## Files touched
-
-- `src/components/top-nav.tsx` — rewrite avatar `DropdownMenuContent`; add `DropdownMenuSub` for "My stuff".
-- `src/components/mobile-nav.tsx` — rewrite "You" dropdown rows.
-- `src/routes/settings.tsx` — collapse `SECTIONS` (8 → 6), add Account inline actions, expand Plus section, merge Safety + Your data.
-- Possibly a single migration adding `profiles.default_city_id` (FK → `cities.id`) and/or `profiles.preferred_language` (text, default `'en'`) **only if** those columns don't already exist. Standard `GRANT`s + RLS update for owner write.
-
-No route additions, no new server-function files (reuses `account.functions.ts`, `payments.functions.ts`, `cities.functions.ts`).
+The rest I'll plan and ship in follow-up turns. Anything to drop or reprioritize?
