@@ -508,6 +508,8 @@ export function WorkshopCollabsPanel({
             </Button>
           </DialogFooter>
         </DialogContent>
+      </Dialog>
+
       <CollabPeek collabId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
     </div>
   );
