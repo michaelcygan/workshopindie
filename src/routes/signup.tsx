@@ -10,6 +10,7 @@ import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
+import { setMyBirthdate } from "@/lib/profile-age.functions";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
@@ -39,11 +40,20 @@ function Signup() {
   const [instagram, setInstagram] = useState(search.ig ?? "");
   const [email, setEmail] = useState(search.email ?? "");
   const [password, setPassword] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
   const redeemSeed = useServerFn(redeemGroupSeedLink);
+  const saveBirthdate = useServerFn(setMyBirthdate);
+
+  // Today minus 18y — the date input refuses anything younger.
+  const maxBirthdate = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().slice(0, 10);
+  })();
 
   // Stash seed-link token in sessionStorage so OAuth round-trips still join the group.
   useEffect(() => {
