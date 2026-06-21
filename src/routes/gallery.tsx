@@ -41,8 +41,25 @@ export const Route = createFileRoute("/gallery")({
       { name: "description", content: "Browse everything people have shipped on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
       { property: "og:title", content: "Work — Workshop" },
       { property: "og:description", content: "Browse everything people have shipped on Workshop." },
+      { property: "og:url", content: "https://workshopindie.com/gallery" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/gallery" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Work — Workshop",
+          description: "Browse everything people have shipped on Workshop.",
+          url: "https://workshopindie.com/gallery",
+          isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+        }),
+      },
     ],
   }),
+
   component: GalleryPage,
 });
 

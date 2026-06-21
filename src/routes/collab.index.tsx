@@ -37,6 +37,24 @@ export const Route = createFileRoute("/collab/")({
     meta: [
       { title: "Collab Board — Workshop" },
       { name: "description", content: "Things people are trying to make. Help out, or post your own and open a Workshop on it." },
+      { property: "og:title", content: "Collab Board — Workshop" },
+      { property: "og:description", content: "Things people are trying to make. Help out, or post your own." },
+      { property: "og:url", content: "https://workshopindie.com/collab" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/collab" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Collab Board — Workshop",
+          description: "Open creative collaborations: briefs, roles, and rooms forming now.",
+          url: "https://workshopindie.com/collab",
+          isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+        }),
+      },
     ],
   }),
 });

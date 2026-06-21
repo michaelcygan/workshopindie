@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const SITE = "https://workshopindie.com";
 
@@ -11,22 +12,32 @@ function xmlEscape(s: string) {
   return s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]!));
 }
 
+
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {
+        // Use a request-scoped publishable-key client + anon SELECT policies — no service role
+        // at the crawler boundary, and PostgREST can cache repeated reads.
+        const sb = createClient<Database>(
+          process.env.SUPABASE_URL!,
+          process.env.SUPABASE_PUBLISHABLE_KEY!,
+          { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+        );
+
         const urls: { loc: string; lastmod?: string; priority?: number }[] = [];
         for (const p of STATIC_PATHS) {
           urls.push({ loc: `${SITE}/${p}`, priority: p === "" ? 1.0 : 0.7 });
         }
 
         const [works, profiles, workshops, collabs, cities] = await Promise.all([
-          supabaseAdmin.from("works").select("slug,published_at").eq("status", "published").in("visibility", ["public", "unlisted"]).order("published_at", { ascending: false }).limit(5000),
-          supabaseAdmin.from("profiles").select("username,updated_at").not("username", "is", null).limit(5000),
-          supabaseAdmin.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active"]).limit(2000),
-          supabaseAdmin.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(2000),
-          supabaseAdmin.from("cities").select("slug").limit(500),
+          sb.from("works").select("slug,published_at").eq("status", "published").in("visibility", ["public", "unlisted"]).order("published_at", { ascending: false }).limit(45000),
+          sb.from("profiles").select("username,updated_at").not("username", "is", null).limit(45000),
+          sb.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active", "finalizing", "shipped"]).limit(10000),
+          sb.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(10000),
+          sb.from("cities").select("slug").limit(2000),
         ]);
+
 
         for (const w of works.data ?? []) urls.push({ loc: `${SITE}/works/${w.slug}`, lastmod: w.published_at ?? undefined, priority: 0.8 });
         for (const p of profiles.data ?? []) urls.push({ loc: `${SITE}/u/${p.username}`, lastmod: p.updated_at ?? undefined, priority: 0.6 });

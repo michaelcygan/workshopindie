@@ -14,6 +14,24 @@ export const Route = createFileRoute("/cities/")({
     meta: [
       { title: "Cities — Workshop" },
       { name: "description", content: "Find local Workshops, standing meetups, and creators in your city." },
+      { property: "og:title", content: "Cities — Workshop" },
+      { property: "og:description", content: "Find local Workshops, standing meetups, and creators in your city." },
+      { property: "og:url", content: "https://workshopindie.com/cities" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/cities" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Cities — Workshop",
+          description: "Find local Workshops, standing meetups, and creators in your city.",
+          url: "https://workshopindie.com/cities",
+          isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+        }),
+      },
     ],
   }),
 });
