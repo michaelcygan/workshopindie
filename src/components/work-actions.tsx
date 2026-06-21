@@ -32,8 +32,17 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
       });
   }, [user, workId]);
 
-  async function toggle(kind: "like" | "save") {
-    if (!user) return navigate({ to: "/login" });
+  // Replay the pending like/save after the user authenticates via the gate.
+  useEffect(() => {
+    if (!user || !pendingAfterAuthRef.current) return;
+    const kind = pendingAfterAuthRef.current;
+    pendingAfterAuthRef.current = null;
+    void doToggle(kind);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  async function doToggle(kind: "like" | "save") {
+    if (!user) return;
     if (pending) return;
     setPending(kind);
     // Optimistic
@@ -51,7 +60,6 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
     setPending(null);
     if (error) {
       toast.error(error.message);
-      // Rollback
       if (kind === "like") {
         setLiked((v) => !v);
         setLikes((n) => n + (liked ? 1 : -1));
@@ -68,6 +76,16 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
       setLiked(row.liked);
       setSaved(row.saved);
     }
+  }
+
+  function toggle(kind: "like" | "save") {
+    if (!user) {
+      pendingAfterAuthRef.current = kind;
+      setGateKind(kind);
+      setGateOpen(true);
+      return;
+    }
+    void doToggle(kind);
   }
 
   return (
