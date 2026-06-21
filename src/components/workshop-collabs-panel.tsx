@@ -209,6 +209,9 @@ export function WorkshopCollabsPanel({
   const [applyCollab, setApplyCollab] = useState<CollabRow | null>(null);
   const [applyRoleId, setApplyRoleId] = useState<string | null>(null);
   const [applyMsg, setApplyMsg] = useState("");
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const openPeek = (id: string) => { setPeekId(id); setPeekOpen(true); };
 
   const sendApply = useMutation({
     mutationFn: async () => {
