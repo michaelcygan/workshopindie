@@ -231,16 +231,64 @@ function Section({
 
 /* ----------------- Account ----------------- */
 
+const LANGUAGE_OPTIONS: { v: string; label: string }[] = [
+  { v: "en", label: "English" },
+  // Future: add more languages here. Drives a Workshop language filter.
+];
+
 function AccountSection() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [resetting, setResetting] = useState(false);
+  const [emailOpen, setEmailOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailBusy, setEmailBusy] = useState(false);
 
   const ageFieldsFn = useServerFn(getMyAgeFields);
   const { data: ageInfo } = useQuery({
     queryKey: ["my-age-fields"],
     queryFn: () => ageFieldsFn(),
   });
+
+  const { data: prefs, isLoading: prefsLoading } = useQuery({
+    queryKey: ["my-account-prefs", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("preferred_language, home_city_id, home_city:cities!profiles_home_city_id_fkey(id,name,country)")
+        .eq("id", user.id)
+        .maybeSingle();
+      return {
+        language: (data?.preferred_language as string | null) ?? "en",
+        city: (data?.home_city ?? null) as CityValue | null,
+      };
+    },
+  });
+
+  async function saveLanguage(lang: string) {
+    if (!user) return;
+    const { error } = await supabase.from("profiles").update({ preferred_language: lang }).eq("id", user.id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["my-account-prefs"] });
+    toast.success("Language saved");
+  }
+
+  async function saveCity(city: CityValue | null) {
+    if (!user) return;
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        home_city_id: city?.id ?? null,
+        home_city_changed_at: new Date().toISOString(),
+      })
+      .eq("id", user.id);
+    if (error) return toast.error(error.message);
+    qc.invalidateQueries({ queryKey: ["my-account-prefs"] });
+    toast.success(city ? "Default city saved" : "Default city cleared");
+  }
 
   async function sendPasswordReset() {
     if (!user?.email) return toast.error("No email on file.");
@@ -253,15 +301,39 @@ function AccountSection() {
     toast.success(`Reset link sent to ${user.email}`);
   }
 
+  async function changeEmail() {
+    const trimmed = newEmail.trim();
+    if (!trimmed || !/^.+@.+\..+$/.test(trimmed)) {
+      return toast.error("Enter a valid email.");
+    }
+    setEmailBusy(true);
+    const { error } = await supabase.auth.updateUser({ email: trimmed });
+    setEmailBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Confirmation sent to ${trimmed}. Click the link to finish the change.`);
+    setEmailOpen(false);
+    setNewEmail("");
+  }
+
   async function signOut() {
     await supabase.auth.signOut();
     navigate({ to: "/" });
   }
 
+  const currentLang = prefs?.language ?? "en";
+
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-surface p-4">
       <Row label="Email" icon={Mail}>
         <span className="truncate text-sm text-ink">{user?.email ?? "—"}</span>
+        <Button
+          variant="outline"
+          size="sm"
+          className="rounded-full"
+          onClick={() => { setNewEmail(""); setEmailOpen(true); }}
+        >
+          Change
+        </Button>
       </Row>
       <Row label="Password" icon={KeyRound}>
         <Button
@@ -284,11 +356,64 @@ function AccountSection() {
           )}
         </span>
       </Row>
+      <Row label="Language" icon={Languages}>
+        <select
+          value={currentLang}
+          disabled={prefsLoading}
+          onChange={(e) => saveLanguage(e.target.value)}
+          className="rounded-md border border-border bg-background px-2.5 py-1.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          {LANGUAGE_OPTIONS.map((o) => (
+            <option key={o.v} value={o.v}>{o.label}</option>
+          ))}
+        </select>
+      </Row>
+      <div className="flex items-start gap-3 border-b border-border/60 py-3">
+        <MapPin className="mt-2 h-4 w-4 shrink-0 text-ink-muted" />
+        <div className="w-32 shrink-0 pt-2 text-sm text-ink-muted">Default city</div>
+        <div className="ml-auto min-w-0 flex-1 max-w-sm">
+          <CityCombobox
+            value={prefs?.city ?? null}
+            onChange={saveCity}
+            placeholder="Search any city"
+            disabled={prefsLoading}
+          />
+          <p className="mt-1 text-xs text-ink-muted">
+            Scopes city pages, Workshops, and local discovery to your home base.
+          </p>
+        </div>
+      </div>
       <div className="pt-2">
         <Button variant="ghost" size="sm" onClick={signOut}>
           Sign out
         </Button>
       </div>
+
+      <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change your sign-in email</DialogTitle>
+            <DialogDescription>
+              We'll send a confirmation link to the new address. The change only takes effect once you click it.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="email"
+            autoFocus
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            placeholder="new@example.com"
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setEmailOpen(false)} disabled={emailBusy}>
+              Cancel
+            </Button>
+            <Button onClick={changeEmail} disabled={emailBusy}>
+              {emailBusy ? "Sending…" : "Send confirmation"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
