@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
 
 const SITE = "https://workshopindie.com";
 
@@ -10,6 +11,7 @@ const STATIC_PATHS = [
 function xmlEscape(s: string) {
   return s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]!));
 }
+
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
