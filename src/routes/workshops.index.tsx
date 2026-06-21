@@ -27,6 +27,22 @@ export const Route = createFileRoute("/workshops/")({
       { name: "description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
       { property: "og:title", content: "Workshops — Workshop" },
       { property: "og:description", content: "What's running right now, what's coming up, and what's near you. RSVP, or just drop in." },
+      { property: "og:url", content: "https://workshopindie.com/workshops" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://workshopindie.com/workshops" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          name: "Workshops — Workshop",
+          description: "Live, five-seat creative workshops: critique, jam, hackathon, office hours.",
+          url: "https://workshopindie.com/workshops",
+          isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+        }),
+      },
     ],
   }),
   component: WorkshopsPage,
