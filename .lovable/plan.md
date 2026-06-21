@@ -1,68 +1,71 @@
-# Workshop pre-launch audit — pores, SEO/AI, scale, cleanup
+## Goal
 
-This is a multi-track plan, not one feature. Pick which tracks to ship now and which to defer; I'll execute each separately.
+Workshop becomes an 18+ product. Existing infra already has a `profiles.birthdate` column with a 13+ floor and a "lock once set" trigger — we lift the floor to 18, require DOB at signup, and force unverified existing users through a one-time DOB modal on next login. Public browsing stays open.
 
-## What's already strong (don't touch)
+## What changes
 
-- Logged-out posture per `.lovable/logged-out-strategy.md` is healthy: detail pages public, `JobPosting` JSON-LD on Collabs, `Event` on Workshops, `CreativeWork` on Works, `Person` on Profiles. `guest-apply-dialog` + `claim_token` + `backfill_guest_applications_on_signup` trigger already convert anonymous Collab applications.
-- `event-rsvp-auth-sheet` + `setPendingRsvp` already resumes RSVP after signup.
-- Sitemap covers works, profiles, workshops, collabs, cities. `robots.txt` correctly disallows private surfaces.
-- Per-route `head()` + JSON-LD on the major public types is in place.
+### 1. Database — raise the floor to 18
 
-## Track 1 — Logged-out conversion pores (highest ROI for launch)
+Single migration:
 
-Tasteful prompts where value has been delivered. Each follows the canonical handoff: prefill, claim token where there's data, never block read.
+- Update `tg_profiles_birthdate_guard()` so the floor is **18 years** (was 13). Keep the "locked once set" rule and the 1900 lower bound.
+- Add `public.is_adult(uuid) → boolean` security-definer helper (returns true only if the user has a birthdate ≥18). Reused by RLS / app checks.
+- Backfill safety: leave existing `birthdate` rows untouched. Any row that's already <18 stays valid in the DB but gets caught at the app layer (modal will soft-delete them).
 
-1. **Landing page logged-out variant** (`src/routes/index.tsx`). Today it renders the signed-in feed for everyone. Split into `LoggedOutHero` (currently only used on `/gallery`) + a curated **public rail set**: live Workshops, fresh Collabs, featured city. Replace `NetworkRail` / `UpcomingInMyGroupsRail` with social proof rails for guests. CTA card under each rail: "Follow @creator for new work" → opens `SignupGateModal` prefilled with the action.
-2. **Save / follow gates** — Works, Profiles, Collabs already have like/save/follow buttons but they require auth. Wire each to `SignupGateModal` with action-specific copy ("Save this work to your portfolio", "Get notified when {name} posts"). Persist the intent in sessionStorage and replay after signup (same pattern as `pending-rsvp`).
-3. **Workshop "remind me" guest flow** — `/workshops/$slug` has no analogue to RSVP for guests. Add a "Remind me" pill that captures email into a new `workshop_reminders(workshop_id, email, claim_token, created_at)` table, mirrors the Collab claim flow, and converts on signup via a trigger.
-4. **Inviter attribution everywhere** — `?via=<username>` is mentioned in the strategy doc but not consistently injected by share sheets. Audit `share-sheet.tsx`, `event-share-sheet.tsx`, `share-collab-sheet.tsx` to always append `via` when sharing, and surface "via @name" on the receiving page's signup CTA.
-5. **Empty-author conversion** — when a logged-in user lands on a Profile / Work / Collab they don't follow, show a one-line "+ Follow" inline; for guests the same surface reads "Sign up to follow."
+No new tables. No grants beyond what `profiles` already has.
 
-## Track 2 — SEO + AI findability
+### 2. Signup — DOB is required
 
-1. **Sitemap index split**. `src/routes/sitemap[.]xml.ts` returns one file capped at 5K profiles + 5K works; at 100K DAU that truncates. Convert to a sitemap index pointing at `/sitemap-works.xml`, `/sitemap-profiles.xml`, `/sitemap-collabs.xml`, `/sitemap-workshops.xml`, `/sitemap-cities.xml`, each paginated 50K/file. Cache `s-maxage=3600`.
-2. **Switch sitemap from `supabaseAdmin` → publishable client** with `TO anon` SELECT on the columns used (`published_at`, `slug`, `username`). Same for `seo-loaders.functions.ts`. Service role at the request boundary for read-only public data is both a perf concern (no PostgREST caching) and a blast-radius concern.
-3. **JSON-LD coverage gaps**: add `CollectionPage` + `BreadcrumbList` on `/cities/$slug`, `/gallery`, `/collab` (list), `/workshops` (list); add `ItemList` to the rails on the city page. These are what Google uses to render rich list snippets.
-4. **`/llms.txt`** — a static `public/llms.txt` describing Workshop's primitives (Workshops, Collabs, Works, Profiles), key URLs, and how to query them. ChatGPT / Claude / Perplexity crawlers read this first. Cheap, high-leverage for AI search.
-5. **Verify canonical/og:url self-reference** on every public route (`head-meta` rule). One pass with a script.
-6. **OG image generation** — current public routes use the cover image when present, fall back to none. Confirm `og:image` is always set on Collab/Work/Workshop/Profile/City when one exists.
+On `/signup` (email/password and Google):
 
-## Track 3 — Backend at 100K DAU
+- Add a **date-of-birth field** (shadcn DatePicker, year-first navigation, max date = today − 18 years so under-18 can't even pick a valid value).
+- Microcopy: *"Workshop is an 18+ product. By signing up you confirm you're at least 18 years old."*
+- On submit, call `setMyBirthdate` immediately after the Supabase signup call. If the trigger rejects (under-18), delete the just-created session, show *"Workshop is 18+. We can't create your account."* and clear the form.
+- Google flow: the DOB step runs on the post-OAuth `/onboarding` page (already exists) — make the DOB field required there with the same trigger handling.
 
-1. **`profiles.last_active_at` write-hot path**. `PresenceHeartbeat` updates `profiles` on a timer — at 100K DAU that's profile-row contention and index bloat. Move to a thin `user_presence(user_id PK, last_seen_at)` table, write there, read joined where needed. Keep `last_active_at` as a backfilled denorm if anything reads it directly.
-2. **View / popularity counters** — `works.view_count` / `popularity_score` and `room_views` should be increment-batched (queue → trigger every N minutes) rather than per-pageview UPDATE. Confirm `popularity_score` has its own index and is recomputed by cron, not on read.
-3. **Index audit on hot read paths**. Verify composite indexes for:
-   - `collab_posts (status, created_at desc) where status='open'`
-   - `works (status, visibility, published_at desc)`
-   - `workshops (status, scheduled_start_at)`
-   - `profiles (lower(username))`, `(lower(email))` for guest-claim trigger
-   - `group_events (group_id, starts_at)`, `(starts_at) where status='published'`
-   - `follows (follower_user_id, followed_user_id)`
-4. **Realtime channel hygiene** — `use-media-room`, `channel-view`, `chat-polls` each open per-room channels (correct). Confirm we unsubscribe on unmount and don't re-subscribe on each render. Set Supabase Realtime quotas in plan.
-5. **`supabaseAdmin` audit** — 354 call sites. Tag each by category (admin tools, webhooks, public reads). The webhook + admin uses are correct; the public-read uses move to publishable + RLS in Track 2.
-6. **Edge caching headers** on every public GET route (`s-maxage=60, stale-while-revalidate=300` for detail pages; `60/600` for lists). The Worker honors these in front of Cloudflare's POP cache.
+### 3. Existing accounts — forced DOB modal
 
-## Track 4 — Pre-launch cleanup
+A new global `<AgeGate />` mounts in `__root.tsx` (after `<AuthProvider>`):
 
-1. Delete stale stub routes if no inbound links: `me.blocked.tsx` is now a `<Navigate>` to `/settings` — keep (stable URL). Audit `me.friends.tsx`, `workshop.tsx` / `workshop.index.tsx` overlap.
-2. Sweep `// eslint-disable-next-line @typescript-eslint/no-explicit-any` — most can be typed properly now that schemas are stable.
-3. Confirm Stripe environment is set to **live** for launch (`payment-test-mode-banner.tsx` should not appear on prod).
-4. Update `mem://security-memory` after Track 2/3 land (publishable-key reads + new presence table).
-5. Run an SEO scan via `seo_chat--trigger_scan` once Track 2 lands, then mark findings fixed.
-6. Verify every CTA reachable from the logged-out hero opens `SignupGateModal` (never a hard redirect to `/signup`) so the user keeps page context.
+- Renders nothing for signed-out users (public surface stays clean).
+- For signed-in users, calls `getMyAgeFields` once. If `birthdate` is null, opens a non-dismissible modal: *"One more thing — confirm your date of birth. Workshop is now 18+."*
+- On submit:
+  - **≥18** → calls `setMyBirthdate`, modal closes, app continues normally.
+  - **<18** → modal swaps to a friendly under-18 state: *"Workshop is 18+. Your account will be removed. Your data won't be shared."* with a single button that calls a new `requestAccountDeletion()` server fn (soft-delete: marks profile `deletion_requested_at = now()`, signs the user out, redirects to a public `/goodbye` page explaining the 30-day reversal window).
+- Modal blocks `<main>` interaction via a backdrop; no escape to other routes.
 
-## Suggested execution order
+### 4. Account deletion plumbing
 
-1. Track 1 (#1, #2) — biggest conversion lift, ship first.
-2. Track 2 (#2, #1, #4) — switch admin→publishable for sitemap + loaders, split sitemap, add llms.txt.
-3. Track 3 (#1, #3) — presence table + index audit.
-4. Track 1 (#3, #4, #5) + Track 4 polish + SEO scan.
+Reuse what's there if a soft-delete column exists; otherwise add `profiles.deletion_requested_at timestamptz` in the same migration as #1. A scheduled job that hard-deletes after 30 days is out of scope for this turn (mention in follow-ups).
 
-## What I need from you
+### 5. Surface copy
 
-Which tracks do you want me to start with? Reasonable defaults if you say "go":
-- **Track 1 #1 + #2** (landing page logged-out variant + save/follow gates) this turn
-- **Track 2 #4** (llms.txt) bundled in — it's a one-file add
+- Signup page footer line: *"Workshop is 18+."*
+- Site footer (`top-nav` / `mobile-nav` footer area): small "18+" badge next to the copyright.
+- `/llms.txt`: add a one-liner under the intro — *"Workshop is an 18+ product; account creation requires age attestation."*
+- Terms page (if one exists — verify during build): add an "Age" clause. If none exists, surface it only in the signup microcopy for now.
 
-The rest I'll plan and ship in follow-up turns. Anything to drop or reprioritize?
+### 6. Out of scope (deliberately)
+
+- No content-flagging / NSFW toggle on Works (the whole point of going 18+ is avoiding that work).
+- No public-page interstitial — public browsing stays open for SEO and conversion.
+- No DOB on third-party login providers beyond what `/onboarding` already collects.
+- No hard delete cron — that's a follow-up turn.
+
+## Files touched
+
+- **New migration** — raise birthdate guard to 18, add `is_adult()`, add `deletion_requested_at` if missing.
+- **New** `src/components/age-gate.tsx` — the modal + soft-delete CTA.
+- **New** `src/lib/account-deletion.functions.ts` — `requestAccountDeletion()` server fn.
+- **New** `src/routes/goodbye.tsx` — post-deletion landing page.
+- **Edit** `src/routes/__root.tsx` — mount `<AgeGate />`.
+- **Edit** `src/routes/signup.tsx` — required DOB field + 18+ microcopy + rejection flow.
+- **Edit** `src/routes/onboarding.tsx` — make DOB required for OAuth signups, same rejection flow.
+- **Edit** `public/llms.txt` — add the 18+ line.
+- **Edit** `src/components/top-nav.tsx` (or wherever the footer lives) — small 18+ badge.
+
+## Open follow-ups for later turns
+
+- Hard-delete cron after 30 days.
+- Audit RLS policies that should use `is_adult()` if you ever loosen the floor again.
+- "Forgot your DOB?" support path (currently locked once set; admins can override via SQL).
