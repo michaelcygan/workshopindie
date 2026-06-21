@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Check, Plus } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
+import { SignupGateModal } from "@/components/signup-gate-modal";
 
 export function FollowButton({
   targetUserId,
@@ -13,15 +13,20 @@ export function FollowButton({
   roomId,
   /** Optional label override, e.g. "Follow back" when the target already follows you. */
   followLabel,
+  /** Optional display name for the signup CTA copy. */
+  targetName,
 }: {
   targetUserId: string;
   roomId?: string;
   followLabel?: string;
+  targetName?: string;
 }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  // Replay follow once the user authenticates via the gate.
+  const pendingAfterAuthRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -34,10 +39,57 @@ export function FollowButton({
       .then(({ data }) => setFollowing(!!data));
   }, [user, targetUserId]);
 
+  // After SignupGateModal auths the user, follow on next render.
+  useEffect(() => {
+    if (!user || !pendingAfterAuthRef.current) return;
+    pendingAfterAuthRef.current = false;
+    void doFollow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   if (user?.id === targetUserId) return null;
 
+  async function doFollow() {
+    if (!user) return;
+    setLoading(true);
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("display_name,username,avatar_url")
+      .eq("id", user.id)
+      .maybeSingle();
+    const { error } = await supabase
+      .from("follows")
+      .insert({ follower_user_id: user.id, followed_user_id: targetUserId });
+    if (error) toast.error(error.message);
+    else {
+      setFollowing(true);
+      if (roomId) {
+        const ch = supabase.channel(`instant:${roomId}`);
+        ch.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            ch.send({
+              type: "broadcast",
+              event: "follow",
+              payload: {
+                follower_id: user.id,
+                followed_id: targetUserId,
+                display_name: me?.display_name ?? me?.username ?? "Someone",
+                avatar_url: me?.avatar_url ?? null,
+              },
+            }).finally(() => supabase.removeChannel(ch));
+          }
+        });
+      }
+    }
+    setLoading(false);
+  }
+
   async function toggle() {
-    if (!user) return navigate({ to: "/login" });
+    if (!user) {
+      pendingAfterAuthRef.current = true;
+      setGateOpen(true);
+      return;
+    }
     setLoading(true);
     if (following) {
       const { error } = await supabase
@@ -47,50 +99,32 @@ export function FollowButton({
         .eq("followed_user_id", targetUserId);
       if (error) toast.error(error.message);
       else setFollowing(false);
+      setLoading(false);
     } else {
-      const { data: me } = await supabase
-        .from("profiles")
-        .select("display_name,username,avatar_url")
-        .eq("id", user.id)
-        .maybeSingle();
-      const { error } = await supabase
-        .from("follows")
-        .insert({ follower_user_id: user.id, followed_user_id: targetUserId });
-      if (error) toast.error(error.message);
-      else {
-        setFollowing(true);
-        if (roomId) {
-          // Best-effort live toast to the followed user inside the workshop.
-          const ch = supabase.channel(`instant:${roomId}`);
-          ch.subscribe((status) => {
-            if (status === "SUBSCRIBED") {
-              ch.send({
-                type: "broadcast",
-                event: "follow",
-                payload: {
-                  follower_id: user.id,
-                  followed_id: targetUserId,
-                  display_name: me?.display_name ?? me?.username ?? "Someone",
-                  avatar_url: me?.avatar_url ?? null,
-                },
-              }).finally(() => supabase.removeChannel(ch));
-            }
-          });
-        }
-      }
+      await doFollow();
     }
-    setLoading(false);
   }
 
   return (
-    <Button
-      onClick={toggle}
-      disabled={loading}
-      variant={following ? "outline" : "default"}
-      className="rounded-full gap-1.5"
-    >
-      {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-      {following ? "Following" : (followLabel ?? "Follow")}
-    </Button>
+    <>
+      <Button
+        onClick={toggle}
+        disabled={loading}
+        variant={following ? "outline" : "default"}
+        className="rounded-full gap-1.5"
+      >
+        {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        {following ? "Following" : (followLabel ?? "Follow")}
+      </Button>
+      <SignupGateModal
+        open={gateOpen}
+        onOpenChange={(v) => {
+          setGateOpen(v);
+          if (!v) pendingAfterAuthRef.current = false;
+        }}
+        title={targetName ? `Follow ${targetName}` : "Follow this creator"}
+        subtitle="Create your free account to follow people and get notified when they post new work."
+      />
+    </>
   );
 }

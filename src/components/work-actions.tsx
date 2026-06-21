@@ -1,18 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, Bookmark } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SignupGateModal } from "@/components/signup-gate-modal";
 
 type Props = { workId: string; initialLikes: number; initialSaves: number };
 
 export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [gateOpen, setGateOpen] = useState(false);
+  const [gateKind, setGateKind] = useState<"like" | "save" | null>(null);
+  const pendingAfterAuthRef = useRef<"like" | "save" | null>(null);
   const [likes, setLikes] = useState(initialLikes);
   const [saves, setSaves] = useState(initialSaves);
   const [pending, setPending] = useState<null | "like" | "save">(null);
