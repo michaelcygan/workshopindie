@@ -97,6 +97,13 @@ function Signup() {
     if (!first || !last) {
       return toast.error("Please enter your first and last name.");
     }
+    if (!birthdate) {
+      return toast.error("Please enter your date of birth. Workshop is 18+.");
+    }
+    // Client-side 18+ check (the DB trigger is the real enforcement).
+    if (birthdate > maxBirthdate) {
+      return toast.error("Workshop is 18+. We can't create your account.");
+    }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
     const { data, error } = await supabase.auth.signUp({
@@ -112,8 +119,23 @@ function Signup() {
         },
       },
     });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    // If email confirmation is off we have a session — persist DOB now so the
+    // 18+ trigger has the last word. If it rejects, sign the user out.
+    if (data.session) {
+      try {
+        await saveBirthdate({ data: { birthdate } });
+      } catch (err) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        const msg = err instanceof Error ? err.message : "Couldn't create your account.";
+        return toast.error(msg);
+      }
+    }
     setLoading(false);
-    if (error) return toast.error(error.message);
     if (data.user?.id) await applyReferral(data.user.id);
     toast.success("Check your inbox to confirm your email.");
     if (search.claim) {
