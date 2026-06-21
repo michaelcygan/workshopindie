@@ -5,10 +5,17 @@ import { usePlus } from "@/hooks/use-plus";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Radio, Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee, Ticket } from "lucide-react";
+import { Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee, Ticket, Briefcase, ChevronRight } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { GroupsNavItem } from "@/components/groups-nav-item";
@@ -19,10 +26,11 @@ export function TopNav() {
   const { isPlus } = usePlus();
   const navigate = useNavigate();
 
-  const initial =
-    (user?.user_metadata?.display_name as string | undefined)?.[0] ??
-    user?.email?.[0]?.toUpperCase() ??
-    "·";
+  const displayName =
+    (user?.user_metadata?.display_name as string | undefined) ??
+    user?.email?.split("@")[0] ??
+    "Your account";
+  const initial = displayName?.[0]?.toUpperCase() ?? "·";
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
@@ -49,12 +57,6 @@ export function TopNav() {
               </Button>
             </Link>
           )}
-          {isPlus && (
-            <span className="hidden md:inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-              <Sparkles className="h-3 w-3 icon-gradient-motion" />
-              <span className="text-gradient-motion">Plus</span>
-            </span>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button data-firstrun="collab" size="sm" className="hidden md:inline-flex rounded-full gap-1.5">
@@ -78,7 +80,7 @@ export function TopNav() {
             <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button data-firstrun="publish" className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition">
+                <button data-firstrun="publish" className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition" aria-label="Your account">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">{initial}</AvatarFallback>
@@ -86,32 +88,65 @@ export function TopNav() {
                 </button>
 
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
-                <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/workshop" })}>
-                  <Radio className="mr-2 h-4 w-4" /> Drop in
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
-                  <Users className="mr-2 h-4 w-4" /> My Collabs
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
-                  <Users className="mr-2 h-4 w-4" /> Network
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
-                  <Ticket className="mr-2 h-4 w-4" /> My Events
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
-                  <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: isPlus ? "/settings" : "/pricing", ...(isPlus ? { hash: "plus" } : {}) })}>
-                  <Sparkles className="mr-2 h-4 w-4" /> {isPlus ? "Manage Plus" : "Go Plus"}
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
-                  <Gift className="mr-2 h-4 w-4" /> Refer & Earn
-                </DropdownMenuItem>
+              <DropdownMenuContent align="end" className="w-60">
+                {/* Identity header → profile */}
+                <button
+                  type="button"
+                  onClick={() => navigate({ to: "/me" })}
+                  className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-muted/70 rounded-sm transition"
+                >
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium text-ink">{displayName}</div>
+                    <div className="truncate text-xs text-ink-muted">View your profile</div>
+                  </div>
+                </button>
+
+                <DropdownMenuSeparator />
+
+                {/* My stuff submenu */}
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    <Briefcase className="mr-2 h-4 w-4" /> My stuff
+                    <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent className="w-52">
+                    <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
+                      <Briefcase className="mr-2 h-4 w-4" /> My Collabs
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
+                      <Users className="mr-2 h-4 w-4" /> Network
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
+                      <Ticket className="mr-2 h-4 w-4" /> My Events
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                      <Gift className="mr-2 h-4 w-4" /> Refer & Earn
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+
+                <DropdownMenuSeparator />
+
+                {isPlus ? (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/settings", hash: "plus" })}>
+                    <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
+                    <span className="text-gradient-motion">Plus</span>
+                    <span className="ml-auto text-xs text-ink-muted">Manage</span>
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
+                    <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
+                    <span className="text-gradient-motion">Go Plus</span>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                   <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 {isAdmin && (
                   <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>

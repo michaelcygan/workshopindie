@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, Sparkles, Megaphone, Gift, Briefcase, Mail, Ticket } from "lucide-react";
+import { Radio, Users, LayoutGrid, Sparkles, Gift, Briefcase, Ticket, Settings as SettingsIcon } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { usePlus } from "@/hooks/use-plus";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -14,12 +15,14 @@ const tabActive =
 
 export function MobileNav() {
   const { user } = useAuth();
+  const { isPlus } = usePlus();
   const navigate = useNavigate();
 
-  const initial =
-    (user?.user_metadata?.display_name as string | undefined)?.[0]?.toUpperCase() ??
-    user?.email?.[0]?.toUpperCase() ??
-    "·";
+  const displayName =
+    (user?.user_metadata?.display_name as string | undefined) ??
+    user?.email?.split("@")[0] ??
+    "Your account";
+  const initial = displayName?.[0]?.toUpperCase() ?? "·";
 
   return (
     <div className="fixed inset-x-0 bottom-3 z-50 flex justify-center px-3 md:hidden">
@@ -52,11 +55,22 @@ export function MobileNav() {
                 <span>You</span>
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" side="top" className="w-52">
-              <DropdownMenuItem onClick={() => navigate({ to: "/me" })}>My profile</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/dms" })}>
-                <Mail className="mr-2 h-4 w-4" /> Messages
-              </DropdownMenuItem>
+            <DropdownMenuContent align="end" side="top" className="w-60">
+              <button
+                type="button"
+                onClick={() => navigate({ to: "/me" })}
+                className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-muted/70 rounded-sm transition"
+              >
+                <Avatar className="h-9 w-9">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
+                  <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-ink">{displayName}</div>
+                  <div className="truncate text-xs text-ink-muted">View your profile</div>
+                </div>
+              </button>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                 <Briefcase className="mr-2 h-4 w-4" /> My Collabs
               </DropdownMenuItem>
@@ -66,11 +80,23 @@ export function MobileNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/me/tickets" })}>
                 <Ticket className="mr-2 h-4 w-4" /> My Events
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
-                <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
                 <Gift className="mr-2 h-4 w-4" /> Refer & Earn
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {isPlus ? (
+                <DropdownMenuItem onClick={() => navigate({ to: "/settings", hash: "plus" })}>
+                  <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
+                  <span className="text-gradient-motion">Manage Plus</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
+                  <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
+                  <span className="text-gradient-motion">Go Plus</span>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                <SettingsIcon className="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
