@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Share2, Copy, Image as ImageIcon, Type, Check, Loader2 } from "lucide-react";
 import { toPng } from "html-to-image";
@@ -13,6 +13,8 @@ import {
 } from "@/components/ui/dialog";
 import { StoryCard } from "./story-card";
 import { logShareEvent } from "@/lib/collab.functions";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 type Props = {
@@ -33,15 +35,30 @@ export function ShareCollabSheet(props: Props) {
   const [generating, setGenerating] = useState(false);
   const storyRef = useRef<HTMLDivElement>(null);
   const logShare = useServerFn(logShareEvent);
+  const { user } = useAuth();
+  const [refUsername, setRefUsername] = useState<string | null>(null);
 
-  const url = typeof window !== "undefined"
+  // Lazy-fetch viewer username so outbound shares carry inviter attribution.
+  useEffect(() => {
+    if (!open || !user || refUsername !== null) return;
+    supabase
+      .from("profiles")
+      .select("username")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => setRefUsername(data?.username ?? ""));
+  }, [open, user, refUsername]);
+
+  const baseUrl = typeof window !== "undefined"
     ? `${window.location.origin}/collab/${props.slug}`
     : `https://workshopindie.com/collab/${props.slug}`;
+  const url = refUsername ? `${baseUrl}?ref=${refUsername}` : baseUrl;
 
   const caption =
     `${pickEmoji(props.category)} Open call: ${props.title}\n` +
     `${props.roles.length ? `Looking for: ${props.roles.slice(0, 3).join(", ")}\n` : ""}` +
     `Apply ↓\n${url}`;
+
 
   async function copy(text: string, what: "link" | "caption", channel: "copy" | "caption") {
     try {
