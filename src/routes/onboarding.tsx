@@ -64,10 +64,10 @@ function Onboarding() {
   const toggleCat = (c: Category) =>
     setCats((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
 
-  // Max date = today minus 13 years (used as the date input max)
+  // Max date = today minus 18 years (Workshop is 18+).
   const maxBirthdate = (() => {
     const d = new Date();
-    d.setFullYear(d.getFullYear() - 13);
+    d.setFullYear(d.getFullYear() - 18);
     return d.toISOString().slice(0, 10);
   })();
 
@@ -168,7 +168,7 @@ function Onboarding() {
               value={birthdate}
               onChange={(e) => setBirthdate(e.target.value)}
             />
-            <p className="text-xs text-ink-muted">Private. Used only for age filters you choose to apply. Never shown on your profile.</p>
+            <p className="text-xs text-ink-muted">Workshop is 18+. Private — never shown on your profile.</p>
           </div>
 
           <div className="space-y-1.5">

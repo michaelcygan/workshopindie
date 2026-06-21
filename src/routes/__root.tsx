@@ -13,6 +13,7 @@ import { FirstRunHint } from "@/components/first-run-hint";
 import { WorkshopLiveToast } from "@/components/workshop-live-toast";
 import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
+import { AgeGate } from "@/components/age-gate";
 import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -147,6 +148,7 @@ function RootComponent() {
           <PendingRsvpFlush />
           <PresenceHeartbeat />
           <SignOutCacheReset />
+          <AgeGate />
 
 
 
