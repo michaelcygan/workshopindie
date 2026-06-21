@@ -89,27 +89,43 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-2">
-      <button
-        onClick={() => toggle("like")}
-        disabled={pending === "like"}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
-          liked && "bg-primary/10 border-primary/30 text-primary",
-        )}
-      >
-        <Heart className={cn("h-4 w-4", liked && "fill-current")} /> {likes}
-      </button>
-      <button
-        onClick={() => toggle("save")}
-        disabled={pending === "save"}
-        className={cn(
-          "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
-          saved && "bg-violet/10 border-violet/30 text-violet",
-        )}
-      >
-        <Bookmark className={cn("h-4 w-4", saved && "fill-current")} /> {saves}
-      </button>
-    </div>
+    <>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => toggle("like")}
+          disabled={pending === "like"}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
+            liked && "bg-primary/10 border-primary/30 text-primary",
+          )}
+        >
+          <Heart className={cn("h-4 w-4", liked && "fill-current")} /> {likes}
+        </button>
+        <button
+          onClick={() => toggle("save")}
+          disabled={pending === "save"}
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
+            saved && "bg-violet/10 border-violet/30 text-violet",
+          )}
+        >
+          <Bookmark className={cn("h-4 w-4", saved && "fill-current")} /> {saves}
+        </button>
+      </div>
+      <SignupGateModal
+        open={gateOpen}
+        onOpenChange={(v) => {
+          setGateOpen(v);
+          if (!v) pendingAfterAuthRef.current = null;
+        }}
+        title={gateKind === "save" ? "Save this work" : "Like this work"}
+        subtitle={
+          gateKind === "save"
+            ? "Create your free account to save works to your portfolio."
+            : "Create your free account to like work and follow the people who made it."
+        }
+      />
+    </>
   );
 }
+
