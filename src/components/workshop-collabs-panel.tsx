@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { Megaphone, UserPlus, Send, Pin, PinOff, ChevronUp, ChevronDown } from "lucide-react";
+import { CollabPeek } from "@/components/collab-peek";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -208,6 +209,9 @@ export function WorkshopCollabsPanel({
   const [applyCollab, setApplyCollab] = useState<CollabRow | null>(null);
   const [applyRoleId, setApplyRoleId] = useState<string | null>(null);
   const [applyMsg, setApplyMsg] = useState("");
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
+  const openPeek = (id: string) => { setPeekId(id); setPeekOpen(true); };
 
   const sendApply = useMutation({
     mutationFn: async () => {
@@ -299,9 +303,9 @@ export function WorkshopCollabsPanel({
                   <div className="flex items-start gap-2">
                     <CategoryChip category={c.category} />
                     <div className="min-w-0 flex-1">
-                      <Link to="/collab/$slug" params={{ slug: c.slug }} className="block font-medium text-ink hover:underline">
+                      <button type="button" onClick={() => openPeek(c.id)} className="block text-left font-medium text-ink hover:underline">
                         {c.title}
-                      </Link>
+                      </button>
                       <p className="truncate text-xs text-ink-muted">
                         by {owner?.display_name || owner?.username || "Someone"}
                         {p.is_host_pin ? " · pinned by host" : pinnedBy ? ` · pinned by ${pinnedBy.display_name || pinnedBy.username || "someone"}` : ""}
@@ -377,9 +381,9 @@ export function WorkshopCollabsPanel({
                 <div className="flex items-start gap-2">
                   <CategoryChip category={c.category} />
                   <div className="min-w-0 flex-1">
-                    <Link to="/collab/$slug" params={{ slug: c.slug }} className="block font-medium text-ink hover:underline">
+                    <button type="button" onClick={() => openPeek(c.id)} className="block text-left font-medium text-ink hover:underline">
                       {c.title}
-                    </Link>
+                    </button>
                     <p className="truncate text-xs text-ink-muted">
                       by {owner?.display_name || owner?.username || "Someone"}
                     </p>
@@ -505,6 +509,8 @@ export function WorkshopCollabsPanel({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <CollabPeek collabId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
     </div>
   );
 }
