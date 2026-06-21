@@ -81,9 +81,27 @@ export const Route = createFileRoute("/u/$username")({
       meta.push({ property: "og:image", content: p.avatar_url });
       meta.push({ name: "twitter:image", content: p.avatar_url });
     }
-    return { meta, links: [{ rel: "canonical", href: url }] };
+    const jsonLd: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "ProfilePage",
+      url,
+      mainEntity: {
+        "@type": "Person",
+        name,
+        alternateName: p?.username ?? undefined,
+        description: p?.headline ?? p?.bio ?? undefined,
+        image: p?.avatar_url ?? undefined,
+        url,
+      },
+    };
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+    };
   },
 });
+
 
 type Profile = {
   id: string;

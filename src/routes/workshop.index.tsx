@@ -325,6 +325,7 @@ function WorkshopPreflight() {
                   onClick={toggleMic}
                   disabled={!devices.mic}
                   title={!devices.mic ? "No mic detected" : effMic ? "Mic on — click to mute on join" : "Mic muted — click to unmute"}
+                  aria-label={!devices.mic ? "No microphone detected" : effMic ? "Mute microphone" : "Unmute microphone"}
                   aria-pressed={effMic}
                   className={cn(
                     "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
@@ -342,6 +343,7 @@ function WorkshopPreflight() {
                   onClick={toggleCam}
                   disabled={!devices.cam}
                   title={!devices.cam ? "No camera detected" : effCam ? "Camera on — click to turn off on join" : "Camera off — click to turn on"}
+                  aria-label={!devices.cam ? "No camera detected" : effCam ? "Turn camera off" : "Turn camera on"}
                   aria-pressed={effCam}
                   className={cn(
                     "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
@@ -354,6 +356,7 @@ function WorkshopPreflight() {
                 >
                   {effCam ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
                 </button>
+
               </>
             )}
           </div>
