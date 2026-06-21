@@ -1,39 +1,39 @@
-## Two tweaks to the unified Stage
+## Goal
 
-### 1. Tools tab → dropdown picker on the main tab bar
+Keep people inside the Workshop while they browse Work and Collabs. Work already opens in a `WorkPeek` lightbox — extend the same pattern to Collabs so clicking a Collab from the Stage doesn't navigate away.
 
-Tools stays on the Stage tab bar alongside Chat / Work / Collabs, but instead of opening into a panel that renders its own secondary tab strip ("Pop-out × … + Tool"), it behaves like a dropdown:
+## What changes
 
-- Click "Tools" → a popover opens directly beneath the tab listing the available tools (Pop-out, Screen Share, Drive, Board, List, Player, Recording) plus any already-enabled tools at the top with a checkmark.
-- Pick a tool → the Stage body switches to that tool's panel (Pop-out config, Drive, Board, etc.). The tab pill now shows "Tools · Pop-out" (active tool name) so you know what's loaded.
-- The secondary header row inside `WorkshopToolsPanel` (the dark "Pop-out × … + Tool" strip) is suppressed when the panel is rendered through the Stage; the dropdown becomes the only switcher.
-- Reopening the dropdown lets you swap tools without leaving the Stage. Selecting "None" / clicking the active tool again returns the Stage to Chat.
+### 1. New `CollabPeek` lightbox
 
-Result: one switcher (Stage tab bar), no nested tabs.
+`src/components/collab-peek.tsx` — modeled on `work-peek.tsx`:
 
-### 2. Claim Host pill uses RadioTower (radar) icon
+- Controlled `Dialog` (`open`, `onOpenChange`, `collabId`).
+- Fetches the collab on open via TanStack Query against `collab_posts` (id, title, slug, category, description, cover_url if present, user_id) plus `collab_roles` and the owner profile (display_name, username, avatar_url).
+- Body: cover/gradient, category chip, title, owner row (clickable → existing `ProfilePeek` flow if available, else link), description, open roles list.
+- Actions row:
+  - **Apply** buttons per role — call existing `applyToCollab` server fn (same as on the full page). Toast on success/error.
+  - **Open full Collab** → `<a href="/collab/{slug}" target="_blank" rel="noopener">` (matches WorkPeek's "Open full work").
+- Skeleton state while loading, identical sizing/styling to `WorkPeek` so the two feel like one family.
 
-`src/components/claim-host-pill.tsx` currently uses the `Crown` icon for every state (Claim Host, Confirming…, unclaimable). Swap all four `Crown` usages for `RadioTower` (already the project's host motif — used in `HostedByLine`, `HostMenu`, and the workshop lobby's "Host a session" CTA).
+### 2. Wire the peek in `workshop-collabs-panel.tsx`
 
-The "Host · settings" pill in the Stage dock (when the viewer is already host) also switches to `RadioTower` for consistency.
+- Add local state `peekCollabId` + `peekOpen`, plus `openCollab(id)`.
+- Replace every `<Link to="/collab/$slug" params={{ slug }}>{c.title}</Link>` (two spots — pinned list + main list) with a `<button onClick={() => openCollab(c.id)}>` styled identically.
+- The "Post one" link in the empty state stays a real `Link` (it goes to a creation flow, not a peek target).
+- Render `<CollabPeek collabId={peekCollabId} open={peekOpen} onOpenChange={setPeekOpen} />` at the bottom of the panel.
+
+### 3. Confirm Work peek coverage
+
+Work already opens via `WorkPeek` from `channel-view.tsx` (`openWork` + `RoomGallery onOpenWork`) and from `WorkshopPresenceWorksRail`. No code change needed; just verify that the rail and any Work surface inside the Stage call `onOpenWork` rather than navigating. If a `<Link to="/works/$slug">` is found inside the Stage tabs, swap it for `openWork(id)`.
+
+## Out of scope
+
+- No changes to routes, server functions, or schema. `applyToCollab` and the existing collab query patterns are reused as-is.
+- The full `/collab/$slug` and `/works/$slug` pages remain available via "Open full …" in each peek (new tab, so the Workshop session stays intact).
 
 ## Files touched
 
-- `src/components/channel-view.tsx`
-  - Replace the Tools button in `StageTabs` with a popover trigger. Add a `ToolsMenu` popover that lists available tools and calls a callback to open the chosen one.
-  - Track active tool id in component state; pass it through to the Tools render path so the panel renders that specific tool directly.
-  - Active label shows on the tab (e.g. "Tools · Pop-out") and the chevron rotates when the menu is open.
-  - Swap `Sparkles` for `RadioTower` in the Dock's "Host · settings" pill.
-- `src/components/workshop-tools-panel.tsx`
-  - Accept an optional `activeTool` prop and a `chromeless` prop. When `chromeless` is true, suppress the in-panel header (the "Pop-out × … + Tool" row) and render only the selected tool body. When `activeTool` is provided, force `currentType` to that value.
-- `src/components/claim-host-pill.tsx`
-  - Replace all `Crown` imports/usages with `RadioTower`.
-
-No backend, routing, or data-shape changes.
-
-## Technical notes
-
-- Popover: use the existing shadcn `Popover` primitive (`@/components/ui/popover`) so styling matches. Trigger is the Tools tab button itself.
-- Tool list source: reuse the `PRESETS` + `TOOL_REALTIME` / `TOOL_OBJECTS` arrays already exported from `workshop-tools-panel.tsx` — export a small `LIVE_TOOLS` constant so `channel-view` can render the picker without importing the whole panel.
-- Active tool state persists per-room in `sessionStorage` under `room-tool:${roomId}`.
-- When no tool is selected and the user clicks the Tools tab without picking, default to the currently-enabled / category-suggested tool (the same fallback `WorkshopToolsPanel` uses today).
+- **new** `src/components/collab-peek.tsx`
+- **edit** `src/components/workshop-collabs-panel.tsx` (state + button swap + peek mount)
+- **edit** (only if a stray Link is found) `src/components/channel-view.tsx` / `workshop-presence-works-rail.tsx`
