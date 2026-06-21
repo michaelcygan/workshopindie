@@ -4,6 +4,8 @@
 
 Workshop's primitives are designed to be findable, shareable, and indexable by both search engines and AI agents. You don't need an account to read, share, or even apply / RSVP — account creation happens after value is delivered.
 
+Workshop is an 18+ product. Public pages are open to everyone, but account creation requires age attestation (date of birth on file, ≥18 years).
+
 ## Primitives
 
 - **Works** — published creative output (films, music, design, writing) credited to one or more makers. Each Work has its own public page with `CreativeWork` JSON-LD.
