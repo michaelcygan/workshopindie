@@ -10,6 +10,7 @@ import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
+import { setMyBirthdate } from "@/lib/profile-age.functions";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
@@ -39,11 +40,20 @@ function Signup() {
   const [instagram, setInstagram] = useState(search.ig ?? "");
   const [email, setEmail] = useState(search.email ?? "");
   const [password, setPassword] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
   const redeemSeed = useServerFn(redeemGroupSeedLink);
+  const saveBirthdate = useServerFn(setMyBirthdate);
+
+  // Today minus 18y — the date input refuses anything younger.
+  const maxBirthdate = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 18);
+    return d.toISOString().slice(0, 10);
+  })();
 
   // Stash seed-link token in sessionStorage so OAuth round-trips still join the group.
   useEffect(() => {
@@ -87,6 +97,13 @@ function Signup() {
     if (!first || !last) {
       return toast.error("Please enter your first and last name.");
     }
+    if (!birthdate) {
+      return toast.error("Please enter your date of birth. Workshop is 18+.");
+    }
+    // Client-side 18+ check (the DB trigger is the real enforcement).
+    if (birthdate > maxBirthdate) {
+      return toast.error("Workshop is 18+. We can't create your account.");
+    }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
     const { data, error } = await supabase.auth.signUp({
@@ -102,8 +119,23 @@ function Signup() {
         },
       },
     });
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message);
+    }
+    // If email confirmation is off we have a session — persist DOB now so the
+    // 18+ trigger has the last word. If it rejects, sign the user out.
+    if (data.session) {
+      try {
+        await saveBirthdate({ data: { birthdate } });
+      } catch (err) {
+        await supabase.auth.signOut();
+        setLoading(false);
+        const msg = err instanceof Error ? err.message : "Couldn't create your account.";
+        return toast.error(msg);
+      }
+    }
     setLoading(false);
-    if (error) return toast.error(error.message);
     if (data.user?.id) await applyReferral(data.user.id);
     toast.success("Check your inbox to confirm your email.");
     if (search.claim) {
@@ -185,9 +217,26 @@ function Signup() {
               />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              required
+              max={maxBirthdate}
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+            />
+            <p className="text-xs text-ink-muted">
+              Workshop is 18+. Private — never shown on your profile.
+            </p>
+          </div>
           <Button type="submit" className="w-full rounded-full" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
+          <p className="text-center text-[11px] text-ink-muted">
+            By creating an account you confirm you are at least 18 years old.
+          </p>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already here? <Link to="/login" className="text-gradient-motion hover:underline">Sign in</Link>

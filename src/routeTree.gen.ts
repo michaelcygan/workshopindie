@@ -20,6 +20,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GroupsRouteImport } from './routes/groups'
+import { Route as GoodbyeRouteImport } from './routes/goodbye'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as GRouteImport } from './routes/g'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -138,6 +139,11 @@ const LoginRoute = LoginRouteImport.update({
 const GroupsRoute = GroupsRouteImport.update({
   id: '/groups',
   path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GoodbyeRoute = GoodbyeRouteImport.update({
+  id: '/goodbye',
+  path: '/goodbye',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -471,6 +477,7 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -545,6 +552,7 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/goodbye': typeof GoodbyeRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -620,6 +628,7 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
@@ -699,6 +708,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/g'
     | '/gallery'
+    | '/goodbye'
     | '/groups'
     | '/login'
     | '/onboarding'
@@ -773,6 +783,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/g'
     | '/gallery'
+    | '/goodbye'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -847,6 +858,7 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/g'
     | '/gallery'
+    | '/goodbye'
     | '/groups'
     | '/login'
     | '/onboarding'
@@ -925,6 +937,7 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   GRoute: typeof GRouteWithChildren
   GalleryRoute: typeof GalleryRoute
+  GoodbyeRoute: typeof GoodbyeRoute
   GroupsRoute: typeof GroupsRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
@@ -1038,6 +1051,13 @@ declare module '@tanstack/react-router' {
       path: '/groups'
       fullPath: '/groups'
       preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/goodbye': {
+      id: '/goodbye'
+      path: '/goodbye'
+      fullPath: '/goodbye'
+      preLoaderRoute: typeof GoodbyeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -1667,6 +1687,7 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   GRoute: GRouteWithChildren,
   GalleryRoute: GalleryRoute,
+  GoodbyeRoute: GoodbyeRoute,
   GroupsRoute: GroupsRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,

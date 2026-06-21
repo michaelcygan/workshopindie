@@ -2664,6 +2664,7 @@ export type Database = {
           created_at: string
           creator_status: Database["public"]["Enums"]["creator_status"]
           deleted_at: string | null
+          deletion_requested_at: string | null
           discoverable: boolean
           display_name: string | null
           dm_policy: string
@@ -2708,6 +2709,7 @@ export type Database = {
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
           deleted_at?: string | null
+          deletion_requested_at?: string | null
           discoverable?: boolean
           display_name?: string | null
           dm_policy?: string
@@ -2752,6 +2754,7 @@ export type Database = {
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
           deleted_at?: string | null
+          deletion_requested_at?: string | null
           discoverable?: boolean
           display_name?: string | null
           dm_policy?: string
@@ -5305,6 +5308,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_adult: { Args: { _user_id: string }; Returns: boolean }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
       is_event_host: {
         Args: { _event_id: string; _user_id: string }
