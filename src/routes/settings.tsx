@@ -13,7 +13,8 @@ import {
   ExternalLink,
   ArrowLeft,
   Bell,
-  Flag,
+  Languages,
+  MapPin,
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -46,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { RequireAuth } from "@/components/require-auth";
 import { cn } from "@/lib/utils";
 
@@ -63,17 +65,22 @@ export const Route = createFileRoute("/settings")({
   }),
 });
 
-type SectionId = "account" | "plus" | "notifications" | "privacy" | "blocked" | "reports" | "data" | "danger";
+type SectionId = "account" | "plus" | "notifications" | "privacy" | "safety" | "data";
 const SECTIONS: { id: SectionId; label: string; icon: typeof UserIcon }[] = [
   { id: "account", label: "Account", icon: UserIcon },
   { id: "plus", label: "Plus membership", icon: Sparkles },
   { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "privacy", label: "Privacy & Rights", icon: Lock },
-  { id: "blocked", label: "Blocked users", icon: Ban },
-  { id: "reports", label: "My reports", icon: Flag },
+  { id: "privacy", label: "Privacy", icon: Lock },
+  { id: "safety", label: "Safety", icon: Ban },
   { id: "data", label: "Your data", icon: Download },
-  { id: "danger", label: "Delete account", icon: ShieldAlert },
 ];
+
+// Legacy hash aliases so old bookmarks still land in the right place.
+const HASH_ALIASES: Record<string, SectionId> = {
+  blocked: "safety",
+  reports: "safety",
+  danger: "data",
+};
 
 function SettingsPage() {
   const [active, setActive] = useState<SectionId>("account");
@@ -82,17 +89,15 @@ function SettingsPage() {
     plus: null,
     notifications: null,
     privacy: null,
-    blocked: null,
-    reports: null,
+    safety: null,
     data: null,
-    danger: null,
   });
 
   // Honor #hash on first paint
   useEffect(() => {
-    const hash = typeof window !== "undefined" ? window.location.hash.replace("#", "") : "";
-    if (hash && SECTIONS.some((s) => s.id === hash)) {
-      const id = hash as SectionId;
+    const raw = typeof window !== "undefined" ? window.location.hash.replace("#", "") : "";
+    const id = (HASH_ALIASES[raw] ?? (SECTIONS.some((s) => s.id === raw) ? (raw as SectionId) : null));
+    if (id) {
       setActive(id);
       requestAnimationFrame(() => {
         sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -160,24 +165,33 @@ function SettingsPage() {
             <NotificationsSection />
           </Section>
 
-          <Section id="privacy" title="Privacy & Rights" subtitle="Control who can reach you, how you appear, and how your Workshop contributions are licensed." refMap={sectionRefs}>
+          <Section id="privacy" title="Privacy" subtitle="Control who can reach you, how you appear, and how your Workshop contributions are licensed." refMap={sectionRefs}>
             <PrivacySection />
           </Section>
 
-          <Section id="blocked" title="Blocked users" subtitle="People you've blocked don't see your content and can't contact you." refMap={sectionRefs}>
-            <BlockedSection />
+          <Section id="safety" title="Safety" subtitle="Blocked users and reports you've filed." refMap={sectionRefs}>
+            <div className="space-y-6">
+              <div>
+                <h3 className="mb-2 text-sm font-medium text-ink">Blocked users</h3>
+                <BlockedSection />
+              </div>
+              <div>
+                <h3 className="mb-2 text-sm font-medium text-ink">My reports</h3>
+                <ReportsSection />
+              </div>
+            </div>
           </Section>
 
-          <Section id="reports" title="My reports" subtitle="Reports you've filed and where they stand." refMap={sectionRefs}>
-            <ReportsSection />
-          </Section>
-
-          <Section id="data" title="Your data" subtitle="Download a JSON snapshot of everything tied to your account." refMap={sectionRefs}>
-            <DataSection />
-          </Section>
-
-          <Section id="danger" title="Delete account" subtitle="Permanent and immediate. This can't be undone." refMap={sectionRefs}>
-            <DangerSection />
+          <Section id="data" title="Your data" subtitle="Export your data, or delete your account." refMap={sectionRefs}>
+            <div className="space-y-6">
+              <DataSection />
+              <div>
+                <h3 className="mb-2 text-sm font-medium text-ink flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-destructive" /> Delete account
+                </h3>
+                <DangerSection />
+              </div>
+            </div>
           </Section>
         </div>
       </div>
