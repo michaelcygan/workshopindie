@@ -2684,6 +2684,7 @@ export type Database = {
           mediums: string[]
           onboarded: boolean
           pinned_work_ids: string[]
+          preferred_language: string
           referred_by: string | null
           show_online: boolean
           tools: string[]
@@ -2727,6 +2728,7 @@ export type Database = {
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          preferred_language?: string
           referred_by?: string | null
           show_online?: boolean
           tools?: string[]
@@ -2770,6 +2772,7 @@ export type Database = {
           mediums?: string[]
           onboarded?: boolean
           pinned_work_ids?: string[]
+          preferred_language?: string
           referred_by?: string | null
           show_online?: boolean
           tools?: string[]
