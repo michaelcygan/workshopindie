@@ -21,6 +21,7 @@ import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
+import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 
 export const Route = createFileRoute("/")({ component: Index });
 
@@ -169,6 +170,7 @@ function GalleryControls({
 }
 
 function Index() {
+  const { user } = useAuth();
   const [category, setCategory] = useState<Category | "all">("all");
   const [sort, setSort] = useState<SortKey>("newest");
   const { ids: blockedIds } = useBlockedIds();
@@ -189,13 +191,16 @@ function Index() {
     <main>
       <Hero />
 
+      {!user && <GalleryLoggedOutHero />}
+
       <HomeLiveWorkshopsRail />
 
-      <YourGroupsStrip />
+      {user && <YourGroupsStrip />}
 
       <NetworkRail />
 
       <CollabsRail />
+
 
 
       <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">

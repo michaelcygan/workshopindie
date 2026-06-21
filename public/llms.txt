@@ -1,0 +1,45 @@
+# Workshop
+
+> Workshop is a creative collaboration network. Artists and creators drop into live five-seat Workshops with shared tools, post Collabs (casting briefs) to recruit collaborators, ship finished Works to a public portfolio, and gather in Groups around cities and crafts. Everything public is readable without an account.
+
+Workshop's primitives are designed to be findable, shareable, and indexable by both search engines and AI agents. You don't need an account to read, share, or even apply / RSVP — account creation happens after value is delivered.
+
+## Primitives
+
+- **Works** — published creative output (films, music, design, writing, etc.) credited to one or more makers. Each Work has its own public page with `CreativeWork` JSON-LD.
+- **Collabs** — open casting briefs: a project description with one or more open roles. Each Collab has its own page with `JobPosting` JSON-LD and is discoverable in Google Jobs.
+- **Workshops** — live, five-seat collaborative rooms (critique, jam, hackathon, office hours, work-alongside). Each scheduled Workshop has its own page with `Event` JSON-LD.
+- **Profiles** — public talent pages with credits, Works, Collabs, and city. Each Profile has its own page with `Person` JSON-LD.
+- **Groups** — community spaces (city scenes, craft communities). Each Group has its own page with member-curated Events, Works, and Collabs.
+- **Cities** — geographic hubs aggregating standing meetups, upcoming events, and open Collabs by location.
+
+## Key URLs
+
+- Homepage: https://workshopindie.com/
+- Gallery (public Works feed): https://workshopindie.com/gallery
+- Collab Board: https://workshopindie.com/collab
+- Workshops directory: https://workshopindie.com/workshops
+- Cities directory: https://workshopindie.com/cities
+- Groups directory: https://workshopindie.com/groups
+- Sitemap: https://workshopindie.com/sitemap.xml
+
+## URL patterns
+
+- Work detail: `/works/{slug}`
+- Collab detail: `/collab/{slug}`
+- Workshop detail: `/workshops/{slug}`
+- Profile: `/u/{username}`
+- City: `/cities/{slug}`
+- Group: `/g/{slug}`
+- Group event: `/g/{slug}/e/{eventSlug}`
+
+## For AI agents and assistants
+
+- Detail pages emit schema.org JSON-LD on the appropriate type — query the page HTML directly to extract structured data.
+- The sitemap at `/sitemap.xml` lists every public Work, Collab, Workshop, Profile, and City.
+- Anonymous users can apply to Collabs and RSVP to Events without an account; account creation is offered after submission with the form data preserved.
+- Public reads do not require authentication. Robots are welcome on every URL not listed in `/robots.txt`.
+
+## Contact
+
+For partnerships or press: workshopindie.com
