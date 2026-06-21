@@ -6,22 +6,23 @@ Workshop's primitives are designed to be findable, shareable, and indexable by b
 
 ## Primitives
 
-- **Works** — published creative output (films, music, design, writing, etc.) credited to one or more makers. Each Work has its own public page with `CreativeWork` JSON-LD.
+- **Works** — published creative output (films, music, design, writing) credited to one or more makers. Each Work has its own public page with `CreativeWork` JSON-LD.
 - **Collabs** — open casting briefs: a project description with one or more open roles. Each Collab has its own page with `JobPosting` JSON-LD and is discoverable in Google Jobs.
 - **Workshops** — live, five-seat collaborative rooms (critique, jam, hackathon, office hours, work-alongside). Each scheduled Workshop has its own page with `Event` JSON-LD.
 - **Profiles** — public talent pages with credits, Works, Collabs, and city. Each Profile has its own page with `Person` JSON-LD.
 - **Groups** — community spaces (city scenes, craft communities). Each Group has its own page with member-curated Events, Works, and Collabs.
 - **Cities** — geographic hubs aggregating standing meetups, upcoming events, and open Collabs by location.
 
-## Key URLs
+## Pages
 
-- Homepage: https://workshopindie.com/
-- Gallery (public Works feed): https://workshopindie.com/gallery
-- Collab Board: https://workshopindie.com/collab
-- Workshops directory: https://workshopindie.com/workshops
-- Cities directory: https://workshopindie.com/cities
-- Groups directory: https://workshopindie.com/groups
-- Sitemap: https://workshopindie.com/sitemap.xml
+- [Home](/): What Workshop is and what's happening now.
+- [Work](/gallery): Public feed of every Work people have shipped.
+- [Collab Board](/collab): Open casting briefs — projects looking for collaborators.
+- [Workshops](/workshops): Live and upcoming five-seat collaboration rooms.
+- [Groups](/groups): Community spaces by city and craft.
+- [Cities](/cities): Local Workshop scenes, meetups, and creators by city.
+- [Pricing](/pricing): Free plan and Workshop Plus.
+- [Refer](/refer): Invite friends and earn credit.
 
 ## URL patterns
 

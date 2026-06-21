@@ -5,8 +5,10 @@ import type { Database } from "@/integrations/supabase/types";
 const SITE = "https://workshopindie.com";
 
 const STATIC_PATHS = [
-  "", "gallery", "instant", "workshops", "collab", "cities", "pricing", "login", "signup",
+  "", "gallery", "workshops", "collab", "cities", "groups", "g",
+  "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password",
 ];
+
 
 function xmlEscape(s: string) {
   return s.replace(/[<>&'"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" }[c]!));

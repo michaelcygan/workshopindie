@@ -72,9 +72,22 @@ export const Route = createFileRoute("/works/$slug")({
       meta.push({ property: "og:image", content: w.cover_url });
       meta.push({ name: "twitter:image", content: w.cover_url });
     }
-    return { meta, links: [{ rel: "canonical", href: url }] };
+    const jsonLd: Record<string, unknown> = {
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      name: w?.title ?? "Work",
+      description: w?.excerpt ?? w?.description ?? undefined,
+      image: w?.cover_url ?? undefined,
+      url,
+    };
+    return {
+      meta,
+      links: [{ rel: "canonical", href: url }],
+      scripts: [{ type: "application/ld+json", children: JSON.stringify(jsonLd) }],
+    };
   },
 });
+
 
 type WorkRow = {
   id: string; title: string; slug: string; category: Category;
