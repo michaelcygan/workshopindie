@@ -303,9 +303,9 @@ export function WorkshopCollabsPanel({
                   <div className="flex items-start gap-2">
                     <CategoryChip category={c.category} />
                     <div className="min-w-0 flex-1">
-                      <Link to="/collab/$slug" params={{ slug: c.slug }} className="block font-medium text-ink hover:underline">
+                      <button type="button" onClick={() => openPeek(c.id)} className="block text-left font-medium text-ink hover:underline">
                         {c.title}
-                      </Link>
+                      </button>
                       <p className="truncate text-xs text-ink-muted">
                         by {owner?.display_name || owner?.username || "Someone"}
                         {p.is_host_pin ? " · pinned by host" : pinnedBy ? ` · pinned by ${pinnedBy.display_name || pinnedBy.username || "someone"}` : ""}
