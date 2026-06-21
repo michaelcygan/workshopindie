@@ -217,9 +217,26 @@ function Signup() {
               />
             </div>
           </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="dob">Date of birth</Label>
+            <Input
+              id="dob"
+              type="date"
+              required
+              max={maxBirthdate}
+              value={birthdate}
+              onChange={(e) => setBirthdate(e.target.value)}
+            />
+            <p className="text-xs text-ink-muted">
+              Workshop is 18+. Private — never shown on your profile.
+            </p>
+          </div>
           <Button type="submit" className="w-full rounded-full" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
+          <p className="text-center text-[11px] text-ink-muted">
+            By creating an account you confirm you are at least 18 years old.
+          </p>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
           Already here? <Link to="/login" className="text-gradient-motion hover:underline">Sign in</Link>
