@@ -53,8 +53,22 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 md:px-6">
-        {/* Primary nav: Workshop · Logo (Home) · Collabs · Groups · More */}
-        <nav className="flex items-center gap-1">
+        {/* Left: brand wordmark → home */}
+        <div className="flex flex-1 items-center justify-start">
+          <Link
+            to="/"
+            aria-label="Home"
+            className="group inline-flex items-center gap-2 rounded-full px-2 py-1.5 transition hover:bg-muted"
+          >
+            <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
+            <span className="font-display text-lg leading-none tracking-tight text-ink">
+              Workshop
+            </span>
+          </Link>
+        </div>
+
+        {/* Center: primary nav */}
+        <nav className="flex flex-1 items-center justify-center gap-1">
           <Link
             data-firstrun="instant"
             to="/workshop"
@@ -62,13 +76,6 @@ export function TopNav() {
             activeProps={{ className: navLinkActive }}
           >
             Workshop
-          </Link>
-          <Link
-            to="/"
-            aria-label="Home"
-            className="mx-1 flex items-center gap-2 rounded-full px-2 py-1.5 font-display text-lg tracking-tight text-ink hover:bg-muted transition"
-          >
-            <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
           </Link>
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
@@ -98,7 +105,8 @@ export function TopNav() {
         </nav>
 
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="flex flex-1 items-center justify-end gap-2">
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button data-firstrun="collab" size="sm" className="hidden md:inline-flex rounded-full gap-1.5">
