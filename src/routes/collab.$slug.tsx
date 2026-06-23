@@ -23,6 +23,7 @@ import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
 import { StartWorkshopFromCollabButton } from "@/components/start-workshop-from-collab-button";
+import { WorksBornHere } from "@/components/works-born-here";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
@@ -667,6 +668,9 @@ function CollabDetail() {
           postDescription={post.description}
         />
       )}
+
+      {/* Reverse provenance — public Works born from this Collab. */}
+      <WorksBornHere collabPostId={post.id} excludeWorkId={post.resulting_work_id ?? null} />
     </main>
   );
 }

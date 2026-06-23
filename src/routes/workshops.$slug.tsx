@@ -26,6 +26,7 @@ import { ShareSheet } from "@/components/share-sheet";
 import { MessageButton } from "@/components/message-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { WorkshopEndedNudge } from "@/components/nudges/workshop-ended-nudge";
+import { WorksBornHere } from "@/components/works-born-here";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -276,6 +277,9 @@ function WorkshopDetail() {
       {isHost && isOver && ws.status !== "shipped" && <FinalizePanel ws={ws} onShipped={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
       {ws.status === "shipped" && <ShippedBanner workshopId={ws.id} />}
+
+      {/* Reverse provenance — every public Work born in this workshop. */}
+      <WorksBornHere workshopId={ws.id} />
 
       {/* Wrap-up nudge — host or confirmed participant, finalizing/shipped */}
       <WorkshopEndedNudge
