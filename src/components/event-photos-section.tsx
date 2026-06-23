@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Camera, Loader2, Trash2, Maximize2, X } from "lucide-react";
@@ -307,38 +307,25 @@ export function EventPhotosProjectorButton({ eventId }: { eventId: string }) {
 function PhotoSlideshow({ items, onClose }: { items: EventPhoto[]; onClose: () => void }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
+  const count = items.length;
 
-  // Native fullscreen on mount.
-  useState(() => {
-    // noop — initialization moved to a single effect via useRef pattern below
-    return null;
-  });
+  useEffect(() => {
+    const el = containerRef.current;
+    if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowRight") setIndex((i) => (count ? (i + 1) % count : 0));
+      if (e.key === "ArrowLeft") setIndex((i) => (count ? (i - 1 + count) % count : 0));
+    }
+    window.addEventListener("keydown", onKey);
+    const id = count > 1 ? window.setInterval(() => setIndex((i) => (i + 1) % count), 6000) : 0;
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      if (id) window.clearInterval(id);
+      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+    };
+  }, [count, onClose]);
 
-  // Auto-advance every 6s.
-  if (typeof window !== "undefined") {
-    // setInterval handled below in a deferred effect via a hidden ticker
-  }
-
-  return (
-    <FullscreenCarousel containerRef={containerRef} items={items} index={index} setIndex={setIndex} onClose={onClose} />
-  );
-}
-
-function FullscreenCarousel({
-  containerRef,
-  items,
-  index,
-  setIndex,
-  onClose,
-}: {
-  containerRef: React.MutableRefObject<HTMLDivElement | null>;
-  items: EventPhoto[];
-  index: number;
-  setIndex: (updater: (i: number) => number) => void;
-  onClose: () => void;
-}) {
-  // Request fullscreen + advance + keyboard, all in one effect.
-  useFullscreenAndAdvance(containerRef, items.length, setIndex, onClose);
   const current = items[index];
   return (
     <div ref={containerRef} className="fixed inset-0 z-[100] flex items-center justify-center bg-black">
@@ -349,7 +336,7 @@ function FullscreenCarousel({
       >
         <X className="h-5 w-5" />
       </button>
-      {items.length === 0 ? (
+      {count === 0 ? (
         <p className="text-white/60">No photos yet.</p>
       ) : current?.url ? (
         <img src={current.url} alt="" className="max-h-full max-w-full object-contain" />
