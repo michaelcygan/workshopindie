@@ -119,10 +119,14 @@ async function loadTasks(
     type Row = {
       id: string; workshop_id: string; title: string; body: string | null;
       due_by: string | null; status: string; updated_at: string;
-      workshop: { slug: string; title: string } | null;
+      workshop: { slug: string; title: string } | { slug: string; title: string }[] | null;
     };
-    const assigned = (aRes.data ?? []) as Row[];
-    const mentioned = (mRes.data ?? []) as Row[];
+    const normalize = (r: Row) => ({
+      ...r,
+      workshop: Array.isArray(r.workshop) ? (r.workshop[0] ?? null) : r.workshop,
+    });
+    const assigned = ((aRes.data ?? []) as unknown as Row[]).map(normalize);
+    const mentioned = ((mRes.data ?? []) as unknown as Row[]).map(normalize);
 
     const seen = new Set<string>();
     const tasks: InProgressTask[] = [];
