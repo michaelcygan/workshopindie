@@ -32,9 +32,7 @@ export const listEventPhotos = createServerFn({ method: "POST" })
       const { supabase } = context;
       const { data: rows, error } = await supabase
         .from("event_photos")
-        .select(
-          "id,event_id,uploader_id,storage_path,width,height,created_at,uploader:profiles!event_photos_uploader_id_fkey(display_name,username,avatar_url)",
-        )
+        .select("id,event_id,uploader_id,storage_path,width,height,created_at")
         .eq("event_id", data.event_id)
         .order("created_at", { ascending: false })
         .limit(300);
@@ -46,20 +44,31 @@ export const listEventPhotos = createServerFn({ method: "POST" })
         : [];
       const urlByPath = new Map(signed.map((s) => [s.path ?? "", s.signedUrl ?? null]));
 
-      type R = (typeof rows)[number] & {
-        uploader: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
-      };
-      return (rows as R[]).map((r) => ({
-        id: r.id,
-        event_id: r.event_id,
-        uploader_id: r.uploader_id,
-        storage_path: r.storage_path,
-        width: r.width,
-        height: r.height,
-        created_at: r.created_at,
-        url: urlByPath.get(r.storage_path) ?? null,
-        uploader: r.uploader ?? null,
-      }));
+      const uploaderIds = Array.from(new Set(rows.map((r) => r.uploader_id)));
+      const { data: profs } = uploaderIds.length
+        ? await supabase
+            .from("profiles")
+            .select("id,display_name,username,avatar_url")
+            .in("id", uploaderIds)
+        : { data: [] as { id: string; display_name: string | null; username: string | null; avatar_url: string | null }[] };
+      const profById = new Map((profs ?? []).map((p) => [p.id, p]));
+
+      return rows.map((r) => {
+        const p = profById.get(r.uploader_id);
+        return {
+          id: r.id,
+          event_id: r.event_id,
+          uploader_id: r.uploader_id,
+          storage_path: r.storage_path,
+          width: r.width,
+          height: r.height,
+          created_at: r.created_at,
+          url: urlByPath.get(r.storage_path) ?? null,
+          uploader: p
+            ? { display_name: p.display_name, username: p.username, avatar_url: p.avatar_url }
+            : null,
+        };
+      });
     } catch {
       return [];
     }
