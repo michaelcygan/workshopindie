@@ -52,9 +52,9 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
-      <div className="relative mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
-        {/* Left: Workshop */}
-        <div className="flex items-center gap-1">
+      <div className="mx-auto flex h-14 max-w-7xl items-center px-4 md:px-6">
+        {/* Primary nav: Workshop · Logo (Home) · Collabs · Groups · More */}
+        <nav className="flex items-center gap-1">
           <Link
             data-firstrun="instant"
             to="/workshop"
@@ -63,13 +63,12 @@ export function TopNav() {
           >
             Workshop
           </Link>
-        </div>
-
-        {/* Center: Logo (Home) · Collabs · Groups · More */}
-        <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
-          <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink px-2">
+          <Link
+            to="/"
+            aria-label="Home"
+            className="mx-1 flex items-center gap-2 rounded-full px-2 py-1.5 font-display text-lg tracking-tight text-ink hover:bg-muted transition"
+          >
             <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
-            Workshop
           </Link>
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
