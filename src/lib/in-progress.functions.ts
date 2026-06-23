@@ -153,7 +153,7 @@ async function loadTasks(
 }
 
 async function loadWorkshops(
-  supabase: import("@supabase/supabase-js").SupabaseClient,
+  supabase: SBClient,
   userId: string,
 ): Promise<InProgressWorkshop[]> {
   try {
@@ -179,7 +179,7 @@ async function loadWorkshops(
 }
 
 async function loadCollabs(
-  supabase: import("@supabase/supabase-js").SupabaseClient,
+  supabase: SBClient,
   userId: string,
 ): Promise<InProgressCollab[]> {
   try {
