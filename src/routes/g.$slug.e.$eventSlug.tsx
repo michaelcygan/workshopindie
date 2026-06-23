@@ -21,6 +21,9 @@ import { EventShareSheet } from "@/components/event-share-sheet";
 import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
+import { EventCompanionPanel } from "@/components/event-companion-panel";
+import { EventWhoStrip } from "@/components/event-who-strip";
+import { getEventPhase } from "@/lib/event-phase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -146,18 +149,22 @@ function EventPage() {
   const past = ends < new Date();
   const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
 
+  // Pure phase helper — pre / live / post (60min pad on each side).
+  const phase = getEventPhase({ starts_at: ev.starts_at, ends_at: ev.ends_at });
+
   const statusLabel =
     ev.status === "canceled" ? "Canceled" :
     past ? "Past" :
     isFull ? "Almost full" :
-    starts < new Date() ? "Happening now" : "Upcoming";
+    phase === "live" ? "Happening now" : "Upcoming";
 
   const going = (attendees ?? []).filter((a) => a.status === "going");
 
   const canonicalUrl = typeof window !== "undefined"
     ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
     : `/g/${ev.group.slug}/e/${ev.slug}`;
-  const canBring = myRsvp?.status === "going" || myRsvp?.status === "maybe";
+  const isAttending = myRsvp?.status === "going" || myRsvp?.status === "maybe";
+  const canBring = isAttending;
 
   return (
     <main className="pb-20">
