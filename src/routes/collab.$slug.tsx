@@ -22,6 +22,7 @@ import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts
 import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
+import { StartWorkshopFromCollabButton } from "@/components/start-workshop-from-collab-button";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
@@ -569,6 +570,15 @@ function CollabDetail() {
               </div>
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
+            {post.status === "open" && (
+              <StartWorkshopFromCollabButton
+                collabPostId={post.id}
+                collabSlug={post.slug}
+                liveWorkshopSlug={liveWorkshop?.slug ?? null}
+                isLive={isLive}
+                isAuthor={isOwner}
+              />
+            )}
           </div>
         )}
 

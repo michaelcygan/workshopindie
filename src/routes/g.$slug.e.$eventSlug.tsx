@@ -21,6 +21,9 @@ import { EventShareSheet } from "@/components/event-share-sheet";
 import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
+import { EventCompanionPanel } from "@/components/event-companion-panel";
+import { EventWhoStrip } from "@/components/event-who-strip";
+import { getEventPhase } from "@/lib/event-phase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -146,18 +149,22 @@ function EventPage() {
   const past = ends < new Date();
   const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
 
+  // Pure phase helper — pre / live / post (60min pad on each side).
+  const phase = getEventPhase({ starts_at: ev.starts_at, ends_at: ev.ends_at });
+
   const statusLabel =
     ev.status === "canceled" ? "Canceled" :
     past ? "Past" :
     isFull ? "Almost full" :
-    starts < new Date() ? "Happening now" : "Upcoming";
+    phase === "live" ? "Happening now" : "Upcoming";
 
   const going = (attendees ?? []).filter((a) => a.status === "going");
 
   const canonicalUrl = typeof window !== "undefined"
     ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
     : `/g/${ev.group.slug}/e/${ev.slug}`;
-  const canBring = myRsvp?.status === "going" || myRsvp?.status === "maybe";
+  const isAttending = myRsvp?.status === "going" || myRsvp?.status === "maybe";
+  const canBring = isAttending;
 
   return (
     <main className="pb-20">
@@ -272,47 +279,63 @@ function EventPage() {
           </div>
         )}
 
-        {/* Who's going (always visible, above tabs) */}
-        <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-display text-lg text-ink">Who's going</h3>
-            <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-              <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-              {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
-            </span>
+        {/* Live companion panel — only for RSVP'd viewers, only during live window */}
+        {phase === "live" && isAttending && (
+          <EventCompanionPanel
+            eventId={ev.id}
+            eventTitle={ev.title}
+            canBring={canBring}
+            attending={isAttending}
+          />
+        )}
+
+        {/* Who's going / Who was here */}
+        {phase === "post" ? (
+          <div className="mt-6">
+            <EventWhoStrip eventId={ev.id} phase="post" />
           </div>
-          {going.length === 0 ? (
-            <p className="text-sm text-ink-muted">No one's RSVP'd yet. Be first.</p>
-          ) : (
-            <div className="flex flex-wrap gap-3">
-              {going.slice(0, 24).map((a) => {
-                type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
-                const p = (a as unknown as R).profile;
-                if (!p) return null;
-                return p.username ? (
-                  <Link key={a.user_id} to="/u/$username" params={{ username: p.username }} className="flex flex-col items-center gap-1">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={p.avatar_url ?? undefined} />
-                      <AvatarFallback>{(p.display_name ?? "?").slice(0, 1)}</AvatarFallback>
-                    </Avatar>
-                    <span className="max-w-[60px] truncate text-[10px] text-ink-muted">{p.display_name ?? p.username}</span>
-                  </Link>
-                ) : (
-                  <div key={a.user_id} className="flex flex-col items-center gap-1">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback>?</AvatarFallback>
-                    </Avatar>
-                  </div>
-                );
-              })}
-              {going.length > 24 && (
-                <div className="flex h-10 items-center justify-center rounded-full bg-muted px-3 text-xs text-ink-muted">
-                  +{going.length - 24}
-                </div>
-              )}
+        ) : (
+          <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="font-display text-lg text-ink">Who's going</h3>
+              <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
+                {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
+              </span>
             </div>
-          )}
-        </div>
+            {going.length === 0 ? (
+              <p className="text-sm text-ink-muted">No one's RSVP'd yet. Be first.</p>
+            ) : (
+              <div className="flex flex-wrap gap-3">
+                {going.slice(0, 24).map((a) => {
+                  type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
+                  const p = (a as unknown as R).profile;
+                  if (!p) return null;
+                  return p.username ? (
+                    <Link key={a.user_id} to="/u/$username" params={{ username: p.username }} className="flex flex-col items-center gap-1">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={p.avatar_url ?? undefined} />
+                        <AvatarFallback>{(p.display_name ?? "?").slice(0, 1)}</AvatarFallback>
+                      </Avatar>
+                      <span className="max-w-[60px] truncate text-[10px] text-ink-muted">{p.display_name ?? p.username}</span>
+                    </Link>
+                  ) : (
+                    <div key={a.user_id} className="flex flex-col items-center gap-1">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>?</AvatarFallback>
+                      </Avatar>
+                    </div>
+                  );
+                })}
+                {going.length > 24 && (
+                  <div className="flex h-10 items-center justify-center rounded-full bg-muted px-3 text-xs text-ink-muted">
+                    +{going.length - 24}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-6">

@@ -990,6 +990,7 @@ export type Database = {
       }
       group_event_rsvps: {
         Row: {
+          checked_in_at: string | null
           created_at: string
           event_id: string
           note: string | null
@@ -1000,6 +1001,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          checked_in_at?: string | null
           created_at?: string
           event_id: string
           note?: string | null
@@ -1010,6 +1012,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          checked_in_at?: string | null
           created_at?: string
           event_id?: string
           note?: string | null
