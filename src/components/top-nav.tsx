@@ -1,7 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
-import { usePlus } from "@/hooks/use-plus";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,15 +14,34 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Shield, Megaphone, Sparkles, Gift, Settings as SettingsIcon, Users, Plus, Coffee, Ticket, Briefcase, ChevronRight } from "lucide-react";
+import {
+  Shield,
+  Megaphone,
+  Gift,
+  Settings as SettingsIcon,
+  Users,
+  Plus,
+  Coffee,
+  Ticket,
+  Briefcase,
+  ChevronRight,
+  ChevronDown,
+  LayoutGrid,
+  Calendar,
+  ListChecks,
+} from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { GroupsNavItem } from "@/components/groups-nav-item";
 
+const navLinkBase =
+  "rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition";
+const navLinkActive =
+  "rounded-full px-3 py-1.5 text-sm text-ink bg-muted";
+
 export function TopNav() {
   const { user, loading } = useAuth();
   const { isAdmin } = useUserRoles();
-  const { isPlus } = usePlus();
   const navigate = useNavigate();
 
   const displayName =
@@ -35,28 +53,53 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 hidden border-b border-border/70 bg-background/80 backdrop-blur-md md:block">
       <div className="relative mx-auto flex h-14 max-w-7xl items-center justify-between px-4 md:px-6">
-        <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink justify-self-start">
-          <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
-          Workshop
-        </Link>
+        {/* Left: Workshop */}
+        <div className="flex items-center gap-1">
+          <Link
+            data-firstrun="instant"
+            to="/workshop"
+            className={navLinkBase}
+            activeProps={{ className: navLinkActive }}
+          >
+            Workshop
+          </Link>
+        </div>
 
+        {/* Center: Logo (Home) · Collabs · Groups · More */}
         <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex">
-          <Link data-firstrun="instant" to="/workshop" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Workshop</Link>
-          <Link to="/collab" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Collab</Link>
-          <Link to="/gallery" className="rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition" activeProps={{ className: "rounded-full px-3 py-1.5 text-sm text-ink bg-muted" }}>Work</Link>
+          <Link to="/" className="flex items-center gap-2 font-display text-xl tracking-tight text-ink px-2">
+            <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
+            Workshop
+          </Link>
+          <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+            Collabs
+          </Link>
           <GroupsNavItem />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className={`${navLinkBase} inline-flex items-center gap-1`}>
+                More
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-52">
+              {user && (
+                <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+                  <ListChecks className="mr-2 h-4 w-4" /> In Progress
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
+                <LayoutGrid className="mr-2 h-4 w-4" /> Work
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/groups" })}>
+                <Calendar className="mr-2 h-4 w-4" /> Events
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
 
 
         <div className="ml-auto flex items-center gap-2">
-          {user && !isPlus && (
-            <Link to="/pricing" className="hidden md:inline-flex">
-              <Button size="sm" variant="ghost" className="rounded-full gap-1.5 hover:bg-muted">
-                <Sparkles className="h-3.5 w-3.5 icon-gradient-motion" />
-                <span className="text-gradient-motion">Go Plus</span>
-              </Button>
-            </Link>
-          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button data-firstrun="collab" size="sm" className="hidden md:inline-flex rounded-full gap-1.5">
@@ -131,28 +174,19 @@ export function TopNav() {
 
                 <DropdownMenuSeparator />
 
-                {isPlus ? (
-                  <DropdownMenuItem onClick={() => navigate({ to: "/settings", hash: "plus" })}>
-                    <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
-                    <span className="text-gradient-motion">Plus</span>
-                    <span className="ml-auto text-xs text-ink-muted">Manage</span>
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
-                    <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
-                    <span className="text-gradient-motion">Go Plus</span>
-                  </DropdownMenuItem>
-                )}
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                   <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
                 {isAdmin && (
-                  <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
-                    <Shield className="mr-2 h-4 w-4" /> Admin
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
+                      <Shield className="mr-2 h-4 w-4" /> Admin
+                    </DropdownMenuItem>
+                  </>
                 )}
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
                     await supabase.auth.signOut();
