@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Radio, Sparkles, MapPin, ArrowRight } from "lucide-react";
+import { Megaphone, Radio, Sparkles, MapPin, ArrowRight, Calendar } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
+import { HomePulseRail } from "@/components/home-pulse-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -97,7 +98,7 @@ function Hero() {
 
         <motion.div
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.18 }}
-          className="mx-auto mt-6 grid max-w-3xl gap-4 md:grid-cols-2"
+          className="mx-auto mt-6 grid max-w-4xl gap-4 md:grid-cols-3"
         >
           <Link
             to="/workshop"
@@ -107,13 +108,31 @@ function Hero() {
               <Radio className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-2xl md:text-[26px] leading-tight">Drop into a Workshop</div>
-              <p className="mt-2 text-sm md:text-[15px] text-primary-foreground/85">
-                A live, five-seat workshop with shared tools. Start a jam, a critique, a hackathon, office hours, or just work alongside other people.
+              <div className="font-display text-xl md:text-2xl leading-tight">Drop into a Workshop</div>
+              <p className="mt-2 text-sm text-primary-foreground/85">
+                Live, five-seat studios with shared tools. Jam, critique, hack, or just work alongside other people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
               Drop in <ArrowRight className="h-4 w-4" />
+            </span>
+          </Link>
+
+          <Link
+            to="/groups"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Calendar className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-display text-xl md:text-2xl leading-tight">Show up to an Event</div>
+              <p className="mt-2 text-sm text-ink-muted">
+                Real rooms, real people. RSVP to an event a Group is hosting — meet the makers in your city.
+              </p>
+            </div>
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
+              Find events <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
 
@@ -125,9 +144,9 @@ function Hero() {
               <Megaphone className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-2xl md:text-[26px] leading-tight">Post a Collab</div>
-              <p className="mt-2 text-sm md:text-[15px] text-ink-muted">
-                Describe what you're working on and accept applications to collaborate. Make your project and showcase it in your portfolio.
+              <div className="font-display text-xl md:text-2xl leading-tight">Post a Collab</div>
+              <p className="mt-2 text-sm text-ink-muted">
+                Describe what you're making and accept applications. Ship the thing, credit the cast, keep the receipts.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
@@ -191,15 +210,19 @@ function Index() {
     <main>
       <Hero />
 
-      {!user && <GalleryLoggedOutHero />}
+      {/* Ambient pulse — first thing below the fold */}
+      <HomePulseRail />
 
-      <HomeLiveWorkshopsRail />
+      {!user && <GalleryLoggedOutHero />}
 
       {user && <YourGroupsStrip />}
 
       <NetworkRail />
 
       <CollabsRail />
+
+      {/* Live Workshops rail — moved down from above-fold to ambient layer */}
+      <HomeLiveWorkshopsRail />
 
 
 
