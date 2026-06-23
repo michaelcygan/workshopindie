@@ -268,3 +268,16 @@ function HoverMoreMenu({
     </div>
   );
 }
+
+function InProgressBadgeDot() {
+  const { count } = useInProgressBadge();
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} in progress`}
+      className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
