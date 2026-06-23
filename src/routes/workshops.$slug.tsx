@@ -25,6 +25,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
 import { MessageButton } from "@/components/message-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
+import { WorkshopEndedNudge } from "@/components/nudges/workshop-ended-nudge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
