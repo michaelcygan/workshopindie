@@ -23,6 +23,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { EventCompanionPanel } from "@/components/event-companion-panel";
 import { EventWhoStrip } from "@/components/event-who-strip";
+import { EventPhotosSection } from "@/components/event-photos-section";
 import { getEventPhase } from "@/lib/event-phase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -291,8 +292,9 @@ function EventPage() {
 
         {/* Who's going / Who was here */}
         {phase === "post" ? (
-          <div className="mt-6">
+          <div className="mt-6 space-y-6">
             <EventWhoStrip eventId={ev.id} phase="post" />
+            <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
           </div>
         ) : (
           <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">

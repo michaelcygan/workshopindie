@@ -8,6 +8,7 @@ import { EventWhoStrip } from "@/components/event-who-strip";
 import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { EventShowcaseProjectorButton } from "@/components/event-showcase-projector-button";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
+import { EventPhotosSection, EventPhotosProjectorButton } from "@/components/event-photos-section";
 
 type Props = {
   eventId: string;
@@ -55,6 +56,14 @@ export function EventCompanionPanel({ eventId, eventTitle, canBring, attending }
           <EventShowcaseProjectorButton eventId={eventId} />
         </div>
         <EventShowcaseStrip eventId={eventId} eventTitle={eventTitle} canBring={canBring} />
+      </ErrorBoundarySafe>
+
+      <ErrorBoundarySafe>
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="font-display text-sm uppercase tracking-wide text-ink-muted">Photos</h3>
+          <EventPhotosProjectorButton eventId={eventId} />
+        </div>
+        <EventPhotosSection eventId={eventId} canUpload={attending} />
       </ErrorBoundarySafe>
 
       <ErrorBoundarySafe>
