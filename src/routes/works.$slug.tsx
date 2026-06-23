@@ -19,6 +19,7 @@ import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 import { WorkSocialProof } from "@/components/work-social-proof";
+import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
 import { getCoCreditedWorks } from "@/lib/network.functions";
 import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
