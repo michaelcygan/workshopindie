@@ -87,11 +87,11 @@ export const completeWorkshopTask = createServerFn({ method: "POST" })
 
 // ---------- internal loaders ----------
 
-type SB = Parameters<Parameters<typeof getInProgress.middleware>[0][0]>[0] extends never ? never : never;
-// (the type-fu above is unused; just keep handler-scoped any-ish helpers)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SBClient = any;
 
 async function loadTasks(
-  supabase: import("@supabase/supabase-js").SupabaseClient,
+  supabase: SBClient,
   userId: string,
 ): Promise<InProgressTask[]> {
   try {
