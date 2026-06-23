@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Hammer, Megaphone, Users } from "lucide-react";
+import { Calendar, Hammer, Megaphone, Users, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +25,6 @@ export function HomePulseRail() {
   });
 
   const items = data ?? [];
-  if (items.length === 0) return null;
 
   return (
     <section className="border-y border-border bg-surface-2/30">
@@ -40,11 +39,39 @@ export function HomePulseRail() {
           </div>
           <p className="text-xs text-ink-muted">Live across the network</p>
         </div>
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
-          {items.map((p) => (
-            <PulseCard key={`${p.kind}-${"id" in p ? p.id : ""}`} pulse={p} />
-          ))}
-        </div>
+        {items.length === 0 ? (
+          <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <div>
+                <p className="font-display text-sm text-ink">Quiet across the network right now.</p>
+                <p className="mt-0.5 text-xs text-ink-muted">Be the spark — follow a few makers, or post a Collab.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2 sm:shrink-0">
+              <Link
+                to="/gallery"
+                className="inline-flex h-8 items-center rounded-full border border-border bg-surface px-3 text-xs text-ink hover:bg-muted"
+              >
+                Browse Work
+              </Link>
+              <Link
+                to="/collab/new"
+                className="inline-flex h-8 items-center rounded-full bg-primary px-3 text-xs font-medium text-primary-foreground hover:opacity-90"
+              >
+                Post a Collab
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 md:mx-0 md:px-0">
+            {items.map((p) => (
+              <PulseCard key={`${p.kind}-${"id" in p ? p.id : ""}`} pulse={p} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );

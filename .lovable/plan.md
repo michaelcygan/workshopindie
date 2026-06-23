@@ -1,39 +1,46 @@
-## Top nav restructure
+## Pass 7 — Knit the new IA together
 
-Resolve the "Workshop" naming collision and reorganize the desktop top bar into three justified zones.
+The 6-pass build is shipped and the nav refactor closed Pass 6. This pass makes the re-weighted flows feel earned: the dashboard gets used, finished actions point to the next one, and new surfaces stop rendering blank voids. Tight scope, no new tables, no migrations.
 
-### Layout
+### 1. Wire In Progress into the daily loop
 
-```text
-[ ● Workshop ]            [ Workshop · Collabs · Groups · More ▾ ]            [ + Create · ✉ · 🔔 · 👤 ]
-   left (home)                       center (primary nav)                          right (actions)
-```
+**Why:** the `/in-progress` dashboard exists but is buried under More. Without an ambient surface, nobody opens it.
 
-- **Left — brand wordmark (home)**: the existing orange gradient dot + the wordmark "Workshop" rendered in the display serif. Whole unit is a single `<Link to="/">` with `aria-label="Home"`. This is the only thing on the left.
-- **Center — primary nav**: `Workshop · Collabs · Groups · More ▾`, horizontally centered in the bar. "Workshop" here keeps its label (per your answer) and links to `/workshop`. Visual differentiation from the brand comes from: (a) serif wordmark on the left vs. sans pill buttons in the center, (b) physical separation across the bar, (c) active-state pill on the page button when on `/workshop`.
-- **Right — actions**: `+ Create` dropdown, Messages, Notifications, avatar menu. Unchanged from today, just pinned right.
+- **Avatar badge (desktop top-nav + mobile You tab).** Add a small count dot to the avatar trigger showing `open tasks due ≤7d + workshops you're confirmed for next 14d`. Polls `getInProgress` via TanStack Query with `staleTime: 60_000`. Hidden when zero.
+- **Signed-in homepage entry.** On `/`, when `user` exists and the bundle is non-empty, render a single "Pick up where you left off" card above the Pulse Rail: shows the top 1 task + top 1 workshop with one CTA each ("Open task" → workshop room; "Open workshop" → `/w/$slug`) and a "See all" link to `/in-progress`. Signed-out: render nothing (homepage stays as-is).
+- New helper `useInProgressBadge()` in `src/hooks/` so the avatar and the homepage card share one query key.
 
-### How the three zones are achieved
+### 2. Post-action "what's next" nudges
 
-Single flex row with three children, each `flex-1`:
-- left: `justify-start`
-- center: `justify-center`
-- right: `justify-end`
+**Why:** users currently hit a dead end after the big actions. The new IA has obvious next steps; surface them inline.
 
-This keeps the center nav truly centered in the viewport regardless of left/right widths (better than `ml-auto` for symmetry).
+Reuse the existing `become-host-nudge` / `create-collab-nudge` visual pattern (small inline card, dismissible, never modal). Three nudges:
 
-### Disambiguation rules
+- **After publishing a Work** (on the Work detail page, owner only, work.published_at within 24h): "Got collaborators? Credit them" → opens existing credit flow. Falls back to "Attach this to an upcoming Event you're in" when credits are already set.
+- **After RSVPing 'going' to an Event**: replace the success toast with a persistent card on the Event page pointing to Photos + Companion ("Drop photos here after the event · Open the companion thread now").
+- **After ending a Workshop session** (host only, session.ended_at within 7d, no work yet linked): "Publish what you made →" deep-links into `/work/new?from_session=<id>`. If a work *is* linked, swap to "Share the result" with a copy-link button.
 
-- Brand wordmark uses `font-display` (serif), normal weight, ~18px, tracks tight. Page-button "Workshop" uses the existing `navLinkBase` sans pill, 14px.
-- Brand wordmark never shows an "active" treatment when on `/workshop` (only the center button does), so the two never light up together.
-- Hovering the brand shows a subtle muted background on the whole `● Workshop` unit; hovering the center button shows the pill background only on that word.
+Each nudge stores a dismiss flag in `localStorage` keyed by `nudge:<kind>:<entity-id>:<user-id>` so it doesn't nag.
 
-### Mobile
+### 3. Honest empty states + mobile home parity
 
-No change to `mobile-nav.tsx` in this pass — the bottom tab bar already reads `Workshop · Collabs · Groups · More · You` with no brand collision.
+**Why:** Pulse rail, In Progress, and Event Photos all render `null`/blank when empty — first-time users see a void where the most interesting surface should be.
 
-### Files
+- `home-pulse-rail.tsx`: empty branch renders a one-line prompt + two primary actions ("Follow a few people" → `/gallery`, "Post a Collab" → `/collab/new`).
+- `/in-progress` page sections (tasks / workshops / collabs): each gets its own per-section empty with the right primary action ("Join a workshop", "Post a Collab", "Browse open calls").
+- `event-companion-panel` photos tab: empty shows "Be first to drop a photo" + upload button (component already exists).
+- **Mobile home parity.** Bottom tab bar has no home affordance — only the orange dot inside More. Add a left-most "Home" tab with the `●` mark (no wordmark — space-constrained) so mobile users have a one-tap path back to `/`. Shift the existing 5 tabs accordingly; if 6 is too tight, fold "More" into the avatar/You sheet.
 
-- `src/components/top-nav.tsx` — restructure the header into three justified flex zones; replace the dot-only home link with a `● Workshop` wordmark unit; keep the center nav (Workshop / Collabs / Groups / More) and the right action cluster intact.
+### 4. Small refactor (bonus, only if it stays under ~15 min)
 
-No other files change. No data, route, or business-logic changes.
+Extract the parallel-fetch + interleave pattern shared by `home-pulse-rail`, `in-progress.functions`, and `event-companion-panel` into a single `interleaveByRecency<T>(sources, key)` util in `src/lib/`. Pure function, no behavior change, removes ~50 lines of duplication. Skip if any caller has diverged enough that the abstraction would leak.
+
+---
+
+### Technical notes
+
+- **No DB changes.** Everything reuses existing `workshop_tasks`, `workshop_participants`, `collab_posts`, `works`, `group_event_rsvps`, `event_photos`. No migrations, no new policies.
+- **New files:** `src/hooks/use-in-progress-badge.ts`, `src/components/pickup-card.tsx`, `src/components/nudges/work-published-nudge.tsx`, `src/components/nudges/event-rsvp-nudge.tsx`, `src/components/nudges/workshop-ended-nudge.tsx`.
+- **Edited files:** `src/components/top-nav.tsx` (avatar badge), `src/components/mobile-nav.tsx` (home tab + badge), `src/routes/index.tsx` (signed-in pickup card), `src/components/home-pulse-rail.tsx` (empty state), `src/routes/in-progress.tsx` (per-section empties), `src/routes/work.$slug.tsx` + `src/routes/g.$slug.e.$eventSlug.tsx` + workshop session page (mount nudges), `src/components/event-companion-panel.tsx` (photos empty).
+- **Auth:** `useInProgressBadge` calls the existing `getInProgress` server fn (already gated by `requireSupabaseAuth`); used only in components, never in public-route loaders.
+- **Out of scope (saved for later):** reverse provenance on Workshop/Collab pages (item 2 from the menu), the `usePulse` refactor beyond the small interleave helper, any new tables, any search/discovery work.

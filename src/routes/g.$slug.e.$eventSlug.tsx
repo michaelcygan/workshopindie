@@ -22,6 +22,7 @@ import { EventShowcaseStrip } from "@/components/event-showcase-strip";
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { EventCompanionPanel } from "@/components/event-companion-panel";
+import { EventRsvpNudge } from "@/components/nudges/event-rsvp-nudge";
 import { EventWhoStrip } from "@/components/event-who-strip";
 import { EventPhotosSection } from "@/components/event-photos-section";
 import { getEventPhase } from "@/lib/event-phase";
@@ -270,6 +271,12 @@ function EventPage() {
             capacity={ev.capacity}
             goingCount={ev.going_count}
             waitlistEnabled={ev.waitlist_enabled}
+          />
+          {/* Persistent post-RSVP nudge — pre-event only */}
+          <EventRsvpNudge
+            eventId={ev.id}
+            rsvpStatus={myRsvp?.status ?? null}
+            phase={phase as "pre" | "live" | "post"}
           />
         </div>
 

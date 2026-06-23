@@ -87,22 +87,16 @@ function InProgressPage() {
             <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
-      ) : totalCount === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-          <h2 className="font-display text-2xl text-ink">All clear.</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-            Nothing assigned, no active workshops, no open collabs. Drop into a Workshop or post a Collab to start something.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
-            <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
-          </div>
-        </div>
       ) : (
         <div className="space-y-10">
           <TasksSection tasks={tasks} />
           <WorkshopsSection workshops={workshops} />
           <CollabsSection collabs={collabs} />
+          {totalCount === 0 && (
+            <p className="text-center text-xs text-ink-muted">
+              All clear across the board. Anything you start will show up here.
+            </p>
+          )}
         </div>
       )}
     </main>
@@ -125,7 +119,6 @@ function SectionHeader({ icon, title, count, hint }: { icon: React.ReactNode; ti
 }
 
 function TasksSection({ tasks }: { tasks: InProgressTask[] }) {
-  if (tasks.length === 0) return null;
   return (
     <section>
       <SectionHeader
@@ -134,9 +127,17 @@ function TasksSection({ tasks }: { tasks: InProgressTask[] }) {
         count={tasks.length}
         hint="Assigned to you or @-mentioned in a Workshop."
       />
-      <ul className="space-y-2">
-        {tasks.map((t) => <TaskRow key={t.id} task={t} />)}
-      </ul>
+      {tasks.length === 0 ? (
+        <SectionEmpty
+          message="No tasks waiting on you."
+          actionLabel="Join a Workshop"
+          actionTo="/workshop"
+        />
+      ) : (
+        <ul className="space-y-2">
+          {tasks.map((t) => <TaskRow key={t.id} task={t} />)}
+        </ul>
+      )}
     </section>
   );
 }
@@ -195,7 +196,6 @@ function TaskRow({ task }: { task: InProgressTask }) {
 }
 
 function WorkshopsSection({ workshops }: { workshops: InProgressWorkshop[] }) {
-  if (workshops.length === 0) return null;
   return (
     <section>
       <SectionHeader
@@ -204,32 +204,39 @@ function WorkshopsSection({ workshops }: { workshops: InProgressWorkshop[] }) {
         count={workshops.length}
         hint="Active studios you're confirmed in."
       />
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {workshops.map((w) => (
-          <li key={w.id}>
-            <Link
-              to="/workshops/$slug"
-              params={{ slug: w.slug }}
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-            >
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wide text-ink-muted">{w.status}</div>
-                <div className="line-clamp-1 font-display text-base text-ink">{w.title}</div>
-                <div className="mt-0.5 text-[11px] text-ink-muted">
-                  Last activity {new Date(w.last_activity_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+      {workshops.length === 0 ? (
+        <SectionEmpty
+          message="You're not in an active Workshop right now."
+          actionLabel="Drop into a Workshop"
+          actionTo="/workshop"
+        />
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {workshops.map((w) => (
+            <li key={w.id}>
+              <Link
+                to="/workshops/$slug"
+                params={{ slug: w.slug }}
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wide text-ink-muted">{w.status}</div>
+                  <div className="line-clamp-1 font-display text-base text-ink">{w.title}</div>
+                  <div className="mt-0.5 text-[11px] text-ink-muted">
+                    Last activity {new Date(w.last_activity_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                  </div>
                 </div>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
 function CollabsSection({ collabs }: { collabs: InProgressCollab[] }) {
-  if (collabs.length === 0) return null;
   return (
     <section>
       <SectionHeader
@@ -238,26 +245,66 @@ function CollabsSection({ collabs }: { collabs: InProgressCollab[] }) {
         count={collabs.length}
         hint="Posts you authored that are still accepting people."
       />
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {collabs.map((c) => (
-          <li key={c.id}>
-            <Link
-              to="/collab/$slug"
-              params={{ slug: c.slug }}
-              className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-            >
-              <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-wide text-ink-muted">{c.status}</div>
-                <div className="line-clamp-1 font-display text-base text-ink">{c.title}</div>
-                <div className="mt-0.5 text-[11px] text-ink-muted">
-                  Posted {new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+      {collabs.length === 0 ? (
+        <SectionEmpty
+          message="No open Collabs from you right now."
+          actionLabel="Post a Collab"
+          actionTo="/collab/new"
+          secondaryLabel="Browse open calls"
+          secondaryTo="/collab"
+        />
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2">
+          {collabs.map((c) => (
+            <li key={c.id}>
+              <Link
+                to="/collab/$slug"
+                params={{ slug: c.slug }}
+                className="group flex items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                <div className="min-w-0">
+                  <div className="text-[10px] uppercase tracking-wide text-ink-muted">{c.status}</div>
+                  <div className="line-clamp-1 font-display text-base text-ink">{c.title}</div>
+                  <div className="mt-0.5 text-[11px] text-ink-muted">
+                    Posted {new Date(c.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                  </div>
                 </div>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
-            </Link>
-          </li>
-        ))}
-      </ul>
+                <ArrowRight className="h-4 w-4 shrink-0 text-ink-muted transition group-hover:translate-x-0.5 group-hover:text-ink" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
+  );
+}
+
+function SectionEmpty({
+  message,
+  actionLabel,
+  actionTo,
+  secondaryLabel,
+  secondaryTo,
+}: {
+  message: string;
+  actionLabel: string;
+  actionTo: string;
+  secondaryLabel?: string;
+  secondaryTo?: string;
+}) {
+  return (
+    <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-border bg-surface/60 p-5 sm:flex-row sm:items-center sm:justify-between">
+      <p className="text-sm text-ink-muted">{message}</p>
+      <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
+        <Link to={actionTo}>
+          <Button size="sm" className="rounded-full">{actionLabel}</Button>
+        </Link>
+        {secondaryLabel && secondaryTo && (
+          <Link to={secondaryTo}>
+            <Button size="sm" variant="outline" className="rounded-full">{secondaryLabel}</Button>
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }

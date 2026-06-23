@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { useInProgressBadge } from "@/hooks/use-in-progress-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -113,11 +114,12 @@ export function TopNav() {
             <NotificationsBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button data-firstrun="publish" className="flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition" aria-label="Your account">
+                <button data-firstrun="publish" className="relative flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition" aria-label="Your account">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">{initial}</AvatarFallback>
                   </Avatar>
+                  <InProgressBadgeDot />
                 </button>
 
               </DropdownMenuTrigger>
@@ -264,5 +266,18 @@ function HoverMoreMenu({
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+  );
+}
+
+function InProgressBadgeDot() {
+  const { count } = useInProgressBadge();
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} in progress`}
+      className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
+    >
+      {count > 9 ? "9+" : count}
+    </span>
   );
 }

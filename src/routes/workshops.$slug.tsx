@@ -25,6 +25,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
 import { MessageButton } from "@/components/message-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
+import { WorkshopEndedNudge } from "@/components/nudges/workshop-ended-nudge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -133,15 +134,50 @@ function WorkshopDetail() {
     organizer: ws.host ? { "@type": "Person", name: ws.host.display_name ?? ws.host.username ?? "Host" } : undefined,
   } : null);
 
+  const isHost = !!user && !!ws && user.id === ws.host_user_id;
+
+  // Lightweight participation check — drives the wrap-up nudge for non-hosts.
+  const { data: myParticipation } = useQuery({
+    queryKey: ["ws-my-part", ws?.id ?? null, user?.id ?? null],
+    enabled: !!user && !!ws && !isHost,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("workshop_participants")
+        .select("participant_status")
+        .eq("workshop_id", ws!.id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return data;
+    },
+  });
+  const isConfirmedParticipant =
+    isHost ||
+    (myParticipation?.participant_status &&
+      ["confirmed", "checked_in", "completed"].includes(myParticipation.participant_status));
+
+  // Resolve published work slug for the share variant of the wrap-up nudge.
+  const { data: publishedWork } = useQuery({
+    queryKey: ["ws-published-work", ws?.published_work_id ?? null],
+    enabled: !!ws?.published_work_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("works")
+        .select("slug")
+        .eq("id", ws!.published_work_id!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
   if (isLoading) return <main className="mx-auto max-w-4xl px-4 py-14"><div className="h-8 w-48 animate-pulse rounded bg-surface-2" /></main>;
   if (!ws) return <main className="mx-auto max-w-4xl px-4 py-14 text-center"><h1 className="font-display text-3xl">Workshop not found</h1><Link to="/workshops" className="mt-4 inline-block text-gradient-motion underline">Back to Workshops</Link></main>;
 
-  const isHost = user?.id === ws.host_user_id;
   const now = Date.now();
   const startMs = ws.starts_at ? new Date(ws.starts_at).getTime() : null;
   const endMs = ws.ends_at ? new Date(ws.ends_at).getTime() : null;
   const isLive = startMs && endMs && now >= startMs - 30 * 60_000 && now <= endMs + 60 * 60_000;
   const isOver = endMs && now > endMs;
+
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-8 md:py-12">
@@ -240,6 +276,17 @@ function WorkshopDetail() {
       {isHost && isOver && ws.status !== "shipped" && <FinalizePanel ws={ws} onShipped={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
       {ws.status === "shipped" && <ShippedBanner workshopId={ws.id} />}
+
+      {/* Wrap-up nudge — host or confirmed participant, finalizing/shipped */}
+      <WorkshopEndedNudge
+        workshopId={ws.id}
+        workshopSlug={ws.slug}
+        workshopTitle={ws.title}
+        status={ws.status}
+        publishedWorkId={ws.published_work_id}
+        publishedWorkSlug={publishedWork?.slug ?? null}
+        isParticipant={!!isConfirmedParticipant}
+      />
     </main>
   );
 }
