@@ -203,3 +203,66 @@ export function TopNav() {
     </header>
   );
 }
+
+function HoverMoreMenu({
+  navigate,
+  hasUser,
+}: {
+  navigate: ReturnType<typeof useNavigate>;
+  hasUser: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  };
+
+  return (
+    <div
+      onMouseEnter={() => {
+        cancelClose();
+        setOpen(true);
+      }}
+      onMouseLeave={scheduleClose}
+      className="relative"
+    >
+      <DropdownMenu open={open} onOpenChange={setOpen}>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={`${navLinkBase} inline-flex items-center gap-1`}
+            onFocus={() => setOpen(true)}
+          >
+            More
+            <ChevronDown className="h-3 w-3 opacity-60" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="center"
+          className="w-52"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
+        >
+          {hasUser && (
+            <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+              <ListChecks className="mr-2 h-4 w-4" /> In Progress
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
+            <LayoutGrid className="mr-2 h-4 w-4" /> Work
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate({ to: "/groups" })}>
+            <Calendar className="mr-2 h-4 w-4" /> Events
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
