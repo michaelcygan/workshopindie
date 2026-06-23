@@ -355,28 +355,3 @@ function PhotoSlideshow({ items, onClose }: { items: EventPhoto[]; onClose: () =
   );
 }
 
-import { useEffect } from "react";
-function useFullscreenAndAdvance(
-  ref: React.MutableRefObject<HTMLDivElement | null>,
-  count: number,
-  setIndex: (u: (i: number) => number) => void,
-  onClose: () => void,
-) {
-  useEffect(() => {
-    const el = ref.current;
-    if (el?.requestFullscreen) el.requestFullscreen().catch(() => {});
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowRight") setIndex((i) => (count ? (i + 1) % count : 0));
-      if (e.key === "ArrowLeft") setIndex((i) => (count ? (i - 1 + count) % count : 0));
-    }
-    window.addEventListener("keydown", onKey);
-    const id = count > 1 ? window.setInterval(() => setIndex((i) => (i + 1) % count), 6000) : 0;
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      if (id) window.clearInterval(id);
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [count]);
-}
