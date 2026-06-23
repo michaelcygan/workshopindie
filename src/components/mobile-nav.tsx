@@ -1,11 +1,10 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Radio, Users, LayoutGrid, Sparkles, Gift, Briefcase, Ticket, Settings as SettingsIcon } from "lucide-react";
+import { Radio, Users, LayoutGrid, Sparkles, Gift, Briefcase, Ticket, Settings as SettingsIcon, MoreHorizontal, ListChecks, Calendar } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { usePlus } from "@/hooks/use-plus";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 
 const tabBase =
@@ -15,7 +14,6 @@ const tabActive =
 
 export function MobileNav() {
   const { user } = useAuth();
-  const { isPlus } = usePlus();
   const navigate = useNavigate();
 
   const displayName =
@@ -33,16 +31,36 @@ export function MobileNav() {
         </Link>
         <Link to="/collab" className={tabBase} activeProps={{ className: tabActive }}>
           <Users className="h-[18px] w-[18px]" />
-          <span>Collab</span>
-        </Link>
-        <Link to="/gallery" className={tabBase} activeProps={{ className: tabActive }}>
-          <LayoutGrid className="h-[18px] w-[18px]" />
-          <span>Work</span>
+          <span>Collabs</span>
         </Link>
         <Link to="/groups" className={tabBase} activeProps={{ className: tabActive }}>
           <Sparkles className="h-[18px] w-[18px]" />
           <span>Groups</span>
         </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className={tabBase} aria-label="More">
+              <MoreHorizontal className="h-[18px] w-[18px]" />
+              <span>More</span>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="center" side="top" className="w-52">
+            <DropdownMenuLabel className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+              More
+            </DropdownMenuLabel>
+            {user && (
+              <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+                <ListChecks className="mr-2 h-4 w-4" /> In Progress
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
+              <LayoutGrid className="mr-2 h-4 w-4" /> Work
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate({ to: "/groups" })}>
+              <Calendar className="mr-2 h-4 w-4" /> Events
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {user ? (
           <DropdownMenu>
@@ -84,17 +102,6 @@ export function MobileNav() {
                 <Gift className="mr-2 h-4 w-4" /> Refer & Earn
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              {isPlus ? (
-                <DropdownMenuItem onClick={() => navigate({ to: "/settings", hash: "plus" })}>
-                  <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
-                  <span className="text-gradient-motion">Manage Plus</span>
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => navigate({ to: "/pricing" })}>
-                  <Sparkles className="mr-2 h-4 w-4 icon-gradient-motion" />
-                  <span className="text-gradient-motion">Go Plus</span>
-                </DropdownMenuItem>
-              )}
               <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                 <SettingsIcon className="mr-2 h-4 w-4" /> Settings
               </DropdownMenuItem>
