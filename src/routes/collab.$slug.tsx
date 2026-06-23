@@ -668,6 +668,9 @@ function CollabDetail() {
           postDescription={post.description}
         />
       )}
+
+      {/* Reverse provenance — public Works born from this Collab. */}
+      <WorksBornHere collabPostId={post.id} excludeWorkId={post.resulting_work_id ?? null} />
     </main>
   );
 }
