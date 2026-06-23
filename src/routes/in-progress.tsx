@@ -87,22 +87,16 @@ function InProgressPage() {
             <div key={i} className="h-20 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
-      ) : totalCount === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-          <h2 className="font-display text-2xl text-ink">All clear.</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-            Nothing assigned, no active workshops, no open collabs. Drop into a Workshop or post a Collab to start something.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-2">
-            <Link to="/workshop"><Button className="rounded-full">Drop into a Workshop</Button></Link>
-            <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
-          </div>
-        </div>
       ) : (
         <div className="space-y-10">
           <TasksSection tasks={tasks} />
           <WorkshopsSection workshops={workshops} />
           <CollabsSection collabs={collabs} />
+          {totalCount === 0 && (
+            <p className="text-center text-xs text-ink-muted">
+              All clear across the board. Anything you start will show up here.
+            </p>
+          )}
         </div>
       )}
     </main>
