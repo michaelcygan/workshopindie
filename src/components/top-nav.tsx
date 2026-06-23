@@ -81,27 +81,8 @@ export function TopNav() {
             Collabs
           </Link>
           <GroupsNavItem />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className={`${navLinkBase} inline-flex items-center gap-1`}>
-                More
-                <ChevronDown className="h-3 w-3 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="center" className="w-52">
-              {user && (
-                <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
-                  <ListChecks className="mr-2 h-4 w-4" /> In Progress
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
-                <LayoutGrid className="mr-2 h-4 w-4" /> Work
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/groups" })}>
-                <Calendar className="mr-2 h-4 w-4" /> Events
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <HoverMoreMenu navigate={navigate} hasUser={!!user} />
+
         </nav>
 
 
