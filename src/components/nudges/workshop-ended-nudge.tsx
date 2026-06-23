@@ -25,7 +25,6 @@ type Props = {
  */
 export function WorkshopEndedNudge({
   workshopId,
-  workshopSlug,
   workshopTitle,
   status,
   publishedWorkId,
