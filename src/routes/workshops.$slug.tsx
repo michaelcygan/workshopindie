@@ -241,6 +241,17 @@ function WorkshopDetail() {
       {isHost && isOver && ws.status !== "shipped" && <FinalizePanel ws={ws} onShipped={() => qc.invalidateQueries({ queryKey: ["workshop", slug] })} />}
 
       {ws.status === "shipped" && <ShippedBanner workshopId={ws.id} />}
+
+      {/* Wrap-up nudge — host or confirmed participant, finalizing/shipped */}
+      <WorkshopEndedNudge
+        workshopId={ws.id}
+        workshopSlug={ws.slug}
+        workshopTitle={ws.title}
+        status={ws.status}
+        publishedWorkId={ws.published_work_id}
+        publishedWorkSlug={publishedWork?.slug ?? null}
+        isParticipant={!!isConfirmedParticipant}
+      />
     </main>
   );
 }
