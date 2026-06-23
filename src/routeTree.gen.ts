@@ -19,6 +19,7 @@ import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as InProgressRouteImport } from './routes/in-progress'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as GoodbyeRouteImport } from './routes/goodbye'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -134,6 +135,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InProgressRoute = InProgressRouteImport.update({
+  id: '/in-progress',
+  path: '/in-progress',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GroupsRoute = GroupsRouteImport.update({
@@ -479,6 +485,7 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
+  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -553,6 +560,7 @@ export interface FileRoutesByTo {
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
+  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -630,6 +638,7 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
+  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
@@ -710,6 +719,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/goodbye'
     | '/groups'
+    | '/in-progress'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -784,6 +794,7 @@ export interface FileRouteTypes {
     | '/g'
     | '/gallery'
     | '/goodbye'
+    | '/in-progress'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -860,6 +871,7 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/goodbye'
     | '/groups'
+    | '/in-progress'
     | '/login'
     | '/onboarding'
     | '/pricing'
@@ -939,6 +951,7 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   GoodbyeRoute: typeof GoodbyeRoute
   GroupsRoute: typeof GroupsRouteWithChildren
+  InProgressRoute: typeof InProgressRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
@@ -1044,6 +1057,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/in-progress': {
+      id: '/in-progress'
+      path: '/in-progress'
+      fullPath: '/in-progress'
+      preLoaderRoute: typeof InProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/groups': {
@@ -1689,6 +1709,7 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   GoodbyeRoute: GoodbyeRoute,
   GroupsRoute: GroupsRouteWithChildren,
+  InProgressRoute: InProgressRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,

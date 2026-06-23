@@ -4750,6 +4750,7 @@ export type Database = {
           created_by: string | null
           due_by: string | null
           id: string
+          mentioned_user_ids: string[]
           sort_order: number
           status: string
           title: string
@@ -4764,6 +4765,7 @@ export type Database = {
           created_by?: string | null
           due_by?: string | null
           id?: string
+          mentioned_user_ids?: string[]
           sort_order?: number
           status?: string
           title: string
@@ -4778,6 +4780,7 @@ export type Database = {
           created_by?: string | null
           due_by?: string | null
           id?: string
+          mentioned_user_ids?: string[]
           sort_order?: number
           status?: string
           title?: string
