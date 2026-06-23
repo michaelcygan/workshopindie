@@ -13,7 +13,8 @@ import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
-import { CreditStrip, type CreditChip } from "@/components/credit-strip";
+import { type CreditChip } from "@/components/credit-strip";
+import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
@@ -272,28 +273,23 @@ function WorkDetail() {
           </a>
         )}
 
-        {/* Credits — cast strip */}
-        {credits.length > 0 && (
-          <section className="mt-12">
-            <h2 className="font-display text-2xl text-ink">Credits</h2>
-            <CreditStrip
-              className="mt-4"
-              credits={credits.map<CreditChip>((c) => ({
-                id: c.id,
-                role_label: c.role_label,
-                display_name: c.display_name,
-                profiles: c.profiles
-                  ? {
-                      id: c.profiles.id,
-                      display_name: c.profiles.display_name,
-                      username: c.profiles.username,
-                      avatar_url: c.profiles.avatar_url,
-                    }
-                  : null,
-              }))}
-            />
-          </section>
-        )}
+        {/* Credits — cast strip + provenance chips */}
+        <WorkCreditLayer
+          workId={work.id}
+          credits={credits.map<CreditChip>((c) => ({
+            id: c.id,
+            role_label: c.role_label,
+            display_name: c.display_name,
+            profiles: c.profiles
+              ? {
+                  id: c.profiles.id,
+                  display_name: c.profiles.display_name,
+                  username: c.profiles.username,
+                  avatar_url: c.profiles.avatar_url,
+                }
+              : null,
+          }))}
+        />
 
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
