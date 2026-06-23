@@ -84,7 +84,6 @@ export function WorkshopEndedNudge({
       >
         <Link
           to="/works/new"
-          search={{ from_workshop: workshopSlug } as never}
           className="inline-flex h-8 items-center rounded-full bg-primary px-3.5 text-xs font-medium text-primary-foreground hover:opacity-90"
         >
           Publish a Work
