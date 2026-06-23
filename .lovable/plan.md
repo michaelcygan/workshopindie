@@ -44,3 +44,17 @@ Extract the parallel-fetch + interleave pattern shared by `home-pulse-rail`, `in
 - **Edited files:** `src/components/top-nav.tsx` (avatar badge), `src/components/mobile-nav.tsx` (home tab + badge), `src/routes/index.tsx` (signed-in pickup card), `src/components/home-pulse-rail.tsx` (empty state), `src/routes/in-progress.tsx` (per-section empties), `src/routes/work.$slug.tsx` + `src/routes/g.$slug.e.$eventSlug.tsx` + workshop session page (mount nudges), `src/components/event-companion-panel.tsx` (photos empty).
 - **Auth:** `useInProgressBadge` calls the existing `getInProgress` server fn (already gated by `requireSupabaseAuth`); used only in components, never in public-route loaders.
 - **Out of scope (saved for later):** reverse provenance on Workshop/Collab pages (item 2 from the menu), the `usePulse` refactor beyond the small interleave helper, any new tables, any search/discovery work.
+
+---
+
+## Pass 8 — Reverse provenance
+
+Tight close-out pass. The 4-item Pass 8 menu (reverse provenance, mobile brand parity, `usePulse` refactor, `interleaveByRecency` util) collapsed to the one item with real user-facing value — the rest were either already coherent (mobile nav has its Home tab) or pure code-shape refactors with regression risk and zero UX delta.
+
+- **`getWorksBySource`** server fn in `src/lib/work-provenance.functions.ts`: public-read, accepts `{workshop_id?, collab_post_id?}`, returns minimal Work cards with author.
+- **`<WorksBornHere />`** in `src/components/works-born-here.tsx`: shared rail, renders nothing when no public Works exist (no empty void), supports `excludeWorkId` so it never double-features a Work already shown elsewhere on the page.
+- **Mounted** on `/workshops/$slug` (after `ShippedBanner`, no exclusion — the banner is the canonical one, the rail shows everything including community ships) and `/collab/$slug` (above the closing `</main>`, excluding `post.resulting_work_id` to avoid duplicating the hero Work).
+
+**Deliberately skipped:**
+- Mobile home pill / wordmark — bottom bar is already at 5 tabs, the Home tab + `●` mark already lands the brand. Adding a wordmark would crowd the layout.
+- `usePulse` shared helper + `interleaveByRecency<T>` util — code-shape only, no UX delta. The current callers have diverged enough (different source counts, different ordering rules) that the abstraction would leak.
