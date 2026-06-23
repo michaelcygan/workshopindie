@@ -75,7 +75,7 @@ export function TopNav() {
             className={navLinkBase}
             activeProps={{ className: navLinkActive }}
           >
-            Workshop
+            Workshops
           </Link>
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
