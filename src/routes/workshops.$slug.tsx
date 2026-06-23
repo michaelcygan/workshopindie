@@ -278,6 +278,9 @@ function WorkshopDetail() {
 
       {ws.status === "shipped" && <ShippedBanner workshopId={ws.id} />}
 
+      {/* Reverse provenance — every public Work born in this workshop. */}
+      <WorksBornHere workshopId={ws.id} />
+
       {/* Wrap-up nudge — host or confirmed participant, finalizing/shipped */}
       <WorkshopEndedNudge
         workshopId={ws.id}
