@@ -274,23 +274,33 @@ function WorkDetail() {
           </a>
         )}
 
-        {/* Credits — cast strip + provenance chips */}
-        <WorkCreditLayer
+        {/* Owner nudge — within 24h of publish, no credits yet */}
+        <WorkPublishedNudge
           workId={work.id}
-          credits={credits.map<CreditChip>((c) => ({
-            id: c.id,
-            role_label: c.role_label,
-            display_name: c.display_name,
-            profiles: c.profiles
-              ? {
-                  id: c.profiles.id,
-                  display_name: c.profiles.display_name,
-                  username: c.profiles.username,
-                  avatar_url: c.profiles.avatar_url,
-                }
-              : null,
-          }))}
+          createdBy={work.created_by}
+          publishedAt={work.published_at}
+          creditCount={credits.length}
         />
+
+        {/* Credits — cast strip + provenance chips */}
+        <div id="credits">
+          <WorkCreditLayer
+            workId={work.id}
+            credits={credits.map<CreditChip>((c) => ({
+              id: c.id,
+              role_label: c.role_label,
+              display_name: c.display_name,
+              profiles: c.profiles
+                ? {
+                    id: c.profiles.id,
+                    display_name: c.profiles.display_name,
+                    username: c.profiles.username,
+                    avatar_url: c.profiles.avatar_url,
+                  }
+                : null,
+            }))}
+          />
+        </div>
 
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
