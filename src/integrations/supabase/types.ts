@@ -769,6 +769,44 @@ export type Database = {
           },
         ]
       }
+      event_photos: {
+        Row: {
+          created_at: string
+          event_id: string
+          height: number | null
+          id: string
+          storage_path: string
+          uploader_id: string
+          width: number | null
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          height?: number | null
+          id?: string
+          storage_path: string
+          uploader_id: string
+          width?: number | null
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          height?: number | null
+          id?: string
+          storage_path?: string
+          uploader_id?: string
+          width?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_photos_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_showcase_items: {
         Row: {
           collab_id: string | null
@@ -5443,6 +5481,10 @@ export type Database = {
         }[]
       }
       user_age: { Args: { _user_id: string }; Returns: number }
+      user_attended_event: {
+        Args: { _event: string; _user: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
