@@ -418,6 +418,11 @@ export function useMediaRoom(roomId: string | undefined) {
         if (ev.active) return ev.from;
         return cur === ev.from ? null : cur;
       });
+      // Re-budget my outbound cam: a peer just started/stopped sharing, so the
+      // aggregate downlink across all peers just shifted and my cam should
+      // shrink (or expand) to keep the mesh under budget.
+      adaptiveFloorRef.current = null;
+      rebudget(count, ev.active || !!screenStreamRef.current);
     }
   }
 
