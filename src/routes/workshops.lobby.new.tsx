@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, Search, Sparkles, Users, Lock, Eye } from "lucide-react";
+import { Check, Search, Users, Lock, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
