@@ -506,6 +506,8 @@ export function useMediaRoom(roomId: string | undefined) {
   }, [roomId]);
 
   function teardownMedia() {
+    stopStatsPoller();
+    adaptiveFloorRef.current = null;
     for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
