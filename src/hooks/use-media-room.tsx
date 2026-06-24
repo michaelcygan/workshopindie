@@ -510,7 +510,7 @@ export function useMediaRoom(roomId: string | undefined) {
   function teardownMedia() {
     stopStatsPoller();
     adaptiveFloorRef.current = null;
-    for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
+    setBandwidthReduced(false);
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
     pairUsedTurnRef.current.clear();
