@@ -633,6 +633,7 @@ export function useMediaRoom(roomId: string | undefined) {
               closePeer(peerId);
             }
           }
+          rebudget(allEntries.length, profileRef.current.screenKbps > 0);
         });
 
         ch.on("presence", { event: "join" }, ({ key, newPresences }) => {
