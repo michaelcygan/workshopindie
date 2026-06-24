@@ -73,6 +73,17 @@ export function useMediaRoom(roomId: string | undefined) {
   const pairUsedTurnRef = useRef<Set<string>>(new Set());
   const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
 
+  // ---- bandwidth governor ---------------------------------------------------
+  // The current per-sender profile (cam kbps / fps / height + screen kbps).
+  // Mirrored in a ref so applyBudget() called from event handlers always sees
+  // the latest values without re-binding the function. Adaptive floor tracks
+  // step-downs from getStats() so we don't oscillate.
+  const profileRef = useRef<BitrateProfile>(pickProfile(1, false));
+  const adaptiveFloorRef = useRef<BitrateProfile | null>(null);
+  const statsTimerRef = useRef<number | null>(null);
+  const consecutiveBwLimitedRef = useRef<Map<string, number>>(new Map());
+
+
   async function getTurnIceServers(): Promise<RTCIceServer[]> {
     const now = Date.now();
     if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
