@@ -15,6 +15,7 @@ type Media = {
   screenSharerId: string | null;
   startScreenShare: () => Promise<void> | void;
   stopScreenShare: () => Promise<void> | void;
+  bandwidthReduced?: boolean;
 };
 
 export function WorkshopScreenSharePanel({
