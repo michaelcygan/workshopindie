@@ -4,6 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { vouchWork, unvouchWork } from "@/lib/work-vouches.functions";
+import { FLAGS } from "@/lib/flags";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,6 +31,7 @@ export function VouchRow({
   vouchers: Voucher[];
   className?: string;
 }) {
+  if (!FLAGS.VOUCHES) return null;
   const { user } = useAuth();
   const qc = useQueryClient();
   const vouch = useServerFn(vouchWork);

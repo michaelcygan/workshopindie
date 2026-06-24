@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useSearch, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
@@ -242,8 +242,25 @@ function NewWorkshop() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-display text-4xl text-ink">Schedule a Workshop</h1>
+        <h1 className="font-display text-4xl text-ink">New Workshop</h1>
         <p className="mt-1 text-ink-muted">A Workshop with a start time. People RSVP. They show up.</p>
+
+        <div className="mt-5 rounded-2xl border border-border bg-surface p-1.5 inline-flex gap-1 text-sm">
+          <button
+            type="button"
+            className="rounded-xl bg-ink px-3.5 py-1.5 text-background"
+            aria-pressed="true"
+          >
+            Pick a time
+          </button>
+          <Link
+            to="/workshops/lobby/new"
+            className="rounded-xl px-3.5 py-1.5 text-ink-soft hover:text-ink hover:bg-muted transition"
+          >
+            Right now
+          </Link>
+        </div>
+
         {search.inviteUserId && (
           <div className="mt-4 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm text-ink">
             We'll invite <span className="font-medium">{inviteProfile?.display_name ?? inviteProfile?.username ?? "them"}</span> as soon as this Workshop is scheduled.

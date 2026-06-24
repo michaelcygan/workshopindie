@@ -4,6 +4,7 @@ import { Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { boostWork, unboostWork } from "@/lib/work-boosts.functions";
+import { FLAGS } from "@/lib/flags";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ export function BoostWorkButton({
   className?: string;
   size?: "sm" | "md";
 }) {
+  if (!FLAGS.BOOSTS) return null;
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: myBoostId } = useMyWorkBoost();

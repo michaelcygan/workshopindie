@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { FLAGS } from "@/lib/flags";
 import { VouchRow, useVouchersForWorks } from "./work-vouch-button";
 import { BoostWorkButton } from "./work-boost-button";
 
@@ -14,6 +15,7 @@ export function WorkSocialProof({
   vouchCount: number;
   boostCount: number;
 }) {
+  if (!FLAGS.BOOSTS && !FLAGS.VOUCHES) return null;
   // Realtime totals so the row updates without a full reload
   const { data: live } = useQuery({
     queryKey: ["work-social-counts", workId],

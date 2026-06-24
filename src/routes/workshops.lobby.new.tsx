@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Check, Search, Sparkles, Users, Lock, Eye } from "lucide-react";
+import { Check, Search, Users, Lock, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -111,14 +111,27 @@ function NewLobbyPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="inline-flex items-center gap-2 rounded-full bg-surface-2 px-3 py-1 text-xs text-ink-soft">
-          <Sparkles className="h-3.5 w-3.5" /> New: invite-only Draft Workshop
-        </div>
-        <h1 className="mt-3 font-display text-4xl text-ink">Start a Draft Workshop</h1>
+        <h1 className="font-display text-4xl text-ink">New Workshop</h1>
         <p className="mt-2 text-ink-muted">
           A private Workshop for an idea. Pull in people you mutually follow —
           brainstorm together, then schedule it when you're ready.
         </p>
+
+        <div className="mt-5 rounded-2xl border border-border bg-surface p-1.5 inline-flex gap-1 text-sm">
+          <Link
+            to="/workshops/new"
+            className="rounded-xl px-3.5 py-1.5 text-ink-soft hover:text-ink hover:bg-muted transition"
+          >
+            Pick a time
+          </Link>
+          <button
+            type="button"
+            className="rounded-xl bg-ink px-3.5 py-1.5 text-background"
+            aria-pressed="true"
+          >
+            Right now
+          </button>
+        </div>
       </motion.div>
 
       <form onSubmit={submit} className="mt-8 space-y-7">
