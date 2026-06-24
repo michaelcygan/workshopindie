@@ -52,6 +52,7 @@ export function useMediaRoom(roomId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [bandwidthReduced, setBandwidthReduced] = useState(false);
   const [screenSharerId, setScreenSharerId] = useState<string | null>(null);
 
   const localStreamRef = useRef<MediaStream | null>(null);
