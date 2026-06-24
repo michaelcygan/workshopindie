@@ -5,7 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 const SITE = "https://workshopindie.com";
 
 const STATIC_PATHS = [
-  "", "gallery", "workshops", "collab", "cities", "groups", "g",
+  "", "gallery", "workshops", "collab", "cities", "groups", "g", "events",
   "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password",
 ];
 

@@ -346,6 +346,14 @@ function EventPage() {
           </div>
         )}
 
+        {/* What attendees bring to the table — weighted ABOVE tabs so visitors
+            (especially logged-out drop-ins from a share link) see real work and
+            open collabs from the people who will be in the room. This is the
+            single highest-converting surface on the event page. */}
+        <div className="mt-6">
+          <EventAttendeeWork eventId={ev.id} />
+        </div>
+
         {/* Tabs */}
         <div className="mt-6">
           <Tabs defaultValue="about">
@@ -399,7 +407,6 @@ function EventPage() {
 
             <TabsContent value="activity" className="mt-5 space-y-6">
               <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
-              <EventAttendeeWork eventId={ev.id} />
             </TabsContent>
 
             <TabsContent value="wall" className="mt-5">

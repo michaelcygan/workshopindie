@@ -33,6 +33,7 @@ import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
@@ -206,6 +207,11 @@ const GroupsIndexRoute = GroupsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => GroupsRoute,
+} as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DmsIndexRoute = DmsIndexRouteImport.update({
   id: '/dms/',
@@ -535,6 +541,7 @@ export interface FileRoutesByFullPath {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
@@ -608,6 +615,7 @@ export interface FileRoutesByTo {
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
+  '/events': typeof EventsIndexRoute
   '/groups': typeof GroupsIndexRoute
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
@@ -688,6 +696,7 @@ export interface FileRoutesById {
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
+  '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
@@ -769,6 +778,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/events/'
     | '/groups/'
     | '/me/'
     | '/workshop/'
@@ -842,6 +852,7 @@ export interface FileRouteTypes {
     | '/cities'
     | '/collab'
     | '/dms'
+    | '/events'
     | '/groups'
     | '/me'
     | '/workshop'
@@ -921,6 +932,7 @@ export interface FileRouteTypes {
     | '/cities/'
     | '/collab/'
     | '/dms/'
+    | '/events/'
     | '/groups/'
     | '/me/'
     | '/workshop/'
@@ -977,6 +989,7 @@ export interface RootRouteChildren {
   WorksSlugRoute: typeof WorksSlugRoute
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
+  EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
@@ -1156,6 +1169,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/groups/'
       preLoaderRoute: typeof GroupsIndexRouteImport
       parentRoute: typeof GroupsRoute
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/dms/': {
       id: '/dms/'
@@ -1735,6 +1755,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorksSlugRoute: WorksSlugRoute,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
+  EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,

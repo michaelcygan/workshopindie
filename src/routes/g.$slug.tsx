@@ -116,19 +116,16 @@ function GroupPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Default to the tab most likely to have content: events > work > collab > workshops.
+  // With a dedicated /events index now live, the group page leads with the
+  // creative output of the scene. Default to Collabs (highest signal of "what's
+  // happening I can join"), then Work, then Workshops, then Events.
   const defaultTab: Tab = useMemo(() => {
-    if (group.work_count > 0) return "work";
     if (group.collab_count > 0) return "collab";
+    if (group.work_count > 0) return "work";
     if (group.workshop_count > 0) return "workshops";
     return "events";
-  }, [group.work_count, group.collab_count, group.workshop_count]);
-  const [tab, setTab] = useState<Tab>("events");
-  // Promote to a smarter default once on mount if events tab will be empty.
-  useEffect(() => {
-    if (defaultTab !== "events") setTab(defaultTab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [group.collab_count, group.work_count, group.workshop_count]);
+  const [tab, setTab] = useState<Tab>(defaultTab);
 
   const qc = useQueryClient();
 
@@ -320,10 +317,10 @@ function GroupPage() {
         {/* Tabs */}
         <div className="sticky top-0 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:flex-wrap md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
-            { id: "events" as const, label: "Events", icon: Calendar, count: null },
-            { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "collab" as const, label: "Collabs", icon: Megaphone, count: group.collab_count },
+            { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
+            { id: "events" as const, label: "Events", icon: Calendar, count: null },
             { id: "members" as const, label: "Members", icon: Users, count: group.member_count },
             { id: "about" as const, label: "About", icon: Info, count: null },
           ].map((t) => {
@@ -400,10 +397,8 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-xl text-ink">Upcoming events</h3>
-        {isAdmin ? (
+        {isAdmin && (
           <Link to="/admin/events" className="text-xs text-primary hover:underline">+ Create event (admin)</Link>
-        ) : (
-          <span className="text-[11px] text-ink-muted" title="Hosting opens to all members in a later tier">Request to host (coming soon)</span>
         )}
       </div>
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
