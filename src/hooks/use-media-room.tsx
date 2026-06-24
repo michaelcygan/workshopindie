@@ -105,6 +105,135 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
+  /**
+   * Push the current bandwidth profile to every outbound video sender.
+   * Called whenever the room shape changes (join/leave, screen share start/stop,
+   * remote screen signal). Also applies camera-source constraints so the
+   * encoder isn't asked to downsize a 1080p capture every frame.
+   *
+   * Pure best-effort — every call is wrapped in try/catch and silently no-ops
+   * if a sender lacks setParameters (Safari < 16 etc).
+   */
+  async function applyBudget() {
+    const profile = profileRef.current;
+    const screenActive = profile.screenKbps > 0;
+    const localCamTrack = (modeRef.current === "video"
+      ? localStreamRef.current?.getVideoTracks()[0] ?? null
+      : null);
+    const localScreenTrack = screenStreamRef.current?.getVideoTracks()[0] ?? null;
+
+    // Downsample the source itself so the encoder has less work to do. We
+    // skip the cam constraint while sharing — cam isn't on the wire then.
+    if (localCamTrack && !screenActive) {
+      try {
+        await localCamTrack.applyConstraints({
+          frameRate: { max: profile.camFps },
+          height: { max: profile.camMaxHeight },
+        });
+      } catch { /* noop — some devices reject mid-stream constraint changes */ }
+    }
+    if (localScreenTrack) {
+      try {
+        localScreenTrack.contentHint = "detail";
+        await localScreenTrack.applyConstraints({ frameRate: { max: profile.screenFps } });
+      } catch { /* noop */ }
+    }
+    if (localCamTrack) {
+      try { localCamTrack.contentHint = "motion"; } catch { /* noop */ }
+    }
+
+    for (const pc of pcsRef.current.values()) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (!sender || !sender.track) continue;
+      const isScreen = sender.track === localScreenTrack;
+      const kbps = isScreen ? profile.screenKbps : profile.camKbps;
+      const fps = isScreen ? profile.screenFps : profile.camFps;
+      if (kbps <= 0) continue;
+      try {
+        const params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) {
+          params.encodings = [{}];
+        }
+        params.encodings[0] = {
+          ...params.encodings[0],
+          maxBitrate: kbps * 1000,
+          maxFramerate: fps,
+        };
+        // "maintain-framerate" keeps text legible during screen share;
+        // "balanced" lets the encoder trade resolution for smoothness on cam.
+        params.degradationPreference = isScreen ? "maintain-framerate" : "balanced";
+        await sender.setParameters(params);
+      } catch { /* noop — Safari pre-16 throws on degradationPreference */ }
+    }
+  }
+
+  /**
+   * Lightweight outbound-rtp poller. If a sender stays `bandwidth`-limited for
+   * 2 consecutive samples (8s), step the profile down one row and remember
+   * the floor so we never re-raise above it until the next mode/share change.
+   */
+  function startStatsPoller() {
+    if (statsTimerRef.current !== null) return;
+    const tick = async () => {
+      try {
+        let shouldStepDown = false;
+        for (const [peerId, pc] of pcsRef.current.entries()) {
+          const stats = await pc.getStats();
+          let bwLimited = false;
+          stats.forEach((r) => {
+            // @ts-expect-error — qualityLimitationReason is not in lib.dom yet
+            if (r.type === "outbound-rtp" && r.kind === "video" && r.qualityLimitationReason === "bandwidth") {
+              bwLimited = true;
+            }
+          });
+          const prev = consecutiveBwLimitedRef.current.get(peerId) ?? 0;
+          const next = bwLimited ? prev + 1 : 0;
+          consecutiveBwLimitedRef.current.set(peerId, next);
+          if (next >= 2) shouldStepDown = true;
+        }
+        if (shouldStepDown) {
+          const screenActive = profileRef.current.screenKbps > 0;
+          const stepped = stepDown(profileRef.current, screenActive);
+          if (stepped) {
+            profileRef.current = stepped;
+            adaptiveFloorRef.current = stepped;
+            consecutiveBwLimitedRef.current.clear();
+            applyBudget().catch(() => {});
+          }
+        }
+      } catch { /* noop */ }
+    };
+    statsTimerRef.current = window.setInterval(tick, 4000);
+  }
+
+  function stopStatsPoller() {
+    if (statsTimerRef.current !== null) {
+      clearInterval(statsTimerRef.current);
+      statsTimerRef.current = null;
+    }
+    consecutiveBwLimitedRef.current.clear();
+  }
+
+  /**
+   * Recompute the profile from current presence + screen-share state, honoring
+   * any adaptive floor set by the stats poller, and push it to all senders.
+   */
+  function rebudget(peerCount: number, screenActive: boolean) {
+    const base = pickProfile(peerCount, screenActive);
+    const floor = adaptiveFloorRef.current;
+    // Floor only applies within the same screen-active state; flipping share
+    // on/off resets the budget so we can re-explore upward.
+    const next = floor && (floor.screenKbps > 0) === screenActive
+      ? { ...base,
+          camKbps: Math.min(base.camKbps, floor.camKbps),
+          screenKbps: Math.min(base.screenKbps || floor.screenKbps, floor.screenKbps || base.screenKbps) }
+      : base;
+    profileRef.current = next;
+    applyBudget().catch(() => {});
+  }
+
+
+
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
       ...prev,
