@@ -683,6 +683,10 @@ export function useMediaRoom(roomId: string | undefined) {
           }
         }
         if (stream && stream.getAudioTracks().length > 0) startSpeakingDetector(stream);
+        const presentCount = Object.keys(ch.presenceState() as Record<string, unknown>).filter((k) => k !== "lurker").length;
+        adaptiveFloorRef.current = null;
+        rebudget(presentCount, !!screenStreamRef.current);
+        startStatsPoller();
       }
 
       setJoined(true);
