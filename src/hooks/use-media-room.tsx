@@ -181,8 +181,8 @@ export function useMediaRoom(roomId: string | undefined) {
           const stats = await pc.getStats();
           let bwLimited = false;
           stats.forEach((r) => {
-            // @ts-expect-error — qualityLimitationReason is not in lib.dom yet
-            if (r.type === "outbound-rtp" && r.kind === "video" && r.qualityLimitationReason === "bandwidth") {
+            const rec = r as { type?: string; kind?: string; qualityLimitationReason?: string };
+            if (rec.type === "outbound-rtp" && rec.kind === "video" && rec.qualityLimitationReason === "bandwidth") {
               bwLimited = true;
             }
           });
