@@ -1,60 +1,93 @@
-## Pass 7 — Knit the new IA together
+# Pass 9 — Marie Kondo (revised to your notes)
 
-The 6-pass build is shipped and the nav refactor closed Pass 6. This pass makes the re-weighted flows feel earned: the dashboard gets used, finished actions point to the next one, and new surfaces stop rendering blank voids. Tight scope, no new tables, no migrations.
-
-### 1. Wire In Progress into the daily loop
-
-**Why:** the `/in-progress` dashboard exists but is buried under More. Without an ambient surface, nobody opens it.
-
-- **Avatar badge (desktop top-nav + mobile You tab).** Add a small count dot to the avatar trigger showing `open tasks due ≤7d + workshops you're confirmed for next 14d`. Polls `getInProgress` via TanStack Query with `staleTime: 60_000`. Hidden when zero.
-- **Signed-in homepage entry.** On `/`, when `user` exists and the bundle is non-empty, render a single "Pick up where you left off" card above the Pulse Rail: shows the top 1 task + top 1 workshop with one CTA each ("Open task" → workshop room; "Open workshop" → `/w/$slug`) and a "See all" link to `/in-progress`. Signed-out: render nothing (homepage stays as-is).
-- New helper `useInProgressBadge()` in `src/hooks/` so the avatar and the homepage card share one query key.
-
-### 2. Post-action "what's next" nudges
-
-**Why:** users currently hit a dead end after the big actions. The new IA has obvious next steps; surface them inline.
-
-Reuse the existing `become-host-nudge` / `create-collab-nudge` visual pattern (small inline card, dismissible, never modal). Three nudges:
-
-- **After publishing a Work** (on the Work detail page, owner only, work.published_at within 24h): "Got collaborators? Credit them" → opens existing credit flow. Falls back to "Attach this to an upcoming Event you're in" when credits are already set.
-- **After RSVPing 'going' to an Event**: replace the success toast with a persistent card on the Event page pointing to Photos + Companion ("Drop photos here after the event · Open the companion thread now").
-- **After ending a Workshop session** (host only, session.ended_at within 7d, no work yet linked): "Publish what you made →" deep-links into `/work/new?from_session=<id>`. If a work *is* linked, swap to "Share the result" with a copy-link button.
-
-Each nudge stores a dismiss flag in `localStorage` keyed by `nudge:<kind>:<entity-id>:<user-id>` so it doesn't nag.
-
-### 3. Honest empty states + mobile home parity
-
-**Why:** Pulse rail, In Progress, and Event Photos all render `null`/blank when empty — first-time users see a void where the most interesting surface should be.
-
-- `home-pulse-rail.tsx`: empty branch renders a one-line prompt + two primary actions ("Follow a few people" → `/gallery`, "Post a Collab" → `/collab/new`).
-- `/in-progress` page sections (tasks / workshops / collabs): each gets its own per-section empty with the right primary action ("Join a workshop", "Post a Collab", "Browse open calls").
-- `event-companion-panel` photos tab: empty shows "Be first to drop a photo" + upload button (component already exists).
-- **Mobile home parity.** Bottom tab bar has no home affordance — only the orange dot inside More. Add a left-most "Home" tab with the `●` mark (no wordmark — space-constrained) so mobile users have a one-tap path back to `/`. Shift the existing 5 tabs accordingly; if 6 is too tight, fold "More" into the avatar/You sheet.
-
-### 4. Small refactor (bonus, only if it stays under ~15 min)
-
-Extract the parallel-fetch + interleave pattern shared by `home-pulse-rail`, `in-progress.functions`, and `event-companion-panel` into a single `interleaveByRecency<T>(sources, key)` util in `src/lib/`. Pure function, no behavior change, removes ~50 lines of duplication. Skip if any caller has diverged enough that the abstraction would leak.
+Goal: cleanest, strongest v1 a solo founder can run. Bold-but-not-destructive. Three small passes, each independently shippable and reversible via feature flags.
 
 ---
 
-### Technical notes
+## What's getting cut, kept, and clarified
 
-- **No DB changes.** Everything reuses existing `workshop_tasks`, `workshop_participants`, `collab_posts`, `works`, `group_event_rsvps`, `event_photos`. No migrations, no new policies.
-- **New files:** `src/hooks/use-in-progress-badge.ts`, `src/components/pickup-card.tsx`, `src/components/nudges/work-published-nudge.tsx`, `src/components/nudges/event-rsvp-nudge.tsx`, `src/components/nudges/workshop-ended-nudge.tsx`.
-- **Edited files:** `src/components/top-nav.tsx` (avatar badge), `src/components/mobile-nav.tsx` (home tab + badge), `src/routes/index.tsx` (signed-in pickup card), `src/components/home-pulse-rail.tsx` (empty state), `src/routes/in-progress.tsx` (per-section empties), `src/routes/work.$slug.tsx` + `src/routes/g.$slug.e.$eventSlug.tsx` + workshop session page (mount nudges), `src/components/event-companion-panel.tsx` (photos empty).
-- **Auth:** `useInProgressBadge` calls the existing `getInProgress` server fn (already gated by `requireSupabaseAuth`); used only in components, never in public-route loaders.
-- **Out of scope (saved for later):** reverse provenance on Workshop/Collab pages (item 2 from the menu), the `usePulse` refactor beyond the small interleave helper, any new tables, any search/discovery work.
+### Cut from v1 UI (code/tables stay, flag-gated off)
+- **Boosts** — `collab-boosts`, `work-boosts` UI hidden everywhere (`WorkSocialProof`, collab cards, work detail). Tables + functions retained.
+- **Vouches** — `collab-vouches`, `work-vouches` UI hidden. Tables + functions retained.
+- **Recorder personas** — `recorder-personas.functions` call sites removed from room UI. File stays.
+
+### Kept (your call, agreed)
+- **Referrals** (`/refer`, `?ref=username` attribution) — useful from user #1.
+- **Plus / Pricing** (`/pricing`, `use-plus`, Stripe Plus tier) — useful from user #2. No changes.
+- **Room pins** (`room-pins`, `room-work-pins`) — critical for "talk about what I'm making" in the live room. No changes.
+- **Lineup** (`lineup.functions`) — critical for in-person events. No changes.
+- **Reverse provenance** — simplified to a clean credits-style chip rail. No vouches/boosts/extras grafted on. The existing `WorksBornHere` rail is already this; I'll verify it's just title + author + cover and trim any noise.
+
+### Route collapse (your A)
+Single canonical entry per primitive. UI unchanged, just fewer doors.
+
+| Keep (canonical) | Redirect → keep / delete |
+|---|---|
+| `/workshops` (home for Workshops) | `/workshop` → 301 to `/workshops`; delete `workshop.tsx` shell |
+| `/workshops/$slug` | `/workshop/$id` → resolve to slug & 301; delete `workshop.$id.tsx` once stable |
+| `/workshops/new` (unified create) | delete `/workshops/lobby/new`, fold into new flow as a "When?" toggle (now / scheduled). In-person stays out of v1 — leave a tiny TODO comment, no UI. |
+| `/me` | absorb `/me/network` as a tab inside `/me`; keep `/me/friends`, `/me/collabs`, `/me/tickets`, `/me/blocked` |
+| `/collab`, `/works/$slug`, `/g/$slug`, `/g/$slug/e/$eventSlug` | unchanged |
+
+### Workshop creation — one flow (your C)
+`/workshops/new` becomes the single form with a "When?" radio:
+- **Right now** → behaves like today's `/workshops/lobby/new` (instant lobby).
+- **Pick a time** → behaves like today's `/workshops/new` (scheduled).
+- In-person: not in v1. No UI surfaced.
+
+Removes ~240 LOC and the #1 navigation confusion for new users.
+
+### In Progress — buildable, not fragile (your E)
+You're right that the current trajectory could get gnarly. Posture for v1:
+
+**Keep:**
+- `/in-progress` page (one section: open tasks where you're assigned or @mentioned, due ≤14d or undated).
+- Avatar dot badge on top-nav + mobile You tab (count only, single query).
+- "Pick up where you left off" card on signed-in homepage (top 1 task, top 1 workshop, one CTA each).
+
+**Trim now (to stop it from growing into a brittle dashboard):**
+- Collapse the three sections (tasks / workshops / collabs) into **one unified list** sorted by recency + due date. Less code, less empty-state handling, easier to reason about.
+- One `useInProgressBadge` query feeds **all three surfaces** (avatar, homepage card, `/in-progress` page). No parallel queries, no drift.
+- Hard cap: 20 items. If you have more, you have other problems.
+
+This stays small enough that future growth (more entity types, smarter ranking) is additive, not a rewrite.
+
+### Admin consolidation (your D)
+15 admin routes → **3 tabs** in a single `/admin` shell:
+- **Moderation:** reports + moderation + audit + users (+ `users.$id` detail)
+- **Content:** events + groups + links + badges + marketplace
+- **Ops:** analytics + engagement + growth + revenue + geo + ops
+
+Same components, one nav. Existing routes become 301 redirects so any bookmark/deep-link still works. Solo-founder reality: you'll open admin maybe twice a week — three tabs is the right surface.
+
+### Operational simplifications (rest of D)
+- **`<EmptyState />`** component — replace the ~12 bespoke empties (icon, title, body, single CTA). ~150 LOC saved, every future empty is free.
+- **`src/lib/flags.ts`** — single source of truth: `BOOSTS=false, VOUCHES=false, RECORDER_PERSONAS=false` (rest true). Components read the flag and render `null`. Flip to re-enable, no archaeology.
+- **DMs vs Chat audit** — verify `dms.functions` and `chat.functions` aren't both wired to the same UI. Pick one (DMs is the user-facing concept), point components there. Schemas untouched.
+- **Co-located queries** for the three heaviest routes (`/`, `/workshops/$slug`, `/g/$slug`) — fold their N parallel server fns into one `getPageData` per route. Fewer round-trips, fewer error branches.
+
+### Not touching
+- The 6 hero flows, the homepage hero + 3 cards, Pulse rail, nudges, event lifecycle, photos, projector mode, age gate, SEO/sitemap, Stripe ticketing — all stay.
 
 ---
 
-## Pass 8 — Reverse provenance
+## Execution order (3 passes)
 
-Tight close-out pass. The 4-item Pass 8 menu (reverse provenance, mobile brand parity, `usePulse` refactor, `interleaveByRecency` util) collapsed to the one item with real user-facing value — the rest were either already coherent (mobile nav has its Home tab) or pure code-shape refactors with regression risk and zero UX delta.
+**9a — Routes & creation flow** (~6 files deleted, 1 unified create form, redirects added)
+Workshop route collapse, unified `/workshops/new`, `/me/network` → tab, redirect aliases.
 
-- **`getWorksBySource`** server fn in `src/lib/work-provenance.functions.ts`: public-read, accepts `{workshop_id?, collab_post_id?}`, returns minimal Work cards with author.
-- **`<WorksBornHere />`** in `src/components/works-born-here.tsx`: shared rail, renders nothing when no public Works exist (no empty void), supports `excludeWorkId` so it never double-features a Work already shown elsewhere on the page.
-- **Mounted** on `/workshops/$slug` (after `ShippedBanner`, no exclusion — the banner is the canonical one, the rail shows everything including community ships) and `/collab/$slug` (above the closing `</main>`, excluding `post.resulting_work_id` to avoid duplicating the hero Work).
+**9b — Feature flags + UI hides**
+Add `src/lib/flags.ts`. Hide Boosts, Vouches, Recorder Personas at all UI mount points. Audit visual fallout. No DB changes.
 
-**Deliberately skipped:**
-- Mobile home pill / wordmark — bottom bar is already at 5 tabs, the Home tab + `●` mark already lands the brand. Adding a wordmark would crowd the layout.
-- `usePulse` shared helper + `interleaveByRecency<T>` util — code-shape only, no UX delta. The current callers have diverged enough (different source counts, different ordering rules) that the abstraction would leak.
+**9c — Admin + EmptyState + In Progress trim + co-located queries**
+3-tab admin shell with route-level redirects. Extract `<EmptyState />`. Collapse In Progress to one unified list + single query hook. Fold heavy-route queries into `getPageData` server fns.
+
+Estimated total: **~2,000–2,500 LOC removed, ~10 routes collapsed, 0 schema changes, 0 UI regressions** (everything cut from UI is flag-gated, not deleted).
+
+---
+
+## One quick confirmation before I build
+
+For the **route redirects** (e.g. `/workshop/$id` → `/workshops/$slug`, old admin routes → tabbed `/admin`): want me to keep the redirect aliases **indefinitely** (safer for bookmarks/SEO, ~30 LOC of glue) or **6 months then delete** (cleaner long-term)?
+
+Default if you don't answer: **keep indefinitely** — they cost almost nothing and SEO equity is real once `sitemap.xml` is crawled.
