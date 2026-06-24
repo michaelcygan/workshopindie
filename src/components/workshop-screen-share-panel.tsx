@@ -15,6 +15,7 @@ type Media = {
   screenSharerId: string | null;
   startScreenShare: () => Promise<void> | void;
   stopScreenShare: () => Promise<void> | void;
+  bandwidthReduced?: boolean;
 };
 
 export function WorkshopScreenSharePanel({
@@ -77,6 +78,12 @@ export function WorkshopScreenSharePanel({
           </span>
         )}
       </div>
+
+      {media.bandwidthReduced && (media.isScreenSharing || media.screenSharerId) && (
+        <p className="mt-3 rounded-lg bg-amber-500/10 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-300">
+          Cams reduced to keep the room smooth — sharing a screen takes priority on the network.
+        </p>
+      )}
 
       <p className="mt-3 text-[11px] text-ink-muted">
         Tip: in the browser's screen-picker, choose <span className="font-medium text-ink-soft">Entire Screen</span> for demos,

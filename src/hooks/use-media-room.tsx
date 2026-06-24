@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { mintTurnCreds } from "@/lib/turn.functions";
+import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
 
 const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
@@ -51,6 +52,7 @@ export function useMediaRoom(roomId: string | undefined) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
+  const [bandwidthReduced, setBandwidthReduced] = useState(false);
   const [screenSharerId, setScreenSharerId] = useState<string | null>(null);
 
   const localStreamRef = useRef<MediaStream | null>(null);
@@ -72,6 +74,17 @@ export function useMediaRoom(roomId: string | undefined) {
   const pairUsedTurnRef = useRef<Set<string>>(new Set());
   const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
 
+  // ---- bandwidth governor ---------------------------------------------------
+  // The current per-sender profile (cam kbps / fps / height + screen kbps).
+  // Mirrored in a ref so applyBudget() called from event handlers always sees
+  // the latest values without re-binding the function. Adaptive floor tracks
+  // step-downs from getStats() so we don't oscillate.
+  const profileRef = useRef<BitrateProfile>(pickProfile(1, false));
+  const adaptiveFloorRef = useRef<BitrateProfile | null>(null);
+  const statsTimerRef = useRef<number | null>(null);
+  const consecutiveBwLimitedRef = useRef<Map<string, number>>(new Map());
+
+
   async function getTurnIceServers(): Promise<RTCIceServer[]> {
     const now = Date.now();
     if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
@@ -92,6 +105,136 @@ export function useMediaRoom(roomId: string | undefined) {
       turnFetchPromiseRef.current = null;
     }
   }
+
+  /**
+   * Push the current bandwidth profile to every outbound video sender.
+   * Called whenever the room shape changes (join/leave, screen share start/stop,
+   * remote screen signal). Also applies camera-source constraints so the
+   * encoder isn't asked to downsize a 1080p capture every frame.
+   *
+   * Pure best-effort — every call is wrapped in try/catch and silently no-ops
+   * if a sender lacks setParameters (Safari < 16 etc).
+   */
+  async function applyBudget() {
+    const profile = profileRef.current;
+    const screenActive = profile.screenKbps > 0;
+    const localCamTrack = (modeRef.current === "video"
+      ? localStreamRef.current?.getVideoTracks()[0] ?? null
+      : null);
+    const localScreenTrack = screenStreamRef.current?.getVideoTracks()[0] ?? null;
+
+    // Downsample the source itself so the encoder has less work to do. We
+    // skip the cam constraint while sharing — cam isn't on the wire then.
+    if (localCamTrack && !screenActive) {
+      try {
+        await localCamTrack.applyConstraints({
+          frameRate: { max: profile.camFps },
+          height: { max: profile.camMaxHeight },
+        });
+      } catch { /* noop — some devices reject mid-stream constraint changes */ }
+    }
+    if (localScreenTrack) {
+      try {
+        localScreenTrack.contentHint = "detail";
+        await localScreenTrack.applyConstraints({ frameRate: { max: profile.screenFps } });
+      } catch { /* noop */ }
+    }
+    if (localCamTrack) {
+      try { localCamTrack.contentHint = "motion"; } catch { /* noop */ }
+    }
+
+    for (const pc of pcsRef.current.values()) {
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (!sender || !sender.track) continue;
+      const isScreen = sender.track === localScreenTrack;
+      const kbps = isScreen ? profile.screenKbps : profile.camKbps;
+      const fps = isScreen ? profile.screenFps : profile.camFps;
+      if (kbps <= 0) continue;
+      try {
+        const params = sender.getParameters();
+        if (!params.encodings || params.encodings.length === 0) {
+          params.encodings = [{}];
+        }
+        params.encodings[0] = {
+          ...params.encodings[0],
+          maxBitrate: kbps * 1000,
+          maxFramerate: fps,
+        };
+        // "maintain-framerate" keeps text legible during screen share;
+        // "balanced" lets the encoder trade resolution for smoothness on cam.
+        params.degradationPreference = isScreen ? "maintain-framerate" : "balanced";
+        await sender.setParameters(params);
+      } catch { /* noop — Safari pre-16 throws on degradationPreference */ }
+    }
+  }
+
+  /**
+   * Lightweight outbound-rtp poller. If a sender stays `bandwidth`-limited for
+   * 2 consecutive samples (8s), step the profile down one row and remember
+   * the floor so we never re-raise above it until the next mode/share change.
+   */
+  function startStatsPoller() {
+    if (statsTimerRef.current !== null) return;
+    const tick = async () => {
+      try {
+        let shouldStepDown = false;
+        for (const [peerId, pc] of pcsRef.current.entries()) {
+          const stats = await pc.getStats();
+          let bwLimited = false;
+          stats.forEach((r) => {
+            const rec = r as { type?: string; kind?: string; qualityLimitationReason?: string };
+            if (rec.type === "outbound-rtp" && rec.kind === "video" && rec.qualityLimitationReason === "bandwidth") {
+              bwLimited = true;
+            }
+          });
+          const prev = consecutiveBwLimitedRef.current.get(peerId) ?? 0;
+          const next = bwLimited ? prev + 1 : 0;
+          consecutiveBwLimitedRef.current.set(peerId, next);
+          if (next >= 2) shouldStepDown = true;
+        }
+        if (shouldStepDown) {
+          const screenActive = profileRef.current.screenKbps > 0;
+          const stepped = stepDown(profileRef.current, screenActive);
+          if (stepped) {
+            profileRef.current = stepped;
+            adaptiveFloorRef.current = stepped;
+            setBandwidthReduced(true);
+            consecutiveBwLimitedRef.current.clear();
+            applyBudget().catch(() => {});
+          }
+        }
+      } catch { /* noop */ }
+    };
+    statsTimerRef.current = window.setInterval(tick, 4000);
+  }
+
+  function stopStatsPoller() {
+    if (statsTimerRef.current !== null) {
+      clearInterval(statsTimerRef.current);
+      statsTimerRef.current = null;
+    }
+    consecutiveBwLimitedRef.current.clear();
+  }
+
+  /**
+   * Recompute the profile from current presence + screen-share state, honoring
+   * any adaptive floor set by the stats poller, and push it to all senders.
+   */
+  function rebudget(peerCount: number, screenActive: boolean) {
+    const base = pickProfile(peerCount, screenActive);
+    const floor = adaptiveFloorRef.current;
+    // Floor only applies within the same screen-active state; flipping share
+    // on/off resets the budget so we can re-explore upward.
+    const next = floor && (floor.screenKbps > 0) === screenActive
+      ? { ...base,
+          camKbps: Math.min(base.camKbps, floor.camKbps),
+          screenKbps: Math.min(base.screenKbps || floor.screenKbps, floor.screenKbps || base.screenKbps) }
+      : base;
+    profileRef.current = next;
+    applyBudget().catch(() => {});
+  }
+
+
 
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
@@ -277,6 +420,11 @@ export function useMediaRoom(roomId: string | undefined) {
         if (ev.active) return ev.from;
         return cur === ev.from ? null : cur;
       });
+      // Re-budget my outbound cam: a peer just started/stopped sharing, so the
+      // aggregate downlink across all peers just shifted and my cam should
+      // shrink (or expand) to keep the mesh under budget.
+      adaptiveFloorRef.current = null;
+      rebudget(count, ev.active || !!screenStreamRef.current);
     }
   }
 
@@ -360,6 +508,9 @@ export function useMediaRoom(roomId: string | undefined) {
   }, [roomId]);
 
   function teardownMedia() {
+    stopStatsPoller();
+    adaptiveFloorRef.current = null;
+    setBandwidthReduced(false);
     for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
@@ -492,6 +643,7 @@ export function useMediaRoom(roomId: string | undefined) {
               closePeer(peerId);
             }
           }
+          rebudget(allEntries.length, profileRef.current.screenKbps > 0);
         });
 
         ch.on("presence", { event: "join" }, ({ key, newPresences }) => {
@@ -541,6 +693,10 @@ export function useMediaRoom(roomId: string | undefined) {
           }
         }
         if (stream && stream.getAudioTracks().length > 0) startSpeakingDetector(stream);
+        const presentCount = Object.keys(ch.presenceState() as Record<string, unknown>).filter((k) => k !== "lurker").length;
+        adaptiveFloorRef.current = null;
+        rebudget(presentCount, !!screenStreamRef.current);
+        startStatsPoller();
       }
 
       setJoined(true);
@@ -624,7 +780,9 @@ export function useMediaRoom(roomId: string | undefined) {
       }
     }
     if (screen) for (const t of screen.getTracks()) t.stop();
-  }, [myId]);
+    adaptiveFloorRef.current = null;
+    rebudget(count, false);
+  }, [myId, count]);
 
   const startScreenShare = useCallback(async () => {
     if (!myId || !channelRef.current) {
@@ -635,7 +793,13 @@ export function useMediaRoom(roomId: string | undefined) {
     let captured: MediaStream;
     try {
       captured = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: 15, max: 30 } },
+        // Cap at 1080p / 15fps at the source — screenshare encoding gets
+        // expensive fast and the mesh budget tightens it further per-peer.
+        video: {
+          frameRate: { ideal: 12, max: 15 },
+          width: { max: 1920 },
+          height: { max: 1080 },
+        },
         audio: false,
       });
     } catch (e) {
@@ -672,7 +836,9 @@ export function useMediaRoom(roomId: string | undefined) {
       event: "signal",
       payload: { type: "screen", from: myId, active: true } satisfies SignalEvent,
     });
-  }, [myId, stopScreenShare]);
+    adaptiveFloorRef.current = null;
+    rebudget(count, true);
+  }, [myId, count, stopScreenShare]);
 
   // Swap the outbound video track on every peer connection. Used by the
   // Director PiP to push a composed canvas (split / cam-only) to the room
@@ -723,6 +889,7 @@ export function useMediaRoom(roomId: string | undefined) {
     startScreenShare,
     stopScreenShare,
     setOutboundScreenTrack,
+    bandwidthReduced,
     cap: ROOM_CAP,
     videoCap: VIDEO_CAP,
   };

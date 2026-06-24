@@ -1,93 +1,104 @@
-# Pass 9 — Marie Kondo (revised to your notes)
+# Pass 10 — Mesh chat bandwidth optimization
 
-Goal: cleanest, strongest v1 a solo founder can run. Bold-but-not-destructive. Three small passes, each independently shippable and reversible via feature flags.
+## The problem
 
----
+Workshop's live room is a **full WebRTC mesh** (cap 5) in `src/hooks/use-media-room.tsx`. Every sender uploads its track to N-1 peers, so my upload cost = my-bitrate × (N-1). Default browser cam encodes at ~1.5–2.5 Mbps and screen capture at 2.5–8 Mbps with no caps anywhere in our code. With 5 participants and one screensharer that's:
 
-## What's getting cut, kept, and clarified
+- Sharer upload: 8 Mbps × 4 = 32 Mbps (kills most home uplinks)
+- Each cam upload: 2 Mbps × 4 = 8 Mbps
+- Aggregate per peer download: 8 + 2×3 = 14 Mbps
 
-### Cut from v1 UI (code/tables stay, flag-gated off)
-- **Boosts** — `collab-boosts`, `work-boosts` UI hidden everywhere (`WorkSocialProof`, collab cards, work detail). Tables + functions retained.
-- **Vouches** — `collab-vouches`, `work-vouches` UI hidden. Tables + functions retained.
-- **Recorder personas** — `recorder-personas.functions` call sites removed from room UI. File stays.
+This will brown out the mesh well before we hit the participant cap. Today we don't touch encoder parameters at all — no `setParameters`, no `contentHint`, no degradation preference. We need a **bandwidth governor** that picks per-track caps based on the current room shape and applies them every time the shape changes.
 
-### Kept (your call, agreed)
-- **Referrals** (`/refer`, `?ref=username` attribution) — useful from user #1.
-- **Plus / Pricing** (`/pricing`, `use-plus`, Stripe Plus tier) — useful from user #2. No changes.
-- **Room pins** (`room-pins`, `room-work-pins`) — critical for "talk about what I'm making" in the live room. No changes.
-- **Lineup** (`lineup.functions`) — critical for in-person events. No changes.
-- **Reverse provenance** — simplified to a clean credits-style chip rail. No vouches/boosts/extras grafted on. The existing `WorksBornHere` rail is already this; I'll verify it's just title + author + cover and trim any noise.
+## The plan
 
-### Route collapse (your A)
-Single canonical entry per primitive. UI unchanged, just fewer doors.
+### 1. Define a mesh budget (`src/lib/mesh-bitrate.ts`, new)
 
-| Keep (canonical) | Redirect → keep / delete |
-|---|---|
-| `/workshops` (home for Workshops) | `/workshop` → 301 to `/workshops`; delete `workshop.tsx` shell |
-| `/workshops/$slug` | `/workshop/$id` → resolve to slug & 301; delete `workshop.$id.tsx` once stable |
-| `/workshops/new` (unified create) | delete `/workshops/lobby/new`, fold into new flow as a "When?" toggle (now / scheduled). In-person stays out of v1 — leave a tiny TODO comment, no UI. |
-| `/me` | absorb `/me/network` as a tab inside `/me`; keep `/me/friends`, `/me/collabs`, `/me/tickets`, `/me/blocked` |
-| `/collab`, `/works/$slug`, `/g/$slug`, `/g/$slug/e/$eventSlug` | unchanged |
+Single source of truth. Pure functions, no DOM, easy to unit-reason about.
 
-### Workshop creation — one flow (your C)
-`/workshops/new` becomes the single form with a "When?" radio:
-- **Right now** → behaves like today's `/workshops/lobby/new` (instant lobby).
-- **Pick a time** → behaves like today's `/workshops/new` (scheduled).
-- In-person: not in v1. No UI surfaced.
+```text
+TARGET_UPLINK_KBPS = 2500   // assume modest home uplink; conservative
+TARGET_DOWNLINK_KBPS = 6000
 
-Removes ~240 LOC and the #1 navigation confusion for new users.
+Per (peerCount, screenActive) → returns:
+  { camKbps, camFps, camMaxHeight, screenKbps, screenFps }
+```
 
-### In Progress — buildable, not fragile (your E)
-You're right that the current trajectory could get gnarly. Posture for v1:
+Profiles (peerCount = total in room incl. self):
 
-**Keep:**
-- `/in-progress` page (one section: open tasks where you're assigned or @mentioned, due ≤14d or undated).
-- Avatar dot badge on top-nav + mobile You tab (count only, single query).
-- "Pick up where you left off" card on signed-in homepage (top 1 task, top 1 workshop, one CTA each).
+| peers | screen | cam kbps | cam fps | cam height | screen kbps | screen fps |
+|-------|--------|----------|---------|------------|-------------|------------|
+| 2     | no     | 1200     | 30      | 720        | —           | —          |
+| 2     | yes    | 250      | 15      | 360        | 1800        | 15         |
+| 3     | no     | 700      | 24      | 540        | —           | —          |
+| 3     | yes    | 180      | 10      | 270        | 1500        | 12         |
+| 4     | no     | 450      | 20      | 360        | —           | —          |
+| 4     | yes    | 120      | 8       | 180        | 1200        | 10         |
+| 5     | no     | 300      | 15      | 270        | —           | —          |
+| 5     | yes    | 90       | 8       | 180        | 1000        | 8          |
 
-**Trim now (to stop it from growing into a brittle dashboard):**
-- Collapse the three sections (tasks / workshops / collabs) into **one unified list** sorted by recency + due date. Less code, less empty-state handling, easier to reason about.
-- One `useInProgressBadge` query feeds **all three surfaces** (avatar, homepage card, `/in-progress` page). No parallel queries, no drift.
-- Hard cap: 20 items. If you have more, you have other problems.
+Invariant the table enforces: `(camKbps × (peers-1)) + (screenKbps × (peers-1)) ≤ TARGET_UPLINK_KBPS × 0.8` for the sharer; cam-only senders stay ≤ TARGET_UPLINK_KBPS × 0.6. Numbers picked so screenshare always nets out below the mesh threshold the user asked about.
 
-This stays small enough that future growth (more entity types, smarter ranking) is additive, not a rewrite.
+### 2. Apply the budget to every sender (`use-media-room.tsx`)
 
-### Admin consolidation (your D)
-15 admin routes → **3 tabs** in a single `/admin` shell:
-- **Moderation:** reports + moderation + audit + users (+ `users.$id` detail)
-- **Content:** events + groups + links + badges + marketplace
-- **Ops:** analytics + engagement + growth + revenue + geo + ops
+Add `applyBudget()` that walks `pcsRef` and for each pc:
 
-Same components, one nav. Existing routes become 301 redirects so any bookmark/deep-link still works. Solo-founder reality: you'll open admin maybe twice a week — three tabs is the right surface.
+- Finds the video sender. Calls `sender.getParameters()`, sets `encodings[0].maxBitrate`, `maxFramerate`, `scaleResolutionDownBy` (derived from current track height vs target height), `degradationPreference = "maintain-framerate"` for screen / `"balanced"` for cam, then `sender.setParameters(...)`.
+- Sets `track.contentHint`: `"detail"` for screen (text legibility), `"motion"` for cam.
+- For local capture, also calls `videoTrack.applyConstraints({ frameRate, height })` so the source itself downsamples (saves encode CPU on top of bitrate cap).
 
-### Operational simplifications (rest of D)
-- **`<EmptyState />`** component — replace the ~12 bespoke empties (icon, title, body, single CTA). ~150 LOC saved, every future empty is free.
-- **`src/lib/flags.ts`** — single source of truth: `BOOSTS=false, VOUCHES=false, RECORDER_PERSONAS=false` (rest true). Components read the flag and render `null`. Flip to re-enable, no archaeology.
-- **DMs vs Chat audit** — verify `dms.functions` and `chat.functions` aren't both wired to the same UI. Pick one (DMs is the user-facing concept), point components there. Schemas untouched.
-- **Co-located queries** for the three heaviest routes (`/`, `/workshops/$slug`, `/g/$slug`) — fold their N parallel server fns into one `getPageData` per route. Fewer round-trips, fewer error branches.
+Call `applyBudget()` from:
 
-### Not touching
-- The 6 hero flows, the homepage hero + 3 cards, Pulse rail, nudges, event lifecycle, photos, projector mode, age gate, SEO/sitemap, Stripe ticketing — all stay.
+- End of `joinWithMode` (initial publish).
+- Presence sync handler when peer count changes (existing block ~line 490).
+- `startScreenShare` and `stopScreenShare` (after the replaceTrack loop).
+- Receipt of remote `screen` signal events (peer started/stopped sharing → re-budget my cam down even though *I'm* not the sharer, because aggregate downlink across peers matters too).
 
----
+### 3. Tighten `getDisplayMedia` (`startScreenShare`)
 
-## Execution order (3 passes)
+Replace the current `{ frameRate: { ideal: 15, max: 30 } }` with constraints driven by the budget:
 
-**9a — Routes & creation flow** (~6 files deleted, 1 unified create form, redirects added)
-Workshop route collapse, unified `/workshops/new`, `/me/network` → tab, redirect aliases.
+```text
+video: {
+  frameRate: { ideal: profile.screenFps, max: profile.screenFps },
+  width:  { max: 1920 },
+  height: { max: 1080 },
+  // contentHint set on the track after capture
+}
+```
 
-**9b — Feature flags + UI hides**
-Add `src/lib/flags.ts`. Hide Boosts, Vouches, Recorder Personas at all UI mount points. Audit visual fallout. No DB changes.
+### 4. Adaptive fallback on congestion
 
-**9c — Admin + EmptyState + In Progress trim + co-located queries**
-3-tab admin shell with route-level redirects. Extract `<EmptyState />`. Collapse In Progress to one unified list + single query hook. Fold heavy-route queries into `getPageData` server fns.
+Add a lightweight `getStats()` poller (every 4s) on each pc. If `outbound-rtp` reports `qualityLimitationReason === "bandwidth"` or `packetsLost / packetsSent > 3%` sustained across 2 samples, **step down one row in the profile table** for that peer's outbound (per-sender cap, not global), and remember the floor for that session. Step back up only on `setMode`/`startScreenShare` boundaries — we don't want oscillation.
 
-Estimated total: **~2,000–2,500 LOC removed, ~10 routes collapsed, 0 schema changes, 0 UI regressions** (everything cut from UI is flag-gated, not deleted).
+### 5. UI surfacing (small, opinionated)
 
----
+In `workshop-tools-panel.tsx`, when screenshare is live, add a one-line status under the share button:
 
-## One quick confirmation before I build
+```text
+Sharing • cams reduced to keep the room smooth
+```
 
-For the **route redirects** (e.g. `/workshop/$id` → `/workshops/$slug`, old admin routes → tabbed `/admin`): want me to keep the redirect aliases **indefinitely** (safer for bookmarks/SEO, ~30 LOC of glue) or **6 months then delete** (cleaner long-term)?
+No knobs, no quality picker. The whole point of a solo-founder app is the governor is automatic.
 
-Default if you don't answer: **keep indefinitely** — they cost almost nothing and SEO equity is real once `sitemap.xml` is crawled.
+### 6. Out of scope for this pass
+
+- SFU / mediasoup migration — that's the v2 answer when we want 6+ peers or recording.
+- Simulcast — only useful with an SFU; in a mesh every receiver wants the same layer, so a single capped encoding is correct.
+- Audio bitrate — Opus default 32 kbps is already negligible vs video.
+
+## Files touched
+
+- **new** `src/lib/mesh-bitrate.ts` — profile table + `pickProfile(peers, screenActive)`.
+- **edit** `src/hooks/use-media-room.tsx` — `applyBudget()` helper, hook it into join / presence-change / screen start+stop / remote `screen` signal; add `getStats()` poller; tighten `getDisplayMedia` constraints; set `contentHint`.
+- **edit** `src/components/workshop-tools-panel.tsx` — one-line "cams reduced" status when `isScreenSharing || screenSharerId`.
+
+No schema changes, no new server functions, no UI surgery beyond the one status line.
+
+## How we'll know it worked
+
+Open a 3-peer room (3 browsers locally), start screenshare from one, watch `chrome://webrtc-internals`:
+- Each cam `outbound-rtp` bytes-sent slope drops to ~180 kbps after share starts.
+- Screen `outbound-rtp` caps at ~1500 kbps.
+- `qualityLimitationReason` settles to `"none"` or `"cpu"`, not `"bandwidth"`.
+- Stopping the share restores cams to the 3-peer no-screen profile within ~1s.
