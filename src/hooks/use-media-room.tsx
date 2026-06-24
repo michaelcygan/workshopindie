@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { mintTurnCreds } from "@/lib/turn.functions";
+import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
 
 const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
