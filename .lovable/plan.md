@@ -1,104 +1,113 @@
-# Pass 10 — Mesh chat bandwidth optimization
+# Pass 11 — Events & Groups as the on-ramp
 
-## The problem
+## Reframe
 
-Workshop's live room is a **full WebRTC mesh** (cap 5) in `src/hooks/use-media-room.tsx`. Every sender uploads its track to N-1 peers, so my upload cost = my-bitrate × (N-1). Default browser cam encodes at ~1.5–2.5 Mbps and screen capture at 2.5–8 Mbps with no caps anywhere in our code. With 5 participants and one screensharer that's:
+You'll host the first real events (WIP nights, listening parties, networking) under the **Groups** primitive. Non-users will land on event pages from invites/social and need to feel pulled into the platform — not just "save the date." Audit covers:
 
-- Sharer upload: 8 Mbps × 4 = 32 Mbps (kills most home uplinks)
-- Each cam upload: 2 Mbps × 4 = 8 Mbps
-- Aggregate per peer download: 8 + 2×3 = 14 Mbps
+- `/g/$slug/e/$eventSlug` (event page) — 496 lines
+- `/g/$slug` (group page) — 882 lines
+- `/groups` (groups index) — 352 lines
+- The event posting flow (currently admin-only via `/admin/events`)
 
-This will brown out the mesh well before we hit the participant cap. Today we don't touch encoder parameters at all — no `setParameters`, no `contentHint`, no degradation preference. We need a **bandwidth governor** that picks per-track caps based on the current room shape and applies them every time the shape changes.
+---
 
-## The plan
+## Findings
 
-### 1. Define a mesh budget (`src/lib/mesh-bitrate.ts`, new)
+### 🔴 Gap 1 — No public `/events` page exists
+Every event lives at `/g/{group}/e/{event}`. There's no top-level "what's happening on Workshop" surface. Bad for:
+- **Discovery** (a new user clicking your invite has nowhere to "browse other events")
+- **SEO** (no crawlable index page → events compete for rank one by one)
+- **Founder ops** (no single place to verify your scheduled lineup)
 
-Single source of truth. Pure functions, no DOM, easy to unit-reason about.
+### 🟡 Gap 2 — RSVP doesn't join the host group
+`rsvp` server fn only writes `group_event_rsvps`. A user who signs up to attend your listening party is **not** added to the group, so they never see the next event, never see the works/collabs the scene produces. This is the single biggest stickiness leak in the event funnel.
 
-```text
-TARGET_UPLINK_KBPS = 2500   // assume modest home uplink; conservative
-TARGET_DOWNLINK_KBPS = 6000
+### 🟡 Gap 3 — Event page has no "what this scene produces" cross-sell
+The event page shows attendee works/collabs (great) but never shows the **host group's** own works/collabs. A non-user thinking "this event looks cool" has no second click into "look at the work this scene is making." This is the real utility wedge you described.
 
-Per (peerCount, screenActive) → returns:
-  { camKbps, camFps, camMaxHeight, screenKbps, screenFps }
-```
+### 🟡 Gap 4 — `EventRsvpAuthSheet` undersells
+Copy says "RSVP to join" + "Takes 20 seconds." Doesn't tell the user they're joining the **group** too, doesn't preview what they'll unlock (apply to collabs, see WIP, etc.). Conversion lift available.
 
-Profiles (peerCount = total in room incl. self):
+### 🟢 Gap 5 — Group page default-tab logic is over-clever
+`g.$slug.tsx` defaults to "events" but then `useEffect` immediately swaps to whichever tab has most content. For your launch where **events are the on-ramp**, Events should just always be the default. Simpler logic, predictable URL.
 
-| peers | screen | cam kbps | cam fps | cam height | screen kbps | screen fps |
-|-------|--------|----------|---------|------------|-------------|------------|
-| 2     | no     | 1200     | 30      | 720        | —           | —          |
-| 2     | yes    | 250      | 15      | 360        | 1800        | 15         |
-| 3     | no     | 700      | 24      | 540        | —           | —          |
-| 3     | yes    | 180      | 10      | 270        | 1500        | 12         |
-| 4     | no     | 450      | 20      | 360        | —           | —          |
-| 4     | yes    | 120      | 8       | 180        | 1200        | 10         |
-| 5     | no     | 300      | 15      | 270        | —           | —          |
-| 5     | yes    | 90       | 8       | 180        | 1000        | 8          |
+### 🟢 Gap 6 — Event posting flow is admin-only and lives in `/admin/events`
+For v1 with you as solo founder this is correct — but the in-group entry point (`Request to host (coming soon)`) is dead copy. We should either link admins to the admin dialog from the group page, or quietly hide the row for non-admins. (Tiny cleanup.)
 
-Invariant the table enforces: `(camKbps × (peers-1)) + (screenKbps × (peers-1)) ≤ TARGET_UPLINK_KBPS × 0.8` for the sharer; cam-only senders stay ≤ TARGET_UPLINK_KBPS × 0.6. Numbers picked so screenshare always nets out below the mesh threshold the user asked about.
+### 🟢 Gap 7 — Event page has 4 tabs (About / Lineup / Activity / Wall)
+The Wall is for going-only chat. The Activity tab is showcases + attendee work. These could merge into a single "Activity" tab with the wall above attendee work — fewer tabs, more density. **Defer** unless you want it now; it's a real touch on UX.
 
-### 2. Apply the budget to every sender (`use-media-room.tsx`)
+---
 
-Add `applyBudget()` that walks `pcsRef` and for each pc:
+## Proposed changes (ranked by leverage)
 
-- Finds the video sender. Calls `sender.getParameters()`, sets `encodings[0].maxBitrate`, `maxFramerate`, `scaleResolutionDownBy` (derived from current track height vs target height), `degradationPreference = "maintain-framerate"` for screen / `"balanced"` for cam, then `sender.setParameters(...)`.
-- Sets `track.contentHint`: `"detail"` for screen (text legibility), `"motion"` for cam.
-- For local capture, also calls `videoTrack.applyConstraints({ frameRate, height })` so the source itself downsamples (saves encode CPU on top of bitrate cap).
+### 1. Auto-join host group on RSVP `[HIGH]`
+`src/lib/group-events.functions.ts` → in `rsvp`, when status is `going`/`maybe`, also `INSERT INTO group_members (group_id, user_id)` (ignoring duplicates). Fully silent on the user side. **This is the single highest-stickiness change in the audit.**
 
-Call `applyBudget()` from:
+### 2. Public `/events` index route `[HIGH]`
+Create `src/routes/events.index.tsx`:
+- Server-loaded list of upcoming public events (next 60 days), grouped by week
+- Hero copy: "What's happening on Workshop"
+- SEO meta + `ItemList` JSON-LD
+- Empty-state CTA: "Browse groups"
+- Add `/events` to `sitemap[.]xml.ts` static paths
+- Add a `Events` link to top-nav under "More"
 
-- End of `joinWithMode` (initial publish).
-- Presence sync handler when peer count changes (existing block ~line 490).
-- `startScreenShare` and `stopScreenShare` (after the replaceTrack loop).
-- Receipt of remote `screen` signal events (peer started/stopped sharing → re-budget my cam down even though *I'm* not the sharer, because aggregate downlink across peers matters too).
+### 3. "From this scene" rail on the event page `[HIGH]`
+Below the RSVP block on `g.$slug.e.$eventSlug.tsx`, add a compact rail with:
+- 3 latest published works from the host group (`group_works` → `works`)
+- 1 open collab from the host group (`group_collabs` → `collab_posts`)
+- Header: "What this scene is making"
+- For logged-out viewers, this is the **deep utility preview** that pulls them in beyond just "save the date."
 
-### 3. Tighten `getDisplayMedia` (`startScreenShare`)
+Implement as a new lightweight component `<EventHostGroupRail groupId groupSlug />` so it's reusable. Two cheap parallel queries via the publishable client.
 
-Replace the current `{ frameRate: { ideal: 15, max: 30 } }` with constraints driven by the budget:
+### 4. Stronger RSVP auth sheet copy `[MED]`
+`EventRsvpAuthSheet` → change title to "RSVP and join {groupName}" and add a 3-bullet preview ("See what the scene is making", "Apply to open collabs", "Get notified about the next one"). Pass `groupName` down from `EventRsvpBlock`. Conversion polish, no logic change.
 
-```text
-video: {
-  frameRate: { ideal: profile.screenFps, max: profile.screenFps },
-  width:  { max: 1920 },
-  height: { max: 1080 },
-  // contentHint set on the track after capture
-}
-```
+### 5. Simplify group page default tab `[LOW]`
+`g.$slug.tsx` → drop the `useEffect` + `defaultTab` swap. Always default to `"events"`. URL becomes predictable; you also stop a one-frame tab flicker.
 
-### 4. Adaptive fallback on congestion
+### 6. Clean dead "Request to host" copy `[LOW]`
+In `GroupEventsTab`, only render the host-affordance row when `isAdmin`. Drops a confusing greyed-out line for the 99% who aren't admins.
 
-Add a lightweight `getStats()` poller (every 4s) on each pc. If `outbound-rtp` reports `qualityLimitationReason === "bandwidth"` or `packetsLost / packetsSent > 3%` sustained across 2 samples, **step down one row in the profile table** for that peer's outbound (per-sender cap, not global), and remember the floor for that session. Step back up only on `setMode`/`startScreenShare` boundaries — we don't want oscillation.
+---
 
-### 5. UI surfacing (small, opinionated)
+## Deferred (don't ship this pass)
 
-In `workshop-tools-panel.tsx`, when screenshare is live, add a one-line status under the share button:
+- **4 → 3 tab merge on event page** (wall + activity). Real UX call; want your nod.
+- **Member-host event creation flow**. You said in-person is launch+1; same for member-hosted online events. Stay admin-only for v1.
+- **Calendar feed / ICS** improvements. Already wired per-event.
+- **Event series RSVP reminders** — exists via existing notifications, not in scope.
 
-```text
-Sharing • cams reduced to keep the room smooth
-```
+---
 
-No knobs, no quality picker. The whole point of a solo-founder app is the governor is automatic.
+## Files this pass would touch
 
-### 6. Out of scope for this pass
+**Edits**
+- `src/lib/group-events.functions.ts` — auto-join group on RSVP
+- `src/routes/g.$slug.e.$eventSlug.tsx` — mount `<EventHostGroupRail />`, pass groupName
+- `src/components/event-rsvp-block.tsx` — pipe groupName through
+- `src/components/event-rsvp-auth-sheet.tsx` — copy + bullets
+- `src/routes/g.$slug.tsx` — drop default-tab swap; hide dead "Request to host" copy
+- `src/routes/sitemap[.]xml.ts` — add `/events`
+- `src/components/top-nav.tsx` — Events link under "More"
 
-- SFU / mediasoup migration — that's the v2 answer when we want 6+ peers or recording.
-- Simulcast — only useful with an SFU; in a mesh every receiver wants the same layer, so a single capped encoding is correct.
-- Audio bitrate — Opus default 32 kbps is already negligible vs video.
+**New**
+- `src/routes/events.index.tsx` — public events index
+- `src/components/event-host-group-rail.tsx` — cross-sell rail
 
-## Files touched
+---
 
-- **new** `src/lib/mesh-bitrate.ts` — profile table + `pickProfile(peers, screenActive)`.
-- **edit** `src/hooks/use-media-room.tsx` — `applyBudget()` helper, hook it into join / presence-change / screen start+stop / remote `screen` signal; add `getStats()` poller; tighten `getDisplayMedia` constraints; set `contentHint`.
-- **edit** `src/components/workshop-tools-panel.tsx` — one-line "cams reduced" status when `isScreenSharing || screenSharerId`.
+## Estimated impact
 
-No schema changes, no new server functions, no UI surgery beyond the one status line.
+| Change | Stickiness | Discovery | Effort |
+|---|---|---|---|
+| Auto-join group on RSVP | 🟢🟢🟢 | — | XS |
+| Public `/events` index | 🟢 | 🟢🟢🟢 | M |
+| "From this scene" rail | 🟢🟢 | 🟢 | S |
+| Auth-sheet copy upgrade | 🟢 | — | XS |
+| Group default-tab cleanup | — | — | XS |
+| Hide dead host copy | — | — | XS |
 
-## How we'll know it worked
-
-Open a 3-peer room (3 browsers locally), start screenshare from one, watch `chrome://webrtc-internals`:
-- Each cam `outbound-rtp` bytes-sent slope drops to ~180 kbps after share starts.
-- Screen `outbound-rtp` caps at ~1500 kbps.
-- `qualityLimitationReason` settles to `"none"` or `"cpu"`, not `"bandwidth"`.
-- Stopping the share restores cams to the 3-peer no-screen profile within ~1s.
+Total: ~1 build turn. Switch to build mode and I'll ship 1–6.
