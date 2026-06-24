@@ -407,7 +407,6 @@ function EventPage() {
 
             <TabsContent value="activity" className="mt-5 space-y-6">
               <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
-              <EventAttendeeWork eventId={ev.id} />
             </TabsContent>
 
             <TabsContent value="wall" className="mt-5">
