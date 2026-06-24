@@ -511,6 +511,7 @@ export function useMediaRoom(roomId: string | undefined) {
     stopStatsPoller();
     adaptiveFloorRef.current = null;
     setBandwidthReduced(false);
+    for (const peerId of Array.from(pcsRef.current.keys())) closePeer(peerId);
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
     pairUsedTurnRef.current.clear();
