@@ -397,10 +397,8 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h3 className="font-display text-xl text-ink">Upcoming events</h3>
-        {isAdmin ? (
+        {isAdmin && (
           <Link to="/admin/events" className="text-xs text-primary hover:underline">+ Create event (admin)</Link>
-        ) : (
-          <span className="text-[11px] text-ink-muted" title="Hosting opens to all members in a later tier">Request to host (coming soon)</span>
         )}
       </div>
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
