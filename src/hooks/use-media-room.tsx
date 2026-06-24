@@ -788,7 +788,13 @@ export function useMediaRoom(roomId: string | undefined) {
     let captured: MediaStream;
     try {
       captured = await navigator.mediaDevices.getDisplayMedia({
-        video: { frameRate: { ideal: 15, max: 30 } },
+        // Cap at 1080p / 15fps at the source — screenshare encoding gets
+        // expensive fast and the mesh budget tightens it further per-peer.
+        video: {
+          frameRate: { ideal: 12, max: 15 },
+          width: { max: 1920 },
+          height: { max: 1080 },
+        },
         audio: false,
       });
     } catch (e) {
