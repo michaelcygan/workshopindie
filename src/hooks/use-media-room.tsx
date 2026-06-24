@@ -889,6 +889,7 @@ export function useMediaRoom(roomId: string | undefined) {
     startScreenShare,
     stopScreenShare,
     setOutboundScreenTrack,
+    bandwidthReduced,
     cap: ROOM_CAP,
     videoCap: VIDEO_CAP,
   };
