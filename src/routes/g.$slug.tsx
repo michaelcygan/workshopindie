@@ -116,19 +116,16 @@ function GroupPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Default to the tab most likely to have content: events > work > collab > workshops.
+  // With a dedicated /events index now live, the group page leads with the
+  // creative output of the scene. Default to Collabs (highest signal of "what's
+  // happening I can join"), then Work, then Workshops, then Events.
   const defaultTab: Tab = useMemo(() => {
-    if (group.work_count > 0) return "work";
     if (group.collab_count > 0) return "collab";
+    if (group.work_count > 0) return "work";
     if (group.workshop_count > 0) return "workshops";
     return "events";
-  }, [group.work_count, group.collab_count, group.workshop_count]);
-  const [tab, setTab] = useState<Tab>("events");
-  // Promote to a smarter default once on mount if events tab will be empty.
-  useEffect(() => {
-    if (defaultTab !== "events") setTab(defaultTab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [group.collab_count, group.work_count, group.workshop_count]);
+  const [tab, setTab] = useState<Tab>(defaultTab);
 
   const qc = useQueryClient();
 
