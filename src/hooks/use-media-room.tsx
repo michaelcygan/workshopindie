@@ -831,7 +831,9 @@ export function useMediaRoom(roomId: string | undefined) {
       event: "signal",
       payload: { type: "screen", from: myId, active: true } satisfies SignalEvent,
     });
-  }, [myId, stopScreenShare]);
+    adaptiveFloorRef.current = null;
+    rebudget(count, true);
+  }, [myId, count, stopScreenShare]);
 
   // Swap the outbound video track on every peer connection. Used by the
   // Director PiP to push a composed canvas (split / cam-only) to the room
