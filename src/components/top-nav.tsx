@@ -260,7 +260,7 @@ function HoverMoreMenu({
           <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
             <LayoutGrid className="mr-2 h-4 w-4" /> Work
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate({ to: "/groups" })}>
+          <DropdownMenuItem onClick={() => navigate({ to: "/events" })}>
             <Calendar className="mr-2 h-4 w-4" /> Events
           </DropdownMenuItem>
         </DropdownMenuContent>
