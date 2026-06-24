@@ -4,6 +4,7 @@ import { Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { boostCollab, unboostCollab } from "@/lib/collab-boosts.functions";
+import { FLAGS } from "@/lib/flags";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -36,6 +37,7 @@ export function BoostButton({
   className?: string;
   size?: "sm" | "md";
 }) {
+  if (!FLAGS.BOOSTS) return null;
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: myBoostId } = useMyBoost();
