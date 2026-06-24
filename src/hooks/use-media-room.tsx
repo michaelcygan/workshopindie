@@ -198,6 +198,7 @@ export function useMediaRoom(roomId: string | undefined) {
           if (stepped) {
             profileRef.current = stepped;
             adaptiveFloorRef.current = stepped;
+            setBandwidthReduced(true);
             consecutiveBwLimitedRef.current.clear();
             applyBudget().catch(() => {});
           }
