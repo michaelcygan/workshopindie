@@ -317,10 +317,10 @@ function GroupPage() {
         {/* Tabs */}
         <div className="sticky top-0 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:flex-wrap md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
-            { id: "events" as const, label: "Events", icon: Calendar, count: null },
-            { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "collab" as const, label: "Collabs", icon: Megaphone, count: group.collab_count },
+            { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
+            { id: "events" as const, label: "Events", icon: Calendar, count: null },
             { id: "members" as const, label: "Members", icon: Users, count: group.member_count },
             { id: "about" as const, label: "About", icon: Info, count: null },
           ].map((t) => {
