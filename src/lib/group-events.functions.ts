@@ -102,6 +102,26 @@ export const rsvp = createServerFn({ method: "POST" })
     };
     const { error } = await supabase.from("group_event_rsvps").upsert(row, { onConflict: "event_id,user_id" });
     if (error) throw new Error(error.message);
+
+    // Auto-join host group when the user is going/maybe/waitlist. Best-effort —
+    // any failure here must not block the RSVP itself. The group membership is
+    // the real stickiness lever for the post-event journey.
+    if (data.status === "going" || data.status === "maybe") {
+      const { data: ev } = await supabase
+        .from("group_events")
+        .select("group_id")
+        .eq("id", data.event_id)
+        .maybeSingle();
+      if (ev?.group_id) {
+        await supabase
+          .from("group_members")
+          .upsert(
+            { group_id: ev.group_id, user_id: userId, role: "member" },
+            { onConflict: "group_id,user_id", ignoreDuplicates: true },
+          );
+      }
+    }
+
     return { ok: true };
   });
 
