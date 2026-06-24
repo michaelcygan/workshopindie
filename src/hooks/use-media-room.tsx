@@ -775,7 +775,9 @@ export function useMediaRoom(roomId: string | undefined) {
       }
     }
     if (screen) for (const t of screen.getTracks()) t.stop();
-  }, [myId]);
+    adaptiveFloorRef.current = null;
+    rebudget(count, false);
+  }, [myId, count]);
 
   const startScreenShare = useCallback(async () => {
     if (!myId || !channelRef.current) {
