@@ -266,6 +266,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
   const [tagline, setTagline] = useState(group.tagline ?? "");
   const [description, setDescription] = useState(group.description ?? "");
   const [coverUrl, setCoverUrl] = useState(group.cover_url ?? "");
+  const [newsUrl, setNewsUrl] = useState(group.news_feed_url ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted">(group.visibility);
   const [parentId, setParentId] = useState<string>(group.parent_group_id ?? "__none__");
   const qc = useQueryClient();
