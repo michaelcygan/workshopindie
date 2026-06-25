@@ -1,37 +1,28 @@
 ## Goal
-Re-skin the group news ticker so it reads as a native part of the group header — aligned, paced, and polished — without changing any data, server functions, or page structure.
+Tighten vertical rhythm on the group page by ~15% and make spacing around the news ticker feel intentional and equidistant. Visual-only edits.
 
-## Where it lives
-Keep current placement: between `GroupHero` and the sticky `GroupTabBar`, mounted from `src/routes/g.$slug.tsx`. Only `src/components/group/group-news-ticker.tsx` is edited.
+## Current rhythm (measured)
+- Hero title block → News ticker: **24px** (`mt-6` on ticker)
+- News ticker → Tab bar: **8 + 32 = 40px** (`mb-2` on ticker + `mt-8` on sticky tab bar)
+- Tab bar → Tab content: **32px** (`mt-8` on content)
 
-## Visual design
-A single contained "pill rail" that mirrors the page's content width.
+## New rhythm (equidistant around the ticker, tighter overall)
+- Hero → ticker: **16px**
+- Ticker → tab bar: **16px**
+- Tab bar → tab content: **20px**
 
-```text
- ┌── max-w-7xl, px-4/6/8 ────────────────────────────────────────────────┐
- │ ●  IN THE NEWS │  Headline one • Headline two • Headline three  →     │
- └───────────────────────────────────────────────────────────────────────┘
-```
+Net savings ≈ 40px, ~17% tighter while making the ticker visibly symmetric within the header stack.
 
-- Wrapper: `mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8`, vertical rhythm `mt-6 mb-2` so it breathes between hero and tabs.
-- Pill: `h-10 rounded-full border border-border bg-surface/70 backdrop-blur-sm overflow-hidden`.
-- Left anchor: solid `bg-surface` chip with a 6px primary dot + uppercase tracked label "In the news" (label hidden < `sm`, dot stays). 1px divider separates anchor from rail.
-- Rail: inner flex track with `gap-10` between items, 13px ink text, links underline on hover, open in new tab with `rel="noopener noreferrer ugc"`.
-- Edge fades: short 32px gradients on both sides of the rail using the pill's own surface color so headlines fade into the chrome instead of being hard-clipped.
-
-## Motion
-- Speed: `duration = max(90s, itemCount * 14s)` — roughly 3× slower than today and self-adjusting so a 4-item feed doesn't whip past.
-- Loop: duplicate the list once and translate `-50%` for a seamless cycle.
-- Pause on `hover` AND `focus-within` (keyboard users).
-- `prefers-reduced-motion`: hide the marquee and render the first 3 headlines as a static, evenly-spaced row inside the same pill.
-
-## Behavior unchanged
-- Same `fetchGroupNews` query, same 30-minute stale time, same "render nothing when empty / no URL".
-- No changes to `GroupHero`, `GroupTabBar`, route, or server functions.
+## Edits
+- `src/components/group/group-news-ticker.tsx`: change wrapper `mt-6 mb-2` → `mt-4 mb-4`.
+- `src/components/group/group-tab-bar.tsx`: change sticky container `mt-8` → `mt-0` (the ticker now owns the bottom gap).
+- `src/routes/g.$slug.tsx`:
+  - Remove the blank line inside `<div className="px-4 md:px-6">` (cosmetic).
+  - Change tab content wrapper `mt-8` → `mt-5` (20px).
+  - When the ticker is absent (no feed), preserve breathing room by giving the tab bar `mt-4` via a sibling-aware wrapper: simplest implementation — always render a single header stack `<div className="space-y-4">` containing `GroupHero`, `GroupNewsTicker`, `GroupTabBar`. Since `GroupNewsTicker` returns `null` when empty, `space-y-4` collapses to a single 16px gap between hero and tabs in the no-feed case (still tighter than today's 40px).
 
 ## Acceptance
-- Ticker sits flush with hero/tab-bar horizontally at all breakpoints.
-- Headlines scroll calmly; hovering or tabbing into a link pauses motion.
-- On mobile the label collapses to just the dot; rail still legible.
-- With reduced motion, a static 3-headline row appears in the same pill.
-- No layout shift when the feed is empty (component returns `null`).
+- Gap above and below the ticker is visually identical (16px).
+- Total header→content distance drops from ~96px to ~52px.
+- When a group has no news feed, hero→tabs is 16px (no orphan whitespace).
+- No changes to ticker styling, hero, or tab bar visuals — only spacing.

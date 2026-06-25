@@ -22,7 +22,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const loop = [...items, ...items];
 
   return (
-    <div className="mx-auto mt-6 mb-2 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="group/ticker relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
         {/* Anchored label */}
         <div className="relative z-20 flex shrink-0 items-center gap-2 rounded-l-full bg-surface px-3 sm:pr-4">
