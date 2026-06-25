@@ -236,7 +236,7 @@ function HoverMoreMenu({
       onMouseLeave={scheduleClose}
       className="relative"
     >
-      <DropdownMenu open={open} onOpenChange={setOpen}>
+      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
           <button
             className={`${navLinkBase} inline-flex items-center gap-1`}
