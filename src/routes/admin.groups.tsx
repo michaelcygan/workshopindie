@@ -259,19 +259,35 @@ function CreateGroupDialog() {
   );
 }
 
-function EditGroupDialog({ group }: { group: GroupRow }) {
+function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: GroupRow[] }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(group.name);
   const [tagline, setTagline] = useState(group.tagline ?? "");
   const [description, setDescription] = useState(group.description ?? "");
   const [coverUrl, setCoverUrl] = useState(group.cover_url ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted">(group.visibility);
+  const [parentId, setParentId] = useState<string>(group.parent_group_id ?? "__none__");
   const qc = useQueryClient();
   const updateFn = useServerFn(updateGroup);
+  const setParentFn = useServerFn(setGroupParent);
+
+  // Eligible parents: not self, not already a child of another, and this
+  // group has no children of its own (one-level nesting).
+  const hasOwnChildren = useMemo(
+    () => allGroups.some((g) => g.parent_group_id === group.id),
+    [allGroups, group.id],
+  );
+  const eligibleParents = useMemo(
+    () =>
+      allGroups
+        .filter((g) => g.id !== group.id && !g.parent_group_id)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [allGroups, group.id],
+  );
 
   const save = useMutation({
-    mutationFn: () =>
-      updateFn({
+    mutationFn: async () => {
+      await updateFn({
         data: {
           id: group.id,
           name,
@@ -280,7 +296,12 @@ function EditGroupDialog({ group }: { group: GroupRow }) {
           cover_url: coverUrl || null,
           visibility,
         },
-      }),
+      });
+      const nextParent = parentId === "__none__" ? null : parentId;
+      if (nextParent !== (group.parent_group_id ?? null)) {
+        await setParentFn({ data: { group_id: group.id, parent_group_id: nextParent } });
+      }
+    },
     onSuccess: () => {
       toast.success("Saved");
       qc.invalidateQueries({ queryKey: ["admin-groups"] });
@@ -311,6 +332,24 @@ function EditGroupDialog({ group }: { group: GroupRow }) {
                 <SelectItem value="unlisted">Unlisted</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>Parent group</Label>
+            {hasOwnChildren ? (
+              <p className="text-xs text-ink-muted">
+                This group has child groups, so it can't be nested under another.
+              </p>
+            ) : (
+              <Select value={parentId} onValueChange={setParentId}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None (top-level)</SelectItem>
+                  {eligibleParents.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
         <DialogFooter>
