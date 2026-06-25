@@ -69,6 +69,7 @@ type UpdatePatch = {
   accent_color?: string | null;
   is_official?: boolean;
   visibility?: "public" | "unlisted";
+  news_feed_url?: string | null;
   featured_at?: string | null;
 };
 
