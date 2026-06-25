@@ -200,6 +200,24 @@ function GroupPage() {
     },
   });
 
+  const { data: childGroups = [] } = useQuery({
+    queryKey: ["group", group.id, "children"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("groups")
+        .select(
+          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at",
+        )
+        .eq("parent_group_id", group.id)
+        .is("deleted_at", null)
+        .eq("visibility", "public")
+        .order("member_count", { ascending: false })
+        .limit(60);
+      return (data ?? []) as unknown as GroupCardData[];
+    },
+  });
+
+
   useEffect(() => {
     const channel = supabase
       .channel(`group-${group.id}`)
