@@ -1344,6 +1344,45 @@ export type Database = {
           },
         ]
       }
+      group_today_pins: {
+        Row: {
+          collab_id: string
+          created_at: string
+          expires_at: string
+          group_id: string
+          user_id: string
+        }
+        Insert: {
+          collab_id: string
+          created_at?: string
+          expires_at?: string
+          group_id: string
+          user_id: string
+        }
+        Update: {
+          collab_id?: string
+          created_at?: string
+          expires_at?: string
+          group_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_today_pins_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_today_pins_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_today_posts: {
         Row: {
           author_id: string

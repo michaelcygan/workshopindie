@@ -28,6 +28,9 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
+import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+import { setGroupNewsFeed } from "@/lib/group-admin.functions";
+
 
 
 type GroupRow = {
@@ -47,14 +50,16 @@ type GroupRow = {
   is_official: boolean;
   featured_at: string | null;
   parent_group_id: string | null;
+  news_feed_url: string | null;
   parent: { id: string; slug: string; name: string } | null;
 };
+
 
 async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
     .from("groups")
     .select(
-      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id",
+      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id,news_feed_url",
     )
     .eq("slug", slug)
     .is("deleted_at", null)
@@ -255,7 +260,10 @@ function GroupPage() {
 
       <GroupHero group={group} nextEvent={nextEvent} />
 
+      <GroupNewsTicker groupId={group.id} />
+
       <div className="px-4 md:px-6">
+
         <GroupTabBar
           tab={tab}
           setTab={setTab}
@@ -403,15 +411,87 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
 
 function GroupAboutTab({ group }: { group: GroupRow }) {
   return (
-    <div className="prose prose-sm max-w-3xl text-ink">
-      {group.description ? (
-        <p className="whitespace-pre-wrap text-ink">{group.description}</p>
-      ) : (
-        <p className="text-ink-muted">No description yet.</p>
-      )}
+    <div className="space-y-8">
+      <div className="prose prose-sm max-w-3xl text-ink">
+        {group.description ? (
+          <p className="whitespace-pre-wrap text-ink">{group.description}</p>
+        ) : (
+          <p className="text-ink-muted">No description yet.</p>
+        )}
+      </div>
+      <GroupNewsFeedSetting group={group} />
     </div>
   );
 }
+
+/** Owner/steward-only control to set the group's news ticker source. */
+function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const setFeed = useServerFn(setGroupNewsFeed);
+  const [url, setUrl] = useState(group.news_feed_url ?? "");
+
+  const { data: canEdit } = useQuery({
+    queryKey: ["group-role", group.id, user?.id ?? "anon"],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("group_members")
+        .select("role")
+        .eq("group_id", group.id)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      const role = (data as { role?: string } | null)?.role;
+      return role === "owner" || role === "steward";
+    },
+    staleTime: 60_000,
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const trimmed = url.trim();
+      await setFeed({
+        data: { group_id: group.id, news_feed_url: trimmed ? trimmed : null },
+      });
+    },
+    onSuccess: () => {
+      toast.success("News feed updated");
+      qc.invalidateQueries({ queryKey: ["group", group.slug] });
+      qc.invalidateQueries({ queryKey: ["group", group.id, "news"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (!canEdit) return null;
+
+  return (
+    <section className="max-w-3xl rounded-3xl border border-border bg-surface p-4">
+      <h3 className="font-display text-base text-ink">News feed</h3>
+      <p className="mt-1 text-xs text-ink-muted">
+        Paste a Google News RSS URL (news.google.com/rss/search?q=…) — text
+        headlines only, scrolled as a ticker above the tabs. Leave blank to
+        hide the ticker.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <input
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://news.google.com/rss/search?q=…"
+          className="min-w-0 flex-1 rounded-xl border border-border bg-background px-3 py-2 text-sm text-ink placeholder:text-ink-muted/70 focus:border-ring focus:outline-none"
+        />
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => save.mutate()}
+          disabled={save.isPending || url.trim() === (group.news_feed_url ?? "")}
+        >
+          Save
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 
 /* ---------- WORKS ---------- */
 type WorkRow = {
