@@ -55,11 +55,14 @@ export function GroupHero({
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-background" />
       </div>
 
-      {/* Title block — in normal flow. Avatar floats over the seam via ring (no clipped border). */}
-      <div className="px-4 md:px-6">
+      {/* Title block — relative + z-10 so its own stacking context paints
+          cleanly above the hero gradient regardless of sibling order. */}
+      <div className="relative z-10 px-4 md:px-6">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4">
-          {/* Avatar tile — opaque background + ring so it reads on any banner */}
-          <div className="-mt-10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-surface ring-4 ring-background shadow-lift">
+          {/* Avatar tile — opaque background + ring; isolate forces its
+              own stacking context so the ring + content always paint over
+              the hero's bottom-fade. */}
+          <div className="relative isolate -mt-10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-surface ring-4 ring-background shadow-lift">
             {group.avatar_url ? (
               <img
                 src={group.avatar_url}
@@ -67,9 +70,17 @@ export function GroupHero({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <Icon className="h-10 w-10 text-ink-muted" />
+              <span
+                aria-hidden
+                className="font-display text-3xl font-semibold leading-none text-ink-soft"
+              >
+                {group.name.trim().charAt(0).toUpperCase() || (
+                  <Icon className="h-8 w-8 text-ink-muted" />
+                )}
+              </span>
             )}
           </div>
+
 
           {/* Title column — gets the slack now that SparkBar moved into the tab bar */}
           <div className="min-w-0 pt-1">
