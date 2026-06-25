@@ -89,6 +89,48 @@ export const updateGroup = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/**
+ * Group stewards/owners (or platform admins) can update just the news feed
+ * URL on their own group. Narrower than updateGroup so we don't widen the
+ * admin surface.
+ */
+export const setGroupNewsFeed = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        group_id: z.string().uuid(),
+        news_feed_url: z.string().url().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: isAdmin } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (!isAdmin) {
+      const { data: m } = await supabase
+        .from("group_members")
+        .select("role")
+        .eq("group_id", data.group_id)
+        .eq("user_id", userId)
+        .maybeSingle();
+      const role = (m as { role?: string } | null)?.role;
+      if (role !== "owner" && role !== "steward") {
+        throw new Error("Only group stewards can change the news feed.");
+      }
+    }
+    const { error } = await supabase
+      .from("groups")
+      .update({ news_feed_url: data.news_feed_url })
+      .eq("id", data.group_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+
 export const deleteGroup = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
