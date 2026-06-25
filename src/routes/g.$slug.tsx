@@ -120,23 +120,17 @@ export const Route = createFileRoute("/g/$slug")({
   }),
 });
 
-type Tab = "events" | "workshops" | "collab" | "work" | "members" | "subgroups" | "about";
+type Tab = GroupTab;
 
 function GroupPage() {
   const group = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // With a dedicated /events index now live, the group page leads with the
-  // creative output of the scene. Default to Collabs (highest signal of "what's
-  // happening I can join"), then Work, then Workshops, then Events.
-  const defaultTab: Tab = useMemo(() => {
-    if (group.collab_count > 0) return "collab";
-    if (group.work_count > 0) return "work";
-    if (group.workshop_count > 0) return "workshops";
-    return "events";
-  }, [group.collab_count, group.work_count, group.workshop_count]);
-  const [tab, setTab] = useState<Tab>(defaultTab);
+  // Stable default: Collabs is the "what can I jump on" surface. Users find
+  // events through the global /events page and the next-event hero pill.
+  const [tab, setTab] = useState<Tab>("collab");
+
 
   const qc = useQueryClient();
 
