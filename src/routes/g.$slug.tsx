@@ -341,7 +341,10 @@ function GroupPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <JoinGroupButton groupId={group.id} />
+            <JoinGroupButton
+              groupId={group.id}
+              parent={group.parent ? { id: group.parent.id, name: group.parent.name } : null}
+            />
           </div>
         </div>
 
@@ -352,6 +355,9 @@ function GroupPage() {
             { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
             { id: "events" as const, label: "Events", icon: Calendar, count: null },
+            ...(childGroups.length > 0
+              ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childGroups.length }]
+              : []),
             { id: "members" as const, label: "Members", icon: Users, count: group.member_count },
             { id: "about" as const, label: "About", icon: Info, count: null },
           ].map((t) => {
@@ -385,6 +391,13 @@ function GroupPage() {
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
           {tab === "workshops" && <GroupWorkshopTab group={group} />}
+          {tab === "subgroups" && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {childGroups.map((g) => (
+                <GroupCard key={g.id} group={g} />
+              ))}
+            </div>
+          )}
           {tab === "members" && <GroupMembersTab group={group} />}
           {tab === "about" && <GroupAboutTab group={group} />}
         </div>
