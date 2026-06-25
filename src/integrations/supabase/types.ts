@@ -1344,6 +1344,41 @@ export type Database = {
           },
         ]
       }
+      group_today_posts: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          expires_at: string | null
+          group_id: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          expires_at?: string | null
+          group_id: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          expires_at?: string | null
+          group_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_today_posts_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_works: {
         Row: {
           added_by: string | null
@@ -1434,6 +1469,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["group_kind"]
           member_count: number
           name: string
+          news_feed_url: string | null
           parent_group_id: string | null
           slug: string
           tagline: string | null
@@ -1459,6 +1495,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["group_kind"]
           member_count?: number
           name: string
+          news_feed_url?: string | null
           parent_group_id?: string | null
           slug: string
           tagline?: string | null
@@ -1484,6 +1521,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["group_kind"]
           member_count?: number
           name?: string
+          news_feed_url?: string | null
           parent_group_id?: string | null
           slug?: string
           tagline?: string | null
@@ -5439,6 +5477,7 @@ export type Database = {
         }[]
       }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
       realtime_can_access_dm: {
         Args: { _conversation_id: string }
