@@ -296,6 +296,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           tagline: tagline || null,
           description: description || null,
           cover_url: coverUrl || null,
+          news_feed_url: newsUrl || null,
           visibility,
         },
       });
