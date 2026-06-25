@@ -270,6 +270,7 @@ function GroupPage() {
         />
 
         <div className="mt-8">
+          {tab === "today" && <GroupTodayTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
