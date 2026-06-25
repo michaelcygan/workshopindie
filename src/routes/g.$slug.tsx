@@ -258,26 +258,27 @@ function GroupPage() {
         </div>
       )}
 
-      <GroupHero group={group} nextEvent={nextEvent} />
+      <div className="space-y-4">
+        <GroupHero group={group} nextEvent={nextEvent} />
 
-      <GroupNewsTicker groupId={group.id} />
+        <GroupNewsTicker groupId={group.id} />
 
-      <div className="px-4 md:px-6">
+        <div className="px-4 md:px-6">
+          <GroupTabBar
+            tab={tab}
+            setTab={setTab}
+            slug={group.slug}
+            counts={{
+              collab: group.collab_count,
+              work: group.work_count,
+              workshops: group.workshop_count,
+              members: group.member_count,
+            }}
+            childCount={childGroups.length}
+          />
 
-        <GroupTabBar
-          tab={tab}
-          setTab={setTab}
-          slug={group.slug}
-          counts={{
-            collab: group.collab_count,
-            work: group.work_count,
-            workshops: group.workshop_count,
-            members: group.member_count,
-          }}
-          childCount={childGroups.length}
-        />
+        <div className="mt-5">
 
-        <div className="mt-8">
           {tab === "today" && <GroupTodayTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "work" && <GroupWorkTab group={group} />}
