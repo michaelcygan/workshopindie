@@ -515,7 +515,18 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <EmptyState label="No Collabs in this Group yet." cta="Browse all Collabs" to="/collab" />
+        <GroupEmpty
+          title="No Collabs yet."
+          hint="Post the first one — it shows up across Workshop."
+          action={
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/collab/new" search={{ group: group.slug }}>
+                <Plus className="h-4 w-4" /> Post a Collab
+              </Link>
+            </Button>
+          }
+        />
+
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           {rows.map((c) => (
