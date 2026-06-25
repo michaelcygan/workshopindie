@@ -24,6 +24,7 @@ const createSchema = z.object({
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
   visibility: z.enum(["public", "unlisted"]).optional(),
+  news_feed_url: z.string().url().nullable().optional(),
 });
 
 export const createGroup = createServerFn({ method: "POST" })
