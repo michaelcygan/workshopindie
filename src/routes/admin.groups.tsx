@@ -327,6 +327,15 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
           <div><Label>Cover image URL</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} /></div>
           <div>
+            <Label>News RSS / Atom feed URL</Label>
+            <Input
+              value={newsUrl}
+              onChange={(e) => setNewsUrl(e.target.value)}
+              placeholder="https://news.google.com/rss/search?q=..."
+            />
+            <p className="mt-1 text-[11px] text-ink-muted">Optional. Shown in the group's Today tab.</p>
+          </div>
+          <div>
             <Label>Visibility</Label>
             <Select value={visibility} onValueChange={(v) => setVisibility(v as "public" | "unlisted")}>
               <SelectTrigger><SelectValue /></SelectTrigger>
