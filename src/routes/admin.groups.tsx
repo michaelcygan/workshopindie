@@ -34,6 +34,7 @@ type GroupRow = {
   tagline: string | null;
   description: string | null;
   cover_url: string | null;
+  parent_group_id: string | null;
 };
 
 function AdminGroups() {
@@ -43,7 +44,7 @@ function AdminGroups() {
     queryFn: async () => {
       const { data } = await supabase
         .from("groups")
-        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,deleted_at")
+        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,deleted_at")
         .is("deleted_at", null)
         .order("kind")
         .order("name");
