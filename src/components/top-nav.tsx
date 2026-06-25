@@ -1,5 +1,5 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
