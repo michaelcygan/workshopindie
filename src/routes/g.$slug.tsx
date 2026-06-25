@@ -112,7 +112,7 @@ export const Route = createFileRoute("/g/$slug")({
   }),
 });
 
-type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
+type Tab = "events" | "workshops" | "collab" | "work" | "members" | "subgroups" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
