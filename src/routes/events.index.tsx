@@ -206,7 +206,7 @@ function EventsIndexPage() {
           {!isLoading && list.length === 0 && (
             <EmptySpark
               title="Nothing on the calendar."
-              body="Scenes post events from their Group page. Find one that fits and the next thing on the books will land here."
+              body="Events hosted by the Groups you join will list here."
               action={
                 <Button asChild className="rounded-full">
                   <Link to="/groups">Browse Groups</Link>
