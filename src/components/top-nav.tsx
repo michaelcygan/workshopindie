@@ -215,6 +215,15 @@ function HoverMoreMenu({
 }) {
   const [open, setOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  useEffect(() => {
+    setOpen(false);
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, [pathname]);
 
   const cancelClose = () => {
     if (closeTimer.current) {
