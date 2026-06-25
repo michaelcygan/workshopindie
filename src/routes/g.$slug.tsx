@@ -435,14 +435,18 @@ function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
     queryKey: ["group-role", group.id, user?.id ?? "anon"],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("group_members")
-        .select("role")
-        .eq("group_id", group.id)
-        .eq("user_id", user!.id)
-        .maybeSingle();
-      const role = (data as { role?: string } | null)?.role;
-      return role === "owner" || role === "steward";
+      const [memberRes, adminRes] = await Promise.all([
+        supabase
+          .from("group_members")
+          .select("role")
+          .eq("group_id", group.id)
+          .eq("user_id", user!.id)
+          .maybeSingle(),
+        supabase.rpc("has_role", { _user_id: user!.id, _role: "admin" }),
+      ]);
+      const role = (memberRes.data as { role?: string } | null)?.role;
+      const isAdmin = adminRes.data === true;
+      return isAdmin || role === "owner" || role === "steward";
     },
     staleTime: 60_000,
   });
