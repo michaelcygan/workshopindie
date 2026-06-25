@@ -28,6 +28,9 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
+import { GroupNewsTicker } from "@/components/group/group-news-ticker";
+import { setGroupNewsFeed } from "@/lib/group-admin.functions";
+
 
 
 type GroupRow = {
