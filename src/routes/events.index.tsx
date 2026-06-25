@@ -161,8 +161,9 @@ function EventsIndexPage() {
           <RecapChip count={list.length} label={when === "upcoming" ? "upcoming" : "past"} />
         </div>
         <p className="mt-3 max-w-2xl text-sm text-ink-muted md:text-base">
-          Listening parties, work-in-progress nights, networking. Drop in, meet
-          people building things, and bring something of your own.
+          Networking, work-in-progress nights, listening parties, hackathons,
+          photo walks and more opportunities to build your creative network and
+          make things.
         </p>
 
         <div className="mt-5 flex flex-wrap items-center gap-2">
