@@ -27,6 +27,7 @@ import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
 import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
+import { GroupTodayTab } from "@/components/group/group-today-tab";
 
 
 type GroupRow = {
@@ -127,9 +128,8 @@ function GroupPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Stable default: Collabs is the "what can I jump on" surface. Users find
-  // events through the global /events page and the next-event hero pill.
-  const [tab, setTab] = useState<Tab>("collab");
+  // Today is the default landing surface — ephemeral chat + fresh collabs.
+  const [tab, setTab] = useState<Tab>("today");
 
 
   const qc = useQueryClient();
@@ -270,6 +270,7 @@ function GroupPage() {
         />
 
         <div className="mt-8">
+          {tab === "today" && <GroupTodayTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}

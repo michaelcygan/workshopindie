@@ -35,6 +35,7 @@ type GroupRow = {
   description: string | null;
   cover_url: string | null;
   parent_group_id: string | null;
+  news_feed_url: string | null;
 };
 
 function AdminGroups() {
@@ -44,7 +45,7 @@ function AdminGroups() {
     queryFn: async () => {
       const { data } = await supabase
         .from("groups")
-        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,deleted_at")
+        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,news_feed_url,deleted_at")
         .is("deleted_at", null)
         .order("kind")
         .order("name");
@@ -265,6 +266,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
   const [tagline, setTagline] = useState(group.tagline ?? "");
   const [description, setDescription] = useState(group.description ?? "");
   const [coverUrl, setCoverUrl] = useState(group.cover_url ?? "");
+  const [newsUrl, setNewsUrl] = useState(group.news_feed_url ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted">(group.visibility);
   const [parentId, setParentId] = useState<string>(group.parent_group_id ?? "__none__");
   const qc = useQueryClient();
@@ -294,6 +296,7 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           tagline: tagline || null,
           description: description || null,
           cover_url: coverUrl || null,
+          news_feed_url: newsUrl || null,
           visibility,
         },
       });
@@ -323,6 +326,15 @@ function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: Gro
           <div><Label>Tagline</Label><Input value={tagline} onChange={(e) => setTagline(e.target.value)} maxLength={140} /></div>
           <div><Label>Description</Label><Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} /></div>
           <div><Label>Cover image URL</Label><Input value={coverUrl} onChange={(e) => setCoverUrl(e.target.value)} /></div>
+          <div>
+            <Label>News RSS / Atom feed URL</Label>
+            <Input
+              value={newsUrl}
+              onChange={(e) => setNewsUrl(e.target.value)}
+              placeholder="https://news.google.com/rss/search?q=..."
+            />
+            <p className="mt-1 text-[11px] text-ink-muted">Optional. Shown in the group's Today tab.</p>
+          </div>
           <div>
             <Label>Visibility</Label>
             <Select value={visibility} onValueChange={(v) => setVisibility(v as "public" | "unlisted")}>

@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Calendar, MapPin, Share2, Sparkles, Star, Users } from "lucide-react";
 import { JoinGroupButton } from "@/components/join-group-button";
-import { GroupSparkBar } from "@/components/group-spark-bar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -53,82 +52,86 @@ export function GroupHero({
         )}
         style={group.cover_url ? { backgroundImage: `url(${group.cover_url})` } : undefined}
       >
-        <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-b from-transparent to-background" />
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-background" />
       </div>
 
-      {/* Title block — in normal flow. Avatar is the only seam-crosser. */}
+      {/* Title block — in normal flow. Avatar floats over the seam via ring (no clipped border). */}
       <div className="px-4 md:px-6">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:gap-6">
-          <div className="flex min-w-0 items-start gap-4">
-            <div className="-mt-10 flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-4 border-background bg-surface shadow-lift">
-              {group.avatar_url ? (
-                <img src={group.avatar_url} alt={group.name} className="h-full w-full rounded-2xl object-cover" />
-              ) : (
-                <Icon className="h-10 w-10 text-ink-muted" />
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4">
+          {/* Avatar tile — opaque background + ring so it reads on any banner */}
+          <div className="-mt-10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-surface ring-4 ring-background shadow-lift">
+            {group.avatar_url ? (
+              <img
+                src={group.avatar_url}
+                alt={group.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <Icon className="h-10 w-10 text-ink-muted" />
+            )}
+          </div>
+
+          {/* Title column — gets the slack now that SparkBar moved into the tab bar */}
+          <div className="min-w-0 pt-1">
+            {group.parent && (
+              <Link
+                to="/g/$slug"
+                params={{ slug: group.parent.slug }}
+                className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted hover:text-ink"
+              >
+                <span aria-hidden>←</span> in {group.parent.name}
+              </Link>
+            )}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
+                {group.kind}
+              </span>
+              {group.featured_at && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                  <Star className="h-3 w-3" /> Featured
+                </span>
+              )}
+              {group.is_official && (
+                <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                  Official
+                </span>
               )}
             </div>
-            <div className="min-w-0 pt-1">
-              {group.parent && (
-                <Link
-                  to="/g/$slug"
-                  params={{ slug: group.parent.slug }}
-                  className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted hover:text-ink"
-                >
-                  <span aria-hidden>←</span> in {group.parent.name}
-                </Link>
-              )}
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
-                  {group.kind}
-                </span>
-                {group.featured_at && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    <Star className="h-3 w-3" /> Featured
-                  </span>
-                )}
-                {group.is_official && (
-                  <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
-                    Official
-                  </span>
-                )}
-              </div>
-              <h1 className="mt-1 truncate font-display text-2xl text-ink sm:text-3xl md:text-4xl">
-                {group.name}
-              </h1>
-              {group.tagline && (
-                <p className="mt-1 line-clamp-2 text-sm text-ink-muted md:text-base">
-                  {group.tagline}
-                </p>
-              )}
-              {nextEvent && (
-                <Link
-                  to="/g/$slug/e/$eventSlug"
-                  params={{ slug: group.slug, eventSlug: nextEvent.slug }}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/15"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  {new Date(nextEvent.starts_at).toLocaleDateString(undefined, {
-                    weekday: "short",
-                    month: "short",
-                    day: "numeric",
-                  })}{" "}
-                  · {nextEvent.title}
-                  <span aria-hidden>→</span>
-                </Link>
-              )}
-              <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
-                <Users className="h-3.5 w-3.5" />
-                <span>{group.member_count} members</span>
-              </div>
+            <h1 className="mt-1 text-balance font-display text-2xl leading-tight text-ink sm:text-3xl md:text-4xl">
+              {group.name}
+            </h1>
+            {group.tagline && (
+              <p className="mt-1 line-clamp-2 text-sm text-ink-muted md:text-base">
+                {group.tagline}
+              </p>
+            )}
+            {nextEvent && (
+              <Link
+                to="/g/$slug/e/$eventSlug"
+                params={{ slug: group.slug, eventSlug: nextEvent.slug }}
+                className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/15"
+              >
+                <Calendar className="h-3.5 w-3.5" />
+                {new Date(nextEvent.starts_at).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}{" "}
+                · {nextEvent.title}
+                <span aria-hidden>→</span>
+              </Link>
+            )}
+            <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
+              <Users className="h-3.5 w-3.5" />
+              <span>{group.member_count} members</span>
             </div>
           </div>
 
-          {/* Right column: one primary CTA + share. Create lives in the tab bar. */}
-          <div className="flex items-center gap-1.5 pt-2">
-            <GroupSparkBar slug={group.slug} />
+          {/* Right column: compact — Share + Join. Create lives in the tab bar. */}
+          <div className="flex shrink-0 items-center gap-1.5 pt-2">
             <Button
               variant="ghost"
-              size="sm"
+              size="icon"
               className="rounded-full"
               onClick={onShare}
               aria-label="Share group"
