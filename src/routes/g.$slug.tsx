@@ -241,8 +241,6 @@ function GroupPage() {
     };
   }, [group.id, qc]);
 
-  const Icon = group.kind === "city" ? MapPin : Sparkles;
-
   return (
     <main className="mx-auto max-w-7xl pb-20">
       {seedToken && !user && seedInfo && (
@@ -255,138 +253,22 @@ function GroupPage() {
         </div>
       )}
 
-      {/* Hero */}
-      <div
-        className={cn(
-          "relative h-48 w-full md:h-64",
-          group.cover_url ? "bg-cover bg-center" : "gradient-motion",
-        )}
-        style={group.cover_url ? { backgroundImage: `url(${group.cover_url})` } : undefined}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/90" />
-      </div>
+      <GroupHero group={group} nextEvent={nextEvent} />
 
-      <div className="-mt-12 px-4 md:px-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="flex items-start gap-4">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl border-4 border-background bg-surface shadow-lift">
-              {group.avatar_url ? (
-                <img src={group.avatar_url} alt={group.name} className="h-full w-full rounded-2xl object-cover" />
-              ) : (
-                <Icon className="h-10 w-10 text-ink-muted" />
-              )}
-            </div>
-            <div className="pt-2">
-              {group.parent && (
-                <Link
-                  to="/g/$slug"
-                  params={{ slug: group.parent.slug }}
-                  className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted hover:text-ink"
-                >
-                  <span aria-hidden>←</span> in {group.parent.name}
-                </Link>
-              )}
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
-                  {group.kind}
-                </span>
-                {group.featured_at && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                    <Star className="h-3 w-3" /> Featured
-                  </span>
-                )}
-                {group.is_official && (
-                  <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-medium text-ink-soft">Official</span>
-                )}
-              </div>
-              <h1 className="mt-1 font-display text-3xl text-ink md:text-4xl">{group.name}</h1>
-              {group.tagline && <p className="mt-1 text-sm text-ink-muted md:text-base">{group.tagline}</p>}
-              {nextEvent && (
-                <Link
-                  to="/g/$slug/e/$eventSlug"
-                  params={{ slug: group.slug, eventSlug: nextEvent.slug }}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary hover:bg-primary/15"
-                >
-                  <Calendar className="h-3.5 w-3.5" />
-                  {new Date(nextEvent.starts_at).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })} · {nextEvent.title}
-                  <span aria-hidden>→</span>
-                </Link>
-              )}
-              <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-ink-muted">
-                <span className="inline-flex items-center gap-1"><Users className="h-3.5 w-3.5" /> {group.member_count} members</span>
-                <span>· {group.workshop_count} Workshops</span>
-                <span>· {group.collab_count} Collabs</span>
-                <span>· {group.work_count} Work</span>
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 md:pb-2">
-            <GroupSparkBar slug={group.slug} />
-            <div className="md:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="rounded-full gap-1.5">
-                    <Plus className="h-4 w-4" /> Post here
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem asChild>
-                    <Link to="/works/new" search={{ group: group.slug }}>New Work</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/collab/new" search={{ group: group.slug }}>New Collab</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/workshops/new" search={{ group: group.slug }}>New Workshop</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <JoinGroupButton
-              groupId={group.id}
-              parent={group.parent ? { id: group.parent.id, name: group.parent.name } : null}
-            />
-          </div>
-        </div>
+      <div className="px-4 md:px-6">
+        <GroupTabBar
+          tab={tab}
+          setTab={setTab}
+          slug={group.slug}
+          counts={{
+            collab: group.collab_count,
+            work: group.work_count,
+            workshops: group.workshop_count,
+            members: group.member_count,
+          }}
+          childCount={childGroups.length}
+        />
 
-        {/* Tabs */}
-        <div className="sticky top-0 z-20 -mx-4 mt-8 flex gap-1.5 overflow-x-auto border-b border-border bg-background/85 px-4 backdrop-blur md:-mx-6 md:flex-wrap md:px-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {[
-            { id: "collab" as const, label: "Collabs", icon: Megaphone, count: group.collab_count },
-            { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
-            { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
-            { id: "events" as const, label: "Events", icon: Calendar, count: null },
-            ...(childGroups.length > 0
-              ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childGroups.length }]
-              : []),
-            { id: "members" as const, label: "Members", icon: Users, count: group.member_count },
-            { id: "about" as const, label: "About", icon: Info, count: null },
-          ].map((t) => {
-            const TIcon = t.icon;
-            const active = tab === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "-mb-px flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition",
-                  active
-                    ? "border-ink text-ink"
-                    : "border-transparent text-ink-muted hover:text-ink",
-                )}
-              >
-                <TIcon className="h-4 w-4" />
-                {t.label}
-                {t.count !== null && (
-                  <span className="text-[11px] text-ink-muted/80">{t.count}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Content */}
         <div className="mt-8">
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "work" && <GroupWorkTab group={group} />}
@@ -410,6 +292,7 @@ function GroupPage() {
     </main>
   );
 }
+
 
 function GroupEventsTab({ group }: { group: GroupRow }) {
   const { user } = useAuth();
