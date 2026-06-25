@@ -110,13 +110,22 @@ function AdminGroups() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={6} className="px-3 py-6 text-center text-ink-muted">No groups.</td></tr>
             )}
-            {filtered.map((g) => (
+            {filtered.map((g) => {
+              const parent = g.parent_group_id
+                ? groups.find((x) => x.id === g.parent_group_id) ?? null
+                : null;
+              return (
               <tr key={g.id} className="border-t border-border">
                 <td className="px-3 py-2">
                   <Link to="/g/$slug" params={{ slug: g.slug }} className="font-medium text-ink hover:underline">
                     {g.name}
                   </Link>
                   <div className="text-[11px] text-ink-muted">/{g.slug}</div>
+                  {parent && (
+                    <div className="mt-0.5 text-[11px] text-ink-muted">
+                      ↳ in <span className="text-ink-soft">{parent.name}</span>
+                    </div>
+                  )}
                 </td>
                 <td className="px-3 py-2 capitalize text-ink-soft">{g.kind}</td>
                 <td className="px-3 py-2">{g.member_count}</td>
@@ -134,7 +143,7 @@ function AdminGroups() {
                 </td>
                 <td className="px-3 py-2 text-right">
                   <div className="inline-flex gap-1">
-                    <EditGroupDialog group={g} />
+                    <EditGroupDialog group={g} allGroups={groups} />
                     <SeedMembersDialog group={g} />
                     <Button
                       size="sm"
@@ -149,7 +158,8 @@ function AdminGroups() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
