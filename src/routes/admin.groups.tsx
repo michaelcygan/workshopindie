@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { createGroup, updateGroup, deleteGroup, seedGroupMembers } from "@/lib/group-admin.functions";
+import { createGroup, updateGroup, deleteGroup, seedGroupMembers, setGroupParent } from "@/lib/group-admin.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/groups")({ component: AdminGroups });
