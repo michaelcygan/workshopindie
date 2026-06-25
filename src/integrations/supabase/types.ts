@@ -1434,6 +1434,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["group_kind"]
           member_count: number
           name: string
+          parent_group_id: string | null
           slug: string
           tagline: string | null
           updated_at: string
@@ -1458,6 +1459,7 @@ export type Database = {
           kind: Database["public"]["Enums"]["group_kind"]
           member_count?: number
           name: string
+          parent_group_id?: string | null
           slug: string
           tagline?: string | null
           updated_at?: string
@@ -1482,6 +1484,7 @@ export type Database = {
           kind?: Database["public"]["Enums"]["group_kind"]
           member_count?: number
           name?: string
+          parent_group_id?: string | null
           slug?: string
           tagline?: string | null
           updated_at?: string
@@ -1503,6 +1506,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "groups_parent_group_id_fkey"
+            columns: ["parent_group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
         ]
       }
