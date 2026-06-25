@@ -276,6 +276,15 @@ function GroupPage() {
               )}
             </div>
             <div className="pt-2">
+              {group.parent && (
+                <Link
+                  to="/g/$slug"
+                  params={{ slug: group.parent.slug }}
+                  className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted hover:text-ink"
+                >
+                  <span aria-hidden>←</span> in {group.parent.name}
+                </Link>
+              )}
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
                   {group.kind}
