@@ -47,13 +47,15 @@ type GroupRow = {
   work_count: number;
   is_official: boolean;
   featured_at: string | null;
+  parent_group_id: string | null;
+  parent: { id: string; slug: string; name: string } | null;
 };
 
 async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
     .from("groups")
     .select(
-      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at",
+      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id,parent:groups!groups_parent_group_id_fkey(id,slug,name)",
     )
     .eq("slug", slug)
     .is("deleted_at", null)
@@ -62,6 +64,7 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
   if (!data) throw notFound();
   return data as unknown as GroupRow;
 }
+
 
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
