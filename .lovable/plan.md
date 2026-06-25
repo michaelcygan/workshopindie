@@ -1,63 +1,61 @@
+# Group Nesting (v1)
 
-# Pass 11 — status check
+Let any group be assigned as a sub-group of another group (one level deep). Surface children on the parent's page as a "Groups" tab. Vocabulary stays as just "Groups" — no new noun.
 
-All six items shipped:
+## Data model
 
-- **A.** `rsvp` auto-joins the host group on `going`/`maybe` (best-effort upsert into `group_members`). ✓
-- **B.** `EventRsvpAuthSheet` + `usePendingRsvp` replay path still wired; under A the replay also joins the group. ✓
-- **C.** `/events` route exists with format + when filters and SEO meta. ✓ (will get a design upgrade below)
-- **D.** Attendee work rail is mounted on the event page via `<EventAttendeeWork />`, which already provides a Collabs/Works toggle and a "Show everyone" expand. This is **better than** the originally-planned separate `EventGoingCollabsRail` — one surface, two signals, no duplicate header. No additional component needed.
-- **E.** Group page defaults to `collab > work > workshops > events`. ✓
-- **F.** "Request to host" only renders for admins. ✓
+Add to `public.groups`:
+- `parent_group_id uuid null references public.groups(id) on delete set null`
+- Index on `parent_group_id`
+- Trigger `tg_groups_no_nested_parent`: reject if a group with `parent_group_id` is itself assigned as another group's parent (enforces single-level depth, in both directions: a child cannot become a parent, and a parent cannot become a child).
+- Self-reference guard: `parent_group_id <> id`.
 
-Nothing functional left in Pass 11.
+No new table — nesting is just a nullable FK. Existing `group_members`, `group_works`, `group_collabs`, `group_workshops`, `group_events` stay scoped to the specific group they were added to (no implicit roll-up in v1; we can add aggregation later without migration).
 
----
+## Server functions
 
-# Pass 11.1 — `/events` design pass
+`src/lib/groups.functions.ts` — add:
+- `setGroupParent({ group_id, parent_group_id | null })` — admin-only (uses existing `has_role` admin check pattern from `group-admin.functions.ts`). Validates depth rule.
+- `listChildGroups({ parent_group_id })` — public read; returns id/slug/name/kind/member_count for non-deleted children, ordered by `member_count desc`.
 
-Lift `/events` to match the design language used on `/groups`, `/workshops`, and `/cities`: serif `PageHeaderCompact`, `KickerChip` eyebrow, `RecapChip` count, week buckets, and a featured row that reuses existing primitives.
+Hosts of a group cannot reparent it themselves in v1 (keeps moderation simple); only platform admins can. Surface this in admin UI only.
 
-## Changes (single file: `src/routes/events.index.tsx`)
+## Admin UI
 
-1. **Header chrome — match `/groups` + `/workshops`**
-   - Swap the ad-hoc `<h1>` block for `<PageHeaderCompact title="Events" backTo="/" backLabel="Home" right={…} />`.
-   - Below the header: `<KickerChip live={happeningCount > 0}>{happeningCount > 0 ? "${n} happening now" : "On the calendar"}</KickerChip>` + a one-line lede + `<RecapChip count={events.length} label="upcoming" />`.
-   - Right slot: pill link `Host an event → /groups` (since events are created from a group; non-admins discover groups first). Keep it as a `Button variant="outline" size="sm"` to mirror Workshops' header.
+`src/routes/admin.groups.tsx`:
+- In `EditGroupDialog`, add a "Parent group" combobox (searchable select of all non-deleted groups except self and except groups that already have children). Save via `setGroupParent`.
+- In the admin table, show a small "↳ ParentName" chip under the slug when `parent_group_id` is set.
 
-2. **Filter row — match the site's segmented control pattern**
-   - Replace the local `SegToggle` with the same "rounded-full border bg-surface p-1 shadow-soft" segmented control used on `/workshops` and `/groups`.
-   - Two groups, left-aligned under the header on desktop, stacked on mobile: **When** (Upcoming / Past) and **Format** (All / In person / Online).
-   - Keep query state local (no URL search params for v1 — matches `/workshops`).
+## Public group page
 
-3. **Featured row — reuse `<FeaturedEventsCompact />`**
-   - The `/groups` page already has a polished featured-events rail. Mount it at the top of `/events` (upcoming + featured only) with a `<KickerChip>Featured</KickerChip>` label, then fall through to the full grid below. Delete the ad-hoc "Featured" `<Sparkles>` block.
-   - Hide the featured row when `when === "past"`.
+`src/routes/g.$slug.tsx`:
+- Fetch `parent_group_id` and (if present) the parent's slug+name.
+- Header: if child, render a small breadcrumb above the title — `← Chicago / Chicago Short Filmmakers`, linking to the parent.
+- Tabs: insert a new "Groups" tab **only when the group has children**. Order: Collabs · Works · Workshops · Events · Groups · About. The tab renders a grid of child group cards (reuse existing `GroupCard`/group tile component used on `/groups`).
+- Empty state on the Groups tab is suppressed — tab only appears when children exist, so no zero-state is needed.
 
-4. **Week-bucketed grid**
-   - Group results by ISO week (`This week`, `Next week`, `Week of MMM d`, …; `Past — MMM YYYY` buckets when viewing past).
-   - Each bucket: small uppercase label (matches the `text-[10.5px] font-semibold uppercase tracking-[0.18em]` rhythm used by `KickerChip`) + the existing `<EventCard>` grid (3 cols desktop / 2 tablet / 1 mobile).
-   - Skeletons during load: 6 `h-56` rounded-3xl shimmer tiles in the same grid (matches `/workshops`).
+## Membership prompt
 
-5. **Empty state — use `<EmptySpark>`**
-   - Replace the dashed-border block with `<EmptySpark title="Nothing on the calendar." body="Scenes post events from their Group page. Find one that fits and the next thing on the books will land here." action={<Link to="/groups"><Button className="rounded-full">Browse Groups</Button></Link>} />`.
+When a user joins a group that has a `parent_group_id`, after the existing `joinGroup` mutation resolves:
+- If they are not already a member of the parent, show a small dialog: "Also join Chicago?" with primary button "Join Chicago" (default-focused) and secondary "Not now."
+- Implement in the existing join button component (find via `joinGroup` usage; likely `src/components/group-join-button.tsx` or inside `g.$slug.tsx`). Pass parent metadata fetched alongside the group.
+- For logged-out users using the existing `SignupGateModal` join pattern, queue the parent-join prompt to fire after signup completes and the pending join replays (extend the existing pending-action ref pattern).
 
-6. **SEO upgrades (head)**
-   - Add `og:url`, `og:type: website`, `twitter:card`, `twitter:title`, `twitter:description` to match the `/groups` head shape.
-   - Add canonical link to `https://workshopindie.com/events`.
-   - Add `ItemList` JSON-LD built from the upcoming events (id, name, url, startDate, location) — emit only when `when === "upcoming"` and list is non-empty. SSR-safe (built from the same query data the component renders).
+## Groups index
 
-7. **YourGroupsStrip** (optional polish, low risk)
-   - Mount `<YourGroupsStrip />` at the top for signed-in users, same way `/workshops` does it. Free stickiness — surfaces "your scenes" right above the public events feed.
+`src/routes/groups.index.tsx`:
+- No structural change. Children remain listed alongside parents (so a user browsing all groups still finds "Chicago Short Filmmakers" directly).
+- Add a subtle "in Chicago" caption under the name on child group cards.
 
-## Files
+## Out of scope for v1
 
-- **Edit**: `src/routes/events.index.tsx` (only)
+- Multi-level nesting.
+- Cross-posting works/collabs/events from child → parent automatically.
+- Host-initiated reparenting (admin-only for now).
+- Renaming "scene"/"micro" kinds — the `kind` enum stays as-is; nesting is orthogonal to kind.
 
-## Explicitly out of scope
+## Technical notes
 
-- City filter, kind filter, calendar/month view, RSVP-from-index, map view — none for v1.
-- Server-loader rewrite — keep the existing client `useQuery` for now; the data shape is small and revalidates well.
-- New components — everything is composed from primitives that already exist (`PageHeaderCompact`, `KickerChip`, `RecapChip`, `EmptySpark`, `EventCard`, `FeaturedEventsCompact`, `YourGroupsStrip`).
-
-~1 short build turn. Approve and I'll ship.
+- Migration adds the column, index, self-ref check, and trigger in one file with appropriate `GRANT`s already in place on `groups`.
+- `useMyGroups` is unchanged (flat list of memberships is still correct).
+- SEO: child group pages get a `BreadcrumbList` JSON-LD entry (Home → Parent → Child) added to the existing schema block.
