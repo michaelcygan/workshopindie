@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
+import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageButton } from "@/components/message-button";
 import {
@@ -47,13 +48,15 @@ type GroupRow = {
   work_count: number;
   is_official: boolean;
   featured_at: string | null;
+  parent_group_id: string | null;
+  parent: { id: string; slug: string; name: string } | null;
 };
 
 async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
     .from("groups")
     .select(
-      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at",
+      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id,parent:groups!groups_parent_group_id_fkey(id,slug,name)",
     )
     .eq("slug", slug)
     .is("deleted_at", null)
@@ -62,6 +65,7 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
   if (!data) throw notFound();
   return data as unknown as GroupRow;
 }
+
 
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -109,7 +113,7 @@ export const Route = createFileRoute("/g/$slug")({
   }),
 });
 
-type Tab = "events" | "workshops" | "collab" | "work" | "members" | "about";
+type Tab = "events" | "workshops" | "collab" | "work" | "members" | "subgroups" | "about";
 
 function GroupPage() {
   const group = Route.useLoaderData();
@@ -197,6 +201,24 @@ function GroupPage() {
     },
   });
 
+  const { data: childGroups = [] } = useQuery({
+    queryKey: ["group", group.id, "children"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("groups")
+        .select(
+          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at",
+        )
+        .eq("parent_group_id", group.id)
+        .is("deleted_at", null)
+        .eq("visibility", "public")
+        .order("member_count", { ascending: false })
+        .limit(60);
+      return (data ?? []) as unknown as GroupCardData[];
+    },
+  });
+
+
   useEffect(() => {
     const channel = supabase
       .channel(`group-${group.id}`)
@@ -254,6 +276,15 @@ function GroupPage() {
               )}
             </div>
             <div className="pt-2">
+              {group.parent && (
+                <Link
+                  to="/g/$slug"
+                  params={{ slug: group.parent.slug }}
+                  className="mb-1 inline-flex items-center gap-1 text-[11px] font-medium text-ink-muted hover:text-ink"
+                >
+                  <span aria-hidden>←</span> in {group.parent.name}
+                </Link>
+              )}
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
                   {group.kind}
@@ -310,7 +341,10 @@ function GroupPage() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <JoinGroupButton groupId={group.id} />
+            <JoinGroupButton
+              groupId={group.id}
+              parent={group.parent ? { id: group.parent.id, name: group.parent.name } : null}
+            />
           </div>
         </div>
 
@@ -321,6 +355,9 @@ function GroupPage() {
             { id: "work" as const, label: "Work", icon: LayoutGrid, count: group.work_count },
             { id: "workshops" as const, label: "Workshops", icon: Radio, count: group.workshop_count },
             { id: "events" as const, label: "Events", icon: Calendar, count: null },
+            ...(childGroups.length > 0
+              ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childGroups.length }]
+              : []),
             { id: "members" as const, label: "Members", icon: Users, count: group.member_count },
             { id: "about" as const, label: "About", icon: Info, count: null },
           ].map((t) => {
@@ -354,6 +391,13 @@ function GroupPage() {
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
           {tab === "workshops" && <GroupWorkshopTab group={group} />}
+          {tab === "subgroups" && (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {childGroups.map((g) => (
+                <GroupCard key={g.id} group={g} />
+              ))}
+            </div>
+          )}
           {tab === "members" && <GroupMembersTab group={group} />}
           {tab === "about" && <GroupAboutTab group={group} />}
         </div>

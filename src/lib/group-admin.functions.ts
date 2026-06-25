@@ -121,3 +121,24 @@ export const seedGroupMembers = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, added: rows.length };
   });
+
+export const setGroupParent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) =>
+    z
+      .object({
+        group_id: z.string().uuid(),
+        parent_group_id: z.string().uuid().nullable(),
+      })
+      .parse(i),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("groups")
+      .update({ parent_group_id: data.parent_group_id })
+      .eq("id", data.group_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

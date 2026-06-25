@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
 } from "@/components/ui/select";
-import { createGroup, updateGroup, deleteGroup, seedGroupMembers } from "@/lib/group-admin.functions";
+import { createGroup, updateGroup, deleteGroup, seedGroupMembers, setGroupParent } from "@/lib/group-admin.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/groups")({ component: AdminGroups });
@@ -34,6 +34,7 @@ type GroupRow = {
   tagline: string | null;
   description: string | null;
   cover_url: string | null;
+  parent_group_id: string | null;
 };
 
 function AdminGroups() {
@@ -43,7 +44,7 @@ function AdminGroups() {
     queryFn: async () => {
       const { data } = await supabase
         .from("groups")
-        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,deleted_at")
+        .select("id,slug,name,kind,member_count,workshop_count,collab_count,work_count,is_official,featured_at,visibility,tagline,description,cover_url,parent_group_id,deleted_at")
         .is("deleted_at", null)
         .order("kind")
         .order("name");
@@ -109,13 +110,22 @@ function AdminGroups() {
             {!isLoading && filtered.length === 0 && (
               <tr><td colSpan={6} className="px-3 py-6 text-center text-ink-muted">No groups.</td></tr>
             )}
-            {filtered.map((g) => (
+            {filtered.map((g) => {
+              const parent = g.parent_group_id
+                ? groups.find((x) => x.id === g.parent_group_id) ?? null
+                : null;
+              return (
               <tr key={g.id} className="border-t border-border">
                 <td className="px-3 py-2">
                   <Link to="/g/$slug" params={{ slug: g.slug }} className="font-medium text-ink hover:underline">
                     {g.name}
                   </Link>
                   <div className="text-[11px] text-ink-muted">/{g.slug}</div>
+                  {parent && (
+                    <div className="mt-0.5 text-[11px] text-ink-muted">
+                      ↳ in <span className="text-ink-soft">{parent.name}</span>
+                    </div>
+                  )}
                 </td>
                 <td className="px-3 py-2 capitalize text-ink-soft">{g.kind}</td>
                 <td className="px-3 py-2">{g.member_count}</td>
@@ -133,7 +143,7 @@ function AdminGroups() {
                 </td>
                 <td className="px-3 py-2 text-right">
                   <div className="inline-flex gap-1">
-                    <EditGroupDialog group={g} />
+                    <EditGroupDialog group={g} allGroups={groups} />
                     <SeedMembersDialog group={g} />
                     <Button
                       size="sm"
@@ -148,7 +158,8 @@ function AdminGroups() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -248,19 +259,35 @@ function CreateGroupDialog() {
   );
 }
 
-function EditGroupDialog({ group }: { group: GroupRow }) {
+function EditGroupDialog({ group, allGroups }: { group: GroupRow; allGroups: GroupRow[] }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(group.name);
   const [tagline, setTagline] = useState(group.tagline ?? "");
   const [description, setDescription] = useState(group.description ?? "");
   const [coverUrl, setCoverUrl] = useState(group.cover_url ?? "");
   const [visibility, setVisibility] = useState<"public" | "unlisted">(group.visibility);
+  const [parentId, setParentId] = useState<string>(group.parent_group_id ?? "__none__");
   const qc = useQueryClient();
   const updateFn = useServerFn(updateGroup);
+  const setParentFn = useServerFn(setGroupParent);
+
+  // Eligible parents: not self, not already a child of another, and this
+  // group has no children of its own (one-level nesting).
+  const hasOwnChildren = useMemo(
+    () => allGroups.some((g) => g.parent_group_id === group.id),
+    [allGroups, group.id],
+  );
+  const eligibleParents = useMemo(
+    () =>
+      allGroups
+        .filter((g) => g.id !== group.id && !g.parent_group_id)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [allGroups, group.id],
+  );
 
   const save = useMutation({
-    mutationFn: () =>
-      updateFn({
+    mutationFn: async () => {
+      await updateFn({
         data: {
           id: group.id,
           name,
@@ -269,7 +296,12 @@ function EditGroupDialog({ group }: { group: GroupRow }) {
           cover_url: coverUrl || null,
           visibility,
         },
-      }),
+      });
+      const nextParent = parentId === "__none__" ? null : parentId;
+      if (nextParent !== (group.parent_group_id ?? null)) {
+        await setParentFn({ data: { group_id: group.id, parent_group_id: nextParent } });
+      }
+    },
     onSuccess: () => {
       toast.success("Saved");
       qc.invalidateQueries({ queryKey: ["admin-groups"] });
@@ -300,6 +332,24 @@ function EditGroupDialog({ group }: { group: GroupRow }) {
                 <SelectItem value="unlisted">Unlisted</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>Parent group</Label>
+            {hasOwnChildren ? (
+              <p className="text-xs text-ink-muted">
+                This group has child groups, so it can't be nested under another.
+              </p>
+            ) : (
+              <Select value={parentId} onValueChange={setParentId}>
+                <SelectTrigger><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">None (top-level)</SelectItem>
+                  {eligibleParents.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
         <DialogFooter>
