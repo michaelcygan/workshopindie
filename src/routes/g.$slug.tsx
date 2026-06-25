@@ -577,7 +577,18 @@ function GroupWorkshopTab({ group }: { group: GroupRow }) {
           ))}
         </div>
       ) : rows.length === 0 ? (
-        <EmptyState label="No Workshops tagged to this Group yet." cta="Browse all Workshops" to="/workshops" />
+        <GroupEmpty
+          title="No Workshops yet."
+          hint="Start a Workshop tied to this Group."
+          action={
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/workshops/new" search={{ group: group.slug }}>
+                <Plus className="h-4 w-4" /> Start a Workshop
+              </Link>
+            </Button>
+          }
+        />
+
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           {rows.map((w) => (
