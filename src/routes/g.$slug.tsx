@@ -59,7 +59,7 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
     .from("groups")
     .select(
-      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id",
+      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id,news_feed_url",
     )
     .eq("slug", slug)
     .is("deleted_at", null)
