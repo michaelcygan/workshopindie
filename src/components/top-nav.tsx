@@ -1,5 +1,5 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
@@ -214,65 +214,45 @@ function HoverMoreMenu({
   hasUser: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     setOpen(false);
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
   }, [pathname]);
 
-  const cancelClose = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  };
-  const scheduleClose = () => {
-    cancelClose();
-    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  const goTo = (to: "/in-progress" | "/gallery" | "/events") => {
+    setOpen(false);
+    navigate({ to });
   };
 
   return (
-    <div
-      onMouseEnter={() => {
-        cancelClose();
-        setOpen(true);
-      }}
-      onMouseLeave={scheduleClose}
-      className="relative"
-    >
-      <DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
+    <div className="relative">
+      <DropdownMenu key={pathname} open={open} onOpenChange={setOpen} modal={false}>
         <DropdownMenuTrigger asChild>
           <button
+            type="button"
             className={`${navLinkBase} inline-flex items-center gap-1`}
-            onFocus={() => setOpen(true)}
+            aria-expanded={open}
           >
             More
             <ChevronDown className="h-3 w-3 opacity-60" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="center"
-          className="w-52"
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
-        >
-          {hasUser && (
-            <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/in-progress" }); }}>
-              <ListChecks className="mr-2 h-4 w-4" /> In Progress
+        {open ? (
+          <DropdownMenuContent align="center" className="w-52">
+            {hasUser && (
+              <DropdownMenuItem onSelect={() => goTo("/in-progress")}>
+                <ListChecks className="mr-2 h-4 w-4" /> In Progress
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onSelect={() => goTo("/gallery")}>
+              <LayoutGrid className="mr-2 h-4 w-4" /> Work
             </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/gallery" }); }}>
-            <LayoutGrid className="mr-2 h-4 w-4" /> Work
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/events" }); }}>
-            <Calendar className="mr-2 h-4 w-4" /> Events
-          </DropdownMenuItem>
-        </DropdownMenuContent>
+            <DropdownMenuItem onSelect={() => goTo("/events")}>
+              <Calendar className="mr-2 h-4 w-4" /> Events
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        ) : null}
       </DropdownMenu>
     </div>
   );
