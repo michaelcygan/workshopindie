@@ -253,14 +253,14 @@ function HoverMoreMenu({
           onMouseLeave={scheduleClose}
         >
           {hasUser && (
-            <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+            <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/in-progress" }); }}>
               <ListChecks className="mr-2 h-4 w-4" /> In Progress
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
+          <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/gallery" }); }}>
             <LayoutGrid className="mr-2 h-4 w-4" /> Work
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => navigate({ to: "/events" })}>
+          <DropdownMenuItem onClick={() => { setOpen(false); navigate({ to: "/events" }); }}>
             <Calendar className="mr-2 h-4 w-4" /> Events
           </DropdownMenuItem>
         </DropdownMenuContent>
