@@ -56,14 +56,24 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
     .from("groups")
     .select(
-      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id,parent:groups!groups_parent_group_id_fkey(id,slug,name)",
+      "id,slug,name,tagline,description,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,parent_group_id",
     )
     .eq("slug", slug)
     .is("deleted_at", null)
     .maybeSingle();
   if (error) throw error;
   if (!data) throw notFound();
-  return data as unknown as GroupRow;
+  let parent: GroupRow["parent"] = null;
+  if (data.parent_group_id) {
+    const { data: p } = await supabase
+      .from("groups")
+      .select("id,slug,name")
+      .eq("id", data.parent_group_id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    parent = p ?? null;
+  }
+  return { ...(data as Omit<GroupRow, "parent">), parent };
 }
 
 
