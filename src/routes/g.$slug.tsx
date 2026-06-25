@@ -299,7 +299,9 @@ function GroupPage() {
           <AdjacentGroupsRail groupId={group.id} />
         </div>
       </div>
+      </div>
     </main>
+
   );
 }
 
