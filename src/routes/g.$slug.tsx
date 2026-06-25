@@ -260,7 +260,10 @@ function GroupPage() {
 
       <GroupHero group={group} nextEvent={nextEvent} />
 
+      <GroupNewsTicker groupId={group.id} />
+
       <div className="px-4 md:px-6">
+
         <GroupTabBar
           tab={tab}
           setTab={setTab}
