@@ -35,6 +35,7 @@ type GroupRow = {
   description: string | null;
   cover_url: string | null;
   parent_group_id: string | null;
+  news_feed_url: string | null;
 };
 
 function AdminGroups() {
