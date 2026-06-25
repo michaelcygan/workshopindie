@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { Send, Trash2, Newspaper, Sparkles, ExternalLink } from "lucide-react";
+import { Send, Trash2, Sparkles, Pin, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
-import { fetchGroupNews } from "@/lib/group-news.functions";
+import { GroupTodayPinPicker } from "@/components/group/group-today-pin-picker";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -27,13 +26,12 @@ type GroupRefForToday = {
 };
 
 /**
- * The leftmost tab on a group page. Three lightweight surfaces in one column:
- *  1. **Today chat** — ephemeral messages from group members, auto-expire at
- *     each author's local midnight (trigger sets `expires_at`).
- *  2. **Fresh collabs** — collabs tagged into this group in the last 24h.
- *  3. **News** — optional RSS/Atom feed configured by group admins.
+ * Today tab — three lightweight surfaces:
+ *  1. Today chat — ephemeral messages, auto-expire at author's local midnight.
+ *  2. Fresh collabs — member-pinned today + recent 24h fallback.
  *
- * All three are read-mostly so a single page query covers them.
+ * News headlines are shown as a ticker above the tab bar (see
+ * `GroupNewsTicker`) so they're visible on every tab, not only here.
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
@@ -41,7 +39,6 @@ export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
       <TodayChat group={group} />
       <aside className="space-y-8">
         <FreshCollabs group={group} />
-        <TodayNews groupId={group.id} />
       </aside>
     </div>
   );
@@ -74,7 +71,6 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     refetchInterval: 60_000,
   });
 
-  // Realtime: append on insert, drop on delete.
   useEffect(() => {
     const ch = supabase
       .channel(`gtp-${group.id}`)
@@ -89,7 +85,6 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     };
   }, [group.id, qc]);
 
-  // Auto-scroll to bottom when new posts arrive.
   useEffect(() => {
     const el = scrollerRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -248,122 +243,229 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   );
 }
 
-/* ---------- Fresh collabs (today) ---------- */
+/* ---------- Fresh collabs (pinned + recent) ---------- */
+
+type PinnedRow = {
+  user_id: string;
+  collab_id: string;
+  collab: { id: string; title: string; slug: string; status: string } | null;
+  user: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+};
+
+type RecentCollab = { id: string; title: string; slug: string; description: string | null };
 
 function FreshCollabs({ group }: { group: GroupRefForToday }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data: isMember } = useIsMemberOfGroup(group.id);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Pinned today.
+  const { data: pinned = [] } = useQuery({
+    queryKey: ["group", group.id, "today-pins"],
+    queryFn: async (): Promise<PinnedRow[]> => {
+      const { data, error } = await supabase
+        .from("group_today_pins")
+        .select(
+          "user_id,collab_id,collab:collab_posts!group_today_pins_collab_id_fkey(id,title,slug,status),user:profiles!group_today_pins_user_id_fkey(username,display_name,avatar_url)",
+        )
+        .eq("group_id", group.id)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return (data ?? []) as unknown as PinnedRow[];
+    },
+    refetchInterval: 60_000,
+  });
+
+  // Realtime invalidate.
+  useEffect(() => {
+    const ch = supabase
+      .channel(`gtp-pins-${group.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_today_pins", filter: `group_id=eq.${group.id}` },
+        () => qc.invalidateQueries({ queryKey: ["group", group.id, "today-pins"] }),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [group.id, qc]);
+
   const since = useMemo(() => {
     const d = new Date();
     d.setHours(d.getHours() - 24);
     return d.toISOString();
   }, []);
+  const pinnedIds = useMemo(() => new Set(pinned.map((p) => p.collab_id)), [pinned]);
 
-  const { data: rows = [] } = useQuery({
+  const { data: recent = [] } = useQuery({
     queryKey: ["group", group.id, "fresh-collabs", since],
-    queryFn: async () => {
+    queryFn: async (): Promise<RecentCollab[]> => {
       const { data } = await supabase
         .from("group_collabs")
-        .select(
-          "added_at,collab:collab_posts(id,title,slug,description,status,created_at)",
-        )
+        .select("added_at,collab:collab_posts(id,title,slug,description,status,created_at)")
         .eq("group_id", group.id)
         .gte("added_at", since)
         .order("added_at", { ascending: false })
         .limit(8);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data ?? []).map((r: any) => r.collab).filter((c: any) => c && c.status === "open") as Array<{
-        id: string;
-        title: string;
-        slug: string;
-        description: string | null;
-      }>;
+      return (data ?? [])
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .map((r: any) => r.collab)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .filter((c: any) => c && c.status === "open") as RecentCollab[];
     },
   });
 
+  const recentFiltered = recent.filter((c) => !pinnedIds.has(c.id)).slice(0, 5);
+
+  const unpin = useMutation({
+    mutationFn: async (collabId: string) => {
+      if (!user) throw new Error("Sign in");
+      const { error } = await supabase
+        .from("group_today_pins")
+        .delete()
+        .eq("group_id", group.id)
+        .eq("user_id", user.id)
+        .eq("collab_id", collabId);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["group", group.id, "today-pins"] }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const empty = pinned.length === 0 && recentFiltered.length === 0;
+
   return (
     <section className="rounded-3xl border border-border bg-surface p-4">
-      <header className="mb-3 flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="font-display text-base text-ink">Fresh collabs</h3>
-      </header>
-      {rows.length === 0 ? (
-        <p className="text-sm text-ink-muted">
-          Nothing new in the last 24h.{" "}
-          <Link
-            to="/collab/new"
-            search={{ group: group.slug }}
-            className="font-medium text-ink underline"
+      <header className="mb-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="font-display text-base text-ink">Fresh collabs</h3>
+        </div>
+        {user && isMember && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-7 gap-1 rounded-full px-2 text-xs"
+            onClick={() => setPickerOpen(true)}
           >
-            Post one →
-          </Link>
+            <Pin className="h-3.5 w-3.5" />
+            Pin
+          </Button>
+        )}
+      </header>
+
+      {empty ? (
+        <p className="text-sm text-ink-muted">
+          {user && isMember ? (
+            <>
+              Pin one of your active collabs so the group sees it today.{" "}
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="font-medium text-ink underline"
+              >
+                Pin one →
+              </button>
+            </>
+          ) : (
+            <>
+              Nothing pinned today.{" "}
+              <Link
+                to="/collab/new"
+                search={{ group: group.slug }}
+                className="font-medium text-ink underline"
+              >
+                Post a collab →
+              </Link>
+            </>
+          )}
         </p>
       ) : (
-        <ul className="space-y-2">
-          {rows.map((c) => (
-            <li key={c.id}>
-              <Link
-                to="/collab/$slug"
-                params={{ slug: c.slug }}
-                className="block rounded-xl border border-border/60 p-2.5 transition hover:bg-muted/50"
-              >
-                <div className="line-clamp-1 text-sm font-medium text-ink">{c.title}</div>
-                {c.description && (
-                  <div className="line-clamp-1 text-xs text-ink-muted">{c.description}</div>
-                )}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
+        <div className="space-y-4">
+          {pinned.length > 0 && (
+            <ul className="space-y-2">
+              {pinned.map((p) => {
+                if (!p.collab) return null;
+                const name = p.user?.display_name ?? p.user?.username ?? "Member";
+                const mine = user?.id === p.user_id;
+                return (
+                  <li key={`${p.user_id}-${p.collab_id}`} className="group/pin relative">
+                    <Link
+                      to="/collab/$slug"
+                      params={{ slug: p.collab.slug }}
+                      className="block rounded-xl border border-primary/30 bg-primary/5 p-2.5 transition hover:bg-primary/10"
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <Pin className="h-3 w-3 text-primary" />
+                        <span className="line-clamp-1 text-sm font-medium text-ink">
+                          {p.collab.title}
+                        </span>
+                      </div>
+                      <div className="mt-0.5 line-clamp-1 text-[11px] text-ink-muted">
+                        by {name}
+                      </div>
+                    </Link>
+                    {mine && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          unpin.mutate(p.collab_id);
+                        }}
+                        aria-label="Unpin"
+                        className="absolute right-1.5 top-1.5 rounded-full p-1 text-ink-muted opacity-0 transition hover:bg-background hover:text-ink group-hover/pin:opacity-100"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
 
-/* ---------- Today news (optional RSS) ---------- */
-
-function TodayNews({ groupId }: { groupId: string }) {
-  const fetchNews = useServerFn(fetchGroupNews);
-  const { data, isLoading } = useQuery({
-    queryKey: ["group", groupId, "news"],
-    queryFn: () => fetchNews({ data: { group_id: groupId, limit: 5 } }),
-    staleTime: 30 * 60 * 1000,
-  });
-  const items = data?.items ?? [];
-  if (!isLoading && items.length === 0) return null;
-
-  return (
-    <section className="rounded-3xl border border-border bg-surface p-4">
-      <header className="mb-3 flex items-center gap-2">
-        <Newspaper className="h-4 w-4 text-ink-muted" />
-        <h3 className="font-display text-base text-ink">In the news</h3>
-      </header>
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded-md bg-surface-2" />
-          ))}
-        </div>
-      ) : (
-        <ul className="space-y-2">
-          {items.map((n, i) => (
-            <li key={i}>
-              <a
-                href={n.link}
-                target="_blank"
-                rel="noopener noreferrer ugc"
-                className="group flex items-start gap-1.5 text-sm text-ink hover:underline"
-              >
-                <span className="line-clamp-2">{n.title}</span>
-                <ExternalLink className="mt-0.5 h-3 w-3 shrink-0 text-ink-muted opacity-0 transition group-hover:opacity-100" />
-              </a>
-              {n.published_at && (
-                <div className="text-[11px] text-ink-muted">
-                  {new Date(n.published_at).toLocaleDateString()}
+          {recentFiltered.length > 0 && (
+            <div>
+              {pinned.length > 0 && (
+                <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+                  Recent
                 </div>
               )}
-            </li>
-          ))}
-        </ul>
+              <ul className="space-y-2">
+                {recentFiltered.map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      to="/collab/$slug"
+                      params={{ slug: c.slug }}
+                      className="block rounded-xl border border-border/60 p-2.5 transition hover:bg-muted/50"
+                    >
+                      <div className="line-clamp-1 text-sm font-medium text-ink">
+                        {c.title}
+                      </div>
+                      {c.description && (
+                        <div className="line-clamp-1 text-xs text-ink-muted">
+                          {c.description}
+                        </div>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       )}
+
+      <GroupTodayPinPicker
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        groupId={group.id}
+      />
     </section>
   );
 }
