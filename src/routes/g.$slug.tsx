@@ -1,8 +1,8 @@
 import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { MapPin, Sparkles, Users, Star, LayoutGrid, Megaphone, Radio, Info, Plus, X, Calendar } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -11,12 +11,6 @@ import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MessageButton } from "@/components/message-button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import {
   tagWorkInGroup,
@@ -30,7 +24,10 @@ import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-link
 import { toast } from "sonner";
 
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
-import { GroupSparkBar } from "@/components/group-spark-bar";
+import { GroupHero } from "@/components/group/group-hero";
+import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
+import { GroupEmpty } from "@/components/group/group-empty";
+
 
 type GroupRow = {
   id: string;
