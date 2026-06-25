@@ -50,8 +50,10 @@ type GroupRow = {
   is_official: boolean;
   featured_at: string | null;
   parent_group_id: string | null;
+  news_feed_url: string | null;
   parent: { id: string; slug: string; name: string } | null;
 };
+
 
 async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
