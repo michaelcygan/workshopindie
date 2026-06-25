@@ -443,7 +443,18 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
           ))}
         </div>
       ) : works.length === 0 ? (
-        <EmptyState label="No Work tagged to this Group yet." cta="Browse all Work" to="/gallery" />
+        <GroupEmpty
+          title="No Work in this Group yet."
+          hint="Tag a piece from your portfolio so it shows up here."
+          action={
+            <Button asChild size="sm" className="rounded-full">
+              <Link to="/works/new" search={{ group: group.slug }}>
+                <Plus className="h-4 w-4" /> Add Work
+              </Link>
+            </Button>
+          }
+        />
+
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {works.map((w) => (
