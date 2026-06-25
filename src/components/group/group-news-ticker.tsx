@@ -1,15 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Newspaper } from "lucide-react";
 import { fetchGroupNews } from "@/lib/group-news.functions";
 
 /**
- * Horizontal marquee of headlines pulled from the group's configured
- * RSS/Atom feed. Renders nothing when no URL is set or the feed is empty,
- * so groups without a feed see no chrome.
- *
- * `prefers-reduced-motion` falls back to a static horizontally-scrollable
- * strip with no animation.
+ * Group news rail — a contained pill that sits between the hero and the
+ * tab bar, aligned to the same max-w-7xl container as the rest of the page.
+ * Anchored "In the news" chip on the left; headlines scroll calmly through
+ * the remaining space. Returns null when no feed or no items.
  */
 export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const fetchNews = useServerFn(fetchGroupNews);
@@ -21,39 +18,62 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const items = data?.items ?? [];
   if (items.length === 0) return null;
 
-  // Duplicate the list once so the marquee can loop seamlessly.
+  const durationSec = Math.max(90, items.length * 14);
   const loop = [...items, ...items];
 
   return (
-    <div className="group/ticker relative mt-2 overflow-hidden border-y border-border bg-surface/60">
-      <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-10 bg-gradient-to-r from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-10 bg-gradient-to-l from-background to-transparent" />
-
-      <div className="flex items-center gap-3 px-4 py-2 motion-reduce:overflow-x-auto motion-reduce:[scrollbar-width:none]">
-        <Newspaper
-          aria-hidden
-          className="h-3.5 w-3.5 shrink-0 text-ink-muted"
-        />
-        <div
-          className="flex shrink-0 animate-[ticker_60s_linear_infinite] items-center gap-6 whitespace-nowrap text-xs text-ink-muted group-hover/ticker:[animation-play-state:paused] motion-reduce:animate-none"
-          style={{ animationName: "ticker" }}
-        >
-          {loop.map((n, i) => (
-            <a
-              key={`${i}-${n.link}`}
-              href={n.link}
-              target="_blank"
-              rel="noopener noreferrer ugc"
-              className="shrink-0 text-ink hover:underline"
-            >
-              {n.title}
-              <span aria-hidden className="ml-6 text-ink-muted/70">·</span>
-            </a>
-          ))}
+    <div className="mx-auto mt-6 mb-2 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="group/ticker relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
+        {/* Anchored label */}
+        <div className="relative z-20 flex shrink-0 items-center gap-2 rounded-l-full bg-surface px-3 sm:pr-4">
+          <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+          <span className="hidden text-[11px] font-medium uppercase tracking-wider text-ink-muted sm:inline">
+            In the news
+          </span>
         </div>
-      </div>
+        <div aria-hidden className="my-2 w-px shrink-0 bg-border/80" />
 
-      <style>{`@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+        {/* Rail */}
+        <div className="relative min-w-0 flex-1 overflow-hidden">
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-8 bg-gradient-to-r from-surface/80 to-transparent" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-8 bg-gradient-to-l from-surface/80 to-transparent" />
+
+          {/* Reduced-motion fallback */}
+          <ul className="hidden h-full items-center gap-10 px-4 text-[13px] text-ink motion-reduce:flex">
+            {items.slice(0, 3).map((n, i) => (
+              <li key={`s-${i}`} className="truncate">
+                <a href={n.link} target="_blank" rel="noopener noreferrer ugc" className="hover:underline">
+                  {n.title}
+                </a>
+              </li>
+            ))}
+          </ul>
+
+          {/* Marquee */}
+          <div
+            className="flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform group-hover/ticker:[animation-play-state:paused] group-focus-within/ticker:[animation-play-state:paused] motion-reduce:hidden"
+            style={{
+              animation: `group-news-ticker ${durationSec}s linear infinite`,
+              width: "max-content",
+            }}
+          >
+            {loop.map((n, i) => (
+              <a
+                key={`${i}-${n.link}`}
+                href={n.link}
+                target="_blank"
+                rel="noopener noreferrer ugc"
+                className="shrink-0 hover:underline focus:outline-none focus-visible:underline"
+              >
+                {n.title}
+                <span aria-hidden className="ml-10 text-ink-muted/40">•</span>
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <style>{`@keyframes group-news-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+      </div>
     </div>
   );
 }
