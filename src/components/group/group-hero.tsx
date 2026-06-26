@@ -1,9 +1,12 @@
-import { Link } from "@tanstack/react-router";
-import { Calendar, MapPin, Share2, Sparkles, Star, Users } from "lucide-react";
+import { Link, useRouter } from "@tanstack/react-router";
+import { Calendar, MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { joinGroupLounge } from "@/lib/instant.functions";
 
 export type GroupHeroData = {
   id: string;
@@ -27,6 +30,16 @@ export function GroupHero({
   nextEvent: { slug: string; title: string; starts_at: string } | null | undefined;
 }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
+
+  const router = useRouter();
+  const joinLoungeFn = useServerFn(joinGroupLounge);
+  const openLounge = useMutation({
+    mutationFn: () => joinLoungeFn({ data: { groupId: group.id } }),
+    onSuccess: ({ roomId }) => {
+      router.navigate({ to: "/lounge/$id", params: { id: roomId } });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
+  });
 
   const onShare = async () => {
     const url = typeof window !== "undefined" ? `${window.location.origin}/g/${group.slug}` : "";
@@ -142,8 +155,20 @@ export function GroupHero({
 
           </div>
 
-          {/* Right column: compact — Share + Join. Create lives in the tab bar. */}
+          {/* Right column: compact — Lounge + Share + Join. Create lives in the tab bar. */}
           <div className="flex shrink-0 items-center gap-1.5 pt-2">
+            <Button
+              size="sm"
+              onClick={() => openLounge.mutate()}
+              disabled={openLounge.isPending}
+              className="rounded-full gap-1.5"
+              title="Drop into the Lounge — auto-joins this group"
+            >
+              <Radio className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                {openLounge.isPending ? "Opening…" : "Open the Lounge"}
+              </span>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
