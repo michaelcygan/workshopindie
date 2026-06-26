@@ -155,8 +155,20 @@ export function GroupHero({
 
           </div>
 
-          {/* Right column: compact — Share + Join. Create lives in the tab bar. */}
+          {/* Right column: compact — Lounge + Share + Join. Create lives in the tab bar. */}
           <div className="flex shrink-0 items-center gap-1.5 pt-2">
+            <Button
+              size="sm"
+              onClick={() => openLounge.mutate()}
+              disabled={openLounge.isPending}
+              className="rounded-full gap-1.5"
+              title="Drop into the Lounge — auto-joins this group"
+            >
+              <Radio className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">
+                {openLounge.isPending ? "Opening…" : "Open the Lounge"}
+              </span>
+            </Button>
             <Button
               variant="ghost"
               size="icon"
