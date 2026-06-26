@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchGroupNews } from "@/lib/group-news.functions";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ExternalLink } from "lucide-react";
+
 
 /**
  * Group news rail — a contained pill that sits between the hero and the
