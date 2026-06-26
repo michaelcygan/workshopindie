@@ -485,9 +485,12 @@ function LiveRoomPage() {
         onOpenChange={setCollabOpen}
         roomId={id}
         defaultTitle={title}
-        onCreated={(slug) => {
+        onCreated={({ collabSlug }) => {
           qc.invalidateQueries({ queryKey: ["instant-room", id] });
-          router.navigate({ to: "/workshops/$slug", params: { slug } });
+          if (collabSlug) {
+            // Open Collab in a new tab so the live Lounge keeps running.
+            window.open(`/collab/${collabSlug}`, "_blank", "noopener,noreferrer");
+          }
         }}
       />
 
