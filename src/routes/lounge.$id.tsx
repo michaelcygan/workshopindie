@@ -221,7 +221,7 @@ function LiveRoomPage() {
     try {
       if (window.localStorage.getItem("ws:first_done") === "1") return;
       window.localStorage.setItem("ws:first_done", "1");
-      const t = setTimeout(() => toast.success("First Workshop — nicely done."), 1200);
+      const t = setTimeout(() => toast.success("First Lounge — nicely done."), 1200);
       return () => clearTimeout(t);
     } catch {
       // ignore
@@ -326,7 +326,7 @@ function LiveRoomPage() {
             to="/lounge"
             className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
           >
-            <ArrowLeft className="h-3 w-3" /> Workshop
+            <ArrowLeft className="h-3 w-3" /> Lounge
           </Link>
           {/* Hide the redundant fallback "Lounge" title on desktop — top nav already shows it.
               When the room has a custom name (after a purpose pick), the title stays. */}
@@ -394,7 +394,7 @@ function LiveRoomPage() {
                 title={
                   room?.claim_user_id && room.claim_user_id !== user.id
                     ? "Someone is claiming host"
-                    : "Become host of this Workshop"
+                    : "Become host of this Lounge"
                 }
               >
                 <Crown className="h-3.5 w-3.5" />

@@ -280,7 +280,7 @@ function WorkshopPreflight() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <h1 className="font-display text-2xl md:text-[28px] leading-none text-ink truncate">
-            Workshop
+            Lounge
           </h1>
         </div>
 
