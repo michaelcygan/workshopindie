@@ -122,7 +122,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
         subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Lounge while there's a seat.",
-        href: roomId ? `/lounge/${roomId}` : "/workshop",
+        href: roomId ? `/lounge/${roomId}` : "/lounge",
       };
     }
     case "chat_mention": {
