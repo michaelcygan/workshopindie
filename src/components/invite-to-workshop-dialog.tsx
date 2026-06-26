@@ -44,7 +44,7 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
         <DialogHeader>
           <DialogTitle>Invite {invitee.displayName ?? invitee.username ?? "them"}</DialogTitle>
           <DialogDescription>
-            Pick one of your Workshops, or start a new one together.
+            Pick one of your Lounges, or start a new one together.
           </DialogDescription>
         </DialogHeader>
 
@@ -77,7 +77,7 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
             })
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center text-sm text-ink-muted">
-              You aren't hosting any active Workshops. Start one to invite them.
+              You aren't hosting any active Lounges. Start one to invite them.
             </div>
           )}
         </div>
@@ -96,11 +96,11 @@ export function InviteToWorkshopDialog({ open, onOpenChange, invitee }: Props) {
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate({ to: "/workshops/new", search: { inviteUserId: invitee.id } });
+                navigate({ to: "/lounge", search: { inviteUserId: invitee.id } });
               }}
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Start a Workshop
+              Open a Lounge
             </Button>
           )}
         </DialogFooter>
