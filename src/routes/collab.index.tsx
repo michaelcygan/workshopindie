@@ -359,34 +359,15 @@ function CollabPage() {
         <p className="text-sm text-ink-muted">
           What people are trying to make. Help out — or open a Workshop on yours.
         </p>
-        <RecapChip count={rawPosts?.length ?? 0} label="open" />
-      </div>
-
-      {/* View filter: All / Open / Shipped */}
-      <div className="mt-4 flex flex-wrap items-center gap-1.5">
-        {(["all", "open", "shipped"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setView(v)}
-            className={cn(
-              "h-8 rounded-full border px-3 text-xs font-medium transition",
-              filters.view === v
-                ? "border-transparent bg-ink text-background"
-                : "border-border bg-surface text-ink-soft hover:bg-muted",
-            )}
-            aria-pressed={filters.view === v}
-          >
-            {v === "all" ? "All" : v === "open" ? "Open" : "Shipped"}
-          </button>
-        ))}
+        {rawPosts && rawPosts.length > 0 && (
+          <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
+            {rawPosts.length} open
+          </span>
+        )}
       </div>
 
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
-
-
-
         <div className="flex flex-wrap items-center gap-2">
           <div className="shrink-0">
             <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />
