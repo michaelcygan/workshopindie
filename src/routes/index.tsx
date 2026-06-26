@@ -94,7 +94,7 @@ function Hero() {
           initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-4 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Drop into a live Workshop with other artists and creators. Post a Collab and join a Group of makers in your area or interest.
+          Drop into the Lounge with other artists and creators. Post a Collab, join a Group, and find an event near you.
         </motion.p>
 
         <motion.div
@@ -102,16 +102,16 @@ function Hero() {
           className="mx-auto mt-6 grid max-w-4xl gap-4 md:grid-cols-3"
         >
           <Link
-            to="/workshop"
+            to="/lounge"
             className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
               <Radio className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-xl md:text-2xl leading-tight">Drop into a Workshop</div>
+              <div className="font-display text-xl md:text-2xl leading-tight">Drop into the Lounge</div>
               <p className="mt-2 text-sm text-primary-foreground/85">
-                Live, five-seat studios with shared tools. Jam, critique, hack, or just work alongside other people.
+                Live, drop-in rooms with shared tools. Jam, critique, hack, or just work alongside other people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -138,7 +138,7 @@ function Hero() {
           </Link>
 
           <Link
-            to="/groups"
+            to="/events"
             className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">

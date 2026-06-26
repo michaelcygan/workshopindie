@@ -564,7 +564,7 @@ function ProfilePage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
-            <Link to="/workshop"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
+            <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
           </div>
         )}
 
@@ -1071,7 +1071,7 @@ function ActivityTab({
         <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Workshop, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <Link to="/works/new"><Button className="rounded-full">Start a Work</Button></Link>
-          <Link to="/workshop"><Button variant="outline" className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop into a Workshop</Button></Link>
           <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
         </div>
       </div>

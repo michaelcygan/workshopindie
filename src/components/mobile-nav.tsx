@@ -31,9 +31,9 @@ export function MobileNav() {
           <Home className="h-[18px] w-[18px]" />
           <span>Home</span>
         </Link>
-        <Link to="/workshop" className={tabBase} activeProps={{ className: tabActive }}>
+        <Link to="/lounge" className={tabBase} activeProps={{ className: tabActive }}>
           <Radio className="h-[18px] w-[18px]" />
-          <span>Workshops</span>
+          <span>Lounge</span>
         </Link>
         <Link to="/collab" className={tabBase} activeProps={{ className: tabActive }}>
           <Users className="h-[18px] w-[18px]" />

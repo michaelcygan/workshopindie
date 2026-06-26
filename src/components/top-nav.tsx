@@ -74,11 +74,11 @@ export function TopNav() {
         <nav className="flex flex-1 items-center justify-center gap-1">
           <Link
             data-firstrun="instant"
-            to="/workshop"
+            to="/lounge"
             className={navLinkBase}
             activeProps={{ className: navLinkActive }}
           >
-            Workshops
+            Lounge
           </Link>
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
@@ -103,9 +103,6 @@ export function TopNav() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: "/workshops/lobby/new" })}>
-                <Coffee className="mr-2 h-4 w-4" /> Create a Workshop
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

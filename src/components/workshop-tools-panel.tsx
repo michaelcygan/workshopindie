@@ -60,7 +60,7 @@ const PRESETS: Record<ToolType, Preset> = {
 // into Drive as link kinds (Google Doc / GitHub Repo). Legacy enabled rows still
 // render via presetFor() so nothing disappears for existing rooms.
 const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
-const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player", "recorder"];
+const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player"];
 const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
 /** Exported for the Stage tab bar's Tools dropdown. */

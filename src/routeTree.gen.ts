@@ -18,6 +18,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoungeRouteImport } from './routes/lounge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InProgressRouteImport } from './routes/in-progress'
 import { Route as GroupsRouteImport } from './routes/groups'
@@ -32,6 +33,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
 import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
@@ -52,6 +54,7 @@ import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
+import { Route as LoungeIdRouteImport } from './routes/lounge.$id'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as ECodeRouteImport } from './routes/e.$code'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
@@ -133,6 +136,11 @@ const OnboardingRoute = OnboardingRouteImport.update({
   path: '/onboarding',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoungeRoute = LoungeRouteImport.update({
+  id: '/lounge',
+  path: '/lounge',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -202,6 +210,11 @@ const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeIndexRoute = LoungeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoungeRoute,
 } as any)
 const GroupsIndexRoute = GroupsIndexRouteImport.update({
   id: '/',
@@ -302,6 +315,11 @@ const MeBlockedRoute = MeBlockedRouteImport.update({
   id: '/me/blocked',
   path: '/me/blocked',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeIdRoute = LoungeIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => LoungeRoute,
 } as any)
 const GSlugRoute = GSlugRouteImport.update({
   id: '/$slug',
@@ -493,6 +511,7 @@ export interface FileRoutesByFullPath {
   '/groups': typeof GroupsRouteWithChildren
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
+  '/lounge': typeof LoungeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -523,6 +542,7 @@ export interface FileRoutesByFullPath {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -543,6 +563,7 @@ export interface FileRoutesByFullPath {
   '/dms/': typeof DmsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -597,6 +618,7 @@ export interface FileRoutesByTo {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -617,6 +639,7 @@ export interface FileRoutesByTo {
   '/dms': typeof DmsIndexRoute
   '/events': typeof EventsIndexRoute
   '/groups': typeof GroupsIndexRoute
+  '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
   '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
@@ -648,6 +671,7 @@ export interface FileRoutesById {
   '/groups': typeof GroupsRouteWithChildren
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
+  '/lounge': typeof LoungeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -678,6 +702,7 @@ export interface FileRoutesById {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -698,6 +723,7 @@ export interface FileRoutesById {
   '/dms/': typeof DmsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
@@ -730,6 +756,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/in-progress'
     | '/login'
+    | '/lounge'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -760,6 +787,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -780,6 +808,7 @@ export interface FileRouteTypes {
     | '/dms/'
     | '/events/'
     | '/groups/'
+    | '/lounge/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -834,6 +863,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -854,6 +884,7 @@ export interface FileRouteTypes {
     | '/dms'
     | '/events'
     | '/groups'
+    | '/lounge'
     | '/me'
     | '/workshop'
     | '/workshops'
@@ -884,6 +915,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/in-progress'
     | '/login'
+    | '/lounge'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -914,6 +946,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -934,6 +967,7 @@ export interface FileRouteTypes {
     | '/dms/'
     | '/events/'
     | '/groups/'
+    | '/lounge/'
     | '/me/'
     | '/workshop/'
     | '/workshops/'
@@ -965,6 +999,7 @@ export interface RootRouteChildren {
   GroupsRoute: typeof GroupsRouteWithChildren
   InProgressRoute: typeof InProgressRoute
   LoginRoute: typeof LoginRoute
+  LoungeRoute: typeof LoungeRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ReferRoute: typeof ReferRoute
@@ -1065,6 +1100,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OnboardingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lounge': {
+      id: '/lounge'
+      path: '/lounge'
+      fullPath: '/lounge'
+      preLoaderRoute: typeof LoungeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -1162,6 +1204,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/lounge/': {
+      id: '/lounge/'
+      path: '/'
+      fullPath: '/lounge/'
+      preLoaderRoute: typeof LoungeIndexRouteImport
+      parentRoute: typeof LoungeRoute
     }
     '/groups/': {
       id: '/groups/'
@@ -1302,6 +1351,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/blocked'
       preLoaderRoute: typeof MeBlockedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/lounge/$id': {
+      id: '/lounge/$id'
+      path: '/$id'
+      fullPath: '/lounge/$id'
+      preLoaderRoute: typeof LoungeIdRouteImport
+      parentRoute: typeof LoungeRoute
     }
     '/g/$slug': {
       id: '/g/$slug'
@@ -1662,6 +1718,19 @@ const GroupsRouteChildren: GroupsRouteChildren = {
 const GroupsRouteWithChildren =
   GroupsRoute._addFileChildren(GroupsRouteChildren)
 
+interface LoungeRouteChildren {
+  LoungeIdRoute: typeof LoungeIdRoute
+  LoungeIndexRoute: typeof LoungeIndexRoute
+}
+
+const LoungeRouteChildren: LoungeRouteChildren = {
+  LoungeIdRoute: LoungeIdRoute,
+  LoungeIndexRoute: LoungeIndexRoute,
+}
+
+const LoungeRouteWithChildren =
+  LoungeRoute._addFileChildren(LoungeRouteChildren)
+
 interface WorkshopRouteChildren {
   WorkshopIdRoute: typeof WorkshopIdRoute
   WorkshopIndexRoute: typeof WorkshopIndexRoute
@@ -1731,6 +1800,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsRoute: GroupsRouteWithChildren,
   InProgressRoute: InProgressRoute,
   LoginRoute: LoginRoute,
+  LoungeRoute: LoungeRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ReferRoute: ReferRoute,
@@ -1768,13 +1838,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

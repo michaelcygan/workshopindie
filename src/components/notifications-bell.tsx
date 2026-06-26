@@ -51,7 +51,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
   const actorUsername = (n.payload?.actor_username as string) || undefined;
   const wsSlug = (n.payload?.slug as string) || undefined;
-  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "A Workshop";
+  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "A Lounge";
   switch (n.kind) {
     case "dm":
       return {
@@ -121,17 +121,17 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const mediumLabel = (n.payload?.medium as string) || null;
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
-        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Workshop while there's a seat.",
-        href: roomId ? `/workshop/${roomId}` : "/workshop",
+        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Lounge while there's a seat.",
+        href: roomId ? `/lounge/${roomId}` : "/workshop",
       };
     }
     case "chat_mention": {
       const roomId = (n.payload?.room_id as string) || n.entity_id || "";
-      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "a Workshop";
+      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "a Lounge";
       return {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: roomId ? `/workshop/${roomId}` : "/workshop",
+        href: roomId ? `/lounge/${roomId}` : "/workshop",
       };
     }
     case "payment_failed":
