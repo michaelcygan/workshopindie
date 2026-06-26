@@ -915,61 +915,83 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   );
 }
 
-/* ---------- WORKSHOPS ---------- */
-type WSRow = { id: string; title: string; slug: string; status: string };
-
+/* ---------- LOUNGE ---------- */
 function GroupWorkshopTab({ group }: { group: GroupRow }) {
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["group", group.id, "workshops"],
-    queryFn: async (): Promise<WSRow[]> => {
+  const { user } = useAuth();
+  const router = useRouter();
+  const joinFn = useServerFn(joinGroupLounge);
+  const { data: liveRooms = [], isLoading } = useQuery({
+    queryKey: ["group", group.id, "lounge-rooms"],
+    queryFn: async () => {
       const { data } = await supabase
-        .from("group_workshops")
-        .select("workshop:workshops(id,title,slug,status,archived_at)")
+        .from("instant_rooms")
+        .select("id, title, status, started_at")
         .eq("group_id", group.id)
-        .limit(48);
-      return (data ?? [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((r: any) => r.workshop)
-        .filter((w: (WSRow & { archived_at?: string | null }) | null) => !!w && !w.archived_at) as WSRow[];
+        .eq("status", "active")
+        .order("started_at", { ascending: false })
+        .limit(8);
+      return data ?? [];
     },
+    refetchInterval: 20_000,
+  });
+
+  const open = useMutation({
+    mutationFn: () => joinFn({ data: { groupId: group.id } }),
+    onSuccess: ({ roomId }) =>
+      router.navigate({ to: "/lounge/$id", params: { id: roomId } }),
+    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
   });
 
   return (
     <div>
-      <AddMineToGroup group={group} entity="workshop" />
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
+        <div className="min-w-0">
+          <h3 className="font-display text-lg text-ink">{group.name} Lounge</h3>
+          <p className="mt-1 text-xs text-ink-muted">
+            Drop in. Mic optional. Joining the Lounge also adds you to {group.name}.
+          </p>
+        </div>
+        <Button
+          size="sm"
+          className="rounded-full gap-1.5"
+          onClick={() => open.mutate()}
+          disabled={!user || open.isPending}
+        >
+          <Radio className="h-3.5 w-3.5" />
+          {open.isPending ? "Opening…" : "Open the Lounge"}
+        </Button>
+      </div>
+
       {isLoading ? (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-surface-2" />
+          {Array.from({ length: 2 }).map((_, i) => (
+            <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
-      ) : rows.length === 0 ? (
-        <GroupEmpty
-          title="No Workshops yet."
-          hint="Start a Workshop tied to this Group."
-          action={
-            <Button asChild size="sm" className="rounded-full">
-              <Link to="/workshops/new" search={{ group: group.slug }}>
-                <Plus className="h-4 w-4" /> Start a Workshop
-              </Link>
-            </Button>
-          }
-        />
-
-      ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {rows.map((w) => (
+      ) : liveRooms.length > 0 ? (
+        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {liveRooms.map((r) => (
             <Link
-              key={w.id}
-              to="/workshops/$slug"
-              params={{ slug: w.slug }}
-              className="rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-lift"
+              key={r.id}
+              to="/lounge/$id"
+              params={{ id: r.id }}
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-lift"
             >
-              <h3 className="font-display text-lg text-ink line-clamp-2">{w.title}</h3>
-              <p className="mt-1 text-xs text-ink-muted">{w.status}</p>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-ink">{r.title ?? "Lounge"}</div>
+                <div className="text-[11px] text-ink-muted">Live now</div>
+              </div>
             </Link>
           ))}
         </div>
+      ) : (
+        <p className="mt-6 text-center text-sm text-ink-muted">
+          No one's in the Lounge right now — be the first to open it.
+        </p>
       )}
     </div>
   );
