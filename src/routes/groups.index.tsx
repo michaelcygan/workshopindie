@@ -24,6 +24,7 @@ type Tab = (typeof TAB_VALUES)[number];
 
 const CATEGORY_VALUES = [
   "all",
+  "city",
   "music",
   "film_video",
   "writing",
@@ -32,12 +33,12 @@ const CATEGORY_VALUES = [
   "performance",
   "audio",
   "scene_life",
-  "city",
 ] as const;
 type Category = (typeof CATEGORY_VALUES)[number];
 
 const CATEGORY_LABELS: Record<Category, string> = {
   all: "All categories",
+  city: "Cities",
   music: "Music",
   film_video: "Film & Video",
   writing: "Writing",
@@ -46,7 +47,6 @@ const CATEGORY_LABELS: Record<Category, string> = {
   performance: "Performance",
   audio: "Audio",
   scene_life: "Scene & Lifestyle",
-  city: "Cities",
 };
 
 const searchSchema = z.object({
