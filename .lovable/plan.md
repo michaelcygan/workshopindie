@@ -1,76 +1,58 @@
-# Lounge refresh — next pass
+# Lounge refresh — what's left
 
-The rebrand is in. This pass turns Lounge into a real surface attached to Groups and Collabs, replaces the old "promote room to persistent Workshop" flow with a simple in-Lounge collab pop-up, and prepares the `/workshops` scheduled surface for retirement (folded into Events).
+Step 1 is partway done: `joinGroupLounge` + `joinCollabLounge` server fns exist, and the Group hero has an **Open the Lounge** button that auto-joins the group. Everything below is still outstanding.
 
-## 1. Group Lounges (public, drop-in, auto-join group)
+## A. Collab side (private Lounge wiring)
 
-Goal: any Group page can open a live Lounge scoped to that Group. Anyone can join; joining auto-adds the user as a group member.
+- Add an **Open the Lounge** button on the Collab page (`collab.$slug.tsx`), visible only to the owner + accepted invitees + accepted guest applicants. Calls `joinCollabLounge` and navigates to `/lounge/$id`. Non-members see a quiet "Members only" hint instead of the button.
+- In `lounge.$id.tsx`, when the room has a `collab_id`:
+  - Show a `Private · Collab cast only` pill in the header.
+  - If a non-member somehow lands on the URL, render a friendly "Members only" empty state instead of the generic 404.
+  - Hide the matchmaker's "Skip" button (private rooms shouldn't shuffle into open lounges).
+- Confirm Collab lounges never appear in `/lounge` discovery (filter `collab_id IS NULL` in the active-rooms RPC; add if missing).
 
-- `Open the Lounge` primary button in `group-hero.tsx` (next to Join/Share).
-- New server fn `joinGroupLounge({ groupId })` in `src/lib/instant.functions.ts`:
-  - Insert into `group_members` (ignore duplicate) so the joiner becomes a member.
-  - Find an `instant_rooms` row where `group_id = $1, status = 'active'` and current presence count < cap; reuse it.
-  - If none, create one with `kind='lounge'`, `group_id`, `title = "<Group name> Lounge"`.
-  - Return `{ roomId }`.
-- Group Lounge tab body (the existing "Workshops" tab): list live rooms for the group + a "Open a new room" CTA. Reuses `LiveWorkshopsRail` filtered by `group_id`.
-- Logged-out click → existing `SignupGateModal` flow with a `pendingAction` that replays `joinGroupLounge` after signup. The auto-join still runs because the server fn does it server-side.
-- RLS for `instant_rooms`: public SELECT when `group_id IS NOT NULL AND collab_id IS NULL` (already in place from prior migration — verify).
+## B. "Create a Collab" from inside the Lounge (popup, no nav)
 
-## 2. Collab Lounges (private, members-only)
+Replaces the old fork-to-persistent-Workshop flow.
 
-Goal: a Collab's confirmed cast has a private room they can drop into anytime.
+- Delete the fork UI from `lounge.$id.tsx`: the `isPromoted` banner, the violet "this Lounge became a Collab" card, the `Sparkles` promoted badge, the `acceptWorkshopJoinInvite` / `declineWorkshopJoinInvite` invite block, and the existing `CreateCollabSheet` that calls `createCollabFromRoom`.
+- Replace with a new `<CreateCollabDialog />` opened by the existing **Create a Collab** button in the room header. It mounts a thin wrapper around the `/collab/new` composer (title, category, short pitch, optional cover) and submits via the existing Collab create server fn. The active Lounge session never unmounts — mic/cam/screenshare stay live.
+- Ownership: the dialog's submitter is the Collab owner. The room itself stays informal — no `source_workshop_id`, no `promoted_at`, no auto-invites to other room participants.
+- After create: toast "Collab posted — pin it to this Lounge?" with a one-tap pin action (writes to `instant_room_collab_pins`; add the table only if it doesn't already exist — verify first).
+- Delete `src/lib/collab-workshop.functions.ts` and `src/components/start-workshop-from-collab-button.tsx` once no call sites remain.
 
-- `Open the Lounge` button on `collab.$slug.tsx`, visible only to owner + accepted applicants + accepted invitees (uses existing `can_access_collab_lounge` helper).
-- New server fn `joinCollabLounge({ collabId })`:
-  - Verify caller via `can_access_collab_lounge`; reject otherwise.
-  - Reuse the row where `collab_id = $1, status='active'`, else create one with `kind='lounge'`, `collab_id`, title `"<Collab title> Lounge"`.
-- `lounge.$id.tsx`: when a row has `collab_id`, render a `Private — Collab cast only` pill in the header and a friendly "Members only" empty state for non-members instead of a generic 404.
-- Collab lounges never surface on `/lounge` discovery tabs.
+## C. Group Lounge tab body
 
-## 3. "Create a Collab" from inside the Lounge (popup, no navigation)
+The Group page's "Lounge" tab currently points at the old workshops list. Replace with:
 
-Replaces the old "Fork this live Workshop into a persistent Workshop" flow.
+- A live-rooms strip filtered to `instant_rooms.group_id = <this group>` and `status = 'active'`, reusing the existing live-rooms card component.
+- A primary "Open a new room" CTA that also calls `joinGroupLounge`.
+- Empty state: "No one's in the Lounge right now — be the first."
 
-- Delete the fork UI from `lounge.$id.tsx`: the `isPromoted` banner, `promoted_at`/`source_workshop_id` checks, the Sparkles "promoted" badge, and `promoteRoom` / `acceptWorkshopJoinInvite` / `declineWorkshopJoinInvite` imports.
-- Delete `src/lib/collab-workshop.functions.ts` entirely (no other call sites after the route cleanup).
-- Add a `<CreateCollabDialog />` opened by a `+ Collab` button in the Lounge tool bar. It mounts a thin wrapper around the existing `/collab/new` form (title, category, short pitch, optional cover) and submits via the existing server fn.
-- Owner = the individual who opened the dialog. The room itself is NOT formalized — no `source_workshop_id`, no `promoted_at`.
-- After create: toast "Collab posted — pin it to this Lounge?" with a one-tap action that writes to `instant_room_work_pins` (or a parallel `instant_room_collab_pins` if pinning collabs needs its own table — confirm before migration).
-- The active Lounge session never unmounts; mic/cam stay live.
+## D. Retire `/workshops` (safe prep only)
 
-## 4. Retire the old `/workshops` scheduled surface (prep only)
+- Add `beforeLoad` redirects: `/workshops` → `/events`, `/workshops/$slug` → `/events`. Mapped-slug lookup is the *following* pass.
+- Sweep remaining `/workshops*` links from top nav, mobile nav, footer, Create menu, landing rails, profile tabs, DMs, work pages, home rails, and the groups-join feed cards.
+- Leave route files + DB tables intact. Full deletion + `workshops → events` data migration is a later pass.
 
-Scheduled workshops fold into Events per the prior decision, but the data still exists. This pass does only the safe prep:
+## E. Cleanup sweep
 
-- Sweep nav, footers, Create menus, and landing rails for any remaining `/workshops*` links and remove them.
-- Add `beforeLoad` redirects from `/workshops` → `/events`, and `/workshops/$slug` → `/events` (mapped event lookup comes in the migration pass).
-- Leave the route files and DB tables intact this turn. Full deletion + data migration to `events` is the *following* pass.
-
-## 5. Cleanup
-
-- Delete `src/components/workshop-recorder.tsx`, `workshop-recording-link.tsx`, and `src/components/recorder/` — already pulled from the picker, no other call sites.
-- Delete `src/lib/lobby.functions.ts` and lobby UI (lobbies are gone; Lounges are joined, not planned).
-- Remove `recorder_personas` UI surfaces (tables stay; UI only).
-- Sweep one last time for user-facing "Workshop" strings outside the brand wordmark.
-
-## Technical notes
-
-- `instant_rooms` already has `group_id`, `collab_id`, `kind`, `status`, `creator_id` from the prior migration. No new DB migration needed for steps 1–3.
-- New server fns live in `src/lib/instant.functions.ts` next to `joinLounge` / `joinMediumLounge` and follow the same `requireSupabaseAuth` + Zod shape. `joinGroupLounge` does the `group_members` insert before the room lookup.
-- `joinGroupLounge` ignores duplicate-key errors on `group_members` (same pattern as `joinGroup` in `src/lib/groups.functions.ts`).
-- `CreateCollabDialog` reuses the existing `/collab/new` form — extract it into `src/components/collab/collab-composer.tsx` if it's still embedded in the route file.
+- Delete `src/components/recorder/`, `workshop-recorder.tsx`, `workshop-recording-link.tsx` (recorder is already off the picker; no other call sites).
+- Delete `src/lib/lobby.functions.ts`, `src/routes/workshops.lobby.new.tsx`, and any lobby UI. Lounges are joined, not planned.
+- Remove the "Become host" / "Claim Host" affordance in private Collab Lounges (the owner is implicit host).
+- One final string sweep for user-facing "Workshop" outside the brand wordmark — top-nav, toasts, empty states, notifications (`workshop_live` kind label, etc.). The DB enum value can stay; only the label changes.
 
 ## Out of scope this pass
 
-- Migrating existing `workshops` rows into `events`.
+- Migrating `workshops` rows into `events`.
 - Deleting `workshops*` route files and tables.
-- Group Lounge moderation tools (kick, lock) — already covered by existing room host controls.
+- New Group Lounge moderation tools (existing host controls cover it).
 
 ## Build order
 
-1. `joinGroupLounge` + `joinCollabLounge` server fns.
-2. `Open the Lounge` buttons on `g.$slug.tsx` and `collab.$slug.tsx`; private-state UI on `lounge.$id.tsx`.
-3. Delete fork-to-Workshop flow; add `CreateCollabDialog` + pin action.
-4. `/workshops*` redirect shims + nav sweep.
-5. Recorder / lobby / leftover-string cleanup.
+1. Collab page button + private-state UI on `lounge.$id.tsx` (Section A).
+2. In-Lounge `CreateCollabDialog` + delete fork code (Section B).
+3. Group Lounge tab body (Section C).
+4. `/workshops` redirects + link sweep (Section D).
+5. Recorder / lobby / string cleanup (Section E).
 6. Verify build.
