@@ -189,7 +189,7 @@ function CityCombobox({
           {(cities ?? []).length === 0 ? (
             <div className="px-3 py-2 text-sm text-ink-muted">No cities match.</div>
           ) : (
-            (cities ?? []).map((c: { id: string; name: string; country: string }) => (
+            (cities ?? []).map((c) => (
               <button
                 key={c.id}
                 type="button"
