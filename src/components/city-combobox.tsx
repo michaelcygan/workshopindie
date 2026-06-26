@@ -4,22 +4,28 @@ import { MapPin, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
+export type CityValue = {
+  id: string;
+  name: string;
+  country?: string | null;
+};
+
 /**
- * Shared city search combobox. Used by Collab Board, Events, etc.
+ * Shared city search combobox. Used by Collab Board, Events, Settings, etc.
  * h-11 pill input; opens a result list pulled from `public.cities`.
  */
 export function CityCombobox({
   value,
-  valueLabel,
   onChange,
   disabled,
   placeholder = "Search by city — or leave for anywhere",
+  className,
 }: {
-  value?: string;
-  valueLabel?: string;
-  onChange: (next: { id?: string; name?: string }) => void;
+  value: CityValue | null;
+  onChange: (next: CityValue | null) => void;
   disabled?: boolean;
   placeholder?: string;
+  className?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -48,7 +54,7 @@ export function CityCombobox({
   });
 
   return (
-    <div ref={wrapRef} className={cn("relative flex-1 min-w-[16rem]", disabled && "opacity-50")}>
+    <div ref={wrapRef} className={cn("relative flex-1 min-w-[16rem]", disabled && "opacity-50", className)}>
       <div
         className={cn(
           "flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft transition focus-within:shadow-lift",
@@ -63,7 +69,7 @@ export function CityCombobox({
             className="flex flex-1 items-center gap-1.5 truncate text-left text-sm text-ink"
           >
             <MapPin className="h-3.5 w-3.5 text-ink-soft" />
-            <span className="truncate">{valueLabel ?? "Selected city"}</span>
+            <span className="truncate">{value.name}</span>
           </button>
         ) : (
           <input
@@ -79,7 +85,7 @@ export function CityCombobox({
         {(value || query) && !disabled && (
           <button
             type="button"
-            onClick={() => { onChange({ id: undefined, name: undefined }); setQuery(""); setOpen(false); }}
+            onClick={() => { onChange(null); setQuery(""); setOpen(false); }}
             className="rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
             aria-label="Clear city"
           >
@@ -97,7 +103,7 @@ export function CityCombobox({
               <button
                 key={c.id}
                 type="button"
-                onClick={() => { onChange({ id: c.id, name: c.name }); setOpen(false); setQuery(""); }}
+                onClick={() => { onChange({ id: c.id, name: c.name, country: c.country }); setOpen(false); setQuery(""); }}
                 className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-ink hover:bg-muted"
               >
                 <span className="truncate">{c.name}</span>
