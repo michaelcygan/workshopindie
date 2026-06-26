@@ -133,10 +133,13 @@ export function GroupHero({
                 <span aria-hidden>→</span>
               </Link>
             )}
-            <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
-              <Users className="h-3.5 w-3.5" />
-              <span>{group.member_count} members</span>
-            </div>
+            {group.member_count > 0 && (
+              <div className="mt-2 flex items-center gap-1.5 text-xs text-ink-muted">
+                <Users className="h-3.5 w-3.5" />
+                <span>{group.member_count} {group.member_count === 1 ? "member" : "members"}</span>
+              </div>
+            )}
+
           </div>
 
           {/* Right column: compact — Share + Join. Create lives in the tab bar. */}
