@@ -90,12 +90,16 @@ function GroupsIndex() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab: Tab = search.t;
   const query = search.q;
+  const category: Category = search.c;
   const allGroupsRef = useRef<HTMLElement>(null);
 
   const setTab = (t: Tab) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, t }), replace: true });
   const setQuery = (q: string) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q }), replace: true });
+  const setCategory = (c: Category) =>
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, c }), replace: true });
+
 
   const { data: allGroups = [], isLoading } = useQuery({
     queryKey: ["groups", "all"],
