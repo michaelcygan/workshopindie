@@ -346,6 +346,36 @@ function GroupsIndex() {
                 <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-soft">
                   {filtered.length} {filtered.length === 1 ? "group" : "groups"}
                 </span>
+                {tab !== "city" && (
+                  <label className="relative">
+                    <span className="sr-only">Filter by category</span>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as Category)}
+                      className={cn(
+                        "appearance-none rounded-full border px-3 py-1 pr-7 text-[11px] font-medium transition focus:outline-none focus:ring-2 focus:ring-ink/20",
+                        category === "all"
+                          ? "border-border bg-surface text-ink-soft hover:bg-muted"
+                          : "border-ink bg-ink text-background",
+                      )}
+                    >
+                      {CATEGORY_VALUES.map((c) => (
+                        <option key={c} value={c} className="bg-background text-ink">
+                          {c === "all" ? "Category" : CATEGORY_LABELS[c]}
+                        </option>
+                      ))}
+                    </select>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px]",
+                        category === "all" ? "text-ink-muted" : "text-background",
+                      )}
+                    >
+                      ▾
+                    </span>
+                  </label>
+                )}
                 <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-background">
                   {TABS.find((t) => t.id === tab)?.label}
                 </span>
@@ -355,6 +385,7 @@ function GroupsIndex() {
                   </span>
                 )}
               </div>
+
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((g) => (
