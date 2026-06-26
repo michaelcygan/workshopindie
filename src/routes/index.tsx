@@ -120,24 +120,6 @@ function Hero() {
           </Link>
 
           <Link
-            to="/groups"
-            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
-          >
-            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <Calendar className="h-5 w-5" />
-            </span>
-            <div>
-              <div className="font-display text-xl md:text-2xl leading-tight">Show up to an Event</div>
-              <p className="mt-2 text-sm text-ink-muted">
-                Real rooms, real people. RSVP to an event a Group is hosting — meet the makers in your city.
-              </p>
-            </div>
-            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
-              Find events <ArrowRight className="h-4 w-4" />
-            </span>
-          </Link>
-
-          <Link
             to="/collab/new"
             className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
           >
@@ -152,6 +134,24 @@ function Hero() {
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
               Post a Collab <ArrowRight className="h-4 w-4" />
+            </span>
+          </Link>
+
+          <Link
+            to="/groups"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+          >
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Calendar className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-display text-xl md:text-2xl leading-tight">Show up to an Event</div>
+              <p className="mt-2 text-sm text-ink-muted">
+                Real rooms, real people. RSVP to an event a Group is hosting — meet the makers in your city.
+              </p>
+            </div>
+            <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
+              Find events <ArrowRight className="h-4 w-4" />
             </span>
           </Link>
         </motion.div>
