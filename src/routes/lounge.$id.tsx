@@ -550,7 +550,7 @@ function CreateCollabSheet({
   onOpenChange: (o: boolean) => void;
   roomId: string;
   defaultTitle: string;
-  onCreated: (workshopSlug: string) => void;
+  onCreated: (result: { workshopSlug: string | null; collabSlug: string | null }) => void;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState(defaultTitle);
