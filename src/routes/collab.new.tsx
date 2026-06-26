@@ -80,7 +80,7 @@ function NewCollab() {
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
-  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
+
   const tagGroup = useServerFn(tagCollabInGroup);
   const search = useSearch({ from: "/collab/new" });
   const preselect = usePreselectGroup(search.group);
