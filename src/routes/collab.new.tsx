@@ -242,8 +242,7 @@ function NewCollab() {
   const shapeValid = !!rights && (locationMode === "online" || !!city);
   const cleanRolesCount = roles.filter((r) => r.role_name.trim() && r.quantity > 0).length;
   const teamValid = cleanRolesCount > 0 && (contactMode === "email_relay" || externalUrl.trim().length > 0);
-  const workshopValid = workshopMode !== "scheduled" || !!scheduledAt;
-  const allValid = pitchValid && shapeValid && teamValid && workshopValid;
+  const allValid = pitchValid && shapeValid && teamValid;
 
   const dots: { ok: boolean; label: string }[] = [
     { ok: pitchValid, label: "The pitch" },
@@ -251,7 +250,6 @@ function NewCollab() {
     { ok: teamValid, label: "The team" },
   ];
 
-  const [workshopExpanded, setWorkshopExpanded] = useState(false);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 pb-32 md:py-14 md:pb-32">
