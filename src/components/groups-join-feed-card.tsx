@@ -127,7 +127,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
         ) : items.length === 0 ? (
           <EmptyState
             title="Quiet in your groups right now."
-            body="No open collabs or upcoming workshops — yet."
+            body="No open collabs or upcoming Lounges — yet."
             cta={
               <button
                 type="button"
