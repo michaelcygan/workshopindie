@@ -27,7 +27,6 @@ const searchSchema = z.object({
   city: fallback(z.string().uuid().optional(), undefined),
   cityName: fallback(z.string().optional(), undefined),
   online: fallback(z.boolean(), false).default(false),
-  view: fallback(z.enum(["all", "open", "shipped"]), "all").default("all"),
 });
 
 export const Route = createFileRoute("/collab/")({

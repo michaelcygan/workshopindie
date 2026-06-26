@@ -1,36 +1,30 @@
 ## Goal
 
-Add a "Subgroups" section to the About tab of every group page:
-- **Public read view** (everyone): list of child groups linked to this group, as compact cards. Hidden entirely when there are none.
-- **Admin-only manager** (platform admins): search existing top-level groups and attach them as children of the current group; remove (unlink) existing children.
+Polish the Collab Board (`/collab`) to match the level of Groups and Workshops, and drop the "Shipped" filter entirely so the board is purely about *open* opportunities.
 
-This piggybacks on the existing `setGroupParent` server fn and the `parent_group_id` column + max-depth trigger that already exist.
+## Changes — `src/routes/collab.index.tsx`
 
-## Changes
+1. **Drop the `view` filter entirely.**
+   - Remove `view` from `searchSchema` and the `SearchShape` type.
+   - Remove `setView`, `filters.view`, and the entire All / Open / Shipped pill row.
+   - In `fetchPosts`, hard-code the query to the previous `view === "open"` branch (status open + not expired). No more shipped/closed handling on this surface — shipped works belong on the resulting Work pages.
+   - Update the empty-state copy to drop the "shipped" implication.
 
-### `src/routes/g.$slug.tsx` — `GroupAboutTab`
+2. **Tighten the header band.**
+   - Merge the kicker chip + tagline + recap chip into a single tidy meta row directly under the title (current spacing is two-row).
+   - Replace `RecapChip count={rawPosts?.length} label="open"` with a single subtle "N open" pill so it matches the chip-style header used on Groups/Workshops.
 
-Extend the About tab body:
+3. **Filter cluster polish.**
+   - Remove the empty `<div>` spacers (lines 399–401) left over from the dropped row.
+   - Keep the category scroller + city combobox + Online toggle on one wrap line; ensure they collapse cleanly on mobile (already mostly there).
 
-1. **Public list** — fetch children with React Query keyed `["group", group.id, "about-children"]`:
-   - `select id, slug, name, kind, avatar_url, member_count from groups where parent_group_id = group.id and deleted_at is null order by member_count desc limit 50`
-   - Render as a header `Subgroups (N)` plus a `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` of compact tiles (avatar + name + member count, linking to `/g/{slug}`).
-   - Section is hidden when count is 0 AND viewer is not admin.
+4. **Section ordering & copy.**
+   - Keep "Live right now" (when present) → "Boosted by the community" → "Open Collabs".
+   - Rename the unlabeled grid header when there are no boosted/live items to a simple "Open Collabs" with a hairline divider so the page never starts grid-less.
 
-2. **Admin manager** (new `GroupSubgroupsManager` component, rendered only when `has_role(admin)` resolves true — reuse the same `useQuery(["is-admin", user?.id])` pattern already in `GroupEventsTab`):
-   - Search input (debounced) → query `groups` where `name ilike %q%`, `parent_group_id is null`, `id <> group.id`, `kind <> 'city'` (cities can't nest under another group at depth 1), limit 10.
-   - Each result row shows name + kind chip + an "Attach" button that calls `setGroupParent({ id: result.id, parent_group_id: group.id })`.
-   - Each existing child row in the public list gets an extra "Unlink" button when admin → `setGroupParent({ id: child.id, parent_group_id: null })`.
-   - On success: toast + `qc.invalidateQueries({ queryKey: ["group", group.id, "about-children"] })` and the children-count query used by the tab bar.
+5. **Light a11y & perf nits.**
+   - Add `aria-label` to the Online toggle.
+   - Type the `cities` `useQuery` return so the inline `(c: {...})` cast is gone.
+   - Use a stable `staleTime: 30_000` on the main `useQuery` to match the boosted query and reduce refetch churn.
 
-3. Place the new section above `<GroupNewsFeedSetting />` so admin tools cluster at the bottom of About.
-
-### No DB / no server changes
-
-- `setGroupParent` already exists with admin-gate + depth check trigger.
-- `parent_group_id` exists on `groups`.
-
-## UX notes
-
-- Subgroup tiles in About are a *condensed* view; the dedicated "Subgroups" tab still shows the full grid for parents with children. The About preview deep-links into `?t=subgroups` via a "See all" link when count > 6.
-- Manager UI uses existing shadcn `Input` + `Button` patterns to match the News feed card styling (rounded-2xl border, h3 heading).
+No DB or server changes. No new components.
