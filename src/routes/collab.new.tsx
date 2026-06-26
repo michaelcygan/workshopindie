@@ -515,9 +515,7 @@ function NewCollab() {
                   ? "Add a title and a short description to continue."
                   : !shapeValid
                     ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
-                    : !teamValid
-                      ? (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")
-                      : "Pick a date and time for the Workshop."}
+                    : (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")}
             </p>
             <div className="flex items-center gap-2">
               <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
@@ -532,13 +530,7 @@ function NewCollab() {
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting
-                  ? "Posting…"
-                  : workshopMode === "now"
-                    ? "Post & open Workshop"
-                    : workshopMode === "scheduled"
-                      ? "Post & schedule Workshop"
-                      : "Post Collab"}
+                {submitting ? "Posting…" : "Post Collab"}
               </Button>
             </div>
           </div>
