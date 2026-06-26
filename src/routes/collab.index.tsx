@@ -472,9 +472,10 @@ function CollabPage() {
       )}
 
       <div className="mt-10">
-        {(boostedPosts && boostedPosts.length > 0) && (
-          <h2 className="mb-3 px-1 font-display text-lg text-ink">Open Collabs</h2>
-        )}
+        <div className="mb-3 flex items-center gap-3 px-1">
+          <h2 className="font-display text-lg text-ink">Open Collabs</h2>
+          <span className="h-px flex-1 bg-border" />
+        </div>
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
