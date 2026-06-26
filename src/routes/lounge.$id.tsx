@@ -193,7 +193,7 @@ function LiveRoomPage() {
   useEffect(() => {
     if (!room || isPromoted || isHost) return;
     if (isEnded) {
-      toast("This Workshop ended.");
+      toast("This Lounge ended.");
       router.navigate({ to: "/workshop" });
     }
   }, [room, isEnded, isHost, isPromoted, router]);
@@ -228,7 +228,7 @@ function LiveRoomPage() {
     }
   }, [user, room?.id, isPromoted]);
 
-  // Keyboard shortcut: "N" hops to next Workshop (guests only).
+  // Keyboard shortcut: "N" skips to next Lounge (guests only).
   useEffect(() => {
     if (!user || !room || isHost || isPromoted || room.status !== "active") return;
     function onKey(e: KeyboardEvent) {
@@ -553,7 +553,7 @@ const LICENSE_OPTIONS: Array<{ id: LicenseChoice; label: string; hint: string }>
   {
     id: "cc_by",
     label: "Creative Commons (BY 4.0)",
-    hint: "Free to use with credit. Matches the Workshop spirit.",
+    hint: "Free to use with credit. Matches the Lounge spirit.",
   },
   {
     id: "portfolio_credit_only",
@@ -657,7 +657,7 @@ function CreateCollabSheet({
             <Rocket className="h-4 w-4 text-violet" /> Create a Collab
           </DialogTitle>
           <DialogDescription>
-            Fork this live Workshop into a persistent one. You'll be the host. Everyone currently in
+            Fork this live Lounge into a persistent one. You'll be the host. Everyone currently in
             the room gets a one-tap invite — no one is auto-added.
           </DialogDescription>
         </DialogHeader>
