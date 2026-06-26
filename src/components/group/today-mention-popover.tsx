@@ -75,7 +75,7 @@ export function TodayMentionPopover({
       let req = supabase
         .from("collab_posts")
         .select("id,title,slug,status")
-        .eq("author_id", user!.id)
+        .eq("user_id", user!.id)
         .eq("status", "open")
         .limit(6);
       if (q) req = req.ilike("title", `%${q}%`);
