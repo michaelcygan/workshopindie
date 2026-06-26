@@ -48,12 +48,12 @@ export function HostRoomEvents({ roomId, isHost }: { roomId: string; isHost: boo
       const exclude = Array.from(new Set([roomId, ...recentExitIds()]));
       const res = await dropRef.current({ data: { excludeRoomIds: exclude } });
       if (res?.roomId && res.roomId !== roomId) {
-        router.navigate({ to: "/workshop/$id", params: { id: res.roomId }, search: { mode: "video" } });
+        router.navigate({ to: "/lounge/$id", params: { id: res.roomId }, search: { mode: "video" } });
       } else {
-        router.navigate({ to: "/workshop" });
+        router.navigate({ to: "/lounge" });
       }
     } catch {
-      router.navigate({ to: "/workshop" });
+      router.navigate({ to: "/lounge" });
     }
   }
 
