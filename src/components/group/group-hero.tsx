@@ -31,6 +31,16 @@ export function GroupHero({
 }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
+  const router = useRouter();
+  const joinLoungeFn = useServerFn(joinGroupLounge);
+  const openLounge = useMutation({
+    mutationFn: () => joinLoungeFn({ data: { groupId: group.id } }),
+    onSuccess: ({ roomId }) => {
+      router.navigate({ to: "/lounge/$id", params: { id: roomId } });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
+  });
+
   const onShare = async () => {
     const url = typeof window !== "undefined" ? `${window.location.origin}/g/${group.slug}` : "";
     try {
