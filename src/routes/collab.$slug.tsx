@@ -523,13 +523,7 @@ function CollabDetail() {
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
             {post.status === "open" && (
-              <StartWorkshopFromCollabButton
-                collabPostId={post.id}
-                collabSlug={post.slug}
-                liveWorkshopSlug={liveWorkshop?.slug ?? null}
-                isLive={isLive}
-                isAuthor={isOwner}
-              />
+              <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
             )}
           </div>
         )}
