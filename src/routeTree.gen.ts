@@ -31,6 +31,7 @@ import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
 import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
@@ -198,6 +199,11 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => WorkshopsRoute,
+} as any)
+const WorkshopIndexRoute = WorkshopIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkshopRoute,
 } as any)
 const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
@@ -507,7 +513,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRoute
+  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -552,6 +558,7 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -583,7 +590,6 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
@@ -627,6 +633,7 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
+  '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -664,7 +671,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRoute
+  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -709,6 +716,7 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
+  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -792,6 +800,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -823,7 +832,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
-    | '/workshop'
     | '/admin/audit'
     | '/admin/badges'
     | '/admin/engagement'
@@ -867,6 +875,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/lounge'
     | '/me'
+    | '/workshop'
     | '/workshops'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -948,6 +957,7 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
+    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -985,7 +995,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  WorkshopRoute: typeof WorkshopRoute
+  WorkshopRoute: typeof WorkshopRouteWithChildren
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -1168,6 +1178,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/'
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
+    }
+    '/workshop/': {
+      id: '/workshop/'
+      path: '/'
+      fullPath: '/workshop/'
+      preLoaderRoute: typeof WorkshopIndexRouteImport
+      parentRoute: typeof WorkshopRoute
     }
     '/me/': {
       id: '/me/'
@@ -1695,6 +1712,18 @@ const LoungeRouteChildren: LoungeRouteChildren = {
 const LoungeRouteWithChildren =
   LoungeRoute._addFileChildren(LoungeRouteChildren)
 
+interface WorkshopRouteChildren {
+  WorkshopIndexRoute: typeof WorkshopIndexRoute
+}
+
+const WorkshopRouteChildren: WorkshopRouteChildren = {
+  WorkshopIndexRoute: WorkshopIndexRoute,
+}
+
+const WorkshopRouteWithChildren = WorkshopRoute._addFileChildren(
+  WorkshopRouteChildren,
+)
+
 interface WorkshopsSlugToolsRouteChildren {
   WorkshopsSlugToolsToolRoute: typeof WorkshopsSlugToolsToolRoute
 }
@@ -1758,7 +1787,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  WorkshopRoute: WorkshopRoute,
+  WorkshopRoute: WorkshopRouteWithChildren,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
