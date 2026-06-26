@@ -23,7 +23,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const [hovering, setHovering] = useState(false);
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
-  const paused = hovering || open;
+  const paused = hovering;
 
   const durationSec = Math.max(90, items.length * 14);
   const loop = [...items, ...items];
@@ -53,6 +53,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
             side="bottom"
             align="start"
             sideOffset={8}
+            avoidCollisions={false}
             className="w-[min(92vw,28rem)] max-h-[70vh] overflow-y-auto p-0"
           >
             <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-2.5 backdrop-blur">
