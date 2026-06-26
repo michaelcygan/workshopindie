@@ -194,7 +194,7 @@ function LiveRoomPage() {
     if (!room || isPromoted || isHost) return;
     if (isEnded) {
       toast("This Lounge ended.");
-      router.navigate({ to: "/workshop" });
+      router.navigate({ to: "/lounge" });
     }
   }, [room, isEnded, isHost, isPromoted, router]);
 
