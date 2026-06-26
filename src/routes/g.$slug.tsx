@@ -29,7 +29,7 @@ import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
-import { setGroupNewsFeed } from "@/lib/group-admin.functions";
+import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 
 
 
@@ -488,7 +488,220 @@ function GroupAboutTab({ group }: { group: GroupRow }) {
           <p className="text-ink-muted">No description yet.</p>
         )}
       </div>
+      <GroupSubgroupsSection group={group} />
       <GroupNewsFeedSetting group={group} />
+    </div>
+  );
+}
+
+type ChildGroupLite = {
+  id: string;
+  slug: string;
+  name: string;
+  kind: GroupRow["kind"];
+  avatar_url: string | null;
+  member_count: number;
+};
+
+function GroupSubgroupsSection({ group }: { group: GroupRow }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const setParent = useServerFn(setGroupParent);
+
+  const { data: isAdmin } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const { data: children = [] } = useQuery({
+    queryKey: ["group", group.id, "about-children"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("groups")
+        .select("id,slug,name,kind,avatar_url,member_count")
+        .eq("parent_group_id", group.id)
+        .order("member_count", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return (data ?? []) as ChildGroupLite[];
+    },
+  });
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["group", group.id, "about-children"] });
+    qc.invalidateQueries({ queryKey: ["group", group.id, "children-count"] });
+    qc.invalidateQueries({ queryKey: ["group", group.id, "children"] });
+  };
+
+  const unlink = useMutation({
+    mutationFn: (childId: string) =>
+      setParent({ data: { id: childId, parent_group_id: null } }),
+    onSuccess: () => {
+      toast.success("Subgroup unlinked");
+      invalidate();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (children.length === 0 && !isAdmin) return null;
+
+  return (
+    <section className="rounded-2xl border border-border bg-surface p-4 md:p-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-display text-base text-ink">
+          Subgroups{children.length > 0 ? ` (${children.length})` : ""}
+        </h3>
+        {children.length > 6 && (
+          <Link
+            to="/g/$slug"
+            params={{ slug: group.slug }}
+            search={{ t: "subgroups" }}
+            className="text-xs text-primary hover:underline"
+          >
+            See all →
+          </Link>
+        )}
+      </div>
+
+      {children.length === 0 ? (
+        <p className="text-sm text-ink-muted">No subgroups yet.</p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {children.slice(0, 12).map((c) => (
+            <li
+              key={c.id}
+              className="flex items-center gap-3 rounded-xl border border-border bg-background p-2"
+            >
+              <Link
+                to="/g/$slug"
+                params={{ slug: c.slug }}
+                className="flex flex-1 items-center gap-3 min-w-0"
+              >
+                <Avatar className="h-9 w-9">
+                  {c.avatar_url && <AvatarImage src={c.avatar_url} alt="" />}
+                  <AvatarFallback>{c.name.slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium text-ink">{c.name}</div>
+                  <div className="text-[11px] text-ink-muted">
+                    {c.member_count} member{c.member_count === 1 ? "" : "s"}
+                  </div>
+                </div>
+              </Link>
+              {isAdmin && (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-[11px] text-ink-muted hover:text-destructive"
+                  disabled={unlink.isPending}
+                  onClick={() => unlink.mutate(c.id)}
+                >
+                  Unlink
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {isAdmin && <GroupSubgroupAttacher group={group} onChanged={invalidate} />}
+    </section>
+  );
+}
+
+function GroupSubgroupAttacher({
+  group,
+  onChanged,
+}: {
+  group: GroupRow;
+  onChanged: () => void;
+}) {
+  const setParent = useServerFn(setGroupParent);
+  const [q, setQ] = useState("");
+  const [debounced, setDebounced] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q.trim()), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const { data: results = [], isFetching } = useQuery({
+    queryKey: ["group-attacher-search", group.id, debounced],
+    enabled: debounced.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("groups")
+        .select("id,slug,name,kind,parent_group_id")
+        .ilike("name", `%${debounced}%`)
+        .is("parent_group_id", null)
+        .neq("id", group.id)
+        .neq("kind", "city")
+        .limit(10);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const attach = useMutation({
+    mutationFn: (childId: string) =>
+      setParent({ data: { id: childId, parent_group_id: group.id } }),
+    onSuccess: () => {
+      toast.success("Subgroup attached");
+      setQ("");
+      setDebounced("");
+      onChanged();
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <div className="mt-4 rounded-xl border border-dashed border-border bg-background/60 p-3">
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+        Admin · attach subgroup
+      </div>
+      <input
+        type="text"
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="Search top-level groups by name…"
+        className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+      />
+      {debounced.length >= 2 && (
+        <ul className="mt-2 space-y-1">
+          {isFetching && <li className="text-xs text-ink-muted">Searching…</li>}
+          {!isFetching && results.length === 0 && (
+            <li className="text-xs text-ink-muted">No matches.</li>
+          )}
+          {results.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 hover:bg-surface"
+            >
+              <div className="min-w-0">
+                <div className="truncate text-sm text-ink">{r.name}</div>
+                <div className="text-[11px] text-ink-muted">{r.kind} · /g/{r.slug}</div>
+              </div>
+              <Button
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                disabled={attach.isPending}
+                onClick={() => attach.mutate(r.id)}
+              >
+                Attach
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

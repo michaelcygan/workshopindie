@@ -1,42 +1,36 @@
-## Audit: Group page (visual + wiring)
+## Goal
 
-The screenshot reads as shippable. A few real issues remain — mostly small polish + one wiring inefficiency worth fixing before launch.
+Add a "Subgroups" section to the About tab of every group page:
+- **Public read view** (everyone): list of child groups linked to this group, as compact cards. Hidden entirely when there are none.
+- **Admin-only manager** (platform admins): search existing top-level groups and attach them as children of the current group; remove (unlink) existing children.
 
-### 1. Visual polish (small)
+This piggybacks on the existing `setGroupParent` server fn and the `parent_group_id` column + max-depth trigger that already exist.
 
-- **Avatar feels stranded on the left.** With the shorter banner, the `S` tile sits in a column of empty cream above the tab bar. Tighten by reducing the avatar's negative top offset (currently `-mt-10`) and the gap between hero band and title block so the avatar nests against the banner edge instead of floating.
-- **"0 members" + empty meta row on a brand‑new group looks sad.** Hide the members line when count is 0 and the viewer is not a member; replace with a single subtle "Be the first to join" hint. Already‑joined groups keep the count.
-- **"In the news" pill is wider than the tab bar baseline.** Constrain the ticker container to match the tab bar's left/right padding so the page has one consistent gutter.
-- **Tab bar + Create button**: on this width the "+ Create" sits flush right and the tabs are flush left — visually they read as two separate components. Add a faint divider under the whole bar (single hairline) so the sticky bar reads as one element when it pins.
+## Changes
 
-### 2. Wiring / data (worth fixing)
+### `src/routes/g.$slug.tsx` — `GroupAboutTab`
 
-- **Membership query duplicated.** `JoinGroupButton` fetches membership, and several tabs re‑derive "am I a member?" independently. Lift one `["group-membership", group.id, user.id]` query into `GroupPage` and pass `isMember` down as a prop. Removes 3–4 redundant requests per page load.
-- **Realtime channel re‑subscribes on every tab switch is fine, but the `group-${id}` channel currently invalidates on `group_members` for ALL inserts.** At 100k DAU on a large group this fires constantly for every viewer. Debounce member‑count invalidations (e.g. trailing 5s) and skip invalidation entirely when the change isn't the current viewer.
-- **`nextEvent` and `childGroups` always fetch, even when their consumers aren't visible.** `nextEvent` is shown in the hero so keep it. `childGroups` is only used inside the Subgroups tab and to compute `childCount` for the tab bar. Replace the full `select(...)` with a cheap `select("id", { count: "exact", head: true })` for the count, and lazy‑load the full list when the tab opens.
-- **Tab state is local React state.** Refresh / share‑link loses the tab. Move `tab` into `validateSearch` (`?t=today|collabs|...`) so deep links land correctly — important for SEO and for the "All events →" / share flows you've already built.
+Extend the About tab body:
 
-### 3. Findability / SEO
+1. **Public list** — fetch children with React Query keyed `["group", group.id, "about-children"]`:
+   - `select id, slug, name, kind, avatar_url, member_count from groups where parent_group_id = group.id and deleted_at is null order by member_count desc limit 50`
+   - Render as a header `Subgroups (N)` plus a `grid-cols-1 sm:grid-cols-2 lg:grid-cols-3` of compact tiles (avatar + name + member count, linking to `/g/{slug}`).
+   - Section is hidden when count is 0 AND viewer is not admin.
 
-- Head meta is solid (title, og:title, og:description, og:image). Add `og:type=profile` (or `website`) and a `twitter:card` entry for parity. Add `CollectionPage` JSON‑LD with `numberOfItems = member_count` for the group root.
+2. **Admin manager** (new `GroupSubgroupsManager` component, rendered only when `has_role(admin)` resolves true — reuse the same `useQuery(["is-admin", user?.id])` pattern already in `GroupEventsTab`):
+   - Search input (debounced) → query `groups` where `name ilike %q%`, `parent_group_id is null`, `id <> group.id`, `kind <> 'city'` (cities can't nest under another group at depth 1), limit 10.
+   - Each result row shows name + kind chip + an "Attach" button that calls `setGroupParent({ id: result.id, parent_group_id: group.id })`.
+   - Each existing child row in the public list gets an extra "Unlink" button when admin → `setGroupParent({ id: child.id, parent_group_id: null })`.
+   - On success: toast + `qc.invalidateQueries({ queryKey: ["group", group.id, "about-children"] })` and the children-count query used by the tab bar.
 
-### 4. Cleanup
+3. Place the new section above `<GroupNewsFeedSetting />` so admin tools cluster at the bottom of About.
 
-- The legacy local `Tab` alias (`type Tab = GroupTab`) is unused outside this file — drop it.
-- `useEffect` for the realtime channel doesn't unsubscribe cleanly if the channel errors before subscribe resolves. Wrap removal in try/catch.
+### No DB / no server changes
 
-### Out of scope (intentionally not touching)
+- `setGroupParent` already exists with admin-gate + depth check trigger.
+- `parent_group_id` exists on `groups`.
 
-- Hero composition, typography sizes, banner color — you've explicitly signed those off.
-- "Today" tab layout — you signed it off last pass.
-- News ticker behavior — already polished.
+## UX notes
 
-### Order of work
-
-1. Avatar nest + members‑row empty state + ticker gutter + tab bar hairline.
-2. Lift membership query; convert `childGroups` to count‑first.
-3. Move tab to `?t=` search param.
-4. Add JSON‑LD + twitter card meta.
-5. Drop unused `Tab` alias; harden channel teardown.
-
-Estimated impact: ~6 file edits, no schema changes, no new dependencies.
+- Subgroup tiles in About are a *condensed* view; the dedicated "Subgroups" tab still shows the full grid for parents with children. The About preview deep-links into `?t=subgroups` via a "See all" link when count > 6.
+- Manager UI uses existing shadcn `Input` + `Button` patterns to match the News feed card styling (rounded-2xl border, h3 heading).
