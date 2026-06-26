@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
+import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -91,6 +92,11 @@ import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/ev
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
   path: '/workshops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopRoute = WorkshopRouteImport.update({
+  id: '/workshop',
+  path: '/workshop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -501,6 +507,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/workshop': typeof WorkshopRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -576,6 +583,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/workshop': typeof WorkshopRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
@@ -656,6 +664,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/workshop': typeof WorkshopRoute
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -738,6 +747,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -813,6 +823,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/workshop'
     | '/admin/audit'
     | '/admin/badges'
     | '/admin/engagement'
@@ -892,6 +903,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -973,6 +985,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  WorkshopRoute: typeof WorkshopRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -1007,6 +1020,13 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof WorkshopsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workshop': {
+      id: '/workshop'
+      path: '/workshop'
+      fullPath: '/workshop'
+      preLoaderRoute: typeof WorkshopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -1738,6 +1758,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  WorkshopRoute: WorkshopRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
