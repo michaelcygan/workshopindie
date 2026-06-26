@@ -29,7 +29,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const loop = [...items, ...items];
 
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+    <div className="px-4 md:px-6">
       <div
         className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm"
         onMouseEnter={() => setHovering(true)}
