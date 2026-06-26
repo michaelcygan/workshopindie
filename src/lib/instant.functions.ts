@@ -378,3 +378,141 @@ export const listRecentActivity = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { events: (rows ?? []) as InstantActivityEvent[] };
   });
+
+/**
+ * Find-or-create the persistent Lounge attached to a Group, auto-join the
+ * caller as a group member (no separate "Join Group" tap required), and
+ * return the room id so the client can navigate into /lounge/$id.
+ *
+ * Group Lounges are public to any signed-in user — anyone who walks in
+ * gets added to the group as a side-effect. Visibility on the room is
+ * "open" so the matchmaker can also surface it.
+ */
+export const joinGroupLounge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { groupId: string }) =>
+    z.object({ groupId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: group } = await supabaseAdmin
+      .from("groups")
+      .select("id, name, slug")
+      .eq("id", data.groupId)
+      .maybeSingle();
+    if (!group) throw new Error("Group not found");
+
+    // Auto-join as a member. Ignore duplicate-key violations — already in.
+    const { error: memberErr } = await supabaseAdmin
+      .from("group_members")
+      .insert({ group_id: data.groupId, user_id: userId } as any);
+    if (memberErr && !/duplicate|unique/i.test(memberErr.message)) {
+      // Non-fatal: we still want them in the room. Log via throw only if
+      // membership itself is required by RLS — for v1 the lounge is open.
+    }
+
+    // Find an active room already attached to this group.
+    const { data: existing } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id")
+      .eq("group_id", data.groupId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return { roomId: existing.id as string };
+
+    const { data: room, error } = await supabaseAdmin
+      .from("instant_rooms")
+      .insert({
+        kind: "lounge",
+        title: `${(group as any).name} · Lounge`,
+        status: "active",
+        participant_cap: 5,
+        creator_id: userId,
+        host_user_id: null,
+        group_id: data.groupId,
+        visibility: "open",
+      } as any)
+      .select("id")
+      .single();
+    if (error || !room) throw new Error(error?.message ?? "Couldn't open the Lounge");
+    return { roomId: room.id as string };
+  });
+
+/**
+ * Find-or-create the persistent Lounge attached to a Collab. Restricted:
+ * only the Collab owner, accepted invitees, and accepted guest applicants
+ * matched to a real user may enter. v1 keeps the membership check in the
+ * handler — RLS hardening is a follow-up pass.
+ */
+export const joinCollabLounge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { collabPostId: string }) =>
+    z.object({ collabPostId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+
+    const { data: post } = await supabaseAdmin
+      .from("collab_posts")
+      .select("id, title, user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post) throw new Error("Collab not found");
+
+    const isOwner = (post as any).user_id === userId;
+    let allowed = isOwner;
+    if (!allowed) {
+      const { data: inv } = await supabaseAdmin
+        .from("collab_invites")
+        .select("id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("invitee_user_id", userId)
+        .eq("status", "accepted")
+        .limit(1)
+        .maybeSingle();
+      if (inv?.id) allowed = true;
+    }
+    if (!allowed) {
+      const { data: ga } = await supabaseAdmin
+        .from("collab_guest_applications")
+        .select("id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("matched_user_id", userId)
+        .eq("status", "accepted")
+        .limit(1)
+        .maybeSingle();
+      if (ga?.id) allowed = true;
+    }
+    if (!allowed) throw new Error("This Lounge is private to confirmed collaborators.");
+
+    const { data: existing } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id")
+      .eq("collab_id", data.collabPostId)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (existing?.id) return { roomId: existing.id as string };
+
+    const { data: room, error } = await supabaseAdmin
+      .from("instant_rooms")
+      .insert({
+        kind: "lounge",
+        title: `${(post as any).title} · Lounge`,
+        status: "active",
+        participant_cap: 5,
+        creator_id: userId,
+        // Owner gets implicit host on first create.
+        host_user_id: isOwner ? userId : null,
+        collab_id: data.collabPostId,
+        visibility: "invite",
+      } as any)
+      .select("id")
+      .single();
+    if (error || !room) throw new Error(error?.message ?? "Couldn't open the Lounge");
+    return { roomId: room.id as string };
+  });
