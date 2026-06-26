@@ -437,40 +437,8 @@ function LiveRoomPage() {
       {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
       {user && <HostRoomEvents roomId={id} isHost={isHost} />}
 
-      {/* Promoted banner — slim */}
-      {isPromoted && forkedWs && (
-        <div className="mt-3 rounded-xl border border-violet/30 bg-violet/5 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Sparkles className="h-3.5 w-3.5 text-violet shrink-0" />
-            <span className="text-ink truncate">
-              This Lounge became a Collab: "{forkedWs.title}".
-            </span>
-            <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }} className="ml-auto">
-              <Button size="sm" variant="outline" className="rounded-full gap-1 h-7">
-                Open <ArrowRight className="h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          {invite && invite.status === "pending" && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-2">
-              <span className="text-xs text-ink-soft">
-                You've been invited to join the persistent Lounge.
-              </span>
-              <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">
-                Join
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onDeclineInvite}
-                className="rounded-full h-7"
-              >
-                No thanks
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Persistent-fork banner removed in the Lounge rebrand.
+          The Lounge stays live; the spun-out Collab is reachable via Collabs. */}
 
       <ChannelView
         key={id}
