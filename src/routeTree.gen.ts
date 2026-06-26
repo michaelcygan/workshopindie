@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
-import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -18,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as LoungeRouteImport } from './routes/lounge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InProgressRouteImport } from './routes/in-progress'
 import { Route as GroupsRouteImport } from './routes/groups'
@@ -30,8 +30,8 @@ import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
-import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
 import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
@@ -40,7 +40,6 @@ import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
-import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as WTokenRouteImport } from './routes/w.$token'
@@ -52,6 +51,7 @@ import { Route as MeFriendsRouteImport } from './routes/me.friends'
 import { Route as MeEditRouteImport } from './routes/me.edit'
 import { Route as MeCollabsRouteImport } from './routes/me.collabs'
 import { Route as MeBlockedRouteImport } from './routes/me.blocked'
+import { Route as LoungeIdRouteImport } from './routes/lounge.$id'
 import { Route as GSlugRouteImport } from './routes/g.$slug'
 import { Route as ECodeRouteImport } from './routes/e.$code'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
@@ -93,11 +93,6 @@ const WorkshopsRoute = WorkshopsRouteImport.update({
   path: '/workshops',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkshopRoute = WorkshopRouteImport.update({
-  id: '/workshop',
-  path: '/workshop',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -131,6 +126,11 @@ const PricingRoute = PricingRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeRoute = LoungeRouteImport.update({
+  id: '/lounge',
+  path: '/lounge',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -193,15 +193,15 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkshopsRoute,
 } as any)
-const WorkshopIndexRoute = WorkshopIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WorkshopRoute,
-} as any)
 const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeIndexRoute = LoungeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoungeRoute,
 } as any)
 const GroupsIndexRoute = GroupsIndexRouteImport.update({
   id: '/',
@@ -242,11 +242,6 @@ const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => WorkshopsRoute,
-} as any)
-const WorkshopIdRoute = WorkshopIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => WorkshopRoute,
 } as any)
 const WorksNewRoute = WorksNewRouteImport.update({
   id: '/works/new',
@@ -302,6 +297,11 @@ const MeBlockedRoute = MeBlockedRouteImport.update({
   id: '/me/blocked',
   path: '/me/blocked',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeIdRoute = LoungeIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => LoungeRoute,
 } as any)
 const GSlugRoute = GSlugRouteImport.update({
   id: '/$slug',
@@ -493,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/groups': typeof GroupsRouteWithChildren
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
+  '/lounge': typeof LoungeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -500,7 +501,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -523,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -534,7 +535,6 @@ export interface FileRoutesByFullPath {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -543,8 +543,8 @@ export interface FileRoutesByFullPath {
   '/dms/': typeof DmsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
-  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -597,6 +597,7 @@ export interface FileRoutesByTo {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -608,7 +609,6 @@ export interface FileRoutesByTo {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
@@ -617,8 +617,8 @@ export interface FileRoutesByTo {
   '/dms': typeof DmsIndexRoute
   '/events': typeof EventsIndexRoute
   '/groups': typeof GroupsIndexRoute
+  '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
-  '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -648,6 +648,7 @@ export interface FileRoutesById {
   '/groups': typeof GroupsRouteWithChildren
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
+  '/lounge': typeof LoungeRouteWithChildren
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -655,7 +656,6 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -678,6 +678,7 @@ export interface FileRoutesById {
   '/dms/$conversationId': typeof DmsConversationIdRoute
   '/e/$code': typeof ECodeRoute
   '/g/$slug': typeof GSlugRouteWithChildren
+  '/lounge/$id': typeof LoungeIdRoute
   '/me/blocked': typeof MeBlockedRoute
   '/me/collabs': typeof MeCollabsRoute
   '/me/edit': typeof MeEditRoute
@@ -689,7 +690,6 @@ export interface FileRoutesById {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -698,8 +698,8 @@ export interface FileRoutesById {
   '/dms/': typeof DmsIndexRoute
   '/events/': typeof EventsIndexRoute
   '/groups/': typeof GroupsIndexRoute
+  '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
-  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -730,6 +730,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/in-progress'
     | '/login'
+    | '/lounge'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -737,7 +738,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
-    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -760,6 +760,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -771,7 +772,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -780,8 +780,8 @@ export interface FileRouteTypes {
     | '/dms/'
     | '/events/'
     | '/groups/'
+    | '/lounge/'
     | '/me/'
-    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -834,6 +834,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -845,7 +846,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
@@ -854,8 +854,8 @@ export interface FileRouteTypes {
     | '/dms'
     | '/events'
     | '/groups'
+    | '/lounge'
     | '/me'
-    | '/workshop'
     | '/workshops'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -884,6 +884,7 @@ export interface FileRouteTypes {
     | '/groups'
     | '/in-progress'
     | '/login'
+    | '/lounge'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -891,7 +892,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
-    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -914,6 +914,7 @@ export interface FileRouteTypes {
     | '/dms/$conversationId'
     | '/e/$code'
     | '/g/$slug'
+    | '/lounge/$id'
     | '/me/blocked'
     | '/me/collabs'
     | '/me/edit'
@@ -925,7 +926,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -934,8 +934,8 @@ export interface FileRouteTypes {
     | '/dms/'
     | '/events/'
     | '/groups/'
+    | '/lounge/'
     | '/me/'
-    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/claim/$token'
@@ -965,6 +965,7 @@ export interface RootRouteChildren {
   GroupsRoute: typeof GroupsRouteWithChildren
   InProgressRoute: typeof InProgressRoute
   LoginRoute: typeof LoginRoute
+  LoungeRoute: typeof LoungeRouteWithChildren
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ReferRoute: typeof ReferRoute
@@ -972,7 +973,6 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  WorkshopRoute: typeof WorkshopRouteWithChildren
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -1007,13 +1007,6 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof WorkshopsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/workshop': {
-      id: '/workshop'
-      path: '/workshop'
-      fullPath: '/workshop'
-      preLoaderRoute: typeof WorkshopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -1063,6 +1056,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lounge': {
+      id: '/lounge'
+      path: '/lounge'
+      fullPath: '/lounge'
+      preLoaderRoute: typeof LoungeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -1149,19 +1149,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
     }
-    '/workshop/': {
-      id: '/workshop/'
-      path: '/'
-      fullPath: '/workshop/'
-      preLoaderRoute: typeof WorkshopIndexRouteImport
-      parentRoute: typeof WorkshopRoute
-    }
     '/me/': {
       id: '/me/'
       path: '/me'
       fullPath: '/me/'
       preLoaderRoute: typeof MeIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/lounge/': {
+      id: '/lounge/'
+      path: '/'
+      fullPath: '/lounge/'
+      preLoaderRoute: typeof LoungeIndexRouteImport
+      parentRoute: typeof LoungeRoute
     }
     '/groups/': {
       id: '/groups/'
@@ -1218,13 +1218,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/$slug'
       preLoaderRoute: typeof WorkshopsSlugRouteImport
       parentRoute: typeof WorkshopsRoute
-    }
-    '/workshop/$id': {
-      id: '/workshop/$id'
-      path: '/$id'
-      fullPath: '/workshop/$id'
-      preLoaderRoute: typeof WorkshopIdRouteImport
-      parentRoute: typeof WorkshopRoute
     }
     '/works/new': {
       id: '/works/new'
@@ -1302,6 +1295,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/me/blocked'
       preLoaderRoute: typeof MeBlockedRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/lounge/$id': {
+      id: '/lounge/$id'
+      path: '/$id'
+      fullPath: '/lounge/$id'
+      preLoaderRoute: typeof LoungeIdRouteImport
+      parentRoute: typeof LoungeRoute
     }
     '/g/$slug': {
       id: '/g/$slug'
@@ -1662,19 +1662,18 @@ const GroupsRouteChildren: GroupsRouteChildren = {
 const GroupsRouteWithChildren =
   GroupsRoute._addFileChildren(GroupsRouteChildren)
 
-interface WorkshopRouteChildren {
-  WorkshopIdRoute: typeof WorkshopIdRoute
-  WorkshopIndexRoute: typeof WorkshopIndexRoute
+interface LoungeRouteChildren {
+  LoungeIdRoute: typeof LoungeIdRoute
+  LoungeIndexRoute: typeof LoungeIndexRoute
 }
 
-const WorkshopRouteChildren: WorkshopRouteChildren = {
-  WorkshopIdRoute: WorkshopIdRoute,
-  WorkshopIndexRoute: WorkshopIndexRoute,
+const LoungeRouteChildren: LoungeRouteChildren = {
+  LoungeIdRoute: LoungeIdRoute,
+  LoungeIndexRoute: LoungeIndexRoute,
 }
 
-const WorkshopRouteWithChildren = WorkshopRoute._addFileChildren(
-  WorkshopRouteChildren,
-)
+const LoungeRouteWithChildren =
+  LoungeRoute._addFileChildren(LoungeRouteChildren)
 
 interface WorkshopsSlugToolsRouteChildren {
   WorkshopsSlugToolsToolRoute: typeof WorkshopsSlugToolsToolRoute
@@ -1731,6 +1730,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsRoute: GroupsRouteWithChildren,
   InProgressRoute: InProgressRoute,
   LoginRoute: LoginRoute,
+  LoungeRoute: LoungeRouteWithChildren,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ReferRoute: ReferRoute,
@@ -1738,7 +1738,6 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  WorkshopRoute: WorkshopRouteWithChildren,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,

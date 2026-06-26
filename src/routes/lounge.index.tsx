@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 
-export const Route = createFileRoute("/workshop/")({
+export const Route = createFileRoute("/lounge/")({
   component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [

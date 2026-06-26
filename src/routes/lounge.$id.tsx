@@ -44,7 +44,7 @@ import { formatRoomTitle } from "@/lib/instant";
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Workshop";
 
-export const Route = createFileRoute("/workshop/$id")({
+export const Route = createFileRoute("/lounge/$id")({
   component: () => (
     <RequireAuth>
       <LiveRoomPage />
