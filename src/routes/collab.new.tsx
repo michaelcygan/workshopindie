@@ -558,12 +558,7 @@ function NewCollab() {
           <DialogHeader>
             <DialogTitle>Your Collab is live.</DialogTitle>
             <DialogDescription>
-              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account.
-              {postedDialog?.scheduledAt && (
-                <span className="mt-2 block text-xs text-ink-muted">
-                  Workshop scheduled for {new Date(postedDialog.scheduledAt).toLocaleString()}.
-                </span>
-              )}
+              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account. Accepted collaborators can open this Collab's private Lounge from the Collab page whenever you want to meet live.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-1 space-y-1.5">
