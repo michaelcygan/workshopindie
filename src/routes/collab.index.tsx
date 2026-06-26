@@ -19,7 +19,7 @@ import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
-import { RecapChip } from "@/components/recap-chip";
+
 
 
 const searchSchema = z.object({
@@ -27,7 +27,6 @@ const searchSchema = z.object({
   city: fallback(z.string().uuid().optional(), undefined),
   cityName: fallback(z.string().optional(), undefined),
   online: fallback(z.boolean(), false).default(false),
-  view: fallback(z.enum(["all", "open", "shipped"]), "all").default("all"),
 });
 
 export const Route = createFileRoute("/collab/")({
@@ -63,10 +62,9 @@ type Filters = {
   cat: WorkCategory | "all";
   city?: string;
   online: boolean;
-  view: "all" | "open" | "shipped";
 };
 
-async function fetchPosts({ cat, city, online, view, blockedIds }: Filters & { blockedIds: string[] }) {
+async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
     .select(
@@ -75,17 +73,10 @@ async function fetchPosts({ cat, city, online, view, blockedIds }: Filters & { b
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
+    .eq("status", "open")
+    .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);
-
-  if (view === "open") {
-    q = q.eq("status", "open").or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`);
-  } else if (view === "shipped") {
-    q = q.eq("status", "closed").not("resulting_work_id", "is", null);
-  } else {
-    // all = open + shipped
-    q = q.or(`and(status.eq.open,or(ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)})),and(status.eq.closed,resulting_work_id.not.is.null)`);
-  }
 
   if (cat !== "all") q = q.eq("category", cat);
   if (online) {
@@ -138,14 +129,15 @@ function CityCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const { data: cities } = useQuery({
+  type CityRow = { id: string; name: string; country: string };
+  const { data: cities } = useQuery<CityRow[]>({
     queryKey: ["collab-city-search", query],
     queryFn: async () => {
       const base = supabase.from("cities").select("id,name,country").order("name").limit(8);
       const { data } = query.trim()
         ? await base.ilike("name", `%${query.trim()}%`)
         : await base;
-      return data ?? [];
+      return (data ?? []) as CityRow[];
     },
     enabled: open && !disabled,
     staleTime: 30_000,
@@ -197,7 +189,7 @@ function CityCombobox({
           {(cities ?? []).length === 0 ? (
             <div className="px-3 py-2 text-sm text-ink-muted">No cities match.</div>
           ) : (
-            (cities ?? []).map((c: { id: string; name: string; country: string }) => (
+            (cities ?? []).map((c) => (
               <button
                 key={c.id}
                 type="button"
@@ -220,8 +212,8 @@ function CollabPage() {
   const navigate = useNavigate({ from: "/collab" });
 
   const filters: Filters = useMemo(
-    () => ({ cat: search.cat, city: search.city, online: search.online, view: search.view }),
-    [search.cat, search.city, search.online, search.view],
+    () => ({ cat: search.cat, city: search.city, online: search.online }),
+    [search.cat, search.city, search.online],
   );
 
   const { ids: blockedIds } = useBlockedIds();
@@ -232,6 +224,7 @@ function CollabPage() {
   const { data: rawPosts, isLoading } = useQuery({
     queryKey: ["collab", filters, blockedKey],
     queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
+    staleTime: 30_000,
   });
 
   const postIds = useMemo(() => (rawPosts ?? []).map((p) => p.id), [rawPosts]);
@@ -308,15 +301,12 @@ function CollabPage() {
     [],
   );
 
-  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean; view: "all" | "open" | "shipped" };
+  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean };
   function setCat(next: WorkCategory | "all") {
     navigate({ search: (prev: SearchShape) => ({ ...prev, cat: next }) });
   }
   function setCity(next: { id?: string; name?: string }) {
     navigate({ search: (prev: SearchShape) => ({ ...prev, city: next.id, cityName: next.name }) });
-  }
-  function setView(next: "all" | "open" | "shipped") {
-    navigate({ search: (prev: SearchShape) => ({ ...prev, view: next }) });
   }
   function toggleOnline() {
     navigate({
@@ -371,34 +361,15 @@ function CollabPage() {
         <p className="text-sm text-ink-muted">
           What people are trying to make. Help out — or open a Workshop on yours.
         </p>
-        <RecapChip count={rawPosts?.length ?? 0} label="open" />
-      </div>
-
-      {/* View filter: All / Open / Shipped */}
-      <div className="mt-4 flex flex-wrap items-center gap-1.5">
-        {(["all", "open", "shipped"] as const).map((v) => (
-          <button
-            key={v}
-            type="button"
-            onClick={() => setView(v)}
-            className={cn(
-              "h-8 rounded-full border px-3 text-xs font-medium transition",
-              filters.view === v
-                ? "border-transparent bg-ink text-background"
-                : "border-border bg-surface text-ink-soft hover:bg-muted",
-            )}
-            aria-pressed={filters.view === v}
-          >
-            {v === "all" ? "All" : v === "open" ? "Open" : "Shipped"}
-          </button>
-        ))}
+        {rawPosts && rawPosts.length > 0 && (
+          <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
+            {rawPosts.length} open
+          </span>
+        )}
       </div>
 
       {/* Unified filter cluster — medium + location on one line */}
       <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
-
-
-
         <div className="flex flex-wrap items-center gap-2">
           <div className="shrink-0">
             <CategoryScroller tabs={tabs} value={filters.cat} onChange={setCat} />
@@ -420,6 +391,7 @@ function CollabPage() {
                   : "border-border bg-surface text-ink-soft hover:bg-muted",
               )}
               aria-pressed={filters.online}
+              aria-label="Toggle online-only Collabs"
             >
               Online only
             </button>
@@ -500,9 +472,10 @@ function CollabPage() {
       )}
 
       <div className="mt-10">
-        {(boostedPosts && boostedPosts.length > 0) && (
-          <h2 className="mb-3 px-1 font-display text-lg text-ink">Open Collabs</h2>
-        )}
+        <div className="mb-3 flex items-center gap-3 px-1">
+          <h2 className="font-display text-lg text-ink">Open Collabs</h2>
+          <span className="h-px flex-1 bg-border" />
+        </div>
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
