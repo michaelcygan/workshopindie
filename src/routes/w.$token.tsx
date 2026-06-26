@@ -16,7 +16,7 @@ export const Route = createFileRoute("/w/$token")({
   head: ({ loaderData }) => {
     const link = (loaderData as any)?.link;
     const title = link?.title ? `${link.title} — Workshop` : "Workshop";
-    const desc = link?.prompt ?? "Drop into a live Workshop.";
+    const desc = link?.prompt ?? "Drop into a live Lounge.";
     const meta: any[] = [
       { title },
       { name: "description", content: desc },

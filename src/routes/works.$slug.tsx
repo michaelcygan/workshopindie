@@ -403,7 +403,7 @@ function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | nul
         <>
           <span aria-hidden>·</span>
           <span>
-            from Workshop{" "}
+            from Lounge{" "}
             <Link
               to="/workshops/$slug"
               params={{ slug: workshop.slug }}

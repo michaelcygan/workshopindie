@@ -218,7 +218,7 @@ function DmsIndex() {
     { id: "all", label: "All", count: counts.all },
     { id: "unread", label: "Unread", count: counts.unread },
     { id: "collabs", label: "Collabs", count: counts.collabs },
-    { id: "workshops", label: "Workshops", count: counts.workshops },
+    { id: "workshops", label: "Lounges", count: counts.workshops },
   ];
 
   return (
@@ -354,7 +354,7 @@ function DmsIndex() {
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
                       collab ? "bg-primary/10 text-primary" : "bg-violet/10 text-violet"
                     }`}>
-                      Re: {collab?.title ?? workshop?.title ?? "Workshop"}
+                      Re: {collab?.title ?? workshop?.title ?? "Lounge"}
                     </span>
                   )}
                   <p className={`truncate text-xs ${unread > 0 ? "text-ink" : "text-ink-muted"}`}>
