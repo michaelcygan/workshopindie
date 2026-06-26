@@ -167,8 +167,17 @@ function GroupPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Today is the default landing surface — ephemeral chat + fresh collabs.
-  const [tab, setTab] = useState<Tab>("today");
+  // Today is the default landing surface; ?t= deep-links to a specific tab.
+  const tab: Tab = (search.t as Tab | undefined) ?? "today";
+  const setTab = (next: Tab) => {
+    navigate({
+      to: "/g/$slug",
+      params: { slug: group.slug },
+      search: (prev) => ({ ...prev, t: next === "today" ? undefined : next }),
+      replace: true,
+    });
+  };
+
 
 
   const qc = useQueryClient();
