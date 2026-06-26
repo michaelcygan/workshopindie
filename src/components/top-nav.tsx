@@ -84,7 +84,12 @@ export function TopNav() {
             Collabs
           </Link>
           <GroupsNavItem />
+          <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+            Events
+          </Link>
           <HoverMoreMenu navigate={navigate} hasUser={!!user} />
+
+
 
         </nav>
 
