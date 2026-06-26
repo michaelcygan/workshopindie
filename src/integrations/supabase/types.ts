@@ -2212,12 +2212,14 @@ export type Database = {
           claim_started_at: string | null
           claim_user_id: string | null
           claim_vetoed: boolean
+          collab_id: string | null
           created_at: string
           creator_id: string | null
           description: string | null
           ended_by_user_id: string | null
           ends_at: string | null
           focus_message: string | null
+          group_id: string | null
           host_user_id: string | null
           id: string
           kind: string
@@ -2243,12 +2245,14 @@ export type Database = {
           claim_started_at?: string | null
           claim_user_id?: string | null
           claim_vetoed?: boolean
+          collab_id?: string | null
           created_at?: string
           creator_id?: string | null
           description?: string | null
           ended_by_user_id?: string | null
           ends_at?: string | null
           focus_message?: string | null
+          group_id?: string | null
           host_user_id?: string | null
           id?: string
           kind?: string
@@ -2274,12 +2278,14 @@ export type Database = {
           claim_started_at?: string | null
           claim_user_id?: string | null
           claim_vetoed?: boolean
+          collab_id?: string | null
           created_at?: string
           creator_id?: string | null
           description?: string | null
           ended_by_user_id?: string | null
           ends_at?: string | null
           focus_message?: string | null
+          group_id?: string | null
           host_user_id?: string | null
           id?: string
           kind?: string
@@ -2313,6 +2319,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "instant_rooms_source_workshop_id_fkey"
@@ -5400,6 +5420,10 @@ export type Database = {
       bump_work_view: {
         Args: { _key: string; _work_id: string }
         Returns: undefined
+      }
+      can_access_collab_lounge: {
+        Args: { _collab_id: string; _user_id: string }
+        Returns: boolean
       }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
       cast_workshop_poll_vote: {
