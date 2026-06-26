@@ -47,7 +47,7 @@ export function GroupHero({
       {/* Hero band — title sits BELOW it, so no clipping. */}
       <div
         className={cn(
-          "relative h-40 w-full md:h-56",
+          "relative h-24 w-full md:h-32",
           group.cover_url ? "bg-cover bg-center" : "gradient-motion",
         )}
         style={group.cover_url ? { backgroundImage: `url(${group.cover_url})` } : undefined}
