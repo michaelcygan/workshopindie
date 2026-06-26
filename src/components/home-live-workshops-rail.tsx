@@ -64,7 +64,7 @@ export function HomeLiveWorkshopsRail() {
       <div className="mb-6 flex items-end justify-between gap-3">
         <div className="min-w-0">
           <h2 className="font-display text-3xl text-ink md:text-4xl">
-            Workshops
+            Lounge
             <span className="relative ml-3 inline-flex h-2.5 w-2.5 align-middle">
               <span className="absolute inset-0 rounded-full bg-coral animate-ping opacity-60" />
               <span className="relative inline-block h-2.5 w-2.5 rounded-full bg-coral" />
@@ -88,13 +88,13 @@ export function HomeLiveWorkshopsRail() {
         </div>
       ) : isEmpty ? (
         <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-          <h3 className="font-display text-2xl text-ink">No live Workshops right now.</h3>
+          <h3 className="font-display text-2xl text-ink">No one is in the Lounge right now.</h3>
           <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
             Start one — five seats, shared tools, anyone can drop in.
           </p>
           <div className="mt-5 flex items-center justify-center gap-3">
             <Link to="/lounge">
-              <Button className="rounded-full">Start a Workshop</Button>
+              <Button className="rounded-full">Open the Lounge</Button>
             </Link>
             <Link
               to="/workshops"
