@@ -58,6 +58,11 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   const { data: isMember } = useIsMemberOfGroup(group.id);
   const [body, setBody] = useState("");
   const scrollerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const postFn = useServerFn(postTodayMessage);
+
+  // Mention popover state.
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
 
   const { data: posts = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "today-posts"],
@@ -96,16 +101,13 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     if (el) el.scrollTop = el.scrollHeight;
   }, [posts.length]);
 
-  const postFn = useMutation({
+  const post = useMutation({
     mutationFn: async (text: string) => {
-      if (!user) throw new Error("Sign in to post");
-      const { error } = await supabase
-        .from("group_today_posts")
-        .insert({ group_id: group.id, author_id: user.id, body: text } as never);
-      if (error) throw error;
+      await postFn({ data: { groupId: group.id, body: text } });
     },
     onSuccess: () => {
       setBody("");
+      setMention(null);
       qc.invalidateQueries({ queryKey: ["group", group.id, "today-posts"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -131,8 +133,54 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     [],
   );
 
+  // Detect "@<query>" being typed near the caret to drive the popover.
+  function recalcMention(value: string, caret: number) {
+    // Look back from caret for an "@" not preceded by a word character.
+    let i = caret - 1;
+    while (i >= 0) {
+      const ch = value[i];
+      if (ch === "@") {
+        const prev = i > 0 ? value[i - 1] : "";
+        if (i === 0 || /\s/.test(prev)) {
+          const query = value.slice(i + 1, caret);
+          if (/^[a-zA-Z0-9_]{0,30}$/.test(query)) {
+            setMention({ start: i, query });
+            return;
+          }
+        }
+        break;
+      }
+      if (/\s/.test(ch)) break;
+      i -= 1;
+    }
+    setMention(null);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const v = e.target.value.slice(0, 500);
+    setBody(v);
+    recalcMention(v, e.target.selectionStart ?? v.length);
+  }
+
+  function handlePickMention(insert: string) {
+    if (!mention) return;
+    const before = body.slice(0, mention.start);
+    const after = body.slice(mention.start + 1 + mention.query.length);
+    const sep = after.startsWith(" ") || after === "" ? "" : " ";
+    const next = `${before}${insert}${sep}${after}`.slice(0, 500);
+    setBody(next);
+    setMention(null);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      const caret = before.length + insert.length + sep.length;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
   return (
-    <section className="rounded-3xl border border-border bg-surface">
+    <section className="relative flex flex-col rounded-3xl border border-border bg-surface">
       <header className="flex items-center justify-between border-b border-border px-4 py-3">
         <div>
           <h2 className="font-display text-lg text-ink">Today in {group.name}</h2>
@@ -147,7 +195,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
       <div
         ref={scrollerRef}
-        className="max-h-[55vh] min-h-[280px] space-y-3 overflow-y-auto px-4 py-4"
+        className="h-[calc(100vh-22rem)] min-h-[480px] max-h-[72vh] space-y-3 overflow-y-auto px-4 py-4"
       >
         {isLoading ? (
           <div className="space-y-2">
@@ -194,7 +242,9 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
                       })}
                     </span>
                   </div>
-                  <p className="whitespace-pre-wrap break-words text-sm text-ink">{p.body}</p>
+                  <p className="whitespace-pre-wrap break-words text-sm text-ink">
+                    {renderTodayBody(p.body)}
+                  </p>
                 </div>
                 {mine && (
                   <button
@@ -217,21 +267,39 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           e.preventDefault();
           const t = body.trim();
           if (!t || !canPost) return;
-          postFn.mutate(t);
+          post.mutate(t);
         }}
-        className="flex items-center gap-2 border-t border-border px-3 py-2"
+        className="relative flex items-center gap-2 border-t border-border px-3 py-2"
       >
+        {canPost && (
+          <TodayMentionPopover
+            open={mention !== null}
+            query={mention?.query ?? ""}
+            groupId={group.id}
+            onPick={handlePickMention}
+            onClose={() => setMention(null)}
+          />
+        )}
         <input
+          ref={inputRef}
           value={body}
-          onChange={(e) => setBody(e.target.value.slice(0, 500))}
+          onChange={handleChange}
+          onKeyUp={(e) => {
+            const el = e.currentTarget;
+            recalcMention(el.value, el.selectionStart ?? el.value.length);
+          }}
+          onClick={(e) => {
+            const el = e.currentTarget;
+            recalcMention(el.value, el.selectionStart ?? el.value.length);
+          }}
           placeholder={
             !user
               ? "Sign in to chat"
               : !isMember
                 ? "Join to chat"
-                : "What's happening today?"
+                : "What's happening? Use @ to tag people or your collabs."
           }
-          disabled={!canPost || postFn.isPending}
+          disabled={!canPost || post.isPending}
           className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none disabled:opacity-60"
         />
         <span className="text-[11px] tabular-nums text-ink-muted/70">{body.length}/500</span>
@@ -239,7 +307,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           type="submit"
           size="sm"
           className={cn("h-8 gap-1 rounded-full", body.trim() ? "" : "opacity-50")}
-          disabled={!canPost || !body.trim() || postFn.isPending}
+          disabled={!canPost || !body.trim() || post.isPending}
         >
           <Send className="h-3.5 w-3.5" />
           Send
