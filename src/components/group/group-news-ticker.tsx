@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchGroupNews } from "@/lib/group-news.functions";
@@ -19,16 +20,23 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
     staleTime: 30 * 60 * 1000,
   });
   const items = data?.items ?? [];
+  const [hovering, setHovering] = useState(false);
+  const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
+  const paused = hovering || open;
 
   const durationSec = Math.max(90, items.length * 14);
   const loop = [...items, ...items];
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
+      <div
+        className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
         {/* Anchored label — click to open headlines drawer */}
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -42,6 +50,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
             </button>
           </PopoverTrigger>
           <PopoverContent
+            side="bottom"
             align="start"
             sideOffset={8}
             className="w-[min(92vw,28rem)] max-h-[70vh] overflow-y-auto p-0"
@@ -94,6 +103,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
           {/* Marquee */}
           <div
             className="gnt-marquee flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
+            data-paused={paused ? "true" : "false"}
             style={{
               animation: `gnt-scroll ${durationSec}s linear infinite`,
               width: "max-content",
@@ -116,8 +126,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
         <style>{`
           @keyframes gnt-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-          .gnt-pill:hover .gnt-marquee,
-          .gnt-pill:focus-within .gnt-marquee { animation-play-state: paused; }
+          .gnt-marquee[data-paused="true"] { animation-play-state: paused !important; }
         `}</style>
       </div>
 
