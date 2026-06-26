@@ -499,13 +499,7 @@ function NewCollab() {
         <div className="flex justify-end gap-2 md:hidden">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
           <Button type="submit" disabled={submitting} className="rounded-full">
-            {submitting
-              ? "Posting…"
-              : workshopMode === "now"
-                ? "Post & open Workshop"
-                : workshopMode === "scheduled"
-                  ? "Post & schedule Workshop"
-                  : "Post Collab"}
+            {submitting ? "Posting…" : "Post Collab"}
           </Button>
         </div>
       </form>
