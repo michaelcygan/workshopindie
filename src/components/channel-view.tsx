@@ -330,7 +330,7 @@ export function ChannelView({
       setEndedOpen(false);
       router.navigate({ to: "/lounge/$id", params: { id: newId }, search: { mode: nextMode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't find a new Workshop");
+      toast.error(e instanceof Error ? e.message : "Couldn't find a new Lounge");
       setJoiningNew(false);
       router.navigate({ to: "/lounge" });
     }
