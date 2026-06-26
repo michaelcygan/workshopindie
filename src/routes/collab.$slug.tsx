@@ -139,9 +139,7 @@ function CollabDetail() {
   const router = useRouter();
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
-  
   const extendFn = useServerFn(extendCollabDeadline);
-  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
