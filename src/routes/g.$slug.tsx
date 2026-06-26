@@ -926,10 +926,10 @@ function GroupWorkshopTab({ group }: { group: GroupRow }) {
     queryFn: async () => {
       const { data } = await supabase
         .from("instant_rooms")
-        .select("id, title, status, started_at")
+        .select("id, title, status, created_at")
         .eq("group_id", group.id)
         .eq("status", "active")
-        .order("started_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(8);
       return data ?? [];
     },
