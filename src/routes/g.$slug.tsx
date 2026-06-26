@@ -80,9 +80,16 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
+const TAB_VALUES = ["today", "events", "workshops", "collab", "work", "members", "subgroups", "about"] as const;
+type TabValue = (typeof TAB_VALUES)[number];
+
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
     j: typeof s.j === "string" ? s.j : undefined,
+    t:
+      typeof s.t === "string" && (TAB_VALUES as readonly string[]).includes(s.t)
+        ? (s.t as TabValue)
+        : undefined,
   }),
   loader: async ({ params }) => fetchGroup(params.slug),
   component: GroupPage,
@@ -113,18 +120,45 @@ export const Route = createFileRoute("/g/$slug")({
       </Link>
     </main>
   ),
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.name} — Group on Workshop` },
-          { name: "description", content: loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop." },
-          { property: "og:title", content: `${loaderData.name} — Group on Workshop` },
-          { property: "og:description", content: loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop." },
-          ...(loaderData.cover_url ? [{ property: "og:image", content: loaderData.cover_url }] : []),
-        ]
-      : [],
-  }),
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return { meta: [] };
+    const title = `${loaderData.name} — Group on Workshop`;
+    const desc = loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop.";
+    const url = `https://workshopindie.com/g/${params.slug}`;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: loaderData.name,
+      description: desc,
+      url,
+      ...(loaderData.cover_url ? { image: loaderData.cover_url } : {}),
+      isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+    };
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
+        ...(loaderData.cover_url ? [{ property: "og:image", content: loaderData.cover_url }] : []),
+        { name: "twitter:card", content: loaderData.cover_url ? "summary_large_image" : "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        ...(loaderData.cover_url ? [{ name: "twitter:image", content: loaderData.cover_url }] : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(jsonLd),
+        },
+      ],
+    };
+  },
 });
+
 
 type Tab = GroupTab;
 
@@ -133,8 +167,21 @@ function GroupPage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
-  // Today is the default landing surface — ephemeral chat + fresh collabs.
-  const [tab, setTab] = useState<Tab>("today");
+  // Today is the default landing surface; ?t= deep-links to a specific tab.
+  const tab: Tab = (search.t as Tab | undefined) ?? "today";
+  const setTab = (next: Tab) => {
+    navigate({
+      to: "/g/$slug",
+      params: { slug: group.slug },
+      search: (prev: { j?: string; t?: TabValue }) => ({
+        ...prev,
+        t: next === "today" ? undefined : (next as TabValue),
+      }),
+
+      replace: true,
+    });
+  };
+
 
 
   const qc = useQueryClient();
@@ -207,7 +254,25 @@ function GroupPage() {
     },
   });
 
+  // Cheap count-only query so the tab bar can show the Subgroups chip
+  // without paying for the full row payload on every page load.
+  const { data: childCount = 0 } = useQuery({
+    queryKey: ["group", group.id, "children-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("groups")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_group_id", group.id)
+        .is("deleted_at", null)
+        .eq("visibility", "public");
+      return count ?? 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
+    enabled: tab === "subgroups" && childCount > 0,
     queryKey: ["group", group.id, "children"],
     queryFn: async () => {
       const { data } = await supabase
@@ -223,6 +288,7 @@ function GroupPage() {
       return (data ?? []) as unknown as GroupCardData[];
     },
   });
+
 
 
   useEffect(() => {
@@ -274,7 +340,7 @@ function GroupPage() {
               workshops: group.workshop_count,
               members: group.member_count,
             }}
-            childCount={childGroups.length}
+            childCount={childCount}
           />
 
         <div className="mt-5">

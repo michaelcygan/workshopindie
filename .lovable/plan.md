@@ -1,100 +1,42 @@
+## Audit: Group page (visual + wiring)
 
-## Today tab polish + group page scale pass
+The screenshot reads as shippable. A few real issues remain — mostly small polish + one wiring inefficiency worth fixing before launch.
 
-### 1. Today layout refresh (after news ticker moved out)
+### 1. Visual polish (small)
 
-Rework `src/components/group/group-today-tab.tsx` into a 3-rail composition:
+- **Avatar feels stranded on the left.** With the shorter banner, the `S` tile sits in a column of empty cream above the tab bar. Tighten by reducing the avatar's negative top offset (currently `-mt-10`) and the gap between hero band and title block so the avatar nests against the banner edge instead of floating.
+- **"0 members" + empty meta row on a brand‑new group looks sad.** Hide the members line when count is 0 and the viewer is not a member; replace with a single subtle "Be the first to join" hint. Already‑joined groups keep the count.
+- **"In the news" pill is wider than the tab bar baseline.** Constrain the ticker container to match the tab bar's left/right padding so the page has one consistent gutter.
+- **Tab bar + Create button**: on this width the "+ Create" sits flush right and the tabs are flush left — visually they read as two separate components. Add a faint divider under the whole bar (single hairline) so the sticky bar reads as one element when it pins.
 
-```text
-┌─────────────────────────────────────────┬────────────────┐
-│  Today chat (taller — ~70vh)            │  Next event    │
-│  - header w/ live count                 │  (single card) │
-│  - messages w/ @mentions + link parsing │                │
-│  - sticky composer                      │ ───────────────│
-│                                         │  Fresh collabs │
-└─────────────────────────────────────────┴────────────────┘
-```
+### 2. Wiring / data (worth fixing)
 
-- Chat height: bump scroller to `h-[calc(100vh-22rem)] min-h-[480px] max-h-[72vh]`.
-- Right rail order: **Next event → Fresh collabs**.
+- **Membership query duplicated.** `JoinGroupButton` fetches membership, and several tabs re‑derive "am I a member?" independently. Lift one `["group-membership", group.id, user.id]` query into `GroupPage` and pass `isMember` down as a prop. Removes 3–4 redundant requests per page load.
+- **Realtime channel re‑subscribes on every tab switch is fine, but the `group-${id}` channel currently invalidates on `group_members` for ALL inserts.** At 100k DAU on a large group this fires constantly for every viewer. Debounce member‑count invalidations (e.g. trailing 5s) and skip invalidation entirely when the change isn't the current viewer.
+- **`nextEvent` and `childGroups` always fetch, even when their consumers aren't visible.** `nextEvent` is shown in the hero so keep it. `childGroups` is only used inside the Subgroups tab and to compute `childCount` for the tab bar. Replace the full `select(...)` with a cheap `select("id", { count: "exact", head: true })` for the count, and lazy‑load the full list when the tab opens.
+- **Tab state is local React state.** Refresh / share‑link loses the tab. Move `tab` into `validateSearch` (`?t=today|collabs|...`) so deep links land correctly — important for SEO and for the "All events →" / share flows you've already built.
 
-### 2. Next event module (new)
+### 3. Findability / SEO
 
-New component `src/components/group/group-next-event.tsx`:
-- Query `group_events` for `group_id = group.id` AND `starts_at >= now()`, ordered ascending, **limit 1**. (Not constrained to "today" — just the soonest upcoming one.)
-- Shows a single card: title, date+time in viewer TZ ("Sat, Jul 4 · 7:30 PM" + relative "in 3 days"), going count, link to `g/$slug/e/$eventSlug`.
-- Empty state: "No upcoming events." + "Post one →" deep link to the group-scoped event create flow.
-- Small "All events →" link to the group's Events tab footer of the card.
+- Head meta is solid (title, og:title, og:description, og:image). Add `og:type=profile` (or `website`) and a `twitter:card` entry for parity. Add `CollectionPage` JSON‑LD with `numberOfItems = member_count` for the group root.
 
-### 3. @mentions for users — with notifications
+### 4. Cleanup
 
-Composer changes in `TodayChat`:
-- Replace `<input>` with auto-resizing `<textarea>` (Enter to send, Shift+Enter newline).
-- New `MentionAutocomplete` popover at `src/components/group/today-mention-popover.tsx`:
-  - Trigger: detect `@` at cursor, capture token until whitespace.
-  - Source: group members from `profiles` joined to `group_members`, `ilike` username/display_name, limit 6.
-  - Insert plain `@username` token.
+- The legacy local `Tab` alias (`type Tab = GroupTab`) is unused outside this file — drop it.
+- `useEffect` for the realtime channel doesn't unsubscribe cleanly if the channel errors before subscribe resolves. Wrap removal in try/catch.
 
-Rendering:
-- Parse body into segments (text | mention | url | collab-link), render mentions as `<Link to="/u/$username">` chips.
+### Out of scope (intentionally not touching)
 
-Notifications — new server fn `postTodayMessage` in `src/lib/today-chat.functions.ts`:
-- Inserts the post, extracts `@username` tokens, resolves to user IDs (filter out author, dupes, non-members), inserts `notifications` rows with `kind = 'today_mention'`, `entity_type = 'group_today_post'`, `entity_id = postId`, `payload = { group_slug, group_name, snippet }`.
-- Cap at 10 mentions/post.
+- Hero composition, typography sizes, banner color — you've explicitly signed those off.
+- "Today" tab layout — you signed it off last pass.
+- News ticker behavior — already polished.
 
-### 4. @mentions for your own collabs
+### Order of work
 
-Same popover, second section:
-- Also queries `collab_posts where author_id = me and status = 'open'` (limit 6) and shows under a "Your collabs" divider.
-- Inserted as markdown link `[Title](/collab/slug)` — no schema change required.
-- Renderer detects `[label](/collab/...)` and renders an inline pill (📣 icon + title).
+1. Avatar nest + members‑row empty state + ticker gutter + tab bar hairline.
+2. Lift membership query; convert `childGroups` to count‑first.
+3. Move tab to `?t=` search param.
+4. Add JSON‑LD + twitter card meta.
+5. Drop unused `Tab` alias; harden channel teardown.
 
-### 5. Clickable links + soft censoring
-
-Shared util `src/lib/today-text.tsx` exporting `renderTodayBody(body)`:
-- Tokenize into text / mention / url / collab-link.
-- URLs auto-linked with `rel="noopener noreferrer nofollow ugc"` + `target="_blank"`.
-- Censor list in `src/lib/link-blocklist.ts` (pornhub.com, xvideos.com, onlyfans.com, etc.). Matching hosts render as muted non-clickable chip: "link hidden · adult content".
-- Shorteners (bit.ly, t.co) get a ⚠︎ prefix but stay clickable.
-- Visible URL text truncated to 60 chars.
-
-### 6. Scale to 100k concurrent — group page hardening
-
-**Realtime**
-- Replace per-viewer `postgres_changes` subscription on `group_today_posts` and `group_today_pins` with a Supabase **broadcast** channel `group:{id}:today`. The post server fn emits the broadcast after insert. Postgres-changes fan-out doesn't survive 100k DAU; broadcast does.
-- On broadcast receipt, append the payload locally instead of re-querying (no thundering herd).
-
-**Read path / indexes (migration)**
-- `group_today_posts (group_id, expires_at desc)`
-- `group_today_pins (group_id, expires_at desc)`
-- `group_events (group_id, starts_at)` — covers next-event lookup
-- `notifications (user_id, read_at, created_at desc)` partial on `read_at is null`
-- Switch chat fetch to keyset pagination (initial 50, load older on scroll-top).
-
-**Write path / abuse**
-- DB trigger `tg_group_today_posts_rate_limit`: reject >5 posts / 10s per user per group.
-- Server-side trim; reject pure-whitespace.
-
-**Caching**
-- TanStack Query: group hero/about `staleTime: 5m`, `gcTime: 30m`.
-- News ticker server fn: per-URL in-memory memo, 5 min TTL.
-
-### 7. Files touched
-
-New:
-- `src/components/group/group-next-event.tsx`
-- `src/components/group/today-mention-popover.tsx`
-- `src/lib/today-text.tsx`
-- `src/lib/link-blocklist.ts`
-- `src/lib/today-chat.functions.ts`
-- One migration (indexes + rate-limit trigger)
-
-Edited:
-- `src/components/group/group-today-tab.tsx` (layout, taller chat, textarea+autocomplete, shared renderer, broadcast, server fn)
-- `src/lib/group-news.functions.ts` (TTL memoize)
-
-### Out of scope
-
-- No new notification UI surface — uses existing notification center.
-- No moderation queue for censored links (silent hide + report).
-- No rich-text editor — plain text + parser.
+Estimated impact: ~6 file edits, no schema changes, no new dependencies.
