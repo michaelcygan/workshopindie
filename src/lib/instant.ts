@@ -2,21 +2,21 @@ import { CATEGORIES } from "@/lib/categories";
 
 /**
  * Normalize a live-room title for display.
- * Rewrites legacy "Instant Workshop[: X]" titles (assigned by the matchmaker RPC)
- * into the user-facing "Workshop: X" convention. Host-set titles pass through.
+ * Rewrites legacy "Instant Workshop[: X]" titles into the user-facing
+ * "Lounge: X" convention. Host-set titles pass through.
  */
 export function formatRoomTitle(
   title: string | null | undefined,
   medium?: string | null,
 ): string {
   const t = (title ?? "").trim();
-  const match = t.match(/^instant\s+workshop(?:\s*[:\-–]\s*(.*))?$/i);
+  const match = t.match(/^(?:instant\s+workshop|workshop)(?:\s*[:\-–]\s*(.*))?$/i);
   if (match) {
     const captured = match[1]?.trim();
     const label =
       captured ||
       (medium ? CATEGORIES.find((c) => c.id === medium)?.label : undefined);
-    return label ? `Workshop: ${label}` : "Workshop";
+    return label ? `Lounge: ${label}` : "Lounge";
   }
-  return t || "Workshop";
+  return t || "Lounge";
 }
