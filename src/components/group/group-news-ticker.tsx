@@ -30,9 +30,13 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
+      <div
+        className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm"
+        onMouseEnter={() => setHovering(true)}
+        onMouseLeave={() => setHovering(false)}
+      >
         {/* Anchored label — click to open headlines drawer */}
-        <Popover>
+        <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <button
               type="button"
@@ -46,6 +50,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
             </button>
           </PopoverTrigger>
           <PopoverContent
+            side="bottom"
             align="start"
             sideOffset={8}
             className="w-[min(92vw,28rem)] max-h-[70vh] overflow-y-auto p-0"
