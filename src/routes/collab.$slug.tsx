@@ -174,20 +174,6 @@ function CollabDetail() {
     },
   });
 
-  const { data: liveWorkshop } = useQuery({
-    queryKey: ["collab-live-workshop", post?.live_workshop_id],
-    enabled: !!post?.live_workshop_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("workshops")
-        .select("id,slug,status")
-        .eq("id", post!.live_workshop_id!)
-        .maybeSingle();
-      return data;
-    },
-  });
-  const isLive = !!liveWorkshop && (liveWorkshop.status === "active" || liveWorkshop.status === "check_in");
-
   const isOwnerEarly = user?.id === post?.user_id;
   const fetchApplicants = useServerFn(listApplicants);
   const { data: applicantsData } = useQuery({
@@ -227,15 +213,6 @@ function CollabDetail() {
   });
 
 
-  const openWorkshopMut = useMutation({
-    mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
-    onSuccess: ({ slug: wsSlug }) => {
-      toast.success("Workshop is live — heading in");
-      qc.invalidateQueries({ queryKey: ["collab", slug] });
-      router.navigate({ to: "/workshops/$slug", params: { slug: wsSlug } });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const applyFn = useServerFn(applyToCollab);
   const sendContact = useMutation({
