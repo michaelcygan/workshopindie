@@ -390,6 +390,7 @@ function CollabPage() {
                   : "border-border bg-surface text-ink-soft hover:bg-muted",
               )}
               aria-pressed={filters.online}
+              aria-label="Toggle online-only Collabs"
             >
               Online only
             </button>
