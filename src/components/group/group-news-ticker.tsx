@@ -23,7 +23,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-      <div className="group/ticker relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
+      <div className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
         {/* Anchored label */}
         <div className="relative z-20 flex shrink-0 items-center gap-2 rounded-l-full bg-surface px-3 sm:pr-4">
           <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
@@ -51,9 +51,9 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
           {/* Marquee */}
           <div
-            className="flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform group-hover/ticker:[animation-play-state:paused] group-focus-within/ticker:[animation-play-state:paused] motion-reduce:hidden"
+            className="gnt-marquee flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
             style={{
-              animation: `group-news-ticker ${durationSec}s linear infinite`,
+              animation: `gnt-scroll ${durationSec}s linear infinite`,
               width: "max-content",
             }}
           >
@@ -72,8 +72,13 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
           </div>
         </div>
 
-        <style>{`@keyframes group-news-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }`}</style>
+        <style>{`
+          @keyframes gnt-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+          .gnt-pill:hover .gnt-marquee,
+          .gnt-pill:focus-within .gnt-marquee { animation-play-state: paused; }
+        `}</style>
       </div>
+
     </div>
   );
 }
