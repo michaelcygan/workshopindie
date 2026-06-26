@@ -253,9 +253,7 @@ function HoverMoreMenu({
             <DropdownMenuItem onSelect={() => goTo("/gallery")}>
               <LayoutGrid className="mr-2 h-4 w-4" /> Work
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => goTo("/events")}>
-              <Calendar className="mr-2 h-4 w-4" /> Events
-            </DropdownMenuItem>
+
           </DropdownMenuContent>
         ) : null}
       </DropdownMenu>
