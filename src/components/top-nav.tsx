@@ -31,7 +31,9 @@ import {
   ChevronDown,
   LayoutGrid,
   Calendar,
+
   ListChecks,
+
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
@@ -84,7 +86,12 @@ export function TopNav() {
             Collabs
           </Link>
           <GroupsNavItem />
+          <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+            Events
+          </Link>
           <HoverMoreMenu navigate={navigate} hasUser={!!user} />
+
+
 
         </nav>
 
@@ -248,9 +255,7 @@ function HoverMoreMenu({
             <DropdownMenuItem onSelect={() => goTo("/gallery")}>
               <LayoutGrid className="mr-2 h-4 w-4" /> Work
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => goTo("/events")}>
-              <Calendar className="mr-2 h-4 w-4" /> Events
-            </DropdownMenuItem>
+
           </DropdownMenuContent>
         ) : null}
       </DropdownMenu>
