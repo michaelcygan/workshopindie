@@ -597,7 +597,7 @@ function CreateCollabSheet({
     if (!title.trim()) return toast.error("Give it a title");
     setBusy(true);
     try {
-      const { workshopSlug } = await create({
+      const { workshopSlug, collabSlug } = await create({
         data: {
           roomId,
           title: title.trim(),
@@ -612,7 +612,7 @@ function CreateCollabSheet({
       if (!workshopSlug) throw new Error("Couldn't create the Collab");
       toast.success("Collab created — everyone in the room got an opt-in invite.");
       onOpenChange(false);
-      onCreated(workshopSlug);
+      onCreated({ workshopSlug, collabSlug });
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't create the Collab");
     } finally {
