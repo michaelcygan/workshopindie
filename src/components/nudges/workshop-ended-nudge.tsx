@@ -79,7 +79,7 @@ export function WorkshopEndedNudge({
         storageKey={`nudge:workshop-publish:${workshopId}:${user.id}`}
         icon={<Rocket className="h-4 w-4" />}
         title="Publish what you made."
-        description="Turn this Workshop's output into a Work. The cast and provenance carry over automatically."
+        description="Turn this Lounge's output into a Work. The cast and provenance carry over automatically."
       >
         <Link
           to="/works/new"

@@ -45,7 +45,7 @@ export const Route = createFileRoute("/cities/$slug")({
     const name = c?.name ?? params.slug;
     const title = `${name} — Workshop`;
     const description = c
-      ? `Live and scheduled Workshops, open collabs, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
+      ? `Live and scheduled Lounges, open collabs, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
       : "Creators on Workshop.";
     return {
       meta: [
@@ -90,7 +90,7 @@ function CityPage() {
 
   useDocumentMeta({
     title: city?.name,
-    description: city ? `Live and scheduled Workshops, open collabs, and creators in ${city.name}.` : undefined,
+    description: city ? `Live and scheduled Lounges, open collabs, and creators in ${city.name}.` : undefined,
   });
 
   const { data: workshops = [] } = useQuery({

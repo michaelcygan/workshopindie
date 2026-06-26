@@ -328,7 +328,7 @@ function CollabDetail() {
               postId={post.id}
               slug={post.slug}
               title={post.title}
-              hostName={hostUser?.display_name || hostUser?.username || "A Workshop artist"}
+              hostName={hostUser?.display_name || hostUser?.username || "A Lounge artist"}
               hostAvatarUrl={hostUser?.avatar_url}
               roles={roles.map((r: { role_name: string }) => r.role_name)}
               category={post.category}

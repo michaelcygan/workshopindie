@@ -116,7 +116,7 @@ export function WorkshopPresenceWorksRail({
       <div className="flex items-center justify-between px-3 pt-2.5 pb-1.5">
         <div className="min-w-0">
           <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
-            {isSelfFallback ? "Your recent work" : "In this Workshop"}
+            {isSelfFallback ? "Your recent work" : "In this Lounge"}
           </p>
           {!isSelfFallback && (
             <p className="text-[10px] text-ink-muted/70">What people here are bringing</p>

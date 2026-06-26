@@ -1179,7 +1179,7 @@ function AddMineToGroup({
 
   if (!user) return null;
 
-  const labelMap = { work: "Work", collab: "Collab", workshop: "Workshop" };
+  const labelMap = { work: "Work", collab: "Collab", workshop: "Lounge" };
 
   return (
     <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-3">
