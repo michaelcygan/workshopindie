@@ -1,93 +1,35 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Loader2, X, Search } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
-import { resolveCityFromOSM } from "@/lib/cities.functions";
+import { useQuery } from "@tanstack/react-query";
+import { MapPin, Search, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 export type CityValue = {
   id: string;
   name: string;
-  country: string;
+  country?: string | null;
 };
 
-type PhotonProps = {
-  name?: string;
-  city?: string;
-  town?: string;
-  village?: string;
-  state?: string;
-  country?: string;
-  countrycode?: string;
-};
-type PhotonFeature = {
-  type: "Feature";
-  geometry: { type: "Point"; coordinates: [number, number] };
-  properties: PhotonProps;
-};
-
-const cache = new Map<string, PhotonFeature[]>();
-
-function featureCityName(p: PhotonProps): string {
-  return p.name || p.city || p.town || p.village || p.state || p.country || "Unknown";
-}
-
+/**
+ * Shared city search combobox. Used by Collab Board, Events, Settings, etc.
+ * h-11 pill input; opens a result list pulled from `public.cities`.
+ */
 export function CityCombobox({
   value,
   onChange,
-  placeholder,
   disabled,
+  placeholder = "Search by city — or leave for anywhere",
+  className,
 }: {
   value: CityValue | null;
-  onChange: (v: CityValue | null) => void;
-  placeholder?: string;
+  onChange: (next: CityValue | null) => void;
   disabled?: boolean;
+  placeholder?: string;
+  className?: string;
 }) {
-  const resolveCity = useServerFn(resolveCityFromOSM);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<PhotonFeature[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [resolving, setResolving] = useState(false);
   const [open, setOpen] = useState(false);
-  const abortRef = useRef<AbortController | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (value) return;
-    const q = query.trim();
-    if (q.length < 2) {
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-    if (cache.has(q)) {
-      setResults(cache.get(q)!);
-      setOpen(true);
-      return;
-    }
-    const t = setTimeout(async () => {
-      abortRef.current?.abort();
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-      setLoading(true);
-      try {
-        const r = await fetch(
-          `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=en&osm_tag=place:city&osm_tag=place:town&osm_tag=place:village`,
-          { signal: ctrl.signal },
-        );
-        if (!r.ok) throw new Error("search failed");
-        const j = (await r.json()) as { features: PhotonFeature[] };
-        const feats = j.features ?? [];
-        cache.set(q, feats);
-        setResults(feats);
-        setOpen(true);
-      } catch (e) {
-        if ((e as Error).name !== "AbortError") setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    }, 250);
-    return () => clearTimeout(t);
-  }, [query, value]);
+  const [query, setQuery] = useState("");
+  const wrapRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -97,97 +39,78 @@ export function CityCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  async function pickFeature(f: PhotonFeature) {
-    const p = f.properties;
-    const [lng, lat] = f.geometry.coordinates;
-    setResolving(true);
-    try {
-      const city = await resolveCity({
-        data: {
-          name: featureCityName(p),
-          state_region: p.state ?? null,
-          country: p.country ?? "Unknown",
-          country_code: p.countrycode ?? null,
-          lat: typeof lat === "number" ? lat : null,
-          lng: typeof lng === "number" ? lng : null,
-        },
-      });
-      onChange(city);
-      setOpen(false);
-      setQuery("");
-    } catch {
-      // swallow; combobox stays open
-    } finally {
-      setResolving(false);
-    }
-  }
-
-  if (value) {
-    return (
-      <div className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-2">
-        <MapPin className="h-4 w-4 shrink-0 text-primary" />
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm text-ink">{value.name}</div>
-          <div className="truncate text-xs text-ink-muted">{value.country}</div>
-        </div>
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          className="rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
-          aria-label="Change city"
-          disabled={disabled}
-        >
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-    );
-  }
+  type CityRow = { id: string; name: string; country: string };
+  const { data: cities } = useQuery<CityRow[]>({
+    queryKey: ["city-combobox-search", query],
+    queryFn: async () => {
+      const base = supabase.from("cities").select("id,name,country").order("name").limit(8);
+      const { data } = query.trim()
+        ? await base.ilike("name", `%${query.trim()}%`)
+        : await base;
+      return (data ?? []) as CityRow[];
+    },
+    enabled: open && !disabled,
+    staleTime: 30_000,
+  });
 
   return (
-    <div ref={wrapRef} className={cn("relative", disabled && "opacity-50")}>
-      <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-        <input
-          type="text"
-          className="h-10 w-full rounded-md border border-border bg-surface pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-ring"
-          placeholder={placeholder ?? "Search any city in the world"}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          disabled={disabled || resolving}
-          autoComplete="off"
-        />
-        {(loading || resolving) && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-ink-muted" />
+    <div ref={wrapRef} className={cn("relative flex-1 min-w-[16rem]", disabled && "opacity-50", className)}>
+      <div
+        className={cn(
+          "flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft transition focus-within:shadow-lift",
+          disabled && "pointer-events-none",
+        )}
+      >
+        <Search className="h-4 w-4 shrink-0 text-ink-muted" />
+        {value ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="flex flex-1 items-center gap-1.5 truncate text-left text-sm text-ink"
+          >
+            <MapPin className="h-3.5 w-3.5 text-ink-soft" />
+            <span className="truncate">{value.name}</span>
+          </button>
+        ) : (
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+            onFocus={() => setOpen(true)}
+            placeholder={placeholder}
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
+            disabled={disabled}
+          />
+        )}
+        {(value || query) && !disabled && (
+          <button
+            type="button"
+            onClick={() => { onChange(null); setQuery(""); setOpen(false); }}
+            className="rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
+            aria-label="Clear city"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         )}
       </div>
-      {open && results.length > 0 && (
-        <div className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-border bg-popover shadow-lift">
-          <ul className="max-h-72 overflow-auto py-1">
-            {results.map((f, i) => {
-              const p = f.properties;
-              const name = featureCityName(p);
-              const sub = [p.state, p.country].filter(Boolean).join(", ");
-              return (
-                <li key={`${name}-${i}`}>
-                  <button
-                    type="button"
-                    onClick={() => pickFeature(f)}
-                    className="flex w-full items-start gap-2 px-3 py-2 text-left transition hover:bg-muted"
-                  >
-                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm text-ink">{name}</span>
-                      <span className="block truncate text-xs text-ink-muted">{sub}</span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-          <div className="border-t border-border bg-surface px-3 py-1.5 text-[10px] text-ink-muted">
-            Cities from OpenStreetMap · Photon
-          </div>
+
+      {open && !disabled && !value && (
+        <div className="absolute left-0 right-0 z-20 mt-2 max-h-72 overflow-auto rounded-2xl border border-border bg-surface p-1 shadow-lift">
+          {(cities ?? []).length === 0 ? (
+            <div className="px-3 py-2 text-sm text-ink-muted">No cities match.</div>
+          ) : (
+            (cities ?? []).map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => { onChange({ id: c.id, name: c.name, country: c.country }); setOpen(false); setQuery(""); }}
+                className="flex w-full items-center justify-between rounded-xl px-3 py-2 text-left text-sm text-ink hover:bg-muted"
+              >
+                <span className="truncate">{c.name}</span>
+                <span className="ml-3 shrink-0 text-xs text-ink-muted">{c.country}</span>
+              </button>
+            ))
+          )}
         </div>
       )}
     </div>
