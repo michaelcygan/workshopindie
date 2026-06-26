@@ -57,7 +57,7 @@ function LinkLanding() {
     setJoining(true);
     try {
       const { roomId } = await join({ data: { token } });
-      navigate({ to: "/workshop/$id", params: { id: roomId } });
+      navigate({ to: "/lounge/$id", params: { id: roomId } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't join");
       setJoining(false);

@@ -57,7 +57,7 @@ export function EnterWorkshopButton({ workshopId, slug, variant = "inline" }: Pr
     return (
       <Button asChild className="rounded-full gap-2">
         <Link to="/workshops/$slug" params={{ slug: targetSlug }}>
-          <DoorOpen className="h-4 w-4" /> Enter Workshop
+          <DoorOpen className="h-4 w-4" /> Enter Lounge
         </Link>
       </Button>
     );
@@ -69,7 +69,7 @@ export function EnterWorkshopButton({ workshopId, slug, variant = "inline" }: Pr
       params={{ slug: targetSlug }}
       className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft hover:text-ink hover:shadow-soft transition"
     >
-      <DoorOpen className="h-3.5 w-3.5" /> Enter Workshop
+      <DoorOpen className="h-3.5 w-3.5" /> Enter Lounge
     </Link>
   );
 }

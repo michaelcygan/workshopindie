@@ -106,7 +106,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
           />
         ) : !hasGroups ? (
           <EmptyState
-            title="Join a group to unlock collabs and workshops from your scenes."
+            title="Join a group to unlock collabs and Lounges from your scenes."
             cta={
               <button
                 type="button"
@@ -127,7 +127,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
         ) : items.length === 0 ? (
           <EmptyState
             title="Quiet in your groups right now."
-            body="No open collabs or upcoming workshops — yet."
+            body="No open collabs or upcoming Lounges — yet."
             cta={
               <button
                 type="button"
@@ -156,12 +156,12 @@ function FeedItemView({
   canSkip: boolean;
 }) {
   const Icon = item.kind === "collab" ? Megaphone : Radio;
-  const kindLabel = item.kind === "collab" ? "Collab" : "Workshop";
+  const kindLabel = item.kind === "collab" ? "Collab" : "Lounge";
   const accent = item.group.accent_color ?? undefined;
   const href =
     item.kind === "collab"
       ? { to: "/collab/$slug", params: { slug: item.slug } }
-      : { to: "/workshops/$slug", params: { slug: item.slug } };
+      : { to: "/events/$slug", params: { slug: item.slug } };
   const startsAt = item.startsAt ? new Date(item.startsAt) : null;
   const startsLabel =
     item.kind === "workshop" && startsAt

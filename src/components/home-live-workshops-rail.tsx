@@ -137,7 +137,7 @@ export function HomeLiveWorkshopsRail() {
                   )}
                 </div>
                 <p className="line-clamp-2 font-display text-base text-ink">
-                  {w.title ?? "Untitled workshop"}
+                  {w.title ?? "Untitled Lounge"}
                 </p>
                 <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-ink-muted">
                   <span className="flex items-center gap-2 truncate">

@@ -1,58 +1,78 @@
-# Lounge refresh — what's left
+## Goal
 
-Step 1 is partway done: `joinGroupLounge` + `joinCollabLounge` server fns exist, and the Group hero has an **Open the Lounge** button that auto-joins the group. Everything below is still outstanding.
+Finish the Lounge rebrand so "Workshop" refers only to the platform/brand. The live-room feature is "Lounge" everywhere a user can see it, and every Collab has its inherent private Lounge — no scheduling, no pairing UI, no "Add a Workshop" step.
 
-## A. Collab side (private Lounge wiring)
+## 1. Kill the "Add a Workshop" block on `/collab/new`
 
-- Add an **Open the Lounge** button on the Collab page (`collab.$slug.tsx`), visible only to the owner + accepted invitees + accepted guest applicants. Calls `joinCollabLounge` and navigates to `/lounge/$id`. Non-members see a quiet "Members only" hint instead of the button.
-- In `lounge.$id.tsx`, when the room has a `collab_id`:
-  - Show a `Private · Collab cast only` pill in the header.
-  - If a non-member somehow lands on the URL, render a friendly "Members only" empty state instead of the generic 404.
-  - Hide the matchmaker's "Skip" button (private rooms shouldn't shuffle into open lounges).
-- Confirm Collab lounges never appear in `/lounge` discovery (filter `collab_id IS NULL` in the active-rooms RPC; add if missing).
+Every Collab already gets a private Lounge via `OpenLoungeButton` on the Collab page (owner + accepted members only). The pairing step is dead weight that contradicts the new model ("users should not be able to plan their own events").
 
-## B. "Create a Collab" from inside the Lounge (popup, no nav)
+In `src/routes/collab.new.tsx`:
+- Remove `workshopMode`, `scheduledAt`, `workshopExpanded`, `openWorkshopFn`, and the entire collapsible "Add a Workshop" section (currently lines ~557–617).
+- Remove the workshop pairing logic in the submit handler (the `workshops` insert + `live_workshop_id` update, and the inline `openWorkshopOnCollab` call).
+- Remove the post-success "Join your Workshop" CTA. Success dialog gets one primary action: "View Collab" → `/collab/$slug`. (The Collab page itself surfaces "Open the Lounge".)
+- Drop the now-unused `WorkshopOption` helper and the `openWorkshopOnCollab` import.
 
-Replaces the old fork-to-persistent-Workshop flow.
+## 2. Rename user-visible "Workshop" → "Lounge" (live-room only)
 
-- Delete the fork UI from `lounge.$id.tsx`: the `isPromoted` banner, the violet "this Lounge became a Collab" card, the `Sparkles` promoted badge, the `acceptWorkshopJoinInvite` / `declineWorkshopJoinInvite` invite block, and the existing `CreateCollabSheet` that calls `createCollabFromRoom`.
-- Replace with a new `<CreateCollabDialog />` opened by the existing **Create a Collab** button in the room header. It mounts a thin wrapper around the `/collab/new` composer (title, category, short pitch, optional cover) and submits via the existing Collab create server fn. The active Lounge session never unmounts — mic/cam/screenshare stay live.
-- Ownership: the dialog's submitter is the Collab owner. The room itself stays informal — no `source_workshop_id`, no `promoted_at`, no auto-invites to other room participants.
-- After create: toast "Collab posted — pin it to this Lounge?" with a one-tap pin action (writes to `instant_room_collab_pins`; add the table only if it doesn't already exist — verify first).
-- Delete `src/lib/collab-workshop.functions.ts` and `src/components/start-workshop-from-collab-button.tsx` once no call sites remain.
+These are visible strings only. Keep the brand "Workshop" everywhere it refers to the product/site.
 
-## C. Group Lounge tab body
+Files and specific copy:
 
-The Group page's "Lounge" tab currently points at the old workshops list. Replace with:
+- `src/components/channel-view.tsx`
+  - Dialog title "Workshop wrapped" → "Lounge wrapped"
+  - Button "Join new Workshop" → "Join a new Lounge"
+  - Toast "Dropped from the Workshop — you went quiet." → "Dropped from the Lounge — you went quiet."
+  - Toast "Couldn't find a new Workshop" → "Couldn't find a new Lounge"
+- `src/components/invite-to-workshop-dialog.tsx`
+  - Rename file to `invite-to-lounge-dialog.tsx`, component to `InviteToLoungeDialog`.
+  - "Pick one of your Workshops, or start a new one together." → "Pick one of your Lounges, or open a new one together."
+  - "You aren't hosting any active Workshops." → "You aren't hosting any active Lounges."
+  - "Start a Workshop" button → "Open a Lounge"
+  - Update import sites (search `InviteToWorkshopDialog`).
+- `src/components/enter-workshop-button.tsx` — visible label "Enter Workshop" → "Enter Lounge" (filename left as-is; rename can come in a separate sweep).
+- `src/components/claim-host-pill.tsx` — tooltip "This Workshop already has managed rights" → "This Lounge already has managed rights".
+- `src/components/groups-join-feed-card.tsx` — `kindLabel = "Workshop"` → `"Lounge"`; empty-state copy "workshops" → "Lounges".
+- `src/components/home-live-workshops-rail.tsx` — fallback "Untitled workshop" → "Untitled Lounge". Rail header/visible labels swept the same way.
+- `src/components/notifications-bell.tsx` — visible notification text for `workshop_starting`, `workshop_now_live`, `workshop_ran_without_you`, `workshop_live` switches to "Lounge" wording. (Notification kind strings on the DB stay; this is rendering only.)
+- `src/routes/signup.tsx` — hero copy "Walk into a live Workshop" → "Walk into a live Lounge". Keep the 18+ error using brand "Workshop".
+- `src/routes/__root.tsx` — meta description / OG description "live collaboration workshops" → "live Lounges". Title/site_name stays "Workshop".
+- `src/components/hop-button.tsx` — comment "Hop to next Workshop" → "Skip to next Lounge".
 
-- A live-rooms strip filtered to `instant_rooms.group_id = <this group>` and `status = 'active'`, reusing the existing live-rooms card component.
-- A primary "Open a new room" CTA that also calls `joinGroupLounge`.
-- Empty state: "No one's in the Lounge right now — be the first."
+Strings that explicitly mean the brand stay untouched: `__root.tsx` `<title>` / `og:site_name`, `settings.tsx` ("Workshop Plus", "Delete your Workshop account?", notification category "Workshop updates"), `pricing.tsx` ("Workshop Plus"), `refer.tsx`, `events.index.tsx` SEO, `checkout.return.tsx`, `redeem.$code.tsx`, `dms.index.tsx` SEO, signup 18+ toast.
 
-## D. Retire `/workshops` (safe prep only)
+## 3. Stop linking to the legacy `/workshop/$id` URL
 
-- Add `beforeLoad` redirects: `/workshops` → `/events`, `/workshops/$slug` → `/events`. Mapped-slug lookup is the *following* pass.
-- Sweep remaining `/workshops*` links from top nav, mobile nav, footer, Create menu, landing rails, profile tabs, DMs, work pages, home rails, and the groups-join feed cards.
-- Leave route files + DB tables intact. Full deletion + `workshops → events` data migration is a later pass.
+`src/routes/workshop.$id.tsx` already redirects to `/lounge/$id`. Update the remaining callers to navigate directly to `/lounge/$id` (avoids a double-hop and a flash):
 
-## E. Cleanup sweep
+- `src/routes/collab.new.tsx` (post-success — being removed in step 1 anyway).
+- `src/components/channel-view.tsx` line 331.
+- `src/components/host-room-events.tsx` line 51.
+- `src/routes/w.$token.tsx` line 60.
+- `src/components/post-workshop-from-city-sheet.tsx` line 192.
 
-- Delete `src/components/recorder/`, `workshop-recorder.tsx`, `workshop-recording-link.tsx` (recorder is already off the picker; no other call sites).
-- Delete `src/lib/lobby.functions.ts`, `src/routes/workshops.lobby.new.tsx`, and any lobby UI. Lounges are joined, not planned.
-- Remove the "Become host" / "Claim Host" affordance in private Collab Lounges (the owner is implicit host).
-- One final string sweep for user-facing "Workshop" outside the brand wordmark — top-nav, toasts, empty states, notifications (`workshop_live` kind label, etc.). The DB enum value can stay; only the label changes.
+Also update `src/routes/lounge.index.tsx` line 549 (`to="/workshops"`) → `to="/events"` (legacy `/workshops` is shimmed to Events).
 
-## Out of scope this pass
+## 4. Group tab id polish
 
-- Migrating `workshops` rows into `events`.
-- Deleting `workshops*` route files and tables.
-- New Group Lounge moderation tools (existing host controls cover it).
+`src/components/group/group-tab-bar.tsx` labels the tab "Lounge" but the id/URL token is still `"workshops"`. Rename the id to `"lounge"` and update the consumer in `src/routes/g.$slug.tsx` so URLs read `?t=lounge`. Keep a one-line back-compat shim that maps `?t=workshops` → `lounge` for any cached links.
 
-## Build order
+## 5. Out of scope (intentional)
 
-1. Collab page button + private-state UI on `lounge.$id.tsx` (Section A).
-2. In-Lounge `CreateCollabDialog` + delete fork code (Section B).
-3. Group Lounge tab body (Section C).
-4. `/workshops` redirects + link sweep (Section D).
-5. Recorder / lobby / string cleanup (Section E).
-6. Verify build.
+These stay untouched in this pass — they're under-the-hood identifiers, not user-visible:
+
+- DB table/column names (`workshops`, `workshop_polls`, `workshop_id`, `live_workshop_id`, `source_workshop_id`).
+- Server-function names (`openWorkshopOnCollab`, `hostInstantWorkshop`, `listMyHostableWorkshops`, `inviteFriendToWorkshop`).
+- Notification `kind` strings stored in the DB.
+- Route filenames `src/routes/workshop.$id.tsx`, `src/routes/workshops.*.tsx` (already redirect shims).
+- localStorage/sessionStorage keys (`workshop:av-prefs`, `workshop:last-room`).
+- Admin analytics labels in `admin.index.tsx` ("Workshops created", "Workshop apps") — they reflect the underlying tables; can be relabeled when the schema is renamed.
+
+A follow-up migration can rename the DB primitives in one shot; doing it now would touch every server function and risk regressions right before launch.
+
+## Verification
+
+- Typecheck must pass after the rename + import-site updates.
+- Click through: `/collab/new` no longer shows the Workshop block; submit posts a Collab and lands on `/collab/$slug` with the "Open the Lounge" CTA visible to the owner.
+- `/g/<slug>?t=lounge` resolves; `/g/<slug>?t=workshops` still resolves via the shim.
+- Open a live Lounge, leave it alone → "Lounge wrapped" dialog (not "Workshop wrapped").
+- Friend's invite dialog says "Open a Lounge".

@@ -195,7 +195,7 @@ export function ChannelView({
   useEffect(() => {
     if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
       toast.error(media.error);
-      router.navigate({ to: "/workshop" });
+      router.navigate({ to: "/lounge" });
     }
   }, [media.error, media.joined, media.busy, router]);
 
@@ -234,9 +234,9 @@ export function ChannelView({
     if (!warnOpen) return;
     const kickT = setTimeout(() => {
       if (inactive) {
-        toast.error("Dropped from the Workshop — you went quiet.");
+        toast.error("Dropped from the Lounge — you went quiet.");
         media.leave();
-        router.navigate({ to: "/workshop" });
+        router.navigate({ to: "/lounge" });
       }
     }, QUIET_KICK_MS);
     return () => clearTimeout(kickT);
@@ -328,11 +328,11 @@ export function ChannelView({
       media.leave();
       const { roomId: newId } = await dropNew();
       setEndedOpen(false);
-      router.navigate({ to: "/workshop/$id", params: { id: newId }, search: { mode: nextMode } });
+      router.navigate({ to: "/lounge/$id", params: { id: newId }, search: { mode: nextMode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't find a new Workshop");
+      toast.error(e instanceof Error ? e.message : "Couldn't find a new Lounge");
       setJoiningNew(false);
-      router.navigate({ to: "/workshop" });
+      router.navigate({ to: "/lounge" });
     }
   }
 
@@ -850,7 +850,7 @@ export function ChannelView({
                     }}
                     onLeaveForLobby={() => {
                       media.leave();
-                      router.navigate({ to: "/workshop" });
+                      router.navigate({ to: "/lounge" });
                     }}
                   />
                 ) : (
@@ -1028,9 +1028,9 @@ export function ChannelView({
               </button>
             )}
             <AlertDialogHeader>
-              <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
+              <AlertDialogTitle>Lounge wrapped</AlertDialogTitle>
               <AlertDialogDescription>
-                You're the only one left. Want to drop into a new Workshop?
+                You're the only one left. Want to drop into a new Lounge?
                 <br />
                 <span className="mt-2 inline-block text-ink-muted">
                   Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…
@@ -1042,7 +1042,7 @@ export function ChannelView({
                 Back to home
               </AlertDialogCancel>
               <AlertDialogAction onClick={handleJoinNew} disabled={joiningNew}>
-                {joiningNew ? "Finding a seat…" : "Join new Workshop"}
+                {joiningNew ? "Finding a seat…" : "Join new Lounge"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

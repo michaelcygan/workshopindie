@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale, Check, Copy } from "lucide-react";
+import { Plus, X, Globe2, Scale, Check, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
-import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
+// Workshop pairing on Collab creation is retired — every Collab gets a private Lounge.
 import { logShareEvent } from "@/lib/collab.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagCollabInGroup } from "@/lib/groups.functions";
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/collab/new")({
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
 type ContactMode = "email_relay" | "external_link";
-type WorkshopMode = "none" | "now" | "scheduled";
+
 type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons";
 type RoleDraft = { role_name: string; quantity: number; description: string };
 
@@ -80,7 +80,7 @@ function NewCollab() {
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
-  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
+
   const tagGroup = useServerFn(tagCollabInGroup);
   const search = useSearch({ from: "/collab/new" });
   const preselect = usePreselectGroup(search.group);
@@ -108,11 +108,9 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "", quantity: 1, description: "" },
   ]);
-  const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
-  const [scheduledAt, setScheduledAt] = useState<string>("");
   const [rights, setRights] = useState<RightsArrangement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string; workshopRoomId: string | null; scheduledAt: string | null } | null>(null);
+  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
@@ -157,9 +155,6 @@ function NewCollab() {
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
     if (!rights) return toast.error("Pick a rights arrangement");
 
-    if (workshopMode === "scheduled" && !scheduledAt) {
-      return toast.error("Pick a date and time for the Workshop");
-    }
 
     if (!isPlus) {
       const { count } = await supabase
@@ -220,65 +215,10 @@ function NewCollab() {
         }
       });
     }
-
-    // Workshop pairing
-    if (workshopMode === "scheduled") {
-      const startsAt = new Date(scheduledAt);
-      if (isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
-        toast.error("Pick a future date & time — Collab posted without a scheduled Workshop.");
-      } else {
-        const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
-        const { data: ws, error: wsErr } = await supabase
-          .from("workshops")
-          .insert({
-            title: title.trim(),
-            slug: "",
-            category,
-            host_user_id: user.id,
-            mode: "scheduled",
-            status: "open",
-            starts_at: startsAt.toISOString(),
-            ends_at: endsAt.toISOString(),
-            location_type: locationMode === "in_person" ? "in_person" : "online",
-            city_id: city?.id ?? null,
-            audience_city_ids: locationMode === "in_person" && city?.id
-              ? [city.id, ...alsoCities.map((c) => c.id)]
-              : [],
-            participant_cap: 5,
-            topic_collab_post_id: post.id,
-            visibility: "public",
-            prompt: `Working session for: ${title.trim()}`,
-          })
-          .select("id")
-          .single();
-        if (wsErr) {
-          toast.error(`Collab posted, but couldn't schedule the Workshop: ${wsErr.message}`);
-        } else if (ws) {
-          await supabase.from("collab_posts").update({ live_workshop_id: ws.id }).eq("id", post.id);
-        }
-      }
-      setSubmitting(false);
-      setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
-      return;
-    }
-
-    if (workshopMode === "now") {
-      try {
-        const res = await openWorkshopFn({ data: { collabPostId: post.id } });
-        setSubmitting(false);
-        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
-        return;
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Couldn't open the Workshop — your Collab is posted.");
-        setSubmitting(false);
-        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
-        return;
-      }
-    }
-
     setSubmitting(false);
-    setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
+    setPostedDialog({ id: post.id, slug: post.slug });
   }
+
 
   const shareUrl = postedDialog
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collab/${postedDialog.slug}`
@@ -302,8 +242,7 @@ function NewCollab() {
   const shapeValid = !!rights && (locationMode === "online" || !!city);
   const cleanRolesCount = roles.filter((r) => r.role_name.trim() && r.quantity > 0).length;
   const teamValid = cleanRolesCount > 0 && (contactMode === "email_relay" || externalUrl.trim().length > 0);
-  const workshopValid = workshopMode !== "scheduled" || !!scheduledAt;
-  const allValid = pitchValid && shapeValid && teamValid && workshopValid;
+  const allValid = pitchValid && shapeValid && teamValid;
 
   const dots: { ok: boolean; label: string }[] = [
     { ok: pitchValid, label: "The pitch" },
@@ -311,7 +250,6 @@ function NewCollab() {
     { ok: teamValid, label: "The team" },
   ];
 
-  const [workshopExpanded, setWorkshopExpanded] = useState(false);
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 pb-32 md:py-14 md:pb-32">
@@ -554,82 +492,14 @@ function NewCollab() {
           </section>
         </div>
 
-        {/* Collapsed Workshop pairing */}
-        <div className="rounded-2xl border border-dashed border-border bg-surface/40">
-          <button
-            type="button"
-            onClick={() => setWorkshopExpanded((v) => !v)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-            aria-expanded={workshopExpanded}
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-ink-muted" />
-              <span className="text-sm font-medium text-ink">
-                {workshopMode === "none" ? "Add a Workshop" : workshopMode === "now" ? "Workshop: open now" : "Workshop: scheduled"}
-              </span>
-            </div>
-            <span className="text-xs text-ink-muted">{workshopExpanded ? "Hide" : "Optional"}</span>
-          </button>
-          {workshopExpanded && (
-            <div className="space-y-3 px-4 pb-4">
-              <p className="text-xs text-ink-muted">A Workshop is a live space of up to 5 — voice or video — for meeting collaborators, brainstorming, and casting roles.</p>
-              <WorkshopOption
-                selected={workshopMode === "none"}
-                onClick={() => setWorkshopMode("none")}
-                icon={<MinusCircle className="h-4 w-4" />}
-                title="Not yet — just post it"
-                body="Post the Collab on its own. You can open a Workshop on it any time."
-              />
-              <WorkshopOption
-                selected={workshopMode === "now"}
-                onClick={() => setWorkshopMode("now")}
-                icon={<Sparkles className="h-4 w-4" />}
-                title="Open a Workshop right now"
-                body="Start a live Workshop the moment you post — meet collaborators on the spot. Up to 5 seats."
-              >
-                {workshopMode === "now" && (
-                  <p className="rounded-lg bg-background/60 px-3 py-2 text-[11px] text-ink-muted">
-                    After you post, we'll drop you straight into the Workshop.
-                  </p>
-                )}
-              </WorkshopOption>
-              <WorkshopOption
-                selected={workshopMode === "scheduled"}
-                onClick={() => setWorkshopMode("scheduled")}
-                icon={<CalendarClock className="h-4 w-4" />}
-                title="Schedule a Workshop"
-                body="Pick a date and time. Applicants get the invite and can RSVP."
-              >
-                {workshopMode === "scheduled" && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
-                    <Input
-                      id="starts-at"
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                      min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
-                      required
-                    />
-                    <p className="text-[11px] text-ink-muted">If nobody shows in the first 15 minutes, the Workshop flips to drop-in mode.</p>
-                  </div>
-                )}
-              </WorkshopOption>
-            </div>
-          )}
-        </div>
+        {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
+
 
         {/* Mobile inline action */}
         <div className="flex justify-end gap-2 md:hidden">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
           <Button type="submit" disabled={submitting} className="rounded-full">
-            {submitting
-              ? "Posting…"
-              : workshopMode === "now"
-                ? "Post & open Workshop"
-                : workshopMode === "scheduled"
-                  ? "Post & schedule Workshop"
-                  : "Post Collab"}
+            {submitting ? "Posting…" : "Post Collab"}
           </Button>
         </div>
       </form>
@@ -645,9 +515,7 @@ function NewCollab() {
                   ? "Add a title and a short description to continue."
                   : !shapeValid
                     ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
-                    : !teamValid
-                      ? (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")
-                      : "Pick a date and time for the Workshop."}
+                    : (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")}
             </p>
             <div className="flex items-center gap-2">
               <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
@@ -662,13 +530,7 @@ function NewCollab() {
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting
-                  ? "Posting…"
-                  : workshopMode === "now"
-                    ? "Post & open Workshop"
-                    : workshopMode === "scheduled"
-                      ? "Post & schedule Workshop"
-                      : "Post Collab"}
+                {submitting ? "Posting…" : "Post Collab"}
               </Button>
             </div>
           </div>
@@ -696,12 +558,7 @@ function NewCollab() {
           <DialogHeader>
             <DialogTitle>Your Collab is live.</DialogTitle>
             <DialogDescription>
-              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account.
-              {postedDialog?.scheduledAt && (
-                <span className="mt-2 block text-xs text-ink-muted">
-                  Workshop scheduled for {new Date(postedDialog.scheduledAt).toLocaleString()}.
-                </span>
-              )}
+              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account. Accepted collaborators can open this Collab's private Lounge from the Collab page whenever you want to meet live.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-1 space-y-1.5">
@@ -719,78 +576,20 @@ function NewCollab() {
             <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
-            {postedDialog?.workshopRoomId ? (
-              <Button
-                type="button"
-                className="rounded-full"
-                onClick={() => {
-                  const id = postedDialog.workshopRoomId!;
-                  setPostedDialog(null);
-                  navigate({ to: "/workshop/$id", params: { id } });
-                }}
-              >
-                Join your Workshop
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="rounded-full"
-                onClick={() => {
-                  const slug = postedDialog!.slug;
-                  setPostedDialog(null);
-                  navigate({ to: "/collab/$slug", params: { slug } });
-                }}
-              >
-                Open Collab page
-              </Button>
-            )}
+            <Button
+              type="button"
+              className="rounded-full"
+              onClick={() => {
+                const slug = postedDialog!.slug;
+                setPostedDialog(null);
+                navigate({ to: "/collab/$slug", params: { slug } });
+              }}
+            >
+              Open Collab page
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </main>
-  );
-}
-
-function WorkshopOption({
-  selected,
-  onClick,
-  icon,
-  title,
-  body,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  title: string;
-  body: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div
-      className={cn(
-        "rounded-xl border bg-background/60 p-3 transition",
-        selected ? "border-ink shadow-sm" : "border-border hover:border-ink/40",
-      )}
-    >
-      <button type="button" onClick={onClick} className="flex w-full items-start gap-3 text-left">
-        <span
-          className={cn(
-            "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border",
-            selected ? "border-ink bg-ink" : "border-border",
-          )}
-        >
-          {selected && <span className="h-1.5 w-1.5 rounded-full bg-background" />}
-        </span>
-        <span className="flex-1 space-y-0.5">
-          <span className="flex items-center gap-1.5 text-sm font-medium text-ink">
-            {icon}
-            {title}
-          </span>
-          <span className="block text-xs text-ink-muted">{body}</span>
-        </span>
-      </button>
-      {children && <div className="mt-3 space-y-2 pl-7">{children}</div>}
-    </div>
   );
 }
