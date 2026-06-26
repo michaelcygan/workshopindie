@@ -215,65 +215,10 @@ function NewCollab() {
         }
       });
     }
-
-    // Workshop pairing
-    if (workshopMode === "scheduled") {
-      const startsAt = new Date(scheduledAt);
-      if (isNaN(startsAt.getTime()) || startsAt.getTime() < Date.now()) {
-        toast.error("Pick a future date & time — Collab posted without a scheduled Workshop.");
-      } else {
-        const endsAt = new Date(startsAt.getTime() + 2 * 60 * 60 * 1000);
-        const { data: ws, error: wsErr } = await supabase
-          .from("workshops")
-          .insert({
-            title: title.trim(),
-            slug: "",
-            category,
-            host_user_id: user.id,
-            mode: "scheduled",
-            status: "open",
-            starts_at: startsAt.toISOString(),
-            ends_at: endsAt.toISOString(),
-            location_type: locationMode === "in_person" ? "in_person" : "online",
-            city_id: city?.id ?? null,
-            audience_city_ids: locationMode === "in_person" && city?.id
-              ? [city.id, ...alsoCities.map((c) => c.id)]
-              : [],
-            participant_cap: 5,
-            topic_collab_post_id: post.id,
-            visibility: "public",
-            prompt: `Working session for: ${title.trim()}`,
-          })
-          .select("id")
-          .single();
-        if (wsErr) {
-          toast.error(`Collab posted, but couldn't schedule the Workshop: ${wsErr.message}`);
-        } else if (ws) {
-          await supabase.from("collab_posts").update({ live_workshop_id: ws.id }).eq("id", post.id);
-        }
-      }
-      setSubmitting(false);
-      setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: scheduledAt || null });
-      return;
-    }
-
-    if (workshopMode === "now") {
-      try {
-        const res = await openWorkshopFn({ data: { collabPostId: post.id } });
-        setSubmitting(false);
-        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: res.roomId, scheduledAt: null });
-        return;
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Couldn't open the Workshop — your Collab is posted.");
-        setSubmitting(false);
-        setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
-        return;
-      }
-    }
-
     setSubmitting(false);
-    setPostedDialog({ id: post.id, slug: post.slug, workshopRoomId: null, scheduledAt: null });
+    setPostedDialog({ id: post.id, slug: post.slug });
   }
+
 
   const shareUrl = postedDialog
     ? `${typeof window !== "undefined" ? window.location.origin : ""}/collab/${postedDialog.slug}`
