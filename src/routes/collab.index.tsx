@@ -62,10 +62,9 @@ type Filters = {
   cat: WorkCategory | "all";
   city?: string;
   online: boolean;
-  view: "all" | "open" | "shipped";
 };
 
-async function fetchPosts({ cat, city, online, view, blockedIds }: Filters & { blockedIds: string[] }) {
+async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blockedIds: string[] }) {
   let q = supabase
     .from("collab_posts")
     .select(
@@ -74,17 +73,10 @@ async function fetchPosts({ cat, city, online, view, blockedIds }: Filters & { b
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
+    .eq("status", "open")
+    .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);
-
-  if (view === "open") {
-    q = q.eq("status", "open").or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`);
-  } else if (view === "shipped") {
-    q = q.eq("status", "closed").not("resulting_work_id", "is", null);
-  } else {
-    // all = open + shipped
-    q = q.or(`and(status.eq.open,or(ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)})),and(status.eq.closed,resulting_work_id.not.is.null)`);
-  }
 
   if (cat !== "all") q = q.eq("category", cat);
   if (online) {
