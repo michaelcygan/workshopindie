@@ -108,11 +108,9 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "", quantity: 1, description: "" },
   ]);
-  const [workshopMode, setWorkshopMode] = useState<WorkshopMode>("none");
-  const [scheduledAt, setScheduledAt] = useState<string>("");
   const [rights, setRights] = useState<RightsArrangement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string; workshopRoomId: string | null; scheduledAt: string | null } | null>(null);
+  const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
