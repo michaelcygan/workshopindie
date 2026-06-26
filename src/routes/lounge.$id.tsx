@@ -443,7 +443,7 @@ function LiveRoomPage() {
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <Sparkles className="h-3.5 w-3.5 text-violet shrink-0" />
             <span className="text-ink truncate">
-              This Workshop became a Collab: "{forkedWs.title}".
+              This Lounge became a Collab: "{forkedWs.title}".
             </span>
             <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }} className="ml-auto">
               <Button size="sm" variant="outline" className="rounded-full gap-1 h-7">
