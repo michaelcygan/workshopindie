@@ -31,7 +31,7 @@ export const Route = createFileRoute("/collab/new")({
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
 type ContactMode = "email_relay" | "external_link";
-type WorkshopMode = "none" | "now" | "scheduled";
+
 type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons";
 type RoleDraft = { role_name: string; quantity: number; description: string };
 
