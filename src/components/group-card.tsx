@@ -18,7 +18,9 @@ export type GroupCardData = {
   work_count: number;
   is_official: boolean;
   featured_at: string | null;
+  category?: string | null;
 };
+
 
 const kindLabel: Record<GroupCardData["kind"], string> = {
   city: "City",
