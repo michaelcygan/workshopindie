@@ -22,10 +22,39 @@ import { GroupsJoinFeedStrip } from "@/components/groups-join-feed-strip";
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
 
+const CATEGORY_VALUES = [
+  "all",
+  "music",
+  "film_video",
+  "writing",
+  "visual_art",
+  "games_tech",
+  "performance",
+  "audio",
+  "scene_life",
+  "city",
+] as const;
+type Category = (typeof CATEGORY_VALUES)[number];
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  all: "All categories",
+  music: "Music",
+  film_video: "Film & Video",
+  writing: "Writing",
+  visual_art: "Visual Art",
+  games_tech: "Games & Tech",
+  performance: "Performance",
+  audio: "Audio",
+  scene_life: "Scene & Lifestyle",
+  city: "Cities",
+};
+
 const searchSchema = z.object({
   t: fallback(z.enum(TAB_VALUES), "all").default("all"),
   q: fallback(z.string(), "").default(""),
+  c: fallback(z.enum(CATEGORY_VALUES), "all").default("all"),
 });
+
 
 export const Route = createFileRoute("/groups/")({
   validateSearch: zodValidator(searchSchema),
@@ -61,12 +90,16 @@ function GroupsIndex() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab: Tab = search.t;
   const query = search.q;
+  const category: Category = search.c;
   const allGroupsRef = useRef<HTMLElement>(null);
 
   const setTab = (t: Tab) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, t }), replace: true });
   const setQuery = (q: string) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q }), replace: true });
+  const setCategory = (c: Category) =>
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, c }), replace: true });
+
 
   const { data: allGroups = [], isLoading } = useQuery({
     queryKey: ["groups", "all"],
@@ -74,7 +107,7 @@ function GroupsIndex() {
       const { data } = await supabase
         .from("groups")
         .select(
-          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at",
+          "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,workshop_count,collab_count,work_count,is_official,featured_at,category",
         )
         .is("deleted_at", null)
         .eq("visibility", "public")
@@ -84,6 +117,7 @@ function GroupsIndex() {
       return (data ?? []) as unknown as GroupCardData[];
     },
   });
+
 
   const { data: myIds = [] } = useQuery({
     queryKey: ["my-group-ids", user?.id ?? "anon"],
@@ -108,13 +142,17 @@ function GroupsIndex() {
     } else if (tab !== "all") {
       rows = rows.filter((g) => g.kind === tab);
     }
+    if (category !== "all") {
+      rows = rows.filter((g) => g.category === category);
+    }
     if (q) {
       rows = rows.filter(
         (g) => g.name.toLowerCase().includes(q) || (g.tagline ?? "").toLowerCase().includes(q),
       );
     }
     return rows;
-  }, [allGroups, tab, query, myIdSet]);
+  }, [allGroups, tab, query, category, myIdSet]);
+
 
   const trending = useMemo(
     () =>
@@ -308,6 +346,36 @@ function GroupsIndex() {
                 <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-soft">
                   {filtered.length} {filtered.length === 1 ? "group" : "groups"}
                 </span>
+                {tab !== "city" && (
+                  <label className="relative">
+                    <span className="sr-only">Filter by category</span>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as Category)}
+                      className={cn(
+                        "appearance-none rounded-full border px-3 py-1 pr-7 text-[11px] font-medium transition focus:outline-none focus:ring-2 focus:ring-ink/20",
+                        category === "all"
+                          ? "border-border bg-surface text-ink-soft hover:bg-muted"
+                          : "border-ink bg-ink text-background",
+                      )}
+                    >
+                      {CATEGORY_VALUES.map((c) => (
+                        <option key={c} value={c} className="bg-background text-ink">
+                          {c === "all" ? "Category" : CATEGORY_LABELS[c]}
+                        </option>
+                      ))}
+                    </select>
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px]",
+                        category === "all" ? "text-ink-muted" : "text-background",
+                      )}
+                    >
+                      ▾
+                    </span>
+                  </label>
+                )}
                 <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-background">
                   {TABS.find((t) => t.id === tab)?.label}
                 </span>
@@ -317,6 +385,7 @@ function GroupsIndex() {
                   </span>
                 )}
               </div>
+
             </div>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {filtered.map((g) => (

@@ -1494,6 +1494,7 @@ export type Database = {
         Row: {
           accent_color: string | null
           avatar_url: string | null
+          category: Database["public"]["Enums"]["group_category"] | null
           city_id: string | null
           collab_count: number
           cover_url: string | null
@@ -1520,6 +1521,7 @@ export type Database = {
         Insert: {
           accent_color?: string | null
           avatar_url?: string | null
+          category?: Database["public"]["Enums"]["group_category"] | null
           city_id?: string | null
           collab_count?: number
           cover_url?: string | null
@@ -1546,6 +1548,7 @@ export type Database = {
         Update: {
           accent_color?: string | null
           avatar_url?: string | null
+          category?: Database["public"]["Enums"]["group_category"] | null
           city_id?: string | null
           collab_count?: number
           cover_url?: string | null
@@ -5621,6 +5624,16 @@ export type Database = {
         | "verified_creator"
         | "admin"
       event_visibility: "public" | "group_only" | "hidden"
+      group_category:
+        | "music"
+        | "film_video"
+        | "writing"
+        | "visual_art"
+        | "games_tech"
+        | "performance"
+        | "audio"
+        | "scene_life"
+        | "city"
       group_event_format: "in_person" | "online" | "hybrid"
       group_event_kind:
         | "open_mic"
@@ -5882,6 +5895,17 @@ export const Constants = {
         "admin",
       ],
       event_visibility: ["public", "group_only", "hidden"],
+      group_category: [
+        "music",
+        "film_video",
+        "writing",
+        "visual_art",
+        "games_tech",
+        "performance",
+        "audio",
+        "scene_life",
+        "city",
+      ],
       group_event_format: ["in_person", "online", "hybrid"],
       group_event_kind: [
         "open_mic",

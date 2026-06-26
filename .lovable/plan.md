@@ -1,52 +1,76 @@
-# Finalize the Events page
+## Goal
 
-Bring `/events` in line with the Collab Board: tighter header, inline city filter, and a "Near you" hint that matches the look of the screenshot.
+Add a **Category** dropdown in the chip cluster on `/groups` (next to "64 groups" / "All"), so the list can be sliced by creative discipline. Works in any tab but most useful on **All**.
 
-## 1. Header — match Collab Board height
+## Categories (taxonomy)
 
-In `src/routes/events.index.tsx`:
+Eight buckets covering all 65 current groups, plus Cities:
 
-- Replace the current stacked header (kicker chip on its own row + large paragraph on its own row) with the Collab Board's single meta-row pattern:
-  - `PageHeaderCompact` (title + "Host an event") — unchanged.
-  - One `mt-3 flex flex-wrap items-center gap-2` row holding:
-    - `<KickerChip live={happeningCount > 0}>` ("N happening now" / "On the calendar")
-    - Short tagline inline as `<p className="text-sm text-ink-muted">` (trimmed to one line, e.g. "Networking, listening parties, work-in-progress nights — RSVP unlocks a free trial.")
-    - Right-aligned `ml-auto` pill: `{list.length} {when}`.
-- Drop the standalone `RecapChip` and the big two-line paragraph block. Net effect: header collapses from ~3 rows to 1 row + meta row, matching the Collab Board's vertical rhythm.
+- **Music** — rap, beats, pop, electronic, DJ, k-pop dance
+- **Film & Video** — narrative, doc, animation, vloggers
+- **Writing** — poetry, screenwriting, novels, zines, cli-fi
+- **Visual Art** — comics, photo, ceramics, type, tattoo, knit, sketch
+- **Games & Tech** — game dev, hackathons, TTRPG
+- **Performance** — stand-up, drag, voice, cosplay, open mic
+- **Audio** — podcasting
+- **Scene & Lifestyle** — aesthetic-driven scenes (Indie Sleaze, Y2K, Cottagecore, Sneakerheads, DIY Punk, etc.)
+- **Cities** — auto-assigned for `kind='city'`
 
-## 2. Filter row — add city filter inline
+## Backend
 
-- Add `city` + `cityName` to a new `validateSearch` schema (matches Collab Board: `city: uuid().optional()`, `cityName: string().optional()`, plus existing `when`/`format` migrated from `useState` to URL search per project routing conventions).
-- Move `when` and `format` into URL search (`useNavigate` setters) so deep-links work.
-- New filter row layout (single `flex flex-wrap items-center gap-2`):
-  - `When` SegToggle (Upcoming / Past)
-  - `Format` SegToggle (All / In person / Online)
-  - `<EventsCityCombobox />` — a slim copy of the Collab Board `CityCombobox` (search input → cities table → select). Disabled when `format === "online"`.
-  - When a city is selected and format ≠ online, show a "Worldwide" clear chip (matches Collab Board).
-- Extract the combobox once into `src/components/city-combobox.tsx` (shared) so the Collab page can later switch to it; Events imports it now. Same visual spec as the existing Collab `CityCombobox` (h-11 pill, search icon, dropdown list).
+1. Add a Postgres enum `group_category` with the values above (incl. `city`).
+2. Add `category group_category` column on `public.groups` (nullable initially).
+3. Backfill all existing 65 groups by name (one-shot UPDATE statements grouping the names into buckets — see assignment list below).
+4. Add `category` to the admin Groups editor so new groups must pick one.
+5. Index `(category) WHERE deleted_at IS NULL` for filter speed.
 
-## 3. "Near you: Chicago" hint
+### Assignment (backfill)
 
-- Wire `useDefaultCity` + `useApplyDefaultCity({ feedKey: "events", ... })` exactly like Collab Board.
-- Below the filter row, render the same two small lines:
-  - If active city = IP-inferred default → "Based on your location · see worldwide".
-  - If no city and a default exists → "Near you: <Chicago>" (clickable, underline) — matches the user's screenshot.
+```text
+Music          → SoundCloud Rappers, Bedroom Pop, Lo-fi Beatmakers,
+                 Synthwave, DJ / Club, Hyperpop, Dreampop, Latin Trap,
+                 Drill, Jazz Revival, Album in a Weekend,
+                 One-Take Music Video, Beat Battle, K-pop Dance Cover
+Film & Video   → Indie Filmmakers, Documentary, Experimental Animation,
+                 48-Hour Film Race, Reel-a-Day, Queer Cinema, Food Vloggers
+Writing        → Poets, Screenwriters, NaNoWriMo Sprint,
+                 Climate Fiction, Zine Makers
+Visual Art     → Comic Artists, Photographers, Ceramicists,
+                 Type Designers, Tattoo Artists, Knitwear Designers,
+                 Sketch-a-Day
+Games & Tech   → Indie Game Devs, Hackathon Crews, Solo Dev Jam,
+                 TTRPG GMs, RPG One-Shot Crew, Demo Day Prep
+Performance    → Stand-up Comics, Open Mic Night, Drag Performers,
+                 Voice Actors, Cosplay
+Audio          → Podcasters, Podcast Pilot Week
+Scene/Life     → Indie Sleaze, Vaporwave Revival, Cottagecore,
+                 Y2K Revival, Afrofuturism, New Weird, DIY Punk,
+                 Sneakerheads
+Cities         → all kind='city' groups
+```
 
-## 4. Query — filter by venue city
+## Frontend (`src/routes/groups.index.tsx`)
 
-Update `fetchPublicEvents` signature to `(when, format, cityId?)`. When `cityId` is set and format ≠ online, add `.eq("venue_city_id", cityId)`. When format = online, ignore city. Keep existing `format` mapping.
+- Add `c` (category) to the `searchSchema` with `fallback(z.enum([...]), "all")`.
+- In the chip cluster (currently `count` pill + tab pill), insert a `<select>` styled as a pill **between** the count and the tab badge, matching the screenshot's spacing:
 
-Bump `queryKey` to include `cityId`.
+  ```text
+  [ 64 groups ]  [ Category ▾ ]  [ All ]
+  ```
 
-## 5. Tighten Featured strip
+- Wire it to filter `filtered` after the existing tab/query filters: `rows = rows.filter(g => g.category === c)`.
+- When `c !== "all"`, show it as an active filter chip with an `×` to clear, mirroring the search-query chip pattern.
+- Hide the dropdown on the **Cities** tab (redundant) and **For you** when the user has 0 groups.
+- Persist `c` in the URL via `navigate({ search: prev => ({...prev, c}) })` so filtered views are shareable.
 
-The "Live events are coming." featured-events placeholder takes a full row even when empty. Keep `<FeaturedEventsCompact />` as-is (don't refactor that component), but only render the wrapping `<section className="mt-8">` when `when === "upcoming"` AND it actually has events — pass through whatever `FeaturedEventsCompact` already exposes, or wrap it in a conditional that hides when there are zero featured rows. If `FeaturedEventsCompact` has no "isEmpty" signal, leave it but reduce top margin to `mt-6` so it doesn't dominate when empty.
+## Out of scope
 
-## Technical notes
+- No change to the discovery clusters / trending / browse-by-kind sections.
+- No category-based routing (just URL params).
+- No multi-select — single category for v1 simplicity.
 
-- Files touched:
-  - `src/routes/events.index.tsx` (header + filters + search schema + query).
-  - `src/components/city-combobox.tsx` (new — extracted from `collab.index.tsx`).
-- DB: no migration; `group_events.venue_city_id` already exists.
-- SEO: append `?city=…` to the existing canonical only when a city is active; default canonical stays `https://workshopindie.com/events`.
-- No changes to RSVP/group flows.
+## Verification
+
+- Migration approved → backfill counts match expected per bucket.
+- Switching the dropdown filters cards instantly; the count pill updates.
+- Reload preserves `?c=music`.
