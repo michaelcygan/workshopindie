@@ -129,14 +129,15 @@ function CityCombobox({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  const { data: cities } = useQuery({
+  type CityRow = { id: string; name: string; country: string };
+  const { data: cities } = useQuery<CityRow[]>({
     queryKey: ["collab-city-search", query],
     queryFn: async () => {
       const base = supabase.from("cities").select("id,name,country").order("name").limit(8);
       const { data } = query.trim()
         ? await base.ilike("name", `%${query.trim()}%`)
         : await base;
-      return data ?? [];
+      return (data ?? []) as CityRow[];
     },
     enabled: open && !disabled,
     staleTime: 30_000,
