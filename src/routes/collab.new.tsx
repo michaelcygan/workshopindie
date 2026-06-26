@@ -155,9 +155,6 @@ function NewCollab() {
     if (cleanRoles.length === 0) return toast.error("Add at least one role");
     if (!rights) return toast.error("Pick a rights arrangement");
 
-    if (workshopMode === "scheduled" && !scheduledAt) {
-      return toast.error("Pick a date and time for the Workshop");
-    }
 
     if (!isPlus) {
       const { count } = await supabase
