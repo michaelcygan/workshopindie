@@ -628,8 +628,8 @@ function CreateCollabSheet({
             <Rocket className="h-4 w-4 text-violet" /> Create a Collab
           </DialogTitle>
           <DialogDescription>
-            Fork this live Lounge into a persistent one. You'll be the host. Everyone currently in
-            the room gets a one-tap invite — no one is auto-added.
+            Spin up a Collab from this Lounge. You'll be the host. Everyone currently in
+            the room gets a one-tap invite — no one is auto-added. The Lounge keeps running.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
