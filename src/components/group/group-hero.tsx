@@ -57,12 +57,12 @@ export function GroupHero({
 
       {/* Title block — relative + z-10 so its own stacking context paints
           cleanly above the hero gradient regardless of sibling order. */}
-      <div className="relative z-10 px-4 md:px-6">
+      <div className="relative z-10 -mt-2 px-4 md:px-6">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3 sm:gap-4">
           {/* Avatar tile — opaque background + ring; isolate forces its
               own stacking context so the ring + content always paint over
               the hero's bottom-fade. */}
-          <div className="relative isolate -mt-10 flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-surface ring-4 ring-background shadow-lift">
+          <div className="relative isolate -mt-6 flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-3xl bg-surface ring-4 ring-background shadow-lift sm:h-20 sm:w-20">
             {group.avatar_url ? (
               <img
                 src={group.avatar_url}
@@ -80,6 +80,7 @@ export function GroupHero({
               </span>
             )}
           </div>
+
 
 
           {/* Title column — gets the slack now that SparkBar moved into the tab bar */}
