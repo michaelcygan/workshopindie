@@ -103,6 +103,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
           {/* Marquee */}
           <div
             className="gnt-marquee flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
+            data-paused={paused ? "true" : "false"}
             style={{
               animation: `gnt-scroll ${durationSec}s linear infinite`,
               width: "max-content",
@@ -125,8 +126,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
         <style>{`
           @keyframes gnt-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-          .gnt-pill:hover .gnt-marquee,
-          .gnt-pill:focus-within .gnt-marquee { animation-play-state: paused; }
+          .gnt-marquee[data-paused="true"] { animation-play-state: paused !important; }
         `}</style>
       </div>
 
