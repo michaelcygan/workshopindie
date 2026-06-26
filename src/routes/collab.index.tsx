@@ -19,7 +19,7 @@ import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
-import { RecapChip } from "@/components/recap-chip";
+
 
 
 const searchSchema = z.object({
