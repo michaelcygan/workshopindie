@@ -111,11 +111,11 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
       };
     case "workshop_starting":
-      return { title: `${wsTitle} is starting`, subtitle: "Join now — your seat's open.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+      return { title: `${wsTitle} is starting`, subtitle: "Join now — your seat's open.", href: wsSlug ? `/events/${wsSlug}` : "/events" };
     case "workshop_now_live":
-      return { title: `${wsTitle} is live`, subtitle: "Drop in before it fills.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+      return { title: `${wsTitle} is live`, subtitle: "Drop in before it fills.", href: wsSlug ? `/events/${wsSlug}` : "/events" };
     case "workshop_ran_without_you":
-      return { title: `${wsTitle} ran without you`, subtitle: "It auto-converted to a live drop-in.", href: wsSlug ? `/workshops/${wsSlug}` : "/workshops" };
+      return { title: `${wsTitle} ran without you`, subtitle: "It auto-converted to a live drop-in.", href: wsSlug ? `/events/${wsSlug}` : "/events" };
     case "workshop_live": {
       const roomId = (n.payload?.room_id as string) || n.entity_id || "";
       const mediumLabel = (n.payload?.medium as string) || null;
