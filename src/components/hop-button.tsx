@@ -45,9 +45,9 @@ export function HopButton({ roomId, medium, mode }: Props) {
       // Drop presence in the room we're leaving so it updates instantly.
       markRecentExit(roomId);
       await supabase.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", user.id);
-      router.navigate({ to: "/workshop/$id", params: { id: res.roomId }, search: { mode } });
+      router.navigate({ to: "/lounge/$id", params: { id: res.roomId }, search: { mode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't hop");
+      toast.error(e instanceof Error ? e.message : "Couldn't skip");
     } finally {
       setBusy(false);
     }
@@ -60,11 +60,11 @@ export function HopButton({ roomId, medium, mode }: Props) {
       onClick={onHop}
       disabled={busy}
       className="rounded-full gap-1.5"
-      title="Skip to the next Workshop"
+      title="Skip to the next Lounge"
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{busy ? "Starting…" : "New"}</span>
+      <span className="hidden sm:inline">{busy ? "Starting…" : "Skip"}</span>
     </Button>
   );
 }
