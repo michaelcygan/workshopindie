@@ -80,9 +80,16 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
+const TAB_VALUES = ["today", "events", "workshops", "collab", "work", "members", "subgroups", "about"] as const;
+type TabValue = (typeof TAB_VALUES)[number];
+
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
     j: typeof s.j === "string" ? s.j : undefined,
+    t:
+      typeof s.t === "string" && (TAB_VALUES as readonly string[]).includes(s.t)
+        ? (s.t as TabValue)
+        : undefined,
   }),
   loader: async ({ params }) => fetchGroup(params.slug),
   component: GroupPage,
@@ -113,18 +120,45 @@ export const Route = createFileRoute("/g/$slug")({
       </Link>
     </main>
   ),
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [
-          { title: `${loaderData.name} — Group on Workshop` },
-          { name: "description", content: loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop." },
-          { property: "og:title", content: `${loaderData.name} — Group on Workshop` },
-          { property: "og:description", content: loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop." },
-          ...(loaderData.cover_url ? [{ property: "og:image", content: loaderData.cover_url }] : []),
-        ]
-      : [],
-  }),
+  head: ({ loaderData, params }) => {
+    if (!loaderData) return { meta: [] };
+    const title = `${loaderData.name} — Group on Workshop`;
+    const desc = loaderData.tagline ?? loaderData.description ?? "Join this Group on Workshop.";
+    const url = `https://workshopindie.com/g/${params.slug}`;
+    const jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: loaderData.name,
+      description: desc,
+      url,
+      ...(loaderData.cover_url ? { image: loaderData.cover_url } : {}),
+      isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
+    };
+    return {
+      meta: [
+        { title },
+        { name: "description", content: desc },
+        { property: "og:title", content: title },
+        { property: "og:description", content: desc },
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: url },
+        ...(loaderData.cover_url ? [{ property: "og:image", content: loaderData.cover_url }] : []),
+        { name: "twitter:card", content: loaderData.cover_url ? "summary_large_image" : "summary" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: desc },
+        ...(loaderData.cover_url ? [{ name: "twitter:image", content: loaderData.cover_url }] : []),
+      ],
+      links: [{ rel: "canonical", href: url }],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify(jsonLd),
+        },
+      ],
+    };
+  },
 });
+
 
 type Tab = GroupTab;
 
