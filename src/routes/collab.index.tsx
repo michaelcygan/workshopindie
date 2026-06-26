@@ -223,6 +223,7 @@ function CollabPage() {
   const { data: rawPosts, isLoading } = useQuery({
     queryKey: ["collab", filters, blockedKey],
     queryFn: () => fetchPosts({ ...filters, blockedIds: Array.from(blockedIds) }),
+    staleTime: 30_000,
   });
 
   const postIds = useMemo(() => (rawPosts ?? []).map((p) => p.id), [rawPosts]);
