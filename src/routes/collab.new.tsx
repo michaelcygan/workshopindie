@@ -492,70 +492,8 @@ function NewCollab() {
           </section>
         </div>
 
-        {/* Collapsed Workshop pairing */}
-        <div className="rounded-2xl border border-dashed border-border bg-surface/40">
-          <button
-            type="button"
-            onClick={() => setWorkshopExpanded((v) => !v)}
-            className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
-            aria-expanded={workshopExpanded}
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-ink-muted" />
-              <span className="text-sm font-medium text-ink">
-                {workshopMode === "none" ? "Add a Workshop" : workshopMode === "now" ? "Workshop: open now" : "Workshop: scheduled"}
-              </span>
-            </div>
-            <span className="text-xs text-ink-muted">{workshopExpanded ? "Hide" : "Optional"}</span>
-          </button>
-          {workshopExpanded && (
-            <div className="space-y-3 px-4 pb-4">
-              <p className="text-xs text-ink-muted">A Workshop is a live space of up to 5 — voice or video — for meeting collaborators, brainstorming, and casting roles.</p>
-              <WorkshopOption
-                selected={workshopMode === "none"}
-                onClick={() => setWorkshopMode("none")}
-                icon={<MinusCircle className="h-4 w-4" />}
-                title="Not yet — just post it"
-                body="Post the Collab on its own. You can open a Workshop on it any time."
-              />
-              <WorkshopOption
-                selected={workshopMode === "now"}
-                onClick={() => setWorkshopMode("now")}
-                icon={<Sparkles className="h-4 w-4" />}
-                title="Open a Workshop right now"
-                body="Start a live Workshop the moment you post — meet collaborators on the spot. Up to 5 seats."
-              >
-                {workshopMode === "now" && (
-                  <p className="rounded-lg bg-background/60 px-3 py-2 text-[11px] text-ink-muted">
-                    After you post, we'll drop you straight into the Workshop.
-                  </p>
-                )}
-              </WorkshopOption>
-              <WorkshopOption
-                selected={workshopMode === "scheduled"}
-                onClick={() => setWorkshopMode("scheduled")}
-                icon={<CalendarClock className="h-4 w-4" />}
-                title="Schedule a Workshop"
-                body="Pick a date and time. Applicants get the invite and can RSVP."
-              >
-                {workshopMode === "scheduled" && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="starts-at" className="text-xs text-ink-muted">When</Label>
-                    <Input
-                      id="starts-at"
-                      type="datetime-local"
-                      value={scheduledAt}
-                      onChange={(e) => setScheduledAt(e.target.value)}
-                      min={new Date(Date.now() + 5 * 60_000).toISOString().slice(0, 16)}
-                      required
-                    />
-                    <p className="text-[11px] text-ink-muted">If nobody shows in the first 15 minutes, the Workshop flips to drop-in mode.</p>
-                  </div>
-                )}
-              </WorkshopOption>
-            </div>
-          )}
-        </div>
+        {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
+
 
         {/* Mobile inline action */}
         <div className="flex justify-end gap-2 md:hidden">
