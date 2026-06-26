@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Plus, X, Globe2, CalendarClock, Sparkles, MinusCircle, Scale, Check, Copy } from "lucide-react";
+import { Plus, X, Globe2, Scale, Check, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
