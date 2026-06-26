@@ -103,7 +103,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
 
           {/* Marquee */}
           <div
-            className="gnt-marquee flex h-full items-center gap-10 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
+            className="gnt-marquee flex h-full items-center gap-5 whitespace-nowrap pl-4 text-[13px] text-ink will-change-transform motion-reduce:hidden"
             data-paused={paused ? "true" : "false"}
             style={{
               animation: `gnt-scroll ${durationSec}s linear infinite`,
@@ -119,7 +119,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
                 className="shrink-0 hover:underline focus:outline-none focus-visible:underline"
               >
                 {n.title}
-                <span aria-hidden className="ml-10 text-ink-muted/40">•</span>
+                <span aria-hidden className="ml-5 text-ink-muted/40">•</span>
               </a>
             ))}
           </div>
