@@ -22,10 +22,39 @@ import { GroupsJoinFeedStrip } from "@/components/groups-join-feed-strip";
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = (typeof TAB_VALUES)[number];
 
+const CATEGORY_VALUES = [
+  "all",
+  "music",
+  "film_video",
+  "writing",
+  "visual_art",
+  "games_tech",
+  "performance",
+  "audio",
+  "scene_life",
+  "city",
+] as const;
+type Category = (typeof CATEGORY_VALUES)[number];
+
+const CATEGORY_LABELS: Record<Category, string> = {
+  all: "All categories",
+  music: "Music",
+  film_video: "Film & Video",
+  writing: "Writing",
+  visual_art: "Visual Art",
+  games_tech: "Games & Tech",
+  performance: "Performance",
+  audio: "Audio",
+  scene_life: "Scene & Lifestyle",
+  city: "Cities",
+};
+
 const searchSchema = z.object({
   t: fallback(z.enum(TAB_VALUES), "all").default("all"),
   q: fallback(z.string(), "").default(""),
+  c: fallback(z.enum(CATEGORY_VALUES), "all").default("all"),
 });
+
 
 export const Route = createFileRoute("/groups/")({
   validateSearch: zodValidator(searchSchema),
