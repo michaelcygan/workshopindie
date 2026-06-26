@@ -20,7 +20,10 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
     staleTime: 30 * 60 * 1000,
   });
   const items = data?.items ?? [];
+  const [hovering, setHovering] = useState(false);
+  const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
+  const paused = hovering || open;
 
   const durationSec = Math.max(90, items.length * 14);
   const loop = [...items, ...items];
