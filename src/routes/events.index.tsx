@@ -1,16 +1,19 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Calendar, MapPin, Radio } from "lucide-react";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { EventCard, type EventCardData } from "@/components/event-card";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
-import { RecapChip } from "@/components/recap-chip";
 import { EmptySpark } from "@/components/empty-spark";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
+import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
+import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { cn } from "@/lib/utils";
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
@@ -19,12 +22,19 @@ import { cn } from "@/lib/utils";
 type Format = "all" | "in_person" | "online";
 type When = "upcoming" | "past";
 
-async function fetchPublicEvents(when: When, format: Format) {
+const searchSchema = z.object({
+  when: fallback(z.enum(["upcoming", "past"]), "upcoming").default("upcoming"),
+  format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
+  city: fallback(z.string().uuid().optional(), undefined),
+  cityName: fallback(z.string().optional(), undefined),
+});
+
+async function fetchPublicEvents(when: When, format: Format, cityId?: string) {
   const now = new Date().toISOString();
   let q = supabase
     .from("group_events")
     .select(
-      "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,promo_pass_months,group:groups!inner(slug,name,avatar_url,visibility,deleted_at)",
+      "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,venue_city_id,going_count,capacity,featured_at,promo_pass_months,group:groups!inner(slug,name,avatar_url,visibility,deleted_at)",
     )
     .is("deleted_at", null)
     .eq("visibility", "public")
@@ -37,6 +47,8 @@ async function fetchPublicEvents(when: When, format: Format) {
   if (format === "in_person") q = q.in("format", ["in_person", "hybrid"]);
   if (format === "online") q = q.in("format", ["online", "hybrid"]);
 
+  if (cityId && format !== "online") q = q.eq("venue_city_id", cityId);
+
   const { data, error } = await q.limit(60);
   if (error) throw error;
   return (data ?? []).filter((e) => {
@@ -46,6 +58,7 @@ async function fetchPublicEvents(when: When, format: Format) {
 }
 
 export const Route = createFileRoute("/events/")({
+  validateSearch: zodValidator(searchSchema),
   component: EventsIndexPage,
   head: () => ({
     meta: [
@@ -96,13 +109,16 @@ function bucketLabel(eventDate: Date, when: When): string {
   return `Week of ${evWeek.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
 }
 
+type SearchShape = z.infer<typeof searchSchema>;
+
 function EventsIndexPage() {
-  const [when, setWhen] = useState<When>("upcoming");
-  const [format, setFormat] = useState<Format>("all");
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: "/events" });
+  const { when, format, city: cityId, cityName } = search;
 
   const { data: events, isLoading } = useQuery({
-    queryKey: ["public-events", when, format],
-    queryFn: () => fetchPublicEvents(when, format),
+    queryKey: ["public-events", when, format, cityId ?? null],
+    queryFn: () => fetchPublicEvents(when, format, cityId),
     staleTime: 60_000,
   });
 
@@ -139,6 +155,41 @@ function EventsIndexPage() {
     };
   }, [list, when]);
 
+  function setWhen(next: When) {
+    navigate({ search: (prev: SearchShape) => ({ ...prev, when: next }) });
+  }
+  function setFormat(next: Format) {
+    navigate({
+      search: (prev: SearchShape) => ({
+        ...prev,
+        format: next,
+        // Online ignores city.
+        city: next === "online" ? undefined : prev.city,
+        cityName: next === "online" ? undefined : prev.cityName,
+      }),
+    });
+  }
+  function setCity(next: CityValue | null) {
+    navigate({
+      search: (prev: SearchShape) => ({
+        ...prev,
+        city: next?.id,
+        cityName: next?.name,
+      }),
+    });
+  }
+
+  const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
+
+  const defaultCityQuery = useDefaultCity();
+  const defaultCity = defaultCityQuery.data?.city ?? null;
+  useApplyDefaultCity({
+    feedKey: "events",
+    isWorldwide: !cityId && format !== "online",
+    apply: (city) => setCity({ id: city.id, name: city.name }),
+    defaultCity,
+  });
+
   return (
     <>
       <YourGroupsStrip />
@@ -154,40 +205,88 @@ function EventsIndexPage() {
           }
         />
 
+        {/* Compact meta row — mirrors the Collab Board */}
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <KickerChip live={happeningCount > 0}>
             {happeningCount > 0 ? `${happeningCount} happening now` : "On the calendar"}
           </KickerChip>
-          <RecapChip count={list.length} label={when === "upcoming" ? "upcoming" : "past"} />
+          <p className="text-sm text-ink-muted">
+            Networking, listening parties, work-in-progress nights — RSVP unlocks a free trial.
+          </p>
+          {list.length > 0 && (
+            <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
+              {list.length} {when}
+            </span>
+          )}
         </div>
-        <p className="mt-3 max-w-2xl text-sm text-ink-muted md:text-base">
-          Networking, work-in-progress nights, listening parties, hackathons,
-          photo walks and more opportunities to build your creative network and
-          make things.
-        </p>
 
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          <SegToggle
-            value={when}
-            onChange={setWhen}
-            options={[
-              { value: "upcoming", label: "Upcoming" },
-              { value: "past", label: "Past" },
-            ]}
-          />
-          <SegToggle
-            value={format}
-            onChange={setFormat}
-            options={[
-              { value: "all", label: "All", icon: Calendar },
-              { value: "in_person", label: "In person", icon: MapPin },
-              { value: "online", label: "Online", icon: Radio },
-            ]}
-          />
+        {/* Unified filter cluster */}
+        <div className="mx-auto mt-5 max-w-5xl space-y-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <SegToggle
+              value={when}
+              onChange={setWhen}
+              options={[
+                { value: "upcoming", label: "Upcoming" },
+                { value: "past", label: "Past" },
+              ]}
+            />
+            <SegToggle
+              value={format}
+              onChange={setFormat}
+              options={[
+                { value: "all", label: "All", icon: Calendar },
+                { value: "in_person", label: "In person", icon: MapPin },
+                { value: "online", label: "Online", icon: Radio },
+              ]}
+            />
+            <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+              <CityCombobox
+                value={cityValue}
+                onChange={setCity}
+                disabled={format === "online"}
+                placeholder="Anywhere — search a city"
+              />
+              {cityValue && format !== "online" && (
+                <button
+                  type="button"
+                  onClick={() => setCity(null)}
+                  className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+                >
+                  Worldwide
+                </button>
+              )}
+            </div>
+          </div>
+
+          {defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
+            <p className="px-1 text-xs text-ink-muted">
+              Based on your location ·{" "}
+              <button
+                type="button"
+                onClick={() => setCity(null)}
+                className="underline underline-offset-2 hover:text-ink"
+              >
+                see worldwide
+              </button>
+            </p>
+          )}
+          {!cityId && format !== "online" && defaultCity && (
+            <p className="px-1 text-xs text-ink-muted">
+              Near you:{" "}
+              <button
+                type="button"
+                onClick={() => setCity({ id: defaultCity.id, name: defaultCity.name })}
+                className="text-ink underline underline-offset-2 hover:text-primary"
+              >
+                {defaultCity.name}
+              </button>
+            </p>
+          )}
         </div>
 
         {when === "upcoming" && (
-          <section className="mt-8">
+          <section className="mt-6">
             <FeaturedEventsCompact />
           </section>
         )}
@@ -207,7 +306,11 @@ function EventsIndexPage() {
           {!isLoading && list.length === 0 && (
             <EmptySpark
               title="Nothing on the calendar."
-              body="Events hosted by the Groups you join will list here."
+              body={
+                cityValue
+                  ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
+                  : "Events hosted by the Groups you join will list here."
+              }
               action={
                 <Button asChild className="rounded-full">
                   <Link to="/groups">Browse Groups</Link>
