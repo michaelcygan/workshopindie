@@ -1028,9 +1028,9 @@ export function ChannelView({
               </button>
             )}
             <AlertDialogHeader>
-              <AlertDialogTitle>Workshop wrapped</AlertDialogTitle>
+              <AlertDialogTitle>Lounge wrapped</AlertDialogTitle>
               <AlertDialogDescription>
-                You're the only one left. Want to drop into a new Workshop?
+                You're the only one left. Want to drop into a new Lounge?
                 <br />
                 <span className="mt-2 inline-block text-ink-muted">
                   Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…
@@ -1042,7 +1042,7 @@ export function ChannelView({
                 Back to home
               </AlertDialogCancel>
               <AlertDialogAction onClick={handleJoinNew} disabled={joiningNew}>
-                {joiningNew ? "Finding a seat…" : "Join new Workshop"}
+                {joiningNew ? "Finding a seat…" : "Join new Lounge"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
