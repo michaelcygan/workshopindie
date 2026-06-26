@@ -36,7 +36,7 @@ export function GroupTabBar({
     { id: "today", label: "Today", icon: Sun, count: null },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
     { id: "work", label: "Work", icon: LayoutGrid, count: counts.work },
-    { id: "workshops", label: "Workshops", icon: Radio, count: counts.workshops },
+    { id: "workshops", label: "Lounge", icon: Radio, count: counts.workshops },
     { id: "events", label: "Events", icon: Calendar, count: null },
     ...(childCount > 0
       ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childCount }]
