@@ -340,7 +340,7 @@ function GroupPage() {
               workshops: group.workshop_count,
               members: group.member_count,
             }}
-            childCount={childGroups.length}
+            childCount={childCount}
           />
 
         <div className="mt-5">
