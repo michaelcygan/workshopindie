@@ -234,7 +234,7 @@ export function ChannelView({
     if (!warnOpen) return;
     const kickT = setTimeout(() => {
       if (inactive) {
-        toast.error("Dropped from the Workshop — you went quiet.");
+        toast.error("Dropped from the Lounge — you went quiet.");
         media.leave();
         router.navigate({ to: "/lounge" });
       }
