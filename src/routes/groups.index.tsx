@@ -142,13 +142,17 @@ function GroupsIndex() {
     } else if (tab !== "all") {
       rows = rows.filter((g) => g.kind === tab);
     }
+    if (category !== "all") {
+      rows = rows.filter((g) => g.category === category);
+    }
     if (q) {
       rows = rows.filter(
         (g) => g.name.toLowerCase().includes(q) || (g.tagline ?? "").toLowerCase().includes(q),
       );
     }
     return rows;
-  }, [allGroups, tab, query, myIdSet]);
+  }, [allGroups, tab, query, category, myIdSet]);
+
 
   const trending = useMemo(
     () =>
