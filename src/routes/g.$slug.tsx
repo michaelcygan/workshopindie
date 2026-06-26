@@ -173,7 +173,11 @@ function GroupPage() {
     navigate({
       to: "/g/$slug",
       params: { slug: group.slug },
-      search: (prev) => ({ ...prev, t: next === "today" ? undefined : next }),
+      search: (prev: { j?: string; t?: TabValue }) => ({
+        ...prev,
+        t: next === "today" ? undefined : (next as TabValue),
+      }),
+
       replace: true,
     });
   };
