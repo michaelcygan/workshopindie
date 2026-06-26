@@ -348,11 +348,8 @@ function CollabDetail() {
               </>
             ) : (
               <>
-                {isLive && (
-                  <Button size="sm" className="rounded-full gap-1 bg-primary" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
-                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
-                    Live now — join
-                  </Button>
+                {post.status === "open" && (
+                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 )}
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
