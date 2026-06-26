@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Send, Trash2, Sparkles, Pin, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { GroupTodayPinPicker } from "@/components/group/group-today-pin-picker";
+import { GroupNextEvent } from "@/components/group/group-next-event";
+import { TodayMentionPopover } from "@/components/group/today-mention-popover";
+import { renderTodayBody } from "@/lib/today-text";
+import { postTodayMessage } from "@/lib/today-chat.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +42,8 @@ export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
       <TodayChat group={group} />
-      <aside className="space-y-8">
+      <aside className="space-y-6">
+        <GroupNextEvent group={group} />
         <FreshCollabs group={group} />
       </aside>
     </div>
