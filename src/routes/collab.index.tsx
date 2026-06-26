@@ -211,8 +211,8 @@ function CollabPage() {
   const navigate = useNavigate({ from: "/collab" });
 
   const filters: Filters = useMemo(
-    () => ({ cat: search.cat, city: search.city, online: search.online, view: search.view }),
-    [search.cat, search.city, search.online, search.view],
+    () => ({ cat: search.cat, city: search.city, online: search.online }),
+    [search.cat, search.city, search.online],
   );
 
   const { ids: blockedIds } = useBlockedIds();
