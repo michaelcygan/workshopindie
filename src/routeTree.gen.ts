@@ -42,6 +42,7 @@ import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
+import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as WTokenRouteImport } from './routes/w.$token'
@@ -254,6 +255,11 @@ const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => WorkshopsRoute,
+} as any)
+const WorkshopIdRoute = WorkshopIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => WorkshopRoute,
 } as any)
 const WorksNewRoute = WorksNewRouteImport.update({
   id: '/works/new',
@@ -548,6 +554,7 @@ export interface FileRoutesByFullPath {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -623,6 +630,7 @@ export interface FileRoutesByTo {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
@@ -706,6 +714,7 @@ export interface FileRoutesById {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
+  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -790,6 +799,7 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -865,6 +875,7 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
@@ -947,6 +958,7 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
+    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -1255,6 +1267,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/$slug'
       preLoaderRoute: typeof WorkshopsSlugRouteImport
       parentRoute: typeof WorkshopsRoute
+    }
+    '/workshop/$id': {
+      id: '/workshop/$id'
+      path: '/$id'
+      fullPath: '/workshop/$id'
+      preLoaderRoute: typeof WorkshopIdRouteImport
+      parentRoute: typeof WorkshopRoute
     }
     '/works/new': {
       id: '/works/new'
@@ -1713,10 +1732,12 @@ const LoungeRouteWithChildren =
   LoungeRoute._addFileChildren(LoungeRouteChildren)
 
 interface WorkshopRouteChildren {
+  WorkshopIdRoute: typeof WorkshopIdRoute
   WorkshopIndexRoute: typeof WorkshopIndexRoute
 }
 
 const WorkshopRouteChildren: WorkshopRouteChildren = {
+  WorkshopIdRoute: WorkshopIdRoute,
   WorkshopIndexRoute: WorkshopIndexRoute,
 }
 
