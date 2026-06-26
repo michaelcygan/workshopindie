@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { fetchGroupNews } from "@/lib/group-news.functions";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ExternalLink } from "lucide-react";
+
 
 /**
  * Group news rail — a contained pill that sits between the hero and the
@@ -24,13 +27,52 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
       <div className="gnt-pill relative isolate flex h-10 items-stretch overflow-hidden rounded-full border border-border bg-surface/70 backdrop-blur-sm">
-        {/* Anchored label */}
-        <div className="relative z-20 flex shrink-0 items-center gap-2 rounded-l-full bg-surface px-3 sm:pr-4">
-          <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-          <span className="hidden text-[11px] font-medium uppercase tracking-wider text-ink-muted sm:inline">
-            In the news
-          </span>
-        </div>
+        {/* Anchored label — click to open headlines drawer */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="relative z-20 flex shrink-0 items-center gap-2 rounded-l-full bg-surface px-3 outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring sm:pr-4"
+              aria-label="Open headlines"
+            >
+              <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+              <span className="hidden text-[11px] font-medium uppercase tracking-wider text-ink-muted sm:inline">
+                In the news
+              </span>
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            sideOffset={8}
+            className="w-[min(92vw,28rem)] max-h-[70vh] overflow-y-auto p-0"
+          >
+            <div className="sticky top-0 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-2.5 backdrop-blur">
+              <div className="flex items-center gap-2">
+                <span aria-hidden className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                <span className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+                  In the news
+                </span>
+              </div>
+              <span className="text-[11px] text-ink-muted">{items.length}</span>
+            </div>
+            <ul className="divide-y divide-border">
+              {items.slice(0, 15).map((n, i) => (
+                <li key={`d-${i}-${n.link}`}>
+                  <a
+                    href={n.link}
+                    target="_blank"
+                    rel="noopener noreferrer ugc"
+                    className="group flex items-start gap-3 px-4 py-3 text-sm text-ink hover:bg-muted/60"
+                  >
+                    <span className="line-clamp-3 flex-1 leading-snug">{n.title}</span>
+                    <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-ink-muted opacity-0 transition group-hover:opacity-100" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </PopoverContent>
+        </Popover>
+
         <div aria-hidden className="my-2 w-px shrink-0 bg-border/80" />
 
         {/* Rail */}
