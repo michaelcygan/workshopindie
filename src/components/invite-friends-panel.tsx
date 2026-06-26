@@ -78,7 +78,7 @@ export function InviteFriendsPanel({ workshopId, sourceRoomId }: Props) {
         )}
       </div>
       <p className="mt-1 text-xs text-ink-muted">
-        Mutual follows you can invite straight to this Workshop.
+        Mutual follows you can invite straight to this Lounge.
       </p>
 
       <div className="mt-3 space-y-2">

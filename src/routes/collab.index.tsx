@@ -35,7 +35,7 @@ export const Route = createFileRoute("/collab/")({
   head: () => ({
     meta: [
       { title: "Collab Board — Workshop" },
-      { name: "description", content: "Things people are trying to make. Help out, or post your own and open a Workshop on it." },
+      { name: "description", content: "Things people are trying to make. Help out, or post your own and open a Lounge on it." },
       { property: "og:title", content: "Collab Board — Workshop" },
       { property: "og:description", content: "Things people are trying to make. Help out, or post your own." },
       { property: "og:url", content: "https://workshopindie.com/collab" },
@@ -359,7 +359,7 @@ function CollabPage() {
           {livePosts.length > 0 ? `${livePosts.length} live now` : "Start a Collab"}
         </KickerChip>
         <p className="text-sm text-ink-muted">
-          What people are trying to make. Help out — or open a Workshop on yours.
+          What people are trying to make. Help out — or open a Lounge on yours.
         </p>
         {rawPosts && rawPosts.length > 0 && (
           <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
@@ -430,7 +430,7 @@ function CollabPage() {
           <div className="mb-3 flex items-center gap-2 px-1">
             <Radio className="h-4 w-4 text-primary" />
             <h2 className="font-display text-lg text-ink">Live right now</h2>
-            <span className="text-xs text-ink-muted">— Workshops on these Collabs are running</span>
+            <span className="text-xs text-ink-muted">— Lounges on these Collabs are running</span>
           </div>
           <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 md:-mx-6 md:px-6 [scrollbar-width:thin]">
             {livePosts.map((p) => (

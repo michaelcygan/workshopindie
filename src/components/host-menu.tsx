@@ -215,7 +215,7 @@ export function HostMenu({
       onChanged();
       setEndOpen(false);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't end Workshop");
+      toast.error(e instanceof Error ? e.message : "Couldn't end Lounge");
     } finally {
       setBusy(null);
     }
@@ -240,7 +240,7 @@ export function HostMenu({
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setRenameOpen(true)} className="gap-2">
             <Pencil className="h-4 w-4" />
-            Rename Workshop
+            Rename Lounge
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onCopyLink} className="gap-2">
             <Share2 className="h-4 w-4" />
@@ -277,7 +277,7 @@ export function HostMenu({
             className="gap-2 text-destructive focus:text-destructive"
           >
             <StopCircle className="h-4 w-4" />
-            End Workshop for all
+            End Lounge for all
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -336,7 +336,7 @@ export function HostMenu({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Pencil className="h-4 w-4 text-primary" /> Rename Workshop
+              <Pencil className="h-4 w-4 text-primary" /> Rename Lounge
             </DialogTitle>
             <DialogDescription>
               Everyone in the room sees the new title. Up to 120 characters.
@@ -429,7 +429,7 @@ export function HostMenu({
               <UserMinus className="h-4 w-4 text-destructive" /> Remove someone
             </DialogTitle>
             <DialogDescription>
-              They leave the Workshop and can't rejoin for 30 minutes. Only affects this room.
+              They leave the Lounge and can't rejoin for 30 minutes. Only affects this room.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-1.5">
@@ -477,9 +477,9 @@ export function HostMenu({
       <AlertDialog open={endOpen} onOpenChange={(o) => !busy && setEndOpen(o)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>End this Workshop for everyone?</AlertDialogTitle>
+            <AlertDialogTitle>End this Lounge for everyone?</AlertDialogTitle>
             <AlertDialogDescription>
-              Everyone in the room will see a wrap screen. The room is archived. You can always start a new Workshop.
+              Everyone in the room will see a wrap screen. The room is archived. You can always start a new Lounge.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -490,7 +490,7 @@ export function HostMenu({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {busy === "end" ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              End Workshop
+              End Lounge
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,78 +1,41 @@
-## Goal
+# Finish the Workshop → Lounge rename
 
-Finish the Lounge rebrand so "Workshop" refers only to the platform/brand. The live-room feature is "Lounge" everywhere a user can see it, and every Collab has its inherent private Lounge — no scheduling, no pairing UI, no "Add a Workshop" step.
+The live-room feature is now **Lounge**. "Workshop" remains only as the platform brand (e.g. landing page brand title) and in admin/internal labels for the legacy scheduled-workshop archive table. Every other user-facing surface still saying "Workshop/Workshops" needs to be updated.
 
-## 1. Kill the "Add a Workshop" block on `/collab/new`
+## Scope
 
-Every Collab already gets a private Lounge via `OpenLoungeButton` on the Collab page (owner + accepted members only). The pairing step is dead weight that contradicts the new model ("users should not be able to plan their own events").
+Sweep every `.tsx`/`.ts` file under `src/` (excluding `routeTree.gen.ts`, `integrations/supabase/types.ts`, and `.functions.ts`/`.server.ts` server code where strings aren't user-visible) for the word "workshop" and rewrite UI-facing copy to "Lounge".
 
-In `src/routes/collab.new.tsx`:
-- Remove `workshopMode`, `scheduledAt`, `workshopExpanded`, `openWorkshopFn`, and the entire collapsible "Add a Workshop" section (currently lines ~557–617).
-- Remove the workshop pairing logic in the submit handler (the `workshops` insert + `live_workshop_id` update, and the inline `openWorkshopOnCollab` call).
-- Remove the post-success "Join your Workshop" CTA. Success dialog gets one primary action: "View Collab" → `/collab/$slug`. (The Collab page itself surfaces "Open the Lounge".)
-- Drop the now-unused `WorkshopOption` helper and the `openWorkshopOnCollab` import.
+### Confirmed from screenshots
+1. **Collab Board** (`src/routes/collab.index.tsx`) — "open a Workshop on yours" → "open a Lounge on yours".
+2. **Groups join strip** (`src/components/groups-join-feed-strip.tsx`) — "live collabs and workshops" → "live collabs and Lounges".
+3. **In Progress page** (`src/routes/in-progress.tsx`) — subtitle "the workshops you're in" → "the Lounges you're in"; section title "Workshops you're in" → "Lounges you're in"; empty state "active Workshop" → "active Lounge"; "Tasks for you" subtitle "@-mentioned in a Workshop" → "@-mentioned in a Lounge".
+4. **Profile header** (`src/routes/u.$username.tsx`) — "Drop into a Workshop" → "Drop into a Lounge".
+5. **Profile in-flight empty** (`src/routes/u.$username.tsx` or `empty-spark.tsx`) — "drop into a Workshop" → "drop into a Lounge"; button "Drop into a Workshop" → "Drop into a Lounge".
+6. **Messages / DMs** (`src/routes/dms.index.tsx`, `new-message-dialog.tsx`) — "collabs and workshops" / "a collab or workshop" → "collabs and Lounges" / "a collab or Lounge".
 
-## 2. Rename user-visible "Workshop" → "Lounge" (live-room only)
+### Additional sweep (same rule applied)
+Apply the same replacement across all remaining UI files surfaced by ripgrep, including but not limited to:
+- `top-nav.tsx`, `home-live-workshops-rail.tsx`, `live-workshops-rail.tsx`, `workshop-strip.tsx`, `workshop-tools-panel.tsx`, `workshop-screen-share-panel.tsx`, `enter-workshop-button.tsx`, `nudges/workshop-ended-nudge.tsx`, `groups-join-feed-card.tsx`, `groups-spark-card.tsx`, `host-first-run-tour.tsx`, `host-menu.tsx`, `host-room-events.tsx`, `claim-host-pill.tsx`, `cocreator-picker.tsx`, `event-share-sheet.tsx`, `event-promo-pass-banner.tsx`, `featured-events-*`, `friend-row.tsx`, `follow-button.tsx`, `message-button.tsx`, `applicants-panel.tsx`, `chat-polls.tsx`, `cc-consent-dialog.tsx`, `license-chip.tsx`, `adjacent-groups-rail.tsx`, `world-arcs.tsx`, `group-card.tsx`, `group/group-tab-bar.tsx`, `collab-card.tsx`, `age-gate.tsx`, `today-text.tsx`, `seo.ts`, `recent-rooms.ts` (display labels only).
+- Routes: `lounge.$id.tsx`, `lounge.index.tsx`, `events.index.tsx`, `cities.index.tsx`, `cities.$slug.tsx`, `collab.$slug.tsx`, `collab.new.tsx`, `collab.claim.$token.tsx`, `dms.$conversationId.tsx`, `index.tsx` (landing — preserve brand mentions), `signup.tsx`, `onboarding.tsx`, `settings.tsx`, `refer.tsx`, `redeem.$code.tsx`, `me.tickets.tsx`, `me.friends.tsx`, `me.edit.tsx`, `in-progress.tsx`, `u.$username.tsx`, `w.$token.tsx`, `checkout.return.tsx`.
 
-These are visible strings only. Keep the brand "Workshop" everywhere it refers to the product/site.
+### What stays "Workshop"
+- Brand name on landing/marketing surfaces (`routes/index.tsx` brand headline, hero, footer — "Workshop is…").
+- Admin-only labels and routes (`admin.*`, `workshops.$slug.archive.tsx`, `workshops.$slug.tools*.tsx`) — these are the retired scheduled-workshop archive surfaces, gated/legacy, and not user-launch facing.
+- Internal identifiers, DB column names, route filenames (`/workshops/*` redirect shims), `instant_rooms.kind = 'workshop'`, server-fn names, types, query keys, comments.
+- Redirect routes already in place (`workshop.$id.tsx`, `workshops.*`).
+- `medium-icons.ts` / `mediums.ts` / `categories.ts` if "workshop" appears only as a category slug (verify; rename label only if user-visible).
 
-Files and specific copy:
+### Approach
 
-- `src/components/channel-view.tsx`
-  - Dialog title "Workshop wrapped" → "Lounge wrapped"
-  - Button "Join new Workshop" → "Join a new Lounge"
-  - Toast "Dropped from the Workshop — you went quiet." → "Dropped from the Lounge — you went quiet."
-  - Toast "Couldn't find a new Workshop" → "Couldn't find a new Lounge"
-- `src/components/invite-to-workshop-dialog.tsx`
-  - Rename file to `invite-to-lounge-dialog.tsx`, component to `InviteToLoungeDialog`.
-  - "Pick one of your Workshops, or start a new one together." → "Pick one of your Lounges, or open a new one together."
-  - "You aren't hosting any active Workshops." → "You aren't hosting any active Lounges."
-  - "Start a Workshop" button → "Open a Lounge"
-  - Update import sites (search `InviteToWorkshopDialog`).
-- `src/components/enter-workshop-button.tsx` — visible label "Enter Workshop" → "Enter Lounge" (filename left as-is; rename can come in a separate sweep).
-- `src/components/claim-host-pill.tsx` — tooltip "This Workshop already has managed rights" → "This Lounge already has managed rights".
-- `src/components/groups-join-feed-card.tsx` — `kindLabel = "Workshop"` → `"Lounge"`; empty-state copy "workshops" → "Lounges".
-- `src/components/home-live-workshops-rail.tsx` — fallback "Untitled workshop" → "Untitled Lounge". Rail header/visible labels swept the same way.
-- `src/components/notifications-bell.tsx` — visible notification text for `workshop_starting`, `workshop_now_live`, `workshop_ran_without_you`, `workshop_live` switches to "Lounge" wording. (Notification kind strings on the DB stay; this is rendering only.)
-- `src/routes/signup.tsx` — hero copy "Walk into a live Workshop" → "Walk into a live Lounge". Keep the 18+ error using brand "Workshop".
-- `src/routes/__root.tsx` — meta description / OG description "live collaboration workshops" → "live Lounges". Title/site_name stays "Workshop".
-- `src/components/hop-button.tsx` — comment "Hop to next Workshop" → "Skip to next Lounge".
+1. Ripgrep every file with `workshop` (case-insensitive) in `src/`.
+2. For each, edit only the **JSX text, button labels, toasts, aria-labels, placeholders, headings, descriptions, and SEO strings**. Keep identifiers, route paths, DB enums, query keys, type names, and code comments untouched.
+3. Pluralization rule: "Workshop" → "Lounge", "Workshops" → "Lounges", "workshop" → "Lounge" (capitalized per existing brand-noun convention already used in copy like "Lounge", "Collab").
+4. Preserve sentences referencing the **scheduled-event** concept ("Workshops, networking, open mics…" on landing) — those describe event types, not the live-room.
+5. Verify with a final `rg -i "workshop"` pass: anything left should be brand mentions, admin, redirects, identifiers, or comments.
 
-Strings that explicitly mean the brand stay untouched: `__root.tsx` `<title>` / `og:site_name`, `settings.tsx` ("Workshop Plus", "Delete your Workshop account?", notification category "Workshop updates"), `pricing.tsx` ("Workshop Plus"), `refer.tsx`, `events.index.tsx` SEO, `checkout.return.tsx`, `redeem.$code.tsx`, `dms.index.tsx` SEO, signup 18+ toast.
+### Technical notes
 
-## 3. Stop linking to the legacy `/workshop/$id` URL
-
-`src/routes/workshop.$id.tsx` already redirects to `/lounge/$id`. Update the remaining callers to navigate directly to `/lounge/$id` (avoids a double-hop and a flash):
-
-- `src/routes/collab.new.tsx` (post-success — being removed in step 1 anyway).
-- `src/components/channel-view.tsx` line 331.
-- `src/components/host-room-events.tsx` line 51.
-- `src/routes/w.$token.tsx` line 60.
-- `src/components/post-workshop-from-city-sheet.tsx` line 192.
-
-Also update `src/routes/lounge.index.tsx` line 549 (`to="/workshops"`) → `to="/events"` (legacy `/workshops` is shimmed to Events).
-
-## 4. Group tab id polish
-
-`src/components/group/group-tab-bar.tsx` labels the tab "Lounge" but the id/URL token is still `"workshops"`. Rename the id to `"lounge"` and update the consumer in `src/routes/g.$slug.tsx` so URLs read `?t=lounge`. Keep a one-line back-compat shim that maps `?t=workshops` → `lounge` for any cached links.
-
-## 5. Out of scope (intentional)
-
-These stay untouched in this pass — they're under-the-hood identifiers, not user-visible:
-
-- DB table/column names (`workshops`, `workshop_polls`, `workshop_id`, `live_workshop_id`, `source_workshop_id`).
-- Server-function names (`openWorkshopOnCollab`, `hostInstantWorkshop`, `listMyHostableWorkshops`, `inviteFriendToWorkshop`).
-- Notification `kind` strings stored in the DB.
-- Route filenames `src/routes/workshop.$id.tsx`, `src/routes/workshops.*.tsx` (already redirect shims).
-- localStorage/sessionStorage keys (`workshop:av-prefs`, `workshop:last-room`).
-- Admin analytics labels in `admin.index.tsx` ("Workshops created", "Workshop apps") — they reflect the underlying tables; can be relabeled when the schema is renamed.
-
-A follow-up migration can rename the DB primitives in one shot; doing it now would touch every server function and risk regressions right before launch.
-
-## Verification
-
-- Typecheck must pass after the rename + import-site updates.
-- Click through: `/collab/new` no longer shows the Workshop block; submit posts a Collab and lands on `/collab/$slug` with the "Open the Lounge" CTA visible to the owner.
-- `/g/<slug>?t=lounge` resolves; `/g/<slug>?t=workshops` still resolves via the shim.
-- Open a live Lounge, leave it alone → "Lounge wrapped" dialog (not "Workshop wrapped").
-- Friend's invite dialog says "Open a Lounge".
+- Pure copy change — no schema, RLS, route, or server-function changes.
+- No new files, no deletions (legacy redirect routes already exist).
+- After edits, typecheck/build runs automatically.

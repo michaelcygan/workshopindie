@@ -89,7 +89,7 @@ export function MediaPanel({
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
         </span>
         <h3 className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted truncate">
-          Workshop
+          Lounge
         </h3>
         <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] text-ink-soft">
           {totalHere}/{m.cap}
@@ -107,7 +107,7 @@ export function MediaPanel({
 
       {!m.joined ? (
         <p className="mt-3 text-xs text-ink-muted">
-          {m.busy ? "Connecting…" : "Joining the Workshop…"}
+          {m.busy ? "Connecting…" : "Joining the Lounge…"}
           {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
         </p>
       ) : (

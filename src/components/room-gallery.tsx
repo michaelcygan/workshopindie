@@ -487,7 +487,7 @@ function Grid({
             </p>
           )
         ) : (
-          <p>No Work in this Workshop yet.</p>
+          <p>No Work in this Lounge yet.</p>
         )}
       </div>
     );

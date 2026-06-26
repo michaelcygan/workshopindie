@@ -165,7 +165,7 @@ function SettingsPage() {
             <NotificationsSection />
           </Section>
 
-          <Section id="privacy" title="Privacy" subtitle="Control who can reach you, how you appear, and how your Workshop contributions are licensed." refMap={sectionRefs}>
+          <Section id="privacy" title="Privacy" subtitle="Control who can reach you, how you appear, and how your Lounge contributions are licensed." refMap={sectionRefs}>
             <PrivacySection />
           </Section>
 
@@ -379,7 +379,7 @@ function AccountSection() {
             disabled={prefsLoading}
           />
           <p className="mt-1 text-xs text-ink-muted">
-            Scopes city pages, Workshops, and local discovery to your home base.
+            Scopes city pages, Lounges, and local discovery to your home base.
           </p>
         </div>
       </div>
@@ -592,7 +592,7 @@ function PrivacySection() {
       <div className="rounded-2xl border border-border bg-surface p-4">
         <div className="text-sm font-medium text-ink">Who can message me</div>
         <p className="mt-1 text-xs text-ink-muted">
-          Collab applicants and workshop hosts you've registered with can always reach you about that specific post.
+          Collab applicants and Lounge hosts you've registered with can always reach you about that specific post.
         </p>
         <div className="mt-3 grid gap-2">
           {dmOptions.map((opt) => {
@@ -649,9 +649,9 @@ function PrivacySection() {
       <div className="rounded-2xl border border-border bg-surface p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <Label className="text-sm font-medium text-ink">Workshops age filter</Label>
+            <Label className="text-sm font-medium text-ink">Lounges age filter</Label>
             <p className="mt-0.5 text-xs text-ink-muted">
-              Only show Workshops scoped to this minimum age. Private to you.
+              Only show Lounges scoped to this minimum age. Private to you.
             </p>
           </div>
         </div>
@@ -721,15 +721,15 @@ function CcConsentSection() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-4">
       <div className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-        Workshop rights
+        Lounge rights
       </div>
       <div className="mt-1 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="text-sm font-medium text-ink">
-            Show the Creative Commons reminder when I enter a Workshop
+            Show the Creative Commons reminder when I enter a Lounge
           </div>
           <p className="mt-1 text-xs text-ink-muted">
-            Workshop contributions are shared under{" "}
+            Lounge contributions are shared under{" "}
             <a
               href="https://creativecommons.org/licenses/by-sa/4.0/"
               target="_blank"
@@ -739,7 +739,7 @@ function CcConsentSection() {
               CC BY-SA 4.0
             </a>{" "}
             until a riff becomes a Collab, where co-creators set the terms. We show a
-            one-time notice the first time you enter a Workshop; turn it back on if you
+            one-time notice the first time you enter a Lounge; turn it back on if you
             want to see it again.
           </p>
         </div>
@@ -977,7 +977,7 @@ function DangerSection() {
 const NOTIF_GROUPS: { key: string; label: string; description: string; email: NotifPrefKey; inapp: NotifPrefKey }[] = [
   { key: "messages", label: "Direct messages", description: "When someone sends you a DM.", email: "email_messages", inapp: "inapp_messages" },
   { key: "collab", label: "Collab activity", description: "Applications, replies, and updates on your collab posts.", email: "email_collab_activity", inapp: "inapp_collab_activity" },
-  { key: "workshop", label: "Workshop updates", description: "Check-in reminders, status changes, and host announcements.", email: "email_workshop_updates", inapp: "inapp_workshop_updates" },
+  { key: "workshop", label: "Lounge updates", description: "Check-in reminders, status changes, and host announcements.", email: "email_workshop_updates", inapp: "inapp_workshop_updates" },
   { key: "follows", label: "New followers", description: "When someone follows your profile.", email: "email_follows", inapp: "inapp_follows" },
   { key: "credits", label: "Credit requests", description: "When someone credits you on a work, or asks you to confirm one.", email: "email_credits", inapp: "inapp_credits" },
   { key: "friend_online", label: "Someone in your network comes online", description: "When a mutual follow becomes active after being away. Off by default — turn on if you want to know.", email: "email_friend_online", inapp: "inapp_friend_online" },
@@ -1159,7 +1159,7 @@ function DataSection() {
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
       <p className="text-sm text-ink">
-        Download a JSON snapshot of your profile, works, collab posts, workshops, applications,
+        Download a JSON snapshot of your profile, works, collab posts, Lounges, applications,
         comments, follows, blocks, and reports filed. Useful for keeping a personal backup or
         moving your portfolio elsewhere.
       </p>

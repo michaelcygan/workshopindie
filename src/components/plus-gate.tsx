@@ -31,7 +31,7 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
 
             <div className="mx-auto mt-6 max-w-sm space-y-3">
               <PlusBullet>All cities — join, post & filter the gallery beyond your home city</PlusBullet>
-              <PlusBullet>Unlimited Workshop time (Free is 30 min/day)</PlusBullet>
+              <PlusBullet>Unlimited Lounge time (Free is 30 min/day)</PlusBullet>
               <PlusBullet>Unlimited published works on your portfolio</PlusBullet>
               <PlusBullet>Unlimited active open Collabs + boosted placement</PlusBullet>
               <PlusBullet>Early access to new features as they ship</PlusBullet>

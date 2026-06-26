@@ -75,13 +75,13 @@ export function CcConsentDialog() {
       <DialogContent className="max-w-md rounded-2xl">
         <DialogHeader>
           <div className="mb-1 inline-flex items-center gap-1.5 self-start rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-            <Sparkles className="h-3 w-3" /> Workshop rights
+            <Sparkles className="h-3 w-3" /> Lounge rights
           </div>
           <DialogTitle className="font-display text-2xl">
-            Workshops are Creative Commons
+            Lounges are Creative Commons
           </DialogTitle>
           <DialogDescription className="text-sm leading-relaxed text-ink-soft">
-            Anything you share in a Workshop — chat, sketches, notes, links — is shared under{" "}
+            Anything you share in a Lounge — chat, sketches, notes, links — is shared under{" "}
             <span className="font-medium text-ink">CC BY-SA 4.0</span> so collaborators can riff
             on it. Start a <span className="font-medium text-ink">Collab</span> to manage rights,
             find additional collaborators, and continue working on the project.

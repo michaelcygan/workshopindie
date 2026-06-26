@@ -126,7 +126,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
 
           {step === 2 && (
             <>
-              <p className="text-sm text-ink-muted">Everyone who applied is pre-credited. Uncheck anyone who didn't end up on the project. Add non-Workshop people by name.</p>
+              <p className="text-sm text-ink-muted">Everyone who applied is pre-credited. Uncheck anyone who didn't end up on the project. Add people not on Workshop by name.</p>
 
               {candidates.length === 0 && extras.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">

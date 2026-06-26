@@ -45,7 +45,7 @@ export const Route = createFileRoute("/cities/$slug")({
     const name = c?.name ?? params.slug;
     const title = `${name} — Workshop`;
     const description = c
-      ? `Live and scheduled Workshops, open collabs, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
+      ? `Live and scheduled Lounges, open collabs, and creators in ${c.name}${c.country ? `, ${c.country}` : ""}.`
       : "Creators on Workshop.";
     return {
       meta: [
@@ -90,7 +90,7 @@ function CityPage() {
 
   useDocumentMeta({
     title: city?.name,
-    description: city ? `Live and scheduled Workshops, open collabs, and creators in ${city.name}.` : undefined,
+    description: city ? `Live and scheduled Lounges, open collabs, and creators in ${city.name}.` : undefined,
   });
 
   const { data: workshops = [] } = useQuery({
@@ -204,7 +204,7 @@ function CityPage() {
       .update({ is_pinned: !ws.is_pinned })
       .eq("id", ws.id);
     if (error) return toast.error(error.message);
-    toast.success(ws.is_pinned ? "Unpinned" : "Pinned as standing Workshop");
+    toast.success(ws.is_pinned ? "Unpinned" : "Pinned as standing Lounge");
     qc.invalidateQueries({ queryKey: ["city-workshops", city?.id] });
   }
 
@@ -234,9 +234,9 @@ function CityPage() {
           </Button>
           <Button
             className="rounded-full gap-1.5"
-            onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Workshop")}
+            onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Lounge")}
           >
-            <Plus className="h-4 w-4" /> Post a Workshop
+            <Plus className="h-4 w-4" /> Post a Lounge
           </Button>
         </div>
       </div>
@@ -280,7 +280,7 @@ function CityPage() {
       <section className="mt-12">
         <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="font-display text-2xl text-ink">Workshops in {city.name}</h2>
+            <h2 className="font-display text-2xl text-ink">Lounges in {city.name}</h2>
             <p className="mt-1 text-sm text-ink-muted">Live now, scheduled, and standing. City-only audience.</p>
           </div>
           <CategoryScroller tabs={workshopTabs} value={wsTab} onChange={(v) => setWsTab(v)} className="md:w-fit" />
@@ -289,13 +289,13 @@ function CityPage() {
         {filteredWorkshops.length === 0 ? (
           <div className="mt-4 rounded-2xl border border-dashed border-border bg-surface p-8 text-center">
             <p className="text-sm text-ink-muted">
-              {wsTab === "live" && `No live Workshops in ${city.name} right now.`}
+              {wsTab === "live" && `No live Lounges in ${city.name} right now.`}
               {wsTab === "scheduled" && `Nothing on the calendar yet.`}
-              {wsTab === "standing" && `No standing Workshops here yet.`}
-              {wsTab === "all" && `No Workshops in ${city.name} yet — start one.`}
+              {wsTab === "standing" && `No standing Lounges here yet.`}
+              {wsTab === "all" && `No Lounges in ${city.name} yet — start one.`}
             </p>
-            <Button className="mt-4 rounded-full gap-1.5" onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Workshop")}>
-              <Plus className="h-4 w-4" /> Post a Workshop
+            <Button className="mt-4 rounded-full gap-1.5" onClick={() => user ? setPostWorkshopOpen(true) : toast.error("Sign in to post a Lounge")}>
+              <Plus className="h-4 w-4" /> Post a Lounge
             </Button>
           </div>
         ) : (

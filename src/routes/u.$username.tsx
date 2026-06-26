@@ -564,7 +564,7 @@ function ProfilePage() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
-            <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Workshop</Button></Link>
+            <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Lounge</Button></Link>
           </div>
         )}
 
@@ -1068,10 +1068,10 @@ function ActivityTab({
   if (empty) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Workshop, or apply to a Collab.</p>
+        <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Lounge, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
           <Link to="/works/new"><Button className="rounded-full">Start a Work</Button></Link>
-          <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop into a Workshop</Button></Link>
+          <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop into a Lounge</Button></Link>
           <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
         </div>
       </div>
@@ -1107,7 +1107,7 @@ function ActivityTab({
 
       {workshops.length > 0 && (
         <section>
-          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Workshops <span className="ml-1 text-ink-muted/60">{workshops.length}</span></h2>
+          <h2 className="text-xs uppercase tracking-wider text-ink-muted">Lounges <span className="ml-1 text-ink-muted/60">{workshops.length}</span></h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {workshops.map((w) => (
               <Link key={w.id + w.role} to="/workshops/$slug" params={{ slug: w.slug }} className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">

@@ -16,7 +16,7 @@ export const Route = createFileRoute("/w/$token")({
   head: ({ loaderData }) => {
     const link = (loaderData as any)?.link;
     const title = link?.title ? `${link.title} — Workshop` : "Workshop";
-    const desc = link?.prompt ?? "Drop into a live Workshop.";
+    const desc = link?.prompt ?? "Drop into a live Lounge.";
     const meta: any[] = [
       { title },
       { name: "description", content: desc },
@@ -91,7 +91,7 @@ function LinkLanding() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
-      {/* Workshop shell — gated peek */}
+      {/* Lounge shell — gated peek */}
       <div className="relative overflow-hidden rounded-3xl border border-border bg-surface shadow-soft">
         {link.cover_url ? (
           <div className="relative aspect-[16/9] w-full">
@@ -137,7 +137,7 @@ function LinkLanding() {
               onClick={() => (user ? enterWorkshop() : setGateOpen(true))}
             >
               <DoorOpen className="h-4 w-4" />
-              {user ? (joining ? "Joining…" : "Join Workshop") : "Create free account & join"}
+              {user ? (joining ? "Joining…" : "Join Lounge") : "Create free account & join"}
             </Button>
           </div>
         </div>
@@ -150,7 +150,7 @@ function LinkLanding() {
           setGateOpen(open);
         }}
         title={`Join "${link.title}"`}
-        subtitle="Create a free account to drop into the Workshop. It's quick."
+        subtitle="Create a free account to drop into the Lounge. It's quick."
         onAuthed={() => {
           setGateOpen(false);
           // useEffect will pick up the new user and auto-join, but kick it off now too.

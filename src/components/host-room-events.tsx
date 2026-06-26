@@ -72,7 +72,7 @@ export function HostRoomEvents({ roomId, isHost }: { roomId: string; isHost: boo
       if (target && target === user.id) {
         markRecentExit(roomId);
         supabase.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", user.id);
-        toast.error("The host removed you from this Workshop.", {
+        toast.error("The host removed you from this Lounge.", {
           action: { label: "Find another", onClick: findAnother },
         });
         router.navigate({ to: "/workshop" });
@@ -82,7 +82,7 @@ export function HostRoomEvents({ roomId, isHost }: { roomId: string; isHost: boo
       if (isHost) return;
       markRecentExit(roomId);
       supabase.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", user.id);
-      toast("The host ended this Workshop.", {
+      toast("The host ended this Lounge.", {
         action: { label: "Find another", onClick: findAnother },
       });
       qc.invalidateQueries({ queryKey: ["instant-room", roomId] });

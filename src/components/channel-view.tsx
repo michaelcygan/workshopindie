@@ -1287,7 +1287,7 @@ function StageTabs({
   return (
     <div
       role="tablist"
-      aria-label="Workshop view"
+      aria-label="Lounge view"
       className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
     >
       {/* Chat first */}
@@ -1324,7 +1324,7 @@ function StageTabs({
         </PopoverTrigger>
         <PopoverContent align="start" className="w-64 p-1">
           <div className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-            Workshop tools
+            Lounge tools
           </div>
           {STAGE_TOOL_OPTIONS.map((opt) => {
             const Icon = opt.icon;

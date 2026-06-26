@@ -131,7 +131,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: roomId ? `/lounge/${roomId}` : "/workshop",
+        href: roomId ? `/lounge/${roomId}` : "/lounge",
       };
     }
     case "payment_failed":

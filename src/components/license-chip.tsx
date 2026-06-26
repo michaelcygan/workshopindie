@@ -12,7 +12,7 @@ export function LicenseChip() {
         <button
           type="button"
           className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-surface px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-muted hover:text-ink hover:border-border-strong transition"
-          aria-label="Workshop license"
+          aria-label="Lounge license"
           title="Shared under CC BY-SA 4.0 until it becomes a Collab"
         >
           <span aria-hidden className="font-semibold">CC</span>

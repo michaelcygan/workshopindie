@@ -13,7 +13,7 @@ export const Route = createFileRoute("/me/friends")({
   head: () => ({
     meta: [
       { title: "Your Network — Workshop" },
-      { name: "description", content: "Mutual follows, online status, and one-tap invites to Workshops." },
+      { name: "description", content: "Mutual follows, online status, and one-tap invites to Lounges." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -38,7 +38,7 @@ function MyFriendsPage() {
       <main className="mx-auto max-w-2xl px-4 py-10">
         <h1 className="font-display text-3xl text-ink">Your Network</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Sign in to see your mutual follows and invite them into Workshops.
+          Sign in to see your mutual follows and invite them into Lounges.
         </p>
         <Link to="/auth" className="mt-4 inline-flex rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground">
           Sign in
@@ -85,7 +85,7 @@ function MyFriendsPage() {
                   <FriendRow
                     key={f.user_id}
                     friend={f}
-                    inviteLabel="Invite to Workshop"
+                    inviteLabel="Invite to Lounge"
                     onInviteClick={() =>
                       setInvitee({ id: f.user_id, displayName: f.display_name, username: f.username })
                     }
@@ -104,7 +104,7 @@ function MyFriendsPage() {
                   <FriendRow
                     key={f.user_id}
                     friend={f}
-                    inviteLabel="Invite to Workshop"
+                    inviteLabel="Invite to Lounge"
                     onInviteClick={() =>
                       setInvitee({ id: f.user_id, displayName: f.display_name, username: f.username })
                     }
