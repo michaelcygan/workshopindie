@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
-const FALLBACK_TITLE = "Workshop";
+const FALLBACK_TITLE = "Lounge";
 
 export const Route = createFileRoute("/lounge/$id")({
   component: () => (
@@ -53,8 +53,8 @@ export const Route = createFileRoute("/lounge/$id")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Workshop" },
-      { name: "description", content: "A live Workshop. Drop in, talk shop, find your people." },
+      { title: "Lounge" },
+      { name: "description", content: "A live Lounge. Drop in, talk shop, find your people." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -62,7 +62,7 @@ export const Route = createFileRoute("/lounge/$id")({
     const router = useRouter();
     return (
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <h1 className="font-display text-3xl text-ink">Couldn't load this Workshop</h1>
+        <h1 className="font-display text-3xl text-ink">Couldn't load this Lounge</h1>
         <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
         <button
           onClick={() => {
@@ -78,13 +78,13 @@ export const Route = createFileRoute("/lounge/$id")({
   },
   notFoundComponent: () => (
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="font-display text-3xl text-ink">This Workshop isn't here</h1>
+      <h1 className="font-display text-3xl text-ink">This Lounge isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
       <Link
         to="/lounge"
         className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
       >
-        Back to Workshop
+        Back to Lounge
       </Link>
     </main>
   ),
@@ -328,7 +328,7 @@ function LiveRoomPage() {
           >
             <ArrowLeft className="h-3 w-3" /> Workshop
           </Link>
-          {/* Hide the redundant fallback "Workshop" title on desktop — top nav already shows it.
+          {/* Hide the redundant fallback "Lounge" title on desktop — top nav already shows it.
               When the room has a custom name (after a purpose pick), the title stays. */}
           {(() => {
             const MediumIcon = mediumIcon(room?.medium ?? room?.category ?? null);
@@ -454,7 +454,7 @@ function LiveRoomPage() {
           {invite && invite.status === "pending" && (
             <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-2">
               <span className="text-xs text-ink-soft">
-                You've been invited to join the persistent Workshop.
+                You've been invited to join the persistent Lounge.
               </span>
               <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">
                 Join

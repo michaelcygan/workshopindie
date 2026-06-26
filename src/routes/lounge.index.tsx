@@ -23,8 +23,8 @@ export const Route = createFileRoute("/lounge/")({
   component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [
-      { title: "Workshop — Drop in or host" },
-      { name: "description", content: "Drop into a live Workshop or host your own. Voice or video, up to 5 per Workshop." },
+      { title: "Lounge — Drop in or host" },
+      { name: "description", content: "Drop into the Lounge or open a new room. Voice or video, up to 5 per room." },
     ],
   }),
 });
@@ -201,7 +201,7 @@ function WorkshopPreflight() {
       const { roomId } = medium
         ? await dropMedium({ data: { medium } })
         : await drop({ data: {} });
-      router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
+      router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open that room");
       setBusy(null);
@@ -253,9 +253,9 @@ function WorkshopPreflight() {
       qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
       router.invalidate();
       setPrivacyOpen(false);
-      router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode } });
+      router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't open your Workshop");
+      toast.error(e instanceof Error ? e.message : "Couldn't open your Lounge");
       setBusy(null);
     }
   }
@@ -430,7 +430,7 @@ function WorkshopPreflight() {
       {idleNudge && liveCount === 0 && devices && canDrop && (
         <div className="mt-3 flex items-center gap-2 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-xs text-ink-soft">
           <Sparkles className="h-3 w-3 text-primary shrink-0" />
-          <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Workshop.</span>
+          <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Lounge.</span>
           <button
             type="button"
             onClick={() => {
@@ -476,7 +476,7 @@ function WorkshopPreflight() {
           <div className="min-w-0 flex-1">
             <div className="text-sm font-medium text-ink">No mic or camera detected.</div>
             <p className="text-xs text-ink-muted">
-              Workshops are voice or video — connect a device, or open this page on your phone.
+              Lounge rooms are voice or video — connect a device, or open this page on your phone.
             </p>
           </div>
           <Button
@@ -509,12 +509,12 @@ function WorkshopPreflight() {
           className="shrink-0 rounded-full h-9 gap-2 px-4"
         >
           {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
-          {busy === "host" ? "Opening…" : hostLabel ? `Start a ${hostLabel} Workshop` : "Start a Workshop"}
+          {busy === "host" ? "Opening…" : hostLabel ? `Open a ${hostLabel} Lounge` : "Open the Lounge"}
         </Button>
       </div>
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
-        Everything in a Workshop is ephemeral until someone creates a{" "}
+        Everything in the Lounge is ephemeral until someone creates a{" "}
         <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
           Collab
         </Link>
@@ -526,7 +526,7 @@ function WorkshopPreflight() {
         medium={null}
         onTakeSeat={async (roomId) => {
           const mode = await preGrantMedia();
-          router.navigate({ to: "/workshop/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+          router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
         }}
       />
 
@@ -543,7 +543,7 @@ function WorkshopPreflight() {
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-3 mb-3">
           <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink-muted">
-            Recent Workshops
+            Recent Lounges
           </h2>
           <Link
             to="/workshops"
