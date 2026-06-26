@@ -145,9 +145,9 @@ function Hero() {
               <Calendar className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-xl md:text-2xl leading-tight">Show up to an Event</div>
+              <div className="font-display text-xl md:text-2xl leading-tight">Find an Event</div>
               <p className="mt-2 text-sm text-ink-muted">
-                Real rooms, real people. RSVP to an event a Group is hosting — meet the makers in your city.
+                Workshops, open mics, listening parties, networking — in person and online. Build your creative network and get to work.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
