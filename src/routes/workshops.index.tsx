@@ -143,7 +143,7 @@ function WorkshopsPage() {
         </KickerChip>
         <p className="text-sm text-ink-muted">
           RSVP to what's scheduled — or skip the wait and{" "}
-          <Link to="/workshop" className="underline hover:text-ink">drop in</Link>.
+          <Link to="/lounge" className="underline hover:text-ink">drop in</Link>.
         </p>
         <RecapChip count={workshops?.length ?? 0} label="in the rotation" />
       </div>

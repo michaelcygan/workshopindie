@@ -74,7 +74,7 @@ export function TopNav() {
         <nav className="flex flex-1 items-center justify-center gap-1">
           <Link
             data-firstrun="instant"
-            to="/workshop"
+            to="/lounge"
             className={navLinkBase}
             activeProps={{ className: navLinkActive }}
           >

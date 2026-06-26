@@ -266,7 +266,7 @@ export const convertScheduledToLive = createServerFn({ method: "POST" })
   });
 
 /**
- * Create-a-Collab from a live room (`/workshop/$id`).
+ * Create-a-Collab from a live room (`/lounge/$id`).
  *
  * - Caller must be the room's host OR currently present in the room (instant_presence).
  * - Forks the live room into a persistent Workshop + paired Collab post.

@@ -47,7 +47,7 @@ function CheckoutReturn() {
       </p>
       <div className="mt-6 flex gap-2">
         <Link to="/me"><Button className="rounded-full">Go to your profile</Button></Link>
-        <Link to="/workshop"><Button variant="outline" className="rounded-full">Drop in</Button></Link>
+        <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop in</Button></Link>
       </div>
       {tick > 0 && <p className="mt-4 text-xs text-ink-muted">Activating subscription…</p>}
     </main>

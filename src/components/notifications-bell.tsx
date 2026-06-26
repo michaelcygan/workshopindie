@@ -122,7 +122,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
         subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Workshop while there's a seat.",
-        href: roomId ? `/workshop/${roomId}` : "/workshop",
+        href: roomId ? `/lounge/${roomId}` : "/workshop",
       };
     }
     case "chat_mention": {
@@ -131,7 +131,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: roomId ? `/workshop/${roomId}` : "/workshop",
+        href: roomId ? `/lounge/${roomId}` : "/workshop",
       };
     }
     case "payment_failed":

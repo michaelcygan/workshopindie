@@ -81,7 +81,7 @@ export const Route = createFileRoute("/lounge/$id")({
       <h1 className="font-display text-3xl text-ink">This Workshop isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
       <Link
-        to="/workshop"
+        to="/lounge"
         className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
       >
         Back to Workshop
@@ -323,7 +323,7 @@ function LiveRoomPage() {
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
         <div className="min-w-0">
           <Link
-            to="/workshop"
+            to="/lounge"
             className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
           >
             <ArrowLeft className="h-3 w-3" /> Workshop

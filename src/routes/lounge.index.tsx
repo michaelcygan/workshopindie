@@ -394,7 +394,7 @@ function WorkshopPreflight() {
             >
               <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface pl-1 pr-1 py-1 text-xs text-ink shadow-soft">
                 <Link
-                  to="/workshop/$id"
+                  to="/lounge/$id"
                   params={{ id: rejoin.id }}
                   search={{ mode: "video" }}
                   className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"

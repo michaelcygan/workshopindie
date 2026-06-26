@@ -93,7 +93,7 @@ export function HomeLiveWorkshopsRail() {
             Start one — five seats, shared tools, anyone can drop in.
           </p>
           <div className="mt-5 flex items-center justify-center gap-3">
-            <Link to="/workshop">
+            <Link to="/lounge">
               <Button className="rounded-full">Start a Workshop</Button>
             </Link>
             <Link

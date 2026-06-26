@@ -58,7 +58,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
   }
 
   function copyLink(r: ActiveInstantRoom) {
-    const path = `/workshop/${r.id}`;
+    const path = `/lounge/${r.id}`;
     const url = typeof window !== "undefined" ? `${window.location.origin}${path}` : path;
     navigator.clipboard?.writeText(url).then(
       () => toast.success("Link copied — share to fill the room"),
