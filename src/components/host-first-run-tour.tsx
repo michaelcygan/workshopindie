@@ -28,7 +28,7 @@ const STEPS = [
   {
     Icon: Rocket,
     title: "Turn it into a Collab when it clicks",
-    body: "Tap Create → Create a Collab to fork this live room into a persistent Workshop. Everyone gets a one-tap invite.",
+    body: "Tap Create → Create a Collab to fork this live room into a persistent Collab. Everyone gets a one-tap invite.",
   },
   {
     Icon: Share2,

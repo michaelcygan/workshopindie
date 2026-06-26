@@ -255,7 +255,7 @@ function EditProfile() {
     <main className="mx-auto max-w-6xl px-4 py-8 pb-32 md:px-6 md:py-12">
       <header className="mb-6">
         <h1 className="font-display text-3xl text-ink md:text-4xl">Edit profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Workshops, and across the network.</p>
+        <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Lounges, and across the network.</p>
       </header>
 
       {/* Mobile sub-nav */}
@@ -420,14 +420,14 @@ function EditProfile() {
               <p className="text-xs text-ink-muted">
                 {birthdateLocked
                   ? "Locked. Contact support if this needs to change."
-                  : "Never shown on your profile. Powers optional age filters for Workshops."}
+                  : "Never shown on your profile. Powers optional age filters for Lounges."}
               </p>
             </div>
           </Section>
 
 
           {/* MEDIUMS & BIO */}
-          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Workshops show up for you." refMap={sectionRefs}>
+          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Lounges show up for you." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">
@@ -476,7 +476,7 @@ function EditProfile() {
 
 
           {/* LOCATION */}
-          <Section id="location" title="Location" subtitle="Helps us surface nearby Workshops and Meetups." refMap={sectionRefs}>
+          <Section id="location" title="Location" subtitle="Helps us surface nearby Lounges and Meetups." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>City</Label>
               <select value={form.cityId} onChange={(e) => set("cityId", e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">

@@ -247,7 +247,7 @@ function DmsIndex() {
             </span>
             {counts.all > 0
               ? `${counts.all} thread${counts.all === 1 ? "" : "s"}${counts.unread > 0 ? ` · ${counts.unread} unread` : ""}`
-              : "DM mutuals — or anyone connected to your collabs and workshops."}
+              : "DM mutuals — or anyone connected to your collabs and Lounges."}
           </p>
         </div>
         <Button
@@ -388,7 +388,7 @@ function EmptyInbox({ onNew }: { onNew: () => void }) {
         </div>
         <h3 className="mt-4 font-display text-2xl text-ink md:text-3xl">No conversations yet.</h3>
         <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-          DM your mutuals, or anyone you're connected to through a collab or workshop.
+          DM your mutuals, or anyone you're connected to through a collab or Lounge.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button onClick={onNew} className="rounded-full gap-1.5">

@@ -77,7 +77,7 @@ function InProgressPage() {
         </div>
         <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">In Progress</h1>
         <p className="mt-2 text-sm text-ink-muted">
-          Tasks waiting on you, the workshops you're in, and your open collabs.
+          Tasks waiting on you, the Lounges you're in, and your open collabs.
         </p>
       </header>
 
@@ -125,13 +125,13 @@ function TasksSection({ tasks }: { tasks: InProgressTask[] }) {
         icon={<ListChecks className="h-4 w-4" />}
         title="Tasks for you"
         count={tasks.length}
-        hint="Assigned to you or @-mentioned in a Workshop."
+        hint="Assigned to you or @-mentioned in a Lounge."
       />
       {tasks.length === 0 ? (
         <SectionEmpty
           message="No tasks waiting on you."
-          actionLabel="Join a Workshop"
-          actionTo="/workshop"
+          actionLabel="Join a Lounge"
+          actionTo="/lounge"
         />
       ) : (
         <ul className="space-y-2">
@@ -200,15 +200,15 @@ function WorkshopsSection({ workshops }: { workshops: InProgressWorkshop[] }) {
     <section>
       <SectionHeader
         icon={<Hammer className="h-4 w-4" />}
-        title="Workshops you're in"
+        title="Lounges you're in"
         count={workshops.length}
         hint="Active studios you're confirmed in."
       />
       {workshops.length === 0 ? (
         <SectionEmpty
-          message="You're not in an active Workshop right now."
-          actionLabel="Drop into a Workshop"
-          actionTo="/workshop"
+          message="You're not in an active Lounge right now."
+          actionLabel="Drop into a Lounge"
+          actionTo="/lounge"
         />
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2">

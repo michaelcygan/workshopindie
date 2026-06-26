@@ -87,8 +87,8 @@ export function LobbiesSection() {
     <section className="mt-10">
       <div className="flex items-end justify-between">
         <div>
-          <h2 className="font-display text-2xl text-ink">Draft Workshops</h2>
-          <p className="text-sm text-ink-muted">Private Workshops you're brainstorming with people you mutually follow. Schedule one when you're ready.</p>
+          <h2 className="font-display text-2xl text-ink">Draft Lounges</h2>
+          <p className="text-sm text-ink-muted">Private Lounges you're brainstorming with people you mutually follow. Schedule one when you're ready.</p>
         </div>
         <Link to="/workshops/lobby/new"><Button size="sm" variant="outline" className="rounded-full gap-1.5"><Sparkles className="h-3.5 w-3.5" /> Start a Draft</Button></Link>
       </div>

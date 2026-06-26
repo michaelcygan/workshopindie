@@ -50,7 +50,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RadioTower className="h-4 w-4 text-violet" /> Open your Workshop
+            <RadioTower className="h-4 w-4 text-violet" /> Open your Lounge
           </DialogTitle>
           <DialogDescription>
             Confirm who can find this room. You can change topic and title before it opens.
@@ -71,7 +71,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               maxLength={120}
-              placeholder={`${mediumLabel} Workshop`}
+              placeholder={`${mediumLabel} Lounge`}
               className="mt-1"
             />
           </div>
@@ -144,7 +144,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
               <li>· Ask all guests to mute (they can unmute themselves)</li>
               <li>· Remove someone if a session goes sideways</li>
               <li>· Lock the room — no new seats fill</li>
-              <li>· End the Workshop for everyone</li>
+              <li>· End the Lounge for everyone</li>
             </ul>
             <p className="mt-1.5 text-[11px] text-ink-muted">
               Anything written, drawn, or pinned stays ephemeral until someone turns it into a Collab.
@@ -162,7 +162,7 @@ export function HostPrivacyDialog({ open, onOpenChange, defaultMedium, defaultTi
             className="gap-2"
           >
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
-            {busy ? "Opening…" : "Open Workshop"}
+            {busy ? "Opening…" : "Open Lounge"}
           </Button>
         </DialogFooter>
       </DialogContent>

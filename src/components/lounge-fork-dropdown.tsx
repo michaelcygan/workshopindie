@@ -59,7 +59,7 @@ export function LoungeForkDropdown({ selectedMedium, onSelectMedium, onJoinNow, 
         className="group inline-flex items-baseline gap-2 rounded-md text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
       >
         <span className="font-display text-4xl md:text-6xl text-ink">
-          Workshop{selectedLabel ? <span className="text-ink-muted">: {selectedLabel}</span> : null}
+          Lounge{selectedLabel ? <span className="text-ink-muted">: {selectedLabel}</span> : null}
         </span>
         <motion.span
           animate={{ rotate: open ? 180 : 0 }}
