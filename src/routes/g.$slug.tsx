@@ -254,7 +254,25 @@ function GroupPage() {
     },
   });
 
+  // Cheap count-only query so the tab bar can show the Subgroups chip
+  // without paying for the full row payload on every page load.
+  const { data: childCount = 0 } = useQuery({
+    queryKey: ["group", group.id, "children-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("groups")
+        .select("id", { count: "exact", head: true })
+        .eq("parent_group_id", group.id)
+        .is("deleted_at", null)
+        .eq("visibility", "public");
+      return count ?? 0;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
+    enabled: tab === "subgroups" && childCount > 0,
     queryKey: ["group", group.id, "children"],
     queryFn: async () => {
       const { data } = await supabase
@@ -270,6 +288,7 @@ function GroupPage() {
       return (data ?? []) as unknown as GroupCardData[];
     },
   });
+
 
 
   useEffect(() => {
