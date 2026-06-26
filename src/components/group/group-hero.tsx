@@ -1,9 +1,12 @@
-import { Link } from "@tanstack/react-router";
-import { Calendar, MapPin, Share2, Sparkles, Star, Users } from "lucide-react";
+import { Link, useRouter } from "@tanstack/react-router";
+import { Calendar, MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { useMutation } from "@tanstack/react-query";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { joinGroupLounge } from "@/lib/instant.functions";
 
 export type GroupHeroData = {
   id: string;
