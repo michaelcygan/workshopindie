@@ -156,12 +156,12 @@ function FeedItemView({
   canSkip: boolean;
 }) {
   const Icon = item.kind === "collab" ? Megaphone : Radio;
-  const kindLabel = item.kind === "collab" ? "Collab" : "Workshop";
+  const kindLabel = item.kind === "collab" ? "Collab" : "Lounge";
   const accent = item.group.accent_color ?? undefined;
   const href =
     item.kind === "collab"
       ? { to: "/collab/$slug", params: { slug: item.slug } }
-      : { to: "/workshops/$slug", params: { slug: item.slug } };
+      : { to: "/events/$slug", params: { slug: item.slug } };
   const startsAt = item.startsAt ? new Date(item.startsAt) : null;
   const startsLabel =
     item.kind === "workshop" && startsAt
