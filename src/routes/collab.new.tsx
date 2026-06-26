@@ -576,31 +576,17 @@ function NewCollab() {
             <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
-            {postedDialog?.workshopRoomId ? (
-              <Button
-                type="button"
-                className="rounded-full"
-                onClick={() => {
-                  const id = postedDialog.workshopRoomId!;
-                  setPostedDialog(null);
-                  navigate({ to: "/workshop/$id", params: { id } });
-                }}
-              >
-                Join your Workshop
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                className="rounded-full"
-                onClick={() => {
-                  const slug = postedDialog!.slug;
-                  setPostedDialog(null);
-                  navigate({ to: "/collab/$slug", params: { slug } });
-                }}
-              >
-                Open Collab page
-              </Button>
-            )}
+            <Button
+              type="button"
+              className="rounded-full"
+              onClick={() => {
+                const slug = postedDialog!.slug;
+                setPostedDialog(null);
+                navigate({ to: "/collab/$slug", params: { slug } });
+              }}
+            >
+              Open Collab page
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
