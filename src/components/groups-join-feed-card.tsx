@@ -106,7 +106,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
           />
         ) : !hasGroups ? (
           <EmptyState
-            title="Join a group to unlock collabs and workshops from your scenes."
+            title="Join a group to unlock collabs and Lounges from your scenes."
             cta={
               <button
                 type="button"
