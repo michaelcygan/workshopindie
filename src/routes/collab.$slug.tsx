@@ -17,12 +17,11 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
-import { openWorkshopOnCollab } from "@/lib/collab-workshop.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
-import { StartWorkshopFromCollabButton } from "@/components/start-workshop-from-collab-button";
+import { OpenLoungeButton } from "@/components/open-lounge-button";
 import { WorksBornHere } from "@/components/works-born-here";
 
 import type { Category } from "@/lib/categories";
@@ -140,9 +139,7 @@ function CollabDetail() {
   const router = useRouter();
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
-  
   const extendFn = useServerFn(extendCollabDeadline);
-  const openWorkshopFn = useServerFn(openWorkshopOnCollab);
 
   const [contactOpen, setContactOpen] = useState(false);
   const [contactRoleId, setContactRoleId] = useState<string | null>(null);
@@ -176,20 +173,6 @@ function CollabDetail() {
       return data;
     },
   });
-
-  const { data: liveWorkshop } = useQuery({
-    queryKey: ["collab-live-workshop", post?.live_workshop_id],
-    enabled: !!post?.live_workshop_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("workshops")
-        .select("id,slug,status")
-        .eq("id", post!.live_workshop_id!)
-        .maybeSingle();
-      return data;
-    },
-  });
-  const isLive = !!liveWorkshop && (liveWorkshop.status === "active" || liveWorkshop.status === "check_in");
 
   const isOwnerEarly = user?.id === post?.user_id;
   const fetchApplicants = useServerFn(listApplicants);
@@ -230,15 +213,6 @@ function CollabDetail() {
   });
 
 
-  const openWorkshopMut = useMutation({
-    mutationFn: () => openWorkshopFn({ data: { collabPostId: post!.id } }),
-    onSuccess: ({ slug: wsSlug }) => {
-      toast.success("Workshop is live — heading in");
-      qc.invalidateQueries({ queryKey: ["collab", slug] });
-      router.navigate({ to: "/workshops/$slug", params: { slug: wsSlug } });
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
 
   const applyFn = useServerFn(applyToCollab);
   const sendContact = useMutation({
@@ -374,11 +348,8 @@ function CollabDetail() {
               </>
             ) : (
               <>
-                {isLive && (
-                  <Button size="sm" className="rounded-full gap-1 bg-primary" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
-                    <span className="relative flex h-2 w-2"><span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75" /><span className="relative inline-flex h-2 w-2 rounded-full bg-white" /></span>
-                    Live now — join
-                  </Button>
+                {post.status === "open" && (
+                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 )}
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
@@ -414,20 +385,6 @@ function CollabDetail() {
         {isOwner && post.status === "open" && !deadlinePassed && (
           (() => {
             const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
-            if (isLive) {
-              return (
-                <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
-                  <Radio className="h-5 w-5 text-primary" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-ink">Your Workshop is live.</p>
-                    <p className="text-xs text-ink-muted">Drop back in — applicants can join from this page.</p>
-                  </div>
-                  <Button size="sm" className="rounded-full gap-1" onClick={() => router.navigate({ to: "/workshops/$slug", params: { slug: liveWorkshop!.slug } })}>
-                    <Radio className="h-3.5 w-3.5" /> Rejoin Workshop
-                  </Button>
-                </div>
-              );
-            }
             if (applicantCount > 0) {
               return (
                 <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
@@ -438,9 +395,7 @@ function CollabDetail() {
                     </p>
                     <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
-                    <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
-                  </Button>
+                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                   <Button size="sm" className="rounded-full gap-1" asChild>
                     <a href="#applicants">
                       <Inbox className="h-3.5 w-3.5" /> Review applicants
@@ -457,9 +412,7 @@ function CollabDetail() {
                     <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
                     <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
-                    <Radio className="h-3.5 w-3.5" /> Open Workshop
-                  </Button>
+                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 </div>
               );
             }
@@ -467,12 +420,10 @@ function CollabDetail() {
               <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
                 <Sparkles className="h-5 w-5 text-ink-muted" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink">Quiet so far. Try a Workshop or another share.</p>
-                  <p className="text-xs text-ink-muted">Live sessions and one fresh share usually unstick a post.</p>
+                  <p className="font-medium text-ink">Quiet so far. Try opening the Lounge or another share.</p>
+                  <p className="text-xs text-ink-muted">A live session and one fresh share usually unstick a post.</p>
                 </div>
-                <Button size="sm" className="rounded-full gap-1" disabled={openWorkshopMut.isPending} onClick={() => openWorkshopMut.mutate()}>
-                  <Radio className="h-3.5 w-3.5" /> {openWorkshopMut.isPending ? "Opening…" : "Open Workshop"}
-                </Button>
+                <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
               </div>
             );
           })()
@@ -572,13 +523,7 @@ function CollabDetail() {
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
             {post.status === "open" && (
-              <StartWorkshopFromCollabButton
-                collabPostId={post.id}
-                collabSlug={post.slug}
-                liveWorkshopSlug={liveWorkshop?.slug ?? null}
-                isLive={isLive}
-                isAuthor={isOwner}
-              />
+              <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
             )}
           </div>
         )}

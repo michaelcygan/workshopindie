@@ -437,40 +437,8 @@ function LiveRoomPage() {
       {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
       {user && <HostRoomEvents roomId={id} isHost={isHost} />}
 
-      {/* Promoted banner — slim */}
-      {isPromoted && forkedWs && (
-        <div className="mt-3 rounded-xl border border-violet/30 bg-violet/5 px-3 py-2">
-          <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Sparkles className="h-3.5 w-3.5 text-violet shrink-0" />
-            <span className="text-ink truncate">
-              This Lounge became a Collab: "{forkedWs.title}".
-            </span>
-            <Link to="/workshops/$slug" params={{ slug: forkedWs.slug }} className="ml-auto">
-              <Button size="sm" variant="outline" className="rounded-full gap-1 h-7">
-                Open <ArrowRight className="h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          {invite && invite.status === "pending" && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-violet/20 pt-2">
-              <span className="text-xs text-ink-soft">
-                You've been invited to join the persistent Lounge.
-              </span>
-              <Button size="sm" onClick={onAcceptInvite} className="rounded-full h-7">
-                Join
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={onDeclineInvite}
-                className="rounded-full h-7"
-              >
-                No thanks
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {/* Persistent-fork banner removed in the Lounge rebrand.
+          The Lounge stays live; the spun-out Collab is reachable via Collabs. */}
 
       <ChannelView
         key={id}
@@ -517,9 +485,12 @@ function LiveRoomPage() {
         onOpenChange={setCollabOpen}
         roomId={id}
         defaultTitle={title}
-        onCreated={(slug) => {
+        onCreated={({ collabSlug }) => {
           qc.invalidateQueries({ queryKey: ["instant-room", id] });
-          router.navigate({ to: "/workshops/$slug", params: { slug } });
+          if (collabSlug) {
+            // Open Collab in a new tab so the live Lounge keeps running.
+            window.open(`/collab/${collabSlug}`, "_blank", "noopener,noreferrer");
+          }
         }}
       />
 
@@ -579,7 +550,7 @@ function CreateCollabSheet({
   onOpenChange: (o: boolean) => void;
   roomId: string;
   defaultTitle: string;
-  onCreated: (workshopSlug: string) => void;
+  onCreated: (result: { workshopSlug: string | null; collabSlug: string | null }) => void;
 }) {
   const { user } = useAuth();
   const [title, setTitle] = useState(defaultTitle);
@@ -626,7 +597,7 @@ function CreateCollabSheet({
     if (!title.trim()) return toast.error("Give it a title");
     setBusy(true);
     try {
-      const { workshopSlug } = await create({
+      const { workshopSlug, collabSlug } = await create({
         data: {
           roomId,
           title: title.trim(),
@@ -641,7 +612,7 @@ function CreateCollabSheet({
       if (!workshopSlug) throw new Error("Couldn't create the Collab");
       toast.success("Collab created — everyone in the room got an opt-in invite.");
       onOpenChange(false);
-      onCreated(workshopSlug);
+      onCreated({ workshopSlug, collabSlug });
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't create the Collab");
     } finally {
@@ -657,8 +628,8 @@ function CreateCollabSheet({
             <Rocket className="h-4 w-4 text-violet" /> Create a Collab
           </DialogTitle>
           <DialogDescription>
-            Fork this live Lounge into a persistent one. You'll be the host. Everyone currently in
-            the room gets a one-tap invite — no one is auto-added.
+            Spin up a Collab from this Lounge. You'll be the host. Everyone currently in
+            the room gets a one-tap invite — no one is auto-added. The Lounge keeps running.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
