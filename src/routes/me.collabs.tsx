@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Clock, Sparkles, ExternalLink, MapPin, Radio, X, Inbox, Trash2, Archive } from "lucide-react";
+import { Megaphone, Clock, Sparkles, ExternalLink, MapPin, Radio, X, Inbox, Trash2, Archive, FileEdit, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -100,11 +100,12 @@ function MyCollabsPage() {
         .select("id,title,slug,description,category,status,ends_on,closed_at,resulting_work_id,created_at,live_workshop_id,city:cities!collab_posts_city_id_fkey(name)")
         .eq("user_id", user!.id)
         .is("resulting_work_id", null)
-        .in("status", ["open", "closed"])
+        .in("status", ["draft", "open", "closed"])
         .order("created_at", { ascending: false });
       const rows = (data ?? []) as unknown as Omit<HostingRow, "applicant_count">[];
-      // Applicant counts — small N, one query per post is fine here.
+      // Applicant counts — small N, one query per post is fine here. Skip drafts.
       const counts = await Promise.all(rows.map(async (r) => {
+        if (r.status === "draft") return 0;
         const [{ count: members }, { count: guests }] = await Promise.all([
           supabase.from("collab_contact_events").select("id", { count: "exact", head: true }).eq("collab_post_id", r.id),
           supabase.from("collab_guest_applications").select("id", { count: "exact", head: true }).eq("collab_post_id", r.id).is("matched_user_id", null),
