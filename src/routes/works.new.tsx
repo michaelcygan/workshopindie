@@ -253,15 +253,8 @@ function NewWork() {
     });
     await supabase.from("work_credits").insert(credits);
 
-    // Link uploaded Cloudflare Stream asset (if any) to this work
-    if (streamUid) {
-      await supabase
-        .from("media_assets")
-        .update({ work_id: work.id })
-        .eq("provider", "cloudflare_stream")
-        .eq("provider_uid", streamUid)
-        .eq("owner_id", user.id);
-    }
+
+
 
     // Tag into selected Groups (best-effort)
     if (selectedGroups.length > 0) {
