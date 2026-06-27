@@ -380,6 +380,18 @@ function CollabDetail() {
             />
             {isOwner ? (
               <>
+                {isDraft && (
+                  <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                    <Eye className="h-3.5 w-3.5" /> Publish
+                  </Button>
+                )}
+                {(post.status === "open" || isDraft) && (
+                  <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                    <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Link>
+                  </Button>
+                )}
                 {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
@@ -394,11 +406,47 @@ function CollabDetail() {
                 {post.status === "open" && (
                   <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 )}
+                {membership?.isMember && (
+                  <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
+                    <LogOut className="h-3.5 w-3.5" /> Leave
+                  </Button>
+                )}
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
             )}
           </div>
         </div>
+
+        {/* Draft banner */}
+        {isOwner && isDraft && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-dashed border-border bg-muted/40 p-3 text-sm">
+            <Pencil className="mt-0.5 h-4 w-4 text-ink-muted" />
+            <div className="flex-1">
+              <p className="font-medium text-ink">This is a draft.</p>
+              <p className="text-ink-muted">Only you can see it. Flesh it out and hit Publish when you're ready.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Re-consent banner: owner changed scope after you joined */}
+        {membership?.needsReconsent && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-700" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-900">The owner updated this Collab's scope.</p>
+              <p className="text-amber-800/90">Review the details above. To stay on board, accept the changes — or leave.</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button size="sm" className="rounded-full" onClick={() => acceptChangesMut.mutate()} disabled={acceptChangesMut.isPending}>
+                Accept changes
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Leave this Collab?")) leaveMut.mutate(); }}>
+                Leave
+              </Button>
+            </div>
+          </div>
+        )}
+
 
 
 
