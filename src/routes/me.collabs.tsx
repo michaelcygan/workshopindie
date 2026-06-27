@@ -217,9 +217,9 @@ function MyCollabsPage() {
 
   const tabs: { id: Tab; label: string; count?: number; emphasize?: boolean }[] = [
     { id: "hosting", label: "Hosting", count: nonDraftHosting.length, emphasize: deadlinePassedCount > 0 },
-    { id: "drafts", label: "Drafts", count: drafts.length },
-    { id: "published", label: "Published", count: published.length },
     { id: "applied", label: "Applied", count: applied.length },
+    { id: "published", label: "Published", count: published.length },
+    { id: "drafts", label: "Drafts", count: drafts.length },
   ];
 
 
