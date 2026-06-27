@@ -100,11 +100,13 @@ function Onboarding() {
     if (!cityId) return toast.error("Please pick your home city — it powers your feed.");
     setSaving(true);
 
-    try {
-      await saveBirthdate({ data: { birthdate } });
-    } catch (err) {
-      setSaving(false);
-      return toast.error(err instanceof Error ? err.message : "Couldn't save date of birth.");
+    if (!hasDobAlready) {
+      try {
+        await saveBirthdate({ data: { birthdate } });
+      } catch (err) {
+        setSaving(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't save date of birth.");
+      }
     }
 
     const display = deriveDisplayName(firstName, lastName);
@@ -122,8 +124,16 @@ function Onboarding() {
         onboarded: true,
       })
       .eq("id", user.id);
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    // Mint a public @handle so /me works immediately and the profile is shareable.
+    try {
+      await claimHandle({ data: {} });
+    } catch {
+      /* non-fatal — user can claim one in profile settings */
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     // Apply referral attribution (covers Google OAuth users — /signup also tries)
     try {
       const ref = sessionStorage.getItem(REF_KEY);
@@ -137,6 +147,7 @@ function Onboarding() {
     } catch { /* non-fatal */ }
     toast.success("Profile created");
     setStage("groups");
+  };
 
 
   };
