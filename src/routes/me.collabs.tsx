@@ -30,7 +30,7 @@ export const Route = createFileRoute("/me/collabs")({
   }),
 });
 
-type Tab = "hosting" | "published" | "applied";
+type Tab = "hosting" | "drafts" | "published" | "applied";
 
 type HostingRow = {
   id: string;
