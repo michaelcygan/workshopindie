@@ -49,17 +49,24 @@ function EditCollab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status,slug,city:city_id(id,name,region,country,slug)")
+        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status,slug,city:cities!collab_posts_city_id_fkey(id,name,region,country,slug)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
-      return data;
+      return data as unknown as {
+        id: string; user_id: string; title: string; description: string | null;
+        timeline_text: string | null; timeline_mode: string | null;
+        starts_on: string | null; ends_on: string | null;
+        location_mode: string; city_id: string | null;
+        compensation_type: string; rights_arrangement: string; status: string; slug: string;
+        city: { id: string; name: string; region: string | null; country: string | null; slug: string } | null;
+      } | null;
     },
   });
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", text: "Flexible / soon" });
+  const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [locationMode, setLocationMode] = useState<LocationMode>("online");
   const [city, setCity] = useState<CityValue | null>(null);
   const [compensationType, setCompensationType] = useState<CompType>("unspecified");
@@ -70,10 +77,9 @@ function EditCollab() {
     setTitle(post.title || "");
     setDescription(post.description || "");
     setTimeline({
-      mode: (post.timeline_mode as TimelineValue["mode"]) || "flexible",
-      text: post.timeline_text || "Flexible / soon",
-      starts_on: post.starts_on || undefined,
-      ends_on: post.ends_on || undefined,
+      mode: ((post.timeline_mode as TimelineValue["mode"]) || "flexible"),
+      starts_on: post.starts_on,
+      ends_on: post.ends_on,
     });
     setLocationMode((post.location_mode as LocationMode) || "online");
     setCity(post.city ? { id: post.city.id, name: post.city.name, region: post.city.region, country: post.city.country, slug: post.city.slug } : null);
@@ -90,10 +96,9 @@ function EditCollab() {
           patch: {
             title: title.trim(),
             description: description.trim() || null,
-            timeline_text: timeline.text,
-            timeline_mode: timeline.mode,
-            starts_on: timeline.starts_on || null,
-            ends_on: timeline.ends_on || null,
+            timeline_mode: timeline.mode === "by_date" ? "by_date" : timeline.mode === "window" ? "between" : "flexible",
+            starts_on: timeline.starts_on,
+            ends_on: timeline.ends_on,
             location_mode: locationMode,
             city_id: locationMode === "online" ? null : (city?.id || null),
             compensation_type: compensationType,
