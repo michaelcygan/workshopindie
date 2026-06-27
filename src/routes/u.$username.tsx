@@ -11,7 +11,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
-import { WorkLightbox } from "@/components/work-lightbox";
 import { CategoryChip } from "@/components/category-chip";
 import { FollowButton } from "@/components/follow-button";
 import { MessageButton } from "@/components/message-button";
@@ -35,7 +34,6 @@ type ProfileTab = typeof TAB_VALUES[number];
 
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
-  w: z.string().optional(),
 });
 
 export const Route = createFileRoute("/u/$username")({
@@ -632,8 +630,6 @@ function ProfilePage() {
               isOwn={isOwn}
               ownerName={name}
               isLoading={!ownedWorks || !creditedWorks}
-              activeLightbox={search.w ?? null}
-              setLightbox={(slug) => navigate({ to: "/u/$username", params: { username }, search: { ...search, w: slug ?? undefined }, replace: true })}
             />
           )}
           {defaultTab === "collabs" && (
@@ -678,7 +674,6 @@ type SortMode = "recent" | "oldest" | "loved";
 
 function WorksTab({
   owned, credited, pinnedWorks, isOwn, ownerName, isLoading,
-  activeLightbox, setLightbox,
 }: {
   owned: OwnedWork[];
   credited: CreditWork[];
@@ -686,8 +681,6 @@ function WorksTab({
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
-  activeLightbox: string | null;
-  setLightbox: (slug: string | null) => void;
 }) {
   const [roleFilter, setRoleFilter] = useState<"all" | "created" | "credited">("all");
   const [activeCat, setActiveCat] = useState<Category | "all">("all");
@@ -748,14 +741,13 @@ function WorksTab({
           <h2 className="font-display text-xl text-ink">Pinned</h2>
           <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {pinnedWorks.map((w, i) => (
+            {pinnedWorks.map((w) => (
               <WorkCard
                 key={w.id}
                 work={w}
-                density={i === 0 && pinnedWorks.length > 1 ? "hero" : "hero"}
+                density="hero"
                 showAvatars
                 showCounters
-                onOpen={() => setLightbox(w.slug)}
               />
             ))}
           </div>
@@ -816,22 +808,11 @@ function WorksTab({
             <WorkCard
               key={`${w._role}-${w.id}`}
               work={w}
-              onOpen={() => setLightbox(w.slug)}
               creditBadge={w._role === "credited" ? w.my_role ?? null : null}
             />
           ))}
         </div>
       )}
-
-      <WorkLightbox
-        works={[
-          ...pinnedWorks.filter((p) => !filtered.some((f) => f.id === p.id)),
-          ...filtered,
-        ]}
-        activeId={activeLightbox}
-        onChange={(slug) => setLightbox(slug)}
-        onClose={() => setLightbox(null)}
-      />
     </>
   );
 }
