@@ -19,8 +19,7 @@ import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
-import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
-import { BoostButton } from "@/components/boost-button";
+// Vouch + Boost retired in v1 distillation pass.
 import { OpenLoungeButton } from "@/components/open-lounge-button";
 import { WorksBornHere } from "@/components/works-born-here";
 

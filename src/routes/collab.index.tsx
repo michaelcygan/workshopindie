@@ -13,7 +13,7 @@ import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
-import { useVouchersForPosts } from "@/components/vouch-button";
+// Vouch + Boost retired in v1 distillation pass.
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";

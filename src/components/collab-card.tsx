@@ -175,13 +175,6 @@ export function CollabCard({
           </div>
         )}
 
-        <VouchRow
-          postId={post.id}
-          authorId={post.user_id}
-          vouchCount={vouchCount}
-          vouchers={postVouchers}
-          className="pt-1"
-        />
 
         <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
@@ -204,9 +197,7 @@ export function CollabCard({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 pt-1">
-          <BoostButton postId={post.id} authorId={post.user_id} />
-        </div>
+
       </div>
     </motion.article>
   );

@@ -17,7 +17,7 @@ import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { GeoDefaultBanner } from "@/components/geo-default-banner";
 import { FreshWorksStrip } from "@/components/fresh-works-strip";
-import { BoostedWorksStrip } from "@/components/boosted-works-strip";
+// BoostedWorksStrip retired in v1 distillation pass.
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -350,8 +350,6 @@ function GalleryPage() {
       {/* Live "shipping right now" rail */}
       <FreshWorksStrip />
 
-      {/* Community-boosted rail */}
-      <BoostedWorksStrip />
 
       {/* Your groups */}
       <YourGroupsStrip />

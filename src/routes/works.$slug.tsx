@@ -18,7 +18,7 @@ import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
-import { WorkSocialProof } from "@/components/work-social-proof";
+// WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
 import { getCoCreditedWorks } from "@/lib/network.functions";
 import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
@@ -253,13 +253,6 @@ function WorkDetail() {
         </div>
 
 
-        {/* Social proof — Vouch + Boost */}
-        <WorkSocialProof
-          workId={work.id}
-          createdBy={work.created_by}
-          vouchCount={work.vouch_count ?? 0}
-          boostCount={work.boost_count ?? 0}
-        />
 
         {/* Body */}
         {work.description && (
