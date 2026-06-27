@@ -221,8 +221,12 @@ function MyCollabsPage() {
     return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
   }
 
+  const nonDraftHosting = useMemo(() => hosting.filter((r) => r.status !== "draft"), [hosting]);
+  const drafts = useMemo(() => hosting.filter((r) => r.status === "draft"), [hosting]);
+
   const tabs: { id: Tab; label: string; count?: number; emphasize?: boolean }[] = [
-    { id: "hosting", label: "Hosting", count: hosting.length, emphasize: deadlinePassedCount > 0 },
+    { id: "hosting", label: "Hosting", count: nonDraftHosting.length, emphasize: deadlinePassedCount > 0 },
+    { id: "drafts", label: "Drafts", count: drafts.length },
     { id: "published", label: "Published", count: published.length },
     { id: "applied", label: "Applied", count: applied.length },
   ];
