@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorkshopsRouteImport } from './routes/workshops'
-import { Route as WorkshopRouteImport } from './routes/workshop'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -31,7 +30,6 @@ import { Route as CitiesRouteImport } from './routes/cities'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
-import { Route as WorkshopIndexRouteImport } from './routes/workshop.index'
 import { Route as MeIndexRouteImport } from './routes/me.index'
 import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
 import { Route as GroupsIndexRouteImport } from './routes/groups.index'
@@ -42,7 +40,6 @@ import { Route as CitiesIndexRouteImport } from './routes/cities.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
-import { Route as WorkshopIdRouteImport } from './routes/workshop.$id'
 import { Route as WorksNewRouteImport } from './routes/works.new'
 import { Route as WorksSlugRouteImport } from './routes/works.$slug'
 import { Route as WTokenRouteImport } from './routes/w.$token'
@@ -76,7 +73,6 @@ import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
-import { Route as WorkshopsLobbyNewRouteImport } from './routes/workshops.lobby.new'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
@@ -95,11 +91,6 @@ import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/ev
 const WorkshopsRoute = WorkshopsRouteImport.update({
   id: '/workshops',
   path: '/workshops',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WorkshopRoute = WorkshopRouteImport.update({
-  id: '/workshop',
-  path: '/workshop',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -202,11 +193,6 @@ const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => WorkshopsRoute,
 } as any)
-const WorkshopIndexRoute = WorkshopIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WorkshopRoute,
-} as any)
 const MeIndexRoute = MeIndexRouteImport.update({
   id: '/me/',
   path: '/me/',
@@ -256,11 +242,6 @@ const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => WorkshopsRoute,
-} as any)
-const WorkshopIdRoute = WorkshopIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => WorkshopRoute,
 } as any)
 const WorksNewRoute = WorksNewRouteImport.update({
   id: '/works/new',
@@ -427,11 +408,6 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
-const WorkshopsLobbyNewRoute = WorkshopsLobbyNewRouteImport.update({
-  id: '/lobby/new',
-  path: '/lobby/new',
-  getParentRoute: () => WorkshopsRoute,
-} as any)
 const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
@@ -525,7 +501,6 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -560,7 +535,6 @@ export interface FileRoutesByFullPath {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -571,7 +545,6 @@ export interface FileRoutesByFullPath {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
-  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -580,7 +553,6 @@ export interface FileRoutesByFullPath {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
-  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -637,7 +609,6 @@ export interface FileRoutesByTo {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
@@ -648,7 +619,6 @@ export interface FileRoutesByTo {
   '/groups': typeof GroupsIndexRoute
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
-  '/workshop': typeof WorkshopIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -657,7 +627,6 @@ export interface FileRoutesByTo {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
-  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -687,7 +656,6 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/workshop': typeof WorkshopRouteWithChildren
   '/workshops': typeof WorkshopsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
@@ -722,7 +690,6 @@ export interface FileRoutesById {
   '/w/$token': typeof WTokenRoute
   '/works/$slug': typeof WorksSlugRoute
   '/works/new': typeof WorksNewRoute
-  '/workshop/$id': typeof WorkshopIdRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
@@ -733,7 +700,6 @@ export interface FileRoutesById {
   '/groups/': typeof GroupsIndexRoute
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
-  '/workshop/': typeof WorkshopIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -742,7 +708,6 @@ export interface FileRoutesById {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
-  '/workshops/lobby/new': typeof WorkshopsLobbyNewRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/payments/webhook': typeof ApiPublicPaymentsWebhookRoute
@@ -773,7 +738,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
-    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -808,7 +772,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -819,7 +782,6 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
-    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -828,7 +790,6 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
-    | '/workshops/lobby/new'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
@@ -885,7 +846,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
@@ -896,7 +856,6 @@ export interface FileRouteTypes {
     | '/groups'
     | '/lounge'
     | '/me'
-    | '/workshop'
     | '/workshops'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -905,7 +864,6 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
-    | '/workshops/lobby/new'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
@@ -934,7 +892,6 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
-    | '/workshop'
     | '/workshops'
     | '/admin/audit'
     | '/admin/badges'
@@ -969,7 +926,6 @@ export interface FileRouteTypes {
     | '/w/$token'
     | '/works/$slug'
     | '/works/new'
-    | '/workshop/$id'
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
@@ -980,7 +936,6 @@ export interface FileRouteTypes {
     | '/groups/'
     | '/lounge/'
     | '/me/'
-    | '/workshop/'
     | '/workshops/'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -989,7 +944,6 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
-    | '/workshops/lobby/new'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/payments/webhook'
@@ -1019,7 +973,6 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  WorkshopRoute: typeof WorkshopRouteWithChildren
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
@@ -1054,13 +1007,6 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof WorkshopsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/workshop': {
-      id: '/workshop'
-      path: '/workshop'
-      fullPath: '/workshop'
-      preLoaderRoute: typeof WorkshopRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -1203,13 +1149,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkshopsIndexRouteImport
       parentRoute: typeof WorkshopsRoute
     }
-    '/workshop/': {
-      id: '/workshop/'
-      path: '/'
-      fullPath: '/workshop/'
-      preLoaderRoute: typeof WorkshopIndexRouteImport
-      parentRoute: typeof WorkshopRoute
-    }
     '/me/': {
       id: '/me/'
       path: '/me'
@@ -1279,13 +1218,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/workshops/$slug'
       preLoaderRoute: typeof WorkshopsSlugRouteImport
       parentRoute: typeof WorkshopsRoute
-    }
-    '/workshop/$id': {
-      id: '/workshop/$id'
-      path: '/$id'
-      fullPath: '/workshop/$id'
-      preLoaderRoute: typeof WorkshopIdRouteImport
-      parentRoute: typeof WorkshopRoute
     }
     '/works/new': {
       id: '/works/new'
@@ -1517,13 +1449,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
-    }
-    '/workshops/lobby/new': {
-      id: '/workshops/lobby/new'
-      path: '/lobby/new'
-      fullPath: '/workshops/lobby/new'
-      preLoaderRoute: typeof WorkshopsLobbyNewRouteImport
-      parentRoute: typeof WorkshopsRoute
     }
     '/workshops/$slug/tools': {
       id: '/workshops/$slug/tools'
@@ -1762,20 +1687,6 @@ const LoungeRouteChildren: LoungeRouteChildren = {
 const LoungeRouteWithChildren =
   LoungeRoute._addFileChildren(LoungeRouteChildren)
 
-interface WorkshopRouteChildren {
-  WorkshopIdRoute: typeof WorkshopIdRoute
-  WorkshopIndexRoute: typeof WorkshopIndexRoute
-}
-
-const WorkshopRouteChildren: WorkshopRouteChildren = {
-  WorkshopIdRoute: WorkshopIdRoute,
-  WorkshopIndexRoute: WorkshopIndexRoute,
-}
-
-const WorkshopRouteWithChildren = WorkshopRoute._addFileChildren(
-  WorkshopRouteChildren,
-)
-
 interface WorkshopsSlugToolsRouteChildren {
   WorkshopsSlugToolsToolRoute: typeof WorkshopsSlugToolsToolRoute
 }
@@ -1805,14 +1716,12 @@ interface WorkshopsRouteChildren {
   WorkshopsSlugRoute: typeof WorkshopsSlugRouteWithChildren
   WorkshopsNewRoute: typeof WorkshopsNewRoute
   WorkshopsIndexRoute: typeof WorkshopsIndexRoute
-  WorkshopsLobbyNewRoute: typeof WorkshopsLobbyNewRoute
 }
 
 const WorkshopsRouteChildren: WorkshopsRouteChildren = {
   WorkshopsSlugRoute: WorkshopsSlugRouteWithChildren,
   WorkshopsNewRoute: WorkshopsNewRoute,
   WorkshopsIndexRoute: WorkshopsIndexRoute,
-  WorkshopsLobbyNewRoute: WorkshopsLobbyNewRoute,
 }
 
 const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
@@ -1839,7 +1748,6 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  WorkshopRoute: WorkshopRouteWithChildren,
   WorkshopsRoute: WorkshopsRouteWithChildren,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,

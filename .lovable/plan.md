@@ -1,56 +1,95 @@
 
-# Collab flow refresh — v1, 2027-ready
+# Distillation Pass — 2027 v1
 
-Four changes, scoped to keep the existing form/layout intact.
+Two audits agree: the route map is solid, but there's a thick band of pre-rebrand cruft (`/workshops/*` legacy links, off-by-default flag code, orphan components) and a few real bugs (`/events/new` missing, `/workshops/lobby/new` button-to-nowhere).
 
-## 1. In-app message stays default; logged-out can still apply
+The five primitives — **Post a Collab · Go to an Event · Join a Group · Drop into a Lounge · Curate a Work** — are clean. This pass removes everything not in service of them.
 
-- Confirm `contactMode` defaults to `email_relay` (it does) and tighten copy on `/collab/new` to: **"In-app message (recommended)"** with a small helper "People reach you in your inbox — no email shared."
-- On the public Collab page, the apply button is visible to logged-out users and opens the existing `GuestApplyDialog`. After a guest submits, the post-submit screen becomes a **single CTA — "Create your account to get replies"** that hands off to `/signup?from=guest_apply&claim=<token>` and auto-claims the application on landing (already wired through `claimGuestApplication`). Add a softer secondary link "I'll do it later" that closes the dialog but stores the claim token in `localStorage` so a later signup still links it.
+## 1. Bugs — fix first
 
-## 2. Draft-friendly Collab posts + edit
+- **`/workshops/new` redirects to `/events/new` which doesn't exist.** Change the redirect target to `/events` (we never built an external event-creation flow; events are posted from inside a Group).
+- **`LobbiesSection` "Start a Draft" → `/workshops/lobby/new`** (route deleted). Component is also unused. Delete the component.
+- **`/lounge` "Open library →" links to `/workshops`** (which redirects to `/events`). Remove the link; the "Recent Lounges" rail already shows what matters.
 
-Loosen the form so a vague "I want to make a short film this week" post works:
+## 2. Legacy `/workshops/$slug` link sweep
 
-- **Required**: Title, Medium (category), What's the idea (description — drop the 20-char min, just non-empty), Timeline (mode is always set), Where (city if not online).
-- **Optional / defaulted**: Roles (if none added, auto-create a single "Open to collaborators" role), Rights (default to a new `decide_later` option — clearly labeled "Figure this out with collaborators"), Compensation (already `unspecified` default), Contact link.
-- Add a **"Save as draft"** button next to Post. Drafts use `status='draft'` (existing enum value, will add if missing) — hidden from discovery, visible only to owner under `/me/collabs`, with a "Publish" button to flip to `open`.
-- Add **`/collab/$slug/edit`** route. Owner-only. Same form, prefilled. Calls a new `updateCollab` server fn that diffs and bumps a new `terms_version` column when scope-affecting fields change (title, description, timeline, location, comp, rights, roles).
+The `/workshops/$slug` page (`workshops.$slug.tsx`) is the old scheduled-workshop detail — *not* the Lounge. Several surfaces still link to it as if it were a Lounge:
 
-## 3. Leave a role / leave a Collab
+| File | Fix |
+|------|-----|
+| `in-progress.tsx` "Lounges you're in" cards | Link to `/lounge/$id` instead |
+| `dms.$conversationId.tsx` "Re: {title}" chip | Link to `/lounge/$id` |
+| `u.$username.tsx` past-rooms blocks (3 spots) | Link to `/lounge/$id` |
+| `enter-workshop-button.tsx` (used on `/works/$slug`) | Link to `/lounge/$id`; rename to `EnterLoungeButton` |
+| `workshop-strip.tsx`, `workshop-live-toast.tsx` | Link to `/lounge/$id` or remove (see §3) |
 
-- New server fn `leaveCollab({ collabPostId })` — finds the caller's accepted `collab_invites` rows for that post and sets `status='left'` (adds value to enum) with `responded_at=now()`. Owner cannot leave (must close the Collab instead).
-- UI: on `/collab/$slug`, when the viewer is an accepted collaborator, show a "Leave this Collab" item in the existing overflow menu, with a confirm dialog ("You'll stop getting updates. The owner will be notified."). Notifies owner via existing notifications pipeline.
+After this sweep, `/workshops/$slug` is only reachable through its own scheduled-workshop flow on city pages, which is its actual purpose.
 
-## 4. Re-consent on owner edits
+## 3. Retire flag-off features for v1
 
-- Add `terms_version int not null default 1` on `collab_posts` and `accepted_terms_version int` on `collab_invites`.
-- `updateCollab` bumps `terms_version` only when scope fields change (cosmetic edits like fixing a typo in a role description don't trigger). When bumped, all accepted invites with `accepted_terms_version < new` are flagged `needs_reconsent` (computed: row still `accepted` but version stale).
-- On `/collab/$slug`, stale collaborators see a sticky banner: **"The owner updated the scope. Review and accept to stay on, or leave."** with two buttons → `acceptCollabChanges` (writes new version) or the same `leaveCollab` from #3.
-- Owner sees a small "X of Y collaborators have re-accepted" line under the roles section while any are pending.
+`src/lib/flags.ts` has three flags hardcoded `false`. Delete the gated code rather than carrying it dark:
 
-## Technical details
+- **`BOOSTS`** — delete `boost-button.tsx`, `work-boost-button.tsx`, `boosted-works-strip.tsx`, the "Boosted" strip on `/collab`, and `collab-boosts.functions.ts` / `work-boosts.functions.ts`. Drop `collab_boosts` and `work_boosts` table reads from feed queries. (Keep the tables themselves — cheap, may revive post-launch.)
+- **`VOUCHES`** — delete `vouch-button.tsx`, `work-vouch-button.tsx`, and the `useVouchersForPosts` call on `/collab`. Both buttons already have zero imports.
+- **`RECORDER_PERSONAS`** — delete `components/recorder/persona-tabs.tsx`. Flag isn't even checked anywhere; pure dead code.
 
-### Schema migration
-- Enum adds: `collab_post_status` += `draft`; `collab_invite_status` += `left`; `rights_arrangement` text accepts new value `decide_later`.
-- `collab_posts`: add `terms_version int not null default 1`.
-- `collab_invites`: add `accepted_terms_version int`, defaulting to `1` for existing accepted rows via the migration.
-- RLS: owner can `UPDATE` own `collab_posts` (already allowed); accepted invitees can `UPDATE` their own `collab_invites` row to set `accepted_terms_version` or status `left`.
+Then delete the `FLAGS` object entirely — only one flag system survives (`useFeatureFlag` against the `feature_flags` table, which is what admin/ops uses).
 
-### New / changed server fns (`src/lib/collab.functions.ts`)
-- `updateCollab({ collabPostId, patch })` — owner-only; diffs scope fields; bumps `terms_version`; replaces roles via delete+insert in a single call.
-- `saveCollabDraft` / `publishCollab` — thin wrappers around insert/update with `status` toggling.
-- `leaveCollab({ collabPostId })` — accepted collaborator self-service.
-- `acceptCollabChanges({ collabPostId })` — writes current `terms_version` onto caller's invite.
+## 4. Consolidate the two Lounge strips on `/lounge`
 
-### Files touched
-- `src/routes/collab.new.tsx` — relax validation, add draft button, default rights to `decide_later`, contact copy tweak, auto-role fallback.
-- `src/routes/collab.$slug.edit.tsx` *(new)* — reuses the form via an extracted `<CollabForm>` component (`src/components/collab-form.tsx`).
-- `src/routes/collab.$slug.tsx` — re-consent banner, Leave action in overflow, owner re-consent progress line.
-- `src/components/guest-apply-dialog.tsx` — post-submit "Create account to get replies" screen + localStorage claim fallback.
-- `src/routes/signup.tsx` — pick up claim token from `localStorage` if `from=guest_apply` and `claim` param absent.
-- `src/lib/collab.functions.ts` — new fns above.
-- One Supabase migration for the enum/column changes and RLS update.
+`lounge.index.tsx` renders `WorkshopStrip` (queries `workshops` table) AND `LiveWorkshopsRail` (queries `instant_rooms`) back-to-back. Keep `LiveWorkshopsRail` — it's the live truth. Delete `WorkshopStrip`.
 
-### Out of scope
-No changes to discovery, boosts, vouches, the publish-to-Work flow, or Lounges.
+## 5. Consolidate Lounge entry server fns
+
+`instant.functions.ts` exports `joinLounge`, `joinMediumLounge`, `hostInstantWorkshop`. Merge `joinMediumLounge` into `joinLounge` with optional `medium`. Rename `hostInstantWorkshop` → `hostLounge` (internal only, but it leaks into logs).
+
+## 6. Orphan components — delete
+
+Zero imports across the codebase:
+- `lobbies-section.tsx`
+- `vouch-button.tsx`, `work-vouch-button.tsx`, `work-boost-button.tsx`, `boost-button.tsx` (after §3)
+- `recorder/persona-tabs.tsx`
+- `nudges/workshop-ended-nudge.tsx`
+
+Single import but stale brand — rename:
+- `invite-to-workshop-dialog.tsx` → `invite-to-lounge-dialog.tsx` (update copy)
+- `post-workshop-from-city-sheet.tsx` → keep route purpose, audit copy, ensure it posts a real Event (Group event) not a legacy workshop
+
+## 7. Copy + storage-key sweep on `/lounge`
+
+In `lounge.index.tsx`: rename `WorkshopPreflight` → `LoungePreflight`; rename localStorage keys `workshop:av-prefs`, `workshop:opened-once`, `workshop:last-room`, sessionStorage `workshop:last-room` to `lounge:*` (one-time migration: read old key, write new). React-query key `workshop-recap-24h` → `lounge-recap-24h`.
+
+Also fix the "Workshop" string fallbacks in `dms.$conversationId.tsx` (use "Lounge") and `nudges/workshop-ended-nudge.tsx` if kept.
+
+## 8. Settings ↔ Profile redundancy
+
+- Remove the read-only profile name/avatar block from `/settings` (`settings.tsx:794-871`); replace with a single "Edit profile →" link to `/me/edit`.
+- Add "Edit profile" to the top-nav avatar "My stuff" submenu so users don't have to detour through `/me`.
+
+## 9. Delete dead lib files
+
+- `cities.functions.ts` — zero references. Confirm no edge function calls it, then delete.
+- After §3, also delete: `collab-boosts.functions.ts`, `work-boosts.functions.ts`, `collab-vouches.functions.ts`, `work-vouches.functions.ts`, `recorder-personas.functions.ts`.
+
+## 10. Delete legacy shim routes
+
+The `/workshop/*` shims (`workshop.tsx`, `workshop.index.tsx`, `workshop.$id.tsx`) and `/workshops/lobby/new` shim have served their bookmarks-grace purpose post-rebrand. Keep `/workshops/$slug` (real scheduled-workshop page) and the `/workshops` → `/events` redirect. Delete the `/workshop` (singular) shims — the rebrand is months old now.
+
+## Out of scope (call out, do not touch this pass)
+
+- **DMs vs in-room chat** (`messages` vs `instant_messages`) — intentionally separate systems. Audit found no actual user confusion; just add a one-line code comment in each.
+- **Notifications bell vs DM bell** — verify (don't refactor) that `notifications` table doesn't double-fire for new DMs.
+- **`workshops` table vs `instant_rooms` table** — these are different products (scheduled IRL workshops on city pages vs drop-in Lounges). Leave the parallel data models; the route boundaries already separate them. Just keep the link audit (§2) clean.
+- **`workshop_sessions` / `workshop_session_demos` / `workshop_session_tracks` tables** — orphaned in app code but a DB migration is a separate decision; leave for a later DB cleanup pass.
+
+## Risk
+
+Mostly delete-only changes. The two non-trivial edits are the link sweep (§2 — straightforward find/replace, but every site needs eyes on params) and the `WorkshopStrip` removal (§4 — verify `LiveWorkshopsRail` already covers the same empty/loading states).
+
+## Sequencing
+
+1. Bugs (§1) — single commit, ships independently.
+2. Link sweep (§2) + copy/keys (§7) — single commit.
+3. Flag retirement (§3) + orphan deletions (§6) + dead libs (§9) — single commit.
+4. Lounge consolidation (§4, §5) — single commit.
+5. Settings polish (§8) + shim deletion (§10) — single commit.

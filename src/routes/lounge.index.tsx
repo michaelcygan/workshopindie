@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
 import { LiveTopicsList } from "@/components/live-topics-list";
 import { RoomPromptMarquee } from "@/components/room-prompt-marquee";
-import { WorkshopStrip } from "@/components/workshop-strip";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
 import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
 import { CATEGORIES, type Category } from "@/lib/categories";
@@ -540,20 +539,6 @@ function WorkshopPreflight() {
         onConfirm={confirmHost}
       />
 
-      <section className="mt-8">
-        <div className="flex items-baseline justify-between gap-3 mb-3">
-          <h2 className="font-display text-sm uppercase tracking-[0.14em] text-ink-muted">
-            Recent Lounges
-          </h2>
-          <Link
-            to="/workshops"
-            className="text-xs text-ink-muted hover:text-ink transition"
-          >
-            Open library →
-          </Link>
-        </div>
-        <WorkshopStrip />
-      </section>
     </main>
   );
 }

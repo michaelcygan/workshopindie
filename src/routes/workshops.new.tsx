@@ -4,7 +4,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 // Live = Lounge (drop-in, no scheduling); Scheduled gatherings = Event.
 export const Route = createFileRoute("/workshops/new")({
   beforeLoad: () => {
-    throw redirect({ to: "/events/new", replace: true });
+    throw redirect({ to: "/events", replace: true });
   },
   component: () => null,
 });
