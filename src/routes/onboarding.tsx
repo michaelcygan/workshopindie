@@ -63,6 +63,23 @@ function Onboarding() {
     const meta = user.user_metadata ?? {};
     if (meta.first_name) setFirstName(String(meta.first_name));
     if (meta.last_name) setLastName(String(meta.last_name));
+    // Pre-load profile so we can skip fields the user already filled at signup.
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,birthdate,bio,city_id,home_city_id,categories,mediums")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!data) return;
+      if (data.first_name) { setFirstName(data.first_name); }
+      if (data.last_name) { setLastName(data.last_name); }
+      if (data.first_name && data.last_name) setHasNameAlready(true);
+      if (data.birthdate) { setBirthdate(String(data.birthdate)); setHasDobAlready(true); }
+      if (data.bio) setBio(data.bio);
+      if (data.home_city_id || data.city_id) setCityId(String(data.home_city_id ?? data.city_id));
+      if (Array.isArray(data.categories)) setCats(data.categories as Category[]);
+      if (Array.isArray(data.mediums)) setMediums(data.mediums as ExtraMedium[]);
+    })();
   }, [user]);
 
   const toggleCat = (c: Category) =>
