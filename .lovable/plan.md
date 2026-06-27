@@ -1,22 +1,23 @@
 ## Goal
-On profile pages, clicking a Work should navigate to the full Work page (`/works/$slug`), not open the lightbox/peek. Keep the lightbox flow for ambient contexts (Lounges/Rooms) where users are actively in another surface and shouldn't be yanked away.
-
-## Platform-wide rule for Works clicks
-- **Profile (`/u/$username`)** → navigate to `/works/$slug` (full page). Today opens lightbox via `?w=slug`.
-- **Gallery (`/gallery`), Cities, Groups index, Collab pages, Search, Fresh strip, In-Progress** → navigate to `/works/$slug` (already do, keep as-is).
-- **Lounges / Rooms (`room-gallery.tsx`)** → keep the in-room lightbox/peek. Rationale: leaving the room drops you from a live session. The lightbox stays scoped to that context only.
-- **Event showcase / Group pinned works** → audit: anywhere outside a live room, switch to direct navigation.
+Saved Collab drafts should appear in **My Collabs** so users can find and resume them. Today they're filtered out of the Hosting tab (`.in("status", ["open","closed"])`).
 
 ## Changes
-1. `src/routes/u.$username.tsx`
-   - Remove `WorkLightbox` import, the `?w=` search param wiring, `activeLightbox`/`setLightbox` prop chain.
-   - Pinned-works grid and main works grid: drop `onOpen`; `WorkCard` already renders as a `<Link to="/works/$slug">` when no `onOpen` is provided (verify), so click → full page.
-   - Remove the `<WorkLightbox …>` mount at the bottom of the page.
-   - Clean the `w` search schema.
 
-2. Quick sweep for any other non-room surface still using `WorkLightbox`/`onOpen={…setLightbox…}` and switch to default Link behavior. (Current usage outside profile is only `room-gallery.tsx` — keep.)
+### `src/routes/me.collabs.tsx`
+1. Hosting query: include `draft` status → `.in("status", ["open","closed","draft"])`. Add `is_draft` derivation in render.
+2. Show drafts at the **top** of the Hosting list with a distinct visual:
+   - `StateBadge tone="muted" label="Draft" sublabel="Not posted"`
+   - Dashed border, subtle bg.
+   - No applicant/deadline metadata (drafts don't have meaningful applicants).
+3. Row actions for drafts:
+   - **Resume editing** → `/collab/$slug/edit` (primary)
+   - **Delete** → existing `deleteMut`
+4. Header subtitle: include draft count in the "needs attention" calc only if 0 attention items, e.g. "2 drafts in progress." Keep existing attention copy when applicable.
+5. Tab count for Hosting will naturally include drafts.
 
-3. Leave `src/components/work-lightbox.tsx` in place (still used by rooms).
+### `src/routes/collab.new.tsx`
+- After "Save as draft," redirect to **`/me/collabs`** (not `/collab/$slug`) so the user sees their new draft in context. Toast unchanged.
 
 ## Out of scope
-- No changes to the Work page itself, room flows, or the event-photo lightbox (different surface).
+- No schema changes. No new tab — drafts live inline in Hosting (simpler, fewer empty states for a solo-founder ship).
+- No changes to the profile Activity tab (it can keep showing drafts; both surfaces are fine).
