@@ -224,8 +224,8 @@ function NewCollab() {
     setSubmitting(false);
 
     if (targetStatus === "draft") {
-      toast.success("Draft saved — keep editing or publish when ready.");
-      navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+      toast.success("Draft saved — find it in My Collabs.");
+      navigate({ to: "/me/collabs" });
       return;
     }
     setPostedDialog({ id: post.id, slug: post.slug });
