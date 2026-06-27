@@ -401,21 +401,6 @@ function CollabPage() {
         </div>
       )}
 
-      {/* Boosted strip */}
-      {boostedPosts && boostedPosts.length > 0 && (
-        <div className="mt-10">
-          <div className="mb-3 flex items-center gap-2 px-1">
-            <Rocket className="h-4 w-4 text-primary" />
-            <h2 className="font-display text-lg text-ink">Boosted by the community</h2>
-            <span className="text-xs text-ink-muted">— most boosted Collabs right now</span>
-          </div>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {boostedPosts.map((p) => (
-              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} boosted groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
-            ))}
-          </div>
-        </div>
-      )}
 
       <div className="mt-10">
         <div className="mb-3 flex items-center gap-3 px-1">
@@ -445,7 +430,7 @@ function CollabPage() {
         ) : (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {posts.map((p) => (
-              <CollabCard key={p.id} post={p} vouchers={vouchersByPost} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
+              <CollabCard key={p.id} post={p} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />
             ))}
           </div>
         )}
