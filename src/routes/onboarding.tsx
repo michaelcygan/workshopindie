@@ -150,8 +150,6 @@ function Onboarding() {
   };
 
 
-  };
-
   function finishOnboarding() {
     try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
     navigate({ to: "/" });
