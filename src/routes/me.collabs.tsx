@@ -178,15 +178,6 @@ function MyCollabsPage() {
     () => hosting.filter((r) => r.status === "draft").length,
     [hosting],
   );
-  // Drafts first, then everything else in original (created_at desc) order.
-  const sortedHosting = useMemo(
-    () => [...hosting].sort((a, b) => {
-      const aDraft = a.status === "draft" ? 0 : 1;
-      const bDraft = b.status === "draft" ? 0 : 1;
-      return aDraft - bDraft;
-    }),
-    [hosting],
-  );
   const attentionCount = deadlinePassedCount;
 
   function invalidateAll() {
