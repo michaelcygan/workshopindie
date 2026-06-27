@@ -30,7 +30,7 @@ export const Route = createFileRoute("/me/collabs")({
   }),
 });
 
-type Tab = "hosting" | "published" | "applied";
+type Tab = "hosting" | "drafts" | "published" | "applied";
 
 type HostingRow = {
   id: string;
@@ -178,15 +178,6 @@ function MyCollabsPage() {
     () => hosting.filter((r) => r.status === "draft").length,
     [hosting],
   );
-  // Drafts first, then everything else in original (created_at desc) order.
-  const sortedHosting = useMemo(
-    () => [...hosting].sort((a, b) => {
-      const aDraft = a.status === "draft" ? 0 : 1;
-      const bDraft = b.status === "draft" ? 0 : 1;
-      return aDraft - bDraft;
-    }),
-    [hosting],
-  );
   const attentionCount = deadlinePassedCount;
 
   function invalidateAll() {
@@ -221,8 +212,12 @@ function MyCollabsPage() {
     return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
   }
 
+  const nonDraftHosting = useMemo(() => hosting.filter((r) => r.status !== "draft"), [hosting]);
+  const drafts = useMemo(() => hosting.filter((r) => r.status === "draft"), [hosting]);
+
   const tabs: { id: Tab; label: string; count?: number; emphasize?: boolean }[] = [
-    { id: "hosting", label: "Hosting", count: hosting.length, emphasize: deadlinePassedCount > 0 },
+    { id: "hosting", label: "Hosting", count: nonDraftHosting.length, emphasize: deadlinePassedCount > 0 },
+    { id: "drafts", label: "Drafts", count: drafts.length },
     { id: "published", label: "Published", count: published.length },
     { id: "applied", label: "Applied", count: applied.length },
   ];
@@ -274,7 +269,7 @@ function MyCollabsPage() {
 
       <div className="mt-6 space-y-3">
         {tab === "hosting" && (
-          hosting.length === 0 ? (
+          nonDraftHosting.length === 0 ? (
             <EmptyState
               title="No Collabs yet."
               body="Post one to find collaborators. Roles, deadline, comp — it takes a minute."
@@ -287,69 +282,45 @@ function MyCollabsPage() {
                   {archivedCount} archived — only visible to you.
                 </p>
               )}
-              {sortedHosting.map((r) => {
-                const isDraft = r.status === "draft";
+              {nonDraftHosting.map((r) => {
                 const isArchived = r.status === "closed";
-                const passed = !isArchived && !isDraft && !!r.ends_on && r.ends_on < today;
+                const passed = !isArchived && !!r.ends_on && r.ends_on < today;
                 return (
                   <div key={r.id} className={cn(
                     "flex flex-wrap items-center gap-3 rounded-2xl border p-4",
-                    isDraft ? "border-dashed border-primary/30 bg-primary/5"
-                      : isArchived ? "border-dashed border-border bg-surface-2/40"
+                    isArchived ? "border-dashed border-border bg-surface-2/40"
                       : passed ? "border-amber-500/30 bg-surface"
                       : "border-border bg-surface",
                   )}>
                     <CategoryChip category={r.category} />
-                    {isDraft
-                      ? <StateBadge tone="closed" label="Draft" sublabel="Not posted" />
-                      : isArchived
-                        ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
-                        : passed
-                          ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
-                          : <StateBadge tone="open" label="Open" sublabel="Casting" />}
+                    {isArchived
+                      ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
+                      : passed
+                        ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
+                        : <StateBadge tone="open" label="Open" sublabel="Casting" />}
                     <div className={cn("min-w-0 flex-1", isArchived && "opacity-70")}>
-                      {isDraft ? (
-                        <Link to="/collab/$slug/edit" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                          {r.title || "Untitled draft"}
-                        </Link>
-                      ) : (
-                        <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                          {r.title}
-                        </Link>
-                      )}
+                      <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                        {r.title}
+                      </Link>
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                         {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
-                        {isDraft && (
-                          <span className="inline-flex items-center gap-1"><FileEdit className="h-3 w-3" /> Saved {new Date(r.created_at).toLocaleDateString()}</span>
-                        )}
                         {isArchived && r.closed_at && (
                           <span className="inline-flex items-center gap-1"><Archive className="h-3 w-3" /> Archived {new Date(r.closed_at).toLocaleDateString()}</span>
                         )}
-                        {!isArchived && !isDraft && r.ends_on && (
+                        {!isArchived && r.ends_on && (
                           <span className={cn("inline-flex items-center gap-1", passed && "text-amber-700")}>
                             <Clock className="h-3 w-3" /> {passed ? "Deadline passed" : `Until ${r.ends_on}`}
                           </span>
                         )}
-                        {!isDraft && r.applicant_count > 0 && (
+                        {r.applicant_count > 0 && (
                           <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
                         )}
-                        {!isArchived && !isDraft && r.live_workshop_id && (
+                        {!isArchived && r.live_workshop_id && (
                           <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Workshop open</span>
                         )}
                       </div>
                     </div>
-                    {isDraft ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </Button>
-                        <Link to="/collab/$slug/edit" params={{ slug: r.slug }}>
-                          <Button size="sm" className="rounded-full gap-1">
-                            <Pencil className="h-3.5 w-3.5" /> Resume editing
-                          </Button>
-                        </Link>
-                      </div>
-                    ) : isArchived ? (
+                    {isArchived ? (
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
                           <X className="h-3.5 w-3.5" /> Dismiss
@@ -383,6 +354,42 @@ function MyCollabsPage() {
             </>
           )
         )}
+
+        {tab === "drafts" && (
+          drafts.length === 0 ? (
+            <EmptyState
+              title="No drafts."
+              body="Start a Collab and save it as a draft — it'll wait for you here."
+              cta={<Link to="/collab/new"><Button className="rounded-full">Post a Collab</Button></Link>}
+            />
+          ) : (
+            drafts.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
+                <CategoryChip category={r.category} />
+                <StateBadge tone="closed" label="Draft" sublabel="Not posted" />
+                <div className="min-w-0 flex-1">
+                  <Link to="/collab/$slug/edit" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                    {r.title || "Untitled draft"}
+                  </Link>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                    <span className="inline-flex items-center gap-1"><FileEdit className="h-3 w-3" /> Saved {new Date(r.created_at).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                  </Button>
+                  <Link to="/collab/$slug/edit" params={{ slug: r.slug }}>
+                    <Button size="sm" className="rounded-full gap-1">
+                      <Pencil className="h-3.5 w-3.5" /> Resume editing
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            ))
+          )
+        )}
+
 
 
         {tab === "published" && (
