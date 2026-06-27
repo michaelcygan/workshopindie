@@ -81,8 +81,10 @@ function NewWork() {
   const [coCreators, setCoCreators] = useState<CoCreator[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [streamUid, setStreamUid] = useState<string | null>(null);
+  const [coverAspect, setCoverAspect] = useState<CoverAspect>("portrait");
+  const [coverFocal, setCoverFocal] = useState<CoverFocal>({ x: 50, y: 50 });
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
 
   useEffect(() => {
