@@ -109,10 +109,11 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "", quantity: 1, description: "" },
   ]);
-  const [rights, setRights] = useState<RightsArrangement | null>(null);
+  const [rights, setRights] = useState<RightsArrangement>("decide_later");
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saveAsDraft, setSaveAsDraft] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
 
