@@ -332,21 +332,41 @@ function NewWork() {
           )}
 
           {/* Cover */}
-          <section className="space-y-2">
+          <section className="space-y-3">
             <Label>Cover</Label>
-            <ImageUpload
-              value={coverUrl}
-              onChange={setCoverUrl}
-              bucket="work-covers"
-              aspect="portrait"
-              label={extracted?.cover_url ? "Replace cover image" : "Upload a 4:5 cover image"}
-            />
-            {extracted?.cover_url && coverUrl === extracted.cover_url && (
-              <p className="text-xs text-ink-muted">
-                Pulled from {providerLabel(extracted.provider) ?? "the link"}. Upload your own to replace it.
-              </p>
+            {coverUrl ? (
+              <>
+                <CoverFramer
+                  src={coverUrl}
+                  aspect={coverAspect}
+                  focal={coverFocal}
+                  onAspectChange={setCoverAspect}
+                  onFocalChange={setCoverFocal}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCoverUrl(null)}
+                  className="text-xs text-ink-muted hover:text-ink underline underline-offset-2"
+                >
+                  Replace cover image
+                </button>
+                {extracted?.cover_url && coverUrl === extracted.cover_url && (
+                  <p className="text-xs text-ink-muted">
+                    Pulled from {providerLabel(extracted.provider) ?? "the link"}. Pick a crop and tap to set the focal point.
+                  </p>
+                )}
+              </>
+            ) : (
+              <ImageUpload
+                value={coverUrl}
+                onChange={setCoverUrl}
+                bucket="work-covers"
+                aspect="portrait"
+                label="Upload a cover image (≤3MB, auto-resized)"
+              />
             )}
           </section>
+
 
           {/* Title */}
           <section className="space-y-1.5">
