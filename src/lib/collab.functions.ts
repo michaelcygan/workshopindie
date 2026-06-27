@@ -585,7 +585,8 @@ export const updateCollab = createServerFn({ method: "POST" })
     if (Object.keys(row).length > 0) {
       const { error: updErr } = await supabaseAdmin
         .from("collab_posts")
-        .update(row)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(row as any)
         .eq("id", data.collabPostId);
       if (updErr) throw new Error(updErr.message);
     }
