@@ -351,6 +351,43 @@ export const extractWorkFromUrl = createServerFn({ method: "POST" })
       }
     }
 
+    // 4b) GitHub — enrich via the public REST API (no auth needed, 60 req/hr
+    // per IP is plenty for one-off "Post a Work" calls). Use the OpenGraph
+    // social card endpoint for a clean 1280x640 cover with the repo name.
+    if (provider === "github") {
+      const seg = u.pathname.replace(/^\/+|\/+$/g, "").split("/");
+      if (seg.length >= 2) {
+        const owner = seg[0];
+        const repo = seg[1].replace(/\.git$/, "");
+        const res = await fetchWithTimeout(
+          `https://api.github.com/repos/${owner}/${repo}`,
+          { headers: { Accept: "application/vnd.github+json" } },
+          3500,
+        );
+        if (res && res.ok) {
+          try {
+            const j = await res.json() as {
+              name?: string; full_name?: string; description?: string | null;
+              stargazers_count?: number; language?: string | null; homepage?: string | null;
+            };
+            base.title = j.name ?? j.full_name ?? base.title;
+            if (j.description) base.description = j.description;
+            const bits: string[] = [];
+            if (typeof j.stargazers_count === "number") bits.push(`★ ${j.stargazers_count}`);
+            if (j.language) bits.push(j.language);
+            if (bits.length && base.description && !base.description.includes("★")) {
+              base.description = `${bits.join(" · ")}\n\n${base.description}`;
+            }
+          } catch { /* ignore */ }
+        }
+        // Always set a deterministic, well-cropped cover.
+        base.cover_url = `https://opengraph.githubassets.com/1/${owner}/${repo}`;
+        base.embed_url = null;
+      }
+    }
+
+
+
     // 5) Books — pull author + seed a buy link from the source URL.
     if (isBookProvider(provider)) {
       let author: string | null = null;
