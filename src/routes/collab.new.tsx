@@ -507,10 +507,19 @@ function NewCollab() {
 
 
         {/* Mobile inline action */}
-        <div className="flex justify-end gap-2 md:hidden">
+        <div className="flex flex-wrap justify-end gap-2 md:hidden">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
-          <Button type="submit" disabled={submitting} className="rounded-full">
-            {submitting ? "Posting…" : "Post Collab"}
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={submitting || !title.trim()}
+            className="rounded-full"
+            onClick={() => setSaveAsDraft(true)}
+          >
+            Save as draft
+          </Button>
+          <Button type="submit" disabled={submitting} className="rounded-full" onClick={() => setSaveAsDraft(false)}>
+            {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
           </Button>
         </div>
       </form>
@@ -521,40 +530,57 @@ function NewCollab() {
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-ink-muted">
               {allValid
-                ? "All set — post when you're ready."
+                ? "All set — post, or save it as a draft to flesh out later."
                 : !pitchValid
-                  ? "Add a title and a short description to continue."
+                  ? "Add a title and a sentence on the idea to continue."
                   : !shapeValid
-                    ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
-                    : (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")}
+                    ? "Pick a city or set location to Remote."
+                    : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
               <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submitting || !title.trim()}
+                className="rounded-full"
+                onClick={() => {
+                  setSaveAsDraft(true);
+                  const form = document.querySelector("form");
+                  if (form) form.requestSubmit();
+                }}
+              >
+                {submitting && saveAsDraft ? "Saving…" : "Save as draft"}
+              </Button>
               <Button
                 type="button"
                 disabled={submitting}
                 variant={allValid ? "default" : "outline"}
                 className="rounded-full"
                 onClick={(e) => {
+                  setSaveAsDraft(false);
                   const form = document.querySelector("form");
                   if (form) form.requestSubmit();
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting ? "Posting…" : "Post Collab"}
+                {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
               </Button>
             </div>
           </div>
           <p className="pb-2 text-[11px] text-ink-muted">
             What happens next:&nbsp;
-            <span className="text-ink-soft">Post</span>
+            <span className="text-ink-soft">Post (or draft)</span>
+            <span className="mx-1.5 opacity-50">→</span>
+            <span className="text-ink-soft">Edit anytime</span>
             <span className="mx-1.5 opacity-50">→</span>
             <span className="text-ink-soft">People apply</span>
             <span className="mx-1.5 opacity-50">→</span>
-            <span className="text-ink-soft">Publish a Work (or archive it)</span>
+            <span className="text-ink-soft">Publish a Work</span>
           </p>
         </div>
       </div>
+
 
 
 
