@@ -82,7 +82,7 @@ function EditCollab() {
       ends_on: post.ends_on,
     });
     setLocationMode((post.location_mode as LocationMode) || "online");
-    setCity(post.city ? { id: post.city.id, name: post.city.name, region: post.city.region, country: post.city.country, slug: post.city.slug } : null);
+    setCity(post.city ? { id: post.city.id, name: post.city.name, country: post.city.country } : null);
     setCompensationType((post.compensation_type as CompType) || "unspecified");
     setRights((post.rights_arrangement as Rights) || "decide_later");
   }, [post]);
