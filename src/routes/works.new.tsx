@@ -623,7 +623,7 @@ function DropStep({
       </div>
 
       <div className="flex flex-col items-center gap-2 text-center">
-        <VideoUploadButton onUploaded={onVideoUploaded} />
+
         <button
           type="button"
           onClick={onManual}
