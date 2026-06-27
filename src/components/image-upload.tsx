@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Upload, Loader2, X } from "lucide-react";
 import { uploadToBucket } from "@/lib/storage";
+import { resizeImageToJpeg } from "@/lib/image-resize";
 import { useAuth } from "@/hooks/use-auth";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -21,6 +22,10 @@ const aspectClass = {
   wide: "aspect-[16/6]",
 } as const;
 
+// v1 storage guardrails — keep portfolios cheap to host.
+const MAX_BYTES = 3 * 1024 * 1024;
+const MAX_EDGE = 2048;
+
 export function ImageUpload({ value, onChange, bucket, aspect = "square", label = "Upload image", className }: Props) {
   const { user } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -28,10 +33,20 @@ export function ImageUpload({ value, onChange, bucket, aspect = "square", label 
 
   async function handleFile(file: File | undefined) {
     if (!file || !user) return;
-    if (file.size > 5 * 1024 * 1024) return toast.error("Max file size is 5MB");
+    if (file.size > MAX_BYTES * 4) {
+      return toast.error("Image too large. Max 12MB before resize.");
+    }
     setUploading(true);
     try {
-      const url = await uploadToBucket(bucket, user.id, file);
+      // Always downscale to ≤2048px JPEG so storage stays bounded.
+      const { blob } = await resizeImageToJpeg(file, MAX_EDGE, 0.82);
+      const sized = blob.size > MAX_BYTES
+        ? (await resizeImageToJpeg(file, 1600, 0.78)).blob
+        : blob;
+      const out = sized instanceof File
+        ? sized
+        : new File([sized], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+      const url = await uploadToBucket(bucket, user.id, out);
       onChange(url);
     } catch (e) {
       toast.error((e as Error).message);

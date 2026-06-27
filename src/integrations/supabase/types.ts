@@ -3866,6 +3866,9 @@ export type Database = {
           city_id: string | null
           comment_count: number
           commercial_use: string
+          cover_aspect: string
+          cover_focal_x: number
+          cover_focal_y: number
           cover_url: string | null
           created_at: string
           created_by: string
@@ -3910,6 +3913,9 @@ export type Database = {
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
+          cover_aspect?: string
+          cover_focal_x?: number
+          cover_focal_y?: number
           cover_url?: string | null
           created_at?: string
           created_by: string
@@ -3954,6 +3960,9 @@ export type Database = {
           city_id?: string | null
           comment_count?: number
           commercial_use?: string
+          cover_aspect?: string
+          cover_focal_x?: number
+          cover_focal_y?: number
           cover_url?: string | null
           created_at?: string
           created_by?: string

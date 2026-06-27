@@ -8,6 +8,7 @@ import { InlineGroupChips } from "./inline-group-chips";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { GroupTag } from "@/hooks/use-group-tags";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { aspectClassFor, focalStyle } from "@/components/cover-framer";
 import { cn } from "@/lib/utils";
 
 export type WorkCardData = {
@@ -16,6 +17,9 @@ export type WorkCardData = {
   slug: string;
   category: Category;
   cover_url: string | null;
+  cover_aspect?: string | null;
+  cover_focal_x?: number | null;
+  cover_focal_y?: number | null;
   source_type: string;
   like_count: number;
   save_count: number;
@@ -27,6 +31,7 @@ export type WorkCardData = {
   embed_url?: string | null;
   credits?: { id?: string | null; display_name: string | null; username: string | null; avatar_url?: string | null }[];
 };
+
 
 type Density = "compact" | "default" | "hero";
 
@@ -87,17 +92,19 @@ export function WorkCard({
       ) : (
         <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
       )}
-      <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : "aspect-[4/5]")}>
+      <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : aspectClassFor(work.cover_aspect))}>
         {work.cover_url ? (
           <img
             src={work.cover_url}
             alt={work.title}
             loading="lazy"
+            style={focalStyle(work.cover_focal_x, work.cover_focal_y)}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full gradient-soft" />
         )}
+
         {showCategory && (
           <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
             <CategoryChip category={work.category} />

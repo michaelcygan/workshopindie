@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
-import { VideoUploadButton, type StreamUploadResult } from "@/components/video-upload-button";
+import { CoverFramer, type CoverAspect, type CoverFocal } from "@/components/cover-framer";
 import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
+
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
 import { WORK_CATEGORIES, WORK_SUBTYPES, type Category, type WorkCategory, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
@@ -80,8 +81,10 @@ function NewWork() {
   const [coCreators, setCoCreators] = useState<CoCreator[]>([]);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [streamUid, setStreamUid] = useState<string | null>(null);
+  const [coverAspect, setCoverAspect] = useState<CoverAspect>("portrait");
+  const [coverFocal, setCoverFocal] = useState<CoverFocal>({ x: 50, y: 50 });
   const [myProfile, setMyProfile] = useState<{ display_name: string | null; username: string | null } | null>(null);
+
   const [book, setBook] = useState<BookDetails>(emptyBookDetails);
 
   useEffect(() => {
@@ -122,23 +125,8 @@ function NewWork() {
     setStep("confirm");
   }
 
-  function applyVideoUpload(r: StreamUploadResult) {
-    setStreamUid(r.uid);
-    setProvider("cloudflare_stream");
-    setEmbedUrl(r.hlsUrl);
-    if (r.thumbnailUrl && !coverUrl) setCoverUrl(r.thumbnailUrl);
-    setExtracted({
-      title: title || "",
-      description: null,
-      cover_url: r.thumbnailUrl,
-      primary_url: r.hlsUrl,
-      embed_url: r.hlsUrl,
-      provider: "cloudflare_stream",
-      author_name: null,
-      suggested_category: "visual",
-    } as unknown as ExtractedWork);
-    setStep("confirm");
-  }
+  // Video uploads were retired for v1 — Works only embed external video (YouTube/Vimeo).
+
 
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
@@ -216,6 +204,9 @@ function NewWork() {
         excerpt: excerpt || null,
         description: description || null,
         cover_url: coverUrl,
+        cover_aspect: coverAspect,
+        cover_focal_x: coverFocal.x,
+        cover_focal_y: coverFocal.y,
         primary_url: primaryUrl || null,
         embed_url: isBook ? null : embedUrl,
         source_type: "manual",
@@ -225,6 +216,7 @@ function NewWork() {
         visibility: "public",
         created_by: user.id,
         ...bookFields,
+
       })
       .select("id,slug")
       .single();
@@ -261,15 +253,8 @@ function NewWork() {
     });
     await supabase.from("work_credits").insert(credits);
 
-    // Link uploaded Cloudflare Stream asset (if any) to this work
-    if (streamUid) {
-      await supabase
-        .from("media_assets")
-        .update({ work_id: work.id })
-        .eq("provider", "cloudflare_stream")
-        .eq("provider_uid", streamUid)
-        .eq("owner_id", user.id);
-    }
+
+
 
     // Tag into selected Groups (best-effort)
     if (selectedGroups.length > 0) {
@@ -294,7 +279,8 @@ function NewWork() {
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
-      setStreamUid(null);
+      setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
+
       setBook(emptyBookDetails);
       setUrlInput("");
       setStep("drop");
@@ -328,9 +314,9 @@ function NewWork() {
           extracting={extracting}
           onSubmit={() => runExtract(urlInput)}
           onManual={() => setStep("manual")}
-          onVideoUploaded={applyVideoUpload}
         />
       )}
+
 
       {(step === "confirm" || step === "manual") && (
         <form
@@ -346,21 +332,41 @@ function NewWork() {
           )}
 
           {/* Cover */}
-          <section className="space-y-2">
+          <section className="space-y-3">
             <Label>Cover</Label>
-            <ImageUpload
-              value={coverUrl}
-              onChange={setCoverUrl}
-              bucket="work-covers"
-              aspect="portrait"
-              label={extracted?.cover_url ? "Replace cover image" : "Upload a 4:5 cover image"}
-            />
-            {extracted?.cover_url && coverUrl === extracted.cover_url && (
-              <p className="text-xs text-ink-muted">
-                Pulled from {providerLabel(extracted.provider) ?? "the link"}. Upload your own to replace it.
-              </p>
+            {coverUrl ? (
+              <>
+                <CoverFramer
+                  src={coverUrl}
+                  aspect={coverAspect}
+                  focal={coverFocal}
+                  onAspectChange={setCoverAspect}
+                  onFocalChange={setCoverFocal}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCoverUrl(null)}
+                  className="text-xs text-ink-muted hover:text-ink underline underline-offset-2"
+                >
+                  Replace cover image
+                </button>
+                {extracted?.cover_url && coverUrl === extracted.cover_url && (
+                  <p className="text-xs text-ink-muted">
+                    Pulled from {providerLabel(extracted.provider) ?? "the link"}. Pick a crop and tap to set the focal point.
+                  </p>
+                )}
+              </>
+            ) : (
+              <ImageUpload
+                value={coverUrl}
+                onChange={setCoverUrl}
+                bucket="work-covers"
+                aspect="portrait"
+                label="Upload a cover image (≤3MB, auto-resized)"
+              />
             )}
           </section>
+
 
           {/* Title */}
           <section className="space-y-1.5">
@@ -560,14 +566,14 @@ function NewWork() {
 }
 
 function DropStep({
-  urlInput, setUrlInput, extracting, onSubmit, onManual, onVideoUploaded,
+  urlInput, setUrlInput, extracting, onSubmit, onManual,
 }: {
   urlInput: string;
   setUrlInput: (v: string) => void;
   extracting: boolean;
   onSubmit: () => void;
   onManual: () => void;
-  onVideoUploaded: (r: StreamUploadResult) => void;
+
 }) {
   return (
     <motion.div
@@ -617,7 +623,7 @@ function DropStep({
       </div>
 
       <div className="flex flex-col items-center gap-2 text-center">
-        <VideoUploadButton onUploaded={onVideoUploaded} />
+
         <button
           type="button"
           onClick={onManual}
