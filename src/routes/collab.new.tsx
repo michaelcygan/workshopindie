@@ -250,10 +250,9 @@ function NewCollab() {
   }
 
   // Validation snapshots for progress dots + submit affordance.
-  const pitchValid = title.trim().length > 0 && description.trim().length >= 20;
-  const shapeValid = !!rights && (locationMode === "online" || !!city);
-  const cleanRolesCount = roles.filter((r) => r.role_name.trim() && r.quantity > 0).length;
-  const teamValid = cleanRolesCount > 0 && (contactMode === "email_relay" || externalUrl.trim().length > 0);
+  const pitchValid = title.trim().length > 0 && description.trim().length > 0;
+  const shapeValid = locationMode === "online" || !!city;
+  const teamValid = contactMode === "email_relay" || externalUrl.trim().length > 0;
   const allValid = pitchValid && shapeValid && teamValid;
 
   const dots: { ok: boolean; label: string }[] = [
