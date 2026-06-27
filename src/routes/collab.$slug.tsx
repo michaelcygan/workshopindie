@@ -216,6 +216,14 @@ function CollabDetail() {
 
 
 
+  const fetchMembership = useServerFn(getMyCollabMembership);
+  const { data: membership } = useQuery({
+    queryKey: ["collab-membership", post?.id, user?.id],
+    queryFn: () => fetchMembership({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!user && user.id !== post?.user_id,
+    staleTime: 30_000,
+  });
+
   const applyFn = useServerFn(applyToCollab);
   const sendContact = useMutation({
     mutationFn: async () => {
@@ -251,6 +259,36 @@ function CollabDetail() {
   const extendMut = useMutation({
     mutationFn: (endsOn: string) => extendFn({ data: { collabPostId: post!.id, endsOn } }),
     onSuccess: () => { toast.success("Deadline extended"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const leaveFn = useServerFn(leaveCollab);
+  const leaveMut = useMutation({
+    mutationFn: () => leaveFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => {
+      toast.success("You've left this Collab.");
+      qc.invalidateQueries({ queryKey: ["collab-membership", post?.id, user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const acceptChangesFn = useServerFn(acceptCollabChanges);
+  const acceptChangesMut = useMutation({
+    mutationFn: () => acceptChangesFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => {
+      toast.success("Changes accepted.");
+      qc.invalidateQueries({ queryKey: ["collab-membership", post?.id, user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateFn = useServerFn(updateCollab);
+  const publishMut = useMutation({
+    mutationFn: () => updateFn({ data: { collabPostId: post!.id, patch: { status: "open" } } }),
+    onSuccess: () => {
+      toast.success("Draft published — it's now live.");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
