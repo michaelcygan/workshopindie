@@ -307,9 +307,9 @@ function NewCollab() {
 
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea</Label>
-            <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
-            <p className="text-[11px] text-ink-muted">{description.trim().length < 20 ? `${20 - description.trim().length} more characters to go` : "Looks good."}</p>
+            <Textarea id="desc" required rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+              placeholder="Even a sentence works: ‘I want to make a short film this week.’ You can flesh it out later." />
+            <p className="text-[11px] text-ink-muted">A line is fine. You can edit anytime.</p>
           </section>
         </div>
 
