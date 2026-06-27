@@ -279,7 +279,8 @@ function NewWork() {
       setCoverUrl(null); setPrimaryUrl(""); setEmbedUrl(null);
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
-      setStreamUid(null);
+      setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
+
       setBook(emptyBookDetails);
       setUrlInput("");
       setStep("drop");
