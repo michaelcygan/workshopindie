@@ -32,10 +32,11 @@ type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
 type ContactMode = "email_relay" | "external_link";
 
-type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons";
+type RightsArrangement = "owner_retains" | "equal_split" | "creative_commons" | "decide_later";
 type RoleDraft = { role_name: string; quantity: number; description: string };
 
 const RIGHTS_OPTIONS: { id: RightsArrangement; label: string; body: string }[] = [
+  { id: "decide_later", label: "Figure it out with collaborators", body: "Decide the arrangement together once the team comes together. Good for early-stage ideas." },
   { id: "creative_commons", label: "Creative Commons", body: "Free for anyone to use with attribution (CC BY 4.0)." },
   { id: "owner_retains", label: "Owner keeps publishing rights", body: "You retain the final say on how the work is released. Collaborators are credited." },
   { id: "equal_split", label: "Equal split among all participants", body: "Everyone who ships on this owns an equal share." },
@@ -108,10 +109,11 @@ function NewCollab() {
   const [roles, setRoles] = useState<RoleDraft[]>([
     { role_name: "", quantity: 1, description: "" },
   ]);
-  const [rights, setRights] = useState<RightsArrangement | null>(null);
+  const [rights, setRights] = useState<RightsArrangement>("decide_later");
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [saveAsDraft, setSaveAsDraft] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
 
@@ -148,15 +150,19 @@ function NewCollab() {
     e.preventDefault();
     if (!user) return;
     if (!title.trim()) return toast.error("Give your Collab a title");
-    if (!description.trim() || description.trim().length < 20) return toast.error("Describe the idea — at least a sentence or two");
+    if (!description.trim()) return toast.error("Add a sentence on what's the idea");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
-    const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
-    if (cleanRoles.length === 0) return toast.error("Add at least one role");
-    if (!rights) return toast.error("Pick a rights arrangement");
 
+    // Roles are optional now — if none, we create a single open-to-collaborators placeholder.
+    let cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
+    if (cleanRoles.length === 0) {
+      cleanRoles = [{ role_name: "Open to collaborators", quantity: 1, description: "" }];
+    }
 
-    if (!isPlus) {
+    const targetStatus: "draft" | "open" = saveAsDraft ? "draft" : "open";
+
+    if (!isPlus && targetStatus === "open") {
       const { count } = await supabase
         .from("collab_posts")
         .select("id", { count: "exact", head: true })
@@ -186,7 +192,7 @@ function NewCollab() {
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
       rights_arrangement: rights,
-      status: "open",
+      status: targetStatus,
     }).select("id,slug").single();
 
     if (error || !post) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't post"); }
@@ -202,8 +208,8 @@ function NewCollab() {
     );
     if (rolesErr) toast.error(rolesErr.message);
 
-    // Tag into selected Groups (best-effort)
-    if (selectedGroups.length > 0) {
+    // Tag into selected Groups (best-effort) — drafts skip tagging.
+    if (targetStatus === "open" && selectedGroups.length > 0) {
       const results = await Promise.allSettled(
         selectedGroups.map((g) =>
           tagGroup({ data: { group_id: g.id, collab_post_id: post.id } }),
@@ -216,6 +222,12 @@ function NewCollab() {
       });
     }
     setSubmitting(false);
+
+    if (targetStatus === "draft") {
+      toast.success("Draft saved — keep editing or publish when ready.");
+      navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+      return;
+    }
     setPostedDialog({ id: post.id, slug: post.slug });
   }
 
@@ -238,10 +250,9 @@ function NewCollab() {
   }
 
   // Validation snapshots for progress dots + submit affordance.
-  const pitchValid = title.trim().length > 0 && description.trim().length >= 20;
-  const shapeValid = !!rights && (locationMode === "online" || !!city);
-  const cleanRolesCount = roles.filter((r) => r.role_name.trim() && r.quantity > 0).length;
-  const teamValid = cleanRolesCount > 0 && (contactMode === "email_relay" || externalUrl.trim().length > 0);
+  const pitchValid = title.trim().length > 0 && description.trim().length > 0;
+  const shapeValid = locationMode === "online" || !!city;
+  const teamValid = contactMode === "email_relay" || externalUrl.trim().length > 0;
   const allValid = pitchValid && shapeValid && teamValid;
 
   const dots: { ok: boolean; label: string }[] = [
@@ -296,9 +307,9 @@ function NewCollab() {
 
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea</Label>
-            <Textarea id="desc" required minLength={20} rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
-              placeholder="What you're making, the vibe, what's already done, and what 'great' looks like." />
-            <p className="text-[11px] text-ink-muted">{description.trim().length < 20 ? `${20 - description.trim().length} more characters to go` : "Looks good."}</p>
+            <Textarea id="desc" required rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+              placeholder="Even a sentence works: ‘I want to make a short film this week.’ You can flesh it out later." />
+            <p className="text-[11px] text-ink-muted">A line is fine. You can edit anytime.</p>
           </section>
         </div>
 
@@ -477,7 +488,7 @@ function NewCollab() {
               <button type="button" onClick={() => setContactMode("email_relay")}
                 className={cn("rounded-full border px-3 py-1.5 text-sm transition",
                   contactMode === "email_relay" ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
-                In-app message
+                In-app message <span className="opacity-70">· recommended</span>
               </button>
               <button type="button" onClick={() => setContactMode("external_link")}
                 className={cn("rounded-full border px-3 py-1.5 text-sm transition",
@@ -485,6 +496,7 @@ function NewCollab() {
                 External link
               </button>
             </div>
+            <p className="text-[11px] text-ink-muted">In-app keeps your email private — applicants land in your inbox.</p>
             {contactMode === "external_link" && (
               <Input className="mt-2" type="url" placeholder="https://… (your contact form, IG, email, etc.)"
                 value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
@@ -496,10 +508,19 @@ function NewCollab() {
 
 
         {/* Mobile inline action */}
-        <div className="flex justify-end gap-2 md:hidden">
+        <div className="flex flex-wrap justify-end gap-2 md:hidden">
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
-          <Button type="submit" disabled={submitting} className="rounded-full">
-            {submitting ? "Posting…" : "Post Collab"}
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={submitting || !title.trim()}
+            className="rounded-full"
+            onClick={() => setSaveAsDraft(true)}
+          >
+            Save as draft
+          </Button>
+          <Button type="submit" disabled={submitting} className="rounded-full" onClick={() => setSaveAsDraft(false)}>
+            {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
           </Button>
         </div>
       </form>
@@ -510,40 +531,57 @@ function NewCollab() {
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-ink-muted">
               {allValid
-                ? "All set — post when you're ready."
+                ? "All set — post, or save it as a draft to flesh out later."
                 : !pitchValid
-                  ? "Add a title and a short description to continue."
+                  ? "Add a title and a sentence on the idea to continue."
                   : !shapeValid
-                    ? (rights ? "Pick a city or set location to Remote." : "Pick a rights arrangement.")
-                    : (cleanRolesCount === 0 ? "Add at least one role." : "Add the contact link people should use.")}
+                    ? "Pick a city or set location to Remote."
+                    : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
               <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={submitting || !title.trim()}
+                className="rounded-full"
+                onClick={() => {
+                  setSaveAsDraft(true);
+                  const form = document.querySelector("form");
+                  if (form) form.requestSubmit();
+                }}
+              >
+                {submitting && saveAsDraft ? "Saving…" : "Save as draft"}
+              </Button>
               <Button
                 type="button"
                 disabled={submitting}
                 variant={allValid ? "default" : "outline"}
                 className="rounded-full"
                 onClick={(e) => {
+                  setSaveAsDraft(false);
                   const form = document.querySelector("form");
                   if (form) form.requestSubmit();
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting ? "Posting…" : "Post Collab"}
+                {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
               </Button>
             </div>
           </div>
           <p className="pb-2 text-[11px] text-ink-muted">
             What happens next:&nbsp;
-            <span className="text-ink-soft">Post</span>
+            <span className="text-ink-soft">Post (or draft)</span>
+            <span className="mx-1.5 opacity-50">→</span>
+            <span className="text-ink-soft">Edit anytime</span>
             <span className="mx-1.5 opacity-50">→</span>
             <span className="text-ink-soft">People apply</span>
             <span className="mx-1.5 opacity-50">→</span>
-            <span className="text-ink-soft">Publish a Work (or archive it)</span>
+            <span className="text-ink-soft">Publish a Work</span>
           </p>
         </div>
       </div>
+
 
 
 

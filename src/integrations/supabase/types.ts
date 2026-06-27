@@ -300,6 +300,7 @@ export type Database = {
       }
       collab_invites: {
         Row: {
+          accepted_terms_version: number | null
           collab_post_id: string
           collab_role_id: string | null
           created_at: string
@@ -311,6 +312,7 @@ export type Database = {
           status: Database["public"]["Enums"]["collab_invite_status"]
         }
         Insert: {
+          accepted_terms_version?: number | null
           collab_post_id: string
           collab_role_id?: string | null
           created_at?: string
@@ -322,6 +324,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["collab_invite_status"]
         }
         Update: {
+          accepted_terms_version?: number | null
           collab_post_id?: string
           collab_role_id?: string | null
           created_at?: string
@@ -373,6 +376,7 @@ export type Database = {
           starts_on: string | null
           status: Database["public"]["Enums"]["collab_post_status"]
           subcategories: string[]
+          terms_version: number
           timeline_mode: Database["public"]["Enums"]["timeline_mode"]
           timeline_text: string | null
           title: string
@@ -403,6 +407,7 @@ export type Database = {
           starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]
+          terms_version?: number
           timeline_mode?: Database["public"]["Enums"]["timeline_mode"]
           timeline_text?: string | null
           title: string
@@ -433,6 +438,7 @@ export type Database = {
           starts_on?: string | null
           status?: Database["public"]["Enums"]["collab_post_status"]
           subcategories?: string[]
+          terms_version?: number
           timeline_mode?: Database["public"]["Enums"]["timeline_mode"]
           timeline_text?: string | null
           title?: string
@@ -5632,8 +5638,13 @@ export type Database = {
         | "jam"
         | "standup"
         | "writing_book"
-      collab_invite_status: "pending" | "accepted" | "declined" | "withdrawn"
-      collab_post_status: "open" | "closed" | "archived" | "removed"
+      collab_invite_status:
+        | "pending"
+        | "accepted"
+        | "declined"
+        | "withdrawn"
+        | "left"
+      collab_post_status: "open" | "closed" | "archived" | "removed" | "draft"
       compensation_type:
         | "paid"
         | "unpaid"
@@ -5901,8 +5912,14 @@ export const Constants = {
         "standup",
         "writing_book",
       ],
-      collab_invite_status: ["pending", "accepted", "declined", "withdrawn"],
-      collab_post_status: ["open", "closed", "archived", "removed"],
+      collab_invite_status: [
+        "pending",
+        "accepted",
+        "declined",
+        "withdrawn",
+        "left",
+      ],
+      collab_post_status: ["open", "closed", "archived", "removed", "draft"],
       compensation_type: [
         "paid",
         "unpaid",

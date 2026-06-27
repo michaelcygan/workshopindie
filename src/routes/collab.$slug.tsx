@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Radio, Scale, Share2, Users, Inbox, Archive } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye } from "lucide-react";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,7 +17,7 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
-import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts } from "@/lib/collab.functions";
+import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 import { VouchRow, useVouchersForPosts } from "@/components/vouch-button";
 import { BoostButton } from "@/components/boost-button";
@@ -26,6 +26,7 @@ import { WorksBornHere } from "@/components/works-born-here";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
+
 
 
 export const Route = createFileRoute("/collab/$slug")({
@@ -131,6 +132,7 @@ const RIGHTS_LABEL: Record<string, string> = {
   owner_retains: "Owner keeps rights",
   equal_split: "Equal split",
   creative_commons: "Creative Commons",
+  decide_later: "Rights TBD",
 };
 
 function CollabDetail() {
@@ -214,6 +216,14 @@ function CollabDetail() {
 
 
 
+  const fetchMembership = useServerFn(getMyCollabMembership);
+  const { data: membership } = useQuery({
+    queryKey: ["collab-membership", post?.id, user?.id],
+    queryFn: () => fetchMembership({ data: { collabPostId: post!.id } }),
+    enabled: !!post && !!user && user.id !== post?.user_id,
+    staleTime: 30_000,
+  });
+
   const applyFn = useServerFn(applyToCollab);
   const sendContact = useMutation({
     mutationFn: async () => {
@@ -252,15 +262,46 @@ function CollabDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const leaveFn = useServerFn(leaveCollab);
+  const leaveMut = useMutation({
+    mutationFn: () => leaveFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => {
+      toast.success("You've left this Collab.");
+      qc.invalidateQueries({ queryKey: ["collab-membership", post?.id, user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const acceptChangesFn = useServerFn(acceptCollabChanges);
+  const acceptChangesMut = useMutation({
+    mutationFn: () => acceptChangesFn({ data: { collabPostId: post!.id } }),
+    onSuccess: () => {
+      toast.success("Changes accepted.");
+      qc.invalidateQueries({ queryKey: ["collab-membership", post?.id, user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const updateFn = useServerFn(updateCollab);
+  const publishMut = useMutation({
+    mutationFn: () => updateFn({ data: { collabPostId: post!.id, patch: { status: "open" } } }),
+    onSuccess: () => {
+      toast.success("Draft published — it's now live.");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
+  const isDraft = post.status === "draft";
   const isArchived = post.status === "closed" && !post.resulting_work_id;
   const isShipped = post.status === "closed" && !!post.resulting_work_id;
 
-  // Archived posts are owner-only. Anyone else gets the standard not-found surface.
-  if (isArchived && !isOwner) {
+  // Drafts and archived posts are owner-only. Anyone else gets the standard not-found surface.
+  if ((isArchived || isDraft) && !isOwner) {
     return (
       <main className="mx-auto max-w-2xl p-10 text-center">
         <h1 className="font-display text-3xl">Not found</h1>
@@ -280,11 +321,13 @@ function CollabDetail() {
     ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
     : null;
   const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
-  const stateBadge = post.status === "open"
-    ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
-    : isShipped
-      ? <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
-      : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
+  const stateBadge = isDraft
+    ? <StateBadge tone="closed" label="Draft" sublabel="Only you can see this" />
+    : post.status === "open"
+      ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
+      : isShipped
+        ? <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
+        : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
@@ -337,6 +380,18 @@ function CollabDetail() {
             />
             {isOwner ? (
               <>
+                {isDraft && (
+                  <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                    <Eye className="h-3.5 w-3.5" /> Publish
+                  </Button>
+                )}
+                {(post.status === "open" || isDraft) && (
+                  <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                    <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
+                      <Pencil className="h-3.5 w-3.5" /> Edit
+                    </Link>
+                  </Button>
+                )}
                 {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
@@ -351,11 +406,47 @@ function CollabDetail() {
                 {post.status === "open" && (
                   <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 )}
+                {membership?.isMember && (
+                  <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
+                    <LogOut className="h-3.5 w-3.5" /> Leave
+                  </Button>
+                )}
                 {user && <ReportDialog entityType="collab_post" entityId={post.id} />}
               </>
             )}
           </div>
         </div>
+
+        {/* Draft banner */}
+        {isOwner && isDraft && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-dashed border-border bg-muted/40 p-3 text-sm">
+            <Pencil className="mt-0.5 h-4 w-4 text-ink-muted" />
+            <div className="flex-1">
+              <p className="font-medium text-ink">This is a draft.</p>
+              <p className="text-ink-muted">Only you can see it. Flesh it out and hit Publish when you're ready.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Re-consent banner: owner changed scope after you joined */}
+        {membership?.needsReconsent && (
+          <div className="mb-3 flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
+            <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-700" />
+            <div className="flex-1">
+              <p className="font-medium text-amber-900">The owner updated this Collab's scope.</p>
+              <p className="text-amber-800/90">Review the details above. To stay on board, accept the changes — or leave.</p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button size="sm" className="rounded-full" onClick={() => acceptChangesMut.mutate()} disabled={acceptChangesMut.isPending}>
+                Accept changes
+              </Button>
+              <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Leave this Collab?")) leaveMut.mutate(); }}>
+                Leave
+              </Button>
+            </div>
+          </div>
+        )}
+
 
 
 
