@@ -119,12 +119,11 @@ export function OnboardingGroupsStep({
   return (
     <div>
       <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">
-        Step 2 of 2 — Pick your Groups
+        You're in
       </p>
-      <h1 className="mt-1 font-display text-3xl text-ink">Where does your work belong?</h1>
+      <h1 className="mt-1 font-display text-3xl text-ink">Pick a few Groups to fill your feed</h1>
       <p className="mt-1 text-sm text-ink-muted">
-        Groups are scenes, genres, and cities. We recommend 3. Your home city is pre-selected — your feed
-        starts from your Groups.
+        Groups are scenes, genres, and cities. Optional — you can join more anytime. Your home city is pre-selected.
       </p>
 
       <div className="mt-5 flex h-11 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">
