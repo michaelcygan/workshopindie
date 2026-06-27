@@ -471,3 +471,244 @@ export const getCollabPublicCounts = createServerFn({ method: "POST" })
     ]);
     return { applicants: (memberRes.count ?? 0) + (guestRes.count ?? 0) };
   });
+
+// ──────────────────────────────────────────────────────────────────────
+// Owner edit + member self-service (leave / re-consent on scope change)
+// ──────────────────────────────────────────────────────────────────────
+
+const roleDraftSchema = z.object({
+  role_name: z.string().trim().min(1).max(120),
+  quantity: z.number().int().min(1).max(20),
+  description: z.string().trim().max(1000).nullable().optional(),
+});
+
+const updateSchema = z.object({
+  collabPostId: z.string().uuid(),
+  patch: z.object({
+    title: z.string().trim().min(1).max(140).optional(),
+    description: z.string().trim().max(3000).nullable().optional(),
+    timeline_text: z.string().trim().max(120).nullable().optional(),
+    timeline_mode: z.enum(["flexible", "by_date", "between"]).optional(),
+    starts_on: z.string().nullable().optional(),
+    ends_on: z.string().nullable().optional(),
+    location_mode: z.enum(["online", "in_person", "hybrid"]).optional(),
+    city_id: z.string().uuid().nullable().optional(),
+    also_cities: z.array(z.string().uuid()).max(4).optional(),
+    compensation_type: z.enum(["paid", "unpaid", "credit", "negotiable", "unspecified"]).optional(),
+    rights_arrangement: z
+      .enum(["owner_retains", "equal_split", "creative_commons", "decide_later"])
+      .optional(),
+    status: z.enum(["draft", "open"]).optional(),
+    roles: z.array(roleDraftSchema).max(20).optional(),
+  }),
+});
+
+// Fields whose change bumps the consent version. Cosmetic edits (typos) don't.
+const SCOPE_KEYS = [
+  "title",
+  "description",
+  "timeline_mode",
+  "starts_on",
+  "ends_on",
+  "location_mode",
+  "city_id",
+  "compensation_type",
+  "rights_arrangement",
+] as const;
+
+export const updateCollab = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => updateSchema.parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: post, error: postErr } = await supabase
+      .from("collab_posts")
+      .select("id,user_id,terms_version,title,description,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (postErr) throw new Error(postErr.message);
+    if (!post) throw new Error("This collab no longer exists.");
+    if (post.user_id !== userId) throw new Error("Only the owner can edit this collab.");
+
+    const patch = data.patch;
+    if (patch.title) {
+      const hit = findHateSlur(patch.title);
+      if (hit) throw new Error("Title contains language that isn't allowed.");
+    }
+    if (patch.description) {
+      const hit = findHateSlur(patch.description);
+      if (hit) throw new Error("Description contains language that isn't allowed.");
+    }
+
+    // Detect a scope change.
+    let scopeChanged = false;
+    for (const k of SCOPE_KEYS) {
+      if (k in patch && (patch as Record<string, unknown>)[k] !== (post as Record<string, unknown>)[k]) {
+        scopeChanged = true;
+        break;
+      }
+    }
+
+    // Build the row update.
+    const row: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(patch)) {
+      if (k === "roles") continue;
+      if (v === undefined) continue;
+      row[k] = v;
+    }
+
+    // Compare roles too — any difference is a scope change.
+    let nextRoles: Array<z.infer<typeof roleDraftSchema>> | null = null;
+    if (patch.roles) {
+      const { data: existingRoles } = await supabaseAdmin
+        .from("collab_roles")
+        .select("role_name,quantity,description")
+        .eq("collab_post_id", data.collabPostId)
+        .order("sort_order", { ascending: true });
+      const norm = (r: { role_name: string; quantity: number; description: string | null }) =>
+        `${r.role_name.trim().toLowerCase()}|${r.quantity}|${(r.description ?? "").trim()}`;
+      const a = (existingRoles ?? []).map(norm).join("§");
+      const b = patch.roles
+        .map((r) => norm({ role_name: r.role_name, quantity: r.quantity, description: r.description ?? null }))
+        .join("§");
+      if (a !== b) {
+        scopeChanged = true;
+        nextRoles = patch.roles;
+      }
+    }
+
+    if (scopeChanged) {
+      row.terms_version = (post.terms_version ?? 1) + 1;
+    }
+
+    if (Object.keys(row).length > 0) {
+      const { error: updErr } = await supabaseAdmin
+        .from("collab_posts")
+        .update(row)
+        .eq("id", data.collabPostId);
+      if (updErr) throw new Error(updErr.message);
+    }
+
+    if (nextRoles) {
+      await supabaseAdmin.from("collab_roles").delete().eq("collab_post_id", data.collabPostId);
+      await supabaseAdmin.from("collab_roles").insert(
+        nextRoles.map((r, i) => ({
+          collab_post_id: data.collabPostId,
+          role_name: r.role_name.trim(),
+          quantity: r.quantity,
+          description: r.description?.trim() || null,
+          sort_order: i,
+        })),
+      );
+    }
+
+    // Notify accepted collaborators that scope changed.
+    if (scopeChanged) {
+      const { data: invites } = await supabaseAdmin
+        .from("collab_invites")
+        .select("invitee_user_id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("status", "accepted");
+      if (invites && invites.length > 0) {
+        await supabaseAdmin.from("notifications").insert(
+          invites.map((i) => ({
+            user_id: i.invitee_user_id,
+            kind: "collab_scope_changed",
+            actor_user_id: userId,
+            entity_type: "collab_post",
+            entity_id: data.collabPostId,
+            payload: { collab_title: post.title },
+          })),
+        );
+      }
+    }
+
+    return { ok: true as const, scopeChanged, termsVersion: row.terms_version ?? post.terms_version };
+  });
+
+export const leaveCollab = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id,title")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post) throw new Error("This collab no longer exists.");
+    if (post.user_id === userId) throw new Error("Owners can't leave their own collab — close it instead.");
+
+    const { data: rows, error } = await supabase
+      .from("collab_invites")
+      .update({ status: "left", responded_at: new Date().toISOString() })
+      .eq("collab_post_id", data.collabPostId)
+      .eq("invitee_user_id", userId)
+      .eq("status", "accepted")
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!rows || rows.length === 0) throw new Error("You're not on this collab.");
+
+    await supabaseAdmin.from("notifications").insert({
+      user_id: post.user_id,
+      kind: "collab_member_left",
+      actor_user_id: userId,
+      entity_type: "collab_post",
+      entity_id: data.collabPostId,
+      payload: { collab_title: post.title },
+    });
+    return { ok: true as const };
+  });
+
+export const acceptCollabChanges = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("terms_version")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post) throw new Error("This collab no longer exists.");
+
+    const { error } = await supabase
+      .from("collab_invites")
+      .update({ accepted_terms_version: post.terms_version })
+      .eq("collab_post_id", data.collabPostId)
+      .eq("invitee_user_id", userId)
+      .eq("status", "accepted");
+    if (error) throw new Error(error.message);
+    return { ok: true as const, termsVersion: post.terms_version };
+  });
+
+// Returns the viewer's membership state for a collab — used to show
+// the Leave button and the re-consent banner.
+export const getMyCollabMembership = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const [postRes, inviteRes] = await Promise.all([
+      supabase.from("collab_posts").select("terms_version").eq("id", data.collabPostId).maybeSingle(),
+      supabase
+        .from("collab_invites")
+        .select("id,status,accepted_terms_version")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("invitee_user_id", userId)
+        .eq("status", "accepted")
+        .maybeSingle(),
+    ]);
+    if (!postRes.data || !inviteRes.data) {
+      return { isMember: false as const };
+    }
+    const termsVersion = postRes.data.terms_version ?? 1;
+    const accepted = inviteRes.data.accepted_terms_version ?? 1;
+    return {
+      isMember: true as const,
+      needsReconsent: accepted < termsVersion,
+      termsVersion,
+    };
+  });
+
