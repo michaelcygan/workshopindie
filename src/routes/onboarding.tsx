@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
 import { setMyBirthdate } from "@/lib/profile-age.functions";
+import { claimAutoUsername } from "@/lib/account.functions";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { OnboardingGroupsStep } from "@/components/onboarding-groups-step";
 
