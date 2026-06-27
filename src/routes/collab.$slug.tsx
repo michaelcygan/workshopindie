@@ -131,6 +131,7 @@ const RIGHTS_LABEL: Record<string, string> = {
   owner_retains: "Owner keeps rights",
   equal_split: "Equal split",
   creative_commons: "Creative Commons",
+  decide_later: "Rights TBD",
 };
 
 function CollabDetail() {
