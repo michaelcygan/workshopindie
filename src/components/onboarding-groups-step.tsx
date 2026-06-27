@@ -210,20 +210,21 @@ export function OnboardingGroupsStep({
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3">
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onSkip}
-          className="text-sm text-ink-muted underline-offset-2 hover:text-ink hover:underline"
+          className="rounded-full"
         >
-          Skip for now
-        </button>
+          Skip to Workshop
+        </Button>
         <Button
           type="button"
           onClick={commit}
           disabled={saving || selected.size === 0}
           className="rounded-full"
         >
-          {saving ? "Joining…" : `Continue${selected.size > 0 ? ` · ${selected.size}` : ""}`}
+          {saving ? "Joining…" : `Join${selected.size > 0 ? ` · ${selected.size}` : ""}`}
         </Button>
       </div>
     </div>
