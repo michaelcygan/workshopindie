@@ -25,7 +25,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { ShareSheet } from "@/components/share-sheet";
 import { MessageButton } from "@/components/message-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
-import { WorkshopEndedNudge } from "@/components/nudges/workshop-ended-nudge";
+// WorkshopEndedNudge retired in v1 distillation pass.
 import { WorksBornHere } from "@/components/works-born-here";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -281,16 +281,6 @@ function WorkshopDetail() {
       {/* Reverse provenance — every public Work born in this workshop. */}
       <WorksBornHere workshopId={ws.id} />
 
-      {/* Wrap-up nudge — host or confirmed participant, finalizing/shipped */}
-      <WorkshopEndedNudge
-        workshopId={ws.id}
-        workshopSlug={ws.slug}
-        workshopTitle={ws.title}
-        status={ws.status}
-        publishedWorkId={ws.published_work_id}
-        publishedWorkSlug={publishedWork?.slug ?? null}
-        isParticipant={!!isConfirmedParticipant}
-      />
     </main>
   );
 }

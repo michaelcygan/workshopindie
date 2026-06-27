@@ -6,8 +6,6 @@ import { StateBadge } from "./state-badge";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
-import { VouchRow, type VouchersByPost } from "./vouch-button";
-import { BoostButton } from "./boost-button";
 import { InlineGroupChips } from "./inline-group-chips";
 import type { GroupTag } from "@/hooks/use-group-tags";
 
@@ -69,14 +67,14 @@ function locationLabel(post: CollabCardData): string {
 
 export function CollabCard({
   post,
-  vouchers,
   boosted,
   groups,
   myGroupIds,
   className,
 }: {
   post: CollabCardData;
-  vouchers?: VouchersByPost;
+  /** Deprecated — kept for API stability while Boosts are flag-off. */
+  vouchers?: unknown;
   boosted?: boolean;
   groups?: GroupTag[];
   myGroupIds?: Set<string>;
@@ -91,8 +89,6 @@ export function CollabCard({
     ? timelineBadgeText(post.timeline_mode, post.starts_on ?? null, post.ends_on ?? null)
     : null;
   const tlLabel = tlBadge ?? post.timeline_text;
-  const postVouchers = vouchers?.get(post.id) ?? [];
-  const vouchCount = post.vouch_count ?? postVouchers.length;
   const isLive = !!post.live_workshop_id;
   const isShipped = post.status === "closed" && !!post.resulting_work_id;
   const daysToDeadline = post.ends_on
