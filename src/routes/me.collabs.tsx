@@ -236,7 +236,9 @@ function MyCollabsPage() {
           <p className="mt-1 text-ink-muted">
             {attentionCount > 0
               ? `${attentionCount} need${attentionCount === 1 ? "s" : ""} your attention.`
-              : "Everything you're hosting or applied to."}
+              : draftCount > 0
+                ? `${draftCount} draft${draftCount === 1 ? "" : "s"} in progress.`
+                : "Everything you're hosting or applied to."}
           </p>
         </div>
         <Link to="/collab/new">
@@ -285,43 +287,69 @@ function MyCollabsPage() {
                   {archivedCount} archived — only visible to you.
                 </p>
               )}
-              {hosting.map((r) => {
+              {sortedHosting.map((r) => {
+                const isDraft = r.status === "draft";
                 const isArchived = r.status === "closed";
-                const passed = !isArchived && !!r.ends_on && r.ends_on < today;
+                const passed = !isArchived && !isDraft && !!r.ends_on && r.ends_on < today;
                 return (
                   <div key={r.id} className={cn(
                     "flex flex-wrap items-center gap-3 rounded-2xl border p-4",
-                    isArchived ? "border-dashed border-border bg-surface-2/40" : passed ? "border-amber-500/30 bg-surface" : "border-border bg-surface",
+                    isDraft ? "border-dashed border-primary/30 bg-primary/5"
+                      : isArchived ? "border-dashed border-border bg-surface-2/40"
+                      : passed ? "border-amber-500/30 bg-surface"
+                      : "border-border bg-surface",
                   )}>
                     <CategoryChip category={r.category} />
-                    {isArchived
-                      ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
-                      : passed
-                        ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
-                        : <StateBadge tone="open" label="Open" sublabel="Casting" />}
+                    {isDraft
+                      ? <StateBadge tone="closed" label="Draft" sublabel="Not posted" />
+                      : isArchived
+                        ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
+                        : passed
+                          ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
+                          : <StateBadge tone="open" label="Open" sublabel="Casting" />}
                     <div className={cn("min-w-0 flex-1", isArchived && "opacity-70")}>
-                      <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                        {r.title}
-                      </Link>
+                      {isDraft ? (
+                        <Link to="/collab/$slug/edit" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                          {r.title || "Untitled draft"}
+                        </Link>
+                      ) : (
+                        <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                          {r.title}
+                        </Link>
+                      )}
                       <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
                         {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
+                        {isDraft && (
+                          <span className="inline-flex items-center gap-1"><FileEdit className="h-3 w-3" /> Saved {new Date(r.created_at).toLocaleDateString()}</span>
+                        )}
                         {isArchived && r.closed_at && (
                           <span className="inline-flex items-center gap-1"><Archive className="h-3 w-3" /> Archived {new Date(r.closed_at).toLocaleDateString()}</span>
                         )}
-                        {!isArchived && r.ends_on && (
+                        {!isArchived && !isDraft && r.ends_on && (
                           <span className={cn("inline-flex items-center gap-1", passed && "text-amber-700")}>
                             <Clock className="h-3 w-3" /> {passed ? "Deadline passed" : `Until ${r.ends_on}`}
                           </span>
                         )}
-                        {r.applicant_count > 0 && (
+                        {!isDraft && r.applicant_count > 0 && (
                           <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
                         )}
-                        {!isArchived && r.live_workshop_id && (
+                        {!isArchived && !isDraft && r.live_workshop_id && (
                           <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Workshop open</span>
                         )}
                       </div>
                     </div>
-                    {isArchived ? (
+                    {isDraft ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
+                          <Trash2 className="h-3.5 w-3.5" /> Delete
+                        </Button>
+                        <Link to="/collab/$slug/edit" params={{ slug: r.slug }}>
+                          <Button size="sm" className="rounded-full gap-1">
+                            <Pencil className="h-3.5 w-3.5" /> Resume editing
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : isArchived ? (
                       <div className="flex flex-wrap gap-1.5">
                         <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
                           <X className="h-3.5 w-3.5" /> Dismiss
