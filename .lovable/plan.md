@@ -1,41 +1,56 @@
-# Finish the Workshop → Lounge rename
 
-The live-room feature is now **Lounge**. "Workshop" remains only as the platform brand (e.g. landing page brand title) and in admin/internal labels for the legacy scheduled-workshop archive table. Every other user-facing surface still saying "Workshop/Workshops" needs to be updated.
+# Collab flow refresh — v1, 2027-ready
 
-## Scope
+Four changes, scoped to keep the existing form/layout intact.
 
-Sweep every `.tsx`/`.ts` file under `src/` (excluding `routeTree.gen.ts`, `integrations/supabase/types.ts`, and `.functions.ts`/`.server.ts` server code where strings aren't user-visible) for the word "workshop" and rewrite UI-facing copy to "Lounge".
+## 1. In-app message stays default; logged-out can still apply
 
-### Confirmed from screenshots
-1. **Collab Board** (`src/routes/collab.index.tsx`) — "open a Workshop on yours" → "open a Lounge on yours".
-2. **Groups join strip** (`src/components/groups-join-feed-strip.tsx`) — "live collabs and workshops" → "live collabs and Lounges".
-3. **In Progress page** (`src/routes/in-progress.tsx`) — subtitle "the workshops you're in" → "the Lounges you're in"; section title "Workshops you're in" → "Lounges you're in"; empty state "active Workshop" → "active Lounge"; "Tasks for you" subtitle "@-mentioned in a Workshop" → "@-mentioned in a Lounge".
-4. **Profile header** (`src/routes/u.$username.tsx`) — "Drop into a Workshop" → "Drop into a Lounge".
-5. **Profile in-flight empty** (`src/routes/u.$username.tsx` or `empty-spark.tsx`) — "drop into a Workshop" → "drop into a Lounge"; button "Drop into a Workshop" → "Drop into a Lounge".
-6. **Messages / DMs** (`src/routes/dms.index.tsx`, `new-message-dialog.tsx`) — "collabs and workshops" / "a collab or workshop" → "collabs and Lounges" / "a collab or Lounge".
+- Confirm `contactMode` defaults to `email_relay` (it does) and tighten copy on `/collab/new` to: **"In-app message (recommended)"** with a small helper "People reach you in your inbox — no email shared."
+- On the public Collab page, the apply button is visible to logged-out users and opens the existing `GuestApplyDialog`. After a guest submits, the post-submit screen becomes a **single CTA — "Create your account to get replies"** that hands off to `/signup?from=guest_apply&claim=<token>` and auto-claims the application on landing (already wired through `claimGuestApplication`). Add a softer secondary link "I'll do it later" that closes the dialog but stores the claim token in `localStorage` so a later signup still links it.
 
-### Additional sweep (same rule applied)
-Apply the same replacement across all remaining UI files surfaced by ripgrep, including but not limited to:
-- `top-nav.tsx`, `home-live-workshops-rail.tsx`, `live-workshops-rail.tsx`, `workshop-strip.tsx`, `workshop-tools-panel.tsx`, `workshop-screen-share-panel.tsx`, `enter-workshop-button.tsx`, `nudges/workshop-ended-nudge.tsx`, `groups-join-feed-card.tsx`, `groups-spark-card.tsx`, `host-first-run-tour.tsx`, `host-menu.tsx`, `host-room-events.tsx`, `claim-host-pill.tsx`, `cocreator-picker.tsx`, `event-share-sheet.tsx`, `event-promo-pass-banner.tsx`, `featured-events-*`, `friend-row.tsx`, `follow-button.tsx`, `message-button.tsx`, `applicants-panel.tsx`, `chat-polls.tsx`, `cc-consent-dialog.tsx`, `license-chip.tsx`, `adjacent-groups-rail.tsx`, `world-arcs.tsx`, `group-card.tsx`, `group/group-tab-bar.tsx`, `collab-card.tsx`, `age-gate.tsx`, `today-text.tsx`, `seo.ts`, `recent-rooms.ts` (display labels only).
-- Routes: `lounge.$id.tsx`, `lounge.index.tsx`, `events.index.tsx`, `cities.index.tsx`, `cities.$slug.tsx`, `collab.$slug.tsx`, `collab.new.tsx`, `collab.claim.$token.tsx`, `dms.$conversationId.tsx`, `index.tsx` (landing — preserve brand mentions), `signup.tsx`, `onboarding.tsx`, `settings.tsx`, `refer.tsx`, `redeem.$code.tsx`, `me.tickets.tsx`, `me.friends.tsx`, `me.edit.tsx`, `in-progress.tsx`, `u.$username.tsx`, `w.$token.tsx`, `checkout.return.tsx`.
+## 2. Draft-friendly Collab posts + edit
 
-### What stays "Workshop"
-- Brand name on landing/marketing surfaces (`routes/index.tsx` brand headline, hero, footer — "Workshop is…").
-- Admin-only labels and routes (`admin.*`, `workshops.$slug.archive.tsx`, `workshops.$slug.tools*.tsx`) — these are the retired scheduled-workshop archive surfaces, gated/legacy, and not user-launch facing.
-- Internal identifiers, DB column names, route filenames (`/workshops/*` redirect shims), `instant_rooms.kind = 'workshop'`, server-fn names, types, query keys, comments.
-- Redirect routes already in place (`workshop.$id.tsx`, `workshops.*`).
-- `medium-icons.ts` / `mediums.ts` / `categories.ts` if "workshop" appears only as a category slug (verify; rename label only if user-visible).
+Loosen the form so a vague "I want to make a short film this week" post works:
 
-### Approach
+- **Required**: Title, Medium (category), What's the idea (description — drop the 20-char min, just non-empty), Timeline (mode is always set), Where (city if not online).
+- **Optional / defaulted**: Roles (if none added, auto-create a single "Open to collaborators" role), Rights (default to a new `decide_later` option — clearly labeled "Figure this out with collaborators"), Compensation (already `unspecified` default), Contact link.
+- Add a **"Save as draft"** button next to Post. Drafts use `status='draft'` (existing enum value, will add if missing) — hidden from discovery, visible only to owner under `/me/collabs`, with a "Publish" button to flip to `open`.
+- Add **`/collab/$slug/edit`** route. Owner-only. Same form, prefilled. Calls a new `updateCollab` server fn that diffs and bumps a new `terms_version` column when scope-affecting fields change (title, description, timeline, location, comp, rights, roles).
 
-1. Ripgrep every file with `workshop` (case-insensitive) in `src/`.
-2. For each, edit only the **JSX text, button labels, toasts, aria-labels, placeholders, headings, descriptions, and SEO strings**. Keep identifiers, route paths, DB enums, query keys, type names, and code comments untouched.
-3. Pluralization rule: "Workshop" → "Lounge", "Workshops" → "Lounges", "workshop" → "Lounge" (capitalized per existing brand-noun convention already used in copy like "Lounge", "Collab").
-4. Preserve sentences referencing the **scheduled-event** concept ("Workshops, networking, open mics…" on landing) — those describe event types, not the live-room.
-5. Verify with a final `rg -i "workshop"` pass: anything left should be brand mentions, admin, redirects, identifiers, or comments.
+## 3. Leave a role / leave a Collab
 
-### Technical notes
+- New server fn `leaveCollab({ collabPostId })` — finds the caller's accepted `collab_invites` rows for that post and sets `status='left'` (adds value to enum) with `responded_at=now()`. Owner cannot leave (must close the Collab instead).
+- UI: on `/collab/$slug`, when the viewer is an accepted collaborator, show a "Leave this Collab" item in the existing overflow menu, with a confirm dialog ("You'll stop getting updates. The owner will be notified."). Notifies owner via existing notifications pipeline.
 
-- Pure copy change — no schema, RLS, route, or server-function changes.
-- No new files, no deletions (legacy redirect routes already exist).
-- After edits, typecheck/build runs automatically.
+## 4. Re-consent on owner edits
+
+- Add `terms_version int not null default 1` on `collab_posts` and `accepted_terms_version int` on `collab_invites`.
+- `updateCollab` bumps `terms_version` only when scope fields change (cosmetic edits like fixing a typo in a role description don't trigger). When bumped, all accepted invites with `accepted_terms_version < new` are flagged `needs_reconsent` (computed: row still `accepted` but version stale).
+- On `/collab/$slug`, stale collaborators see a sticky banner: **"The owner updated the scope. Review and accept to stay on, or leave."** with two buttons → `acceptCollabChanges` (writes new version) or the same `leaveCollab` from #3.
+- Owner sees a small "X of Y collaborators have re-accepted" line under the roles section while any are pending.
+
+## Technical details
+
+### Schema migration
+- Enum adds: `collab_post_status` += `draft`; `collab_invite_status` += `left`; `rights_arrangement` text accepts new value `decide_later`.
+- `collab_posts`: add `terms_version int not null default 1`.
+- `collab_invites`: add `accepted_terms_version int`, defaulting to `1` for existing accepted rows via the migration.
+- RLS: owner can `UPDATE` own `collab_posts` (already allowed); accepted invitees can `UPDATE` their own `collab_invites` row to set `accepted_terms_version` or status `left`.
+
+### New / changed server fns (`src/lib/collab.functions.ts`)
+- `updateCollab({ collabPostId, patch })` — owner-only; diffs scope fields; bumps `terms_version`; replaces roles via delete+insert in a single call.
+- `saveCollabDraft` / `publishCollab` — thin wrappers around insert/update with `status` toggling.
+- `leaveCollab({ collabPostId })` — accepted collaborator self-service.
+- `acceptCollabChanges({ collabPostId })` — writes current `terms_version` onto caller's invite.
+
+### Files touched
+- `src/routes/collab.new.tsx` — relax validation, add draft button, default rights to `decide_later`, contact copy tweak, auto-role fallback.
+- `src/routes/collab.$slug.edit.tsx` *(new)* — reuses the form via an extracted `<CollabForm>` component (`src/components/collab-form.tsx`).
+- `src/routes/collab.$slug.tsx` — re-consent banner, Leave action in overflow, owner re-consent progress line.
+- `src/components/guest-apply-dialog.tsx` — post-submit "Create account to get replies" screen + localStorage claim fallback.
+- `src/routes/signup.tsx` — pick up claim token from `localStorage` if `from=guest_apply` and `claim` param absent.
+- `src/lib/collab.functions.ts` — new fns above.
+- One Supabase migration for the enum/column changes and RLS update.
+
+### Out of scope
+No changes to discovery, boosts, vouches, the publish-to-Work flow, or Lounges.
