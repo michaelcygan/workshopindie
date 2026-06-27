@@ -598,7 +598,7 @@ function CollabDetail() {
           )}
         </div>
 
-        <CollabSocialProof postId={post.id} authorId={post.user_id} />
+        
 
         {hostUser && (
           <div className="mt-6 flex flex-wrap items-center gap-2">
