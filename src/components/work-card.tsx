@@ -92,17 +92,19 @@ export function WorkCard({
       ) : (
         <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
       )}
-      <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : "aspect-[4/5]")}>
+      <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : aspectClassFor(work.cover_aspect))}>
         {work.cover_url ? (
           <img
             src={work.cover_url}
             alt={work.title}
             loading="lazy"
+            style={focalStyle(work.cover_focal_x, work.cover_focal_y)}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full gradient-soft" />
         )}
+
         {showCategory && (
           <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
             <CategoryChip category={work.category} />
