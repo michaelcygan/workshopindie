@@ -8,6 +8,7 @@ import { InlineGroupChips } from "./inline-group-chips";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { GroupTag } from "@/hooks/use-group-tags";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+import { aspectClassFor, focalStyle } from "@/components/cover-framer";
 import { cn } from "@/lib/utils";
 
 export type WorkCardData = {
@@ -16,6 +17,9 @@ export type WorkCardData = {
   slug: string;
   category: Category;
   cover_url: string | null;
+  cover_aspect?: string | null;
+  cover_focal_x?: number | null;
+  cover_focal_y?: number | null;
   source_type: string;
   like_count: number;
   save_count: number;
@@ -27,6 +31,7 @@ export type WorkCardData = {
   embed_url?: string | null;
   credits?: { id?: string | null; display_name: string | null; username: string | null; avatar_url?: string | null }[];
 };
+
 
 type Density = "compact" | "default" | "hero";
 
