@@ -166,40 +166,41 @@ function Onboarding() {
           />
         ) : (
           <>
-        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 1 of 2 — Profile basics</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Welcome to Workshop</p>
         <h1 className="mt-1 font-display text-3xl text-ink">Create your profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your Groups. You can change anything later.</p>
-
-
-
-
+        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. You can change anything later.</p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="first">First name <span className="text-destructive">*</span></Label>
-              <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="last">Last name <span className="text-destructive">*</span></Label>
-              <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-          </div>
-          <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
+          {!hasNameAlready && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="first">First name <span className="text-destructive">*</span></Label>
+                  <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="last">Last name <span className="text-destructive">*</span></Label>
+                  <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+              </div>
+              <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
+            </>
+          )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth <span className="text-destructive">*</span></Label>
-
-            <Input
-              id="dob"
-              type="date"
-              required
-              max={maxBirthdate}
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-            />
-            <p className="text-xs text-ink-muted">Workshop is 18+. Private — never shown on your profile.</p>
-          </div>
+          {!hasDobAlready && (
+            <div className="space-y-1.5">
+              <Label htmlFor="dob">Date of birth <span className="text-destructive">*</span></Label>
+              <Input
+                id="dob"
+                type="date"
+                required
+                max={maxBirthdate}
+                value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+              />
+              <p className="text-xs text-ink-muted">Workshop is 18+. Private — never shown on your profile.</p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Home city <span className="text-ink-muted">(required)</span></Label>
