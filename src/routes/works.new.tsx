@@ -314,9 +314,9 @@ function NewWork() {
           extracting={extracting}
           onSubmit={() => runExtract(urlInput)}
           onManual={() => setStep("manual")}
-          onVideoUploaded={applyVideoUpload}
         />
       )}
+
 
       {(step === "confirm" || step === "manual") && (
         <form
