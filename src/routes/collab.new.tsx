@@ -150,15 +150,19 @@ function NewCollab() {
     e.preventDefault();
     if (!user) return;
     if (!title.trim()) return toast.error("Give your Collab a title");
-    if (!description.trim() || description.trim().length < 20) return toast.error("Describe the idea — at least a sentence or two");
+    if (!description.trim()) return toast.error("Add a sentence on what's the idea");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
-    const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
-    if (cleanRoles.length === 0) return toast.error("Add at least one role");
-    if (!rights) return toast.error("Pick a rights arrangement");
 
+    // Roles are optional now — if none, we create a single open-to-collaborators placeholder.
+    let cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
+    if (cleanRoles.length === 0) {
+      cleanRoles = [{ role_name: "Open to collaborators", quantity: 1, description: "" }];
+    }
 
-    if (!isPlus) {
+    const targetStatus: "draft" | "open" = saveAsDraft ? "draft" : "open";
+
+    if (!isPlus && targetStatus === "open") {
       const { count } = await supabase
         .from("collab_posts")
         .select("id", { count: "exact", head: true })
@@ -188,7 +192,7 @@ function NewCollab() {
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
       rights_arrangement: rights,
-      status: "open",
+      status: targetStatus,
     }).select("id,slug").single();
 
     if (error || !post) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't post"); }
@@ -204,8 +208,8 @@ function NewCollab() {
     );
     if (rolesErr) toast.error(rolesErr.message);
 
-    // Tag into selected Groups (best-effort)
-    if (selectedGroups.length > 0) {
+    // Tag into selected Groups (best-effort) — drafts skip tagging.
+    if (targetStatus === "open" && selectedGroups.length > 0) {
       const results = await Promise.allSettled(
         selectedGroups.map((g) =>
           tagGroup({ data: { group_id: g.id, collab_post_id: post.id } }),
@@ -218,6 +222,12 @@ function NewCollab() {
       });
     }
     setSubmitting(false);
+
+    if (targetStatus === "draft") {
+      toast.success("Draft saved — keep editing or publish when ready.");
+      navigate({ to: "/collab/$slug", params: { slug: post.slug } });
+      return;
+    }
     setPostedDialog({ id: post.id, slug: post.slug });
   }
 
