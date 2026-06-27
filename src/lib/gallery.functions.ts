@@ -89,6 +89,9 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       slug: string;
       category: Category;
       cover_url: string | null;
+      cover_aspect: string | null;
+      cover_focal_x: number | null;
+      cover_focal_y: number | null;
       embed_url: string | null;
       source_type: string;
       like_count: number;
@@ -107,11 +110,15 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       slug: r.slug,
       category: r.category,
       cover_url: r.cover_url,
+      cover_aspect: r.cover_aspect,
+      cover_focal_x: r.cover_focal_x,
+      cover_focal_y: r.cover_focal_y,
       embed_url: r.embed_url,
       source_type: r.source_type,
       like_count: r.like_count,
       save_count: r.save_count,
       view_count: r.view_count,
+
       credits: (r.work_credits ?? [])
         .sort((a, b) => a.sort_order - b.sort_order)
         .map((c) => ({
