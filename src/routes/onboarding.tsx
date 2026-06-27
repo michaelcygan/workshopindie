@@ -128,7 +128,7 @@ function Onboarding() {
 
     // Mint a public @handle so /me works immediately and the profile is shareable.
     try {
-      await claimHandle({ data: {} });
+      await claimHandle();
     } catch {
       /* non-fatal — user can claim one in profile settings */
     }
