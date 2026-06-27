@@ -573,7 +573,7 @@ function DropStep({
   extracting: boolean;
   onSubmit: () => void;
   onManual: () => void;
-  onVideoUploaded: (r: StreamUploadResult) => void;
+
 }) {
   return (
     <motion.div
