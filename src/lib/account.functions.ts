@@ -3,6 +3,63 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
+function slugifyHandle(input: string): string {
+  return (input || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "")
+    .slice(0, 24);
+}
+
+/**
+ * Auto-mint a username from the user's first+last (or display_name) if they
+ * don't have one yet. Never overwrites a user-chosen handle. Returns the
+ * effective username so callers can navigate to /u/$username immediately.
+ */
+export const claimAutoUsername = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { userId } = context;
+    const { data: profile, error: readErr } = await supabaseAdmin
+      .from("profiles")
+      .select("username, first_name, last_name, display_name")
+      .eq("id", userId)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (profile?.username) return { username: profile.username };
+
+    const base =
+      slugifyHandle(`${profile?.first_name ?? ""}${profile?.last_name ?? ""}`) ||
+      slugifyHandle(profile?.display_name ?? "") ||
+      `user${userId.slice(0, 6)}`;
+
+    const candidates: string[] = [base];
+    for (let i = 0; i < 6; i++) {
+      candidates.push(`${base}${Math.random().toString(36).slice(2, 5)}`);
+    }
+    candidates.push(`user${userId.slice(0, 8)}`);
+
+    for (const candidate of candidates) {
+      if (!candidate || candidate.length < 2) continue;
+      const { data: taken } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("username", candidate)
+        .maybeSingle();
+      if (taken) continue;
+      const { error: updErr } = await supabaseAdmin
+        .from("profiles")
+        .update({ username: candidate })
+        .eq("id", userId)
+        .is("username", null);
+      if (!updErr) return { username: candidate };
+    }
+    throw new Error("Couldn't reserve a username. Try setting one in profile settings.");
+  });
+
+
+
 /** Read the signed-in user's account-level privacy settings. */
 export const getMyPrivacy = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

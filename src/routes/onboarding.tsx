@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
 import { setMyBirthdate } from "@/lib/profile-age.functions";
+import { claimAutoUsername } from "@/lib/account.functions";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { OnboardingGroupsStep } from "@/components/onboarding-groups-step";
 
@@ -29,6 +30,7 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const saveBirthdate = useServerFn(setMyBirthdate);
+  const claimHandle = useServerFn(claimAutoUsername);
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
 
@@ -43,6 +45,8 @@ function Onboarding() {
   const [cityId, setCityId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [stage, setStage] = useState<"basics" | "groups">("basics");
+  const [hasNameAlready, setHasNameAlready] = useState(false);
+  const [hasDobAlready, setHasDobAlready] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) navigate({ to: "/login" });
@@ -59,6 +63,23 @@ function Onboarding() {
     const meta = user.user_metadata ?? {};
     if (meta.first_name) setFirstName(String(meta.first_name));
     if (meta.last_name) setLastName(String(meta.last_name));
+    // Pre-load profile so we can skip fields the user already filled at signup.
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("first_name,last_name,birthdate,bio,city_id,home_city_id,categories,mediums")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (!data) return;
+      if (data.first_name) { setFirstName(data.first_name); }
+      if (data.last_name) { setLastName(data.last_name); }
+      if (data.first_name && data.last_name) setHasNameAlready(true);
+      if (data.birthdate) { setBirthdate(String(data.birthdate)); setHasDobAlready(true); }
+      if (data.bio) setBio(data.bio);
+      if (data.home_city_id || data.city_id) setCityId(String(data.home_city_id ?? data.city_id));
+      if (Array.isArray(data.categories)) setCats(data.categories as Category[]);
+      if (Array.isArray(data.mediums)) setMediums(data.mediums as ExtraMedium[]);
+    })();
   }, [user]);
 
   const toggleCat = (c: Category) =>
@@ -79,11 +100,13 @@ function Onboarding() {
     if (!cityId) return toast.error("Please pick your home city — it powers your feed.");
     setSaving(true);
 
-    try {
-      await saveBirthdate({ data: { birthdate } });
-    } catch (err) {
-      setSaving(false);
-      return toast.error(err instanceof Error ? err.message : "Couldn't save date of birth.");
+    if (!hasDobAlready) {
+      try {
+        await saveBirthdate({ data: { birthdate } });
+      } catch (err) {
+        setSaving(false);
+        return toast.error(err instanceof Error ? err.message : "Couldn't save date of birth.");
+      }
     }
 
     const display = deriveDisplayName(firstName, lastName);
@@ -101,8 +124,16 @@ function Onboarding() {
         onboarded: true,
       })
       .eq("id", user.id);
+    if (error) { setSaving(false); return toast.error(error.message); }
+
+    // Mint a public @handle so /me works immediately and the profile is shareable.
+    try {
+      await claimHandle();
+    } catch {
+      /* non-fatal — user can claim one in profile settings */
+    }
+
     setSaving(false);
-    if (error) return toast.error(error.message);
     // Apply referral attribution (covers Google OAuth users — /signup also tries)
     try {
       const ref = sessionStorage.getItem(REF_KEY);
@@ -116,9 +147,8 @@ function Onboarding() {
     } catch { /* non-fatal */ }
     toast.success("Profile created");
     setStage("groups");
-
-
   };
+
 
   function finishOnboarding() {
     try { sessionStorage.setItem("ws.welcome_open", "1"); } catch { /* ignore */ }
@@ -136,40 +166,41 @@ function Onboarding() {
           />
         ) : (
           <>
-        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 1 of 2 — Profile basics</p>
+        <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Welcome to Workshop</p>
         <h1 className="mt-1 font-display text-3xl text-ink">Create your profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. Next, you'll pick your Groups. You can change anything later.</p>
-
-
-
-
+        <p className="mt-1 text-sm text-ink-muted">A few quick details so people can credit you and your feed knows where you are. You can change anything later.</p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="first">First name <span className="text-destructive">*</span></Label>
-              <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="last">Last name <span className="text-destructive">*</span></Label>
-              <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
-            </div>
-          </div>
-          <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
+          {!hasNameAlready && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="first">First name <span className="text-destructive">*</span></Label>
+                  <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="last">Last name <span className="text-destructive">*</span></Label>
+                  <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                </div>
+              </div>
+              <p className="-mt-3 text-xs text-ink-muted">This is how you'll be credited on works and collabs. You can claim a public @handle later.</p>
+            </>
+          )}
 
-          <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth <span className="text-destructive">*</span></Label>
-
-            <Input
-              id="dob"
-              type="date"
-              required
-              max={maxBirthdate}
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-            />
-            <p className="text-xs text-ink-muted">Workshop is 18+. Private — never shown on your profile.</p>
-          </div>
+          {!hasDobAlready && (
+            <div className="space-y-1.5">
+              <Label htmlFor="dob">Date of birth <span className="text-destructive">*</span></Label>
+              <Input
+                id="dob"
+                type="date"
+                required
+                max={maxBirthdate}
+                value={birthdate}
+                onChange={(e) => setBirthdate(e.target.value)}
+              />
+              <p className="text-xs text-ink-muted">Workshop is 18+. Private — never shown on your profile.</p>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label>Home city <span className="text-ink-muted">(required)</span></Label>

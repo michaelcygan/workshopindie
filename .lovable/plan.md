@@ -1,49 +1,63 @@
+# Fix profile redirect + tighten onboarding
 
-# Post-a-Work — v1 distillation
+## The bug (note #2)
 
-Four focused changes to `/works/new`, the extractor, and the work renderer. One migration, no new tables.
+`/me/index.tsx` redirects to `/onboarding` whenever `!profile.onboarded || !profile.username`. The onboarding form sets `onboarded: true` but **never assigns a username**, so every new user gets bounced back to "Create your profile" forever when they click Profile in the dropdown.
 
-## 1. Cover framing chooser (1:1 / 16:9 / 4:5)
+## Fix: auto-mint a username at onboarding completion
 
-YouTube/Vimeo thumbnails come back 16:9 and the card forces a 4:5 frame — clipping the top and bottom. Let the user pick the framing.
+Add a `claimAutoUsername` server function (in `src/lib/account.functions.ts`) that:
 
-- Migration: add `works.cover_aspect text default 'portrait'` (check `('portrait','square','landscape')`) and `works.cover_focal text default 'center'` (`'top'|'center'|'bottom'`).
-- In `/works/new`, when a `cover_url` is present, show three framing tiles (1:1, 16:9, 4:5) plus a focal selector — all rendered from the same source URL using `aspect-*` + `object-cover` + `object-position`. No re-upload, no server crop.
-- `WorkCard` honors `cover_aspect` in default density (hero stays 16:10). Gallery masonry tolerates mixed heights.
+1. Slugifies `first + last` → `janedoe`.
+2. If taken, appends a short random suffix (`janedoe7k`, retry up to 5x).
+3. Updates `profiles.username` for the calling user (only if currently NULL — never overwrites a user-chosen handle).
+4. Returns the username string.
 
-## 2. Drop user video uploads
+Call it from `src/routes/onboarding.tsx` `onSubmit` **before** flipping `onboarded: true`, and again as a safety net from `/me/index.tsx` if a stale account lands there without a username (one-time backfill, then redirect to `/u/$username`).
 
-Cloudflare Stream bandwidth blows up at HD; v1 stays embed-only.
+Users can still rename their handle later in `/me/edit` — same validation as today.
 
-- Remove `VideoUploadButton` from `DropStep` (and the "Or upload a video file" link).
-- Leave `stream-uploads.functions.ts` and `media_assets` wiring intact — archived Workshop recordings still use them — but stop exposing the entry point from the Work flow.
-- Reword the drop card: "Paste a link from YouTube, Vimeo, SoundCloud, Bandcamp, or your own site."
+## Holistic onboarding pass (note #3)
 
-## 3. Image-upload guardrails
+The end-to-end flow today is: **Signup → email confirm → Onboarding step 1 (basics) → Onboarding step 2 (Groups) → Home (with welcome tour flag) → ProfileCompletionChip nags on home**. It works but it's piecemeal and asks the same questions twice.
 
-`ImageUpload` is the only image surface on a Work (cover only — no gallery in v1). Cap what lands in storage:
+### Distillation
 
-- Client: reject >3 MB or >4096 px long-edge; auto-downscale via existing `image-resize.ts` (raise `maxEdge` to 2048 for covers).
-- Add a `tg_works_cover_cleanup` trigger: when `cover_url` changes on a `works` row and the previous URL points to the `work-covers` bucket, delete the old storage object (via `storage.delete_object`) so replacements don't accumulate.
-- No multi-image gallery — description stays text-only.
+**A. Merge "name + DOB" into the signup screen and "city + mediums" into onboarding step 1.**
+Today `/signup` already collects first name, last name, DOB. `/onboarding` re-asks for first name + last name + DOB. Drop the duplicate fields from onboarding — pre-fill from `user_metadata` and just show city + mediums + optional bio.
 
-## 4. Build category — URL-only with smart cards
+**B. Kill the "step 1 of 2" framing; make Groups feel like a reward, not a chore.**
+After basics save, show a single celebratory screen: *"You're in. Pick a few Groups to fill your feed (optional)."* with a Skip → Home button that's just as prominent as "Continue".
 
-Build gets a dedicated branch in `extractWorkFromUrl` instead of generic oEmbed:
+**C. Auto-username (above) means /me works immediately** after step 1, so a user who skips Groups can still click Profile and land on their real page.
 
-- Migration: add `works.build_meta jsonb` (single bag — avoids schema sprawl).
-- **GitHub / GitLab**: detect host, hit the public REST API (`https://api.github.com/repos/{owner}/{repo}`, no auth — unauthenticated rate limit is fine for v1 publish volume), store `{ kind: 'repo', owner, name, stars, language, description, default_branch }`. Cover falls back to GitHub's auto-generated OG image (`https://opengraph.githubassets.com/1/{owner}/{repo}`). Work page renders a repo card (icon, language dot, star count, "View on GitHub" button) — no iframe.
-- **Any other site**: call Firecrawl `scrape` with `formats: ['screenshot']` from the server function once at publish time, upload the PNG into `work-covers`, set as `cover_url`. No live mirror, no scheduled refresh — user can click "Refresh preview" on the Work page (rate-limited to once per 24h per user via existing `rate_limits` table). Stores `{ kind: 'site', host, last_snapshot_at }` in `build_meta`.
-- Build category never embeds an iframe. Primary CTA on the Work page is "Visit site" / "View on GitHub".
-- Requires the existing Firecrawl connection (`FIRECRAWL_API_KEY`) — I'll verify it's linked before implementing; if not, I'll prompt to link it.
+**D. Welcome tour trigger** stays as-is (`ws.welcome_open` sessionStorage), but only fires when the user lands on `/` from onboarding — not after Groups skip back-navigation.
 
-## Technical details
+**E. ProfileCompletionChip** keeps nudging avatar + bio + first Work on the home page. That's the right place for ongoing nudges — onboarding itself stays short.
 
-Files touched:
+### Resulting flow
 
-- `src/routes/works.new.tsx` — remove `VideoUploadButton`, add framing chooser, branch Build category UI.
-- `src/components/work-card.tsx` — honor `cover_aspect` / `cover_focal`.
-- `src/lib/works-import.functions.ts` — Build branch: GitHub REST + Firecrawl screenshot path.
-- `src/lib/image-resize.ts` + `src/components/image-upload.tsx` — enforce 3 MB / 2048 px caps.
-- `src/routes/works.$slug.tsx` — render repo card / "Visit site" CTA for Build; render cover at chosen aspect.
-- Migration: `cover_aspect`, `cover_focal`, `build_meta`, cover-cleanup trigger.
+```text
+/signup     → email + password + first + last + DOB + (optional IG)
+              ↓ (auto-confirmed or email link)
+/onboarding → home city (required) + mediums + short bio (optional)
+              ↓ auto-mints username
+Groups step → "Pick a few Groups" with equal-weight Skip
+              ↓
+/           → welcome tour overlay + ProfileCompletionChip for the rest
+```
+
+Net effect: 1 fewer duplicate screen, profile button works the moment basics are saved, and the "two-step" anxiety goes away.
+
+## Technical changes
+
+1. **`src/lib/account.functions.ts`** — add `claimAutoUsername` server fn (slugify, collision-retry, update only if null).
+2. **`src/routes/onboarding.tsx`** —
+   - Remove `firstName` / `lastName` / `birthdate` fields and the `setMyBirthdate` call (already collected at signup; if missing, redirect to signup-style mini-prompt).
+   - Call `claimAutoUsername` before the `profiles.update`.
+   - Simplify copy: drop "Step 1 of 2", reframe Groups step as optional.
+3. **`src/routes/me.index.tsx`** — if `onboarded && !username`, call `claimAutoUsername` once then redirect to `/u/$username` (backfill for users stuck by the current bug).
+4. **`src/components/onboarding-groups-step.tsx`** — make Skip button equal visual weight to Continue (no code logic change beyond styling).
+5. **`src/routes/signup.tsx`** — no changes (already collects name + DOB).
+
+No DB migration needed; `profiles.username` already exists and is nullable-unique.
