@@ -488,7 +488,7 @@ function NewCollab() {
               <button type="button" onClick={() => setContactMode("email_relay")}
                 className={cn("rounded-full border px-3 py-1.5 text-sm transition",
                   contactMode === "email_relay" ? "border-transparent bg-ink text-background" : "border-border bg-background text-ink-soft hover:bg-muted")}>
-                In-app message
+                In-app message <span className="opacity-70">· recommended</span>
               </button>
               <button type="button" onClick={() => setContactMode("external_link")}
                 className={cn("rounded-full border px-3 py-1.5 text-sm transition",
@@ -496,6 +496,7 @@ function NewCollab() {
                 External link
               </button>
             </div>
+            <p className="text-[11px] text-ink-muted">In-app keeps your email private — applicants land in your inbox.</p>
             {contactMode === "external_link" && (
               <Input className="mt-2" type="url" placeholder="https://… (your contact form, IG, email, etc.)"
                 value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
