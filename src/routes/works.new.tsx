@@ -204,6 +204,9 @@ function NewWork() {
         excerpt: excerpt || null,
         description: description || null,
         cover_url: coverUrl,
+        cover_aspect: coverAspect,
+        cover_focal_x: coverFocal.x,
+        cover_focal_y: coverFocal.y,
         primary_url: primaryUrl || null,
         embed_url: isBook ? null : embedUrl,
         source_type: "manual",
@@ -213,6 +216,7 @@ function NewWork() {
         visibility: "public",
         created_by: user.id,
         ...bookFields,
+
       })
       .select("id,slug")
       .single();
