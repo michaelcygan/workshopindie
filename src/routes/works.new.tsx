@@ -13,8 +13,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ImageUpload } from "@/components/image-upload";
 import { EmbedPlayer, providerLabel } from "@/components/embed-player";
-import { VideoUploadButton, type StreamUploadResult } from "@/components/video-upload-button";
+import { CoverFramer, type CoverAspect, type CoverFocal } from "@/components/cover-framer";
 import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
+
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
 import { WORK_CATEGORIES, WORK_SUBTYPES, type Category, type WorkCategory, categoryClass } from "@/lib/categories";
 import { cn } from "@/lib/utils";
