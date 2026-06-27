@@ -566,7 +566,7 @@ function NewWork() {
 }
 
 function DropStep({
-  urlInput, setUrlInput, extracting, onSubmit, onManual, onVideoUploaded,
+  urlInput, setUrlInput, extracting, onSubmit, onManual,
 }: {
   urlInput: string;
   setUrlInput: (v: string) => void;
