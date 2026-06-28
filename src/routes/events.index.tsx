@@ -340,11 +340,12 @@ function EventsIndexPage() {
 
         </div>
 
-        {when === "upcoming" && (
+        {when === "upcoming" && !mineActive && (
           <section className="mt-6">
             <FeaturedEventsCompact />
           </section>
         )}
+
 
         <section className="mt-10">
           {isLoading && (
