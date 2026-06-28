@@ -27,7 +27,6 @@ import {
   Coffee,
   Ticket,
   Briefcase,
-  ChevronRight,
   LayoutGrid,
   Calendar,
 
