@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
-import { Calendar, MapPin, Radio } from "lucide-react";
+import { Calendar, MapPin, Radio, Ticket } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,8 +14,11 @@ import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { listMyUpcomingRsvps, listMyPastRsvps } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
+
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
 // groups still own their event pages and RSVP still auto-joins the host group.
@@ -27,7 +31,9 @@ const searchSchema = z.object({
   format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
   city: fallback(z.string().uuid().optional(), undefined),
   cityName: fallback(z.string().optional(), undefined),
+  mine: fallback(z.boolean(), false).default(false),
 });
+
 
 async function fetchPublicEvents(when: When, format: Format, cityId?: string) {
   const now = new Date().toISOString();
@@ -114,15 +120,36 @@ type SearchShape = z.infer<typeof searchSchema>;
 function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events" });
-  const { when, format, city: cityId, cityName } = search;
+  const { when, format, city: cityId, cityName, mine } = search;
+  const { user } = useAuth();
 
-  const { data: events, isLoading } = useQuery({
+  const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
+  const minePastFn = useServerFn(listMyPastRsvps);
+
+  const mineActive = mine && !!user;
+
+  const { data: publicData, isLoading: publicLoading } = useQuery({
     queryKey: ["public-events", when, format, cityId ?? null],
     queryFn: () => fetchPublicEvents(when, format, cityId),
     staleTime: 60_000,
+    enabled: !mineActive,
   });
 
+  const { data: mineData, isLoading: mineLoading } = useQuery({
+    queryKey: ["my-rsvps-feed", when, user?.id],
+    queryFn: async () => {
+      const rows = when === "past" ? await minePastFn() : await mineUpcomingFn();
+      type R = { event: EventCardData };
+      return (rows as unknown as R[]).map((r) => r.event);
+    },
+    staleTime: 30_000,
+    enabled: mineActive,
+  });
+
+  const events = mineActive ? mineData : publicData;
+  const isLoading = mineActive ? mineLoading : publicLoading;
   const list = events ?? [];
+
   const happeningCount = useMemo(() => {
     const now = Date.now();
     return list.filter((e) => {
@@ -178,6 +205,11 @@ function EventsIndexPage() {
       }),
     });
   }
+  function setMine(next: boolean) {
+    navigate({ search: (prev: SearchShape) => ({ ...prev, mine: next }) });
+  }
+
+
 
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
 
@@ -231,35 +263,57 @@ function EventsIndexPage() {
                 { value: "past", label: "Past" },
               ]}
             />
-            <SegToggle
-              value={format}
-              onChange={setFormat}
-              options={[
-                { value: "all", label: "All", icon: Calendar },
-                { value: "in_person", label: "In person", icon: MapPin },
-                { value: "online", label: "Online", icon: Radio },
-              ]}
-            />
-            <div className="flex min-w-[16rem] flex-1 items-center gap-2">
-              <CityCombobox
-                value={cityValue}
-                onChange={setCity}
-                disabled={format === "online"}
-                placeholder="Anywhere — search a city"
-              />
-              {cityValue && format !== "online" && (
-                <button
-                  type="button"
-                  onClick={() => setCity(null)}
-                  className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
-                >
-                  Worldwide
-                </button>
-              )}
-            </div>
+            {user && (
+              <button
+                type="button"
+                onClick={() => setMine(!mine)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-soft transition",
+                  mine
+                    ? "border-ink bg-ink text-surface"
+                    : "border-border bg-surface text-ink-soft hover:text-ink",
+                )}
+                aria-pressed={mine}
+              >
+                <Ticket className="h-3 w-3" />
+                My RSVPs
+              </button>
+            )}
+
+            {!mineActive && (
+              <>
+                <SegToggle
+                  value={format}
+                  onChange={setFormat}
+                  options={[
+                    { value: "all", label: "All", icon: Calendar },
+                    { value: "in_person", label: "In person", icon: MapPin },
+                    { value: "online", label: "Online", icon: Radio },
+                  ]}
+                />
+                <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+                  <CityCombobox
+                    value={cityValue}
+                    onChange={setCity}
+                    disabled={format === "online"}
+                    placeholder="Anywhere — search a city"
+                  />
+                  {cityValue && format !== "online" && (
+                    <button
+                      type="button"
+                      onClick={() => setCity(null)}
+                      className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+                    >
+                      Worldwide
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
-          {defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
+
+          {!mineActive && defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
             <p className="px-1 text-xs text-ink-muted">
               Based on your location ·{" "}
               <button
@@ -271,7 +325,7 @@ function EventsIndexPage() {
               </button>
             </p>
           )}
-          {!cityId && format !== "online" && defaultCity && (
+          {!mineActive && !cityId && format !== "online" && defaultCity && (
             <p className="px-1 text-xs text-ink-muted">
               Near you:{" "}
               <button
@@ -283,13 +337,15 @@ function EventsIndexPage() {
               </button>
             </p>
           )}
+
         </div>
 
-        {when === "upcoming" && (
+        {when === "upcoming" && !mineActive && (
           <section className="mt-6">
             <FeaturedEventsCompact />
           </section>
         )}
+
 
         <section className="mt-10">
           {isLoading && (
@@ -305,19 +361,26 @@ function EventsIndexPage() {
 
           {!isLoading && list.length === 0 && (
             <EmptySpark
-              title="Nothing on the calendar."
+              title={mineActive ? "No RSVPs yet." : "Nothing on the calendar."}
               body={
-                cityValue
-                  ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
-                  : "Events hosted by the Groups you join will list here."
+                mineActive
+                  ? when === "past"
+                    ? "Events you attend will show up here."
+                    : "RSVP to an event and it'll appear here for quick access."
+                  : cityValue
+                    ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
+                    : "Events hosted by the Groups you join will list here."
               }
               action={
-                <Button asChild className="rounded-full">
-                  <Link to="/groups">Browse Groups</Link>
+                <Button asChild className="rounded-full" onClick={() => mineActive && setMine(false)}>
+                  <Link to={mineActive ? "/events" : "/groups"} search={mineActive ? { mine: false } as never : undefined}>
+                    {mineActive ? "Browse events" : "Browse Groups"}
+                  </Link>
                 </Button>
               }
             />
           )}
+
 
           {!isLoading && buckets.length > 0 && (
             <div className="space-y-10">

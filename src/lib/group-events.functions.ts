@@ -170,6 +170,25 @@ export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
       .sort((a, b) => new Date(a.event.starts_at).getTime() - new Date(b.event.starts_at).getTime());
   });
 
+export const listMyPastRsvps = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    const { data, error } = await supabase
+      .from("group_event_rsvps")
+      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!inner(slug,name,avatar_url))`)
+      .eq("user_id", userId)
+      .in("status", ["going", "maybe", "waitlist"])
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    type R = { event: { starts_at: string; ends_at: string } };
+    return ((data ?? []) as unknown as R[])
+      .filter((r) => new Date(r.event.ends_at) <= new Date())
+      .sort((a, b) => new Date(b.event.starts_at).getTime() - new Date(a.event.starts_at).getTime())
+      .slice(0, 30);
+  });
+
+
 const commentSchema = z.object({
   event_id: z.string().uuid(),
   body: z.string().min(1).max(500),

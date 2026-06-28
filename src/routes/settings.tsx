@@ -238,12 +238,27 @@ const LANGUAGE_OPTIONS: { v: string; label: string }[] = [
 
 function AccountSection() {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const qc = useQueryClient();
+
+
+
+
   const [resetting, setResetting] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
   const [newEmail, setNewEmail] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
+
+  // OAuth-vs-password detection. Supabase exposes `providers` on app_metadata
+  // when a user signs in with Google/GitHub/etc. We treat "email" as the only
+  // provider that supports password reset.
+  const providers = ((user?.app_metadata?.providers as string[] | undefined) ?? []).filter(Boolean);
+  const hasPassword = providers.length === 0 || providers.includes("email");
+  const oauthOnly = !hasPassword;
+  const oauthLabel = providers
+    .filter((p) => p !== "email")
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(", ");
+
 
   const ageFieldsFn = useServerFn(getMyAgeFields);
   const { data: ageInfo } = useQuery({
@@ -315,10 +330,8 @@ function AccountSection() {
     setNewEmail("");
   }
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/" });
-  }
+
+
 
   const currentLang = prefs?.language ?? "en";
 
@@ -336,26 +349,35 @@ function AccountSection() {
         </Button>
       </Row>
       <Row label="Password" icon={KeyRound}>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-          disabled={resetting}
-          onClick={sendPasswordReset}
-        >
-          {resetting ? "Sending…" : "Send reset link"}
-        </Button>
+        {oauthOnly ? (
+          <span className="text-sm text-ink-muted">
+            Signed in with {oauthLabel || "a third-party provider"} — no password to manage.
+          </span>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            disabled={resetting}
+            onClick={sendPasswordReset}
+          >
+            {resetting ? "Sending…" : "Send reset link"}
+          </Button>
+        )}
       </Row>
       <Row label="Date of birth" icon={UserIcon}>
         <span className="text-sm text-ink">
-          {ageInfo?.birthdate ?? <span className="text-ink-muted">Not set — </span>}
-          {!ageInfo?.birthdate && (
-            <Link to="/me/edit" className="text-sm underline underline-offset-2">
-              add it on Edit profile
-            </Link>
+          {ageInfo?.birthdate ? (
+            <>
+              {ageInfo.birthdate}
+              <span className="ml-2 text-xs text-ink-muted">Locked after signup</span>
+            </>
+          ) : (
+            <span className="text-ink-muted">Not set</span>
           )}
         </span>
       </Row>
+
       <Row label="Language" icon={Languages}>
         <select
           value={currentLang}
@@ -383,11 +405,8 @@ function AccountSection() {
           </p>
         </div>
       </div>
-      <div className="pt-2">
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          Sign out
-        </Button>
-      </div>
+
+
 
       <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
         <DialogContent>
