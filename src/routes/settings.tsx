@@ -330,10 +330,8 @@ function AccountSection() {
     setNewEmail("");
   }
 
-  async function signOut() {
-    await supabase.auth.signOut();
-    navigate({ to: "/" });
-  }
+
+
 
   const currentLang = prefs?.language ?? "en";
 
