@@ -280,3 +280,14 @@ function InProgressBadgeDot() {
     </span>
   );
 }
+
+function InProgressCountPill() {
+  const { count } = useInProgressBadge();
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
