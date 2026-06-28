@@ -1,7 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo } from "react";
-import { Calendar, MapPin, Radio } from "lucide-react";
+import { Calendar, MapPin, Radio, Ticket } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,8 +14,11 @@ import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { FeaturedEventsCompact } from "@/components/featured-events-compact";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
+import { listMyUpcomingRsvps, listMyPastRsvps } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
+
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
 // groups still own their event pages and RSVP still auto-joins the host group.
