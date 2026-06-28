@@ -239,6 +239,8 @@ const LANGUAGE_OPTIONS: { v: string; label: string }[] = [
 function AccountSection() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
 
 
   const [resetting, setResetting] = useState(false);
