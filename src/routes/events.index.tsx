@@ -205,6 +205,10 @@ function EventsIndexPage() {
       }),
     });
   }
+  function setMine(next: boolean) {
+    navigate({ search: (prev: SearchShape) => ({ ...prev, mine: next || undefined as unknown as boolean }) });
+  }
+
 
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
 
