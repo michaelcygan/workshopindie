@@ -120,15 +120,36 @@ type SearchShape = z.infer<typeof searchSchema>;
 function EventsIndexPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/events" });
-  const { when, format, city: cityId, cityName } = search;
+  const { when, format, city: cityId, cityName, mine } = search;
+  const { user } = useAuth();
 
-  const { data: events, isLoading } = useQuery({
+  const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
+  const minePastFn = useServerFn(listMyPastRsvps);
+
+  const mineActive = mine && !!user;
+
+  const { data: publicData, isLoading: publicLoading } = useQuery({
     queryKey: ["public-events", when, format, cityId ?? null],
     queryFn: () => fetchPublicEvents(when, format, cityId),
     staleTime: 60_000,
+    enabled: !mineActive,
   });
 
+  const { data: mineData, isLoading: mineLoading } = useQuery({
+    queryKey: ["my-rsvps-feed", when, user?.id],
+    queryFn: async () => {
+      const rows = when === "past" ? await minePastFn() : await mineUpcomingFn();
+      type R = { event: EventCardData };
+      return (rows as unknown as R[]).map((r) => r.event);
+    },
+    staleTime: 30_000,
+    enabled: mineActive,
+  });
+
+  const events = mineActive ? mineData : publicData;
+  const isLoading = mineActive ? mineLoading : publicLoading;
   const list = events ?? [];
+
   const happeningCount = useMemo(() => {
     const now = Date.now();
     return list.filter((e) => {
