@@ -263,6 +263,23 @@ function EventsIndexPage() {
                 { value: "past", label: "Past" },
               ]}
             />
+            {user && (
+              <button
+                type="button"
+                onClick={() => setMine(!mine)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-soft transition",
+                  mine
+                    ? "border-ink bg-ink text-surface"
+                    : "border-border bg-surface text-ink-soft hover:text-ink",
+                )}
+                aria-pressed={mine}
+              >
+                <Ticket className="h-3 w-3" />
+                My RSVPs
+              </button>
+            )}
+
             <SegToggle
               value={format}
               onChange={setFormat}
