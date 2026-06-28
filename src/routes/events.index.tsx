@@ -361,19 +361,26 @@ function EventsIndexPage() {
 
           {!isLoading && list.length === 0 && (
             <EmptySpark
-              title="Nothing on the calendar."
+              title={mineActive ? "No RSVPs yet." : "Nothing on the calendar."}
               body={
-                cityValue
-                  ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
-                  : "Events hosted by the Groups you join will list here."
+                mineActive
+                  ? when === "past"
+                    ? "Events you attend will show up here."
+                    : "RSVP to an event and it'll appear here for quick access."
+                  : cityValue
+                    ? `No ${when} events in ${cityValue.name} yet. Try Worldwide or a different city.`
+                    : "Events hosted by the Groups you join will list here."
               }
               action={
-                <Button asChild className="rounded-full">
-                  <Link to="/groups">Browse Groups</Link>
+                <Button asChild className="rounded-full" onClick={() => mineActive && setMine(false)}>
+                  <Link to={mineActive ? "/events" : "/groups"} search={mineActive ? { mine: false } as never : undefined}>
+                    {mineActive ? "Browse events" : "Browse Groups"}
+                  </Link>
                 </Button>
               }
             />
           )}
+
 
           {!isLoading && buckets.length > 0 && (
             <div className="space-y-10">
