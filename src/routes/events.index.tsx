@@ -313,7 +313,7 @@ function EventsIndexPage() {
           </div>
 
 
-          {defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
+          {!mineActive && defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
             <p className="px-1 text-xs text-ink-muted">
               Based on your location ·{" "}
               <button
@@ -325,7 +325,7 @@ function EventsIndexPage() {
               </button>
             </p>
           )}
-          {!cityId && format !== "online" && defaultCity && (
+          {!mineActive && !cityId && format !== "online" && defaultCity && (
             <p className="px-1 text-xs text-ink-muted">
               Near you:{" "}
               <button
@@ -337,6 +337,7 @@ function EventsIndexPage() {
               </button>
             </p>
           )}
+
         </div>
 
         {when === "upcoming" && (
