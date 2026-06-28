@@ -156,6 +156,10 @@ export function TopNav() {
                     <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-52">
+                    <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+                      <ListChecks className="mr-2 h-4 w-4" /> In Progress
+                      <InProgressCountPill />
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                       <Briefcase className="mr-2 h-4 w-4" /> My Collabs
                     </DropdownMenuItem>
