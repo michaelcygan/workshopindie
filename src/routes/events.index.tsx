@@ -280,33 +280,38 @@ function EventsIndexPage() {
               </button>
             )}
 
-            <SegToggle
-              value={format}
-              onChange={setFormat}
-              options={[
-                { value: "all", label: "All", icon: Calendar },
-                { value: "in_person", label: "In person", icon: MapPin },
-                { value: "online", label: "Online", icon: Radio },
-              ]}
-            />
-            <div className="flex min-w-[16rem] flex-1 items-center gap-2">
-              <CityCombobox
-                value={cityValue}
-                onChange={setCity}
-                disabled={format === "online"}
-                placeholder="Anywhere — search a city"
-              />
-              {cityValue && format !== "online" && (
-                <button
-                  type="button"
-                  onClick={() => setCity(null)}
-                  className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
-                >
-                  Worldwide
-                </button>
-              )}
-            </div>
+            {!mineActive && (
+              <>
+                <SegToggle
+                  value={format}
+                  onChange={setFormat}
+                  options={[
+                    { value: "all", label: "All", icon: Calendar },
+                    { value: "in_person", label: "In person", icon: MapPin },
+                    { value: "online", label: "Online", icon: Radio },
+                  ]}
+                />
+                <div className="flex min-w-[16rem] flex-1 items-center gap-2">
+                  <CityCombobox
+                    value={cityValue}
+                    onChange={setCity}
+                    disabled={format === "online"}
+                    placeholder="Anywhere — search a city"
+                  />
+                  {cityValue && format !== "online" && (
+                    <button
+                      type="button"
+                      onClick={() => setCity(null)}
+                      className="h-11 shrink-0 rounded-full border border-border bg-surface px-4 text-sm font-medium text-ink-soft shadow-soft transition hover:bg-muted"
+                    >
+                      Worldwide
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
+
 
           {defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
             <p className="px-1 text-xs text-ink-muted">
