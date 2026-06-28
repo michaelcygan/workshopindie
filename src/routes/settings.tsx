@@ -245,6 +245,18 @@ function AccountSection() {
   const [newEmail, setNewEmail] = useState("");
   const [emailBusy, setEmailBusy] = useState(false);
 
+  // OAuth-vs-password detection. Supabase exposes `providers` on app_metadata
+  // when a user signs in with Google/GitHub/etc. We treat "email" as the only
+  // provider that supports password reset.
+  const providers = ((user?.app_metadata?.providers as string[] | undefined) ?? []).filter(Boolean);
+  const hasPassword = providers.length === 0 || providers.includes("email");
+  const oauthOnly = !hasPassword;
+  const oauthLabel = providers
+    .filter((p) => p !== "email")
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(", ");
+
+
   const ageFieldsFn = useServerFn(getMyAgeFields);
   const { data: ageInfo } = useQuery({
     queryKey: ["my-age-fields"],
