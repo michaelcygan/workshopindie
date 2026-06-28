@@ -28,7 +28,6 @@ import {
   Ticket,
   Briefcase,
   ChevronRight,
-  ChevronDown,
   LayoutGrid,
   Calendar,
 
@@ -82,17 +81,16 @@ export function TopNav() {
           >
             Lounge
           </Link>
+          <GroupsNavItem />
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
           </Link>
-          <GroupsNavItem />
           <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Events
           </Link>
-          <HoverMoreMenu navigate={navigate} hasUser={!!user} />
-
-
-
+          <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+            Work
+          </Link>
         </nav>
 
 
@@ -218,55 +216,6 @@ export function TopNav() {
   );
 }
 
-function HoverMoreMenu({
-  navigate,
-  hasUser,
-}: {
-  navigate: ReturnType<typeof useNavigate>;
-  hasUser: boolean;
-}) {
-  const [open, setOpen] = useState(false);
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-
-  useEffect(() => {
-    setOpen(false);
-  }, [pathname]);
-
-  const goTo = (to: "/in-progress" | "/gallery" | "/events") => {
-    setOpen(false);
-    navigate({ to });
-  };
-
-  return (
-    <div className="relative">
-      <DropdownMenu key={pathname} open={open} onOpenChange={setOpen} modal={false}>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            className={`${navLinkBase} inline-flex items-center gap-1`}
-            aria-expanded={open}
-          >
-            More
-            <ChevronDown className="h-3 w-3 opacity-60" />
-          </button>
-        </DropdownMenuTrigger>
-        {open ? (
-          <DropdownMenuContent align="center" className="w-52">
-            {hasUser && (
-              <DropdownMenuItem onSelect={() => goTo("/in-progress")}>
-                <ListChecks className="mr-2 h-4 w-4" /> In Progress
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onSelect={() => goTo("/gallery")}>
-              <LayoutGrid className="mr-2 h-4 w-4" /> Work
-            </DropdownMenuItem>
-
-          </DropdownMenuContent>
-        ) : null}
-      </DropdownMenu>
-    </div>
-  );
-}
 
 function InProgressBadgeDot() {
   const { count } = useInProgressBadge();
