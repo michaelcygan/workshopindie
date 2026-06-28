@@ -238,7 +238,8 @@ const LANGUAGE_OPTIONS: { v: string; label: string }[] = [
 
 function AccountSection() {
   const { user } = useAuth();
-  const qc = useQueryClient();
+  const navigate = useNavigate();
+
 
   const [resetting, setResetting] = useState(false);
   const [emailOpen, setEmailOpen] = useState(false);
