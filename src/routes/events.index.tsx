@@ -31,7 +31,9 @@ const searchSchema = z.object({
   format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
   city: fallback(z.string().uuid().optional(), undefined),
   cityName: fallback(z.string().optional(), undefined),
+  mine: fallback(z.boolean(), false).default(false),
 });
+
 
 async function fetchPublicEvents(when: When, format: Format, cityId?: string) {
   const now = new Date().toISOString();
