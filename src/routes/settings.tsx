@@ -404,11 +404,8 @@ function AccountSection() {
           </p>
         </div>
       </div>
-      <div className="pt-2">
-        <Button variant="ghost" size="sm" onClick={signOut}>
-          Sign out
-        </Button>
-      </div>
+
+
 
       <Dialog open={emailOpen} onOpenChange={setEmailOpen}>
         <DialogContent>
