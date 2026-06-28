@@ -156,6 +156,10 @@ export function TopNav() {
                     <ChevronRight className="ml-auto h-4 w-4 opacity-60" />
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-52">
+                    <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
+                      <ListChecks className="mr-2 h-4 w-4" /> In Progress
+                      <InProgressCountPill />
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                       <Briefcase className="mr-2 h-4 w-4" /> My Collabs
                     </DropdownMenuItem>
@@ -276,3 +280,14 @@ function InProgressBadgeDot() {
     </span>
   );
 }
+
+function InProgressCountPill() {
+  const { count } = useInProgressBadge();
+  if (count <= 0) return null;
+  return (
+    <span className="ml-auto inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
