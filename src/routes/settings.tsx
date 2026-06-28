@@ -348,26 +348,35 @@ function AccountSection() {
         </Button>
       </Row>
       <Row label="Password" icon={KeyRound}>
-        <Button
-          variant="outline"
-          size="sm"
-          className="rounded-full"
-          disabled={resetting}
-          onClick={sendPasswordReset}
-        >
-          {resetting ? "Sending…" : "Send reset link"}
-        </Button>
+        {oauthOnly ? (
+          <span className="text-sm text-ink-muted">
+            Signed in with {oauthLabel || "a third-party provider"} — no password to manage.
+          </span>
+        ) : (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full"
+            disabled={resetting}
+            onClick={sendPasswordReset}
+          >
+            {resetting ? "Sending…" : "Send reset link"}
+          </Button>
+        )}
       </Row>
       <Row label="Date of birth" icon={UserIcon}>
         <span className="text-sm text-ink">
-          {ageInfo?.birthdate ?? <span className="text-ink-muted">Not set — </span>}
-          {!ageInfo?.birthdate && (
-            <Link to="/me/edit" className="text-sm underline underline-offset-2">
-              add it on Edit profile
-            </Link>
+          {ageInfo?.birthdate ? (
+            <>
+              {ageInfo.birthdate}
+              <span className="ml-2 text-xs text-ink-muted">Locked after signup</span>
+            </>
+          ) : (
+            <span className="text-ink-muted">Not set</span>
           )}
         </span>
       </Row>
+
       <Row label="Language" icon={Languages}>
         <select
           value={currentLang}
