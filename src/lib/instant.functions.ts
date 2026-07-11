@@ -241,7 +241,7 @@ export const getInstantRoom = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
+      .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed")
       .eq("id", data.roomId)
       .maybeSingle();
     return { room };
