@@ -1003,19 +1003,23 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "members"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: gm } = await supabase
         .from("group_members")
-        .select("user:profiles!group_members_user_id_fkey(id,username,display_name,avatar_url,hide_group_memberships)")
+        .select("user_id")
         .eq("group_id", group.id)
         .limit(200);
-      return (data ?? [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((r: any) => r.user)
-        .filter((u: { hide_group_memberships?: boolean } | null) => !!u && !u.hide_group_memberships) as {
-          id: string; username: string | null; display_name: string | null; avatar_url: string | null;
-        }[];
+      const ids = (gm ?? []).map((r) => r.user_id as string);
+      if (ids.length === 0) return [];
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id,username,display_name,avatar_url,hide_group_memberships")
+        .in("id", ids);
+      return (profs ?? []).filter((p) => !p.hide_group_memberships) as {
+        id: string; username: string | null; display_name: string | null; avatar_url: string | null;
+      }[];
     },
   });
+
 
   if (isLoading) return <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />;
   if (members.length === 0) {
