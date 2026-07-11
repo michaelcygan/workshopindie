@@ -15,6 +15,7 @@ import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { AgeGate } from "@/components/age-gate";
 import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
+import { useTitleBadge } from "@/hooks/use-title-badge";
 import { supabase } from "@/integrations/supabase/client";
 
 
@@ -148,6 +149,7 @@ function RootComponent() {
           <PendingRsvpFlush />
           <PresenceHeartbeat />
           <SignOutCacheReset />
+          <TitleBadge />
           <AgeGate />
 
 
@@ -162,6 +164,11 @@ function RootComponent() {
 
 function PendingRsvpFlush() {
   usePendingRsvpFlush();
+  return null;
+}
+
+function TitleBadge() {
+  useTitleBadge();
   return null;
 }
 

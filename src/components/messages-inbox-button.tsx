@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Mail } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { playNotifySound } from "@/lib/notify-sound";
 
 /**
  * Envelope inbox button — pairs visually with NotificationsBell.
@@ -46,6 +47,7 @@ export function MessagesInboxButton() {
       if (next > lastUnreadRef.current) {
         setPulse(true);
         setTimeout(() => setPulse(false), 600);
+        playNotifySound();
       }
       lastUnreadRef.current = next;
     }
