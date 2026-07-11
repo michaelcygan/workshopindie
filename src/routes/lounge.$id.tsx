@@ -26,7 +26,7 @@ import {
   acceptWorkshopJoinInvite,
   declineWorkshopJoinInvite,
 } from "@/lib/collab-workshop.functions";
-import { renameLounge, endLounge } from "@/lib/instant.functions";
+import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
 
 
 import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
@@ -120,6 +120,7 @@ function LiveRoomPage() {
   const titleInputRef = useRef<HTMLInputElement>(null);
   const rename = useServerFn(renameLounge);
   const endRoom = useServerFn(endLounge);
+  const fetchRoom = useServerFn(getInstantRoom);
 
 
   useEffect(() => {
@@ -129,15 +130,8 @@ function LiveRoomPage() {
   const { data: room, isFetched } = useQuery({
     queryKey: ["instant-room", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("instant_rooms")
-        .select(
-          "id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed",
-        )
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw error;
-      return (data as Room | null) ?? null;
+      const { room } = await fetchRoom({ data: { roomId: id } });
+      return (room as Room | null) ?? null;
     },
     refetchInterval: 5000,
   });

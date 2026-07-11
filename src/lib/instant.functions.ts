@@ -235,15 +235,27 @@ export const endLounge = createServerFn({ method: "POST" })
 
 /** Public: fetch a single instant room's metadata (for headers, banners, etc). */
 export const getInstantRoom = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: { roomId: string }) =>
     z.object({ roomId: z.string().uuid() }).parse(input),
   )
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id, title, kind, medium, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id")
+      .select("id, title, kind, medium, category, host_user_id, promoted_at, source_workshop_id, status, focus_message, locked, ended_by_user_id, workshop_id, claim_user_id, claim_started_at, claim_vetoed, group_id, collab_id")
       .eq("id", data.roomId)
       .maybeSingle();
+    const groupId = (room as any)?.group_id as string | null | undefined;
+    if (groupId) {
+      const { data: member } = await supabaseAdmin
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!member) return { room: null };
+    }
     return { room };
   });
 
