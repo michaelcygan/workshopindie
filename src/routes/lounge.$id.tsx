@@ -246,39 +246,8 @@ function LiveRoomPage() {
     },
   });
 
-  // Other participants (for the host's Remove picker). Only fetched when host.
-  const { data: participants = [] } = useQuery({
-    queryKey: ["instant-room-participants", id, isHost],
-    enabled: !!user && isHost,
-    refetchInterval: 8000,
-    queryFn: async () => {
-      const cutoff = new Date(Date.now() - 60_000).toISOString();
-      const { data } = await supabase
-        .from("instant_presence")
-        .select(
-          "user_id, profile:profiles!instant_presence_user_id_fkey(display_name, username, avatar_url)",
-        )
-        .eq("room_id", id)
-        .gt("last_seen_at", cutoff);
-      return (
-        (data ?? []) as Array<{
-          user_id: string;
-          profile: {
-            display_name: string | null;
-            username: string | null;
-            avatar_url: string | null;
-          } | null;
-        }>
-      )
-        .filter((p) => p.user_id !== user!.id)
-        .map((p) => ({
-          user_id: p.user_id,
-          display_name: p.profile?.display_name ?? null,
-          username: p.profile?.username ?? null,
-          avatar_url: p.profile?.avatar_url ?? null,
-        }));
-    },
-  });
+  // Participants query retired — used to be for the HostMenu remove picker (v0).
+
 
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
