@@ -230,9 +230,12 @@ function WorkshopPreflight() {
     }
   }
 
+  const [hostTitle, setHostTitle] = useState("");
+
   function handleHost() {
-    openLounge(hostMedium, null);
+    openLounge(hostMedium, hostTitle.trim() || null);
   }
+
 
   function handleUsePrompt(p: RoomPrompt) {
     openLounge(p.medium, p.title);
