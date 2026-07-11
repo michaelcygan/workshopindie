@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
+import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
 import { LiveTopicsList } from "@/components/live-topics-list";
 import { RoomPromptMarquee } from "@/components/room-prompt-marquee";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
