@@ -15,16 +15,16 @@ import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
 import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
-import RoomBoard from "@/components/room-board";
 import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
-import { WorkshopRecordingLink } from "@/components/workshop-recording-link";
 
-// Shipped tools (enable-able today). `outline` is the stored value behind the "Docs" label.
-// Moodboard was retired in favor of Board (a whiteboard that already supports image/text/link stickers).
-type ShippedToolType = "pinboard" | "list" | "outline" | "drive" | "repo_links" | "screen_share" | "recorder" | "board" | "player" | "pip";
-// Tools on the roadmap, surfaced as disabled "Coming soon" chips so users know they're planned.
-type ComingSoonToolType = never;
-type ToolType = ShippedToolType | ComingSoonToolType;
+// v1 Lounge tool set — async / single-player primitives only.
+// Board, List, Recording, Docs, Pinboard, Repo & Demo were retired from the picker;
+// legacy rows for those types still render via presetFor() → PRESETS.
+type ShippedToolType = "screen_share" | "pip" | "drive" | "player";
+type LegacyStoredToolType =
+  | "board" | "list" | "recorder" | "outline" | "pinboard" | "repo_links"
+  | "shot_list" | "track_list" | "moodboard";
+type ToolType = ShippedToolType;
 
 
 type Preset = {
@@ -38,29 +38,29 @@ type Preset = {
   fields: ("title" | "body" | "url")[];
 };
 
-// Order here drives chip order in the picker. Screen Share first, Recording second, then
-// collaboration surfaces, then niche ones. Pinboard is intentionally absent from
-// TOOL_ORDER — its function is fully covered by Board (whiteboard with image/text/link
-// stickers). The PRESETS entry stays so legacy Pinboard rows still render via presetFor().
-const PRESETS: Record<ToolType, Preset> = {
+// PRESETS covers every stored tool_type — v1 shipped + legacy — so `presetFor()`
+// can always resolve a label/icon for an existing row. Only the v1 set appears
+// in the picker (TOOL_ORDER); everything else is legacy-render-only.
+const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
   screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
-  recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
   pip:          { label: "Pop-out",      icon: PictureInPicture2, blurb: "Float the room in a Picture-in-Picture window so you can keep working in other tabs.", fields: [] },
-  outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
-  board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard for images, text, links, and reference pins.", fields: [] },
-  list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link",          fields: ["title", "body", "url"] },
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
+  // Legacy — no longer offered in the picker.
+  recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
+  outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
+  board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard.", fields: [] },
+  list:         { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", titlePlaceholder: "What's on the list?", urlPlaceholder: "Optional link", fields: ["title", "body", "url"] },
   repo_links:   { label: "Repo & Demo",  icon: Github,      blurb: "Code repos and live demos.",     titlePlaceholder: "Label",             urlPlaceholder: "Repo, demo, or doc URL", fields: ["title", "url"] },
   pinboard:     { label: "Pinboard",     icon: Pin,         blurb: "References, ideas, links.",      bodyPlaceholder: "Drop a reference, idea, or link…",  fields: ["body", "url"] },
+  shot_list:    { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", fields: ["title", "body", "url"] },
+  track_list:   { label: "List",         icon: ListChecks,  blurb: "To-dos, shots, tracks — any list.", fields: ["title", "body", "url"] },
+  moodboard:    { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard.", fields: [] },
 };
 
-// Picker is now grouped into Realtime + Objects strips. Docs (outline), Pinboard,
-// and Repo & Demo are intentionally removed from the picker for v1 launch — folded
-// into Drive as link kinds (Google Doc / GitHub Repo). Legacy enabled rows still
-// render via presetFor() so nothing disappears for existing rooms.
+// v1 picker: only these tools appear when adding a new tool.
 const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
-const TOOL_OBJECTS: ToolType[] = ["drive", "board", "list", "player"];
+const TOOL_OBJECTS: ToolType[] = ["drive", "player"];
 const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
 
 /** Exported for the Stage tab bar's Tools dropdown. */
@@ -74,21 +74,17 @@ export const STAGE_TOOL_OPTIONS = TOOL_ORDER.map((type) => ({
 
 
 const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
-  film: "list", music: "list", writing: "drive", writing_book: "drive", build: "drive", visual: "board",
+  film: "drive", music: "player", writing: "drive", writing_book: "drive", build: "drive", visual: "drive",
   critique: "drive", business: "drive", coworking: "drive",
   office_hours: "drive", roundtable: "drive", pitch: "drive",
-  listen_party: "list", open_mic: "list", jam: "drive", standup: "drive",
+  listen_party: "player", open_mic: "player", jam: "player", standup: "drive",
 };
 
-// Stored value mapping — UI label "List" stores tool_type='list'.
-// Legacy rows with tool_type='shot_list' / 'track_list' are still rendered as List below.
-// Legacy 'moodboard' rows were migrated to 'board' by SQL; map any stragglers defensively.
-type StoredToolType = ShippedToolType | "shot_list" | "track_list" | "moodboard";
+// Stored tool_type values that may appear on existing rows.
+type StoredToolType = ShippedToolType | LegacyStoredToolType;
 
 function presetFor(stored: StoredToolType): Preset {
-  if (stored === "shot_list" || stored === "track_list") return PRESETS.list;
-  if (stored === "moodboard") return PRESETS.board;
-  return PRESETS[stored];
+  return PRESETS[stored] ?? PRESETS.drive;
 }
 
 export type ToolsScope =
