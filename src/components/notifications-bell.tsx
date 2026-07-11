@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { Bell, Mail, UserPlus, MessageCircle, CreditCard, Sparkles, Radio, Gift, Calendar, Ticket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { playNotifySound } from "@/lib/notify-sound";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { markAllNotificationsRead } from "@/lib/notifications.functions";
 import { formatRoomTitle } from "@/lib/instant";
