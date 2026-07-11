@@ -28,10 +28,7 @@ import {
 } from "@/lib/collab-workshop.functions";
 import { renameLounge, endLounge } from "@/lib/instant.functions";
 
-  createCollabFromRoom,
-  acceptWorkshopJoinInvite,
-  declineWorkshopJoinInvite,
-} from "@/lib/collab-workshop.functions";
+
 import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
