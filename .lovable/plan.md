@@ -1,63 +1,89 @@
+## What we're adding
 
-# Simplify Lounge for v1 — updated
+Bring the Lounge's editable **name** back into the room header. Whoever names a Lounge becomes its **namer** — the only person who can rename or end it. This is not a host role: namers get no seat priority, no privacy toggles, no gatekeeping. It's a lightweight lock so a Lounge that's been given a specific purpose ("Chicago Filmmakers Brainstorm") doesn't get renamed out from under everyone every few minutes.
 
-Goal: make Lounges feel like drop-in networking. One flavor only. No private/Collab Lounges. Group Lounges stay, but they're only visible to group members. The tool set is trimmed to async/single-player primitives, and the in-room host role is gone.
+Group scoping stays intact everywhere a named Lounge can be created or discovered.
 
-## What stays
+---
 
-- **Chat** — unchanged.
-- **Collab / Work pinning inside a room** — participants can still pin a collab post or feature a work while inside a Lounge (`instant_room_pins`, `instant_room_work_pins`). The connection is inside-out (from Lounge → surface), not outside-in.
-- **Tool picker (v1 set):** Screen Share, Pop-out (PiP), Drive, Player.
-- **Public open Lounges** — `visibility: "open"`, the default drop-in fork. Matchmaker, `LoungeForkDropdown`, `HopButton` all keep working.
-- **Group Lounges** — `joinGroupLounge` stays, gated on `group_members` membership (unchanged). Visible on the Group page, home rails, and the Lounge index — but ONLY to signed-in users who belong to that group. Non-members never see them.
-- **Presence, hop, fork dropdown, `WaitingForOthersCard`, `FocusStrip`**.
+## Core rules
 
-## What goes
+1. **Default (unnamed) Lounge** — anyone in the room can name it. First save wins → they become the namer.
+2. **Named Lounge** — only the namer can rename or end. Others just see the name in the header.
+3. **Naming from the Lounge index** — the "Open a Lounge" flow gets an optional name field. If provided, the caller is set as namer up-front.
+4. **Group Lounges** — the auto-created `${group.name} · Lounge` is *unnamed* (no namer). A member who renames it becomes the namer; the `group_id` stays pinned and matchmaker/hop keep respecting membership.
+5. **Forking a group Lounge** — a new named Lounge started from inside a group Lounge inherits its `group_id`, so it stays members-only. Fork from a public Lounge → stays public.
+6. **Legacy rooms** — rooms with a `host_user_id` from the old flow are treated as already-named by that user (they keep rename rights). No migration needed.
 
-### From the tool picker (both open Lounges and paired Workshop rooms)
-- **Board**, **List**, **Recording** removed from the picker and `ActiveToolBody` routing. Legacy enabled rows keep rendering via the `presetFor()` fallback so nothing crashes for existing rooms.
+---
 
-### In-room host role (everywhere)
-- Delete Lounge usages of `BecomeHostNudge`, `HostFirstRunTour`, `HostedByLine`, `HostMenu`, `ClaimHostPill`, `host-privacy-dialog`, `host-room-events`, `startHostClaim` and the `Crown` icon in `lounge.$id.tsx`.
-- In `WorkshopToolsPanel`: `canEnable = true` for anyone in the room. Creators can still remove tools they added; no other host-only affordances.
-- Scheduled-workshop "host" (owner of the `workshops` row) stays for edit permissions on the workshop page. Only the *in-room* host role and its UI disappear.
+## Data model
 
-### Private / Collab-scoped Lounges (fully retired)
-- **Remove `joinCollabLounge`** from `src/lib/instant.functions.ts` (server fn + any `visibility: "invite"` code path it depends on).
-- **Delete `src/components/open-lounge-button.tsx`** and remove all 5 usages in `src/routes/collab.$slug.tsx` (lines 23, 406, 488, 505, 516, 616). No "Open the Lounge" button on any Collab page.
-- Any lingering `visibility: "invite"` code branches (e.g. the `notifyLoungeSpawn` early-return, the create-room fork) are simplified to the single `"open"` path. Keep the `visibility` column in the DB so existing rows don't break — new rooms just always insert `"open"` (or `"group"` for group rooms if that value already exists; otherwise `"open"` gated by `group_id`).
-- `instant_rooms.collab_id` column stays in place (schema untouched) but new rooms never populate it. Existing invite rooms keep rendering if someone still has a link, but no new ones can be created.
+Reuse existing columns — no schema change required:
+- `instant_rooms.host_user_id` → repurposed as **`named_by_user_id`** semantically. Null = unnamed, anyone can claim by renaming.
+- `instant_rooms.title` → the display name.
+- `instant_rooms.group_id` → already gates group scoping.
 
-### Lounge index / home rails visibility rules
-- `listActiveInstantRooms` (and any home/Lounge-page rail) filters:
-  - `kind = 'lounge'` and `status = 'active'`
-  - AND (`group_id IS NULL` — public open Lounge) OR (`group_id` matches a group the current user belongs to).
-  - Signed-out viewers see only `group_id IS NULL` public Lounges.
-- On the Group page, the Group's Lounge card is only rendered when the viewer is a member (already the pattern — verify and tighten if needed).
+No migration. The v1 "no host role" rule from last turn still holds — namer has zero in-room privileges beyond rename/end.
 
-## What we intentionally do NOT change
+---
 
-- **Database schema.** `visibility`, `collab_id`, `group_id`, `host_user_id`, `instant_board_items`, `workshop_tools` — all stay. Cleanup migrations can come later once we're sure nothing's referencing them.
-- **Paired Workshop rooms** (`kind = 'workshop_live'`) — same tool trim + host-UI removal as instant Lounges, but the scheduling/ownership model on the `workshops` row is untouched.
-- **Screen Share / PiP / Drive / Player / chat / pins / presence / hop / fork** internals — untouched.
-- **`OpenLoungeButton` component's Collab-invite-acceptance logic is deleted**, not repurposed. Accepted collaborators still get their normal Collab access; they just don't get a private Lounge.
+## UI changes
 
-## Files touched
+**`src/routes/lounge.$id.tsx` — header**
+- Restore the room title into the circled header area (currently hidden on desktop when title equals the "Lounge" fallback).
+- Always render the title chip; when unnamed, show placeholder text "Name this Lounge" as a subtle button.
+- Click behavior:
+  - Unnamed room, signed-in viewer → opens inline rename input; save calls `renameLounge` and claims namer.
+  - Named room, viewer is namer → opens rename input.
+  - Named room, viewer is not namer → non-interactive; small tooltip "Named by @user".
+- Add a small "End Lounge" action in the header overflow, visible only to the namer.
 
-- `src/components/workshop-tools-panel.tsx` — trim `PRESETS`/`TOOL_REALTIME`/`TOOL_OBJECTS` to `screen_share`, `pip`, `drive`, `player`; drop host gating (`canEnable = true`); remove Board/List/Recording cases from `ActiveToolBody`.
-- `src/routes/lounge.$id.tsx` — remove host-UI imports and JSX (`HostFirstRunTour`, `HostedByLine`, `HostMenu`, `BecomeHostNudge`, `HostRoomEvents`, `startHostClaim`, `Crown`).
-- `src/routes/collab.$slug.tsx` — remove `OpenLoungeButton` import + 5 render sites.
-- `src/lib/instant.functions.ts` — delete `joinCollabLounge`; collapse `visibility === "invite"` branches in `createInstantRoom` / `notifyLoungeSpawn` / listing fns; tighten `listActiveInstantRooms` to hide group Lounges from non-members.
-- Delete (after verifying no other importers): `src/components/open-lounge-button.tsx`, `src/components/become-host-nudge.tsx`, `src/components/host-first-run-tour.tsx`, `src/components/hosted-by-line.tsx`, `src/components/host-menu.tsx`, `src/components/host-privacy-dialog.tsx`, `src/components/host-room-events.tsx`, `src/components/claim-host-pill.tsx`, `src/components/room-board.tsx`. If any is still imported elsewhere (admin, workshop scheduling), leave the file and only remove the Lounge usage.
-- `src/routes/workshops.$slug.tools.$tool.tsx` / `workshops.$slug.tools.tsx` — remove Board/List/Recording from the picker UI.
+**`src/routes/lounge.index.tsx` — start flow**
+- Add an optional single-line "Name this Lounge (optional)" input near the "Open a Lounge" affordance. Empty → unnamed. Filled → caller becomes namer.
+- Prompt-driven opens (`handleUsePrompt`) already pass a title; keep that path — caller becomes namer.
+- Group Lounge tiles keep launching unnamed group rooms.
+
+---
+
+## Server changes (`src/lib/instant.functions.ts`)
+
+**New:** `renameLounge({ roomId, title })`
+- Requires auth. Loads the room. 
+- If `named_by_user_id` (host_user_id) is null → set title + claim caller as namer. Also: if `group_id` present, require the caller to be a member.
+- If already set → 403 unless caller is the current namer.
+- Trim, 1–80 chars, basic profanity check via existing helper.
+
+**New:** `endLounge({ roomId })` — namer-only, sets `status = "ended"`. (Or reuse existing end mechanism if present — audit `admin-ops`/`instant.functions.ts` for it during build.)
+
+**`hostInstantWorkshop`** — already accepts `title`; when caller provides one, set `host_user_id = userId` (namer). When title is null, insert with `host_user_id = null` so the resulting Lounge is unnamed.
+
+**`joinGroupLounge`** — unchanged; still inserts with `host_user_id: null`.
+
+**Group-scoping guardrails (critical):**
+- Audit the `join_lounge` and `join_medium_lounge` Postgres RPCs to confirm they filter `group_id IS NULL` for the public matchmaker — non-members must never be matched into a group-scoped Lounge. If they don't, add the filter in a migration (separate approval).
+- `HopButton` already goes through the matchmaker; same filter covers it.
+- `list_active_instant_rooms` (updated last turn) already hides group rooms from non-members on `/lounge` and home rails.
+
+**Forking:** the existing "hop" / "start fresh" path from inside a Lounge should carry `group_id` through when the source room has one. Audit the fork/hop server fn during build; if it currently drops `group_id`, add it back.
+
+---
 
 ## Verification
 
-1. Fresh Lounge (public open) shows only Screen Share, Pop-out, Drive, Player; no host CTA, no "Hosted by" line.
-2. `/collab/$slug` (any Collab post) shows no "Open the Lounge" button anywhere on the page.
-3. Signed-out viewer at `/lounge` sees only public open Lounges; group Lounges are hidden.
-4. Signed-in member of Chicago group sees the Chicago Lounge on `/lounge`, home rails, and `/g/chicago`. Non-members don't see it in any of those surfaces.
-5. Any participant in a room can enable/disable a tool; creator can still remove tools they added.
-6. Existing rooms with Board/List/Recording or a `host_user_id` still render (legacy fallback) — the UI just no longer surfaces those affordances for new rooms.
-7. Typecheck + build clean; no orphan imports of the removed components or `joinCollabLounge`.
+- Open a fresh public Lounge with no name → header shows "Name this Lounge" button; clicking + saving makes viewer the namer; a second tab shows the name is now locked.
+- Second viewer in the same room sees the name but no rename affordance; tooltip shows namer.
+- Start a Lounge from `/lounge` with a name in the new input → land in room already named; only starter can rename.
+- Join Chicago group Lounge as a member → rename to "Chicago Filmmakers Brainstorm" → sign in as a non-member of Chicago → the room is not surfaced on `/lounge`, matchmaker never drops you in, and Hop from an unrelated public Lounge never lands you there.
+- Fork/hop from a group Lounge → new room inherits `group_id` and is invisible to non-members.
+- Legacy room with old `host_user_id` → that user can still rename; others cannot.
 
+---
+
+## Files to touch
+
+- `src/routes/lounge.$id.tsx` — header title + inline rename + End action
+- `src/routes/lounge.index.tsx` — optional name input in start flow
+- `src/lib/instant.functions.ts` — `renameLounge`, `endLounge`, unnamed-by-default for `joinGroupLounge` (already true), namer set on `hostInstantWorkshop` only when title present
+- Audit only (fix if needed, in same turn): `join_lounge` / `join_medium_lounge` RPCs for `group_id IS NULL` filter; fork/hop path for `group_id` inheritance
+- Small `NameLoungeInput` component (new, under `src/components/`) shared by header + start flow

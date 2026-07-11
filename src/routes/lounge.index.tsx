@@ -230,9 +230,12 @@ function WorkshopPreflight() {
     }
   }
 
+  const [hostTitle, setHostTitle] = useState("");
+
   function handleHost() {
-    openLounge(hostMedium, null);
+    openLounge(hostMedium, hostTitle.trim() || null);
   }
+
 
   function handleUsePrompt(p: RoomPrompt) {
     openLounge(p.medium, p.title);
@@ -465,7 +468,7 @@ function WorkshopPreflight() {
       )}
 
       {/* Host strip — hairline, filled CTA */}
-      <div className="mt-4 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center justify-between gap-3">
+      <div className="mt-4 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="min-w-0 flex items-center gap-3">
           <div className="hidden sm:grid h-9 w-9 place-items-center rounded-full bg-muted/40 text-ink shrink-0">
             <RadioTower className="h-4 w-4" />
@@ -473,19 +476,30 @@ function WorkshopPreflight() {
           <div className="min-w-0">
             <div className="text-sm font-medium text-ink truncate">Hosting a session?</div>
             <p className="text-xs text-ink-muted truncate">
-              Name it, lock it down, share a link.
+              Optional: name it so it stays yours to rename or end.
             </p>
           </div>
         </div>
-        <Button
-          onClick={handleHost}
-          disabled={!canDrop || busy !== null}
-          className="shrink-0 rounded-full h-9 gap-2 px-4"
-        >
-          {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
-          {busy === "host" ? "Opening…" : hostLabel ? `Open a ${hostLabel} Lounge` : "Open the Lounge"}
-        </Button>
+        <div className="flex items-center gap-2 sm:shrink-0">
+          <input
+            type="text"
+            value={hostTitle}
+            onChange={(e) => setHostTitle(e.target.value.slice(0, 80))}
+            placeholder="Name this Lounge (optional)"
+            maxLength={80}
+            className="h-9 min-w-0 flex-1 sm:w-56 rounded-full border border-border bg-background px-3 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          <Button
+            onClick={handleHost}
+            disabled={!canDrop || busy !== null}
+            className="shrink-0 rounded-full h-9 gap-2 px-4"
+          >
+            {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
+            {busy === "host" ? "Opening…" : hostLabel ? `Open a ${hostLabel} Lounge` : "Open the Lounge"}
+          </Button>
+        </div>
       </div>
+
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
         Everything in the Lounge is ephemeral until someone creates a{" "}
