@@ -230,9 +230,9 @@ export function GuestApplyDialog(props: Props) {
             </div>
 
             {claimUrl && (
-              <div className="mt-3 rounded-2xl border border-dashed border-border bg-surface p-3">
+              <div className="mt-3 overflow-hidden rounded-2xl border border-dashed border-border bg-surface p-3">
                 <p className="text-[11px] uppercase tracking-wide text-ink-muted">Save your claim link</p>
-                <div className="mt-1 flex items-center gap-2">
+                <div className="mt-1 flex min-w-0 items-center gap-2">
                   <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-[11px] text-ink-soft">{claimUrl}</code>
                   <Button type="button" size="sm" variant="outline" className="shrink-0 rounded-full gap-1" onClick={copyClaim}>
                     {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
