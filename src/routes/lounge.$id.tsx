@@ -358,19 +358,29 @@ function LiveRoomPage() {
                   </span>
                 ) : (
                   <span className="flex min-w-0 items-center gap-1.5">
-                    <span
-                      className={
-                        "truncate" +
-                        (!isNamed ? " text-ink-muted italic font-normal text-lg md:text-xl" : "")
-                      }
-                    >
-                      {isNamed ? title : "Name this Lounge"}
-                    </span>
+                    {(() => {
+                      // Show the actual room title whenever we have one — matchmaker
+                      // rooms already carry a sensible default ("Artist's Lounge",
+                      // "Lounge: Film"). Only show the italic placeholder when we
+                      // truly have nothing beyond the bare fallback.
+                      const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
+                      return (
+                        <span
+                          className={
+                            "truncate" +
+                            (!hasTitle ? " text-ink-muted italic font-normal text-lg md:text-xl" : "")
+                          }
+                        >
+                          {hasTitle ? title : "Name this Lounge"}
+                        </span>
+                      );
+                    })()}
                     {canRename && (
                       <button
                         type="button"
                         onClick={() => {
-                          setDraftTitle(isNamed ? title : "");
+                          const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
+                          setDraftTitle(hasTitle ? title : "");
                           setEditingTitle(true);
                           setTimeout(() => titleInputRef.current?.focus(), 0);
                         }}
@@ -382,6 +392,7 @@ function LiveRoomPage() {
                       </button>
                     )}
                   </span>
+
                 )}
               </h1>
             );
