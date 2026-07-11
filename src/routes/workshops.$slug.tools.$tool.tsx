@@ -16,7 +16,7 @@ import {
   Lock,
   Save,
 } from "lucide-react";
-import RoomBoard from "@/components/room-board";
+// RoomBoard retired in v1 — Board is no longer offered as a workshop tool.
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
