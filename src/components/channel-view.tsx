@@ -24,7 +24,7 @@ import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
-import { startHostClaim, setRoomTitle } from "@/lib/host-room.functions";
+import { setRoomTitle } from "@/lib/host-room.functions";
 import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
