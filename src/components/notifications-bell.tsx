@@ -189,8 +189,10 @@ export function NotificationsBell() {
   const { user } = useAuth();
   const [items, setItems] = useState<Row[]>([]);
   const [open, setOpen] = useState(false);
+  const [pulse, setPulse] = useState(false);
   const navigate = useNavigate();
   const markAll = useServerFn(markAllNotificationsRead);
+  const didInitialLoadRef = useRef(false);
 
   async function load() {
     if (!user) { setItems([]); return; }
@@ -201,9 +203,10 @@ export function NotificationsBell() {
       .order("created_at", { ascending: false })
       .limit(30);
     setItems((data ?? []) as Row[]);
+    didInitialLoadRef.current = true;
   }
 
-  useEffect(() => { load(); }, [user?.id]);
+  useEffect(() => { didInitialLoadRef.current = false; load(); }, [user?.id]);
 
   useEffect(() => {
     if (!user) return;
@@ -212,7 +215,19 @@ export function NotificationsBell() {
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
-        (payload) => setItems((prev) => [payload.new as Row, ...prev].slice(0, 30)),
+        (payload) => {
+          setItems((prev) => {
+            const row = payload.new as Row;
+            if (prev.some((p) => p.id === row.id)) return prev;
+            return [row, ...prev].slice(0, 30);
+          });
+          // Only chime + pulse for genuinely new arrivals (not the initial load).
+          if (didInitialLoadRef.current) {
+            playNotifySound();
+            setPulse(true);
+            setTimeout(() => setPulse(false), 600);
+          }
+        },
       )
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -232,17 +247,22 @@ export function NotificationsBell() {
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
-          aria-label="Notifications"
+          aria-label={unread > 0 ? `Notifications (${unread} unread)` : "Notifications"}
           className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-soft ring-1 ring-border hover:bg-muted"
         >
           <Bell className="h-4 w-4" />
           {unread > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-semibold text-background">
+            <span
+              className={`absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-semibold text-background ${
+                pulse ? "animate-in zoom-in-50 duration-200" : ""
+              }`}
+            >
               {unread > 9 ? "9+" : unread}
             </span>
           )}
         </button>
       </PopoverTrigger>
+
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <span className="text-sm font-medium text-ink">Notifications</span>
