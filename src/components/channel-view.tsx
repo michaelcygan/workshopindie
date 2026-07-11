@@ -813,14 +813,6 @@ export function ChannelView({
                     presenceCount={presence.length}
                     renaming={renaming}
                     onSetDraft={setDraft}
-                    onClaimHost={async () => {
-                      try {
-                        await claimHost({ data: { roomId } });
-                        toast("Claiming host — others have 10s to object.");
-                      } catch (e: any) {
-                        toast.error(e?.message ?? "Couldn't claim");
-                      }
-                    }}
                     onRename={async (newTitle) => {
                       const prev = title;
                       setRenaming(true);
