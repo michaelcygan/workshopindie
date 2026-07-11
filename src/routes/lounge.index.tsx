@@ -10,7 +10,7 @@ import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility 
 import { LiveTopicsList } from "@/components/live-topics-list";
 import { RoomPromptMarquee } from "@/components/room-prompt-marquee";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
-import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
+// HostPrivacyDialog retired — v1 Lounges are always public/open, no host privacy step.
 import { CATEGORIES, type Category } from "@/lib/categories";
 import type { RoomPrompt } from "@/lib/topic-prompts";
 import { supabase } from "@/integrations/supabase/client";
