@@ -1053,7 +1053,6 @@ function EmptyLaunchpad({
   presenceCount,
   renaming,
   onSetDraft,
-  onClaimHost,
   onRename,
   onLeaveForLobby,
 }: {
@@ -1065,7 +1064,6 @@ function EmptyLaunchpad({
   presenceCount: number;
   renaming: boolean;
   onSetDraft: (s: string) => void;
-  onClaimHost: () => void | Promise<void>;
   onRename: (newTitle: string) => void | Promise<void>;
   onLeaveForLobby: () => void;
 }) {
