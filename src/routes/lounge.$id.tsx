@@ -175,11 +175,15 @@ function LiveRoomPage() {
   });
 
   const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
-  // v1: no in-room host role. `isHost` still means "was the room's creator" for legacy rooms
-  // where host_user_id was populated — used to bypass the ended-room bounce.
-  const isHost = !!user && !!room && room.host_user_id === user.id;
+  // v1 "namer" model: host_user_id doubles as named_by_user_id.
+  // Null = unnamed → anyone (or, for group rooms, any member) can name it.
+  const namedByUserId = room?.host_user_id ?? null;
+  const isNamed = !!namedByUserId;
+  const isNamer = !!user && namedByUserId === user.id;
+  const isHost = isNamer; // legacy rooms with host_user_id keep rename/end rights
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status !== "active";
+
 
   // If the room is ended/archived and you're not the host, bounce home.
   // Host stays so they can wrap up gracefully.
