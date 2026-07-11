@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, RadioTower } from "lucide-react";
-import { ClaimHostPill } from "@/components/claim-host-pill";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
@@ -25,7 +24,7 @@ import { useMediaRoom, type MediaMode } from "@/hooks/use-media-room";
 import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
-import { startHostClaim, setRoomTitle } from "@/lib/host-room.functions";
+import { setRoomTitle } from "@/lib/host-room.functions";
 import { RoomNoteBanner } from "@/components/room-note-banner";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
@@ -172,7 +171,7 @@ export function ChannelView({
   const dropNew = useServerFn(joinLounge);
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const sendMessage = useServerFn(sendChatMessage);
-  const claimHost = useServerFn(startHostClaim);
+  // Host claim retired in v1 — anyone in the room can use tools directly.
   const renameRoom = useServerFn(setRoomTitle);
   const qc = useQueryClient();
   const [renaming, setRenaming] = useState(false);
@@ -814,14 +813,6 @@ export function ChannelView({
                     presenceCount={presence.length}
                     renaming={renaming}
                     onSetDraft={setDraft}
-                    onClaimHost={async () => {
-                      try {
-                        await claimHost({ data: { roomId } });
-                        toast("Claiming host — others have 10s to object.");
-                      } catch (e: any) {
-                        toast.error(e?.message ?? "Couldn't claim");
-                      }
-                    }}
                     onRename={async (newTitle) => {
                       const prev = title;
                       setRenaming(true);
@@ -952,30 +943,10 @@ export function ChannelView({
             }
           />
 
-          {!videoFocus && user && (
-            <div className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-3 shadow-soft">
-              {hostUserId === user.id ? (
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent("workshop:open-host-menu", { detail: { roomId } }))}
-                  className="inline-flex w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/15 transition"
-                  title="Open host settings"
-                >
-                  <RadioTower className="h-3.5 w-3.5" /> Host · settings
-                </button>
-              ) : (
-                <div className="flex justify-center">
-                  <ClaimHostPill
-                    roomId={roomId}
-                    viewerId={user.id}
-                    unclaimable={!!workshopId}
-                    claimUserId={null}
-                    claimStartedAt={null}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          {/* Host settings / claim-host affordances removed in v1 — Lounge is roleless. */}
+
+
+
 
 
           {!videoFocus && user && (
@@ -1062,7 +1033,6 @@ function EmptyLaunchpad({
   presenceCount,
   renaming,
   onSetDraft,
-  onClaimHost,
   onRename,
   onLeaveForLobby,
 }: {
@@ -1074,7 +1044,6 @@ function EmptyLaunchpad({
   presenceCount: number;
   renaming: boolean;
   onSetDraft: (s: string) => void;
-  onClaimHost: () => void | Promise<void>;
   onRename: (newTitle: string) => void | Promise<void>;
   onLeaveForLobby: () => void;
 }) {

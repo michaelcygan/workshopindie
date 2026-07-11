@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X, Crown } from "lucide-react";
+import { ArrowLeft, Rocket, X } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
@@ -26,20 +26,15 @@ import {
   acceptWorkshopJoinInvite,
   declineWorkshopJoinInvite,
 } from "@/lib/collab-workshop.functions";
-import { startHostClaim } from "@/lib/host-room.functions";
 import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
-import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
-import { HostedByLine } from "@/components/hosted-by-line";
-import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
-import { HostRoomEvents } from "@/components/host-room-events";
-import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
+
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Lounge";
@@ -170,23 +165,11 @@ function LiveRoomPage() {
   });
 
   const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
+  // v1: no in-room host role. `isHost` still means "was the room's creator" for legacy rooms
+  // where host_user_id was populated — used to bypass the ended-room bounce.
   const isHost = !!user && !!room && room.host_user_id === user.id;
-  const isLeaderless = !!room && !room.host_user_id;
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status !== "active";
-  const claimHostFn = useServerFn(startHostClaim);
-  const canClaimHost =
-    !!user && !!room && room.status === "active" && !room.host_user_id && !isHost;
-  async function handleClaimHost() {
-    if (!room) return;
-    try {
-      await claimHostFn({ data: { roomId: id } });
-      toast("Claiming host — others have 10s to object.");
-      qc.invalidateQueries({ queryKey: ["instant-room", id] });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't claim host");
-    }
-  }
 
   // If the room is ended/archived and you're not the host, bounce home.
   // Host stays so they can wrap up gracefully.
@@ -263,39 +246,8 @@ function LiveRoomPage() {
     },
   });
 
-  // Other participants (for the host's Remove picker). Only fetched when host.
-  const { data: participants = [] } = useQuery({
-    queryKey: ["instant-room-participants", id, isHost],
-    enabled: !!user && isHost,
-    refetchInterval: 8000,
-    queryFn: async () => {
-      const cutoff = new Date(Date.now() - 60_000).toISOString();
-      const { data } = await supabase
-        .from("instant_presence")
-        .select(
-          "user_id, profile:profiles!instant_presence_user_id_fkey(display_name, username, avatar_url)",
-        )
-        .eq("room_id", id)
-        .gt("last_seen_at", cutoff);
-      return (
-        (data ?? []) as Array<{
-          user_id: string;
-          profile: {
-            display_name: string | null;
-            username: string | null;
-            avatar_url: string | null;
-          } | null;
-        }>
-      )
-        .filter((p) => p.user_id !== user!.id)
-        .map((p) => ({
-          user_id: p.user_id,
-          display_name: p.profile?.display_name ?? null,
-          username: p.profile?.username ?? null,
-          avatar_url: p.profile?.avatar_url ?? null,
-        }));
-    },
-  });
+  // Participants query retired — used to be for the HostMenu remove picker (v0).
+
 
   const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
   const declineInvite = useServerFn(declineWorkshopJoinInvite);
@@ -362,46 +314,12 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="flex items-center gap-2">
-            {!isHost && room?.status === "active" && (
+            {room?.status === "active" && (
               <HopButton
                 roomId={id}
                 medium={(room?.medium as any) ?? null}
                 mode={mode ?? "video"}
               />
-            )}
-            {isHost && room && (
-              <HostMenu
-                roomId={id}
-                hostUserId={user.id}
-                title={room.title || FALLBACK_TITLE}
-                focusMessage={room.focus_message}
-                locked={!!room.locked}
-                participants={participants}
-                onChanged={() => qc.invalidateQueries({ queryKey: ["instant-room", id] })}
-              />
-            )}
-            {isLeaderless && (
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={
-                  room?.status !== "active" ||
-                  !!room?.workshop_id ||
-                  (!!room?.claim_user_id && room.claim_user_id !== user.id)
-                }
-                onClick={handleClaimHost}
-                className="rounded-full gap-1.5"
-                title={
-                  room?.claim_user_id && room.claim_user_id !== user.id
-                    ? "Someone is claiming host"
-                    : "Become host of this Lounge"
-                }
-              >
-                <Crown className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">
-                  {room?.claim_user_id ? "Claiming…" : "Claim Host"}
-                </span>
-              </Button>
             )}
             <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
               <Rocket className="h-3.5 w-3.5" />{" "}
@@ -411,34 +329,15 @@ function LiveRoomPage() {
         )}
       </div>
 
-      {/* Hosted by + lock badge — sits just under the title row. */}
-      {!isPromoted && room?.host_user_id && (
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <HostedByLine hostUserId={room.host_user_id} />
-          {room.locked && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] text-ink-soft">
-              Locked
-            </span>
-          )}
-        </div>
-      )}
-
-      {/* Focus message — visible to everyone; host sees a ghost CTA when empty */}
+      {/* Focus message — visible to everyone. In v1 there's no in-room host,
+          so nobody sees the "set focus" affordance from here. */}
       {!isPromoted && (
         <FocusStrip
           text={room?.focus_message ?? null}
-          isHost={isHost}
-          onHostSet={() =>
-            window.dispatchEvent(new CustomEvent("workshop:open-focus", { detail: { roomId: id } }))
-          }
+          isHost={false}
+          onHostSet={() => {}}
         />
       )}
-
-      {/* Realtime listener for host broadcasts (mute_all, kick, ended) */}
-      {user && <HostRoomEvents roomId={id} isHost={isHost} />}
-
-      {/* Persistent-fork banner removed in the Lounge rebrand.
-          The Lounge stays live; the spun-out Collab is reachable via Collabs. */}
 
       <ChannelView
         key={id}
@@ -475,7 +374,7 @@ function LiveRoomPage() {
       <WaitingForOthersCard
         roomId={id}
         visible={!isPromoted && liveCount <= 1}
-        canPingMutuals={isHost}
+        canPingMutuals={false}
         filledSeats={Math.max(1, liveCount)}
         viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
       />
@@ -494,24 +393,11 @@ function LiveRoomPage() {
         }}
       />
 
-      <HostFirstRunTour active={isHost && !isPromoted} />
-
-      {user && !isPromoted && (
-        <BecomeHostNudge
-          roomId={id}
-          viewerId={user.id}
-          isEligibleRoom={
-            !!room && room.status === "active" && !room.host_user_id && !room.claim_user_id
-          }
-        />
-      )}
       {!isPromoted && (
         <CreateCollabNudge
           roomId={id}
-          visible={!!user && (isHost || isLeaderless) && liveCount >= 1}
+          visible={!!user && liveCount >= 1}
           onCreate={() => setCollabOpen(true)}
-          onClaimHost={handleClaimHost}
-          canClaimHost={canClaimHost}
         />
       )}
     </main>

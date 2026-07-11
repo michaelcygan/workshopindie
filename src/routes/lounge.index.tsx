@@ -6,11 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { joinLounge, joinMediumLounge, hostInstantWorkshop, type RoomVisibility } from "@/lib/instant.functions";
+import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
 import { LiveTopicsList } from "@/components/live-topics-list";
 import { RoomPromptMarquee } from "@/components/room-prompt-marquee";
 import { LiveWorkshopsRail } from "@/components/live-workshops-rail";
-import { HostPrivacyDialog } from "@/components/host-privacy-dialog";
+// HostPrivacyDialog retired — v1 Lounges are always public/open, no host privacy step.
 import { CATEGORIES, type Category } from "@/lib/categories";
 import type { RoomPrompt } from "@/lib/topic-prompts";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,10 +48,7 @@ function WorkshopPreflight() {
   });
   const [liveCount, setLiveCount] = useState(0);
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
-  const [hostMedium, setHostMedium] = useState<Category | null>(null);
-  const [pendingTitle, setPendingTitle] = useState<string>("");
-  const [inspiredBy, setInspiredBy] = useState<string | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [hostMedium] = useState<Category | null>(null);
   const [firstVisit, setFirstVisit] = useState(false);
   const [rejoin, setRejoin] = useState<{ id: string; title: string; leftAt: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -208,56 +205,39 @@ function WorkshopPreflight() {
     }
   }
 
-  function handleHost() {
-    if (busy || !canDrop) return;
-    setHostMedium(null);
-    setPendingTitle("");
-    setInspiredBy(null);
-    setPrivacyOpen(true);
-  }
-
-  function handleUsePrompt(p: RoomPrompt) {
+  async function openLounge(medium: Category | null, title: string | null) {
     if (busy || !canDrop) {
       if (!canDrop) toast.error("Connect a mic or camera to continue.");
       return;
     }
-    setHostMedium(p.medium);
-    setPendingTitle(p.title);
-    setInspiredBy(p.title);
-    setPrivacyOpen(true);
-  }
-
-  function handlePrivacyOpenChange(o: boolean) {
-    setPrivacyOpen(o);
-    if (!o) {
-      setHostMedium(null);
-      setPendingTitle("");
-      setInspiredBy(null);
-    }
-  }
-
-  async function confirmHost(args: { title: string; visibility: RoomVisibility; medium: Category | null }) {
-    if (busy || !canDrop) return;
     setBusy("host");
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(null); return; }
       const { roomId } = await host({
         data: {
-          medium: args.medium ?? null,
-          title: args.title || null,
-          visibility: args.visibility,
+          medium: medium ?? null,
+          title: title || null,
+          visibility: "open",
         },
       });
       qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
       router.invalidate();
-      setPrivacyOpen(false);
       router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open your Lounge");
       setBusy(null);
     }
   }
+
+  function handleHost() {
+    openLounge(hostMedium, null);
+  }
+
+  function handleUsePrompt(p: RoomPrompt) {
+    openLounge(p.medium, p.title);
+  }
+
 
   const subtitle =
     liveCount === 0
@@ -432,12 +412,7 @@ function WorkshopPreflight() {
           <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Lounge.</span>
           <button
             type="button"
-            onClick={() => {
-              setHostMedium(favoriteMedium);
-              setPendingTitle("");
-              setInspiredBy(null);
-              setPrivacyOpen(true);
-            }}
+            onClick={() => openLounge(favoriteMedium, null)}
             className="ml-auto font-medium text-primary hover:underline"
           >
             Open
@@ -528,17 +503,6 @@ function WorkshopPreflight() {
           router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
         }}
       />
-
-      <HostPrivacyDialog
-        open={privacyOpen}
-        onOpenChange={handlePrivacyOpenChange}
-        defaultMedium={hostMedium}
-        defaultTitle={pendingTitle}
-        inspiredBy={inspiredBy}
-        busy={busy === "host"}
-        onConfirm={confirmHost}
-      />
-
     </main>
   );
 }
