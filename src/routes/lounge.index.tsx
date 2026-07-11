@@ -208,56 +208,39 @@ function WorkshopPreflight() {
     }
   }
 
-  function handleHost() {
-    if (busy || !canDrop) return;
-    setHostMedium(null);
-    setPendingTitle("");
-    setInspiredBy(null);
-    setPrivacyOpen(true);
-  }
-
-  function handleUsePrompt(p: RoomPrompt) {
+  async function openLounge(medium: Category | null, title: string | null) {
     if (busy || !canDrop) {
       if (!canDrop) toast.error("Connect a mic or camera to continue.");
       return;
     }
-    setHostMedium(p.medium);
-    setPendingTitle(p.title);
-    setInspiredBy(p.title);
-    setPrivacyOpen(true);
-  }
-
-  function handlePrivacyOpenChange(o: boolean) {
-    setPrivacyOpen(o);
-    if (!o) {
-      setHostMedium(null);
-      setPendingTitle("");
-      setInspiredBy(null);
-    }
-  }
-
-  async function confirmHost(args: { title: string; visibility: RoomVisibility; medium: Category | null }) {
-    if (busy || !canDrop) return;
     setBusy("host");
     try {
       const mode = await preGrantMedia();
       if (!mode) { setBusy(null); return; }
       const { roomId } = await host({
         data: {
-          medium: args.medium ?? null,
-          title: args.title || null,
-          visibility: args.visibility,
+          medium: medium ?? null,
+          title: title || null,
+          visibility: "open",
         },
       });
       qc.invalidateQueries({ queryKey: ["instant-active-rooms"] });
       router.invalidate();
-      setPrivacyOpen(false);
       router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open your Lounge");
       setBusy(null);
     }
   }
+
+  function handleHost() {
+    openLounge(hostMedium, null);
+  }
+
+  function handleUsePrompt(p: RoomPrompt) {
+    openLounge(p.medium, p.title);
+  }
+
 
   const subtitle =
     liveCount === 0
