@@ -512,16 +512,6 @@ function WorkshopPreflight() {
         }}
       />
 
-      <HostPrivacyDialog
-        open={privacyOpen}
-        onOpenChange={handlePrivacyOpenChange}
-        defaultMedium={hostMedium}
-        defaultTitle={pendingTitle}
-        inspiredBy={inspiredBy}
-        busy={busy === "host"}
-        onConfirm={confirmHost}
-      />
 
-    </main>
   );
 }
