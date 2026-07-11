@@ -669,8 +669,7 @@ export function ComposerToolButton({ scope }: { scope: ToolsScope }) {
   });
 
   if (!user) return null;
-  const isHost = scope.hostUserId !== null && user.id === scope.hostUserId;
-  const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
+  const canEnable = !!user;
   if (!canEnable) return null;
 
   const occupied = new Set<StoredToolType>(
