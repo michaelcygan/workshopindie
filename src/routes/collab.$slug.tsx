@@ -401,8 +401,6 @@ function CollabDetail() {
               </>
             ) : (
               <>
-                {post.status === "open" && (
-                )}
                 {membership?.isMember && (
                   <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
                     <LogOut className="h-3.5 w-3.5" /> Leave
