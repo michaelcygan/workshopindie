@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, Rocket } from "lucide-react";
+import { ArrowLeft, Rocket, X } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
