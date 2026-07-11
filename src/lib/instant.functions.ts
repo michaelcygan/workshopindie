@@ -117,7 +117,12 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
       .eq("id", userId)
       .maybeSingle();
     const name = profile?.display_name || profile?.username || "Host";
-    const title = data.title?.trim() || `${name}'s Workshop`;
+    const providedTitle = data.title?.trim() || null;
+    // v1: "namer" model. If the opener names the Lounge, they claim it
+    // (stored on host_user_id — no in-room privileges beyond rename/end).
+    // If no name, the Lounge is unnamed and any participant can name it first.
+    const title = providedTitle || `${name}'s Lounge`;
+    const namedByUserId = providedTitle ? userId : null;
     const { data: room, error } = await supabaseAdmin
       .from("instant_rooms")
       .insert({
@@ -126,13 +131,13 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
         status: "active",
         participant_cap: 5,
         creator_id: userId,
-        host_user_id: userId,
+        host_user_id: namedByUserId,
         medium: data.medium ?? null,
         visibility: data.visibility,
       } as any)
       .select("id")
       .single();
-    if (error || !room) throw new Error(error?.message ?? "Couldn't open your Workshop");
+    if (error || !room) throw new Error(error?.message ?? "Couldn't open your Lounge");
 
     // Fire-and-forget mutual notification (also surfaces a soft viral loop).
     await notifyMutualsOnHost({
@@ -144,6 +149,88 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
     });
 
     return { roomId: room.id };
+  });
+
+/**
+ * Rename a Lounge. First person to name an unnamed Lounge becomes the
+ * "namer" and is the only one who can rename or end it thereafter.
+ * For group-scoped Lounges, only group members can claim the name.
+ */
+export const renameLounge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; title: string }) =>
+    z.object({
+      roomId: z.string().uuid(),
+      title: z.string().trim().min(1).max(80),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, kind, status, host_user_id, group_id")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (!room) throw new Error("Room not found");
+    if ((room as any).kind !== "lounge" || (room as any).status !== "active") {
+      throw new Error("This Lounge isn't live");
+    }
+
+    const currentNamer = (room as any).host_user_id as string | null;
+    if (currentNamer && currentNamer !== userId) {
+      throw new Error("Only the person who named this Lounge can rename it.");
+    }
+
+    // Group-scoped Lounge: only members may name it.
+    const groupId = (room as any).group_id as string | null;
+    if (groupId) {
+      const { data: mem } = await supabaseAdmin
+        .from("group_members")
+        .select("user_id")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!mem) throw new Error("Only group members can name this Lounge.");
+    }
+
+    const nextTitle = data.title.trim();
+    const update: Record<string, unknown> = { title: nextTitle };
+    if (!currentNamer) update.host_user_id = userId;
+
+    const { error } = await supabaseAdmin
+      .from("instant_rooms")
+      .update(update as any)
+      .eq("id", data.roomId);
+    if (error) throw new Error(error.message);
+    return { ok: true, title: nextTitle, namedByUserId: currentNamer ?? userId };
+  });
+
+/**
+ * End a Lounge. Only the namer (the person who named it) can end it.
+ */
+export const endLounge = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string }) =>
+    z.object({ roomId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id, kind, status, host_user_id")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (!room) throw new Error("Room not found");
+    if ((room as any).host_user_id !== userId) {
+      throw new Error("Only the person who named this Lounge can end it.");
+    }
+    if ((room as any).status !== "active") return { ok: true };
+    const { error } = await supabaseAdmin
+      .from("instant_rooms")
+      .update({ status: "ended", ended_by_user_id: userId } as any)
+      .eq("id", data.roomId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 /** Public: fetch a single instant room's metadata (for headers, banners, etc). */
