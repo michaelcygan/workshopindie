@@ -171,7 +171,7 @@ export function ChannelView({
   const dropNew = useServerFn(joinLounge);
   const purgeBoard = useServerFn(purgeRoomWhiteboard);
   const sendMessage = useServerFn(sendChatMessage);
-  const claimHost = useServerFn(startHostClaim);
+  // Host claim retired in v1 — anyone in the room can use tools directly.
   const renameRoom = useServerFn(setRoomTitle);
   const qc = useQueryClient();
   const [renaming, setRenaming] = useState(false);
