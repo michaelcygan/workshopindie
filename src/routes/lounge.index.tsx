@@ -511,7 +511,6 @@ function WorkshopPreflight() {
           router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
         }}
       />
-
-
+    </main>
   );
 }
