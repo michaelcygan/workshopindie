@@ -154,8 +154,10 @@ export function WorkshopToolsPanel(props: Props) {
     },
   });
 
-  const isHost = !!user && scope.hostUserId !== null && user.id === scope.hostUserId;
-  const canEnable = isHost || (scope.kind === "instant" && scope.hostUserId === null);
+  // v1: anyone in the room can enable/disable tools. Creators can still remove
+  // tools they added; there is no in-room host role anymore.
+  const isCreator = !!user && scope.hostUserId !== null && user.id === scope.hostUserId;
+  const canEnable = !!user;
   const enabledTools = tools.filter((tool) => tool.enabled);
   const currentType: StoredToolType | null = externalActive ?? active ?? enabledTools[0]?.tool_type ?? null;
   const currentTool = enabledTools.find((tool) => tool.tool_type === currentType);
