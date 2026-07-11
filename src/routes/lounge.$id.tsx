@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, RadioTower, Rocket, Sparkles, ArrowRight, X, Crown } from "lucide-react";
+import { ArrowLeft, Rocket } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
@@ -26,20 +26,15 @@ import {
   acceptWorkshopJoinInvite,
   declineWorkshopJoinInvite,
 } from "@/lib/collab-workshop.functions";
-import { startHostClaim } from "@/lib/host-room.functions";
 import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
-import { HostFirstRunTour } from "@/components/host-first-run-tour";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
-import { HostedByLine } from "@/components/hosted-by-line";
-import { HostMenu } from "@/components/host-menu";
 import { HopButton } from "@/components/hop-button";
-import { HostRoomEvents } from "@/components/host-room-events";
-import { BecomeHostNudge } from "@/components/become-host-nudge";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
+
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
 const FALLBACK_TITLE = "Lounge";
