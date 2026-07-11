@@ -245,7 +245,7 @@ export function WorkshopToolsPanel(props: Props) {
           const P = presetFor(tool.tool_type);
           const Icon = P.icon;
           const isActive = currentType === tool.tool_type;
-          const canRemove = isHost || (scope.kind === "instant" && tool.created_by_user_id === user!.id);
+          const canRemove = isCreator || (scope.kind === "instant" && tool.created_by_user_id === user!.id);
           return (
             <div
               key={tool.id}
