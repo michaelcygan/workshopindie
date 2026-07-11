@@ -20,7 +20,6 @@ import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.function
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
-import { OpenLoungeButton } from "@/components/open-lounge-button";
 import { WorksBornHere } from "@/components/works-born-here";
 
 import type { Category } from "@/lib/categories";
@@ -403,7 +402,6 @@ function CollabDetail() {
             ) : (
               <>
                 {post.status === "open" && (
-                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 )}
                 {membership?.isMember && (
                   <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
@@ -485,7 +483,6 @@ function CollabDetail() {
                     </p>
                     <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
                   </div>
-                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                   <Button size="sm" className="rounded-full gap-1" asChild>
                     <a href="#applicants">
                       <Inbox className="h-3.5 w-3.5" /> Review applicants
@@ -502,7 +499,6 @@ function CollabDetail() {
                     <p className="font-medium text-ink">Share it — that's how applicants find you.</p>
                     <p className="text-xs text-ink-muted">Drop the link in your IG story or a group chat. No account needed to apply.</p>
                   </div>
-                  <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
                 </div>
               );
             }
@@ -513,7 +509,6 @@ function CollabDetail() {
                   <p className="font-medium text-ink">Quiet so far. Try opening the Lounge or another share.</p>
                   <p className="text-xs text-ink-muted">A live session and one fresh share usually unstick a post.</p>
                 </div>
-                <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
               </div>
             );
           })()
@@ -613,7 +608,6 @@ function CollabDetail() {
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
             {post.status === "open" && (
-              <OpenLoungeButton collabPostId={post.id} ownerUserId={post.user_id} />
             )}
           </div>
         )}
