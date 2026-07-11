@@ -48,10 +48,7 @@ function WorkshopPreflight() {
   });
   const [liveCount, setLiveCount] = useState(0);
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
-  const [hostMedium, setHostMedium] = useState<Category | null>(null);
-  const [pendingTitle, setPendingTitle] = useState<string>("");
-  const [inspiredBy, setInspiredBy] = useState<string | null>(null);
-  const [privacyOpen, setPrivacyOpen] = useState(false);
+  const [hostMedium] = useState<Category | null>(null);
   const [firstVisit, setFirstVisit] = useState(false);
   const [rejoin, setRejoin] = useState<{ id: string; title: string; leftAt: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
