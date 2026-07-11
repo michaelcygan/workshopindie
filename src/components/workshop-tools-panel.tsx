@@ -395,15 +395,7 @@ function toDriveScope(scope: ToolsScope): DrivePanelScope {
 }
 
 function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id: string; tool_type: StoredToolType }; media?: MediaForTools }) {
-  const { user } = useAuth();
-  // Dedicated full-featured components for the rich tools.
-  if (tool.tool_type === "outline") {
-    return (
-      <div className="p-4">
-        <WorkshopDocsEditor scope={toDocsScope(scope)} />
-      </div>
-    );
-  }
+  // v1 shipped tools.
   if (tool.tool_type === "drive") {
     return (
       <div className="p-4">
@@ -418,25 +410,8 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
-  if (tool.tool_type === "recorder") {
-    const isHost = !!user && scope.hostUserId !== null && user.id === scope.hostUserId;
-    return (
-      <div className="p-4">
-        <WorkshopRecordingLink
-          scope={scope.kind === "instant"
-            ? { kind: "instant", roomId: scope.roomId }
-            : { kind: "persistent", workshopId: scope.workshopId }}
-          toolId={tool.id}
-          isHost={isHost}
-        />
-      </div>
-    );
-  }
   if (tool.tool_type === "pip") {
     return <PipBody />;
-  }
-  if (tool.tool_type === "board") {
-    return <BoardBody scope={scope} />;
   }
   if (tool.tool_type === "player") {
     const playerScope = scope.kind === "instant"
@@ -444,25 +419,26 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       : { kind: "persistent" as const, workshopId: scope.workshopId, hostUserId: scope.hostUserId };
     return <WorkshopPlayerTool scope={playerScope} toolId={tool.id} />;
   }
-  // Lightweight primitives (Pinboard, List, Moodboard, Repo & Demo, legacy shot/track list).
+  // Legacy Docs rows.
+  if (tool.tool_type === "outline") {
+    return (
+      <div className="p-4">
+        <WorkshopDocsEditor scope={toDocsScope(scope)} />
+      </div>
+    );
+  }
+  // Legacy Board, Recording rows — render a small notice; data stays in the DB.
+  if (tool.tool_type === "board" || tool.tool_type === "moodboard" || tool.tool_type === "recorder") {
+    return (
+      <div className="p-4 text-sm text-ink-muted">
+        {tool.tool_type === "recorder"
+          ? "The Recording tool was retired. Use Screen Share for live sessions or drop a link in Drive."
+          : "The Board was retired in v1. Use Drive to share images and links."}
+      </div>
+    );
+  }
+  // Lightweight primitives (Pinboard, List, Repo & Demo, legacy shot/track list).
   return <ToolItems scope={scope} tool={tool} />;
-}
-
-function BoardBody({ scope }: { scope: ToolsScope }) {
-  const { user } = useAuth();
-  if (!user) return null;
-  return (
-    <div className="p-2 h-[560px]">
-      <RoomBoard
-        scope={scope.kind === "instant"
-          ? { kind: "instant", roomId: scope.roomId }
-          : { kind: "persistent", workshopId: scope.workshopId }}
-        userId={user.id}
-        fullscreen
-        className="h-full"
-      />
-    </div>
-  );
 }
 
 function PipBody() {
