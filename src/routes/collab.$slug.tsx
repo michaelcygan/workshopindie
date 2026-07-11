@@ -605,8 +605,6 @@ function CollabDetail() {
               </div>
             </Link>
             {!isOwner && <MessageButton otherUserId={hostUser.id} contextCollabPostId={post.id} />}
-            {post.status === "open" && (
-            )}
           </div>
         )}
 
