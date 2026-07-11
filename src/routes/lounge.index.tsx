@@ -415,12 +415,7 @@ function WorkshopPreflight() {
           <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Lounge.</span>
           <button
             type="button"
-            onClick={() => {
-              setHostMedium(favoriteMedium);
-              setPendingTitle("");
-              setInspiredBy(null);
-              setPrivacyOpen(true);
-            }}
+            onClick={() => openLounge(favoriteMedium, null)}
             className="ml-auto font-medium text-primary hover:underline"
           >
             Open
