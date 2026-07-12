@@ -22,11 +22,13 @@ import { PlusGate } from "@/components/plus-gate";
 import { logShareEvent } from "@/lib/collab.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagCollabInGroup } from "@/lib/groups.functions";
+import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollab,
-  validateSearch: z.object({ group: z.string().optional() }),
+  validateSearch: z.object({ group: z.string().optional(), fromLounge: z.string().uuid().optional() }),
 });
+
 
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
