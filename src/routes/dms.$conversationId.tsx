@@ -348,7 +348,50 @@ function DmsThread() {
     }
   }
 
+  // `@` typeahead state for the composer.
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
+  const mentionOpen = mention !== null;
+
+  function recalcMention(value: string, caret: number) {
+    let i = caret - 1;
+    while (i >= 0) {
+      const ch = value[i];
+      if (ch === "@") {
+        const prev = i > 0 ? value[i - 1] : "";
+        if (i === 0 || /\s/.test(prev)) {
+          const query = value.slice(i + 1, caret);
+          if (/^[a-zA-Z0-9_]{0,30}$/.test(query)) {
+            setMention({ start: i, query });
+            return;
+          }
+        }
+        break;
+      }
+      if (/\s/.test(ch)) break;
+      i -= 1;
+    }
+    setMention(null);
+  }
+
+  function insertMention(s: MentionSuggestion) {
+    if (!mention) return;
+    const before = body.slice(0, mention.start);
+    const after = body.slice(mention.start + 1 + mention.query.length);
+    const sep = after.startsWith(" ") || after === "" ? "" : " ";
+    const next = `${before}${s.insert}${sep}${after}`.slice(0, 2000);
+    setBody(next);
+    setMention(null);
+    requestAnimationFrame(() => {
+      const el = composerRef.current;
+      if (!el) return;
+      const caret = before.length + s.insert.length + sep.length;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
   function onComposerKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (mentionOpen) return; // Popover owns Enter/Tab/Arrow keys.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
