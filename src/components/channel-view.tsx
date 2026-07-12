@@ -34,6 +34,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { ProfilePeek } from "@/components/profile-peek";
+import { UsernameMention } from "@/components/username-mention";
+
 
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 import { ChatPolls } from "@/components/chat-polls";
