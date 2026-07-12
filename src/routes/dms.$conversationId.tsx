@@ -429,6 +429,23 @@ function DmsThread() {
 
   const grouped = useMemo(() => groupMessages(messages, user?.id ?? null), [messages, user?.id]);
 
+  // Participants for MessageBody rendering (just the other person; @mentions
+  // of anyone else render via UsernameMention).
+  const participants: MentionCandidate[] = useMemo(
+    () =>
+      other
+        ? [
+            {
+              user_id: other.id,
+              display_name: other.display_name,
+              username: other.username,
+              avatar_url: other.avatar_url,
+            },
+          ]
+        : [],
+    [other],
+  );
+
   if (loading || !user) return null;
 
   const charsLeft = 2000 - body.length;
