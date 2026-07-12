@@ -491,10 +491,7 @@ function LiveRoomPage() {
                 toast.success("Collab posted — pinned to this Lounge.");
                 qc.invalidateQueries({ queryKey: ["room-pins", id] });
               }}
-              onDraftSaved={() => {
-                setCollabOpen(false);
-                toast.success("Draft saved — find it in My Collabs.");
-              }}
+              onDraftSaved={() => setCollabOpen(false)}
               onBackToLounge={() => setCollabOpen(false)}
             />
           )}
