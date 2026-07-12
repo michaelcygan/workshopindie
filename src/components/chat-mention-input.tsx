@@ -264,6 +264,7 @@ export function MessageBody({
   meUsername,
   onMentionClick,
   renderMention,
+  renderUnknownMention,
 }: {
   body: string;
   participants: MentionCandidate[];
@@ -274,11 +275,12 @@ export function MessageBody({
     isMe: boolean;
     children: React.ReactNode;
   }) => React.ReactNode;
+  renderUnknownMention?: (args: { handle: string; children: React.ReactNode }) => React.ReactNode;
 }) {
   const parts = useMemo(() => {
     type Seg =
       | { type: "text"; text: string }
-      | { type: "mention"; text: string; user?: MentionCandidate }
+      | { type: "mention"; text: string; user?: MentionCandidate; handle: string }
       | { type: "link"; text: string; href: string };
     const segments: Seg[] = [];
     const re = /(^|\s)@([A-Za-z0-9_]{1,30})|\bhttps?:\/\/[^\s<]+/g;
@@ -289,11 +291,12 @@ export function MessageBody({
       const matchStart = isMention ? m.index + (m[1]?.length ?? 0) : m.index;
       if (matchStart > last) segments.push({ type: "text", text: body.slice(last, matchStart) });
       if (isMention) {
-        const handle = m[2].toLowerCase();
-        const user = participants.find((p) => (p.username ?? "").toLowerCase() === handle);
-        if (user) segments.push({ type: "mention", text: `@${user.username}`, user });
-        else segments.push({ type: "text", text: `@${m[2]}` });
-        last = matchStart + 1 + m[2].length;
+        const handle = m[2];
+        const user = participants.find(
+          (p) => (p.username ?? "").toLowerCase() === handle.toLowerCase(),
+        );
+        segments.push({ type: "mention", text: `@${handle}`, user, handle });
+        last = matchStart + 1 + handle.length;
       } else {
         const url = m[0];
         segments.push({ type: "link", text: url, href: url });
@@ -336,14 +339,16 @@ export function MessageBody({
           </button>
         );
         if (p.user && renderMention) {
-          return (
-            <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>
-          );
+          return <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>;
+        }
+        if (!p.user && renderUnknownMention) {
+          return <span key={i}>{renderUnknownMention({ handle: p.handle, children: chip })}</span>;
         }
         return <span key={i}>{chip}</span>;
       })}
     </span>
   );
 }
+
 
 
