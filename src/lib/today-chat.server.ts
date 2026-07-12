@@ -7,7 +7,6 @@
 
 export const BODY_MAX = 500;
 export const MENTION_CAP = 10;
-export const TZ_RE = /^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+-]+){0,2}$/;
 
 const MENTION_RE = /(?:^|\s)@([a-zA-Z0-9_]{2,30})/g;
 

@@ -1394,7 +1394,7 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
-          expires_at: string | null
+          expires_at: string
           group_id: string
           id: string
         }
@@ -1402,7 +1402,7 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
-          expires_at?: string | null
+          expires_at?: string
           group_id: string
           id?: string
         }
@@ -1410,7 +1410,7 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
-          expires_at?: string | null
+          expires_at?: string
           group_id?: string
           id?: string
         }
