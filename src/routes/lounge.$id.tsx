@@ -26,6 +26,7 @@ import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
+import { CollabComposer } from "@/routes/collab.new";
 
 
 
