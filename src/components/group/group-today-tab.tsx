@@ -103,11 +103,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
   const post = useMutation({
     mutationFn: async (text: string) => {
-      const tz =
-        typeof Intl !== "undefined"
-          ? Intl.DateTimeFormat().resolvedOptions().timeZone
-          : undefined;
-      await postFn({ data: { groupId: group.id, body: text, tz } });
+      await postFn({ data: { groupId: group.id, body: text } });
     },
     onSuccess: () => {
       setBody("");
@@ -189,7 +185,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
         <div>
           <h2 className="font-display text-lg text-ink">Today in {group.name}</h2>
           <p className="text-xs text-ink-muted">
-            {today} · messages clear at midnight, your time.
+            {today} · each message clears 24 hours after it's posted.
           </p>
         </div>
         <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
