@@ -328,8 +328,7 @@ export function CollabComposer({
       "mx-auto max-w-2xl px-4",
       embed ? "py-6 pb-6" : "py-10 pb-32 md:py-14 md:pb-32",
     )}>
-      </main>);
-      // ⬇︎ placeholder replaced immediately below
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Post a Collab</h1>
         <p className="mt-1 text-ink-muted">Share what you're making and the roles you need. People reach out — you pick your team.</p>
