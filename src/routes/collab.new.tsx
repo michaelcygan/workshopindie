@@ -226,7 +226,19 @@ function NewCollab() {
         }
       });
     }
+
+    // Auto-pin into the originating Lounge so the Collab appears in its Collabs tab.
+    if (targetStatus === "open" && fromLounge) {
+      try {
+        await pinToRoom({ data: { roomId: fromLounge, collabPostId: post.id } });
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? `Posted, but couldn't pin to the Lounge: ${e.message}` : "Posted, but couldn't pin to the Lounge",
+        );
+      }
+    }
     setSubmitting(false);
+
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");
