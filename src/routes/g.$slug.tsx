@@ -347,10 +347,10 @@ function GroupPage() {
         <div className="mt-5">
 
           {tab === "today" && <GroupTodayTab group={group} />}
-          {tab === "events" && <GroupEventsTab group={group} />}
-          {tab === "work" && <GroupWorkTab group={group} />}
-          {tab === "collab" && <GroupCollabTab group={group} />}
           {tab === "workshops" && <GroupWorkshopTab group={group} />}
+          {tab === "collab" && <GroupCollabTab group={group} />}
+          {tab === "work" && <GroupWorkTab group={group} />}
+          {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "subgroups" && (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {childGroups.map((g) => (
