@@ -29,12 +29,10 @@ import {
 import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
 
 
-import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
 import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
-import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
