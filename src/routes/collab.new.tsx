@@ -570,10 +570,7 @@ export function CollabComposer({
 
         {/* Mobile inline action */}
         <div className="flex flex-wrap justify-end gap-2 md:hidden">
-          <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
-            if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
-            navigate({ to: "/collab" });
-          }}>Cancel</Button>
+          <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
           <Button
             type="submit"
             variant="outline"
