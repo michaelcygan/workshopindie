@@ -477,9 +477,19 @@ export function ChannelView({
     };
   }, [roomId, user]);
 
+  const [hasNewBelow, setHasNewBelow] = useState(false);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 120) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      setHasNewBelow(false);
+    } else {
+      setHasNewBelow(true);
+    }
   }, [messages.length]);
+
 
   async function submitChat(mentions: string[]) {
     if (!user || !draft.trim()) return;
