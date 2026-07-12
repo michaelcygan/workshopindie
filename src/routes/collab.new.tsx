@@ -572,8 +572,11 @@ export function CollabComposer({
         {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
 
 
-        {/* Mobile inline action */}
-        <div className="flex flex-wrap justify-end gap-2 md:hidden">
+        {/* Inline action bar — always visible on mobile, and on all sizes when embedded (dialog has no room for a fixed footer). */}
+        <div className={cn(
+          "flex flex-wrap justify-end gap-2",
+          embed ? "" : "md:hidden",
+        )}>
           <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
           <Button
             type="submit"
@@ -590,8 +593,11 @@ export function CollabComposer({
         </div>
       </form>
 
-      {/* Desktop sticky action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-border bg-background/95 backdrop-blur md:block">
+      {/* Desktop sticky action bar — hidden when embedded. */}
+      <div className={cn(
+        "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur",
+        embed ? "hidden" : "hidden md:block",
+      )}>
         <div className="mx-auto max-w-2xl px-4">
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-ink-muted">
