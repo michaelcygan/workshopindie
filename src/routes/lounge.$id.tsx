@@ -634,7 +634,7 @@ function CreateCollabSheet({
 
           <div className="rounded-2xl border border-border bg-surface-2/40 p-3">
             <div className="flex items-baseline justify-between">
-              <label className="text-xs font-medium text-ink-soft">Rights</label>
+              <label className="text-xs font-medium text-ink-soft">Collab license</label>
               <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">
                 {license === "cc_by" ? "Default · CC BY 4.0" : "Custom"}
               </span>
