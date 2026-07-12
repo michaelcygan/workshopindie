@@ -111,7 +111,15 @@ const ROLE_PRESETS: Record<Category, string[]> = {
   standup: [],
 };
 
-function NewCollab() {
+export function CollabComposer({
+  embed = false,
+  groupPreselectId = null,
+  fromLounge = null,
+  onCancel,
+  onPosted,
+  onDraftSaved,
+  onBackToLounge,
+}: CollabComposerProps) {
   const { user, loading } = useAuth();
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
@@ -119,10 +127,7 @@ function NewCollab() {
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
-  const search = useSearch({ from: "/collab/new" });
-  const fromLounge = search.fromLounge ?? null;
-  const embed = !!search.embed;
-  const preselect = usePreselectGroup(search.group);
+  const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
   useEffect(() => {
