@@ -591,6 +591,8 @@ function DmsThread() {
                 key={g.id}
                 cluster={g}
                 isLastCluster={isLast}
+                participants={participants}
+                meUsername={null}
                 onRetry={async (m) => {
                   // Re-send a failed message
                   setMessages((prev) => prev.filter((x) => x.id !== m.id));
