@@ -22,11 +22,13 @@ import { PlusGate } from "@/components/plus-gate";
 import { logShareEvent } from "@/lib/collab.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagCollabInGroup } from "@/lib/groups.functions";
+import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollab,
-  validateSearch: z.object({ group: z.string().optional() }),
+  validateSearch: z.object({ group: z.string().optional(), fromLounge: z.string().uuid().optional() }),
 });
+
 
 type LocationMode = "online" | "in_person" | "hybrid";
 type CompType = "paid" | "unpaid" | "credit" | "negotiable" | "unspecified";
@@ -83,8 +85,11 @@ function NewCollab() {
   const navigate = useNavigate();
 
   const tagGroup = useServerFn(tagCollabInGroup);
+  const pinToRoom = useServerFn(pinCollab);
   const search = useSearch({ from: "/collab/new" });
+  const fromLounge = search.fromLounge ?? null;
   const preselect = usePreselectGroup(search.group);
+
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
@@ -221,7 +226,19 @@ function NewCollab() {
         }
       });
     }
+
+    // Auto-pin into the originating Lounge so the Collab appears in its Collabs tab.
+    if (targetStatus === "open" && fromLounge) {
+      try {
+        await pinToRoom({ data: { roomId: fromLounge, collabPostId: post.id } });
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? `Posted, but couldn't pin to the Lounge: ${e.message}` : "Posted, but couldn't pin to the Lounge",
+        );
+      }
+    }
     setSubmitting(false);
+
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");
@@ -614,18 +631,37 @@ function NewCollab() {
             <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
-            <Button
-              type="button"
-              className="rounded-full"
-              onClick={() => {
-                const slug = postedDialog!.slug;
-                setPostedDialog(null);
-                navigate({ to: "/collab/$slug", params: { slug } });
-              }}
-            >
-              Open Collab page
-            </Button>
+            {fromLounge ? (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  setPostedDialog(null);
+                  // Prefer closing this tab (we were opened from the Lounge with window.open).
+                  // If the browser blocks close(), fall back to navigating back to the Lounge.
+                  try { window.close(); } catch { /* ignore */ }
+                  if (!window.closed) {
+                    navigate({ to: "/lounge/$id", params: { id: fromLounge } });
+                  }
+                }}
+              >
+                Back to the Lounge
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const slug = postedDialog!.slug;
+                  setPostedDialog(null);
+                  navigate({ to: "/collab/$slug", params: { slug } });
+                }}
+              >
+                Open Collab page
+              </Button>
+            )}
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </main>

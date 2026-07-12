@@ -1,67 +1,46 @@
-# Lounge simplification pass
+## Goal
 
-Goal: reshape the live room around live networking without rebuilding it. Keep every real-time / media / presence system, keep Chat + Collabs + Work as the three content tabs, and strip UI that implies Lounge is a production workspace.
+Make the Lounge's "New Collab" button use the real Collab creation flow (the one at `/collab/new`), and automatically pin the resulting Collab into the current Lounge's Collabs tab so the conversation and the Collab stay tied together.
 
-Scope is intentionally narrow — presentation and copy only, no schema, no realtime rewrites, no changes outside `/lounge/*`.
+Today the button opens a simplified in-lounge `CreateCollabSheet` (a parallel, cut-down form that calls `createCollabFromRoom`). That fork means the Lounge Collab misses fields, roles, timeline, location, groups, drafts, Plus gating, etc. — everything that lives in `/collab/new`. It also doesn't pin the new Collab into the Lounge, so it never shows up in the Collabs tab of the room it came from.
 
-## 1. Header (`src/routes/lounge.$id.tsx`)
+## Approach
 
-- **Demote "Create a Collab"**: replace the primary `<Button>` with a small ghost link ("New Collab from here") tucked next to the `End` button. Keeps the flow, stops it dominating a networking room. Sheet component (`CreateCollabSheet`) stays as-is.
-- **Rename Skip control**: pass a `label="Next Lounge"` prop through `HopButton` (or update the button in place) so the header CTA and keyboard shortcut hint read "Next Lounge" instead of "Skip". Tooltip: "Find another live Lounge". Only one Hop button in the header — remove the duplicate `HopButton` render inside `ChannelView` (line ~693 or 938, whichever is the redundant sidebar copy).
-- **Remove `<LicenseChip />`** from the live-count row. Lounge conversations are not licensed content.
+Reuse `/collab/new` as-is (don't duplicate it). Open it in a new tab from the Lounge, carrying the room id, and have the real flow auto-pin the freshly-posted Collab back into that Lounge. The Lounge Collabs tab already subscribes to `instant_room_pins` in realtime, so the new Collab will appear for everyone in the room within a second — no extra plumbing needed.
 
-## 2. Tab bar (`src/components/channel-view.tsx`, `StageTabs`)
+Concretely:
 
-- Remove the **Tools** popover trigger and its `<Popover>` block entirely. Tabs collapse to: `Chat`, `Work`, `Collabs`.
-- Remove `activeTool` state plumbing tied to the tab bar (leave the underlying `WorkshopToolsPanel` intact; it just no longer mounts as a "tab").
-- Remove `composerLeading` `ComposerToolButton` from the chat composer — no in-chat tool inserter.
+1. **Lounge — "New Collab" button** (`src/routes/lounge.$id.tsx`)
+   - Replace `onClick={() => setCollabOpen(true)}` with `window.open('/collab/new?fromLounge=<roomId>', '_blank', 'noopener,noreferrer')`.
+   - Remove the `<CreateCollabSheet …/>` mount, its `collabOpen` state, the local `CreateCollabSheet` component definition, and the now-unused `createCollabFromRoom` / `LICENSE_OPTIONS` / dialog imports.
+   - Update `CreateCollabNudge`'s `onCreate` to open the same URL.
 
-## 3. Call controls (screen share + PiP as first-class)
+2. **`/collab/new` — accept a Lounge return context** (`src/routes/collab.new.tsx`)
+   - Extend `validateSearch` with `fromLounge: z.string().uuid().optional()`.
+   - Read `fromLounge` from `useSearch`.
+   - After the existing insert of `collab_posts` + `collab_roles` succeeds (still status `open`), if `fromLounge` is present, call the existing `pinCollab` server fn with `{ roomId: fromLounge, collabPostId: post.id }`. Best-effort: if it fails, show a toast but keep the post.
+   - In the posted-confirmation dialog (`postedDialog`), when `fromLounge` is set, swap the primary CTA to "Back to the Lounge" that does `window.close()` (falls back to `navigate({ to: '/lounge/$id', params: { id: fromLounge } })` if the tab wasn't opened by us). Keep the copy-link / share options.
 
-The existing `MediaPanel` renders mic/cam/leave. Screen share and PiP currently only live inside the Tools panel.
+3. **Keep** the small ambient "New Collab" link in the header and the `CreateCollabNudge` — both just change where they point.
 
-- In `ChannelView`, mount **Screen Share** and **Pop-out** as buttons in the primary media control row (next to mic/cam). Reuse `WorkshopScreenSharePanel`'s start/stop hook and `PopOutButton` from `workshop-pip.tsx` — no new logic, just surface them.
-- Tooltip copy:
-  - Screen share: "Share your screen" / active: "Stop sharing"
-  - PiP: "Keep Lounge visible" (Picture-in-Picture)
-- Keep permission-denied / already-sharing states handled by the existing panel; surface toast errors on failure.
+4. **Backend / server functions** — no changes.
+   - `pinCollab` already handles both host-pin (creator = host) and guest-pin flows and is idempotent per `(room_id, collab_post_id)`.
+   - The Lounge Collabs tab already fetches pins and subscribes to `instant_room_pins` realtime, so newly-pinned Collabs from `/collab/new` will show up automatically without additional wiring.
+   - `createCollabFromRoom` becomes unused from the UI. Leave the server fn in place for now (not deleted) — it can be retired in a follow-up once we're sure nothing else calls it.
 
-## 4. Tools panel — retire from Lounge
+## What stays intact
 
-- Delete the `toolsSlot` prop wiring from `LiveRoomPage` → `ChannelView`. The `WorkshopToolsPanel` file itself stays (Workshops still use it via `workshops.$slug.tools.*`).
-- Delete `ComposerToolButton` usage in Lounge only.
-- Legacy `drive` / `player` rows in existing rooms remain reachable via the Workshop route if they were promoted; nothing is deleted from the DB.
+- Real Collab flow (roles, timeline, cities, comp, rights, groups, drafts, Plus gate, share sheet).
+- Live Lounge keeps running while the user posts in a separate tab.
+- Collabs tab in the Lounge, its realtime, and its pin/unpin UX.
+- Group Lounges: since the Collab is posted through the standard flow, the user tags Groups themselves — nothing about the Lounge auto-scopes the Collab.
 
-## 5. Empty / alone state (`WaitingForOthersCard`)
+## Files changed
 
-Light copy pass only — confirm room is loaded, list conversation starters ("Say hi", "What are you working on lately?", "Who are you hoping to meet?"), and offer "Find another Lounge" (Hop) + link back to `/lounge`. No new component.
+- `src/routes/lounge.$id.tsx` — swap button + nudge target to open `/collab/new?fromLounge=…`; remove the local `CreateCollabSheet` and its imports/state.
+- `src/routes/collab.new.tsx` — accept `fromLounge` search param; auto-pin on successful post; adjust success dialog CTA when opened from a Lounge.
 
-## 6. CreateCollabSheet cleanup
+## Follow-ups (not in this change)
 
-The sheet still exists (reachable from the demoted header link) but the room-level rights radio group is misleading in a networking context:
-- Keep the sheet functional (it creates a Collab, which does have a license).
-- Change section label from "Rights" → "Collab license" so it is clearly about the new Collab, not the Lounge.
-
-## 7. Files touched
-
-- `src/routes/lounge.$id.tsx` — demote CTA, drop `LicenseChip`, drop `toolsSlot` + `composerLeading`, rename sheet label.
-- `src/components/channel-view.tsx` — remove Tools tab from `StageTabs`, drop `composerLeading` slot, mount ScreenShare + PiP buttons in media controls, remove duplicate `HopButton`.
-- `src/components/hop-button.tsx` — label "Next Lounge", tooltip update.
-- `src/components/waiting-for-others-card.tsx` — copy pass.
-- (No changes to) `workshop-tools-panel.tsx`, `workshop-screen-share-panel.tsx`, `workshop-pip.tsx`, Collabs/Work panels, server functions, schema.
-
-## 8. Explicit non-goals
-
-- No rename of Lounge, no changes to matchmaker, presence, media provider, chat table, moderation, or auth.
-- No changes to `/collab`, `/workshops`, `/g/*`, `/me`, or any other route.
-- No DB migration. Legacy `instant_tools` rows are ignored by the new UI but preserved.
-- Chat, Collabs, and Work tab internals unchanged — they already pull participants' open Collabs & published Work.
-
-## Acceptance check after build
-
-1. `/lounge/$id` header shows: title, live count, Next Lounge, small "New Collab" link, End (namer only). No `LicenseChip`, no big Rocket CTA.
-2. Tab bar shows exactly Chat / Work / Collabs. No Tools dropdown, no `+ Tool` button in composer.
-3. Media control row shows: mic, cam, screen share, PiP, leave.
-4. Only one Skip/Hop control exists, labelled "Next Lounge".
-5. Screen share start/stop + PiP open/close still work; permission-denied still toasts.
-6. Nothing outside `src/routes/lounge.*` and `src/components/channel-view.tsx` / `hop-button.tsx` / `waiting-for-others-card.tsx` is modified.
+- Retire `createCollabFromRoom` server fn and its migration once we confirm no other caller.
+- Optional: a subtle "Posted from the {Lounge name} Lounge" chip on the Collab detail page.
