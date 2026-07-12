@@ -1,31 +1,37 @@
-## Root cause
+## Simplify Today board to rolling 24h per post
 
-`src/lib/today-chat.functions.ts` is a `.functions.ts` module that declares module-scope helpers and constants:
+Switch the Today board from local-timezone daily reset to a plain rolling 24-hour window per post. No timezone plumbing, no message cap.
 
-- `BODY_MAX`, `MENTION_RE`, `MENTION_CAP`, `TZ_RE`
-- `extractMentions()`
+### Behavior
+- Each post expires exactly 24 hours after it was created.
+- Board shows posts where `expires_at > now()`, newest first.
+- No per-user timezone logic anywhere.
+- No message cap — a busy city group can post as much as it wants; posts fall off naturally after 24h.
 
-…and the `.handler()` body references `TZ_RE` and `extractMentions()` directly.
+### Changes
 
-TanStack Start's `?tss-serverfn-split` transform emits a server-only module that keeps ONLY the `createServerFn` chain — sibling module-scope declarations are stripped. At runtime the handler hits `TZ_RE`/`extractMentions` and throws `ReferenceError`. The mutation catches it, clears the input via `onSuccess`… no — `setBody("")` runs on success only, but the toast for the thrown error can arrive with an empty/opaque message when it crosses the RPC boundary as a `ReferenceError`, so the user sees the input clear (from `disabled` styling flicker + no visible toast) and no post. The two successful posts from earlier today were created before this file grew the tz/mention helpers.
+**Database (migration)**
+- Change `group_today_posts.expires_at` default to `now() + interval '24 hours'` so the column is populated automatically on insert.
+- Keep the existing index on `(group_id, expires_at)`; the filter shape doesn't change.
+- Existing rows keep whatever `expires_at` they already have (they'll age out naturally).
 
-The database side is fine (INSERT policy passes for this user; `is_adult` returns true; `expires_at` is populated by the RPC).
+**Server function** (`src/lib/today-chat.functions.ts`)
+- Remove the `tz` input field and the `TZ_RE` validation.
+- Remove the `expires_at` computation in the handler — let the DB default handle it.
+- Delete `src/lib/today-chat.server.ts` (only `TZ_RE` lived there that's going away; keep `BODY_MAX`, `MENTION_CAP`, `extractMentions` inlined back into `.functions.ts` since the split-transform bug is avoided by not having module-scope helpers referenced by the handler — I'll inline them into the handler scope or a small local const the validator/handler share safely).
+- Notification insert logic (`today_mention`) unchanged.
 
-## Fix
+**Client** (`src/components/group/group-today-tab.tsx` and the post composer)
+- Stop reading / sending `Intl.DateTimeFormat().resolvedOptions().timeZone`.
+- Call `postToday({ data: { groupId, body } })` — no `tz`.
+- Board query unchanged (still filters `expires_at > now()` server-side via existing RLS/select).
 
-Move the helpers and constants out of the `.functions.ts` module into a server-only sibling, then import them.
+### Out of scope
+- No UI copy changes beyond removing any "resets at midnight" hint if one exists.
+- No message cap.
+- No changes to mentions, notifications, RLS, or the composer's mention popover.
 
-**New file** `src/lib/today-chat.server.ts`:
-- Export `BODY_MAX`, `MENTION_CAP`, `TZ_RE`, `extractMentions`.
-- Move the `MENTION_RE` regex here as well (kept private to the helper).
-
-**Edit** `src/lib/today-chat.functions.ts`:
-- Replace the module-scope helpers with an `import { BODY_MAX, TZ_RE, extractMentions } from "./today-chat.server"`.
-- Handler body unchanged in behavior, but now references only imports and locals — safe under the split transform.
-- `inputValidator` uses `BODY_MAX` from the import (input validators are bundled with the server fn, but keeping this consistent).
-
-No schema, RLS, UI, or notification changes. No behavior changes for the client — the same server fn signature and return shape.
-
-## Out of scope
-- Reworking the mutation's error toast (real error surface returns after the split fix).
-- The `expires_at` fallback / UTC path — already handled correctly.
+### Why this is the right call
+- Zero timezone bugs possible — the recent post failure was caused by tz plumbing.
+- Fewer moving parts: DB default does the work, handler shrinks, client drops a field.
+- "Today" naturally reads as "the last 24 hours of activity" and stays fresh continuously instead of wiping at a fixed clock time.
