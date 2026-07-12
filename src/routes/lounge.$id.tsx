@@ -463,30 +463,17 @@ function LiveRoomPage() {
         viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
       />
 
-      <CreateCollabSheet
-        open={collabOpen}
-        onOpenChange={setCollabOpen}
-        roomId={id}
-        defaultTitle={title}
-        onCreated={({ collabSlug }) => {
-          qc.invalidateQueries({ queryKey: ["instant-room", id] });
-          if (collabSlug) {
-            // Open Collab in a new tab so the live Lounge keeps running.
-            window.open(`/collab/${collabSlug}`, "_blank", "noopener,noreferrer");
-          }
-        }}
-      />
-
       {!isPromoted && (
         <CreateCollabNudge
           roomId={id}
           visible={!!user && liveCount >= 1}
-          onCreate={() => setCollabOpen(true)}
+          onCreate={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
         />
       )}
     </main>
   );
 }
+
 
 type LicenseChoice = "cc_by" | "rights_managed_externally" | "portfolio_credit_only" | "private";
 
