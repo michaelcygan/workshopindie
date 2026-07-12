@@ -92,6 +92,7 @@ function NewCollab() {
   const pinToRoom = useServerFn(pinCollab);
   const search = useSearch({ from: "/collab/new" });
   const fromLounge = search.fromLounge ?? null;
+  const embed = !!search.embed;
   const preselect = usePreselectGroup(search.group);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
