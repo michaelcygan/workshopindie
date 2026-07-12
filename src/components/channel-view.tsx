@@ -1237,105 +1237,22 @@ function EmptyLaunchpad({
 function StageTabs({
   value,
   onChange,
-  activeTool,
-  onPickTool,
 }: {
   value: RoomViewMode;
   onChange: (v: RoomViewMode) => void;
-  activeTool: string | null;
-  onPickTool: (toolType: string) => void;
 }) {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const activeOption = activeTool ? STAGE_TOOL_OPTIONS.find((o) => o.type === activeTool) : null;
   const tabs: Array<{ id: Exclude<RoomViewMode, "tools">; label: string; icon: React.ReactNode }> = [
     { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
     { id: "gallery", label: "Work", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
     { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
   ];
-  const toolsActive = value === "tools";
   return (
     <div
       role="tablist"
       aria-label="Lounge view"
       className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
     >
-      {/* Chat first */}
-      <TabButton
-        active={value === "chat"}
-        onClick={() => onChange("chat")}
-        icon={<MessageCircle className="h-3.5 w-3.5" />}
-        label="Chat"
-      />
-
-      {/* Tools dropdown — sits on the main bar like any tab, opens a popover */}
-      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={toolsActive}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              toolsActive
-                ? "bg-ink text-background shadow-sm"
-                : "text-ink-muted hover:text-ink hover:bg-muted/60",
-            )}
-          >
-            <Wrench className="h-3.5 w-3.5" />
-            Tools
-            {toolsActive && activeOption && (
-              <span className="opacity-80">· {activeOption.label}</span>
-            )}
-            <ChevronDown className={cn("h-3 w-3 transition", menuOpen && "rotate-180")} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-64 p-1">
-          <div className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-            Lounge tools
-          </div>
-          {STAGE_TOOL_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const selected = toolsActive && activeTool === opt.type;
-            return (
-              <button
-                key={opt.type}
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onPickTool(opt.type);
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition",
-                  selected ? "bg-ink/5 text-ink" : "text-ink-soft hover:bg-muted",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="flex-1 text-left">{opt.label}</span>
-                {selected && <Check className="h-3.5 w-3.5 text-primary" />}
-              </button>
-            );
-          })}
-          {toolsActive && (
-            <>
-              <div className="my-1 border-t border-border" />
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onChange("chat");
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-muted hover:bg-muted hover:text-ink"
-              >
-                Back to chat
-              </button>
-            </>
-          )}
-        </PopoverContent>
-      </Popover>
-
-      {tabs.slice(1).map((t) => (
+      {tabs.map((t) => (
         <TabButton
           key={t.id}
           active={value === t.id}
@@ -1347,6 +1264,7 @@ function StageTabs({
     </div>
   );
 }
+
 
 function TabButton({
   active,
