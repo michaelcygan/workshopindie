@@ -477,15 +477,25 @@ function LiveRoomPage() {
 
       <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
         <DialogContent
-          className="max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 overflow-hidden"
+          className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogTitle className="sr-only">New Collab</DialogTitle>
           {collabOpen && (
-            <iframe
-              title="New Collab"
-              src={`/collab/new?fromLounge=${id}&embed=1`}
-              className="h-full w-full border-0 bg-background"
+            <CollabComposer
+              embed
+              fromLounge={id}
+              onCancel={() => setCollabOpen(false)}
+              onPosted={() => {
+                setCollabOpen(false);
+                toast.success("Collab posted — pinned to this Lounge.");
+                qc.invalidateQueries({ queryKey: ["room-pins", id] });
+              }}
+              onDraftSaved={() => {
+                setCollabOpen(false);
+                toast.success("Draft saved — find it in My Collabs.");
+              }}
+              onBackToLounge={() => setCollabOpen(false)}
             />
           )}
         </DialogContent>
