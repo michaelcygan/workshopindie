@@ -998,6 +998,21 @@ export function ChannelView({
                   </ul>
                 )}
               </div>
+              {hasNewBelow && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = scrollRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                    setHasNewBelow(false);
+                  }}
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground shadow-md hover:opacity-90"
+                >
+                  New messages ↓
+                </button>
+              )}
+              </div>
+
               <ChatMentionInput
                 draft={draft}
                 setDraft={setDraft}
