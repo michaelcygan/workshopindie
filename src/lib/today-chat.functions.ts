@@ -16,6 +16,8 @@ function extractMentions(body: string): string[] {
   return Array.from(out);
 }
 
+const TZ_RE = /^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+
 export const postTodayMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) =>
@@ -23,6 +25,7 @@ export const postTodayMessage = createServerFn({ method: "POST" })
       .object({
         groupId: z.string().uuid(),
         body: z.string().min(1).max(BODY_MAX),
+        tz: z.string().max(64).optional(),
       })
       .parse(i),
   )
@@ -40,12 +43,30 @@ export const postTodayMessage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!member) throw new Error("Join the group to post here.");
 
+    // If the browser sent a plausible IANA zone, compute expires_at up front
+    // so posting never depends on the author having a home city set.
+    let expiresAt: string | null = null;
+    if (data.tz && TZ_RE.test(data.tz)) {
+      const { data: nm } = await supabase.rpc("next_local_midnight_utc", {
+        _tz: data.tz,
+      } as never);
+      if (nm) expiresAt = nm as unknown as string;
+    }
+
+    const insertRow: Record<string, unknown> = {
+      group_id: data.groupId,
+      author_id: userId,
+      body,
+    };
+    if (expiresAt) insertRow.expires_at = expiresAt;
+
     const { data: inserted, error: insertError } = await supabase
       .from("group_today_posts")
-      .insert({ group_id: data.groupId, author_id: userId, body } as never)
+      .insert(insertRow as never)
       .select("id,created_at,expires_at")
       .single();
     if (insertError) throw new Error(insertError.message);
+
 
     const postId = (inserted as { id: string }).id;
 

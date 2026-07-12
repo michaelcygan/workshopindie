@@ -103,7 +103,11 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
   const post = useMutation({
     mutationFn: async (text: string) => {
-      await postFn({ data: { groupId: group.id, body: text } });
+      const tz =
+        typeof Intl !== "undefined"
+          ? Intl.DateTimeFormat().resolvedOptions().timeZone
+          : undefined;
+      await postFn({ data: { groupId: group.id, body: text, tz } });
     },
     onSuccess: () => {
       setBody("");
