@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
@@ -101,6 +101,8 @@ export function ChannelView({
   /** Optional control rendered to the left of the chat textarea (e.g. "+ Tool"). */
   composerLeading?: React.ReactNode;
 }) {
+
+
 
 
   const { user } = useAuth();
@@ -721,7 +723,7 @@ export function ChannelView({
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
-          {/* Top-right icon cluster: focus / PiP / fullscreen — reads as one control group. */}
+          {/* Top-right icon cluster: focus / share / PiP / fullscreen — reads as one control group. */}
           <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <button
               type="button"
@@ -736,6 +738,45 @@ export function ChannelView({
                 <Columns2 className="h-3.5 w-3.5" />
               )}
             </button>
+            {(() => {
+              const sharing = !!media.isScreenSharing;
+              const someoneElse = !!media.screenSharerId && !sharing;
+              const disabled = !media.joined || (someoneElse && !sharing);
+              const label = sharing
+                ? "Stop sharing"
+                : someoneElse
+                  ? "Someone else is sharing"
+                  : "Share your screen";
+              return (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (sharing) await media.stopScreenShare();
+                      else await media.startScreenShare();
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Couldn't start screen share");
+                    }
+                  }}
+                  disabled={disabled}
+                  className={cn(
+                    "rounded-full p-1.5 shadow-sm ring-1 transition",
+                    sharing
+                      ? "bg-primary text-primary-foreground ring-primary/50 hover:bg-primary/90"
+                      : "bg-background/90 text-ink ring-border hover:bg-background",
+                    disabled && "opacity-50 cursor-not-allowed",
+                  )}
+                  aria-label={label}
+                  title={label}
+                >
+                  {sharing ? (
+                    <MonitorOff className="h-3.5 w-3.5" />
+                  ) : (
+                    <MonitorPlay className="h-3.5 w-3.5" />
+                  )}
+                </button>
+              );
+            })()}
             <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
             <button
               type="button"
@@ -747,9 +788,10 @@ export function ChannelView({
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
           </div>
+
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
-          <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} />
+          <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
             <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
@@ -934,14 +976,8 @@ export function ChannelView({
             onExit={handleExit}
             onOpenWork={openWork}
             roomId={roomId}
-            dockExtra={
-              <HopButton
-                roomId={roomId}
-                medium={null}
-                mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
-              />
-            }
           />
+
 
           {/* Host settings / claim-host affordances removed in v1 — Lounge is roleless. */}
 
@@ -1239,11 +1275,13 @@ function StageTabs({
   onChange,
   activeTool,
   onPickTool,
+  showTools = false,
 }: {
   value: RoomViewMode;
   onChange: (v: RoomViewMode) => void;
-  activeTool: string | null;
-  onPickTool: (toolType: string) => void;
+  activeTool?: string | null;
+  onPickTool?: (toolType: string) => void;
+  showTools?: boolean;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const activeOption = activeTool ? STAGE_TOOL_OPTIONS.find((o) => o.type === activeTool) : null;
@@ -1259,7 +1297,6 @@ function StageTabs({
       aria-label="Lounge view"
       className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
     >
-      {/* Chat first */}
       <TabButton
         active={value === "chat"}
         onClick={() => onChange("chat")}
@@ -1267,73 +1304,74 @@ function StageTabs({
         label="Chat"
       />
 
-      {/* Tools dropdown — sits on the main bar like any tab, opens a popover */}
-      <Popover open={menuOpen} onOpenChange={setMenuOpen}>
-        <PopoverTrigger asChild>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={toolsActive}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            className={cn(
-              "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
-              toolsActive
-                ? "bg-ink text-background shadow-sm"
-                : "text-ink-muted hover:text-ink hover:bg-muted/60",
+      {showTools && onPickTool && (
+        <Popover open={menuOpen} onOpenChange={setMenuOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={toolsActive}
+              aria-haspopup="menu"
+              aria-expanded={menuOpen}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition",
+                toolsActive
+                  ? "bg-ink text-background shadow-sm"
+                  : "text-ink-muted hover:text-ink hover:bg-muted/60",
+              )}
+            >
+              <Wrench className="h-3.5 w-3.5" />
+              Tools
+              {toolsActive && activeOption && (
+                <span className="opacity-80">· {activeOption.label}</span>
+              )}
+              <ChevronDown className={cn("h-3 w-3 transition", menuOpen && "rotate-180")} />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-64 p-1">
+            <div className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+              Tools
+            </div>
+            {STAGE_TOOL_OPTIONS.map((opt) => {
+              const Icon = opt.icon;
+              const selected = toolsActive && activeTool === opt.type;
+              return (
+                <button
+                  key={opt.type}
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onPickTool(opt.type);
+                  }}
+                  className={cn(
+                    "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition",
+                    selected ? "bg-ink/5 text-ink" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="flex-1 text-left">{opt.label}</span>
+                  {selected && <Check className="h-3.5 w-3.5 text-primary" />}
+                </button>
+              );
+            })}
+            {toolsActive && (
+              <>
+                <div className="my-1 border-t border-border" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onChange("chat");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-muted hover:bg-muted hover:text-ink"
+                >
+                  Back to chat
+                </button>
+              </>
             )}
-          >
-            <Wrench className="h-3.5 w-3.5" />
-            Tools
-            {toolsActive && activeOption && (
-              <span className="opacity-80">· {activeOption.label}</span>
-            )}
-            <ChevronDown className={cn("h-3 w-3 transition", menuOpen && "rotate-180")} />
-          </button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-64 p-1">
-          <div className="px-2 py-1.5 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-            Lounge tools
-          </div>
-          {STAGE_TOOL_OPTIONS.map((opt) => {
-            const Icon = opt.icon;
-            const selected = toolsActive && activeTool === opt.type;
-            return (
-              <button
-                key={opt.type}
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onPickTool(opt.type);
-                }}
-                className={cn(
-                  "flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition",
-                  selected ? "bg-ink/5 text-ink" : "text-ink-soft hover:bg-muted",
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="flex-1 text-left">{opt.label}</span>
-                {selected && <Check className="h-3.5 w-3.5 text-primary" />}
-              </button>
-            );
-          })}
-          {toolsActive && (
-            <>
-              <div className="my-1 border-t border-border" />
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  onChange("chat");
-                }}
-                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-ink-muted hover:bg-muted hover:text-ink"
-              >
-                Back to chat
-              </button>
-            </>
-          )}
-        </PopoverContent>
-      </Popover>
+          </PopoverContent>
+        </Popover>
+      )}
 
       {tabs.slice(1).map((t) => (
         <TabButton
@@ -1347,6 +1385,8 @@ function StageTabs({
     </div>
   );
 }
+
+
 
 function TabButton({
   active,

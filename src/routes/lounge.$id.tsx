@@ -29,12 +29,10 @@ import {
 import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
 
 
-import { WorkshopToolsPanel, ComposerToolButton } from "@/components/workshop-tools-panel";
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
 import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
-import { LicenseChip } from "@/components/license-chip";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 
@@ -399,8 +397,6 @@ function LiveRoomPage() {
               </span>
               Live · {liveCount}/5
             </span>
-            <span className="text-ink-muted/40">·</span>
-            <LicenseChip />
           </div>
         </div>
 
@@ -413,10 +409,14 @@ function LiveRoomPage() {
                 mode={mode ?? "video"}
               />
             )}
-            <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
-              <Rocket className="h-3.5 w-3.5" />{" "}
-              <span className="hidden sm:inline">Create a Collab</span>
-            </Button>
+            <button
+              type="button"
+              onClick={() => setCollabOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+              title="Turn this conversation into a Collab post"
+            >
+              <Rocket className="h-3 w-3" /> New Collab
+            </button>
             {isNamer && room?.status === "active" && (
               <Button
                 size="sm"
@@ -460,30 +460,8 @@ function LiveRoomPage() {
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
-        toolsSlot={({ media, activeTool }) => (
-          <WorkshopToolsPanel
-            scope={{
-              kind: "instant",
-              roomId: id,
-              hostUserId: room?.host_user_id ?? null,
-              category: (room?.category as any) ?? (room?.medium as any) ?? null,
-            }}
-            media={media}
-            activeTool={(activeTool as any) ?? null}
-            chromeless
-          />
-        )}
-        composerLeading={
-          <ComposerToolButton
-            scope={{
-              kind: "instant",
-              roomId: id,
-              hostUserId: room?.host_user_id ?? null,
-              category: (room?.category as any) ?? (room?.medium as any) ?? null,
-            }}
-          />
-        }
       />
+
 
       <WaitingForOthersCard
         roomId={id}
@@ -656,7 +634,7 @@ function CreateCollabSheet({
 
           <div className="rounded-2xl border border-border bg-surface-2/40 p-3">
             <div className="flex items-baseline justify-between">
-              <label className="text-xs font-medium text-ink-soft">Rights</label>
+              <label className="text-xs font-medium text-ink-soft">Collab license</label>
               <span className="text-[10px] uppercase tracking-[0.16em] text-ink-muted">
                 {license === "cc_by" ? "Default · CC BY 4.0" : "Custom"}
               </span>

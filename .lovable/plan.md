@@ -1,89 +1,67 @@
-## What we're adding
+# Lounge simplification pass
 
-Bring the Lounge's editable **name** back into the room header. Whoever names a Lounge becomes its **namer** — the only person who can rename or end it. This is not a host role: namers get no seat priority, no privacy toggles, no gatekeeping. It's a lightweight lock so a Lounge that's been given a specific purpose ("Chicago Filmmakers Brainstorm") doesn't get renamed out from under everyone every few minutes.
+Goal: reshape the live room around live networking without rebuilding it. Keep every real-time / media / presence system, keep Chat + Collabs + Work as the three content tabs, and strip UI that implies Lounge is a production workspace.
 
-Group scoping stays intact everywhere a named Lounge can be created or discovered.
+Scope is intentionally narrow — presentation and copy only, no schema, no realtime rewrites, no changes outside `/lounge/*`.
 
----
+## 1. Header (`src/routes/lounge.$id.tsx`)
 
-## Core rules
+- **Demote "Create a Collab"**: replace the primary `<Button>` with a small ghost link ("New Collab from here") tucked next to the `End` button. Keeps the flow, stops it dominating a networking room. Sheet component (`CreateCollabSheet`) stays as-is.
+- **Rename Skip control**: pass a `label="Next Lounge"` prop through `HopButton` (or update the button in place) so the header CTA and keyboard shortcut hint read "Next Lounge" instead of "Skip". Tooltip: "Find another live Lounge". Only one Hop button in the header — remove the duplicate `HopButton` render inside `ChannelView` (line ~693 or 938, whichever is the redundant sidebar copy).
+- **Remove `<LicenseChip />`** from the live-count row. Lounge conversations are not licensed content.
 
-1. **Default (unnamed) Lounge** — anyone in the room can name it. First save wins → they become the namer.
-2. **Named Lounge** — only the namer can rename or end. Others just see the name in the header.
-3. **Naming from the Lounge index** — the "Open a Lounge" flow gets an optional name field. If provided, the caller is set as namer up-front.
-4. **Group Lounges** — the auto-created `${group.name} · Lounge` is *unnamed* (no namer). A member who renames it becomes the namer; the `group_id` stays pinned and matchmaker/hop keep respecting membership.
-5. **Forking a group Lounge** — a new named Lounge started from inside a group Lounge inherits its `group_id`, so it stays members-only. Fork from a public Lounge → stays public.
-6. **Legacy rooms** — rooms with a `host_user_id` from the old flow are treated as already-named by that user (they keep rename rights). No migration needed.
+## 2. Tab bar (`src/components/channel-view.tsx`, `StageTabs`)
 
----
+- Remove the **Tools** popover trigger and its `<Popover>` block entirely. Tabs collapse to: `Chat`, `Work`, `Collabs`.
+- Remove `activeTool` state plumbing tied to the tab bar (leave the underlying `WorkshopToolsPanel` intact; it just no longer mounts as a "tab").
+- Remove `composerLeading` `ComposerToolButton` from the chat composer — no in-chat tool inserter.
 
-## Data model
+## 3. Call controls (screen share + PiP as first-class)
 
-Reuse existing columns — no schema change required:
-- `instant_rooms.host_user_id` → repurposed as **`named_by_user_id`** semantically. Null = unnamed, anyone can claim by renaming.
-- `instant_rooms.title` → the display name.
-- `instant_rooms.group_id` → already gates group scoping.
+The existing `MediaPanel` renders mic/cam/leave. Screen share and PiP currently only live inside the Tools panel.
 
-No migration. The v1 "no host role" rule from last turn still holds — namer has zero in-room privileges beyond rename/end.
+- In `ChannelView`, mount **Screen Share** and **Pop-out** as buttons in the primary media control row (next to mic/cam). Reuse `WorkshopScreenSharePanel`'s start/stop hook and `PopOutButton` from `workshop-pip.tsx` — no new logic, just surface them.
+- Tooltip copy:
+  - Screen share: "Share your screen" / active: "Stop sharing"
+  - PiP: "Keep Lounge visible" (Picture-in-Picture)
+- Keep permission-denied / already-sharing states handled by the existing panel; surface toast errors on failure.
 
----
+## 4. Tools panel — retire from Lounge
 
-## UI changes
+- Delete the `toolsSlot` prop wiring from `LiveRoomPage` → `ChannelView`. The `WorkshopToolsPanel` file itself stays (Workshops still use it via `workshops.$slug.tools.*`).
+- Delete `ComposerToolButton` usage in Lounge only.
+- Legacy `drive` / `player` rows in existing rooms remain reachable via the Workshop route if they were promoted; nothing is deleted from the DB.
 
-**`src/routes/lounge.$id.tsx` — header**
-- Restore the room title into the circled header area (currently hidden on desktop when title equals the "Lounge" fallback).
-- Always render the title chip; when unnamed, show placeholder text "Name this Lounge" as a subtle button.
-- Click behavior:
-  - Unnamed room, signed-in viewer → opens inline rename input; save calls `renameLounge` and claims namer.
-  - Named room, viewer is namer → opens rename input.
-  - Named room, viewer is not namer → non-interactive; small tooltip "Named by @user".
-- Add a small "End Lounge" action in the header overflow, visible only to the namer.
+## 5. Empty / alone state (`WaitingForOthersCard`)
 
-**`src/routes/lounge.index.tsx` — start flow**
-- Add an optional single-line "Name this Lounge (optional)" input near the "Open a Lounge" affordance. Empty → unnamed. Filled → caller becomes namer.
-- Prompt-driven opens (`handleUsePrompt`) already pass a title; keep that path — caller becomes namer.
-- Group Lounge tiles keep launching unnamed group rooms.
+Light copy pass only — confirm room is loaded, list conversation starters ("Say hi", "What are you working on lately?", "Who are you hoping to meet?"), and offer "Find another Lounge" (Hop) + link back to `/lounge`. No new component.
 
----
+## 6. CreateCollabSheet cleanup
 
-## Server changes (`src/lib/instant.functions.ts`)
+The sheet still exists (reachable from the demoted header link) but the room-level rights radio group is misleading in a networking context:
+- Keep the sheet functional (it creates a Collab, which does have a license).
+- Change section label from "Rights" → "Collab license" so it is clearly about the new Collab, not the Lounge.
 
-**New:** `renameLounge({ roomId, title })`
-- Requires auth. Loads the room. 
-- If `named_by_user_id` (host_user_id) is null → set title + claim caller as namer. Also: if `group_id` present, require the caller to be a member.
-- If already set → 403 unless caller is the current namer.
-- Trim, 1–80 chars, basic profanity check via existing helper.
+## 7. Files touched
 
-**New:** `endLounge({ roomId })` — namer-only, sets `status = "ended"`. (Or reuse existing end mechanism if present — audit `admin-ops`/`instant.functions.ts` for it during build.)
+- `src/routes/lounge.$id.tsx` — demote CTA, drop `LicenseChip`, drop `toolsSlot` + `composerLeading`, rename sheet label.
+- `src/components/channel-view.tsx` — remove Tools tab from `StageTabs`, drop `composerLeading` slot, mount ScreenShare + PiP buttons in media controls, remove duplicate `HopButton`.
+- `src/components/hop-button.tsx` — label "Next Lounge", tooltip update.
+- `src/components/waiting-for-others-card.tsx` — copy pass.
+- (No changes to) `workshop-tools-panel.tsx`, `workshop-screen-share-panel.tsx`, `workshop-pip.tsx`, Collabs/Work panels, server functions, schema.
 
-**`hostInstantWorkshop`** — already accepts `title`; when caller provides one, set `host_user_id = userId` (namer). When title is null, insert with `host_user_id = null` so the resulting Lounge is unnamed.
+## 8. Explicit non-goals
 
-**`joinGroupLounge`** — unchanged; still inserts with `host_user_id: null`.
+- No rename of Lounge, no changes to matchmaker, presence, media provider, chat table, moderation, or auth.
+- No changes to `/collab`, `/workshops`, `/g/*`, `/me`, or any other route.
+- No DB migration. Legacy `instant_tools` rows are ignored by the new UI but preserved.
+- Chat, Collabs, and Work tab internals unchanged — they already pull participants' open Collabs & published Work.
 
-**Group-scoping guardrails (critical):**
-- Audit the `join_lounge` and `join_medium_lounge` Postgres RPCs to confirm they filter `group_id IS NULL` for the public matchmaker — non-members must never be matched into a group-scoped Lounge. If they don't, add the filter in a migration (separate approval).
-- `HopButton` already goes through the matchmaker; same filter covers it.
-- `list_active_instant_rooms` (updated last turn) already hides group rooms from non-members on `/lounge` and home rails.
+## Acceptance check after build
 
-**Forking:** the existing "hop" / "start fresh" path from inside a Lounge should carry `group_id` through when the source room has one. Audit the fork/hop server fn during build; if it currently drops `group_id`, add it back.
-
----
-
-## Verification
-
-- Open a fresh public Lounge with no name → header shows "Name this Lounge" button; clicking + saving makes viewer the namer; a second tab shows the name is now locked.
-- Second viewer in the same room sees the name but no rename affordance; tooltip shows namer.
-- Start a Lounge from `/lounge` with a name in the new input → land in room already named; only starter can rename.
-- Join Chicago group Lounge as a member → rename to "Chicago Filmmakers Brainstorm" → sign in as a non-member of Chicago → the room is not surfaced on `/lounge`, matchmaker never drops you in, and Hop from an unrelated public Lounge never lands you there.
-- Fork/hop from a group Lounge → new room inherits `group_id` and is invisible to non-members.
-- Legacy room with old `host_user_id` → that user can still rename; others cannot.
-
----
-
-## Files to touch
-
-- `src/routes/lounge.$id.tsx` — header title + inline rename + End action
-- `src/routes/lounge.index.tsx` — optional name input in start flow
-- `src/lib/instant.functions.ts` — `renameLounge`, `endLounge`, unnamed-by-default for `joinGroupLounge` (already true), namer set on `hostInstantWorkshop` only when title present
-- Audit only (fix if needed, in same turn): `join_lounge` / `join_medium_lounge` RPCs for `group_id IS NULL` filter; fork/hop path for `group_id` inheritance
-- Small `NameLoungeInput` component (new, under `src/components/`) shared by header + start flow
+1. `/lounge/$id` header shows: title, live count, Next Lounge, small "New Collab" link, End (namer only). No `LicenseChip`, no big Rocket CTA.
+2. Tab bar shows exactly Chat / Work / Collabs. No Tools dropdown, no `+ Tool` button in composer.
+3. Media control row shows: mic, cam, screen share, PiP, leave.
+4. Only one Skip/Hop control exists, labelled "Next Lounge".
+5. Screen share start/stop + PiP open/close still work; permission-denied still toasts.
+6. Nothing outside `src/routes/lounge.*` and `src/components/channel-view.tsx` / `hop-button.tsx` / `waiting-for-others-card.tsx` is modified.

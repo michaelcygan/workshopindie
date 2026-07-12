@@ -60,11 +60,12 @@ export function HopButton({ roomId, medium, mode }: Props) {
       onClick={onHop}
       disabled={busy}
       className="rounded-full gap-1.5"
-      title="Skip to the next Lounge"
+      title="Find another live Lounge"
+      aria-label="Go to next Lounge"
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{busy ? "Starting…" : "Skip"}</span>
+      <span className="hidden sm:inline">{busy ? "Finding…" : "Next Lounge"}</span>
     </Button>
   );
 }
