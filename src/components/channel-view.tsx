@@ -856,7 +856,16 @@ export function ChannelView({
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
               {roomId && <RoomNoteBanner roomId={roomId} />}
-              <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
+              <div className="relative">
+              <div
+                ref={scrollRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setHasNewBelow(false);
+                }}
+                className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6"
+              >
+
                 {messages.length === 0 ? (
                   <EmptyLaunchpad
                     title={title}
