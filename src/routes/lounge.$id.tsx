@@ -103,7 +103,6 @@ function LiveRoomPage() {
   const router = useRouter();
   const qc = useQueryClient();
   const [editingTitle, setEditingTitle] = useState(false);
-  const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
   const titleInputRef = useRef<HTMLInputElement>(null);
