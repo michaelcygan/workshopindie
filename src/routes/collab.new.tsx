@@ -26,7 +26,11 @@ import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollab,
-  validateSearch: z.object({ group: z.string().optional(), fromLounge: z.string().uuid().optional() }),
+  validateSearch: z.object({
+    group: z.string().optional(),
+    fromLounge: z.string().uuid().optional(),
+    embed: z.union([z.literal("1"), z.literal("true"), z.boolean()]).optional(),
+  }),
 });
 
 
