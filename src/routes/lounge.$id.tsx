@@ -397,8 +397,6 @@ function LiveRoomPage() {
               </span>
               Live · {liveCount}/5
             </span>
-            <span className="text-ink-muted/40">·</span>
-            <LicenseChip />
           </div>
         </div>
 
