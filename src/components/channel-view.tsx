@@ -914,17 +914,29 @@ export function ChannelView({
                             animate={{ opacity: 1, y: 0 }}
                             className={`group flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
                           >
-                            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                              {p?.avatar_url ? (
-                                <img
-                                  src={p.avatar_url}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                p?.display_name?.[0] || "?"
-                              )}
-                            </div>
+                            {mine || !p ? (
+                              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
+                                {p?.avatar_url ? (
+                                  <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  p?.display_name?.[0] || "?"
+                                )}
+                              </div>
+                            ) : (
+                              <ProfilePeek userId={m.user_id}>
+                                <button
+                                  type="button"
+                                  className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted hover:ring-2 hover:ring-primary/40 transition"
+                                  aria-label={`Open ${p.display_name || p.username || "member"} profile`}
+                                >
+                                  {p.avatar_url ? (
+                                    <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                                  ) : (
+                                    p.display_name?.[0] || "?"
+                                  )}
+                                </button>
+                              </ProfilePeek>
+                            )}
                             <div className={`flex max-w-[75%] flex-col ${mine ? "items-end" : "items-start"}`}>
                               <div
                                 className={`rounded-2xl px-3 py-2 text-sm ${
@@ -936,25 +948,40 @@ export function ChannelView({
                                 }`}
                               >
                                 {!mine && p && (
-                                  <div className="text-[10px] font-medium opacity-70 mb-0.5">
-                                    {p.display_name || p.username}
-                                  </div>
+                                  <ProfilePeek userId={m.user_id}>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-medium opacity-70 mb-0.5 hover:underline"
+                                    >
+                                      {p.display_name || p.username}
+                                    </button>
+                                  </ProfilePeek>
                                 )}
                                 <MessageBody
                                   body={m.body}
                                   participants={mentionCandidates}
                                   meUsername={me?.username ?? null}
+                                  renderMention={({ user: mu, children }) => (
+                                    <ProfilePeek userId={mu.user_id}>{children}</ProfilePeek>
+                                  )}
                                 />
                               </div>
-                              <div className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}>
+                              <div
+                                className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}
+                                title={new Date(m.created_at).toLocaleString()}
+                              >
                                 <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
                                 <ReactionPills
                                   reactions={msgReactions}
                                   meUserId={user?.id}
                                   onToggle={(e) => toggleReaction(m.id, e)}
                                 />
+                                <span className="text-[10px] text-ink-muted opacity-0 group-hover:opacity-70 transition">
+                                  {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                                </span>
                               </div>
                             </div>
+
                           </motion.li>
                         );
                       })}
