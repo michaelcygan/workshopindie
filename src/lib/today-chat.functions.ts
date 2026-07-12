@@ -1,22 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-
-const BODY_MAX = 500;
-const MENTION_RE = /(?:^|\s)@([a-zA-Z0-9_]{2,30})/g;
-const MENTION_CAP = 10;
-
-function extractMentions(body: string): string[] {
-  const out = new Set<string>();
-  let m: RegExpExecArray | null;
-  while ((m = MENTION_RE.exec(body)) !== null) {
-    out.add(m[1].toLowerCase());
-    if (out.size >= MENTION_CAP) break;
-  }
-  return Array.from(out);
-}
-
-const TZ_RE = /^[A-Za-z_+-]+(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+import { BODY_MAX, TZ_RE, extractMentions } from "./today-chat.server";
 
 export const postTodayMessage = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -66,7 +51,6 @@ export const postTodayMessage = createServerFn({ method: "POST" })
       .select("id,created_at,expires_at")
       .single();
     if (insertError) throw new Error(insertError.message);
-
 
     const postId = (inserted as { id: string }).id;
 
