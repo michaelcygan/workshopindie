@@ -460,30 +460,8 @@ function LiveRoomPage() {
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
-        toolsSlot={({ media, activeTool }) => (
-          <WorkshopToolsPanel
-            scope={{
-              kind: "instant",
-              roomId: id,
-              hostUserId: room?.host_user_id ?? null,
-              category: (room?.category as any) ?? (room?.medium as any) ?? null,
-            }}
-            media={media}
-            activeTool={(activeTool as any) ?? null}
-            chromeless
-          />
-        )}
-        composerLeading={
-          <ComposerToolButton
-            scope={{
-              kind: "instant",
-              roomId: id,
-              hostUserId: room?.host_user_id ?? null,
-              category: (room?.category as any) ?? (room?.medium as any) ?? null,
-            }}
-          />
-        }
       />
+
 
       <WaitingForOthersCard
         roomId={id}
