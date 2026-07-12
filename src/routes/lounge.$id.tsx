@@ -487,6 +487,22 @@ function LiveRoomPage() {
           onCreate={() => setCollabOpen(true)}
         />
       )}
+
+      <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
+        <DialogContent
+          className="max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 overflow-hidden"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogTitle className="sr-only">New Collab</DialogTitle>
+          {collabOpen && (
+            <iframe
+              title="New Collab"
+              src={`/collab/new?fromLounge=${id}&embed=1`}
+              className="h-full w-full border-0 bg-background"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
