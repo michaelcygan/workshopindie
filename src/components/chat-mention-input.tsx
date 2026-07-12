@@ -222,28 +222,42 @@ export function MessageBody({
   participants,
   meUsername,
   onMentionClick,
+  renderMention,
 }: {
   body: string;
   participants: MentionCandidate[];
   meUsername?: string | null;
   onMentionClick?: (userId: string) => void;
+  renderMention?: (args: {
+    user: MentionCandidate;
+    isMe: boolean;
+    children: React.ReactNode;
+  }) => React.ReactNode;
 }) {
   const parts = useMemo(() => {
-    const segments: Array<{ type: "text" | "mention"; text: string; user?: MentionCandidate }> = [];
-    const re = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
+    type Seg =
+      | { type: "text"; text: string }
+      | { type: "mention"; text: string; user?: MentionCandidate }
+      | { type: "link"; text: string; href: string };
+    const segments: Seg[] = [];
+    const re = /(^|\s)@([A-Za-z0-9_]{1,30})|\bhttps?:\/\/[^\s<]+/g;
     let last = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(body))) {
-      const handle = m[2].toLowerCase();
-      const user = participants.find((p) => (p.username ?? "").toLowerCase() === handle);
-      const matchStart = m.index + m[1].length;
+      const isMention = !!m[2];
+      const matchStart = isMention ? m.index + (m[1]?.length ?? 0) : m.index;
       if (matchStart > last) segments.push({ type: "text", text: body.slice(last, matchStart) });
-      if (user) {
-        segments.push({ type: "mention", text: `@${user.username}`, user });
+      if (isMention) {
+        const handle = m[2].toLowerCase();
+        const user = participants.find((p) => (p.username ?? "").toLowerCase() === handle);
+        if (user) segments.push({ type: "mention", text: `@${user.username}`, user });
+        else segments.push({ type: "text", text: `@${m[2]}` });
+        last = matchStart + 1 + m[2].length;
       } else {
-        segments.push({ type: "text", text: `@${m[2]}` });
+        const url = m[0];
+        segments.push({ type: "link", text: url, href: url });
+        last = matchStart + url.length;
       }
-      last = matchStart + 1 + m[2].length;
     }
     if (last < body.length) segments.push({ type: "text", text: body.slice(last) });
     return segments;
@@ -253,22 +267,42 @@ export function MessageBody({
     <span className="whitespace-pre-wrap break-words">
       {parts.map((p, i) => {
         if (p.type === "text") return <span key={i}>{p.text}</span>;
+        if (p.type === "link") {
+          return (
+            <a
+              key={i}
+              href={p.href}
+              target="_blank"
+              rel="noreferrer"
+              className="underline underline-offset-2 hover:text-primary break-all"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {p.text}
+            </a>
+          );
+        }
         const isMe = !!meUsername && p.user?.username?.toLowerCase() === meUsername.toLowerCase();
-        return (
+        const chip = (
           <button
-            key={i}
             type="button"
             onClick={() => p.user && onMentionClick?.(p.user.user_id)}
             className={cn(
               "rounded px-1 font-medium",
-              isMe ? "bg-primary/20 text-primary" : "bg-foreground/10",
+              isMe ? "bg-primary/20 text-primary" : "bg-foreground/10 hover:bg-foreground/20",
             )}
           >
             {p.text}
           </button>
         );
+        if (p.user && renderMention) {
+          return (
+            <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>
+          );
+        }
+        return <span key={i}>{chip}</span>;
       })}
     </span>
   );
 }
+
 
