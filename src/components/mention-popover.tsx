@@ -161,12 +161,17 @@ export function MentionPopover({
         {flat.map((s, i) => {
           const isSectionStart =
             i > 0 && firstIndexByKind[s.kind] === i && s.kind !== flat[i - 1].kind;
-          const isFirst = i === 0 && s.kind !== "user";
+          const isFirstSectionHeader = i === 0 && s.kind !== "user";
           const activeItem = i === active;
           return (
             <li key={`${s.kind}-${s.id}`}>
-              {(isSectionStart || isFirst) && (
-                <div className="mt-1 border-t border-border px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-ink-muted first:border-t-0 first:mt-0 first:pt-1">
+              {(isSectionStart || isFirstSectionHeader) && (
+                <div
+                  className={cn(
+                    "px-3 pt-2 text-[10px] font-medium uppercase tracking-wide text-ink-muted",
+                    isSectionStart && "mt-1 border-t border-border",
+                  )}
+                >
                   {KIND_LABEL[s.kind]}
                 </div>
               )}
