@@ -936,14 +936,8 @@ export function ChannelView({
             onExit={handleExit}
             onOpenWork={openWork}
             roomId={roomId}
-            dockExtra={
-              <HopButton
-                roomId={roomId}
-                medium={null}
-                mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
-              />
-            }
           />
+
 
           {/* Host settings / claim-host affordances removed in v1 — Lounge is roleless. */}
 
