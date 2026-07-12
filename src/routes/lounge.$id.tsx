@@ -26,6 +26,7 @@ import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
+import { CollabComposer } from "@/routes/collab.new";
 
 
 
@@ -112,21 +113,7 @@ function LiveRoomPage() {
   const fetchRoom = useServerFn(getInstantRoom);
   const [collabOpen, setCollabOpen] = useState(false);
 
-  useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      const data = e.data as { type?: string } | null;
-      if (!data || typeof data !== "object") return;
-      if (data.type === "lounge-collab:posted") {
-        setCollabOpen(false);
-        toast.success("Collab posted — pinned to this Lounge.");
-        qc.invalidateQueries({ queryKey: ["room-pins", id] });
-      } else if (data.type === "lounge-collab:close") {
-        setCollabOpen(false);
-      }
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [id, qc]);
+  // Composer is rendered in-place via <CollabComposer/> below; no cross-frame messaging needed.
 
 
   useEffect(() => {
@@ -490,15 +477,22 @@ function LiveRoomPage() {
 
       <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
         <DialogContent
-          className="max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 overflow-hidden"
+          className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogTitle className="sr-only">New Collab</DialogTitle>
           {collabOpen && (
-            <iframe
-              title="New Collab"
-              src={`/collab/new?fromLounge=${id}&embed=1`}
-              className="h-full w-full border-0 bg-background"
+            <CollabComposer
+              embed
+              fromLounge={id}
+              onCancel={() => setCollabOpen(false)}
+              onPosted={() => {
+                setCollabOpen(false);
+                toast.success("Collab posted — pinned to this Lounge.");
+                qc.invalidateQueries({ queryKey: ["room-pins", id] });
+              }}
+              onDraftSaved={() => setCollabOpen(false)}
+              onBackToLounge={() => setCollabOpen(false)}
             />
           )}
         </DialogContent>

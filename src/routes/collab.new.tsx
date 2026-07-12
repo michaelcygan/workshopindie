@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
@@ -25,13 +25,42 @@ import { tagCollabInGroup } from "@/lib/groups.functions";
 import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
-  component: NewCollab,
+  component: NewCollabRoute,
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
-    embed: z.coerce.boolean().optional(),
   }),
 });
+
+function NewCollabRoute() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  return (
+    <CollabComposer
+      groupPreselectId={search.group ?? null}
+      fromLounge={search.fromLounge ?? null}
+      onCancel={() => navigate({ to: "/collab" })}
+      onPosted={(slug) => navigate({ to: "/collab/$slug", params: { slug } })}
+      onDraftSaved={() => navigate({ to: "/me/collabs" })}
+      onBackToLounge={(loungeId) =>
+        navigate({ to: "/lounge/$id", params: { id: loungeId } })
+      }
+    />
+  );
+}
+
+export type CollabComposerProps = {
+  /** When present, the composer is mounted inside another surface (e.g. a Lounge dialog). */
+  embed?: boolean;
+  /** Group id to preselect on mount (from ?group=). */
+  groupPreselectId?: string | null;
+  /** Lounge id to auto-pin the resulting Collab to. */
+  fromLounge?: string | null;
+  onCancel?: () => void;
+  onPosted?: (slug: string, id: string) => void;
+  onDraftSaved?: () => void;
+  onBackToLounge?: (loungeId: string) => void;
+};
 
 
 type LocationMode = "online" | "in_person" | "hybrid";
@@ -82,7 +111,15 @@ const ROLE_PRESETS: Record<Category, string[]> = {
   standup: [],
 };
 
-function NewCollab() {
+export function CollabComposer({
+  embed = false,
+  groupPreselectId = null,
+  fromLounge = null,
+  onCancel,
+  onPosted,
+  onDraftSaved,
+  onBackToLounge,
+}: CollabComposerProps) {
   const { user, loading } = useAuth();
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
@@ -90,10 +127,7 @@ function NewCollab() {
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
-  const search = useSearch({ from: "/collab/new" });
-  const fromLounge = search.fromLounge ?? null;
-  const embed = !!search.embed;
-  const preselect = usePreselectGroup(search.group);
+  const preselect = usePreselectGroup(groupPreselectId ?? undefined);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
   useEffect(() => {
@@ -247,20 +281,12 @@ function NewCollab() {
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");
-      if (embed) {
-        try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch { /* ignore */ }
-        return;
-      }
-      navigate({ to: "/me/collabs" });
+      onDraftSaved?.();
       return;
     }
     if (embed) {
-      try {
-        window.parent?.postMessage(
-          { type: "lounge-collab:posted", slug: post.slug, id: post.id },
-          "*",
-        );
-      } catch { /* ignore */ }
+      // Host surface (e.g. Lounge dialog) handles the "posted" UX.
+      onPosted?.(post.slug, post.id);
       return;
     }
     setPostedDialog({ id: post.id, slug: post.slug });
@@ -298,7 +324,11 @@ function NewCollab() {
 
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 pb-32 md:py-14 md:pb-32">
+    <main className={cn(
+      "mx-auto max-w-2xl px-4",
+      embed ? "py-6 pb-6" : "py-10 pb-32 md:py-14 md:pb-32",
+    )}>
+
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <h1 className="font-display text-4xl text-ink">Post a Collab</h1>
         <p className="mt-1 text-ink-muted">Share what you're making and the roles you need. People reach out — you pick your team.</p>
@@ -542,12 +572,12 @@ function NewCollab() {
         {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
 
 
-        {/* Mobile inline action */}
-        <div className="flex flex-wrap justify-end gap-2 md:hidden">
-          <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
-            if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
-            navigate({ to: "/collab" });
-          }}>Cancel</Button>
+        {/* Inline action bar — always visible on mobile, and on all sizes when embedded (dialog has no room for a fixed footer). */}
+        <div className={cn(
+          "flex flex-wrap justify-end gap-2",
+          embed ? "" : "md:hidden",
+        )}>
+          <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
           <Button
             type="submit"
             variant="outline"
@@ -563,8 +593,11 @@ function NewCollab() {
         </div>
       </form>
 
-      {/* Desktop sticky action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-border bg-background/95 backdrop-blur md:block">
+      {/* Desktop sticky action bar — hidden when embedded. */}
+      <div className={cn(
+        "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur",
+        embed ? "hidden" : "hidden md:block",
+      )}>
         <div className="mx-auto max-w-2xl px-4">
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-ink-muted">
@@ -577,10 +610,7 @@ function NewCollab() {
                     : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
-                if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
-                navigate({ to: "/collab" });
-              }}>Cancel</Button>
+              <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
               <Button
                 type="button"
                 variant="outline"
@@ -660,13 +690,9 @@ function NewCollab() {
                 type="button"
                 className="rounded-full"
                 onClick={() => {
+                  const lounge = fromLounge;
                   setPostedDialog(null);
-                  // Prefer closing this tab (we were opened from the Lounge with window.open).
-                  // If the browser blocks close(), fall back to navigating back to the Lounge.
-                  try { window.close(); } catch { /* ignore */ }
-                  if (!window.closed) {
-                    navigate({ to: "/lounge/$id", params: { id: fromLounge } });
-                  }
+                  onBackToLounge?.(lounge);
                 }}
               >
                 Back to the Lounge
@@ -676,9 +702,9 @@ function NewCollab() {
                 type="button"
                 className="rounded-full"
                 onClick={() => {
-                  const slug = postedDialog!.slug;
+                  const posted = postedDialog!;
                   setPostedDialog(null);
-                  navigate({ to: "/collab/$slug", params: { slug } });
+                  onPosted?.(posted.slug, posted.id);
                 }}
               >
                 Open Collab page
