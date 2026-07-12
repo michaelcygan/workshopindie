@@ -281,20 +281,12 @@ export function CollabComposer({
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");
-      if (embed) {
-        try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch { /* ignore */ }
-        return;
-      }
-      navigate({ to: "/me/collabs" });
+      onDraftSaved?.();
       return;
     }
     if (embed) {
-      try {
-        window.parent?.postMessage(
-          { type: "lounge-collab:posted", slug: post.slug, id: post.id },
-          "*",
-        );
-      } catch { /* ignore */ }
+      // Host surface (e.g. Lounge dialog) handles the "posted" UX.
+      onPosted?.(post.slug, post.id);
       return;
     }
     setPostedDialog({ id: post.id, slug: post.slug });
