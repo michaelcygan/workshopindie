@@ -484,7 +484,7 @@ function LiveRoomPage() {
         <CreateCollabNudge
           roomId={id}
           visible={!!user && liveCount >= 1}
-          onCreate={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
+          onCreate={() => setCollabOpen(true)}
         />
       )}
     </main>
