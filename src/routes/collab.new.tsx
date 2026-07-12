@@ -25,13 +25,42 @@ import { tagCollabInGroup } from "@/lib/groups.functions";
 import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
-  component: NewCollab,
+  component: NewCollabRoute,
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
-    embed: z.coerce.boolean().optional(),
   }),
 });
+
+function NewCollabRoute() {
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  return (
+    <CollabComposer
+      groupPreselectId={search.group ?? null}
+      fromLounge={search.fromLounge ?? null}
+      onCancel={() => navigate({ to: "/collab" })}
+      onPosted={(slug) => navigate({ to: "/collab/$slug", params: { slug } })}
+      onDraftSaved={() => navigate({ to: "/me/collabs" })}
+      onBackToLounge={(loungeId) =>
+        navigate({ to: "/lounge/$id", params: { id: loungeId } })
+      }
+    />
+  );
+}
+
+export type CollabComposerProps = {
+  /** When present, the composer is mounted inside another surface (e.g. a Lounge dialog). */
+  embed?: boolean;
+  /** Group id to preselect on mount (from ?group=). */
+  groupPreselectId?: string | null;
+  /** Lounge id to auto-pin the resulting Collab to. */
+  fromLounge?: string | null;
+  onCancel?: () => void;
+  onPosted?: (slug: string, id: string) => void;
+  onDraftSaved?: () => void;
+  onBackToLounge?: (loungeId: string) => void;
+};
 
 
 type LocationMode = "online" | "in_person" | "hybrid";
