@@ -402,12 +402,13 @@ function LiveRoomPage() {
             )}
             <button
               type="button"
-              onClick={() => setCollabOpen(true)}
+              onClick={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
               className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
-              title="Turn this conversation into a Collab post"
+              title="Post a Collab from this Lounge — it'll auto-pin here"
             >
               <Rocket className="h-3 w-3" /> New Collab
             </button>
+
             {isNamer && room?.status === "active" && (
               <Button
                 size="sm"
