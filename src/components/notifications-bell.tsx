@@ -33,6 +33,7 @@ const ICONS: Record<string, typeof Bell> = {
   workshop_ran_without_you: Radio,
   workshop_live: Radio,
   chat_mention: MessageCircle,
+  today_mention: MessageCircle,
   referral_joined: UserPlus,
   referral_reward_earned: Gift,
   first_work_shipped: Sparkles,
@@ -133,6 +134,15 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
         href: roomId ? `/lounge/${roomId}` : "/lounge",
+      };
+    }
+    case "today_mention": {
+      const gSlug = (n.payload?.group_slug as string) || "";
+      const groupName = (n.payload?.group_name as string) || "a group";
+      return {
+        title: `${actor} tagged you in ${groupName}'s Today board`,
+        subtitle: (n.payload?.snippet as string) ?? "",
+        href: gSlug ? `/g/${gSlug}` : "/groups",
       };
     }
     case "payment_failed":
