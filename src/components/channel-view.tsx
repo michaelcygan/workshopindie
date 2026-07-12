@@ -973,6 +973,10 @@ export function ChannelView({
                                   renderMention={({ user: mu, children }) => (
                                     <ProfilePeek userId={mu.user_id}>{children}</ProfilePeek>
                                   )}
+                                  renderUnknownMention={({ handle, children }) => (
+                                    <UsernameMention handle={handle}>{children}</UsernameMention>
+                                  )}
+
                                 />
                               </div>
                               <div
