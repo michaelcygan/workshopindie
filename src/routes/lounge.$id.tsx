@@ -102,7 +102,7 @@ function LiveRoomPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
-  const [collabOpen, setCollabOpen] = useState(false);
+  const [editingTitle, setEditingTitle] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [draftTitle, setDraftTitle] = useState("");
   const [savingTitle, setSavingTitle] = useState(false);
