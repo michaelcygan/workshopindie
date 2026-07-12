@@ -33,6 +33,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { MessageBody, type MentionCandidate } from "@/components/chat-mention-input";
+import { MentionPopover } from "@/components/mention-popover";
+import { UsernameMention } from "@/components/username-mention";
+import type { MentionSuggestion } from "@/lib/mention-suggestions";
 
 type Message = {
   id: string;
