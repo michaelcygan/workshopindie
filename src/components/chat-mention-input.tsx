@@ -63,19 +63,58 @@ export function ChatMentionInput({
     }
   }
 
+  // Global profile search (any user, not just participants). Debounced.
+  const [globalResults, setGlobalResults] = useState<MentionCandidate[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) {
+      setGlobalResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,display_name,username,avatar_url")
+        .ilike("username", `${q}%`)
+        .limit(8);
+      if (cancelled || !data) return;
+      setGlobalResults(
+        data
+          .filter((p) => p.username)
+          .map((p) => ({
+            user_id: p.id,
+            display_name: p.display_name,
+            username: p.username,
+            avatar_url: p.avatar_url,
+          })),
+      );
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [open, query]);
+
   const matches = useMemo(() => {
     if (!open) return [];
     const q = query.trim().toLowerCase();
-    return participants
-      .filter((p) => {
-        const u = (p.username ?? "").toLowerCase();
-        const d = (p.display_name ?? "").toLowerCase();
-        if (!u) return false;
-        if (!q) return true;
-        return u.startsWith(q) || u.includes(q) || d.includes(q);
-      })
-      .slice(0, 6);
-  }, [open, query, participants]);
+    const local = participants.filter((p) => {
+      const u = (p.username ?? "").toLowerCase();
+      const d = (p.display_name ?? "").toLowerCase();
+      if (!u) return false;
+      if (!q) return true;
+      return u.startsWith(q) || u.includes(q) || d.includes(q);
+    });
+    const seen = new Set(local.map((p) => p.user_id));
+    const merged = [
+      ...local,
+      ...globalResults.filter((p) => p.username && !seen.has(p.user_id)),
+    ];
+    return merged.slice(0, 8);
+  }, [open, query, participants, globalResults]);
+
 
   function insertMention(c: MentionCandidate) {
     if (tokenStart === null || !c.username) return;
