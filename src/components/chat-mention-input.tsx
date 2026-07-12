@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Send } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
+import { Calendar, Megaphone, Send, Users } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-
+import { MentionPopover } from "@/components/mention-popover";
+import { GroupPeek } from "@/components/group-peek";
+import { EventPeek } from "@/components/event-peek";
+import type { MentionSuggestion } from "@/lib/mention-suggestions";
 
 export type MentionCandidate = {
   user_id: string;
@@ -14,9 +17,15 @@ export type MentionCandidate = {
 };
 
 /**
- * Chat composer with `@handle` typeahead over the current room participants.
- * Inserts `@username ` into the draft and tracks which user ids were tagged so
- * the parent can pass them through to the server fn.
+ * Chat composer with `@handle` typeahead. Suggests:
+ *  - People (room participants first, then global handle search)
+ *  - Your Collabs (open collab_posts you own)
+ *  - Groups (yours first, then public name search)
+ *  - Upcoming Events
+ *
+ * User picks insert `@username `; the other kinds insert markdown-style
+ * internal links (e.g. `[Title](/collab/slug) `) that MessageBody then
+ * renders as chips + hover peeks.
  */
 export function ChatMentionInput({
   draft,
@@ -43,7 +52,6 @@ export function ChatMentionInput({
   leadingAction?: React.ReactNode;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [active, setActive] = useState<number>(0);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [tokenStart, setTokenStart] = useState<number | null>(null);
@@ -56,79 +64,44 @@ export function ChatMentionInput({
       setTokenStart(caret - m[1].length - 1); // index of '@'
       setQuery(m[1].toLowerCase());
       setOpen(true);
-      setActive(0);
     } else {
       setTokenStart(null);
       setOpen(false);
     }
   }
 
-  // Global profile search (any user, not just participants). Debounced.
-  const [globalResults, setGlobalResults] = useState<MentionCandidate[]>([]);
-  useEffect(() => {
-    if (!open) return;
-    const q = query.trim().toLowerCase();
-    if (q.length < 1) {
-      setGlobalResults([]);
-      return;
-    }
-    let cancelled = false;
-    const t = setTimeout(async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("id,display_name,username,avatar_url")
-        .ilike("username", `${q}%`)
-        .limit(8);
-      if (cancelled || !data) return;
-      setGlobalResults(
-        data
-          .filter((p) => p.username)
-          .map((p) => ({
-            user_id: p.id,
-            display_name: p.display_name,
-            username: p.username,
-            avatar_url: p.avatar_url,
-          })),
-      );
-    }, 150);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [open, query]);
+  // Room participants become "extra users" that show ahead of the global
+  // profile search, without a network round-trip.
+  const extraUsers: MentionSuggestion[] = useMemo(
+    () =>
+      participants
+        .filter((p) => p.username)
+        .map((p) => ({
+          kind: "user" as const,
+          id: p.user_id,
+          label: p.display_name || (p.username as string),
+          sublabel: `@${p.username}`,
+          avatar: p.avatar_url,
+          insert: `@${p.username} `,
+        })),
+    [participants],
+  );
 
-  const matches = useMemo(() => {
-    if (!open) return [];
-    const q = query.trim().toLowerCase();
-    const local = participants.filter((p) => {
-      const u = (p.username ?? "").toLowerCase();
-      const d = (p.display_name ?? "").toLowerCase();
-      if (!u) return false;
-      if (!q) return true;
-      return u.startsWith(q) || u.includes(q) || d.includes(q);
-    });
-    const seen = new Set(local.map((p) => p.user_id));
-    const merged = [
-      ...local,
-      ...globalResults.filter((p) => p.username && !seen.has(p.user_id)),
-    ];
-    return merged.slice(0, 8);
-  }, [open, query, participants, globalResults]);
-
-
-  function insertMention(c: MentionCandidate) {
-    if (tokenStart === null || !c.username) return;
+  function insertSuggestion(s: MentionSuggestion) {
+    if (tokenStart === null) return;
     const input = inputRef.current;
     const caret = input?.selectionStart ?? draft.length;
     const before = draft.slice(0, tokenStart);
     const after = draft.slice(caret);
-    const insert = `@${c.username} `;
-    const next = before + insert + after;
+    // For user picks we replace the `@` and the partial handle with the
+    // full `@handle `. For collab/group/event picks the `@` is discarded
+    // and replaced with the markdown link.
+    const next = before + s.insert + after;
     setDraft(next);
     setOpen(false);
     setTokenStart(null);
     requestAnimationFrame(() => {
-      const pos = (before + insert).length;
+      const pos = (before + s.insert).length;
       input?.focus();
       input?.setSelectionRange(pos, pos);
     });
@@ -146,32 +119,9 @@ export function ChatMentionInput({
     return Array.from(out);
   }
 
-  function handleKey(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (open && matches.length > 0) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActive((i) => (i + 1) % matches.length);
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActive((i) => (i - 1 + matches.length) % matches.length);
-        return;
-      }
-      if (e.key === "Enter" || e.key === "Tab") {
-        e.preventDefault();
-        insertMention(matches[active]);
-        return;
-      }
-      if (e.key === "Escape") {
-        setOpen(false);
-        return;
-      }
-    }
-  }
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (open) return; // Let popover's Enter handle the pick.
     const body = draft.trim();
     if (!body) return;
     const ids = extractMentionIds(body);
@@ -180,48 +130,15 @@ export function ChatMentionInput({
 
   return (
     <form onSubmit={handleSubmit} className={cn("relative flex items-center gap-2", className)}>
-      {open && matches.length > 0 && (
-        <div
-          className={cn(
-            "absolute bottom-full left-0 mb-2 w-72 max-w-[calc(100%-4rem)] overflow-hidden rounded-xl border shadow-lg z-30",
-            tone === "dark"
-              ? "border-background/15 bg-background/95 backdrop-blur text-ink"
-              : "border-border bg-popover text-ink",
-          )}
-        >
-          <ul className="max-h-60 overflow-y-auto py-1">
-            {matches.map((c, i) => (
-              <li key={c.user_id}>
-                <button
-                  type="button"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    insertMention(c);
-                  }}
-                  className={cn(
-                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
-                    i === active ? "bg-muted" : "hover:bg-muted/60",
-                  )}
-                >
-                  <div className="h-6 w-6 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                    {c.avatar_url ? (
-                      <img src={c.avatar_url} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      (c.display_name?.[0] ?? c.username?.[0] ?? "?").toUpperCase()
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm">{c.display_name || c.username}</div>
-                    {c.username && (
-                      <div className="truncate text-[11px] text-ink-muted">@{c.username}</div>
-                    )}
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <MentionPopover
+        open={open}
+        query={query}
+        sections={["user", "collab", "group", "event"]}
+        extraUsers={extraUsers}
+        onPick={insertSuggestion}
+        onClose={() => setOpen(false)}
+        tone={tone}
+      />
       {leadingAction && <div className="shrink-0">{leadingAction}</div>}
       <Input
         ref={inputRef}
@@ -230,7 +147,6 @@ export function ChatMentionInput({
           setDraft(e.target.value);
           syncToken(e.target.value, e.target.selectionStart ?? e.target.value.length);
         }}
-        onKeyDown={handleKey}
         onBlur={() => setTimeout(() => setOpen(false), 100)}
         onSelect={(e) => {
           const el = e.currentTarget;
@@ -239,7 +155,11 @@ export function ChatMentionInput({
         placeholder={placeholder}
         maxLength={1000}
         disabled={disabled}
-        className={tone === "dark" ? "bg-background/10 border-background/10 text-background placeholder:text-background/40" : undefined}
+        className={
+          tone === "dark"
+            ? "bg-background/10 border-background/10 text-background placeholder:text-background/40"
+            : undefined
+        }
       />
       <Button
         type="submit"
@@ -255,8 +175,10 @@ export function ChatMentionInput({
 }
 
 /**
- * Render a chat message body with @handle chips. Mentions matching `meUsername`
- * get a primary accent.
+ * Render a chat message body with:
+ *  - @handle chips (participant-aware, `meUsername` gets primary accent)
+ *  - [Label](/collab|/g|/g/…/e/…) internal-link chips with peek popovers
+ *  - Bare URL autolinks
  */
 export function MessageBody({
   body,
@@ -281,29 +203,78 @@ export function MessageBody({
     type Seg =
       | { type: "text"; text: string }
       | { type: "mention"; text: string; user?: MentionCandidate; handle: string }
-      | { type: "link"; text: string; href: string };
-    const segments: Seg[] = [];
-    const re = /(^|\s)@([A-Za-z0-9_]{1,30})|\bhttps?:\/\/[^\s<]+/g;
-    let last = 0;
+      | { type: "link"; text: string; href: string }
+      | { type: "collab"; label: string; slug: string }
+      | { type: "group"; label: string; slug: string }
+      | { type: "event"; label: string; groupSlug: string; eventSlug: string };
+
+    type Hit = { start: number; end: number; seg: Seg };
+    const hits: Hit[] = [];
+
+    const eventRe =
+      /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
+    const groupRe = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
+    const collabRe = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
+    const mentionRe = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
+    const urlRe = /\bhttps?:\/\/[^\s<]+/g;
+
     let m: RegExpExecArray | null;
-    while ((m = re.exec(body))) {
-      const isMention = !!m[2];
-      const matchStart = isMention ? m.index + (m[1]?.length ?? 0) : m.index;
-      if (matchStart > last) segments.push({ type: "text", text: body.slice(last, matchStart) });
-      if (isMention) {
-        const handle = m[2];
-        const user = participants.find(
-          (p) => (p.username ?? "").toLowerCase() === handle.toLowerCase(),
-        );
-        segments.push({ type: "mention", text: `@${handle}`, user, handle });
-        last = matchStart + 1 + handle.length;
-      } else {
-        const url = m[0];
-        segments.push({ type: "link", text: url, href: url });
-        last = matchStart + url.length;
-      }
+    while ((m = eventRe.exec(body))) {
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "event", label: m[1], groupSlug: m[2], eventSlug: m[3] },
+      });
     }
-    if (last < body.length) segments.push({ type: "text", text: body.slice(last) });
+    while ((m = groupRe.exec(body))) {
+      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "group", label: m[1], slug: m[2] },
+      });
+    }
+    while ((m = collabRe.exec(body))) {
+      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "collab", label: m[1], slug: m[2] },
+      });
+    }
+    while ((m = urlRe.exec(body))) {
+      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "link", text: m[0], href: m[0] },
+      });
+    }
+    while ((m = mentionRe.exec(body))) {
+      const at = m.index + (m[1]?.length ?? 0);
+      const end = at + 1 + m[2].length;
+      if (hits.some((h) => at >= h.start && at < h.end)) continue;
+      const handle = m[2];
+      const user = participants.find(
+        (p) => (p.username ?? "").toLowerCase() === handle.toLowerCase(),
+      );
+      hits.push({
+        start: at,
+        end,
+        seg: { type: "mention", text: `@${handle}`, user, handle },
+      });
+    }
+
+    hits.sort((a, b) => a.start - b.start);
+
+    const segments: Seg[] = [];
+    let cursor = 0;
+    for (const h of hits) {
+      if (h.start > cursor) segments.push({ type: "text", text: body.slice(cursor, h.start) });
+      segments.push(h.seg);
+      cursor = h.end;
+    }
+    if (cursor < body.length) segments.push({ type: "text", text: body.slice(cursor) });
     return segments;
   }, [body, participants]);
 
@@ -325,6 +296,48 @@ export function MessageBody({
             </a>
           );
         }
+        if (p.type === "collab") {
+          return (
+            <Link
+              key={i}
+              to="/collab/$slug"
+              params={{ slug: p.slug }}
+              className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
+            >
+              <Megaphone className="h-3 w-3" />
+              {p.label}
+            </Link>
+          );
+        }
+        if (p.type === "group") {
+          return (
+            <GroupPeek key={i} slug={p.slug}>
+              <Link
+                to="/g/$slug"
+                params={{ slug: p.slug }}
+                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+              >
+                <Users className="h-3 w-3" />
+                {p.label}
+              </Link>
+            </GroupPeek>
+          );
+        }
+        if (p.type === "event") {
+          return (
+            <EventPeek key={i} groupSlug={p.groupSlug} eventSlug={p.eventSlug}>
+              <Link
+                to="/g/$slug/e/$eventSlug"
+                params={{ slug: p.groupSlug, eventSlug: p.eventSlug }}
+                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+              >
+                <Calendar className="h-3 w-3" />
+                {p.label}
+              </Link>
+            </EventPeek>
+          );
+        }
+        // mention
         const isMe = !!meUsername && p.user?.username?.toLowerCase() === meUsername.toLowerCase();
         const chip = (
           <button
@@ -349,6 +362,3 @@ export function MessageBody({
     </span>
   );
 }
-
-
-
