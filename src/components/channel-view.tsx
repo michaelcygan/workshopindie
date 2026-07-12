@@ -33,6 +33,8 @@ import { formatRoomTitle } from "@/lib/instant";
 import { useQueryClient } from "@tanstack/react-query";
 
 import { FullscreenShell } from "@/components/fullscreen-shell";
+import { ProfilePeek } from "@/components/profile-peek";
+
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
 import { ChatPolls } from "@/components/chat-polls";
 import {
@@ -475,9 +477,19 @@ export function ChannelView({
     };
   }, [roomId, user]);
 
+  const [hasNewBelow, setHasNewBelow] = useState(false);
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    if (distanceFromBottom < 120) {
+      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      setHasNewBelow(false);
+    } else {
+      setHasNewBelow(true);
+    }
   }, [messages.length]);
+
 
   async function submitChat(mentions: string[]) {
     if (!user || !draft.trim()) return;
@@ -844,7 +856,16 @@ export function ChannelView({
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
               {roomId && <RoomNoteBanner roomId={roomId} />}
-              <div ref={scrollRef} className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6">
+              <div className="relative">
+              <div
+                ref={scrollRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setHasNewBelow(false);
+                }}
+                className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6"
+              >
+
                 {messages.length === 0 ? (
                   <EmptyLaunchpad
                     title={title}
@@ -902,17 +923,29 @@ export function ChannelView({
                             animate={{ opacity: 1, y: 0 }}
                             className={`group flex gap-2 ${mine ? "flex-row-reverse" : ""}`}
                           >
-                            <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
-                              {p?.avatar_url ? (
-                                <img
-                                  src={p.avatar_url}
-                                  alt=""
-                                  className="h-full w-full object-cover"
-                                />
-                              ) : (
-                                p?.display_name?.[0] || "?"
-                              )}
-                            </div>
+                            {mine || !p ? (
+                              <div className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted">
+                                {p?.avatar_url ? (
+                                  <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                                ) : (
+                                  p?.display_name?.[0] || "?"
+                                )}
+                              </div>
+                            ) : (
+                              <ProfilePeek userId={m.user_id}>
+                                <button
+                                  type="button"
+                                  className="h-7 w-7 shrink-0 overflow-hidden rounded-full bg-muted text-[10px] flex items-center justify-center text-ink-muted hover:ring-2 hover:ring-primary/40 transition"
+                                  aria-label={`Open ${p.display_name || p.username || "member"} profile`}
+                                >
+                                  {p.avatar_url ? (
+                                    <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                                  ) : (
+                                    p.display_name?.[0] || "?"
+                                  )}
+                                </button>
+                              </ProfilePeek>
+                            )}
                             <div className={`flex max-w-[75%] flex-col ${mine ? "items-end" : "items-start"}`}>
                               <div
                                 className={`rounded-2xl px-3 py-2 text-sm ${
@@ -924,25 +957,40 @@ export function ChannelView({
                                 }`}
                               >
                                 {!mine && p && (
-                                  <div className="text-[10px] font-medium opacity-70 mb-0.5">
-                                    {p.display_name || p.username}
-                                  </div>
+                                  <ProfilePeek userId={m.user_id}>
+                                    <button
+                                      type="button"
+                                      className="text-[10px] font-medium opacity-70 mb-0.5 hover:underline"
+                                    >
+                                      {p.display_name || p.username}
+                                    </button>
+                                  </ProfilePeek>
                                 )}
                                 <MessageBody
                                   body={m.body}
                                   participants={mentionCandidates}
                                   meUsername={me?.username ?? null}
+                                  renderMention={({ user: mu, children }) => (
+                                    <ProfilePeek userId={mu.user_id}>{children}</ProfilePeek>
+                                  )}
                                 />
                               </div>
-                              <div className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}>
+                              <div
+                                className={`mt-1 flex items-center gap-1 ${mine ? "flex-row-reverse" : ""}`}
+                                title={new Date(m.created_at).toLocaleString()}
+                              >
                                 <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
                                 <ReactionPills
                                   reactions={msgReactions}
                                   meUserId={user?.id}
                                   onToggle={(e) => toggleReaction(m.id, e)}
                                 />
+                                <span className="text-[10px] text-ink-muted opacity-0 group-hover:opacity-70 transition">
+                                  {new Date(m.created_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+                                </span>
                               </div>
                             </div>
+
                           </motion.li>
                         );
                       })}
@@ -950,6 +998,21 @@ export function ChannelView({
                   </ul>
                 )}
               </div>
+              {hasNewBelow && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const el = scrollRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                    setHasNewBelow(false);
+                  }}
+                  className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground shadow-md hover:opacity-90"
+                >
+                  New messages ↓
+                </button>
+              )}
+              </div>
+
               <ChatMentionInput
                 draft={draft}
                 setDraft={setDraft}
