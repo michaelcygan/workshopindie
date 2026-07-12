@@ -48,7 +48,7 @@ export function WaitingForOthersCard({
   const nextEmptyIdx = filled < SEAT_COUNT ? filled : -1;
 
   function shareUrl() {
-    return `${window.location.origin}/workshop/${roomId}`;
+    return `${window.location.origin}/lounge/${roomId}`;
   }
 
   async function copyLink() {
