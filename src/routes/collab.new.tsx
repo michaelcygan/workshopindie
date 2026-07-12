@@ -85,8 +85,11 @@ function NewCollab() {
   const navigate = useNavigate();
 
   const tagGroup = useServerFn(tagCollabInGroup);
+  const pinToRoom = useServerFn(pinCollab);
   const search = useSearch({ from: "/collab/new" });
+  const fromLounge = search.fromLounge ?? null;
   const preselect = usePreselectGroup(search.group);
+
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
   useEffect(() => {
     if (preselect.data && preselect.data.length > 0 && selectedGroups.length === 0) {
