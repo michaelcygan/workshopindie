@@ -33,6 +33,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { MessageBody, type MentionCandidate } from "@/components/chat-mention-input";
+import { MentionPopover } from "@/components/mention-popover";
+import { UsernameMention } from "@/components/username-mention";
+import type { MentionSuggestion } from "@/lib/mention-suggestions";
 
 type Message = {
   id: string;
@@ -344,7 +348,50 @@ function DmsThread() {
     }
   }
 
+  // `@` typeahead state for the composer.
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
+  const mentionOpen = mention !== null;
+
+  function recalcMention(value: string, caret: number) {
+    let i = caret - 1;
+    while (i >= 0) {
+      const ch = value[i];
+      if (ch === "@") {
+        const prev = i > 0 ? value[i - 1] : "";
+        if (i === 0 || /\s/.test(prev)) {
+          const query = value.slice(i + 1, caret);
+          if (/^[a-zA-Z0-9_]{0,30}$/.test(query)) {
+            setMention({ start: i, query });
+            return;
+          }
+        }
+        break;
+      }
+      if (/\s/.test(ch)) break;
+      i -= 1;
+    }
+    setMention(null);
+  }
+
+  function insertMention(s: MentionSuggestion) {
+    if (!mention) return;
+    const before = body.slice(0, mention.start);
+    const after = body.slice(mention.start + 1 + mention.query.length);
+    const sep = after.startsWith(" ") || after === "" ? "" : " ";
+    const next = `${before}${s.insert}${sep}${after}`.slice(0, 2000);
+    setBody(next);
+    setMention(null);
+    requestAnimationFrame(() => {
+      const el = composerRef.current;
+      if (!el) return;
+      const caret = before.length + s.insert.length + sep.length;
+      el.focus();
+      el.setSelectionRange(caret, caret);
+    });
+  }
+
   function onComposerKey(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (mentionOpen) return; // Popover owns Enter/Tab/Arrow keys.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSend();
@@ -381,6 +428,23 @@ function DmsThread() {
   }
 
   const grouped = useMemo(() => groupMessages(messages, user?.id ?? null), [messages, user?.id]);
+
+  // Participants for MessageBody rendering (just the other person; @mentions
+  // of anyone else render via UsernameMention).
+  const participants: MentionCandidate[] = useMemo(
+    () =>
+      other
+        ? [
+            {
+              user_id: other.id,
+              display_name: other.display_name,
+              username: other.username,
+              avatar_url: other.avatar_url,
+            },
+          ]
+        : [],
+    [other],
+  );
 
   if (loading || !user) return null;
 
@@ -527,6 +591,8 @@ function DmsThread() {
                 key={g.id}
                 cluster={g}
                 isLastCluster={isLast}
+                participants={participants}
+                meUsername={null}
                 onRetry={async (m) => {
                   // Re-send a failed message
                   setMessages((prev) => prev.filter((x) => x.id !== m.id));
@@ -548,13 +614,48 @@ function DmsThread() {
       >
         <label htmlFor="dm-composer" className="sr-only">Message</label>
         <div className="relative flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+          <MentionPopover
+            open={mentionOpen}
+            query={mention?.query ?? ""}
+            sections={["user", "collab", "group", "event"]}
+            extraUsers={
+              other?.username
+                ? [
+                    {
+                      kind: "user",
+                      id: other.id,
+                      label: other.display_name || other.username,
+                      sublabel: `@${other.username}`,
+                      avatar: other.avatar_url,
+                      insert: `@${other.username} `,
+                    },
+                  ]
+                : []
+            }
+            onPick={insertMention}
+            onClose={() => setMention(null)}
+          />
           <textarea
             id="dm-composer"
             ref={composerRef}
             value={body}
-            onChange={(e) => { setBody(e.target.value); emitTyping(); }}
+            onChange={(e) => {
+              const v = e.target.value;
+              setBody(v);
+              emitTyping();
+              recalcMention(v, e.target.selectionStart ?? v.length);
+            }}
             onKeyDown={onComposerKey}
-            placeholder="Message…"
+            onKeyUp={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onBlur={() => setTimeout(() => setMention(null), 100)}
+            placeholder="Message… use @ to tag people, collabs, groups, or events"
             rows={1}
             maxLength={2000}
             autoFocus
@@ -718,10 +819,14 @@ function MessageCluster({
   cluster,
   isLastCluster,
   onRetry,
+  participants,
+  meUsername,
 }: {
   cluster: Cluster;
   isLastCluster: boolean;
   onRetry: (m: Message) => void;
+  participants: MentionCandidate[];
+  meUsername: string | null;
 }) {
   const { mine, messages } = cluster;
   const last = messages[messages.length - 1];
@@ -751,7 +856,14 @@ function MessageCluster({
               } transition`}
               title={new Date(m.created_at).toLocaleString()}
             >
-              <p className="whitespace-pre-wrap break-words">{m.body}</p>
+              <MessageBody
+                body={m.body}
+                participants={participants}
+                meUsername={meUsername}
+                renderUnknownMention={({ handle, children }) => (
+                  <UsernameMention handle={handle}>{children}</UsernameMention>
+                )}
+              />
             </div>
             {m._failed && (
               <button

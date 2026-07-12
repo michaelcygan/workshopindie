@@ -301,7 +301,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
               ? "Sign in to chat"
               : !isMember
                 ? "Join to chat"
-                : "What's happening? Use @ to tag people or your collabs."
+                : "What's happening? Use @ to tag people, collabs, groups, or events."
           }
           disabled={!canPost || post.isPending}
           className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none disabled:opacity-60"
