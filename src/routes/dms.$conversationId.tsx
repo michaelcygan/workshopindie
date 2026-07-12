@@ -819,10 +819,14 @@ function MessageCluster({
   cluster,
   isLastCluster,
   onRetry,
+  participants,
+  meUsername,
 }: {
   cluster: Cluster;
   isLastCluster: boolean;
   onRetry: (m: Message) => void;
+  participants: MentionCandidate[];
+  meUsername: string | null;
 }) {
   const { mine, messages } = cluster;
   const last = messages[messages.length - 1];
@@ -852,7 +856,14 @@ function MessageCluster({
               } transition`}
               title={new Date(m.created_at).toLocaleString()}
             >
-              <p className="whitespace-pre-wrap break-words">{m.body}</p>
+              <MessageBody
+                body={m.body}
+                participants={participants}
+                meUsername={meUsername}
+                renderUnknownMention={({ handle, children }) => (
+                  <UsernameMention handle={handle}>{children}</UsernameMention>
+                )}
+              />
             </div>
             {m._failed && (
               <button
