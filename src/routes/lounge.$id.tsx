@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
 import { ArrowLeft, Rocket, X, Pencil, Check, DoorOpen } from "lucide-react";
@@ -109,6 +110,23 @@ function LiveRoomPage() {
   const rename = useServerFn(renameLounge);
   const endRoom = useServerFn(endLounge);
   const fetchRoom = useServerFn(getInstantRoom);
+  const [collabOpen, setCollabOpen] = useState(false);
+
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      const data = e.data as { type?: string } | null;
+      if (!data || typeof data !== "object") return;
+      if (data.type === "lounge-collab:posted") {
+        setCollabOpen(false);
+        toast.success("Collab posted — pinned to this Lounge.");
+        qc.invalidateQueries({ queryKey: ["room-pins", id] });
+      } else if (data.type === "lounge-collab:close") {
+        setCollabOpen(false);
+      }
+    }
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, [id, qc]);
 
 
   useEffect(() => {
@@ -401,7 +419,7 @@ function LiveRoomPage() {
             )}
             <button
               type="button"
-              onClick={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
+              onClick={() => setCollabOpen(true)}
               className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
               title="Post a Collab from this Lounge — it'll auto-pin here"
             >
@@ -466,9 +484,25 @@ function LiveRoomPage() {
         <CreateCollabNudge
           roomId={id}
           visible={!!user && liveCount >= 1}
-          onCreate={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
+          onCreate={() => setCollabOpen(true)}
         />
       )}
+
+      <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
+        <DialogContent
+          className="max-w-3xl w-[95vw] h-[90vh] p-0 gap-0 overflow-hidden"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogTitle className="sr-only">New Collab</DialogTitle>
+          {collabOpen && (
+            <iframe
+              title="New Collab"
+              src={`/collab/new?fromLounge=${id}&embed=1`}
+              className="h-full w-full border-0 bg-background"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

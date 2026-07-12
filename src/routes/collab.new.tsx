@@ -26,7 +26,11 @@ import { pinCollab } from "@/lib/room-pins.functions";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollab,
-  validateSearch: z.object({ group: z.string().optional(), fromLounge: z.string().uuid().optional() }),
+  validateSearch: z.object({
+    group: z.string().optional(),
+    fromLounge: z.string().uuid().optional(),
+    embed: z.union([z.literal("1"), z.literal("true"), z.boolean()]).optional(),
+  }),
 });
 
 
@@ -88,6 +92,7 @@ function NewCollab() {
   const pinToRoom = useServerFn(pinCollab);
   const search = useSearch({ from: "/collab/new" });
   const fromLounge = search.fromLounge ?? null;
+  const embed = !!search.embed;
   const preselect = usePreselectGroup(search.group);
 
   const [selectedGroups, setSelectedGroups] = useState<PickerGroup[]>([]);
@@ -242,7 +247,20 @@ function NewCollab() {
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");
+      if (embed) {
+        try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch { /* ignore */ }
+        return;
+      }
       navigate({ to: "/me/collabs" });
+      return;
+    }
+    if (embed) {
+      try {
+        window.parent?.postMessage(
+          { type: "lounge-collab:posted", slug: post.slug, id: post.id },
+          "*",
+        );
+      } catch { /* ignore */ }
       return;
     }
     setPostedDialog({ id: post.id, slug: post.slug });
@@ -526,7 +544,10 @@ function NewCollab() {
 
         {/* Mobile inline action */}
         <div className="flex flex-wrap justify-end gap-2 md:hidden">
-          <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+          <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
+            if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
+            navigate({ to: "/collab" });
+          }}>Cancel</Button>
           <Button
             type="submit"
             variant="outline"
@@ -556,7 +577,10 @@ function NewCollab() {
                     : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+              <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
+                if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
+                navigate({ to: "/collab" });
+              }}>Cancel</Button>
               <Button
                 type="button"
                 variant="outline"
