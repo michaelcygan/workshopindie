@@ -1,8 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+
 
 export type MentionCandidate = {
   user_id: string;
@@ -61,19 +63,58 @@ export function ChatMentionInput({
     }
   }
 
+  // Global profile search (any user, not just participants). Debounced.
+  const [globalResults, setGlobalResults] = useState<MentionCandidate[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    const q = query.trim().toLowerCase();
+    if (q.length < 1) {
+      setGlobalResults([]);
+      return;
+    }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id,display_name,username,avatar_url")
+        .ilike("username", `${q}%`)
+        .limit(8);
+      if (cancelled || !data) return;
+      setGlobalResults(
+        data
+          .filter((p) => p.username)
+          .map((p) => ({
+            user_id: p.id,
+            display_name: p.display_name,
+            username: p.username,
+            avatar_url: p.avatar_url,
+          })),
+      );
+    }, 150);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [open, query]);
+
   const matches = useMemo(() => {
     if (!open) return [];
     const q = query.trim().toLowerCase();
-    return participants
-      .filter((p) => {
-        const u = (p.username ?? "").toLowerCase();
-        const d = (p.display_name ?? "").toLowerCase();
-        if (!u) return false;
-        if (!q) return true;
-        return u.startsWith(q) || u.includes(q) || d.includes(q);
-      })
-      .slice(0, 6);
-  }, [open, query, participants]);
+    const local = participants.filter((p) => {
+      const u = (p.username ?? "").toLowerCase();
+      const d = (p.display_name ?? "").toLowerCase();
+      if (!u) return false;
+      if (!q) return true;
+      return u.startsWith(q) || u.includes(q) || d.includes(q);
+    });
+    const seen = new Set(local.map((p) => p.user_id));
+    const merged = [
+      ...local,
+      ...globalResults.filter((p) => p.username && !seen.has(p.user_id)),
+    ];
+    return merged.slice(0, 8);
+  }, [open, query, participants, globalResults]);
+
 
   function insertMention(c: MentionCandidate) {
     if (tokenStart === null || !c.username) return;
@@ -223,6 +264,7 @@ export function MessageBody({
   meUsername,
   onMentionClick,
   renderMention,
+  renderUnknownMention,
 }: {
   body: string;
   participants: MentionCandidate[];
@@ -233,11 +275,12 @@ export function MessageBody({
     isMe: boolean;
     children: React.ReactNode;
   }) => React.ReactNode;
+  renderUnknownMention?: (args: { handle: string; children: React.ReactNode }) => React.ReactNode;
 }) {
   const parts = useMemo(() => {
     type Seg =
       | { type: "text"; text: string }
-      | { type: "mention"; text: string; user?: MentionCandidate }
+      | { type: "mention"; text: string; user?: MentionCandidate; handle: string }
       | { type: "link"; text: string; href: string };
     const segments: Seg[] = [];
     const re = /(^|\s)@([A-Za-z0-9_]{1,30})|\bhttps?:\/\/[^\s<]+/g;
@@ -248,11 +291,12 @@ export function MessageBody({
       const matchStart = isMention ? m.index + (m[1]?.length ?? 0) : m.index;
       if (matchStart > last) segments.push({ type: "text", text: body.slice(last, matchStart) });
       if (isMention) {
-        const handle = m[2].toLowerCase();
-        const user = participants.find((p) => (p.username ?? "").toLowerCase() === handle);
-        if (user) segments.push({ type: "mention", text: `@${user.username}`, user });
-        else segments.push({ type: "text", text: `@${m[2]}` });
-        last = matchStart + 1 + m[2].length;
+        const handle = m[2];
+        const user = participants.find(
+          (p) => (p.username ?? "").toLowerCase() === handle.toLowerCase(),
+        );
+        segments.push({ type: "mention", text: `@${handle}`, user, handle });
+        last = matchStart + 1 + handle.length;
       } else {
         const url = m[0];
         segments.push({ type: "link", text: url, href: url });
@@ -295,14 +339,16 @@ export function MessageBody({
           </button>
         );
         if (p.user && renderMention) {
-          return (
-            <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>
-          );
+          return <span key={i}>{renderMention({ user: p.user, isMe, children: chip })}</span>;
+        }
+        if (!p.user && renderUnknownMention) {
+          return <span key={i}>{renderUnknownMention({ handle: p.handle, children: chip })}</span>;
         }
         return <span key={i}>{chip}</span>;
       })}
     </span>
   );
 }
+
 
 
