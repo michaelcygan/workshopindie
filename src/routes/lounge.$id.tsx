@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, Rocket, X, Pencil, Check, DoorOpen } from "lucide-react";
+import { ArrowLeft, Rocket, Pencil, Check, DoorOpen } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
@@ -12,17 +12,7 @@ import { ChannelView } from "@/components/channel-view";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  createCollabFromRoom,
   acceptWorkshopJoinInvite,
   declineWorkshopJoinInvite,
 } from "@/lib/collab-workshop.functions";
@@ -35,6 +25,7 @@ import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
+
 
 
 const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
