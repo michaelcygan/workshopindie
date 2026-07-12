@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
 import { ArrowLeft, Rocket, X, Pencil, Check, DoorOpen } from "lucide-react";
