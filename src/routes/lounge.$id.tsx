@@ -409,10 +409,14 @@ function LiveRoomPage() {
                 mode={mode ?? "video"}
               />
             )}
-            <Button size="sm" onClick={() => setCollabOpen(true)} className="rounded-full gap-1.5">
-              <Rocket className="h-3.5 w-3.5" />{" "}
-              <span className="hidden sm:inline">Create a Collab</span>
-            </Button>
+            <button
+              type="button"
+              onClick={() => setCollabOpen(true)}
+              className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+              title="Turn this conversation into a Collab post"
+            >
+              <Rocket className="h-3 w-3" /> New Collab
+            </button>
             {isNamer && room?.status === "active" && (
               <Button
                 size="sm"
