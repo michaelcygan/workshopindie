@@ -419,7 +419,7 @@ function LiveRoomPage() {
             )}
             <button
               type="button"
-              onClick={() => window.open(`/collab/new?fromLounge=${id}`, "_blank", "noopener,noreferrer")}
+              onClick={() => setCollabOpen(true)}
               className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
               title="Post a Collab from this Lounge — it'll auto-pin here"
             >
