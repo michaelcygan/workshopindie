@@ -29,7 +29,7 @@ export const Route = createFileRoute("/collab/new")({
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
-    embed: z.union([z.literal("1"), z.literal("true"), z.boolean()]).optional(),
+    embed: z.coerce.boolean().optional(),
   }),
 });
 
