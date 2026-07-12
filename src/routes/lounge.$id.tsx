@@ -113,21 +113,7 @@ function LiveRoomPage() {
   const fetchRoom = useServerFn(getInstantRoom);
   const [collabOpen, setCollabOpen] = useState(false);
 
-  useEffect(() => {
-    function onMessage(e: MessageEvent) {
-      const data = e.data as { type?: string } | null;
-      if (!data || typeof data !== "object") return;
-      if (data.type === "lounge-collab:posted") {
-        setCollabOpen(false);
-        toast.success("Collab posted — pinned to this Lounge.");
-        qc.invalidateQueries({ queryKey: ["room-pins", id] });
-      } else if (data.type === "lounge-collab:close") {
-        setCollabOpen(false);
-      }
-    }
-    window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [id, qc]);
+  // Composer is rendered in-place via <CollabComposer/> below; no cross-frame messaging needed.
 
 
   useEffect(() => {
