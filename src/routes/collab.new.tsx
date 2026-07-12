@@ -680,13 +680,9 @@ export function CollabComposer({
                 type="button"
                 className="rounded-full"
                 onClick={() => {
+                  const lounge = fromLounge;
                   setPostedDialog(null);
-                  // Prefer closing this tab (we were opened from the Lounge with window.open).
-                  // If the browser blocks close(), fall back to navigating back to the Lounge.
-                  try { window.close(); } catch { /* ignore */ }
-                  if (!window.closed) {
-                    navigate({ to: "/lounge/$id", params: { id: fromLounge } });
-                  }
+                  onBackToLounge?.(lounge);
                 }}
               >
                 Back to the Lounge
@@ -696,9 +692,9 @@ export function CollabComposer({
                 type="button"
                 className="rounded-full"
                 onClick={() => {
-                  const slug = postedDialog!.slug;
+                  const posted = postedDialog!;
                   setPostedDialog(null);
-                  navigate({ to: "/collab/$slug", params: { slug } });
+                  onPosted?.(posted.slug, posted.id);
                 }}
               >
                 Open Collab page
