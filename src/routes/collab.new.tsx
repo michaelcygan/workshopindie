@@ -577,7 +577,10 @@ function NewCollab() {
                     : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab" })}>Cancel</Button>
+              <Button type="button" variant="ghost" className="rounded-full" onClick={() => {
+                if (embed) { try { window.parent?.postMessage({ type: "lounge-collab:close" }, "*"); } catch {} return; }
+                navigate({ to: "/collab" });
+              }}>Cancel</Button>
               <Button
                 type="button"
                 variant="outline"
