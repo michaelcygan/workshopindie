@@ -1,50 +1,100 @@
-# Lounge — final launch polish pass
+# Lounge chat continuity + auto-close/delete lifecycle
 
-Focused, low-risk changes. No new backend, no schema changes. All frontend/presentation.
+Two related changes, one SQL migration + one small policy fix. No new UI.
 
-## 1. Chat mentions → profile float-open (the main ask)
+## Problem today
 
-The plumbing is already there:
-- `ChatMentionInput` (composer) supports `@handle` typeahead over room participants and stores tagged user ids.
-- `MessageBody` renders `@handle` chips as clickable buttons and exposes an `onMentionClick(userId)` prop.
-- `ProfilePeek` (used across works, u/$username, work-lightbox) is the app's standard hover/click "mini float-open" for a user.
+- `instant_messages.expires_at` defaults to `now() + 24h` and a cron already
+  deletes any row past that expiry. So chat vanishes 24h after posting even if
+  the Lounge is still active — breaks continuity for newcomers.
+- The `SELECT` policy on `instant_messages` requires an **active
+  `instant_presence` row** for the reader. A user who leaves loses read access
+  immediately; when they rejoin they see everything again (fine), but this
+  same rule means a fresh joiner sees the full log as long as messages
+  haven't expired — good, so no policy change needed for the reader side.
+- Rooms today go `active → archived` only when `join_medium_lounge` sweeps
+  stale rooms on the next join attempt (5-min presence gap). There's no
+  scheduled sweep, no explicit "grace / rejoin window", and no auto-delete
+  of archived rooms — old rooms and their messages linger indefinitely (or
+  disappear early, per the 24h TTL above).
 
-What's missing in the Lounge: `channel-view.tsx` renders `<MessageBody />` without wiring `onMentionClick`, so mention chips are inert.
+## Answers locked in
 
-Changes in `src/components/channel-view.tsx`:
-- Wrap each `@handle` chip in `<ProfilePeek userId={...}>` so clicking a mention opens the standard mini profile card (view profile, message, follow — whatever ProfilePeek already exposes). Implement by rendering `MessageBody` with a small render-prop or by refactoring the chip render inline so each mention chip is a `<ProfilePeek>` trigger. Prefer adding a `renderMention` prop to `MessageBody` to keep the component reusable.
-- Also make the sender's small name label above each message a `<ProfilePeek>` trigger, and the avatar too. Same primitive, three entry points, consistent behavior.
+- **Rejoin grace window** after the room hits zero live presence: **15 min**.
+  Empty past that → mark `status='archived'` (Lounge is closed).
+- **Delete window** after close: **24 h**. Then hard-delete the room, which
+  cascades and removes chat, presence, pins, etc.
 
-Result: type `@han…` → pick from typeahead → message posts with a chip → anyone in the room can tap the chip and get the mini profile float-open, same as everywhere else in the app.
+## Migration (single change set)
 
-## 2. Lite chat enhancements (only additive, no scope creep)
+1. **Stop the TTL from eating live-room chat.** Drop the 24h default on
+   `instant_messages.expires_at` and set existing rows to `NULL`. Keep the
+   column (cheap, and useful if we want short-lived rooms later). The
+   existing cron `DELETE FROM instant_messages WHERE expires_at < now()`
+   becomes a no-op for live chat — messages now live as long as the room.
+   Chat still gets deleted with the room via the existing `ON DELETE
+   CASCADE` on `instant_messages.room_id`.
 
-All in `channel-view.tsx` chat block:
-- **Auto-scroll to bottom** on new messages when the user is already near the bottom; if they've scrolled up, show a small "New messages ↓" pill instead of yanking them down.
-- **Linkify URLs** inside `MessageBody` (plain-text URLs → `<a target="_blank" rel="noreferrer">`). Keep it to `http(s)://` only; no rich unfurls at launch.
-- **Timestamp on hover** for each message (title attr + small muted time on the reactions row) — no layout change.
-- **Empty state** microcopy: replace the current blank with a one-liner like "Say hi, drop a link, or `@` someone in the room." — nudges the mention behavior we just enabled.
-- **Enter to send, Shift+Enter for newline** — confirm this is the current behavior in `ChatMentionInput`; if not, add it. (It already accepts key handling for the typeahead.)
+2. **Add lifecycle timestamps to `instant_rooms`:**
+   - `emptied_at timestamptz` — set when a sweep sees zero live presence,
+     cleared when someone rejoins.
+   - `closed_at timestamptz` — set when the room transitions to
+     `status='archived'` by the sweep (or by an explicit end action).
 
-Explicitly out of scope for launch: threads/replies, edit/delete, file uploads in chat, read receipts, typing indicators. Chat is "mainstage" but stays lite.
+3. **Add a `sweep_stale_lounges()` SECURITY DEFINER function** run by
+   `pg_cron` every minute. It handles the whole lifecycle in one pass and
+   is scoped to `kind IN ('lounge','workshop')` matched to the Lounge UX
+   (skip `group`/`collab`-owned rooms if we don't want to auto-kill those —
+   see Open question below):
 
-## 3. Fullscreen flow pass
+   ```text
+   -- 1. Stamp emptied_at on active rooms with no live presence (60s cutoff),
+   --    clear it on any room that has live presence again.
+   -- 2. Archive rooms whose emptied_at is older than 15 min:
+   --      status='archived', closed_at=now(), ended_by_user_id=NULL.
+   -- 3. Hard-delete archived rooms whose closed_at is older than 24 h.
+   --    ON DELETE CASCADE handles instant_messages, instant_presence,
+   --    instant_message_reactions, room pins, etc.
+   ```
 
-`FullscreenShell` is already used for the Gallery view with title, presence strip, and a minimize control, and there's an Esc-to-exit handler. Small polish:
-- Make sure the top-right icon cluster (focus / share / PiP / fullscreen) has consistent tooltips and the same `aria-label` pattern; the focus-video toggle currently swaps between `MessageSquare` and `Columns2` — keep, but verify tooltip copy reads naturally ("Focus video" / "Show chat").
-- Confirm the pinned Collab banner (from the Collabs tab) survives entering/exiting fullscreen — it should, since it lives above the media panel, but worth a quick manual pass.
-- On mobile widths, verify the fullscreen shell doesn't clip the presence strip; if it does, allow it to wrap.
+4. **Schedule with `pg_cron`:** `SELECT cron.schedule('sweep-stale-lounges',
+   '* * * * *', $$ SELECT public.sweep_stale_lounges(); $$);` This is a
+   pure-SQL scheduled task — no HTTP hook needed.
 
-## 4. Other Lounge items worth a look before launch
+5. **Keep the existing `join_medium_lounge` 5-min sweep** as-is — it's a
+   cheap on-demand cleanup that keeps matchmaking fresh. The new sweep is
+   what governs the actual close/delete lifecycle.
 
-- **New Collab modal**: now that it's an in-app `Dialog` with `CollabComposer`, double-check the modal closes cleanly on post + the Collabs tab invalidates (already wired) and that the sticky action bar is hidden in embed mode (already done). Confirm the dialog is scrollable on short viewports (`max-h-[90vh] overflow-y-auto` — already set).
-- **Waiting-for-others card**: verify it disappears the instant a second participant joins (presence event), not on next poll.
-- **HopButton**: quick copy pass — make sure it reads naturally next to the new Collabs tab.
-- **Room title**: ensure `formatRoomTitle` handles empty/placeholder titles gracefully on the fullscreen shell header.
+## Client changes
+
+None required for the core behavior. Optional small niceties (skip if we
+want to keep this migration-only):
+
+- On the Lounge route, if the loader/query resolves a room with
+  `status='archived'`, render a "This Lounge closed — the chat log will be
+  cleared in ~24h" read-only state instead of the live chat composer. This
+  is nice but not needed for launch; the sweep will delete the room on
+  schedule regardless.
+
+## Open question I'll flag but not block on
+
+`sweep_stale_lounges()` targets `kind='lounge'` only by default. Workshop-,
+group-, and collab-attached rooms have their own lifecycles (a Workshop
+persists across sessions; a Collab Lounge lives with the Collab). Scoping
+to `lounge` avoids nuking those. If you want the same auto-close on any of
+those, say the word and I'll widen the sweep's `WHERE kind IN (...)`.
 
 ## Files touched
 
-- `src/components/chat-mention-input.tsx` — add optional `renderMention` prop to `MessageBody` (backwards compatible).
-- `src/components/channel-view.tsx` — wire `ProfilePeek` into mention chips, sender name, avatar; add auto-scroll pill, linkify, hover timestamp, empty-state copy; small a11y polish on the fullscreen icon cluster.
+- One Supabase migration:
+  - `ALTER TABLE public.instant_messages ALTER COLUMN expires_at DROP NOT
+    NULL; ALTER COLUMN expires_at DROP DEFAULT; UPDATE public.instant_messages
+    SET expires_at = NULL;`
+  - `ALTER TABLE public.instant_rooms ADD COLUMN emptied_at timestamptz,
+    ADD COLUMN closed_at timestamptz;`
+  - `CREATE OR REPLACE FUNCTION public.sweep_stale_lounges() ...`
+  - `SELECT cron.schedule('sweep-stale-lounges', '* * * * *', $$ SELECT
+    public.sweep_stale_lounges(); $$);`
 
-No routes, no server functions, no DB, no new deps.
+No app-code file changes needed unless we add the optional
+archived-state banner above.

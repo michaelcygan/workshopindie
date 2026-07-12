@@ -1983,7 +1983,7 @@ export type Database = {
         Row: {
           body: string
           created_at: string
-          expires_at: string
+          expires_at: string | null
           id: string
           mentions: string[]
           room_id: string
@@ -1992,7 +1992,7 @@ export type Database = {
         Insert: {
           body: string
           created_at?: string
-          expires_at?: string
+          expires_at?: string | null
           id?: string
           mentions?: string[]
           room_id: string
@@ -2001,7 +2001,7 @@ export type Database = {
         Update: {
           body?: string
           created_at?: string
-          expires_at?: string
+          expires_at?: string | null
           id?: string
           mentions?: string[]
           room_id?: string
@@ -2218,10 +2218,12 @@ export type Database = {
           claim_started_at: string | null
           claim_user_id: string | null
           claim_vetoed: boolean
+          closed_at: string | null
           collab_id: string | null
           created_at: string
           creator_id: string | null
           description: string | null
+          emptied_at: string | null
           ended_by_user_id: string | null
           ends_at: string | null
           focus_message: string | null
@@ -2251,10 +2253,12 @@ export type Database = {
           claim_started_at?: string | null
           claim_user_id?: string | null
           claim_vetoed?: boolean
+          closed_at?: string | null
           collab_id?: string | null
           created_at?: string
           creator_id?: string | null
           description?: string | null
+          emptied_at?: string | null
           ended_by_user_id?: string | null
           ends_at?: string | null
           focus_message?: string | null
@@ -2284,10 +2288,12 @@ export type Database = {
           claim_started_at?: string | null
           claim_user_id?: string | null
           claim_vetoed?: boolean
+          closed_at?: string | null
           collab_id?: string | null
           created_at?: string
           creator_id?: string | null
           description?: string | null
+          emptied_at?: string | null
           ended_by_user_id?: string | null
           ends_at?: string | null
           focus_message?: string | null
@@ -5604,6 +5610,7 @@ export type Database = {
       }
       slugify: { Args: { _in: string }; Returns: string }
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      sweep_stale_lounges: { Args: never; Returns: undefined }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
         Returns: {
