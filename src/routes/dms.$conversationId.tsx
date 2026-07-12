@@ -614,13 +614,48 @@ function DmsThread() {
       >
         <label htmlFor="dm-composer" className="sr-only">Message</label>
         <div className="relative flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+          <MentionPopover
+            open={mentionOpen}
+            query={mention?.query ?? ""}
+            sections={["user", "collab", "group", "event"]}
+            extraUsers={
+              other?.username
+                ? [
+                    {
+                      kind: "user",
+                      id: other.id,
+                      label: other.display_name || other.username,
+                      sublabel: `@${other.username}`,
+                      avatar: other.avatar_url,
+                      insert: `@${other.username} `,
+                    },
+                  ]
+                : []
+            }
+            onPick={insertMention}
+            onClose={() => setMention(null)}
+          />
           <textarea
             id="dm-composer"
             ref={composerRef}
             value={body}
-            onChange={(e) => { setBody(e.target.value); emitTyping(); }}
+            onChange={(e) => {
+              const v = e.target.value;
+              setBody(v);
+              emitTyping();
+              recalcMention(v, e.target.selectionStart ?? v.length);
+            }}
             onKeyDown={onComposerKey}
-            placeholder="Message…"
+            onKeyUp={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onBlur={() => setTimeout(() => setMention(null), 100)}
+            placeholder="Message… use @ to tag people, collabs, groups, or events"
             rows={1}
             maxLength={2000}
             autoFocus
