@@ -87,6 +87,8 @@ export function ChannelView({
   workshopId,
   hostUserId,
   medium,
+  toolsSlot,
+  composerLeading,
 }: {
   roomId: string;
   title: string;
@@ -95,7 +97,11 @@ export function ChannelView({
   workshopId?: string;
   hostUserId?: string | null;
   medium?: string | null;
+  toolsSlot?: React.ReactNode | ((ctx: { media: ReturnType<typeof useMediaRoom>; activeTool: string | null }) => React.ReactNode);
+  /** Optional control rendered to the left of the chat textarea (e.g. "+ Tool"). */
+  composerLeading?: React.ReactNode;
 }) {
+
 
 
 
