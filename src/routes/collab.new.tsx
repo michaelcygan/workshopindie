@@ -631,18 +631,37 @@ function NewCollab() {
             <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
-            <Button
-              type="button"
-              className="rounded-full"
-              onClick={() => {
-                const slug = postedDialog!.slug;
-                setPostedDialog(null);
-                navigate({ to: "/collab/$slug", params: { slug } });
-              }}
-            >
-              Open Collab page
-            </Button>
+            {fromLounge ? (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  setPostedDialog(null);
+                  // Prefer closing this tab (we were opened from the Lounge with window.open).
+                  // If the browser blocks close(), fall back to navigating back to the Lounge.
+                  try { window.close(); } catch { /* ignore */ }
+                  if (!window.closed) {
+                    navigate({ to: "/lounge/$id", params: { id: fromLounge } });
+                  }
+                }}
+              >
+                Back to the Lounge
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                className="rounded-full"
+                onClick={() => {
+                  const slug = postedDialog!.slug;
+                  setPostedDialog(null);
+                  navigate({ to: "/collab/$slug", params: { slug } });
+                }}
+              >
+                Open Collab page
+              </Button>
+            )}
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
     </main>
