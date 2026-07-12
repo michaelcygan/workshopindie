@@ -1,23 +1,33 @@
 import { Link } from "@tanstack/react-router";
 import { Fragment, type ReactNode } from "react";
-import { Megaphone } from "lucide-react";
+import { Calendar, Megaphone, Users } from "lucide-react";
 import { isBlockedHost, isShortenerHost } from "@/lib/link-blocklist";
+import { UsernameMention } from "@/components/username-mention";
+import { GroupPeek } from "@/components/group-peek";
+import { EventPeek } from "@/components/event-peek";
 
 /**
- * Parse a Today chat body into renderable segments.
+ * Parse a chat / Today post body into renderable segments.
  * Supports:
- *  - @username mentions  →  link to /u/$username
- *  - [Label](/collab/slug) inline collab links →  pill with megaphone icon
- *  - Bare URLs (http/https) → autolinked with soft censoring
+ *  - @username mentions                    → ProfilePeek chip (via UsernameMention)
+ *  - [Label](/collab/slug) inline links     → collab pill + link
+ *  - [Label](/g/slug) inline links          → group pill + hover peek
+ *  - [Label](/g/slug/e/eventSlug) links     → event pill + hover peek
+ *  - Bare URLs (http/https)                 → autolinked with soft censoring
  */
 
 type Segment =
   | { type: "text"; value: string }
   | { type: "mention"; username: string }
   | { type: "collab"; label: string; slug: string }
+  | { type: "group"; label: string; slug: string }
+  | { type: "event"; label: string; groupSlug: string; eventSlug: string }
   | { type: "url"; href: string };
 
-const COLLAB_LINK_RE = /\[([^\]\n]{1,80})\]\((\/collab\/[a-zA-Z0-9_-]{1,80})\)/g;
+const EVENT_LINK_RE =
+  /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
+const GROUP_LINK_RE = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
+const COLLAB_LINK_RE = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
 const MENTION_RE = /(^|\s)@([a-zA-Z0-9_]{2,30})/g;
 const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/g;
 
@@ -26,15 +36,35 @@ function tokenize(body: string): Segment[] {
   const hits: Hit[] = [];
 
   let m: RegExpExecArray | null;
-  while ((m = COLLAB_LINK_RE.exec(body)) !== null) {
+  EVENT_LINK_RE.lastIndex = 0;
+  while ((m = EVENT_LINK_RE.exec(body)) !== null) {
     hits.push({
       start: m.index,
       end: m.index + m[0].length,
-      seg: { type: "collab", label: m[1], slug: m[2].replace(/^\/collab\//, "") },
+      seg: { type: "event", label: m[1], groupSlug: m[2], eventSlug: m[3] },
     });
   }
+  GROUP_LINK_RE.lastIndex = 0;
+  while ((m = GROUP_LINK_RE.exec(body)) !== null) {
+    // Skip if already captured as an event (event regex is a superset).
+    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: { type: "group", label: m[1], slug: m[2] },
+    });
+  }
+  COLLAB_LINK_RE.lastIndex = 0;
+  while ((m = COLLAB_LINK_RE.exec(body)) !== null) {
+    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: { type: "collab", label: m[1], slug: m[2] },
+    });
+  }
+  URL_RE.lastIndex = 0;
   while ((m = URL_RE.exec(body)) !== null) {
-    // Skip URLs that were already captured inside a markdown collab link
     if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
     hits.push({
       start: m.index,
@@ -42,6 +72,7 @@ function tokenize(body: string): Segment[] {
       seg: { type: "url", href: m[0] },
     });
   }
+  MENTION_RE.lastIndex = 0;
   while ((m = MENTION_RE.exec(body)) !== null) {
     const at = m.index + (m[1] ? m[1].length : 0);
     const end = at + 1 + m[2].length;
@@ -80,14 +111,14 @@ export function renderTodayBody(body: string): ReactNode {
     }
     if (s.type === "mention") {
       return (
-        <Link
-          key={i}
-          to="/u/$username"
-          params={{ username: s.username }}
-          className="rounded px-0.5 font-medium text-primary hover:underline"
-        >
-          @{s.username}
-        </Link>
+        <UsernameMention key={i} handle={s.username}>
+          <button
+            type="button"
+            className="rounded px-0.5 font-medium text-primary hover:underline"
+          >
+            @{s.username}
+          </button>
+        </UsernameMention>
       );
     }
     if (s.type === "collab") {
@@ -101,6 +132,34 @@ export function renderTodayBody(body: string): ReactNode {
           <Megaphone className="h-3 w-3" />
           {s.label}
         </Link>
+      );
+    }
+    if (s.type === "group") {
+      return (
+        <GroupPeek key={i} slug={s.slug}>
+          <Link
+            to="/g/$slug"
+            params={{ slug: s.slug }}
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+          >
+            <Users className="h-3 w-3" />
+            {s.label}
+          </Link>
+        </GroupPeek>
+      );
+    }
+    if (s.type === "event") {
+      return (
+        <EventPeek key={i} groupSlug={s.groupSlug} eventSlug={s.eventSlug}>
+          <Link
+            to="/g/$slug/e/$eventSlug"
+            params={{ slug: s.groupSlug, eventSlug: s.eventSlug }}
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+          >
+            <Calendar className="h-3 w-3" />
+            {s.label}
+          </Link>
+        </EventPeek>
       );
     }
     // URL
@@ -138,9 +197,12 @@ export function renderTodayBody(body: string): ReactNode {
   });
 }
 
-/** Strip markdown collab-links to plain titles for snippets / notifications. */
+/** Strip markdown links (collab/group/event) to plain labels for snippets. */
 export function flattenTodayBodyToText(body: string): string {
-  return body.replace(COLLAB_LINK_RE, (_full, label: string) => label);
+  return body
+    .replace(EVENT_LINK_RE, (_f, label: string) => label)
+    .replace(GROUP_LINK_RE, (_f, label: string) => label)
+    .replace(COLLAB_LINK_RE, (_f, label: string) => label);
 }
 
 /** Extract @username tokens (deduped, lowercase). */
