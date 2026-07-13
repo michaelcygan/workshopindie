@@ -163,6 +163,22 @@ export function useMediaRoom(roomId: string | undefined) {
   const turnExpiresAtRef = useRef<number>(0);
   const pairUsedTurnRef = useRef<Set<string>>(new Set());
   const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
+  // Per-pair telemetry: when the pair started, whether TURN was attempted, and
+  // the recorded event id so we can update it with relay bytes on close.
+  const pairMetaRef = useRef<
+    Map<
+      string,
+      {
+        startedAt: number;
+        turnAttempted: boolean;
+        turnSucceeded: boolean;
+        recorded: boolean;
+        eventId: string | null;
+        finalRelayed: boolean;
+      }
+    >
+  >(new Map());
+  const iceErrorRef = useRef<Map<string, number>>(new Map());
 
   // ---- bandwidth governor ---------------------------------------------------
   // The current per-sender profile (cam kbps / fps / height + screen kbps).
@@ -175,18 +191,31 @@ export function useMediaRoom(roomId: string | undefined) {
   const consecutiveBwLimitedRef = useRef<Map<string, number>>(new Map());
 
 
-  async function getTurnIceServers(): Promise<RTCIceServer[]> {
+  async function getTurnIceServers(forceRefresh = false): Promise<RTCIceServer[]> {
     const now = Date.now();
-    if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
+    if (
+      !forceRefresh &&
+      turnIceServersRef.current &&
+      turnExpiresAtRef.current > now + 60_000
+    ) {
       return turnIceServersRef.current;
     }
     if (turnFetchPromiseRef.current) return turnFetchPromiseRef.current;
 
     turnFetchPromiseRef.current = (async () => {
-      const res = await mintTurnCreds({ data: { roomId, ttlSeconds: 600 } });
-      turnIceServersRef.current = res.iceServers;
+      const res = await mintTurnCreds({
+        data: { roomId, ttlSeconds: 600, envMode: WEBRTC_MODE },
+      });
+      // Client-side shape validation — server already checks, but a defensive
+      // guard here means a bad response never lands in RTCPeerConnection.
+      const servers = Array.isArray(res.iceServers) ? res.iceServers : [];
+      const usable = servers.filter(
+        (s) => s && typeof s === "object" && "urls" in s && (typeof s.urls === "string" || Array.isArray(s.urls)),
+      );
+      if (usable.length === 0) throw new Error("TURN response had no usable iceServers");
+      turnIceServersRef.current = usable;
       turnExpiresAtRef.current = new Date(res.expiresAt).getTime();
-      return res.iceServers;
+      return usable;
     })();
 
     try {
@@ -195,6 +224,7 @@ export function useMediaRoom(roomId: string | undefined) {
       turnFetchPromiseRef.current = null;
     }
   }
+
 
   /**
    * Push the current bandwidth profile to every outbound video sender.
