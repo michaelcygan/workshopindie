@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Info, LayoutGrid, Megaphone, Plus, Radio, Sparkles, Sun, Users } from "lucide-react";
+import { Calendar, Info, LayoutGrid, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 export type GroupTab =
   | "today"
   | "events"
-  | "workshops"
   | "collab"
   | "work"
   | "members"
@@ -29,12 +28,11 @@ export function GroupTabBar({
   tab: GroupTab;
   setTab: (t: GroupTab) => void;
   slug: string;
-  counts: { collab: number; work: number; workshops: number; members: number };
+  counts: { collab: number; work: number; members: number };
   childCount: number;
 }) {
   const items: { id: GroupTab; label: string; icon: typeof LayoutGrid; count: number | null }[] = [
     { id: "today", label: "Today", icon: Sun, count: null },
-    { id: "workshops", label: "Lounge", icon: Radio, count: counts.workshops },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
     { id: "work", label: "Work", icon: LayoutGrid, count: counts.work },
     { id: "events", label: "Events", icon: Calendar, count: null },
@@ -44,6 +42,7 @@ export function GroupTabBar({
     { id: "members", label: "Members", icon: Users, count: counts.members },
     { id: "about", label: "About", icon: Info, count: null },
   ];
+
 
   return (
     // Outer: sticky, no overflow — overscroll can't pull this out of place.
