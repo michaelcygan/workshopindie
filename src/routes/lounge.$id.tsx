@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useRef, useState } from "react";
 import { RequireAuth } from "@/components/require-auth";
@@ -47,25 +47,12 @@ export const Route = createFileRoute("/lounge/$id")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  errorComponent: ({ error, reset }) => {
-    const router = useRouter();
-    return (
-      <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-        <h1 className="font-display text-3xl text-ink">Couldn't load this Lounge</h1>
-        <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
-        <button
-          onClick={() => {
-            router.invalidate();
-            reset();
-          }}
-          className="mt-6 rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
-        >
-          Try again
-        </button>
-      </main>
-    );
-  },
-  notFoundComponent: () => (
+  errorComponent: LoungeErrorBoundary,
+  notFoundComponent: LoungeNotFound,
+});
+
+function LoungeNotFound() {
+  return (
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-ink">This Lounge isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
@@ -76,8 +63,54 @@ export const Route = createFileRoute("/lounge/$id")({
         Back to Lounge
       </Link>
     </main>
-  ),
-});
+  );
+}
+
+function LoungeLoading() {
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <p className="text-sm text-ink-muted">Loading Lounge…</p>
+    </main>
+  );
+}
+
+function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void }) {
+  const router = useRouter();
+  const qc = useQueryClient();
+  // Log for diagnostics; keep user-facing copy friendly.
+  if (typeof console !== "undefined") console.error("[Lounge] boundary:", error);
+  return (
+    <main className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <h1 className="font-display text-3xl text-ink">Lounge hit a snag</h1>
+      <p className="mt-2 text-sm text-ink-muted">
+        A temporary problem interrupted this Lounge. Try reconnecting, or head back to Lounge discovery.
+      </p>
+      <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <button
+          onClick={async () => {
+            // Clear any stuck room caches, cancel in-flight, then re-run loaders.
+            await qc.cancelQueries({ queryKey: ["instant-room"] });
+            qc.removeQueries({ queryKey: ["instant-room"] });
+            qc.removeQueries({ queryKey: ["instant-room-live-count"] });
+            router.invalidate();
+            reset();
+          }}
+          className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
+        >
+          Try again
+        </button>
+        <Link
+          to="/lounge"
+          onClick={() => reset()}
+          className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
+        >
+          Return to Lounge
+        </Link>
+      </div>
+    </main>
+  );
+}
+
 
 type Room = {
   id: string;
@@ -129,8 +162,11 @@ function LiveRoomPage() {
     refetchInterval: 5000,
   });
 
-  // Bad room ID → trigger the notFound boundary instead of a blank live-room shell.
-  if (isFetched && room === null) throw notFound();
+  // Bad room ID → render inline NotFound AFTER all hooks (never mid-render — that
+  // would change the hook count between renders and trip the React hooks-order guard).
+  const roomMissing = isFetched && room === null;
+
+
 
   // Pending opt-in invite for the persistent fork
   const { data: invite } = useQuery({
@@ -270,7 +306,11 @@ function LiveRoomPage() {
     qc.invalidateQueries({ queryKey: ["wji", room.source_workshop_id, user?.id] });
   }
 
+  // All hooks above run unconditionally on every render. Only branch on rendering below.
+  if (roomMissing) return <LoungeNotFound />;
+
   return (
+
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
       <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">

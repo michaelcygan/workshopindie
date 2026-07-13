@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { SkipForward, Loader2 } from "lucide-react";
@@ -17,9 +17,12 @@ type Props = {
 };
 
 /**
- * "Hop to next Workshop" — matchmaker call that excludes the current room
+ * "Hop to next Lounge" — matchmaker call that excludes the current room
  * plus any recently-exited rooms. Drops presence in the current room before
  * navigating so the previous room reflects the exit immediately.
+ *
+ * Idempotent: rapid clicks are debounced by `busy`, and a request-id ref
+ * ensures a slow prior request cannot overwrite the newly selected room.
  */
 export function HopButton({ roomId, medium, mode }: Props) {
   const router = useRouter();
@@ -27,29 +30,36 @@ export function HopButton({ roomId, medium, mode }: Props) {
   const drop = useServerFn(joinLounge);
   const dropMedium = useServerFn(joinMediumLounge);
   const [busy, setBusy] = useState(false);
+  const reqRef = useRef(0);
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
 
   async function onHop() {
     if (busy || !user) return;
+    const my = ++reqRef.current;
     setBusy(true);
     try {
       const exclude = Array.from(new Set([roomId, ...recentExitIds()]));
       const res = medium
         ? await dropMedium({ data: { medium, excludeRoomIds: exclude } })
         : await drop({ data: { excludeRoomIds: exclude } });
+      // Superseded by a later hop, or unmounted — don't act on this response.
+      if (my !== reqRef.current || !mountedRef.current) return;
       if (!res?.roomId || res.roomId === roomId) {
         toast("No other rooms right now.", {
           description: "You're the only one live in this medium — try a different one.",
         });
         return;
       }
-      // Drop presence in the room we're leaving so it updates instantly.
       markRecentExit(roomId);
       await supabase.from("instant_presence").delete().eq("room_id", roomId).eq("user_id", user.id);
+      if (my !== reqRef.current || !mountedRef.current) return;
       router.navigate({ to: "/lounge/$id", params: { id: res.roomId }, search: { mode } });
     } catch (e) {
+      if (my !== reqRef.current || !mountedRef.current) return;
       toast.error(e instanceof Error ? e.message : "Couldn't skip");
     } finally {
-      setBusy(false);
+      if (mountedRef.current) setBusy(false);
     }
   }
 
@@ -69,3 +79,4 @@ export function HopButton({ roomId, medium, mode }: Props) {
     </Button>
   );
 }
+

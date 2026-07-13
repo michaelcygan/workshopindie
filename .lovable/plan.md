@@ -1,64 +1,121 @@
+## Root cause
 
-## Goal
+`src/routes/lounge.$id.tsx` — `LiveRoomPage` throws `notFound()` mid-render at line 133:
 
-One conceptual "Lounge" per group, but backed by the same matchmaker used for the public Lounge — so if the room is full, a second (then third) group-scoped room spawns automatically. No forking UI, no picker, no separate tab.
+```
+const { data: room, isFetched } = useQuery(...)   // hook #N
+if (isFetched && room === null) throw notFound()  // conditional throw
+const { data: invite } = useQuery(...)            // hook #N+1
+const { data: forkedWs } = useQuery(...)          // hook #N+2
+useEffect(...)  useEffect(...)  useEffect(...)  useEffect(...)  useQuery(...)   // more hooks
+const acceptInvite = useServerFn(...)             // more hooks
+const declineInvite = useServerFn(...)
+```
 
-If Chicago vs. Chicago Writers needs to be a distinction, that's a separate `Chicago Writers` group (its own Lounge) — this plan is only removing the in-group forking surface.
+React runs hooks 1..N, then either throws (bailing before hooks N+1..last) or continues. Between refetches, cache invalidations, `queryKey` changes when navigating between rooms, and the `refetchInterval: 5000` refetch cycle, `isFetched` and `room` transition through states where the throw fires on one render and not the next. React compares hook counts against the previous render and blows up with **"Rendered fewer hooks than expected."** The error boundary shows "Couldn't load this Lounge," and only a full browser reload clears it because the query cache is still in the flip-flop state.
 
----
+Contributing factors in the same file:
+- `useRouter()` called inside `errorComponent` — safe today but fragile; the boundary re-mounts on `reset()` without invalidating the room query, so the same broken cache state re-renders.
+- `key={id}` on `<ChannelView>` correctly resets that subtree on Skip, but the parent hook order still varies.
+- No cancellation/request-id in `joinLounge`/`hopToNext`, so a stale Join response can overwrite the newly selected room's state.
 
-## Changes
+## Fix (scoped, minimal)
 
-### 1. Group page — remove the "Lounge" tab
+### 1. `src/routes/lounge.$id.tsx` — stabilize hook order
+Move ALL hooks above any conditional return/throw. Convert the "not found" branch into a normal render return (or delegate to a child), NOT a mid-body throw:
 
-`src/components/group/group-tab-bar.tsx`
-- Drop the `{ id: "workshops", ... }` tab entry, so the row becomes: Today · Collabs · Work · Events · (Groups if children) · Members · About.
-- Keep the "Open the Lounge" item in the trailing "Create" dropdown.
+```tsx
+function LiveRoomPage() {
+  // ── all hooks, unconditionally, in fixed order ──
+  const { id } = Route.useParams()
+  const { mode } = Route.useSearch()
+  const { user, loading } = useAuth()
+  const router = useRouter()
+  const qc = useQueryClient()
+  const rename = useServerFn(renameLounge)
+  const endRoom = useServerFn(endLounge)
+  const fetchRoom = useServerFn(getInstantRoom)
+  const acceptInvite = useServerFn(acceptWorkshopJoinInvite)
+  const declineInvite = useServerFn(declineWorkshopJoinInvite)
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [draftTitle, setDraftTitle] = useState("")
+  const [savingTitle, setSavingTitle] = useState(false)
+  const [collabOpen, setCollabOpen] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
 
-`src/routes/g.$slug.tsx`
-- Remove the `"workshops"` case from the tab renderer.
-- Delete `GroupWorkshopTab` (dead once the tab is gone) and its supporting imports.
-- Drop `workshops` from the `counts` prop and stop reading `workshop_count` / the `group_workshops` realtime subscription used only for that badge.
-- If the URL still lands on `?t=workshops` (old link), fall back to `today`.
+  const roomQ = useQuery({ queryKey: ["instant-room", id], queryFn: ..., refetchInterval: 5000 })
+  const inviteQ = useQuery({ ..., enabled: !!user && !!roomQ.data?.source_workshop_id })
+  const forkedQ = useQuery({ ..., enabled: !!roomQ.data?.source_workshop_id })
+  const liveCountQ = useQuery({ ..., enabled: !!user && !roomQ.data?.promoted_at })
 
-The "Open the Lounge" button already lives in `GroupHero` and calls `joinGroupLounge` — that stays as the single entry point.
+  useEffect(/* auth redirect */)
+  useEffect(/* bounce on ended */)
+  useEffect(/* sessionStorage last-room */)
+  useEffect(/* first-workshop toast */)
+  useEffect(/* "N" hotkey */)
 
-### 2. Group Lounge matchmaker — spawn a sibling room when full
+  // ── conditional rendering only, no conditional hooks ──
+  if (loading) return <LoungeLoading />
+  if (roomQ.isFetched && roomQ.data === null) return <LoungeNotFound />
+  if (!roomQ.data) return <LoungeLoading />
 
-`src/lib/instant.functions.ts` → `joinGroupLounge`
-- Replace the "find one active, else create one" logic with a matchmaker query modeled on `join_lounge`:
-  - Consider all `instant_rooms` where `group_id = data.groupId`, `kind = 'lounge'`, `status = 'active'`, `visibility = 'open'`, not locked, live_count < cap (5), not blocked-pair, not in the caller's removal cooldown.
-  - Order: prefer rooms hosted by someone the caller follows, then highest live count, then oldest.
-  - If none qualifies, insert a new group-scoped room (same shape as today: `kind='lounge'`, `group_id`, `visibility='open'`, `participant_cap=5`).
-- Keep the auto-join to `group_members` side-effect.
+  const room = roomQ.data
+  return <LiveRoomView room={room} .../>  // pure JSX, no more hooks
+}
+```
 
-Implementation choice: do this in a new RPC `public.join_group_lounge(_user_id, _group_id, _exclude_room_ids)` mirroring `join_lounge`, and call it from `joinGroupLounge` via `supabaseAdmin.rpc(...)`. Keeps parity with the other matchmakers and reuses the same `is_blocked_pair` / `is_follow` helpers.
+Guidelines applied:
+- No `throw notFound()` mid-body. Render an inline `LoungeNotFound` (same JSX as the route's `notFoundComponent`).
+- Every `useQuery` uses `enabled:` so the hook is always called; the query itself no-ops.
+- No new state machine, no reducer, no rewrite — just reorder + inline conditional render.
 
-### 3. Surface group Lounges on /lounge and homepage (members only)
+### 2. `errorComponent` — real recovery
+Replace inline `useRouter()` with a small named component. On "Try again":
+1. `qc.removeQueries({ queryKey: ["instant-room", id] })` and related keys
+2. `qc.cancelQueries(...)`
+3. `router.invalidate()`  
+4. `reset()`
 
-Currently `join_lounge`, `join_medium_lounge`, and `list_active_instant_rooms` all filter `group_id IS NULL`, so group rooms are invisible on public surfaces. Change surfacing (not matchmaking):
+Add a secondary "Return to Lounge" button linking to `/lounge`. Show a friendly message ("Lounge hit a temporary problem…") and log the raw `error.stack` via existing `captureError` (from `src/lib/error-capture.ts`) — no new dependency.
 
-- `list_active_instant_rooms(_viewer uuid)` — include group-scoped rooms only when the viewer is a member of that room's group. Everything else unchanged. Public (null-group) rooms still surface to all.
-- Public matchmakers `join_lounge` / `join_medium_lounge` are unchanged — they still skip group rooms so a random "drop me in" doesn't teleport a non-member into Chicago's Lounge. Group rooms are only entered via the group's "Open the Lounge" button (or by clicking a surfaced card, which routes through `joinSpecificInstantRoom` — that already enforces access via `getInstantRoom`'s member check for the room detail view).
+### 3. Skip / Join stale-response guard
+In `src/lib/instant.functions.ts` `joinLounge`/`hopToNext` call sites (mainly `HopButton` and `ChannelView`'s `dropNew`), add a request-id / cancellation pattern:
 
-Client rails (`LiveWorkshopsRail`, homepage tickers) already consume `listActiveInstantRooms`, so they'll pick up the new member-scoped rows automatically. Room cards for group Lounges will show the room title (e.g. "Chicago · Lounge").
+```ts
+const reqRef = useRef(0)
+async function onHop() {
+  const my = ++reqRef.current
+  const { roomId } = await hopFn(...)
+  if (my !== reqRef.current) return  // superseded
+  router.navigate({ to: "/lounge/$id", params: { id: roomId } })
+}
+```
 
-### 4. Route fallback for old links
+Debounce the Hop/Skip and Join buttons via a `busy` flag (already partially in `ChannelView` — extend to `HopButton`).
 
-`src/routes/g.$slug.tsx`
-- In the `?t=` parser, map legacy `workshops` → `today` so any external/shared link that pointed at the tab still loads a valid tab instead of a blank body.
+### 4. ChannelView audit pass (targeted)
+`src/components/channel-view.tsx` has ~25 hooks all above returns already; verify no hook was added inside a branch by newer edits. Confirm:
+- `useMediaRoom(roomId)` runs unconditionally
+- The auto-join effect guards on `autoJoinedRef` and cleans up when `roomId` changes (already keyed via parent `key={id}`)
+- Presence/subscription effects return cleanup that unsubscribes and cancels timers
 
-### Out of scope
+No structural changes expected here beyond spot fixes if the audit finds something.
 
-- No About-tab "related groups" linker in this change — that's a separate feature (would need a `related_groups` table + an editor). Call it out as a follow-up rather than bundling it here.
-- No changes to `/lounge/$id` room UI, rename/end rules, Hop, or the 5-seat cap.
-- No changes to `hostInstantWorkshop` (public Lounge hosting is unaffected).
-- No data migration — existing group rooms keep working; new ones spawn as needed.
+### 5. Diagnostics
+Reuse the existing `src/lib/error-capture.ts`. On error-boundary trip, capture: route, roomId, entry surface (referrer or session flag), auth status, and last transition. No PII, no chat contents.
 
----
+## Files changed (expected)
 
-## Technical notes
+- `src/routes/lounge.$id.tsx` — hook reorder, remove mid-render throw, better error boundary, request-id on Hop
+- `src/components/hop-button.tsx` — debounce + stale-response guard
+- `src/components/channel-view.tsx` — spot fixes only if audit surfaces any conditional hook (none expected from initial scan)
+- (No new files, no schema changes, no DB migrations)
 
-- Migration file will define the new `join_group_lounge` RPC (SECURITY DEFINER, `GRANT EXECUTE ... TO authenticated`) and replace `list_active_instant_rooms(_viewer uuid)` to include `group_id IS NULL OR EXISTS (member row for _viewer)`.
-- `joinGroupLounge` server fn keeps its `requireSupabaseAuth` middleware and its `group_members` upsert; only the room-selection block changes to call the new RPC.
-- No changes to `src/integrations/supabase/types.ts` are needed by hand — regenerated after migration approval.
+## Out of scope
+- Redesign, renaming, provider swap, pricing, moderation, RLS.
+- Rewriting Lounge as a reducer/state machine (existing scattered state isn't the direct cause; the mid-render `throw` is).
+- Group/matchmaker DB logic (already correct from the last pass).
+
+## Acceptance verification
+
+I'll run Playwright against `http://localhost:8080/lounge/<id>` scenarios: fresh load, refresh-in-room, rapid double-Join, rapid double-Skip, deleted-room id (should show inline NotFound, not error boundary), and returning from `/g/$slug`. Check console for the hooks-order error string. Report which paths passed and any remaining gaps.
