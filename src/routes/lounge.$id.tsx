@@ -162,8 +162,11 @@ function LiveRoomPage() {
     refetchInterval: 5000,
   });
 
-  // Bad room ID → trigger the notFound boundary instead of a blank live-room shell.
-  if (isFetched && room === null) throw notFound();
+  // Bad room ID → render inline NotFound AFTER all hooks (never mid-render — that
+  // would change the hook count between renders and trip the React hooks-order guard).
+  const roomMissing = isFetched && room === null;
+
+
 
   // Pending opt-in invite for the persistent fork
   const { data: invite } = useQuery({
