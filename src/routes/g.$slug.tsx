@@ -339,7 +339,6 @@ function GroupPage() {
             counts={{
               collab: group.collab_count,
               work: group.work_count,
-              workshops: group.workshop_count,
               members: group.member_count,
             }}
             childCount={childCount}
@@ -348,8 +347,8 @@ function GroupPage() {
         <div className="mt-5">
 
           {tab === "today" && <GroupTodayTab group={group} />}
-          {tab === "workshops" && <GroupWorkshopTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
+
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "subgroups" && (
