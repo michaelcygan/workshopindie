@@ -2,7 +2,7 @@ import { createFileRoute, Link, notFound, useNavigate, useRouter } from "@tansta
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { Plus, X, Radio } from "lucide-react";
+import { Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
 import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
-import { joinGroupLounge } from "@/lib/instant.functions";
+
 import { toast } from "sonner";
 
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
@@ -81,8 +81,9 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
-const TAB_VALUES = ["today", "workshops", "collab", "work", "events", "members", "subgroups", "about"] as const;
+const TAB_VALUES = ["today", "collab", "work", "events", "members", "subgroups", "about"] as const;
 type TabValue = (typeof TAB_VALUES)[number];
+
 
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -304,9 +305,7 @@ function GroupPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "group_collabs", filter: `group_id=eq.${group.id}` }, () => {
         qc.invalidateQueries({ queryKey: ["group", group.id, "collabs"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_workshops", filter: `group_id=eq.${group.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["group", group.id, "workshops"] });
-      })
+
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -338,7 +337,6 @@ function GroupPage() {
             counts={{
               collab: group.collab_count,
               work: group.work_count,
-              workshops: group.workshop_count,
               members: group.member_count,
             }}
             childCount={childCount}
@@ -347,8 +345,8 @@ function GroupPage() {
         <div className="mt-5">
 
           {tab === "today" && <GroupTodayTab group={group} />}
-          {tab === "workshops" && <GroupWorkshopTab group={group} />}
           {tab === "collab" && <GroupCollabTab group={group} />}
+
           {tab === "work" && <GroupWorkTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "subgroups" && (
@@ -916,87 +914,8 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   );
 }
 
-/* ---------- LOUNGE ---------- */
-function GroupWorkshopTab({ group }: { group: GroupRow }) {
-  const { user } = useAuth();
-  const router = useRouter();
-  const joinFn = useServerFn(joinGroupLounge);
-  const { data: liveRooms = [], isLoading } = useQuery({
-    queryKey: ["group", group.id, "lounge-rooms"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("instant_rooms")
-        .select("id, title, status, created_at")
-        .eq("group_id", group.id)
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(8);
-      return data ?? [];
-    },
-    refetchInterval: 20_000,
-  });
 
-  const open = useMutation({
-    mutationFn: () => joinFn({ data: { groupId: group.id } }),
-    onSuccess: ({ roomId }) =>
-      router.navigate({ to: "/lounge/$id", params: { id: roomId } }),
-    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
-  });
 
-  return (
-    <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
-        <div className="min-w-0">
-          <h3 className="font-display text-lg text-ink">{group.name} Lounge</h3>
-          <p className="mt-1 text-xs text-ink-muted">
-            Drop in. Mic optional. Joining the Lounge also adds you to {group.name}.
-          </p>
-        </div>
-        <Button
-          size="sm"
-          className="rounded-full gap-1.5"
-          onClick={() => open.mutate()}
-          disabled={!user || open.isPending}
-        >
-          <Radio className="h-3.5 w-3.5" />
-          {open.isPending ? "Opening…" : "Open the Lounge"}
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <div key={i} className="h-24 animate-pulse rounded-2xl bg-surface-2" />
-          ))}
-        </div>
-      ) : liveRooms.length > 0 ? (
-        <div className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
-          {liveRooms.map((r) => (
-            <Link
-              key={r.id}
-              to="/lounge/$id"
-              params={{ id: r.id }}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:-translate-y-0.5 hover:shadow-lift"
-            >
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500 opacity-75" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-              </span>
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium text-ink">{r.title ?? "Lounge"}</div>
-                <div className="text-[11px] text-ink-muted">Live now</div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <p className="mt-6 text-center text-sm text-ink-muted">
-          No one's in the Lounge right now — be the first to open it.
-        </p>
-      )}
-    </div>
-  );
-}
 
 /* ---------- MEMBERS ---------- */
 function GroupMembersTab({ group }: { group: GroupRow }) {

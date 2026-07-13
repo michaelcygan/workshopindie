@@ -497,7 +497,7 @@ export const joinGroupLounge = createServerFn({ method: "POST" })
 
     const { data: group } = await supabaseAdmin
       .from("groups")
-      .select("id, name, slug")
+      .select("id")
       .eq("id", data.groupId)
       .maybeSingle();
     if (!group) throw new Error("Group not found");
@@ -507,38 +507,19 @@ export const joinGroupLounge = createServerFn({ method: "POST" })
       .from("group_members")
       .insert({ group_id: data.groupId, user_id: userId } as any);
     if (memberErr && !/duplicate|unique/i.test(memberErr.message)) {
-      // Non-fatal: we still want them in the room. Log via throw only if
-      // membership itself is required by RLS — for v1 the lounge is open.
+      // Non-fatal — proceed to matchmaker.
     }
 
-    // Find an active room already attached to this group.
-    const { data: existing } = await supabaseAdmin
-      .from("instant_rooms")
-      .select("id")
-      .eq("group_id", data.groupId)
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (existing?.id) return { roomId: existing.id as string };
-
-    const { data: room, error } = await supabaseAdmin
-      .from("instant_rooms")
-      .insert({
-        kind: "lounge",
-        title: `${(group as any).name} · Lounge`,
-        status: "active",
-        participant_cap: 5,
-        creator_id: userId,
-        host_user_id: null,
-        group_id: data.groupId,
-        visibility: "open",
-      } as any)
-      .select("id")
-      .single();
-    if (error || !room) throw new Error(error?.message ?? "Couldn't open the Lounge");
-    return { roomId: room.id as string };
+    // Matchmaker: joins an existing group-scoped room with a seat, or spawns a new one.
+    const { data: roomId, error } = await supabaseAdmin.rpc("join_group_lounge", {
+      _user_id: userId,
+      _group_id: data.groupId,
+      _exclude_room_ids: [],
+    } as any);
+    if (error || !roomId) throw new Error(error?.message ?? "Couldn't open the Lounge");
+    return { roomId: roomId as string };
   });
+
 
 // joinCollabLounge retired in v1 — Lounges are no longer scoped to Collab posts.
 // Existing rooms with a `collab_id` still work if someone has the /lounge/$id link,

@@ -5527,6 +5527,14 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      join_group_lounge: {
+        Args: {
+          _exclude_room_ids?: string[]
+          _group_id: string
+          _user_id: string
+        }
+        Returns: string
+      }
       join_link_workshop: {
         Args: { _exclude_room_ids?: string[]; _token: string; _user_id: string }
         Returns: string
