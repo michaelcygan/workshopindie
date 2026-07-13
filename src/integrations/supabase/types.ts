@@ -3350,6 +3350,7 @@ export type Database = {
       }
       turn_credential_grants: {
         Row: {
+          env_mode: string
           granted_at: string
           id: string
           room_id: string | null
@@ -3357,6 +3358,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          env_mode?: string
           granted_at?: string
           id?: string
           room_id?: string | null
@@ -3364,6 +3366,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          env_mode?: string
           granted_at?: string
           id?: string
           room_id?: string | null
@@ -3410,6 +3413,66 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webrtc_connection_events: {
+        Row: {
+          browser_family: string | null
+          bytes_received: number | null
+          bytes_sent: number | null
+          connect_ms: number | null
+          created_at: string
+          device_class: string | null
+          env_mode: string
+          id: string
+          local_candidate_type: string | null
+          participant_count: number | null
+          path: string
+          relay_ended_at: string | null
+          remote_candidate_type: string | null
+          room_id: string | null
+          turn_attempted: boolean
+          turn_succeeded: boolean
+          user_id: string
+        }
+        Insert: {
+          browser_family?: string | null
+          bytes_received?: number | null
+          bytes_sent?: number | null
+          connect_ms?: number | null
+          created_at?: string
+          device_class?: string | null
+          env_mode?: string
+          id?: string
+          local_candidate_type?: string | null
+          participant_count?: number | null
+          path: string
+          relay_ended_at?: string | null
+          remote_candidate_type?: string | null
+          room_id?: string | null
+          turn_attempted?: boolean
+          turn_succeeded?: boolean
+          user_id: string
+        }
+        Update: {
+          browser_family?: string | null
+          bytes_received?: number | null
+          bytes_sent?: number | null
+          connect_ms?: number | null
+          created_at?: string
+          device_class?: string | null
+          env_mode?: string
+          id?: string
+          local_candidate_type?: string | null
+          participant_count?: number | null
+          path?: string
+          relay_ended_at?: string | null
+          remote_candidate_type?: string | null
+          room_id?: string | null
+          turn_attempted?: boolean
+          turn_succeeded?: boolean
           user_id?: string
         }
         Relationships: []
