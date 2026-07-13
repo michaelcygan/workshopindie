@@ -1,18 +1,108 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { mintTurnCreds } from "@/lib/turn.functions";
+import {
+  mintTurnCreds,
+  recordWebrtcConnection,
+  recordWebrtcRelayEnd,
+} from "@/lib/turn.functions";
 import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
 
 const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
 ];
 
-const ICE_CONFIG: RTCConfiguration = { iceServers: STUN_ONLY };
+
 
 // How long to wait for ICE to reach "connected" before assuming the direct
 // peer-to-peer path won't work and upgrading this pair to TURN relay.
 const ICE_CHECKING_TIMEOUT_MS = 8000;
+
+// -----------------------------------------------------------------------------
+// WebRTC connection mode. Controlled via VITE_WEBRTC_MODE build-time env var.
+//   "auto"        — production default. Direct-first, relay only on failure.
+//   "force-turn"  — staging: every pair is created with relay-only ICE policy so
+//                   we can exercise the TURN path without waiting for a natural
+//                   failure. Never enable in production.
+//   "direct-only" — dev: never mint TURN, never upgrade a failing pair. Used to
+//                   validate the direct path in isolation.
+// -----------------------------------------------------------------------------
+type WebrtcMode = "auto" | "force-turn" | "direct-only";
+const WEBRTC_MODE: WebrtcMode = (() => {
+  const raw = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_WEBRTC_MODE;
+  if (raw === "force-turn" || raw === "direct-only") return raw;
+  return "auto";
+})();
+
+function detectBrowserFamily(): "chrome" | "firefox" | "safari" | "edge" | "other" {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent || "";
+  if (/edg\//i.test(ua)) return "edge";
+  if (/firefox\//i.test(ua)) return "firefox";
+  if (/chrome\//i.test(ua)) return "chrome";
+  if (/safari\//i.test(ua)) return "safari";
+  return "other";
+}
+
+function detectDeviceClass(): "mobile" | "desktop" {
+  if (typeof navigator === "undefined") return "desktop";
+  const uad = (navigator as unknown as { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uad && typeof uad.mobile === "boolean") return uad.mobile ? "mobile" : "desktop";
+  if (typeof window !== "undefined" && window.matchMedia) {
+    if (window.matchMedia("(pointer: coarse)").matches) return "mobile";
+  }
+  return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") ? "mobile" : "desktop";
+}
+
+async function inspectCandidatePair(pc: RTCPeerConnection): Promise<{
+  path: "direct" | "relayed" | "failed";
+  localType?: "host" | "srflx" | "prflx" | "relay";
+  remoteType?: "host" | "srflx" | "prflx" | "relay";
+  bytesSent?: number;
+  bytesReceived?: number;
+}> {
+  try {
+    const stats = await pc.getStats();
+    let selectedPair: unknown = null;
+    let transportSelectedPairId: string | undefined;
+    const byId = new Map<string, unknown>();
+    stats.forEach((r) => byId.set((r as { id: string }).id, r));
+    stats.forEach((r) => {
+      const rec = r as { type?: string; selected?: boolean; nominated?: boolean; state?: string; selectedCandidatePairId?: string };
+      if (rec.type === "transport" && rec.selectedCandidatePairId) {
+        transportSelectedPairId = rec.selectedCandidatePairId;
+      }
+      if (rec.type === "candidate-pair" && (rec.selected || (rec.nominated && rec.state === "succeeded"))) {
+        selectedPair = r;
+      }
+    });
+    if (!selectedPair && transportSelectedPairId) {
+      selectedPair = byId.get(transportSelectedPairId) ?? null;
+    }
+    if (!selectedPair) return { path: "failed" };
+    const pair = selectedPair as {
+      localCandidateId?: string;
+      remoteCandidateId?: string;
+      bytesSent?: number;
+      bytesReceived?: number;
+    };
+    const local = pair.localCandidateId ? (byId.get(pair.localCandidateId) as { candidateType?: string } | undefined) : undefined;
+    const remote = pair.remoteCandidateId ? (byId.get(pair.remoteCandidateId) as { candidateType?: string } | undefined) : undefined;
+    const localType = (local?.candidateType ?? undefined) as "host" | "srflx" | "prflx" | "relay" | undefined;
+    const remoteType = (remote?.candidateType ?? undefined) as "host" | "srflx" | "prflx" | "relay" | undefined;
+    const path: "direct" | "relayed" = localType === "relay" || remoteType === "relay" ? "relayed" : "direct";
+    return {
+      path,
+      localType,
+      remoteType,
+      bytesSent: pair.bytesSent,
+      bytesReceived: pair.bytesReceived,
+    };
+  } catch {
+    return { path: "failed" };
+  }
+}
 
 export const ROOM_CAP = 5;
 export const VIDEO_CAP = 5;
@@ -73,6 +163,22 @@ export function useMediaRoom(roomId: string | undefined) {
   const turnExpiresAtRef = useRef<number>(0);
   const pairUsedTurnRef = useRef<Set<string>>(new Set());
   const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
+  // Per-pair telemetry: when the pair started, whether TURN was attempted, and
+  // the recorded event id so we can update it with relay bytes on close.
+  const pairMetaRef = useRef<
+    Map<
+      string,
+      {
+        startedAt: number;
+        turnAttempted: boolean;
+        turnSucceeded: boolean;
+        recorded: boolean;
+        eventId: string | null;
+        finalRelayed: boolean;
+      }
+    >
+  >(new Map());
+  const iceErrorRef = useRef<Map<string, number>>(new Map());
 
   // ---- bandwidth governor ---------------------------------------------------
   // The current per-sender profile (cam kbps / fps / height + screen kbps).
@@ -85,18 +191,31 @@ export function useMediaRoom(roomId: string | undefined) {
   const consecutiveBwLimitedRef = useRef<Map<string, number>>(new Map());
 
 
-  async function getTurnIceServers(): Promise<RTCIceServer[]> {
+  async function getTurnIceServers(forceRefresh = false): Promise<RTCIceServer[]> {
     const now = Date.now();
-    if (turnIceServersRef.current && turnExpiresAtRef.current > now + 30_000) {
+    if (
+      !forceRefresh &&
+      turnIceServersRef.current &&
+      turnExpiresAtRef.current > now + 60_000
+    ) {
       return turnIceServersRef.current;
     }
     if (turnFetchPromiseRef.current) return turnFetchPromiseRef.current;
 
     turnFetchPromiseRef.current = (async () => {
-      const res = await mintTurnCreds({ data: { roomId, ttlSeconds: 600 } });
-      turnIceServersRef.current = res.iceServers;
+      const res = await mintTurnCreds({
+        data: { roomId, ttlSeconds: 600, envMode: WEBRTC_MODE },
+      });
+      // Client-side shape validation — server already checks, but a defensive
+      // guard here means a bad response never lands in RTCPeerConnection.
+      const servers = Array.isArray(res.iceServers) ? res.iceServers : [];
+      const usable = servers.filter(
+        (s) => s && typeof s === "object" && "urls" in s && (typeof s.urls === "string" || Array.isArray(s.urls)),
+      );
+      if (usable.length === 0) throw new Error("TURN response had no usable iceServers");
+      turnIceServersRef.current = usable;
       turnExpiresAtRef.current = new Date(res.expiresAt).getTime();
-      return res.iceServers;
+      return usable;
     })();
 
     try {
@@ -105,6 +224,7 @@ export function useMediaRoom(roomId: string | undefined) {
       turnFetchPromiseRef.current = null;
     }
   }
+
 
   /**
    * Push the current bandwidth profile to every outbound video sender.
@@ -243,14 +363,35 @@ export function useMediaRoom(roomId: string | undefined) {
     }));
   }
 
+  async function submitRelayEnd(peerId: string, pc: RTCPeerConnection) {
+    const meta = pairMetaRef.current.get(peerId);
+    if (!meta || !meta.eventId || !meta.finalRelayed) return;
+    try {
+      const stats = await inspectCandidatePair(pc);
+      await recordWebrtcRelayEnd({
+        data: {
+          eventId: meta.eventId,
+          bytesSent: stats.bytesSent,
+          bytesReceived: stats.bytesReceived,
+        },
+      });
+    } catch (e) {
+      console.warn("recordWebrtcRelayEnd failed", e);
+    }
+  }
+
   function closePeer(peerId: string) {
     const t = pairCheckTimersRef.current.get(peerId);
     if (t) { clearTimeout(t); pairCheckTimersRef.current.delete(peerId); }
     const pc = pcsRef.current.get(peerId);
     if (pc) {
+      // Fire-and-forget: submit relay-end telemetry before we close.
+      void submitRelayEnd(peerId, pc);
       try { pc.close(); } catch { /* noop */ }
       pcsRef.current.delete(peerId);
     }
+    pairMetaRef.current.delete(peerId);
+    iceErrorRef.current.delete(peerId);
     setPeers((prev) => {
       if (!(peerId in prev)) return prev;
       const next = { ...prev };
@@ -268,22 +409,35 @@ export function useMediaRoom(roomId: string | undefined) {
   }
 
   async function upgradePeerToTurn(peerId: string, peerMode: MediaMode) {
+    if (WEBRTC_MODE === "direct-only") return;
     if (pairUsedTurnRef.current.has(peerId)) return; // one retry per pair
     pairUsedTurnRef.current.add(peerId);
     clearCheckTimer(peerId);
 
+    // If cached credentials are near expiry, force a refresh so a new peer
+    // joining late in a Lounge doesn't inherit an about-to-expire ticket.
+    const nearExpiry = turnExpiresAtRef.current > 0 && turnExpiresAtRef.current < Date.now() + 60_000;
+
     let turnServers: RTCIceServer[];
     try {
-      turnServers = await getTurnIceServers();
+      turnServers = await getTurnIceServers(nearExpiry);
     } catch (e) {
       console.warn("TURN mint failed", e);
+      const meta = pairMetaRef.current.get(peerId);
+      if (meta) { meta.turnAttempted = true; meta.turnSucceeded = false; }
       closePeer(peerId);
       return;
     }
 
+    const meta = pairMetaRef.current.get(peerId);
+    if (meta) meta.turnAttempted = true;
+
     // Tear down the failed pc and recreate with TURN servers.
+    // closePeer wipes pairMeta — preserve turnAttempted flag for the new pc.
     closePeer(peerId);
     const pc = createPeer(peerId, peerMode, [...STUN_ONLY, ...turnServers]);
+    const newMeta = pairMetaRef.current.get(peerId);
+    if (newMeta) newMeta.turnAttempted = true;
     // Only the lex-greater side re-offers (matches normal join handshake).
     if (myId && myId > peerId) {
       try { await makeOfferOn(pc, peerId); } catch (e) { console.warn("TURN re-offer failed", e); }
@@ -295,8 +449,20 @@ export function useMediaRoom(roomId: string | undefined) {
     peerMode: MediaMode,
     iceServers: RTCIceServer[] = STUN_ONLY,
   ): RTCPeerConnection {
-    const pc = new RTCPeerConnection({ iceServers });
+    // Force-TURN staging mode: relay-only ICE policy so we exercise the TURN
+    // path even when a direct route is available. Never used in production.
+    const iceTransportPolicy: RTCIceTransportPolicy | undefined =
+      WEBRTC_MODE === "force-turn" ? "relay" : undefined;
+    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy });
     pcsRef.current.set(peerId, pc);
+    pairMetaRef.current.set(peerId, {
+      startedAt: performance.now(),
+      turnAttempted: WEBRTC_MODE === "force-turn",
+      turnSucceeded: false,
+      recorded: false,
+      eventId: null,
+      finalRelayed: false,
+    });
     setPeers((prev) => ({
       ...prev,
       [peerId]: { userId: peerId, speaking: false, mode: peerMode, stream: prev[peerId]?.stream ?? null },
@@ -318,13 +484,35 @@ export function useMediaRoom(roomId: string | undefined) {
         });
       }
     };
+    // Feature-detected: not all browsers expose onicecandidateerror. Track a
+    // per-pair count for diagnostics; never log address/IP fields.
+    try {
+      (pc as unknown as { onicecandidateerror: ((e: RTCPeerConnectionIceErrorEvent) => void) | null })
+        .onicecandidateerror = (e) => {
+        const count = (iceErrorRef.current.get(peerId) ?? 0) + 1;
+        iceErrorRef.current.set(peerId, count);
+        if (count <= 3) {
+          console.warn("ICE candidate error", {
+            errorCode: e.errorCode,
+            errorText: e.errorText,
+            url: e.url,
+          });
+        }
+      };
+    } catch { /* noop */ }
     pc.oniceconnectionstatechange = () => {
       const s = pc.iceConnectionState;
       if (s === "connected" || s === "completed") {
         clearCheckTimer(peerId);
+        void maybeRecordConnected(peerId, pc);
       } else if (s === "checking") {
-        // Arm 8s upgrade timer (only once per pair lifecycle).
-        if (!pairCheckTimersRef.current.has(peerId) && !pairUsedTurnRef.current.has(peerId)) {
+        // Arm 8s upgrade timer (only once per pair lifecycle). Skipped when
+        // force-turn (already relay) or direct-only (no fallback available).
+        if (
+          WEBRTC_MODE === "auto" &&
+          !pairCheckTimersRef.current.has(peerId) &&
+          !pairUsedTurnRef.current.has(peerId)
+        ) {
           const t = window.setTimeout(() => {
             pairCheckTimersRef.current.delete(peerId);
             if (pcsRef.current.get(peerId) === pc &&
@@ -335,15 +523,17 @@ export function useMediaRoom(roomId: string | undefined) {
           pairCheckTimersRef.current.set(peerId, t);
         }
       } else if (s === "failed" || s === "disconnected") {
-        if (!pairUsedTurnRef.current.has(peerId)) {
+        if (WEBRTC_MODE === "auto" && !pairUsedTurnRef.current.has(peerId)) {
           upgradePeerToTurn(peerId, peerMode);
         } else if (s === "failed") {
+          void maybeRecordFailed(peerId);
           closePeer(peerId);
         }
       }
     };
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed" && pairUsedTurnRef.current.has(peerId)) {
+        void maybeRecordFailed(peerId);
         closePeer(peerId);
       }
     };
@@ -358,11 +548,73 @@ export function useMediaRoom(roomId: string | undefined) {
     return pc;
   }
 
+  async function maybeRecordConnected(peerId: string, pc: RTCPeerConnection) {
+    const meta = pairMetaRef.current.get(peerId);
+    if (!meta || meta.recorded) return;
+    meta.recorded = true;
+    const stats = await inspectCandidatePair(pc);
+    if (stats.path === "relayed") {
+      meta.turnSucceeded = true;
+      meta.finalRelayed = true;
+    }
+    try {
+      const res = await recordWebrtcConnection({
+        data: {
+          roomId,
+          path: stats.path,
+          localCandidateType: stats.localType,
+          remoteCandidateType: stats.remoteType,
+          turnAttempted: meta.turnAttempted,
+          turnSucceeded: meta.turnSucceeded,
+          connectMs: Math.max(0, Math.round(performance.now() - meta.startedAt)),
+          participantCount: pcsRef.current.size,
+          browserFamily: detectBrowserFamily(),
+          deviceClass: detectDeviceClass(),
+          envMode: WEBRTC_MODE,
+        },
+      });
+      meta.eventId = res.id;
+    } catch (e) {
+      console.warn("recordWebrtcConnection failed", e);
+    }
+  }
+
+  async function maybeRecordFailed(peerId: string) {
+    const meta = pairMetaRef.current.get(peerId);
+    if (!meta || meta.recorded) return;
+    meta.recorded = true;
+    try {
+      await recordWebrtcConnection({
+        data: {
+          roomId,
+          path: "failed",
+          turnAttempted: meta.turnAttempted,
+          turnSucceeded: false,
+          connectMs: Math.max(0, Math.round(performance.now() - meta.startedAt)),
+          participantCount: pcsRef.current.size,
+          browserFamily: detectBrowserFamily(),
+          deviceClass: detectDeviceClass(),
+          envMode: WEBRTC_MODE,
+        },
+      });
+    } catch (e) {
+      console.warn("recordWebrtcConnection (failed) failed", e);
+    }
+  }
+
 
   function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
     const existing = pcsRef.current.get(peerId);
     if (existing) return existing;
+    // Force-TURN mode: create the pair with TURN servers from the start. We
+    // still fall through to createPeer with STUN_ONLY if the mint fails —
+    // relay-only ICE policy will then produce no candidates and the pair
+    // will simply fail to connect (correct behavior for staging tests).
+    if (WEBRTC_MODE === "force-turn" && turnIceServersRef.current) {
+      return createPeer(peerId, peerMode, [...STUN_ONLY, ...turnIceServersRef.current]);
+    }
     return createPeer(peerId, peerMode, STUN_ONLY);
+
   }
 
   async function makeOfferOn(pc: RTCPeerConnection, peerId: string) {
@@ -515,6 +767,8 @@ export function useMediaRoom(roomId: string | undefined) {
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
     pairUsedTurnRef.current.clear();
+    pairMetaRef.current.clear();
+    iceErrorRef.current.clear();
     turnIceServersRef.current = null;
     turnExpiresAtRef.current = 0;
     if (localStreamRef.current) {
@@ -569,6 +823,15 @@ export function useMediaRoom(roomId: string | undefined) {
       }
 
       if (joined) teardownMedia();
+
+      // Force-TURN staging mode: prefetch TURN creds so the first pair uses
+      // relay from the start. Failure is non-fatal — the pair will simply
+      // fail to establish, which is the correct outcome for a relay test.
+      if (WEBRTC_MODE === "force-turn") {
+        try { await getTurnIceServers(); } catch (e) { console.warn("force-turn prefetch failed", e); }
+      } else if (WEBRTC_MODE === "direct-only" && import.meta.env.DEV) {
+        console.warn("[WebRTC] direct-only mode — TURN fallback disabled");
+      }
 
       let stream: MediaStream | null = null;
       try {
