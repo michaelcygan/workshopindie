@@ -767,6 +767,8 @@ export function useMediaRoom(roomId: string | undefined) {
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
     pairUsedTurnRef.current.clear();
+    pairMetaRef.current.clear();
+    iceErrorRef.current.clear();
     turnIceServersRef.current = null;
     turnExpiresAtRef.current = 0;
     if (localStreamRef.current) {
