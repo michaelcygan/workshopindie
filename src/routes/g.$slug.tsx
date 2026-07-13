@@ -305,9 +305,7 @@ function GroupPage() {
       .on("postgres_changes", { event: "*", schema: "public", table: "group_collabs", filter: `group_id=eq.${group.id}` }, () => {
         qc.invalidateQueries({ queryKey: ["group", group.id, "collabs"] });
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_workshops", filter: `group_id=eq.${group.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["group", group.id, "workshops"] });
-      })
+
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
