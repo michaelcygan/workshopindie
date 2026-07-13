@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
-import { mintTurnCreds } from "@/lib/turn.functions";
+import {
+  mintTurnCreds,
+  recordWebrtcConnection,
+  recordWebrtcRelayEnd,
+} from "@/lib/turn.functions";
 import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
 
 const STUN_ONLY: RTCIceServer[] = [
@@ -13,6 +17,92 @@ const ICE_CONFIG: RTCConfiguration = { iceServers: STUN_ONLY };
 // How long to wait for ICE to reach "connected" before assuming the direct
 // peer-to-peer path won't work and upgrading this pair to TURN relay.
 const ICE_CHECKING_TIMEOUT_MS = 8000;
+
+// -----------------------------------------------------------------------------
+// WebRTC connection mode. Controlled via VITE_WEBRTC_MODE build-time env var.
+//   "auto"        — production default. Direct-first, relay only on failure.
+//   "force-turn"  — staging: every pair is created with relay-only ICE policy so
+//                   we can exercise the TURN path without waiting for a natural
+//                   failure. Never enable in production.
+//   "direct-only" — dev: never mint TURN, never upgrade a failing pair. Used to
+//                   validate the direct path in isolation.
+// -----------------------------------------------------------------------------
+type WebrtcMode = "auto" | "force-turn" | "direct-only";
+const WEBRTC_MODE: WebrtcMode = (() => {
+  const raw = (import.meta as unknown as { env?: Record<string, string | undefined> }).env
+    ?.VITE_WEBRTC_MODE;
+  if (raw === "force-turn" || raw === "direct-only") return raw;
+  return "auto";
+})();
+
+function detectBrowserFamily(): "chrome" | "firefox" | "safari" | "edge" | "other" {
+  if (typeof navigator === "undefined") return "other";
+  const ua = navigator.userAgent || "";
+  if (/edg\//i.test(ua)) return "edge";
+  if (/firefox\//i.test(ua)) return "firefox";
+  if (/chrome\//i.test(ua)) return "chrome";
+  if (/safari\//i.test(ua)) return "safari";
+  return "other";
+}
+
+function detectDeviceClass(): "mobile" | "desktop" {
+  if (typeof navigator === "undefined") return "desktop";
+  const uad = (navigator as unknown as { userAgentData?: { mobile?: boolean } }).userAgentData;
+  if (uad && typeof uad.mobile === "boolean") return uad.mobile ? "mobile" : "desktop";
+  if (typeof window !== "undefined" && window.matchMedia) {
+    if (window.matchMedia("(pointer: coarse)").matches) return "mobile";
+  }
+  return /android|iphone|ipad|ipod|mobile/i.test(navigator.userAgent || "") ? "mobile" : "desktop";
+}
+
+async function inspectCandidatePair(pc: RTCPeerConnection): Promise<{
+  path: "direct" | "relayed" | "failed";
+  localType?: "host" | "srflx" | "prflx" | "relay";
+  remoteType?: "host" | "srflx" | "prflx" | "relay";
+  bytesSent?: number;
+  bytesReceived?: number;
+}> {
+  try {
+    const stats = await pc.getStats();
+    let selectedPair: unknown = null;
+    let transportSelectedPairId: string | undefined;
+    const byId = new Map<string, unknown>();
+    stats.forEach((r) => byId.set((r as { id: string }).id, r));
+    stats.forEach((r) => {
+      const rec = r as { type?: string; selected?: boolean; nominated?: boolean; state?: string; selectedCandidatePairId?: string };
+      if (rec.type === "transport" && rec.selectedCandidatePairId) {
+        transportSelectedPairId = rec.selectedCandidatePairId;
+      }
+      if (rec.type === "candidate-pair" && (rec.selected || (rec.nominated && rec.state === "succeeded"))) {
+        selectedPair = r;
+      }
+    });
+    if (!selectedPair && transportSelectedPairId) {
+      selectedPair = byId.get(transportSelectedPairId) ?? null;
+    }
+    if (!selectedPair) return { path: "failed" };
+    const pair = selectedPair as {
+      localCandidateId?: string;
+      remoteCandidateId?: string;
+      bytesSent?: number;
+      bytesReceived?: number;
+    };
+    const local = pair.localCandidateId ? (byId.get(pair.localCandidateId) as { candidateType?: string } | undefined) : undefined;
+    const remote = pair.remoteCandidateId ? (byId.get(pair.remoteCandidateId) as { candidateType?: string } | undefined) : undefined;
+    const localType = (local?.candidateType ?? undefined) as "host" | "srflx" | "prflx" | "relay" | undefined;
+    const remoteType = (remote?.candidateType ?? undefined) as "host" | "srflx" | "prflx" | "relay" | undefined;
+    const path: "direct" | "relayed" = localType === "relay" || remoteType === "relay" ? "relayed" : "direct";
+    return {
+      path,
+      localType,
+      remoteType,
+      bytesSent: pair.bytesSent,
+      bytesReceived: pair.bytesReceived,
+    };
+  } catch {
+    return { path: "failed" };
+  }
+}
 
 export const ROOM_CAP = 5;
 export const VIDEO_CAP = 5;
