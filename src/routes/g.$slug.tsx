@@ -81,8 +81,9 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
-const TAB_VALUES = ["today", "workshops", "collab", "work", "events", "members", "subgroups", "about"] as const;
+const TAB_VALUES = ["today", "collab", "work", "events", "members", "subgroups", "about"] as const;
 type TabValue = (typeof TAB_VALUES)[number];
+
 
 export const Route = createFileRoute("/g/$slug")({
   validateSearch: (s: Record<string, unknown>) => ({
