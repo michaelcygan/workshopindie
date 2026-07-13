@@ -306,7 +306,11 @@ function LiveRoomPage() {
     qc.invalidateQueries({ queryKey: ["wji", room.source_workshop_id, user?.id] });
   }
 
+  // All hooks above run unconditionally on every render. Only branch on rendering below.
+  if (roomMissing) return <LoungeNotFound />;
+
   return (
+
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
       <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
