@@ -824,6 +824,15 @@ export function useMediaRoom(roomId: string | undefined) {
 
       if (joined) teardownMedia();
 
+      // Force-TURN staging mode: prefetch TURN creds so the first pair uses
+      // relay from the start. Failure is non-fatal — the pair will simply
+      // fail to establish, which is the correct outcome for a relay test.
+      if (WEBRTC_MODE === "force-turn") {
+        try { await getTurnIceServers(); } catch (e) { console.warn("force-turn prefetch failed", e); }
+      } else if (WEBRTC_MODE === "direct-only" && import.meta.env.DEV) {
+        console.warn("[WebRTC] direct-only mode — TURN fallback disabled");
+      }
+
       let stream: MediaStream | null = null;
       try {
         stream = await navigator.mediaDevices.getUserMedia({
