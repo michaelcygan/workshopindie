@@ -21,7 +21,7 @@ import {
   untagWorkshopInGroup,
 } from "@/lib/groups.functions";
 import { resolveGroupSeedLink, redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
-import { joinGroupLounge } from "@/lib/instant.functions";
+
 import { toast } from "sonner";
 
 import { AdjacentGroupsRail } from "@/components/adjacent-groups-rail";
