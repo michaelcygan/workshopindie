@@ -12,7 +12,7 @@ const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
 ];
 
-const ICE_CONFIG: RTCConfiguration = { iceServers: STUN_ONLY };
+
 
 // How long to wait for ICE to reach "connected" before assuming the direct
 // peer-to-peer path won't work and upgrading this pair to TURN relay.
