@@ -181,7 +181,47 @@ type PeerMeta = {
   finalRelayed: boolean;
   // Buffered ICE per gen — early candidates before remoteDescription is set.
   pendingIce: Map<number, RTCIceCandidateInit[]>;
+  // Audio-first health-state ladder + snapshot aggregation.
+  healthState: "ok" | "degraded" | "video-off";
+  degradedStreak: number;         // consecutive samples over degraded threshold
+  videoOffStreak: number;         // consecutive samples over video-off threshold
+  recoverStreak: number;          // consecutive good samples toward recovery
+  videoOffSuspended: boolean;     // sender.replaceTrack(null) is currently applied
+  reconnectCount: number;         // bumped by scheduleIceRestart
+  iceRestarts: number;            // number of times we've actually asked for restartIce
+  // Snapshot accumulator: raw counters + samples-in-window (~20s / 5 samples)
+  snapSampleCount: number;
+  snapLastBytesOutVideo: number;
+  snapLastBytesOutAudio: number;
+  snapLastBytesInVideo: number;
+  snapLastBytesInAudio: number;
+  snapLastPacketsOut: number;
+  snapLastRetransOut: number;
+  snapLastPacketsInLost: number;
+  snapLastPacketsInRecv: number;
+  snapAccRttMs: number;
+  snapAccKbpsOutV: number;
+  snapAccKbpsOutA: number;
+  snapAccKbpsInV: number;
+  snapAccKbpsInA: number;
+  snapAccJitter: number;
+  snapLastFrameW: number;
+  snapLastFrameH: number;
+  snapLastFps: number;
+  snapLastFramesDropped: number;
+  snapLastQlr: "none" | "cpu" | "bandwidth" | "other";
 };
+
+// Per-peer sample thresholds for the audio-first ladder. Chosen to require
+// consistent evidence over ~8s (2 samples) before penalizing, and ~12s
+// (3 samples) before recovering — hysteresis prevents oscillation.
+const DEGRADE_ENTER_LOSS_PCT = 5;
+const DEGRADE_ENTER_RTT_MS = 400;
+const VIDEO_OFF_ENTER_LOSS_PCT = 15;
+const RECOVER_GOOD_LOSS_PCT = 1;
+const RECOVER_GOOD_RTT_MS = 200;
+const SAMPLES_PER_SNAPSHOT = 5;   // ~20s at 4s poll interval
+
 
 export function useMediaRoom(roomId: string | undefined) {
   const { user } = useAuth();
