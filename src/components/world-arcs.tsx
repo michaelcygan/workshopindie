@@ -85,15 +85,6 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-  return promos.map((p) => ({
-    from: p.from,
-    to: p.to ?? p.from,
-    verb: p.verb ?? p.title,
-    kind: p.kind,
-    href: p.href,
-    title: p.title,
-  }));
-}
 
 const REDUCE_MOTION =
   typeof window !== "undefined" &&
