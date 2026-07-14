@@ -238,11 +238,21 @@ function SuggestionIcon({ suggestion: s }: { suggestion: MentionSuggestion }) {
       </span>
     );
   }
+  if (s.kind === "event") {
+    return s.avatar ? (
+      <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+    ) : (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-coral/15 text-coral">
+        <Calendar className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // work
   return s.avatar ? (
     <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
   ) : (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-coral/15 text-coral">
-      <Calendar className="h-3.5 w-3.5" />
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+      <FileText className="h-3.5 w-3.5" />
     </span>
   );
 }
