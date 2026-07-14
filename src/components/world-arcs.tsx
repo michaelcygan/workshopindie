@@ -441,20 +441,44 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
 
       if (label) {
         if (activeLabel) {
+          const p = activeLabel.pair;
+          const kind = p.kind ?? "work";
           label.style.opacity = String(activeLabel.opacity);
           label.style.transform = `translate(${activeLabel.x + 12}px, ${activeLabel.y - 30}px)`;
-          // Hairline pill with pulsing dot + workshop name
-          label.innerHTML = `
-            <span class="relative inline-flex h-1.5 w-1.5 mr-1.5">
-              <span class="absolute inset-0 animate-ping rounded-full bg-primary opacity-70"></span>
-              <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
-            </span>
-            <span class="text-ink">${activeLabel.pair.from.name} → ${activeLabel.pair.to.name}</span>
-            <span class="mx-1 text-ink-muted/60">·</span>
-            <span class="text-ink-muted">${activeLabel.pair.verb}</span>
-          `;
+          label.style.pointerEvents = p.href ? "auto" : "none";
+
+          const dotColor =
+            kind === "collab" ? "bg-[rgb(245,158,66)]" :
+            kind === "group" ? "bg-[rgb(214,68,116)]" :
+            "bg-primary";
+
+          const glyph =
+            kind === "collab"
+              ? `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgb(245,158,66)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M3 11l18-8v18l-18-8z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`
+              : kind === "group"
+              ? `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgb(214,68,116)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>`
+              : `<span class="relative inline-flex h-1.5 w-1.5 mr-1.5"><span class="absolute inset-0 animate-ping rounded-full ${dotColor} opacity-70"></span><span class="relative inline-flex h-1.5 w-1.5 rounded-full ${dotColor}"></span></span>`;
+
+          const routeText =
+            kind === "group"
+              ? `<span class="text-ink">${p.from.name}</span>`
+              : `<span class="text-ink">${p.from.name} → ${p.to.name}</span>`;
+
+          const titleText = escapeHtml(p.title ?? p.verb ?? "");
+          const labelText = titleText
+            ? `<span class="mx-1 text-ink-muted/60">·</span><span class="text-ink-muted">${titleText}</span>`
+            : "";
+
+          const inner = `${glyph}${routeText}${labelText}`;
+
+          if (p.href) {
+            label.innerHTML = `<a href="${p.href}" class="inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
+          } else {
+            label.innerHTML = inner;
+          }
         } else {
           label.style.opacity = "0";
+          label.style.pointerEvents = "none";
         }
       }
 
@@ -466,7 +490,7 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, []);
+  }, [promos]);
 
   return (
     <div ref={wrapRef} className={className ?? "relative"}>
