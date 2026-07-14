@@ -54,6 +54,7 @@ type FormState = {
   artistStatement: string;
   avatar: string | null;
   cover: string | null;
+  coverWorkId: string | null;
   cats: Category[];
   mediums: ExtraMedium[];
   tools: string[];
