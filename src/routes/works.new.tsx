@@ -282,6 +282,7 @@ function NewWork() {
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
+      setExtraCategories([]);
 
       setBook(emptyBookDetails);
       setUrlInput("");
