@@ -119,7 +119,7 @@ async function fetchForYouPage(params: {
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
-  if (params.category !== "all") qb = qb.eq("category", params.category as Category);
+  if (params.category !== "all") qb = qb.contains("categories", [params.category as Category]);
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
