@@ -129,6 +129,7 @@ type Room = {
   claim_user_id: string | null;
   claim_started_at: string | null;
   claim_vetoed: boolean | null;
+  screening_work_id: string | null;
 };
 
 function LiveRoomPage() {
