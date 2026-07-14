@@ -356,6 +356,7 @@ export type Database = {
         Row: {
           also_cities: string[]
           boost_count: number
+          categories: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           close_nudge_dismissed_at: string | null
@@ -387,6 +388,7 @@ export type Database = {
         Insert: {
           also_cities?: string[]
           boost_count?: number
+          categories?: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -418,6 +420,7 @@ export type Database = {
         Update: {
           also_cities?: string[]
           boost_count?: number
+          categories?: Database["public"]["Enums"]["category"][]
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           close_nudge_dismissed_at?: string | null
@@ -3982,6 +3985,7 @@ export type Database = {
           book_published_on: string | null
           book_publisher: string | null
           boost_count: number
+          categories: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           city_id: string | null
           comment_count: number
@@ -4029,6 +4033,7 @@ export type Database = {
           book_published_on?: string | null
           book_publisher?: string | null
           boost_count?: number
+          categories?: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
@@ -4076,6 +4081,7 @@ export type Database = {
           book_published_on?: string | null
           book_publisher?: string | null
           boost_count?: number
+          categories?: Database["public"]["Enums"]["category"][]
           category?: Database["public"]["Enums"]["category"]
           city_id?: string | null
           comment_count?: number
@@ -5144,6 +5150,7 @@ export type Database = {
           archived_at: string | null
           audience_city_ids: string[]
           auto_converted_at: string | null
+          categories: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at: string | null
           check_in_opens_at: string | null
@@ -5198,6 +5205,7 @@ export type Database = {
           archived_at?: string | null
           audience_city_ids?: string[]
           auto_converted_at?: string | null
+          categories?: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
@@ -5252,6 +5260,7 @@ export type Database = {
           archived_at?: string | null
           audience_city_ids?: string[]
           auto_converted_at?: string | null
+          categories?: Database["public"]["Enums"]["category"][]
           category?: Database["public"]["Enums"]["category"]
           check_in_closes_at?: string | null
           check_in_opens_at?: string | null
