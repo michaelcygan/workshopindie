@@ -709,7 +709,13 @@ export function useMediaRoom(roomId: string | undefined) {
     clearCheckTimer(peerId);
     clearDisconnectTimer(peerId);
     const pc = pcsRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
     if (pc) {
+      // Best-effort: emit a final snapshot before we lose stats access, then
+      // the existing relay-end telemetry, then close.
+      if (meta && meta.eventId && meta.snapSampleCount > 0) {
+        void flushSnapshot(peerId, meta);
+      }
       void submitRelayEnd(peerId, pc);
       try { pc.close(); } catch { /* noop */ }
       pcsRef.current.delete(peerId);
