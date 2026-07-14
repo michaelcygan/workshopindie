@@ -315,6 +315,7 @@ function EditProfile() {
               <CoverImagePicker
                 value={form.cover}
                 onChange={(v) => set("cover", v)}
+                onWorkChange={(id) => set("coverWorkId", id)}
                 works={ownedWorks.map((w) => ({ id: w.id, title: w.title, cover_url: w.cover_url }))}
                 worksLoading={worksLoading}
               />
