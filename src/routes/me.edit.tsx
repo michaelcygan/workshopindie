@@ -130,6 +130,7 @@ function EditProfile() {
         artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
         avatar: data.avatar_url ?? null,
         cover: data.cover_url ?? null,
+        coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
         cats: (data.categories ?? []) as Category[],
         mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
         tools: ((data.tools as string[] | null) ?? []),
