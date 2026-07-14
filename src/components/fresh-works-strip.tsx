@@ -46,7 +46,7 @@ export function FreshWorksStrip() {
             <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
           <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-ink">
-            Shipping right now
+            Recent
           </h2>
           <span className="text-xs text-ink-muted">· last 24h</span>
           <Sparkles className="ml-auto h-3.5 w-3.5 text-ink-muted" />
