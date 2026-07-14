@@ -1,59 +1,133 @@
-# Comments: owner controls, one-level replies, DM commenter
+# First-party moderation engine
 
-Keep the model dead simple. No threading beyond a single owner reply. No new "archive" concept — "hidden" already does the job; the owner just gets a toggle to show hidden ones.
+Workshop already has three pieces we build on rather than replace:
 
-## What the owner can do on each comment
+- `src/lib/profanity.server.ts` — a small hardcoded slur list, only wired into 4 spots in `collab.functions.ts`.
+- `public.moderation_terms` table + `admin-moderation.functions.ts` + `/admin/moderation` page — the admin can manage a lexicon, but nothing reads it at runtime.
+- `public.mod_rules` — enable/threshold table with no readers yet.
 
-On any comment on their own Work, a small `…` menu offers:
+The plan: promote the lexicon table to the source of truth, replace `profanity.server.ts` with a real engine that reads it, and call one server helper from every write path.
 
-1. **Reply** — inline composer opens under the comment; posts a single child comment tagged "Author reply".
-2. **Message** — opens (or creates) a DM with the commenter and navigates to `/dms/$id`.
-3. **Hide** / **Unhide** — hides the comment from the public thread. The commenter still sees their own comment (with a subtle "Only visible to you — hidden by author" label). The owner sees it dimmed with an "Unhide" action. A "Show hidden (N)" toggle at the top of the thread lets the owner reveal them inline.
+## 1. Data model changes (one migration)
 
-Non-owners see none of these controls. Admins keep their existing moderation.
+Extend `moderation_terms`:
+- `kind text not null default 'exact'` — `'exact' | 'phrase' | 'regex' | 'allow'` (allow = false-positive exception; suppresses a match).
+- `category text not null default 'slur'` — `'slur' | 'threat' | 'harassment' | 'spam'` (informational; drives error category).
+- `enabled boolean not null default true`.
+- `updated_by uuid null references auth.users(id)`, `updated_at timestamptz default now()`.
+- Trigger to stamp `updated_at`/`updated_by` on write.
 
-## Data changes
+Add `public.moderation_events` (audit + repeat-behavior signal):
+```
+id uuid pk, user_id uuid null, surface text not null, subject_id text null,
+category text not null, rule_id uuid null, severity text not null,  -- 'block' | 'warn' | 'flag'
+term_hash text null,                                                 -- sha256 of matched normalized term, never the term itself
+excerpt_ciphertext bytea null, excerpt_nonce bytea null,             -- optional, admin-only, off by default
+created_at timestamptz default now()
+```
+- RLS: `admins` full; users only see their own rows (for "you've been rate-limited" cooldown checks via RPC).
+- GRANTs to `authenticated` (SELECT/INSERT via SECURITY DEFINER RPC only) and `service_role`.
 
-Add two columns to `public.comments`:
+Add SECURITY DEFINER RPC `moderation_recent_block_count(_user uuid, _window_s int) returns int` for rate-limit decisions without exposing the table broadly.
 
-- `owner_hidden boolean not null default false` — set by the Work owner.
-- `parent_id uuid null references public.comments(id) on delete cascade` — non-null only for the owner's reply. DB check: `parent_id` must point to a comment on the same `work_id` and must itself have `parent_id is null` (enforced in the server fn; a trigger is overkill).
+Seed `moderation_terms` from the existing SLURS constant in `profanity.server.ts` (kind='exact', category='slur', severity='block') plus ~30 common obfuscations as `kind='regex'`.
 
-RLS updates on `comments`:
+## 2. Shared moderation engine
 
-- Replace the public SELECT policy so a row is visible when:
-  `not hidden and not owner_hidden`, **OR** viewer is the commenter (`auth.uid() = user_id`), **OR** viewer owns the Work (`exists (select 1 from works w where w.id = work_id and w.created_by = auth.uid())`), plus the existing block-pair check.
-- Add an UPDATE policy scoped to the Work owner that only permits toggling `owner_hidden` (enforced by writing through a server fn; policy just gates the row).
-- Keep existing insert/delete/edit-own and admin policies.
+New `src/lib/moderation/engine.ts` (isomorphic pure code — no imports of `client.server`):
+- `normalize(text)`: NFKD → strip diacritics + zero-width chars (`\u200B-\u200D\uFEFF`) → Unicode confusables map (Cyrillic а→a, Greek ο→o, fullwidth Ａ→a, etc., small hand-curated table) → lowercase → leetspeak swaps (0→o, 1→i/l, 3→e, 4→a, 5→s, 7→t, @→a, $→s) → collapse repeats (`aaaa`→`aa`) → collapse punctuation/whitespace inside word boundaries. Keep `\s` between tokens so word boundaries still work for phrases.
+- `compileMatcher(terms)`: returns `{ block: RegExp[], warn: RegExp[], allow: RegExp[] }` with word-boundary anchoring (`(?:^|\P{L})term(?:$|\P{L})/u`). `exact` → literal escaped + boundaries. `phrase` → same across whitespace. `regex` → trust admin input, wrap in try/catch and skip on failure.
+- `check(text, matcher, opts)`: returns `{ ok: true } | { ok: false, severity, category, ruleId }`. Runs allow list first (returns ok if fully explained by allow), then block, then warn. Never returns the matched substring.
+- `checkSpam(text, opts)`: link-count / mention-count / repetition heuristics; per-surface thresholds passed in.
 
-No new table. No thread depth beyond 1.
+New `src/lib/moderation/service.server.ts` (server-only wrapper):
+- In-process cache of compiled matcher, TTL 60s, invalidated via a Postgres `LISTEN` or simpler: an integer `bumpVersion` RPC that admin write paths call. Cache keyed by version.
+- `moderateForServer({ text, surface, userId, subjectId?, spamOpts? })` server-side helper:
+  1. Load/reuse compiled matcher.
+  2. Run `check` + `checkSpam`.
+  3. On block/warn: insert `moderation_events` row (fire-and-forget with `service_role` via `supabaseAdmin` loaded inside the function), including `term_hash` only (no raw term). Bumps a per-user counter used by cooldown.
+  4. If user has ≥5 blocks in last 10 min → escalate this attempt's severity to `flag` and shorten posting cadence (server refuses with generic "please slow down" for 5 min). Numbers configurable via `mod_rules`.
+  5. Return `{ ok, category, message }` — message is generic ("This can't be posted because it contains language prohibited by Workshop's community standards. Please revise it and try again." + optional category).
 
-## Server functions (new `src/lib/comments.functions.ts`)
+New server fn `getModerationClientBundle` (public, cached) returns a compact JSON snapshot the browser can compile locally for pre-check UX only — includes only the `enabled` patterns with severity/category, no notes. Client cache keyed by `version` field; refetched with `staleTime: 5 min`. This is the "safe cached representation" — losing it can't bypass the server check.
 
-All use `requireSupabaseAuth`.
+New `src/lib/moderation/client.ts`:
+- `useModerationChecker()` hook: fetches bundle once via TanStack Query, memoizes compiled matcher, exposes `check(text): { ok, category }` synchronously.
+- Pure client-side warning UI only. Never treats client "ok" as authorization.
 
-- `setCommentHidden({ commentId, hidden })` — verifies caller owns the Work that the comment belongs to, updates `owner_hidden`.
-- `replyToComment({ commentId, body })` — verifies caller owns the Work, verifies parent has `parent_id is null`, inserts a new comment with `work_id`, `user_id = owner`, `parent_id = commentId`, trimmed body (1–1000 chars). Returns the new row.
-- DM open reuses existing `openOrCreateConversation` from `src/lib/dms.functions.ts` — no new fn needed.
+## 3. Wire the engine into every write path
 
-## UI changes (`src/components/comment-thread.tsx`)
+Central helper `moderateOrThrow(context, surface, text, opts?)`: throws a typed `Error` whose message is the generic user-facing string. Called at the top of each affected `.handler(...)`. Applied to (grouped by file):
 
-- Extend the query to select `parent_id, owner_hidden` and to fetch the Work's `created_by` once (or pass it in as a prop from `works.$slug.tsx`, which already has it).
-- Group rows: top-level (`parent_id is null`) rendered in order; each top-level row renders its single owner reply (if any) indented beneath it with an "Author reply" chip.
-- Per comment, if `viewer.id === work.created_by` and the comment isn't the owner's own reply, render a `DropdownMenu` with Reply / Message / Hide (or Unhide).
-  - Reply → toggles an inline `Textarea` + Post button; on success invalidates `["comments", workId]`.
-  - Message → calls `openOrCreateConversation({ otherUserId: comment.user_id })` then `navigate({ to: "/dms/$conversationId" })`.
-  - Hide/Unhide → calls `setCommentHidden`, optimistic update, toast.
-- Hidden rendering:
-  - Viewer is commenter: show with muted "Only visible to you — hidden by author" note.
-  - Viewer is owner: show dimmed with "Hidden" chip + Unhide.
-  - Everyone else: filtered out by RLS (nothing to render).
-- Top of thread, if `viewer.id === work.created_by` and hidden count > 0: a small `"Show hidden (N)"` / `"Hide hidden"` toggle (client-side filter on already-fetched rows).
-- Owner's own reply row hides the Reply/Message/Hide menu (no self-actions); it keeps the existing "delete own comment" affordance if we have one.
+- `comments.functions.ts` — replyToComment already exists; add engine call. Extend to a new `postComment` server fn (front-end today writes directly to `supabase.from("comments")` — direct writes bypass moderation, so we add an RLS restriction below and switch the client to the server fn).
+- `dms.functions.ts` — `sendMessage`.
+- `chat.functions.ts`, `today-chat.functions.ts`, `instant.functions.ts`, `host-room.functions.ts`, `lobby.functions.ts` — every message/pin/welcome insertion.
+- `works.functions.ts`, `works-import.functions.ts` — `title`, `description`, `excerpt`, credit `role_label`/`display_name`. Both create and edit paths.
+- `collab.functions.ts` — extend existing `findHateSlur` call sites to `moderateOrThrow` (title, description, roles, requirements, application message).
+- `collab-publish.functions.ts`, `collab-workshop.functions.ts` — publish gate.
+- `groups.functions.ts`, `group-admin.functions.ts`, `group-events.functions.ts`, `group-events-admin.functions.ts`, `group-news.functions.ts` — name, description, posts, event fields, updates, comments.
+- `event-companion.functions.ts`, `event-showcase.functions.ts`, `event-photos.functions.ts` (captions), `event-import.functions.ts`, `event-short.functions.ts` — captions/notes only.
+- `workshop-*.functions.ts` — messages, doc titles, poll questions/options, task titles, tool item labels.
+- `account.functions.ts`, `me.edit.tsx` server fns — `display_name`, `username`, `headline`, `bio`, `pronouns`, city.
+- `notifications-prefs.functions.ts` — none (no free text).
+- `admin-moderation.functions.ts` — admin term/rule writes bump lexicon version and log via existing `logAdminAction`.
+- `friends.functions.ts` / follow request notes if any.
+- `share.functions.ts`, `referrals.functions.ts` — any free-text captions.
 
-## Out of scope
+**Publish gate for drafts:** `works.$slug.edit.tsx` and `collab.$slug.edit.tsx` allow saving drafts freely; the transition-to-published server fn (`publishWork`, `publishCollab`) re-runs moderation on the full record. If a term is added later, drafts stay drafts.
 
-- Threaded replies beyond one owner reply.
-- A separate "Archive" state (folded into `owner_hidden`).
-- Editing/removing an owner reply via new UI beyond the existing edit-own behavior.
-- Notifications wiring changes (owner reply and DM open just piggy-back on existing systems).
+**RLS clamp so direct writes can't bypass:** for `comments`, `messages`, `instant_messages`, `workshop_messages`, `group_today_posts`, `group_event_comments`, `event_photos`, `event_showcase_items`, `group_news`, and `reports` — replace the `INSERT` policy so it only permits `body/text` when a matching server-side moderation event row exists for the caller within the last few seconds; simplest form: keep INSERT open but add a `BEFORE INSERT` trigger that calls a SECURITY DEFINER function `assert_moderated(text, surface)` which checks the pre-registered moderation ticket. **Simpler and preferred:** switch these tables to `TO service_role` INSERT only and route all inserts through server fns (they already exist for most; add ones missing — notably `comments`, `event_photos captions`, `group_today_posts`). This is the "smallest reliable server-side enforcement" for our stack.
+
+Client changes: swap the ~6 direct `supabase.from(...).insert(...)` UGC sites for their server-fn equivalents. No visual change.
+
+## 4. Rate limiting / repeat behavior
+
+Reuse the existing `rate_limits` table + `check_and_bump` RPC (already used in `dms.functions.ts`). Per-surface budgets, e.g.:
+- comments: 8/min, 40/hour
+- messages: 30/min
+- lounge chat: 60/min
+- long-form (works/collabs/groups/events publish): 6/hour
+- `mod_block`: any block increments a per-user counter; ≥5 in 10 min → 5-min posting cooldown (server-enforced, generic message).
+
+All checked server-side. Buttons may show a disabled state, but the source of truth is the RPC.
+
+## 5. UX
+
+Reusable `ModerationError` class with `.category` and `.userMessage`. Server fns throw it; call sites (existing `toast.error(e.message)` patterns) show the message unchanged. Preserve text in editors — every current UGC form already keeps state on error (no clearing on catch); explicitly confirm this in each edit-form file and, where a form does clear, remove the reset-on-error.
+
+Inline error prop threaded into the existing `Input`/`Textarea` field affected: use `aria-invalid` + a `<p role="alert">` sibling with the category message so screen readers pick it up. No color-only signaling.
+
+No repetition of the offending term. No exposure of matcher internals.
+
+## 6. Admin UI (extend `/admin/moderation`)
+
+Add tabs to the existing page:
+- **Terms** (existing) — add `kind`, `category`, `enabled` toggle columns; add "Allowlist" section using `kind='allow'`. Show `updated_by`/`updated_at`. Bumps lexicon version on save.
+- **Events** — paginated list from `moderation_events` filtered by surface/category/user; shows term hash + category + severity + count; drill-in shows the sanitized excerpt only if the admin explicitly requests decryption (`show excerpt` button — decrypts server-side via a fn that also logs the peek to `admin_audit_log`).
+- **Rules** (existing) — surface-scoped rate-limit knobs; edits publish via `check_and_bump` config load.
+
+## 7. Tests
+
+Add `src/lib/moderation/engine.test.ts` (bun + vitest already in project). Cases exactly as spec:
+- exact term, mixed case, punctuation-separated (`n.i.g.g.e.r`), zero-width injection, Cyrillic а confusable, leet variants, phrase across newline.
+- False positives: `Scunthorpe`, `classic`, `assassin`, `analysis`, `bass`, `hello@example.com`, URLs containing `ass`.
+- Allowlist entry overrides.
+- Ordinary profanity (`fuck`, `shit`) → allowed.
+- Educational quoting → allowed when wrapped by allowlisted phrase pattern (documented limitation otherwise).
+- Multi-lingual valid text (Japanese, Arabic, Cyrillic non-slur).
+- Spam heuristics: 6 links → warn, same link ×3 → block.
+- `moderateOrThrow` unit test per surface (mock supabase).
+
+## 8. Scope explicitly out
+
+- No image/OCR/audio/video moderation. Media still flows through existing report system.
+- No auto-ban. Repeat threshold reaches admin flag only.
+- No lexicon delivered to client in raw form beyond enabled compiled patterns needed for pre-check UX; the same patterns exist in the DB accessible only to admins.
+
+## Files changed
+
+Migration (1). New: `src/lib/moderation/{engine.ts,service.server.ts,client.ts,engine.test.ts}`. Edit: `profanity.server.ts` (replace body with re-export from engine — or delete after callers migrated), `admin-moderation.functions.ts`, `/routes/admin.moderation.tsx`, plus every `.functions.ts` listed in §3 (~25 files, one added helper call each), plus ~6 UGC form components to switch from direct-insert to server-fn.
+
+## Report shape (delivered after implementation)
+
+Will list: protected surfaces, server enforcement points, normalization steps, false-positive strategy, hard-block vs flag categories, repeat-abuse handling, admin workflow, DB changes, files/tests changed, known limits.
