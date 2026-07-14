@@ -48,7 +48,7 @@ const PER_USER_LIMIT = 30;
 async function fetchUserWorks(userId: string): Promise<GalleryWork[]> {
   const { data } = await supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,created_by,published_at")
+    .select("id,title,slug,category,categories,cover_url,created_by,published_at")
     .eq("created_by", userId)
     .eq("status", "published")
     .order("published_at", { ascending: false, nullsFirst: false })

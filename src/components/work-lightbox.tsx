@@ -2,7 +2,7 @@ import { useEffect, useCallback } from "react";
 import { Link } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, X, Heart, Bookmark, Eye, ExternalLink } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { CategoryChip } from "./category-chip";
+import { CategoryChips } from "./category-chips";
 import { EmbedPlayer, providerFromUrl } from "./embed-player";
 import { ProfilePeek } from "./profile-peek";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -111,7 +111,7 @@ export function WorkLightbox({
             {/* Meta */}
             <div className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
-                <CategoryChip category={work.category} />
+                <CategoryChips primary={work.category} categories={work.categories} />
                 {work.my_role && (
                   <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs text-ink-soft">
                     as {work.my_role}

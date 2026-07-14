@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Calendar, MapPin, Users } from "lucide-react";
-import { CategoryChip } from "./category-chip";
+import { CategoryChipsCompact } from "./category-chips";
 import type { Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { InlineGroupChips } from "./inline-group-chips";
@@ -12,6 +12,7 @@ export type WorkshopCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   prompt: string | null;
   starts_at: string | null;
   location_type: "online" | "in_person" | "hybrid";
@@ -48,7 +49,7 @@ export function WorkshopCard({ ws, groups, myGroupIds, className }: { ws: Worksh
     >
       <Link to="/workshops/$slug" params={{ slug: ws.slug }} className="absolute inset-0 z-10" aria-label={ws.title} />
       <div className="flex items-center gap-2 p-4 pb-2">
-        <CategoryChip category={ws.category} />
+        <CategoryChipsCompact primary={ws.category} categories={ws.categories} />
         <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">
           {ws.status}
         </span>

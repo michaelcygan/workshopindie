@@ -2,7 +2,7 @@ import { ExternalLink, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChipsCompact } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ type CollabRow = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   description: string | null;
   user_id: string;
   cover_url: string | null;
@@ -47,7 +48,7 @@ export function CollabPeek({
       const { data: c, error } = await supabase
         .from("collab_posts")
         .select(
-          "id,title,slug,category,description,user_id,cover_url,status,roles:collab_roles(id,role_name,quantity,sort_order)",
+          "id,title,slug,category,categories,description,user_id,cover_url,status,roles:collab_roles(id,role_name,quantity,sort_order)",
         )
         .eq("id", collabId!)
         .maybeSingle();
@@ -91,13 +92,13 @@ export function CollabPeek({
               <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
                 <img src={collab.cover_url} alt={collab.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={collab.category} />
+                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
                 </div>
               </div>
             ) : (
               <div className="relative aspect-video w-full gradient-soft">
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={collab.category} />
+                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
                 </div>
               </div>
             )}

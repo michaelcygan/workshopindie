@@ -17,7 +17,7 @@ import { CoverFramer, type CoverAspect, type CoverFocal } from "@/components/cov
 import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
 
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
-import { WORK_CATEGORIES, WORK_SUBTYPES, type Category, type WorkCategory, categoryClass } from "@/lib/categories";
+import { WORK_SUBTYPES, type Category, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
@@ -25,6 +25,7 @@ import { PlusGate } from "@/components/plus-gate";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
+import { CategoryMultiPicker } from "@/components/category-multi-picker";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -70,6 +71,7 @@ function NewWork() {
   // form state
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<WorkCategory>("visual");
+  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
   const [subtype, setSubtype] = useState<string | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
@@ -200,6 +202,7 @@ function NewWork() {
         title: title.trim(),
         slug: "",
         category: category as Category,
+        categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
         subtype: subtype,
         excerpt: excerpt || null,
         description: description || null,
@@ -280,6 +283,7 @@ function NewWork() {
       setProvider(null); setSubtype(null); setOwnsRights(false);
       setCoCreators([]); setDetailsOpen(false);
       setCoverAspect("portrait"); setCoverFocal({ x: 50, y: 50 });
+      setExtraCategories([]);
 
       setBook(emptyBookDetails);
       setUrlInput("");
@@ -381,26 +385,14 @@ function NewWork() {
             />
           </section>
 
-          {/* Category */}
           <section className="space-y-2">
-            <Label>Category</Label>
-            <div className="flex flex-wrap gap-2">
-              {WORK_CATEGORIES.map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  onClick={() => { setCategory(c.id as WorkCategory); setSubtype(null); }}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-sm transition",
-                    category === c.id
-                      ? cn("border-transparent", categoryClass(c.id))
-                      : "border-border bg-surface text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  {c.label}
-                </button>
-              ))}
-            </div>
+            <CategoryMultiPicker
+              primary={category}
+              onPrimaryChange={(next) => setCategory(next)}
+              extras={extraCategories}
+              onExtrasChange={setExtraCategories}
+              onPrimaryReset={() => setSubtype(null)}
+            />
             {subtypeOptions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {subtypeOptions.map((s) => (

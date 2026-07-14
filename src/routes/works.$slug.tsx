@@ -7,7 +7,7 @@ import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChips } from "@/components/category-chips";
 import { WorkActions } from "@/components/work-actions";
 import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
@@ -92,7 +92,7 @@ export const Route = createFileRoute("/works/$slug")({
 
 
 type WorkRow = {
-  id: string; title: string; slug: string; category: Category;
+  id: string; title: string; slug: string; category: Category; categories: Category[] | null;
   description: string | null; excerpt: string | null;
   cover_url: string | null; primary_url: string | null; embed_url: string | null;
   source_type: string; license_type: string; published_at: string | null; created_at: string;
@@ -116,7 +116,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,categories,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -193,7 +193,7 @@ function WorkDetail() {
       <article className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
         <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex items-center gap-2">
-            <CategoryChip category={work.category} />
+            <CategoryChips primary={work.category} categories={work.categories} />
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
               {SOURCE_LABELS[work.source_type] ?? work.source_type}
             </span>

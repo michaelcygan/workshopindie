@@ -141,7 +141,7 @@ type CreditWork = WorkCardData & { my_role: string; owner: { id: string; display
 async function fetchOwnedWorks(userId: string): Promise<OwnedWork[]> {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
+    .select("id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
     .eq("created_by", userId)
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -168,7 +168,7 @@ async function fetchOwnedWorks(userId: string): Promise<OwnedWork[]> {
 async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("role_label, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility,created_by, owner:profiles!works_created_by_fkey(id,display_name,username), work_credits(role_label,sort_order,display_name, profiles(id,display_name,username)))")
+    .select("role_label, work:works!inner(id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,status,visibility,created_by, owner:profiles!works_created_by_fkey(id,display_name,username), work_credits(role_label,sort_order,display_name, profiles(id,display_name,username)))")
     .eq("user_id", userId)
     .eq("hidden_from_profile", false);
   if (error) throw error;
@@ -211,7 +211,7 @@ async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
 async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
   const { data, error } = await supabase
     .from("work_credits")
-    .select("pinned_at, work:works!inner(id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url)))")
+    .select("pinned_at, work:works!inner(id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url)))")
     .eq("user_id", userId)
     .not("pinned_at", "is", null)
     .order("pinned_at", { ascending: false })
@@ -316,7 +316,7 @@ function ProfilePage() {
     enabled: isOwnEarly,
     queryFn: async () => {
       const { data } = await supabase.from("works")
-        .select("id,title,slug,category,cover_url,status,updated_at")
+        .select("id,title,slug,category,categories,cover_url,status,updated_at")
         .eq("created_by", profile!.id)
         .neq("status", "published")
         .order("updated_at", { ascending: false });

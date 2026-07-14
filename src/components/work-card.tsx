@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Heart, Bookmark, Eye, Play, Rocket, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { CategoryChip } from "./category-chip";
+import { CategoryChipsCompact } from "./category-chips";
 import { ProfilePeek } from "./profile-peek";
 import { providerFromUrl, providerLabel } from "./embed-player";
 import { InlineGroupChips } from "./inline-group-chips";
@@ -16,6 +16,7 @@ export type WorkCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   cover_url: string | null;
   cover_aspect?: string | null;
   cover_focal_x?: number | null;
@@ -107,7 +108,7 @@ export function WorkCard({
 
         {showCategory && (
           <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
-            <CategoryChip category={work.category} />
+            <CategoryChipsCompact primary={work.category} categories={work.categories} />
             {isFresh && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
                 <Sparkles className="h-2.5 w-2.5" /> Fresh

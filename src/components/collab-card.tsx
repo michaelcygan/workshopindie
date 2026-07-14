@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Link } from "@tanstack/react-router";
 import { Clock, Radio } from "lucide-react";
-import { CategoryChip } from "./category-chip";
+import { CategoryChipsCompact } from "./category-chips";
 import { StateBadge } from "./state-badge";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
@@ -15,6 +15,7 @@ export type CollabCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   description: string | null;
   timeline_text: string | null;
   timeline_mode?: TimelineMode | null;
@@ -117,7 +118,7 @@ export function CollabCard({
       />
 
       <div className="flex items-center gap-2 px-5 pt-5">
-        <CategoryChip category={post.category} />
+        <CategoryChipsCompact primary={post.category} categories={post.categories} />
         {post.status === "open" ? (
           <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
         ) : isShipped ? (

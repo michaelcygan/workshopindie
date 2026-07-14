@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { WORK_CATEGORIES, type Category, categoryClass } from "@/lib/categories";
+import { type Category, type WorkCategory } from "@/lib/categories";
+import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
 import { cn } from "@/lib/utils";
@@ -138,7 +139,8 @@ export function CollabComposer({
   }, [preselect.data]);
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Category>("visual");
+  const [category, setCategory] = useState<WorkCategory>("visual");
+  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
   const [description, setDescription] = useState("");
   const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [timelineNote, setTimelineNote] = useState("");
@@ -222,7 +224,8 @@ export function CollabComposer({
     const { data: post, error } = await supabase.from("collab_posts").insert({
       title: title.trim(),
       slug: "",
-      category,
+      category: category as Category,
+      categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
       description: description || null,
       timeline_text: timelineNote.trim() || null,
       timeline_mode: timeline.mode,
@@ -357,18 +360,14 @@ export function CollabComposer({
             <Input id="title" required maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Looking for a vocalist for a moody synthwave EP" />
           </section>
 
-          <section className="space-y-2">
-            <Label>Medium</Label>
-            <div className="flex flex-wrap gap-2">
-              {WORK_CATEGORIES.map((c) => (
-                <button type="button" key={c.id} onClick={() => setCategory(c.id)}
-                  className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                    category === c.id ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-background text-ink-soft hover:bg-muted")}>
-                  {c.label}
-                </button>
-              ))}
-            </div>
-          </section>
+          <CategoryMultiPicker
+            label="Medium"
+            primary={category}
+            onPrimaryChange={(next) => setCategory(next)}
+            extras={extraCategories}
+            onExtrasChange={setExtraCategories}
+            hint="A Collab can span mediums (e.g. Music + Visual). Star an extra to make it the primary."
+          />
 
           <section className="space-y-1.5">
             <Label htmlFor="desc">What's the idea</Label>

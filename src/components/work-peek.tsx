@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChips } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
@@ -15,6 +15,7 @@ export type WorkPeekData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   cover_url: string | null;
   excerpt: string | null;
   description: string | null;
@@ -74,7 +75,7 @@ export function WorkPeek({
               <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
                 <img src={work.cover_url} alt={work.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={work.category} />
+                  <CategoryChips primary={work.category} categories={work.categories} />
                 </div>
                 <div className="absolute right-3 top-3 rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
                   {SOURCE_LABELS[work.source_type] ?? work.source_type}

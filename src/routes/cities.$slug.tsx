@@ -98,7 +98,7 @@ function CityPage() {
     enabled: !!city?.id,
     queryFn: async () => {
       const { data } = await supabase.from("workshops")
-        .select("id,title,slug,category,prompt,starts_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,mode,is_pinned,city_id,audience_city_ids, host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
+        .select("id,title,slug,category,categories,prompt,starts_at,location_type,location_text,participant_cap,confirmed_count,application_count,status,mode,is_pinned,city_id,audience_city_ids, host:profiles!workshops_host_user_id_fkey(display_name,username,avatar_url)")
         .or(`city_id.eq.${city!.id},audience_city_ids.cs.{${city!.id}}`)
         .eq("visibility", "public")
         .not("status", "in", "(archived,canceled)")
@@ -134,11 +134,11 @@ function CityPage() {
     enabled: !!city?.id,
     queryFn: async () => {
       const { data } = await supabase.from("works")
-        .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
+        .select("id,title,slug,category,categories,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
         .eq("city_id", city!.id).eq("status", "published").in("visibility", ["public", "unlisted"])
         .order("published_at", { ascending: false, nullsFirst: false }).limit(6);
       type Row = {
-        id: string; title: string; slug: string; category: WorkCardData["category"];
+        id: string; title: string; slug: string; category: WorkCardData["category"]; categories: WorkCardData["categories"];
         cover_url: string | null; source_type: WorkCardData["source_type"];
         like_count: number | null; save_count: number | null; view_count: number | null;
         work_credits: Array<{
@@ -147,7 +147,7 @@ function CityPage() {
         }> | null;
       };
       return ((data ?? []) as Row[]).map<WorkCardData>((r) => ({
-        id: r.id, title: r.title, slug: r.slug, category: r.category, cover_url: r.cover_url, source_type: r.source_type,
+        id: r.id, title: r.title, slug: r.slug, category: r.category, categories: r.categories, cover_url: r.cover_url, source_type: r.source_type,
         like_count: r.like_count ?? 0, save_count: r.save_count ?? 0, view_count: r.view_count ?? 0,
         credits: (r.work_credits ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
           .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
@@ -160,7 +160,7 @@ function CityPage() {
     enabled: !!city?.id,
     queryFn: async () => {
       const { data } = await supabase.from("collab_posts")
-        .select("id,title,slug,category,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id, user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)")
+        .select("id,title,slug,category,categories,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,compensation_type,status,created_at,resulting_work_id, user:profiles!collab_posts_user_id_fkey(display_name,username,avatar_url), city:cities!collab_posts_city_id_fkey(name), roles:collab_roles(id,role_name,sort_order)")
         .or(`city_id.eq.${city!.id},also_cities.cs.{${city!.id}}`)
         .or(`status.eq.open,and(status.eq.closed,resulting_work_id.not.is.null)`)
         .order("created_at", { ascending: false }).limit(6);
