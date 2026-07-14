@@ -38,6 +38,9 @@ import { UsernameMention } from "@/components/username-mention";
 
 
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
+import { PinnedScreeningStrip, useRoomPinsAndScreening } from "@/components/pinned-screening-strip";
+import { ScreeningStage } from "@/components/screening-stage";
+import { stopScreening } from "@/lib/room-screening.functions";
 import { ChatPolls } from "@/components/chat-polls";
 import {
   ChatMentionInput,
@@ -94,6 +97,7 @@ export function ChannelView({
   toolsSlot,
   composerLeading,
   nextLoungeSlot,
+  screeningWorkId = null,
 }: {
   roomId: string;
   title: string;
@@ -107,6 +111,8 @@ export function ChannelView({
   composerLeading?: React.ReactNode;
   /** Optional prominent slot rendered above Mute/Camera in the Lounge side panel. */
   nextLoungeSlot?: React.ReactNode;
+  /** Lounge-wide screening pointer — a published Work id being screened right now. */
+  screeningWorkId?: string | null;
 }) {
 
 
@@ -188,6 +194,8 @@ export function ChannelView({
 
 
   const media = useMediaRoom(roomId);
+  const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
+  const stopScreeningFn = useServerFn(stopScreening);
 
   // The lobby "Drop in" button is the consent point — auto-join with mic + camera
   // (or whatever mode was requested via ?mode=) as soon as the user is loaded.
@@ -761,6 +769,54 @@ export function ChannelView({
               roomId={roomId}
               medium={null}
               mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
+            />
+          }
+          pinnedSlot={
+            <PinnedScreeningStrip
+              roomId={roomId}
+              meUserId={user.id}
+              hostUserId={hostUserId ?? null}
+              screeningWorkId={screeningWorkId}
+              onOpen={openWork}
+            />
+          }
+          screeningActive={!!screeningWork}
+          screeningSlot={screeningWork ? (
+            <ScreeningStage
+              work={screeningWork}
+              onStop={() => stopScreeningFn({ data: { roomId } }).catch((e: any) => toast.error(e?.message ?? "Couldn't stop"))}
+              canStop
+            />
+          ) : null}
+          collabsSlot={
+            <WorkshopCollabsPanel
+              roomId={roomId}
+              hostUserId={hostUserId ?? null}
+              presenceUsers={[
+                {
+                  user_id: user.id,
+                  display_name: meDisplay,
+                  username: me?.username ?? null,
+                  avatar_url: meAvatar,
+                },
+                ...others.map((o) => ({
+                  user_id: o.user_id,
+                  display_name: o.profile?.display_name ?? null,
+                  username: o.profile?.username ?? null,
+                  avatar_url: o.profile?.avatar_url ?? null,
+                })),
+              ]}
+            />
+          }
+          gallerySlot={
+            <RoomGallery
+              meUserId={user.id}
+              members={galleryMembers}
+              roomId={roomId}
+              hostUserId={hostUserId ?? null}
+              onOpenWork={openWork}
+              className="h-full"
+              fullscreen
             />
           }
         />

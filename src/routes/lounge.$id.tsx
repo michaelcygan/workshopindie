@@ -129,6 +129,7 @@ type Room = {
   claim_user_id: string | null;
   claim_started_at: string | null;
   claim_vetoed: boolean | null;
+  screening_work_id: string | null;
 };
 
 function LiveRoomPage() {
@@ -471,6 +472,7 @@ function LiveRoomPage() {
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
+        screeningWorkId={room?.screening_work_id ?? null}
         nextLoungeSlot={
           !isPromoted && room?.status === "active" ? (
             <HopButton
