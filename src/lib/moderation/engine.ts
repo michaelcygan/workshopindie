@@ -73,7 +73,11 @@ export function normalize(input: string): { normalized: string; tight: string } 
     .replace(/([a-z0-9])\1{2,}/g, "$1$1")
     .replace(/\s+/g, " ")
     .trim();
-  const tight = spaced.replace(/\s+/g, "");
+  // tight: strip whitespace AND apply leet substitutions
+  let tight = spaced.replace(/\s+/g, "");
+  let tOut = "";
+  for (const ch of tight) tOut += LEET[ch] ?? ch;
+  tight = tOut;
   return { normalized: spaced, tight };
 }
 
