@@ -754,6 +754,10 @@ export function useMediaRoom(roomId: string | undefined) {
     }
     meta.restartInFlight = true;
     meta.restartAttempts.push(now);
+    meta.reconnectCount++;
+    meta.iceRestarts++;
+
+
 
     try {
       // Refresh near-expiry TURN creds so a restart doesn't inherit a dead ticket.
