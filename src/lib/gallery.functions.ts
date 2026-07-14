@@ -63,7 +63,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       .in("id", workIds)
       .limit(data.limit);
 
-    if (data.category !== "all") q = q.eq("category", data.category as Category);
+    if (data.category !== "all") q = q.contains("categories", [data.category as Category]);
     if (cityId) q = q.eq("city_id", cityId);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");
