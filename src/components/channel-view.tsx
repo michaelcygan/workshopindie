@@ -94,6 +94,7 @@ export function ChannelView({
   toolsSlot,
   composerLeading,
   nextLoungeSlot,
+  screeningWorkId = null,
 }: {
   roomId: string;
   title: string;
@@ -107,6 +108,8 @@ export function ChannelView({
   composerLeading?: React.ReactNode;
   /** Optional prominent slot rendered above Mute/Camera in the Lounge side panel. */
   nextLoungeSlot?: React.ReactNode;
+  /** Lounge-wide screening pointer — a published Work id being screened right now. */
+  screeningWorkId?: string | null;
 }) {
 
 
