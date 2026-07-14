@@ -1057,6 +1057,7 @@ export function ChannelView({
             onExit={handleExit}
             onOpenWork={openWork}
             roomId={roomId}
+            nextLoungeSlot={nextLoungeSlot}
           />
 
 
