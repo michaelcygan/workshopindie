@@ -26,11 +26,12 @@ export type CoverWorkOption = {
 type Props = {
   value: string | null;
   onChange: (url: string | null) => void;
+  onWorkChange?: (workId: string | null) => void;
   works: CoverWorkOption[];
   worksLoading?: boolean;
 };
 
-export function CoverImagePicker({ value, onChange, works, worksLoading }: Props) {
+export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLoading }: Props) {
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
