@@ -964,8 +964,11 @@ export function VideoTile({
   return (
     <div className={cn(
       "relative aspect-video overflow-hidden rounded-2xl bg-ink ring-2 transition",
-      speaking ? "ring-primary" : "ring-transparent",
+      speaking ? "ring-[3px] ring-primary" : "ring-transparent",
     )}>
+      {speaking && (
+        <span className="pointer-events-none absolute inset-0 rounded-2xl ring-4 ring-primary/30 animate-pulse" />
+      )}
       <video
         ref={ref}
         autoPlay
@@ -979,6 +982,7 @@ export function VideoTile({
     </div>
   );
 }
+
 
 export function AudioTile({
   displayName, avatarUrl, speaking, muted,
