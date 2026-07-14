@@ -193,7 +193,7 @@ function WorkDetail() {
       <article className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
         <motion.header initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
           <div className="flex items-center gap-2">
-            <CategoryChip category={work.category} />
+            <CategoryChips primary={work.category} categories={work.categories} />
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
               {SOURCE_LABELS[work.source_type] ?? work.source_type}
             </span>
