@@ -214,3 +214,77 @@ export function useEventSuggestions(userId: string | undefined, query: string, e
     },
   });
 }
+
+/**
+ * Works search — global by title. Ranks the signed-in user's own works
+ * first so "@my <title>" is trivially reachable, then everyone else's.
+ */
+export function useWorkSuggestions(userId: string | undefined, query: string, enabled: boolean) {
+  const q = query.trim().toLowerCase();
+  return useQuery({
+    queryKey: ["mention-works", userId ?? "anon", q],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async (): Promise<MentionSuggestion[]> => {
+      const seen = new Set<string>();
+      const out: MentionSuggestion[] = [];
+      const CATEGORY_LABEL = (c: string | null) =>
+        c ? c.charAt(0).toUpperCase() + c.slice(1) : "Work";
+
+      const push = (
+        rows: Array<{
+          id: string;
+          title: string;
+          slug: string;
+          category: string | null;
+          cover_url: string | null;
+        }>,
+        sublabelPrefix?: string,
+      ) => {
+        for (const r of rows) {
+          if (seen.has(r.id)) continue;
+          seen.add(r.id);
+          out.push({
+            kind: "work",
+            id: r.id,
+            label: r.title,
+            sublabel: sublabelPrefix ?? CATEGORY_LABEL(r.category),
+            avatar: r.cover_url,
+            insert: `[${r.title}](/works/${r.slug}) `,
+          });
+          if (out.length >= LIMIT) break;
+        }
+      };
+
+      // 1) Own works first.
+      if (userId) {
+        let mine = supabase
+          .from("works")
+          .select("id,title,slug,category,cover_url")
+          .eq("created_by", userId)
+          .eq("status", "published")
+          .in("visibility", ["public", "unlisted"])
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .limit(LIMIT);
+        if (q) mine = mine.ilike("title", `%${q}%`);
+        const { data } = await mine;
+        push((data ?? []) as never, "Your piece");
+      }
+
+      // 2) Everyone else's — fill to LIMIT.
+      if (out.length < LIMIT && q) {
+        const { data } = await supabase
+          .from("works")
+          .select("id,title,slug,category,cover_url")
+          .eq("status", "published")
+          .in("visibility", ["public", "unlisted"])
+          .ilike("title", `%${q}%`)
+          .order("published_at", { ascending: false, nullsFirst: false })
+          .limit(LIMIT);
+        push((data ?? []) as never);
+      }
+
+      return out.slice(0, LIMIT);
+    },
+  });
+}
