@@ -92,7 +92,7 @@ const PULSE_MS = 1200;
 
 type ArcSlot = { pairIdx: number; start: number; landedAt: number | null };
 
-export function WorldArcs({ className }: { className?: string }) {
+export function WorldArcs({ className, promos }: { className?: string; promos?: GlobePromo[] }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const labelRef = useRef<HTMLDivElement | null>(null);
