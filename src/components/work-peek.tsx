@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChips } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
