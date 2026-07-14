@@ -480,6 +480,19 @@ function EditProfile() {
               <Textarea id="bio" rows={5} maxLength={500} value={form.bio} onChange={(e) => set("bio", e.target.value)} />
               <p className="text-right text-xs text-ink-muted">{form.bio.length}/500</p>
             </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="artist-statement">Artist statement</Label>
+              <Textarea
+                id="artist-statement"
+                rows={4}
+                maxLength={1000}
+                value={form.artistStatement}
+                onChange={(e) => set("artistStatement", e.target.value)}
+                placeholder="A short manifesto — what your practice is about. Sits above your Works. Leave blank to hide."
+              />
+              <p className="text-right text-xs text-ink-muted">{form.artistStatement.length}/1000</p>
+            </div>
           </Section>
 
 
