@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Heart, Bookmark, Eye, ExternalLink, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -7,8 +8,10 @@ import { CategoryChips } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
-import { formatCount } from "@/lib/utils";
+import { cn, formatCount } from "@/lib/utils";
 import { getWorkPeekDetail } from "@/lib/works-peek.functions";
+import { useWorkLike } from "@/hooks/use-work-like";
+import { SignupGateModal } from "@/components/signup-gate-modal";
 
 export type WorkPeekData = {
   id: string;
@@ -51,6 +54,19 @@ export function WorkPeek({
 
   const work = (data?.work ?? null) as WorkPeekData | null;
   const creator = (data?.creator ?? null) as Creator | null;
+
+  const like = useWorkLike(work?.id ?? null, work?.like_count ?? 0);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  function onLike() {
+    if (!work) return;
+    if (!like.isAuthed) {
+      like.queueForAfterAuth();
+      setGateOpen(true);
+      return;
+    }
+    void like.toggle();
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -110,7 +126,20 @@ export function WorkPeek({
                 </button>
               )}
               <div className="flex items-center gap-4 text-xs text-ink-muted">
-                <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {formatCount(work.like_count)}</span>
+                <button
+                  type="button"
+                  onClick={onLike}
+                  disabled={like.pending}
+                  aria-pressed={like.liked}
+                  aria-label={like.liked ? "Remove from Favorites" : "Add to Favorites"}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 -mx-1.5 transition hover:bg-muted",
+                    like.liked && "text-primary",
+                  )}
+                >
+                  <Heart className={cn("h-3.5 w-3.5", like.liked && "fill-current")} />
+                  {formatCount(like.likes)}
+                </button>
                 <span className="inline-flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" /> {formatCount(work.save_count)}</span>
                 <span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {formatCount(work.comment_count)}</span>
                 <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {formatCount(work.view_count)}</span>
@@ -118,7 +147,7 @@ export function WorkPeek({
               <div className="flex items-center justify-end pt-2">
                 <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
                   <a href={`/works/${work.slug}`} target="_blank" rel="noopener noreferrer">
-                    Open full work <ExternalLink className="h-3.5 w-3.5" />
+                    Open full piece <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </Button>
               </div>
@@ -126,6 +155,15 @@ export function WorkPeek({
           </motion.div>
         )}
       </DialogContent>
+      <SignupGateModal
+        open={gateOpen}
+        onOpenChange={(v) => {
+          setGateOpen(v);
+          if (!v) like.clearQueued();
+        }}
+        title="Favorite this piece"
+        subtitle="Create your free account to favorite pieces and find them again in your Gallery."
+      />
     </Dialog>
   );
 }

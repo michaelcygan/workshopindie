@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Megaphone, Users } from "lucide-react";
+import { Calendar, FileText, Megaphone, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -7,6 +7,7 @@ import {
   useGroupSuggestions,
   useMyCollabSuggestions,
   useUserSuggestions,
+  useWorkSuggestions,
   type MentionKind,
   type MentionSuggestion,
 } from "@/lib/mention-suggestions";
@@ -48,11 +49,13 @@ export function MentionPopover({
   const includeCollabs = sections.includes("collab");
   const includeGroups = sections.includes("group");
   const includeEvents = sections.includes("event");
+  const includeWorks = sections.includes("work");
 
   const users = useUserSuggestions(query, open && includeUsers);
   const collabs = useMyCollabSuggestions(uid, query, open && includeCollabs);
   const groups = useGroupSuggestions(uid, query, open && includeGroups);
   const events = useEventSuggestions(uid, query, open && includeEvents);
+  const works = useWorkSuggestions(uid, query, open && includeWorks);
 
   const q = query.trim().toLowerCase();
 
@@ -90,6 +93,7 @@ export function MentionPopover({
     if (includeCollabs) push(collabs.data);
     if (includeGroups) push(groups.data);
     if (includeEvents) push(events.data);
+    if (includeWorks) push(works.data);
     return list;
   }, [
     filteredExtras,
@@ -97,10 +101,12 @@ export function MentionPopover({
     collabs.data,
     groups.data,
     events.data,
+    works.data,
     includeUsers,
     includeCollabs,
     includeGroups,
     includeEvents,
+    includeWorks,
   ]);
 
   const [active, setActive] = useState(0);
@@ -144,6 +150,7 @@ export function MentionPopover({
     collab: "Your collabs",
     group: "Groups",
     event: "Upcoming events",
+    work: "Works",
   };
 
   return (
@@ -231,11 +238,21 @@ function SuggestionIcon({ suggestion: s }: { suggestion: MentionSuggestion }) {
       </span>
     );
   }
+  if (s.kind === "event") {
+    return s.avatar ? (
+      <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+    ) : (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-coral/15 text-coral">
+        <Calendar className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // work
   return s.avatar ? (
     <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
   ) : (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-coral/15 text-coral">
-      <Calendar className="h-3.5 w-3.5" />
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+      <FileText className="h-3.5 w-3.5" />
     </span>
   );
 }
