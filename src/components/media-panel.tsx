@@ -63,6 +63,7 @@ export function MediaPanel({
   onOpenWork,
   roomId,
   dockExtra,
+  nextLoungeSlot,
 }: {
   m: MediaState;
   channelTitle: string;
@@ -78,6 +79,8 @@ export function MediaPanel({
   roomId?: string;
   /** Optional extra control rendered in the dock alongside Mute/Camera/Exit. */
   dockExtra?: React.ReactNode;
+  /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
+  nextLoungeSlot?: React.ReactNode;
 }) {
   const totalHere = 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
