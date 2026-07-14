@@ -358,7 +358,7 @@ function WorkshopPreflight() {
         )}
       </div>
       {firstVisit && liveCount === 0 && (
-        <p className="mt-1 text-xs text-ink/70 italic">You're the spark tonight.</p>
+        <p className="mt-1 text-xs text-ink/70 italic">You're the spark right now.</p>
       )}
 
       <AnimatePresence>
