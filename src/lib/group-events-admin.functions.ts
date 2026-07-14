@@ -52,6 +52,12 @@ async function rehostCoverIfExternal(coverUrl: string | null | undefined, idHint
   }
 }
 
+// Reject javascript: / data: / embedded HTML; allow only http(s) URLs.
+const safeHttpUrl = z
+  .string()
+  .url()
+  .refine((u) => /^https?:\/\//i.test(u), { message: "Must be an http(s) URL" });
+
 const baseSchema = z.object({
   group_id: z.string().uuid(),
   title: z.string().min(2).max(120),
@@ -59,7 +65,7 @@ const baseSchema = z.object({
   description: z.string().max(6000).nullable().optional(),
   kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other", "lineup"]),
   format: z.enum(["in_person", "online", "hybrid"]),
-  cover_url: z.string().url().nullable().optional(),
+  cover_url: safeHttpUrl.nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),
   starts_at: z.string(),
   ends_at: z.string(),
@@ -69,7 +75,7 @@ const baseSchema = z.object({
   venue_city_id: z.string().uuid().nullable().optional(),
   venue_lat: z.number().nullable().optional(),
   venue_lng: z.number().nullable().optional(),
-  online_url: z.string().url().nullable().optional(),
+  online_url: safeHttpUrl.nullable().optional(),
   capacity: z.number().int().min(1).max(10000).nullable().optional(),
   waitlist_enabled: z.boolean().optional(),
   visibility: z.enum(["public", "group_only", "unlisted"]).optional(),
@@ -81,6 +87,13 @@ const baseSchema = z.object({
   series_key: z.string().max(60).nullable().optional(),
   // Lineup config: blank = no lineup, number = capacity.
   lineup_capacity: z.number().int().min(1).max(200).nullable().optional(),
+  // v2: source + recurrence + pin
+  source: z.enum(["workshop", "external"]).optional(),
+  external_url: safeHttpUrl.nullable().optional(),
+  external_organizer: z.string().max(140).nullable().optional(),
+  is_recurring: z.boolean().optional(),
+  recurrence_label: z.string().max(80).nullable().optional(),
+  pinned: z.boolean().optional(),
 });
 
 export const createEvent = createServerFn({ method: "POST" })
