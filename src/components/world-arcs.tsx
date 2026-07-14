@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { geoOrthographic, geoInterpolate, geoContains } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import landRaw from "@/assets/land-110m.json";
