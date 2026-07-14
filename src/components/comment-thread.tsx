@@ -45,7 +45,10 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
   const isOwner = !!user && !!ownerId && user.id === ownerId;
   const setHiddenFn = useServerFn(setCommentHidden);
   const replyFn = useServerFn(replyToComment);
+  const postFn = useServerFn(postComment);
   const openConvo = useServerFn(openOrCreateConversation);
+  const mod = useModerationChecker();
+  const [modError, setModError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["comments", workId],
