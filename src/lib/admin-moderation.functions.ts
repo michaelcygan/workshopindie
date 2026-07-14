@@ -75,3 +75,18 @@ export const upsertModRule = createServerFn({ method: "POST" })
     await logAdminAction(context.supabase, "mod.rule.upsert", "mod_rule", null, payload as any);
     return { ok: true };
   });
+
+// Moderation events (admin log of blocks/warns/flags)
+export const listModerationEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const { data } = await admin
+      .from("moderation_events")
+      .select("id, user_id, surface, subject_id, category, severity, term_hash, created_at, profiles:profiles!moderation_events_user_id_fkey(display_name, username)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    return data ?? [];
+  });
+
