@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { setRoomNote } from "@/lib/host-room.functions";
+import { RenderLinks } from "@/lib/render-links";
 
 const MAX = 280;
 
