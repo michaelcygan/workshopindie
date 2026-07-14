@@ -244,12 +244,19 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
       <form onSubmit={submit} className="space-y-2">
         <Textarea
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => { setBody(e.target.value); if (modError) setModError(null); }}
           placeholder={user ? "Say something thoughtful." : "Sign in to comment."}
           rows={3}
           maxLength={1000}
           disabled={!user}
+          aria-invalid={!!modError}
+          aria-describedby={modError ? "comment-mod-error" : undefined}
         />
+        {modError && (
+          <p id="comment-mod-error" role="alert" className="text-xs text-destructive">
+            {modError}
+          </p>
+        )}
         <div className="flex justify-end">
           <Button type="submit" disabled={posting || !body.trim()} className="rounded-full">
             {user ? (posting ? "Posting…" : "Post comment") : "Sign in to comment"}
