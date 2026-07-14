@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useRouter } from "@tanstack/react-router";
 import { geoOrthographic, geoInterpolate, geoContains } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import landRaw from "@/assets/land-110m.json";
@@ -109,6 +110,9 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
   const dotAlphaRef = useRef(0);
   const inViewRef = useRef(true);
   const lastInteractionRef = useRef(0);
+  const hoveredRef = useRef(false);
+  const currentPromoRef = useRef<Pair | null>(null);
+  const router = useRouter();
 
   // Build land dots after first paint, chunked so we never block the main thread.
   useEffect(() => {
@@ -449,12 +453,18 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
       }
 
       if (label) {
-        if (activeLabel) {
+        if (hoveredRef.current && currentPromoRef.current?.href) {
+          // Freeze label in place while user is hovering (so it's clickable).
+          label.style.opacity = "1";
+          label.style.pointerEvents = "auto";
+        } else if (activeLabel) {
           const p = activeLabel.pair;
+          currentPromoRef.current = p;
           const kind = p.kind ?? "work";
           label.style.opacity = String(activeLabel.opacity);
           label.style.transform = `translate(${activeLabel.x + 12}px, ${activeLabel.y - 30}px)`;
           label.style.pointerEvents = p.href ? "auto" : "none";
+          label.style.cursor = p.href ? "pointer" : "default";
 
           const dotColor =
             kind === "collab" ? "bg-[rgb(245,158,66)]" :
@@ -481,13 +491,14 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
           const inner = `${glyph}${routeText}${labelText}`;
 
           if (p.href) {
-            label.innerHTML = `<a href="${p.href}" class="inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
+            label.innerHTML = `<a href="${p.href}" data-pill-link="1" class="inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
           } else {
             label.innerHTML = inner;
           }
         } else {
           label.style.opacity = "0";
           label.style.pointerEvents = "none";
+          currentPromoRef.current = null;
         }
       }
 
@@ -500,6 +511,30 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
       ro.disconnect();
     };
   }, [promos]);
+
+  // Hover-to-freeze + SPA-navigate on click for the floating pill.
+  useEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+    const enter = () => { hoveredRef.current = true; };
+    const leave = () => { hoveredRef.current = false; };
+    const click = (e: MouseEvent) => {
+      const href = currentPromoRef.current?.href;
+      if (!href) return;
+      // Let cmd/ctrl/middle-click open in new tab.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
+      e.preventDefault();
+      router.navigate({ to: href });
+    };
+    label.addEventListener("mouseenter", enter);
+    label.addEventListener("mouseleave", leave);
+    label.addEventListener("click", click);
+    return () => {
+      label.removeEventListener("mouseenter", enter);
+      label.removeEventListener("mouseleave", leave);
+      label.removeEventListener("click", click);
+    };
+  }, [router]);
 
   return (
     <div ref={wrapRef} className={className ?? "relative"}>
