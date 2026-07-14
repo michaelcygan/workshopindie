@@ -2819,6 +2819,7 @@ export type Database = {
         Row: {
           age_filter_min: number | null
           aliases: string[]
+          artist_statement: string | null
           avatar_url: string | null
           bio: string | null
           birthdate: string | null
@@ -2864,6 +2865,7 @@ export type Database = {
         Insert: {
           age_filter_min?: number | null
           aliases?: string[]
+          artist_statement?: string | null
           avatar_url?: string | null
           bio?: string | null
           birthdate?: string | null
@@ -2909,6 +2911,7 @@ export type Database = {
         Update: {
           age_filter_min?: number | null
           aliases?: string[]
+          artist_statement?: string | null
           avatar_url?: string | null
           bio?: string | null
           birthdate?: string | null
