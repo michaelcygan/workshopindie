@@ -14,6 +14,8 @@ type Props = {
   roomId: string;
   medium: Category | null;
   mode: "video" | "voice";
+  tone?: "outline" | "primary";
+  fullWidth?: boolean;
 };
 
 /**
