@@ -5,6 +5,7 @@ import {
   mintTurnCreds,
   recordWebrtcConnection,
   recordWebrtcRelayEnd,
+  recordWebrtcSnapshot,
 } from "@/lib/turn.functions";
 import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
 
