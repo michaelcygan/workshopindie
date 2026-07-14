@@ -171,6 +171,83 @@ async function fetchForYouPage(params: {
   return { works, nextCursor };
 }
 
+async function fetchFavoritesPage(params: {
+  userId: string;
+  category: string;
+  citySlug: string;
+  cityIdMap: Map<string, string>;
+  q: string;
+  cursor: string | null;
+  blockedIds: string[];
+}): Promise<{ works: WorkCardData[]; nextCursor: string | null }> {
+  let rq = supabase
+    .from("work_reactions")
+    .select("work_id, created_at")
+    .eq("user_id", params.userId)
+    .eq("reaction", "like")
+    .order("created_at", { ascending: false })
+    .limit(PAGE_SIZE);
+  if (params.cursor) rq = rq.lt("created_at", params.cursor);
+  const { data: reactions, error: rErr } = await rq;
+  if (rErr) throw rErr;
+  const rxns = (reactions ?? []) as Array<{ work_id: string; created_at: string }>;
+  if (rxns.length === 0) return { works: [], nextCursor: null };
+  const ids = rxns.map((r) => r.work_id);
+
+  let qb = supabase
+    .from("works")
+    .select(
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
+    )
+    .in("id", ids);
+  if (params.category !== "all") qb = qb.contains("categories", [params.category as Category]);
+  if (params.citySlug !== "all") {
+    const cid = params.cityIdMap.get(params.citySlug);
+    if (!cid) return { works: [], nextCursor: null };
+    qb = qb.eq("city_id", cid);
+  }
+  if (params.q.trim()) {
+    const s = params.q.trim().replace(/[%,]/g, " ");
+    qb = qb.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%`);
+  }
+  const { data, error } = await qb;
+  if (error) throw error;
+  type Row = {
+    id: string; title: string; slug: string; category: Category;
+    cover_url: string | null; embed_url: string | null; source_type: string;
+    like_count: number; save_count: number; view_count: number;
+    vouch_count: number; boost_count: number;
+    published_at: string | null;
+    created_by: string;
+    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+  };
+  const blocked = new Set(params.blockedIds);
+  const byId = new Map<string, Row>();
+  for (const r of (data as Row[]) ?? []) {
+    if (blocked.has(r.created_by)) continue;
+    byId.set(r.id, r);
+  }
+  // Preserve favorite-order (most recently favorited first).
+  const works: WorkCardData[] = [];
+  for (const r of rxns) {
+    const w = byId.get(r.work_id);
+    if (!w) continue;
+    works.push({
+      id: w.id, title: w.title, slug: w.slug, category: w.category,
+      cover_url: w.cover_url, embed_url: w.embed_url, source_type: w.source_type,
+      like_count: w.like_count, save_count: w.save_count, view_count: w.view_count,
+      vouch_count: w.vouch_count, boost_count: w.boost_count,
+      published_at: w.published_at, created_by: w.created_by,
+      credits: (w.work_credits ?? [])
+        .sort((a, b) => a.sort_order - b.sort_order)
+        .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
+    });
+  }
+  const last = rxns[rxns.length - 1];
+  const nextCursor = rxns.length === PAGE_SIZE && last ? last.created_at : null;
+  return { works, nextCursor };
+}
+
 function GalleryPage() {
   const search = Route.useSearch();
   const navigate = useNavigate({ from: "/gallery" });
