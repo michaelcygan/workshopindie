@@ -144,7 +144,7 @@ function StripItem({ item }: { item: MyGroupsFeedItem }) {
   return (
     <Link
       {...href}
-      className="group/item inline-flex max-w-[320px] shrink-0 items-center gap-2.5 rounded-full border border-border bg-background px-3 py-1.5 text-sm transition hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-soft"
+      className="group/item inline-flex h-9 max-w-[320px] shrink-0 items-center gap-2.5 rounded-full border border-border bg-background px-3 text-sm leading-none transition hover:-translate-y-0.5 hover:border-ink/20 hover:shadow-soft"
     >
       <span
         aria-hidden
@@ -153,13 +153,17 @@ function StripItem({ item }: { item: MyGroupsFeedItem }) {
       >
         <Icon className="h-2.5 w-2.5" />
       </span>
-      <span className="hidden text-[10px] font-semibold uppercase tracking-wide text-ink-muted sm:inline">
+      <span className="hidden shrink-0 items-center text-[10px] font-semibold uppercase leading-none tracking-wide text-ink-muted sm:inline-flex">
         {kindLabel}
       </span>
-      <span className="truncate font-display text-[13px] text-ink">{item.title}</span>
-      <span className="hidden text-[11px] text-ink-muted md:inline">· {item.group.name}</span>
+      <span className="truncate font-display text-[13px] leading-none text-ink">{item.title}</span>
+      <span className="hidden shrink-0 items-center text-[11px] leading-none text-ink-muted md:inline-flex">
+        · {item.group.name}
+      </span>
       {startsLabel && (
-        <span className="hidden text-[11px] text-ink-muted lg:inline">· {startsLabel}</span>
+        <span className="hidden shrink-0 items-center text-[11px] leading-none text-ink-muted lg:inline-flex">
+          · {startsLabel}
+        </span>
       )}
       <ArrowRight className="h-3 w-3 shrink-0 text-ink-muted transition group-hover/item:translate-x-0.5 group-hover/item:text-ink" />
     </Link>
