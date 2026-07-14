@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { JoinGroupButton } from "@/components/join-group-button";
 import { formatCount } from "@/lib/utils";
 
 type PeekGroup = {
@@ -119,6 +120,9 @@ function Body({ slug }: { slug: string }) {
           >
             View group <ExternalLink className="h-3 w-3" />
           </Link>
+        </div>
+        <div className="pt-1">
+          <JoinGroupButton groupId={data.id} groupName={data.name} />
         </div>
       </div>
     </div>
