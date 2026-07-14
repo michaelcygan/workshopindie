@@ -306,6 +306,18 @@ function GalleryPage() {
           },
         });
       }
+      if (tab === "favorites") {
+        if (!user) return { works: [], nextCursor: null };
+        return fetchFavoritesPage({
+          userId: user.id,
+          category,
+          citySlug,
+          cityIdMap,
+          q,
+          cursor: pageParam,
+          blockedIds: Array.from(blockedIds),
+        });
+      }
       return fetchForYouPage({ category, citySlug, cityIdMap, sort, q, cursor: pageParam, blockedIds: Array.from(blockedIds) });
     },
     getNextPageParam: (last) => last.nextCursor,
