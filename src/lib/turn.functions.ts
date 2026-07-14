@@ -238,7 +238,7 @@ export const recordWebrtcSnapshot = createServerFn({ method: "POST" })
     patch.snapshot_count = ((cur as { snapshot_count?: number } | null)?.snapshot_count ?? 0) + 1;
     const { error } = await supabase
       .from("webrtc_connection_events")
-      .update(patch)
+      .update(patch as never)
       .eq("id", data.eventId);
     if (error) throw new Error(error.message);
     return { ok: true };
