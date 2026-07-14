@@ -186,6 +186,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "collab_contact_events_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       collab_dm_allowances: {
@@ -478,6 +485,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "collab_posts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       collab_roles: {
@@ -626,6 +640,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -680,10 +701,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comp_memberships_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comp_memberships_granted_to_fkey"
             columns: ["granted_to"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comp_memberships_granted_to_fkey"
+            columns: ["granted_to"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -742,10 +777,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "conversations_user_a_fkey"
+            columns: ["user_a"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "conversations_user_b_fkey"
             columns: ["user_b"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_user_b_fkey"
+            columns: ["user_b"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -933,10 +982,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "follows_followed_user_id_fkey"
+            columns: ["followed_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "follows_follower_user_id_fkey"
             columns: ["follower_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_follower_user_id_fkey"
+            columns: ["follower_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2038,6 +2101,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "instant_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       instant_presence: {
@@ -2075,6 +2145,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_presence_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2555,6 +2632,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "media_assets_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "media_assets_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -2643,6 +2727,13 @@ export type Database = {
             columns: ["sender_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2833,6 +2924,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notification_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notifications: {
@@ -2878,10 +2976,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_actor_user_id_fkey"
+            columns: ["actor_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3265,10 +3377,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "relationship_edges_other_user_id_fkey"
+            columns: ["other_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "relationship_edges_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relationship_edges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3310,6 +3436,13 @@ export type Database = {
             columns: ["reporter_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_user_id_fkey"
+            columns: ["reporter_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3398,6 +3531,13 @@ export type Database = {
             columns: ["host_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "standing_meetups_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3664,6 +3804,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "work_agreement_signatures_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       work_agreements: {
@@ -3715,6 +3862,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_agreements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_agreements_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -3757,6 +3911,13 @@ export type Database = {
             columns: ["applicant_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_applications_applicant_user_id_fkey"
+            columns: ["applicant_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3844,6 +4005,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_collaborators_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_collaborators_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -3895,6 +4063,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_credits_work_id_fkey"
             columns: ["work_id"]
             isOneToOne: false
@@ -3937,6 +4112,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invite_tokens_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -3991,10 +4173,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "work_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "work_invites_invitee_user_id_fkey"
             columns: ["invitee_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_invites_invitee_user_id_fkey"
+            columns: ["invitee_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4034,6 +4230,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4242,6 +4445,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "works_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "works_source_workshop_id_fkey"
             columns: ["source_workshop_id"]
             isOneToOne: false
@@ -4300,6 +4510,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_applications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4742,6 +4959,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workshop_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workshop_messages_workshop_id_fkey"
             columns: ["workshop_id"]
             isOneToOne: false
@@ -4791,6 +5015,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -4968,6 +5199,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workshop_session_demos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       workshop_session_tracks: {
@@ -5028,6 +5266,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workshop_session_tracks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       workshop_sessions: {
@@ -5080,6 +5325,13 @@ export type Database = {
             columns: ["started_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_sessions_started_by_fkey"
+            columns: ["started_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -5190,6 +5442,13 @@ export type Database = {
             columns: ["created_by_user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workshop_tool_items_created_by_user_id_fkey"
+            columns: ["created_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
           {
@@ -5425,6 +5684,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "workshops_host_user_id_fkey"
+            columns: ["host_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "workshops_published_work_id_fkey"
             columns: ["published_work_id"]
             isOneToOne: false
@@ -5449,6 +5715,156 @@ export type Database = {
       }
     }
     Views: {
+      public_profiles: {
+        Row: {
+          aliases: string[] | null
+          artist_statement: string | null
+          avatar_url: string | null
+          bio: string | null
+          categories: Database["public"]["Enums"]["category"][] | null
+          city_id: string | null
+          cover_url: string | null
+          cover_work_id: string | null
+          created_at: string | null
+          creator_status: Database["public"]["Enums"]["creator_status"] | null
+          discoverable: boolean | null
+          display_name: string | null
+          dm_policy: string | null
+          event_visibility:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links: Json | null
+          follower_count: number | null
+          following_count: number | null
+          headline: string | null
+          hide_group_memberships: boolean | null
+          home_city_id: string | null
+          id: string | null
+          indexable: boolean | null
+          instagram_handle: string | null
+          mediums: string[] | null
+          onboarded: boolean | null
+          pinned_work_ids: string[] | null
+          preferred_language: string | null
+          show_online: boolean | null
+          tools: string[] | null
+          updated_at: string | null
+          username: string | null
+          work_count: number | null
+          worked_with_count: number | null
+        }
+        Insert: {
+          aliases?: string[] | null
+          artist_statement?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          categories?: Database["public"]["Enums"]["category"][] | null
+          city_id?: string | null
+          cover_url?: string | null
+          cover_work_id?: string | null
+          created_at?: string | null
+          creator_status?: Database["public"]["Enums"]["creator_status"] | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          dm_policy?: string | null
+          event_visibility?:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links?: Json | null
+          follower_count?: number | null
+          following_count?: number | null
+          headline?: string | null
+          hide_group_memberships?: boolean | null
+          home_city_id?: string | null
+          id?: string | null
+          indexable?: boolean | null
+          instagram_handle?: string | null
+          mediums?: string[] | null
+          onboarded?: boolean | null
+          pinned_work_ids?: string[] | null
+          preferred_language?: string | null
+          show_online?: boolean | null
+          tools?: string[] | null
+          updated_at?: string | null
+          username?: string | null
+          work_count?: number | null
+          worked_with_count?: number | null
+        }
+        Update: {
+          aliases?: string[] | null
+          artist_statement?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          categories?: Database["public"]["Enums"]["category"][] | null
+          city_id?: string | null
+          cover_url?: string | null
+          cover_work_id?: string | null
+          created_at?: string | null
+          creator_status?: Database["public"]["Enums"]["creator_status"] | null
+          discoverable?: boolean | null
+          display_name?: string | null
+          dm_policy?: string | null
+          event_visibility?:
+            | Database["public"]["Enums"]["event_visibility"]
+            | null
+          external_links?: Json | null
+          follower_count?: number | null
+          following_count?: number | null
+          headline?: string | null
+          hide_group_memberships?: boolean | null
+          home_city_id?: string | null
+          id?: string | null
+          indexable?: boolean | null
+          instagram_handle?: string | null
+          mediums?: string[] | null
+          onboarded?: boolean | null
+          pinned_work_ids?: string[] | null
+          preferred_language?: string | null
+          show_online?: boolean | null
+          tools?: string[] | null
+          updated_at?: string | null
+          username?: string | null
+          work_count?: number | null
+          worked_with_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_cover_work_id_fkey"
+            columns: ["cover_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_home_city_id_fkey"
+            columns: ["home_city_id"]
+            isOneToOne: false
+            referencedRelation: "vw_city_activity_7d"
+            referencedColumns: ["city_id"]
+          },
+        ]
+      }
       vw_acquisition_funnel: {
         Row: {
           first_action: number | null
