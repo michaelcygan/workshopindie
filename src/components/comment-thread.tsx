@@ -79,13 +79,23 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return navigate({ to: "/login" });
-    if (!body.trim()) return;
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    setModError(null);
+    const pre = mod.check(trimmed, { maxLinks: 4, maxRepeatChars: 25 });
+    if (!pre.ok) { setModError(pre.message); return; }
     setPosting(true);
-    const { error } = await supabase.from("comments").insert({ user_id: user.id, work_id: workId, body: body.trim() });
-    setPosting(false);
-    if (error) return toast.error(error.message);
-    setBody("");
-    qc.invalidateQueries({ queryKey: ["comments", workId] });
+    try {
+      await postFn({ data: { workId, body: trimmed } });
+      setBody("");
+      qc.invalidateQueries({ queryKey: ["comments", workId] });
+    } catch (err) {
+      const msg = (err as Error).message;
+      setModError(msg);
+      toast.error(msg);
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function onToggleHidden(c: Row) {
