@@ -582,6 +582,8 @@ export type Database = {
           created_at: string
           hidden: boolean
           id: string
+          owner_hidden: boolean
+          parent_id: string | null
           updated_at: string
           user_id: string
           work_id: string
@@ -591,6 +593,8 @@ export type Database = {
           created_at?: string
           hidden?: boolean
           id?: string
+          owner_hidden?: boolean
+          parent_id?: string | null
           updated_at?: string
           user_id: string
           work_id: string
@@ -600,11 +604,20 @@ export type Database = {
           created_at?: string
           hidden?: boolean
           id?: string
+          owner_hidden?: boolean
+          parent_id?: string | null
           updated_at?: string
           user_id?: string
           work_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "comments_user_id_fkey"
             columns: ["user_id"]
@@ -5649,6 +5662,10 @@ export type Database = {
       }
       is_work_owner: {
         Args: { _user_id: string; _work_id: string }
+        Returns: boolean
+      }
+      is_work_owner_of_comment: {
+        Args: { _comment_id: string; _user_id: string }
         Returns: boolean
       }
       is_workshop_host: {

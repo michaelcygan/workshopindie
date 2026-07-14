@@ -322,7 +322,7 @@ function WorkDetail() {
 
         {/* Comments */}
         <section className="mt-14">
-          <CommentThread workId={work.id} />
+          <CommentThread workId={work.id} ownerId={work.created_by} />
         </section>
       </article>
     </main>
