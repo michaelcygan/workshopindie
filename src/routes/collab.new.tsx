@@ -224,7 +224,8 @@ export function CollabComposer({
     const { data: post, error } = await supabase.from("collab_posts").insert({
       title: title.trim(),
       slug: "",
-      category,
+      category: category as Category,
+      categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
       description: description || null,
       timeline_text: timelineNote.trim() || null,
       timeline_mode: timeline.mode,
