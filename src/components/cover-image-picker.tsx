@@ -143,6 +143,7 @@ export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLo
                     type="button"
                     onClick={() => {
                       onChange(w.cover_url);
+                      onWorkChange?.(w.id);
                       setPickerOpen(false);
                     }}
                     className={cn(
