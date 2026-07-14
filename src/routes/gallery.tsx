@@ -27,7 +27,7 @@ import { KickerChip } from "@/components/kicker-chip";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
-  tab: fallback(z.enum(["for-you", "following"]), "for-you").default("for-you"),
+  tab: fallback(z.enum(["for-you", "following", "favorites"]), "for-you").default("for-you"),
   cat: fallback(z.string(), "all").default("all"),
   city: fallback(z.string(), "all").default("all"),
   sort: fallback(z.enum(["recent", "trending"]), "recent").default("recent"),
