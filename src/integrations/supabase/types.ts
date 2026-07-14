@@ -3419,6 +3419,11 @@ export type Database = {
       }
       webrtc_connection_events: {
         Row: {
+          avg_inbound_kbps_audio: number | null
+          avg_inbound_kbps_video: number | null
+          avg_outbound_kbps_audio: number | null
+          avg_outbound_kbps_video: number | null
+          avg_rtt_ms: number | null
           browser_family: string | null
           bytes_received: number | null
           bytes_sent: number | null
@@ -3426,18 +3431,35 @@ export type Database = {
           created_at: string
           device_class: string | null
           env_mode: string
+          frames_dropped: number | null
+          health_state_terminal: string | null
+          ice_restarts: number
           id: string
+          jitter_ms_in: number | null
           local_candidate_type: string | null
+          outbound_fps: number | null
+          outbound_height: number | null
+          outbound_width: number | null
+          packet_loss_pct_in: number | null
+          packet_loss_pct_out: number | null
           participant_count: number | null
           path: string
+          quality_limitation_reason: string | null
+          reconnect_count: number
           relay_ended_at: string | null
           remote_candidate_type: string | null
           room_id: string | null
+          snapshot_count: number
           turn_attempted: boolean
           turn_succeeded: boolean
           user_id: string
         }
         Insert: {
+          avg_inbound_kbps_audio?: number | null
+          avg_inbound_kbps_video?: number | null
+          avg_outbound_kbps_audio?: number | null
+          avg_outbound_kbps_video?: number | null
+          avg_rtt_ms?: number | null
           browser_family?: string | null
           bytes_received?: number | null
           bytes_sent?: number | null
@@ -3445,18 +3467,35 @@ export type Database = {
           created_at?: string
           device_class?: string | null
           env_mode?: string
+          frames_dropped?: number | null
+          health_state_terminal?: string | null
+          ice_restarts?: number
           id?: string
+          jitter_ms_in?: number | null
           local_candidate_type?: string | null
+          outbound_fps?: number | null
+          outbound_height?: number | null
+          outbound_width?: number | null
+          packet_loss_pct_in?: number | null
+          packet_loss_pct_out?: number | null
           participant_count?: number | null
           path: string
+          quality_limitation_reason?: string | null
+          reconnect_count?: number
           relay_ended_at?: string | null
           remote_candidate_type?: string | null
           room_id?: string | null
+          snapshot_count?: number
           turn_attempted?: boolean
           turn_succeeded?: boolean
           user_id: string
         }
         Update: {
+          avg_inbound_kbps_audio?: number | null
+          avg_inbound_kbps_video?: number | null
+          avg_outbound_kbps_audio?: number | null
+          avg_outbound_kbps_video?: number | null
+          avg_rtt_ms?: number | null
           browser_family?: string | null
           bytes_received?: number | null
           bytes_sent?: number | null
@@ -3464,13 +3503,25 @@ export type Database = {
           created_at?: string
           device_class?: string | null
           env_mode?: string
+          frames_dropped?: number | null
+          health_state_terminal?: string | null
+          ice_restarts?: number
           id?: string
+          jitter_ms_in?: number | null
           local_candidate_type?: string | null
+          outbound_fps?: number | null
+          outbound_height?: number | null
+          outbound_width?: number | null
+          packet_loss_pct_in?: number | null
+          packet_loss_pct_out?: number | null
           participant_count?: number | null
           path?: string
+          quality_limitation_reason?: string | null
+          reconnect_count?: number
           relay_ended_at?: string | null
           remote_candidate_type?: string | null
           room_id?: string | null
+          snapshot_count?: number
           turn_attempted?: boolean
           turn_succeeded?: boolean
           user_id?: string
@@ -5517,6 +5568,10 @@ export type Database = {
       check_and_bump: {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
+      }
+      claim_lounge_slot: {
+        Args: { _cap?: number; _room_id: string; _user_id: string }
+        Returns: Json
       }
       contains_blocked_term: { Args: { _text: string }; Returns: string }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
