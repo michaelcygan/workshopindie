@@ -472,6 +472,7 @@ function LiveRoomPage() {
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
         initialMode={mode ?? "video"}
+        screeningWorkId={room?.screening_work_id ?? null}
         nextLoungeSlot={
           !isPromoted && room?.status === "active" ? (
             <HopButton
