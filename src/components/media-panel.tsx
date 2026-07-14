@@ -658,12 +658,19 @@ export function FullscreenRoom({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Layout segmented control — only when stage has something to show */}
-          {stageHasContent && (
+          {/* Layout segmented control — visible when there's something to switch to */}
+          {(stageHasContent || screeningActive) && (
             <div className="hidden sm:flex items-center gap-0.5 rounded-full bg-background/10 p-0.5">
-              <LayoutSeg active={layoutMode === "stage"} onClick={() => setLayoutMode("stage")} icon={<MonitorPlay className="h-3.5 w-3.5" />} label="Stage" />
-              <LayoutSeg active={layoutMode === "grid"} onClick={() => setLayoutMode("grid")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Grid" />
-              <LayoutSeg active={layoutMode === "tool"} onClick={() => setLayoutMode("tool")} icon={<Maximize2 className="h-3.5 w-3.5" />} label="Tool" />
+              {stageHasContent && (
+                <>
+                  <LayoutSeg active={layoutMode === "stage"} onClick={() => setLayoutMode("stage")} icon={<MonitorPlay className="h-3.5 w-3.5" />} label="Stage" />
+                  <LayoutSeg active={layoutMode === "grid"} onClick={() => setLayoutMode("grid")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Grid" />
+                  <LayoutSeg active={layoutMode === "tool"} onClick={() => setLayoutMode("tool")} icon={<Maximize2 className="h-3.5 w-3.5" />} label="Tool" />
+                </>
+              )}
+              {screeningActive && (
+                <LayoutSeg active={layoutMode === "screening"} onClick={() => setLayoutMode("screening")} icon={<MonitorPlay className="h-3.5 w-3.5" />} label="Screening" />
+              )}
             </div>
           )}
           <button
