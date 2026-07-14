@@ -168,10 +168,13 @@ export const updateEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { id, featured, ...rest } = data;
+    const { id, featured, pinned, ...rest } = data;
     const patch: Record<string, unknown> = { ...rest };
     if (typeof featured === "boolean") {
       patch.featured_at = featured ? new Date().toISOString() : null;
+    }
+    if (typeof pinned === "boolean") {
+      patch.pinned_at = pinned ? new Date().toISOString() : null;
     }
     const { error } = await supabase.from("group_events").update(patch as never).eq("id", id);
     if (error) throw new Error(error.message);
