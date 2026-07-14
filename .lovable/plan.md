@@ -1,30 +1,48 @@
-## Plan: Add "Nonfiction" as a book subtype
+# Rename "Work" → "Gallery" in the UI
 
-### Diagnosis
-Book subtypes are defined once in `src/lib/categories.ts` as a plain string list (`WORK_SUBTYPES.writing_book`). Today the list is:
+Reframes the vocabulary users see without changing data models, URLs, or code identifiers. "Work" stays as the internal primitive (tables, types, route filenames, variable names, dev-facing labels). Every string a normal user reads changes.
 
-```
-Novel, Novella, Short story collection, Poetry, Memoir / Nonfiction, Anthology, Zine, Serial
-```
+## The rule
 
-Nonfiction is bundled with Memoir into a single pill, which hides it as its own choice.
+- **Section / collection of pieces** → **Gallery** (e.g. profile tab, submit-flow destination, cover-picker "your Gallery").
+- **A single piece** → refer to it by its title, its category (Book, Song, Film…), or the generic word "piece" / "post". Never say "your Work" in the singular.
+- **Verb for adding one** → **Post to Gallery** (was "Post a Work", "New Work", "Publish Work").
+- **URLs unchanged** — `/works/*`, `/works/new`, `/works/:slug/edit` all stay. Renaming URLs breaks inbound links, shares, SEO, and every internal `<Link to>`.
+- **Internal / code** — table names, column names, `WorkPeek`, `WorkCard`, `work_credits`, route filenames, TypeScript types, function names, admin dashboards, log lines: all untouched.
 
-### Where this list is used
-Only two places read `WORK_SUBTYPES` — both are automatically fixed by editing the source list:
-- `src/routes/works.new.tsx` (submit-a-work flow)
-- `src/routes/works.$slug.edit.tsx` (edit-a-work flow — just added)
+## Scope of copy changes
 
-Subtype is stored as free-form text in `works.subtype` (not a DB enum), so no migration is needed and existing rows saved as `"Memoir / Nonfiction"` continue to render fine as a label.
+Sweep for every user-visible string containing "Work" / "Works" (case-insensitive) and rewrite per the rule above. Confirmed hotspots from a first pass:
 
-### Change
-Split `"Memoir / Nonfiction"` into two separate pills in `src/lib/categories.ts`:
+- Top nav / mobile nav: "Post a Work" → "Post to Gallery"; any "Works" tab label → "Gallery".
+- Home (`src/routes/index.tsx`): empty state "post your work" / button "Post a Work".
+- Profile (`src/routes/u.$username.tsx`): "Works" section heading → "Gallery".
+- Profile edit (`src/routes/me.edit.tsx`): "your Works tabs", "Sits above your Works" → "your Gallery", "Sits above your Gallery".
+- Submit + edit flow (`src/routes/works.new.tsx`, `works.$slug.edit.tsx`): page title, submit CTA ("Publish Work" → "Post to Gallery"), helper copy.
+- Cover picker (`src/components/cover-image-picker.tsx`): "Select a cover from your Works" → "…from your Gallery".
+- Workshop / event rails and CTAs: "Publish Work", "Post a work →", "New Work", "Share a piece" — reworded to Gallery / plain "piece" language.
+- Nudges, share sheet, follow-button subtitle, welcome tour, signup, settings ("hides your works" → "hides your gallery"), refer, pricing, plus-gate, notifications, admin-facing user copy where end-users see it.
+- Reverse-provenance rail (`works-born-here.tsx`) heading "Works born here" → "Born here in the Gallery" (or just "Born here" — single title works for both cases).
+- SEO metadata (route `head()` titles/descriptions) rewritten to match, including profile pages, gallery route, and work detail page.
 
-```
-Novel, Novella, Short story collection, Poetry, Memoir, Nonfiction, Anthology, Zine, Serial
-```
+Admin routes (`src/routes/admin.*`) keep "Works" — admins are internal audience and the schema label matches.
 
-That's the entire change. Both the create and edit flows pick it up automatically. No DB migration, no other file edits.
+## Individual piece pages
 
-### Out of scope
-- No changes to the collab role list for books (different concept).
-- No back-fill of existing works currently labeled `"Memoir / Nonfiction"` — owners can re-pick on edit if they want to split.
+On the work detail page (`src/routes/works.$slug.tsx`):
+- Page `<title>` = the piece's title only (no " · Work" suffix if any exists).
+- Breadcrumb / back-link that currently says "Works" → "Gallery" (links to `/gallery` or the creator's `/u/$username`).
+- Owner Edit button label stays "Edit"; toast / confirm copy that says "work" → "post" or the title.
+
+## Verification
+
+- `rg -n -i "\\bwork(s)?\\b"` sweep across `src/routes/` and `src/components/` after edits — remaining hits must be code identifiers, admin surfaces, comments, or intentional (e.g. Workshop, which is unrelated).
+- Manual click-through of: top nav → Post to Gallery; profile page shows "Gallery" tab; cover picker dialog title; workshop "Publish" button; empty-state on home.
+- Typecheck.
+
+## Out of scope
+
+- No URL renames (`/works/*` stays).
+- No DB / schema / type / function renames.
+- No changes to Workshop, Collab, Lounge, or Group vocabulary.
+- No new features — pure copy pass.
