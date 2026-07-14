@@ -254,7 +254,7 @@ function Index() {
                 Be the first to post your work and start your portfolio.
               </p>
               <Link to="/works/new" className="mt-5 inline-block">
-                <Button className="rounded-full">Post a Work</Button>
+                <Button className="rounded-full">Post to Gallery</Button>
               </Link>
             </div>
           ) : (

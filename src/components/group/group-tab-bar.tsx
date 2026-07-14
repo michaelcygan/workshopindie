@@ -95,7 +95,7 @@ export function GroupTabBar({
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/works/new" search={{ group: slug }}>
-                New Work
+                Post to Gallery
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>

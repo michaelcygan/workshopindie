@@ -225,7 +225,7 @@ function BringDialog({ eventId }: { eventId: string }) {
           <div className="rounded-2xl border border-dashed border-border bg-surface-2/30 p-5 text-center text-sm text-ink-soft">
             You don't have a published public work or open collab yet.
             <div className="mt-3 flex justify-center gap-2">
-              <Link to="/works/new" className="text-xs font-medium text-primary hover:underline">Post a work →</Link>
+              <Link to="/works/new" className="text-xs font-medium text-primary hover:underline">Post to Gallery →</Link>
               <Link to="/collab/new" className="text-xs font-medium text-primary hover:underline">Start a collab →</Link>
             </div>
           </div>

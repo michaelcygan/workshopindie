@@ -157,7 +157,7 @@ function SettingsPage() {
             <AccountSection />
           </Section>
 
-          <Section id="plus" title="Plus membership" subtitle="Manage your Workshop Plus subscription." refMap={sectionRefs}>
+          <Section id="plus" title="Plus membership" subtitle="Manage your Galleryhop Plus subscription." refMap={sectionRefs}>
             <PlusSection />
           </Section>
 
@@ -947,7 +947,7 @@ function DangerSection() {
   return (
     <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-5">
       <p className="text-sm text-ink">
-        Deleting your account immediately signs you out, scrubs your profile, hides your works
+        Deleting your account immediately signs you out, scrubs your profile, hides your gallery
         and collab posts, and removes you from search. This can't be undone.
       </p>
       <Button
@@ -962,7 +962,7 @@ function DangerSection() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete your Workshop account?</DialogTitle>
+            <DialogTitle>Delete your Galleryhop account?</DialogTitle>
             <DialogDescription>
               {memo.email
                 ? <>This permanently deletes <span className="font-medium text-ink">{memo.email}</span> and signs you out everywhere.</>

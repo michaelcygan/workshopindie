@@ -174,9 +174,9 @@ function EditWork() {
   if (!work) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <h1 className="font-display text-3xl text-ink">Work not found</h1>
+        <h1 className="font-display text-3xl text-ink">Not found</h1>
         <Link to="/gallery" className="mt-6 inline-block">
-          <Button variant="outline" className="rounded-full">Back to Work</Button>
+          <Button variant="outline" className="rounded-full">Back to Gallery</Button>
         </Link>
       </main>
     );
@@ -191,10 +191,10 @@ function EditWork() {
         params={{ slug }}
         className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Work
+        <ArrowLeft className="h-4 w-4" /> Back to Gallery
       </Link>
 
-      <h1 className="mt-4 font-display text-4xl text-ink md:text-5xl">Edit Work</h1>
+      <h1 className="mt-4 font-display text-4xl text-ink md:text-5xl">Edit</h1>
       <p className="mt-1 text-sm text-ink-muted">Changes save immediately when you hit Save.</p>
 
       <div className="mt-8 space-y-6">

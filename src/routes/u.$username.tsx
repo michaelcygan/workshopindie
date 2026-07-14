@@ -561,7 +561,7 @@ function ProfilePage() {
         {/* Owner-only primary CTAs */}
         {isOwn && (
           <div className="mt-5 flex flex-wrap gap-2">
-            <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Publish a Work</Button></Link>
+            <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post to Gallery</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
             <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Lounge</Button></Link>
           </div>
@@ -732,7 +732,7 @@ function WorksTab({
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
         {isOwn && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Link to="/works/new"><Button className="rounded-full">Publish a Work</Button></Link>
+            <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
           </div>
         )}

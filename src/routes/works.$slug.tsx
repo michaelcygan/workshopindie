@@ -43,16 +43,16 @@ export const Route = createFileRoute("/works/$slug")({
       <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
       <div className="mt-6 flex justify-center gap-2">
         <Button onClick={reset} className="rounded-full">Try again</Button>
-        <Link to="/gallery"><Button variant="outline" className="rounded-full">Back to Work</Button></Link>
+        <Link to="/gallery"><Button variant="outline" className="rounded-full">Back to Gallery</Button></Link>
       </div>
     </main>
   ),
   notFoundComponent: () => (
     <main className="mx-auto max-w-3xl px-4 py-20 text-center">
-      <h1 className="font-display text-4xl text-ink">Work not found</h1>
+      <h1 className="font-display text-4xl text-ink">Not found</h1>
       <p className="mt-2 text-sm text-ink-muted">It may have been removed or made private.</p>
       <Link to="/gallery" className="mt-6 inline-block">
-        <Button variant="outline" className="rounded-full">Back to Work</Button>
+        <Button variant="outline" className="rounded-full">Back to Gallery</Button>
       </Link>
     </main>
   ),
@@ -184,8 +184,8 @@ function WorkDetail() {
   if (!work) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
-        <h1 className="font-display text-4xl text-ink">Work not found</h1>
-        <Link to="/gallery" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to Work</Button></Link>
+        <h1 className="font-display text-4xl text-ink">Not found</h1>
+        <Link to="/gallery" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to Gallery</Button></Link>
       </main>
     );
   }

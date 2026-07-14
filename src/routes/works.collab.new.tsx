@@ -54,7 +54,7 @@ function NewCollaborativeWork() {
   if (!user) {
     return (
       <div className="container mx-auto p-8 max-w-md">
-        <h1 className="text-2xl font-semibold mb-2">Sign in to start a Work</h1>
+        <h1 className="text-2xl font-semibold mb-2">Sign in to post to your Gallery</h1>
         <Button asChild><Link to="/login">Sign in</Link></Button>
       </div>
     );

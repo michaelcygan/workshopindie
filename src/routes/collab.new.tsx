@@ -647,7 +647,7 @@ export function CollabComposer({
             <span className="mx-1.5 opacity-50">→</span>
             <span className="text-ink-soft">People apply</span>
             <span className="mx-1.5 opacity-50">→</span>
-            <span className="text-ink-soft">Publish a Work</span>
+            <span className="text-ink-soft">Post to Gallery</span>
           </p>
         </div>
       </div>

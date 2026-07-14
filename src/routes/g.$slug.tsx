@@ -815,7 +815,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
           action={
             <Button asChild size="sm" className="rounded-full">
               <Link to="/works/new" search={{ group: group.slug }}>
-                <Plus className="h-4 w-4" /> Add Work
+                <Plus className="h-4 w-4" /> Add a piece
               </Link>
             </Button>
           }

@@ -40,7 +40,7 @@ const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "mediums", label: "Mediums & bio", icon: Sparkles },
   { id: "location", label: "Location", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
-  { id: "pinned", label: "Pinned works", icon: Pin },
+  { id: "pinned", label: "Pinned pieces", icon: Pin },
 ];
 
 type FormState = {
@@ -435,7 +435,7 @@ function EditProfile() {
 
 
           {/* MEDIUMS & BIO */}
-          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Works tabs, gallery filters, and which Lounges show up for you." refMap={sectionRefs}>
+          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Gallery tabs, gallery filters, and which Lounges show up for you." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">
@@ -462,7 +462,7 @@ function EditProfile() {
                   );
                 })}
               </div>
-              <p className="text-xs text-ink-muted">Pick all that apply. Your Works tabs come from Film, Music, Writing, Build, and Visual — the rest just describe your practice.</p>
+              <p className="text-xs text-ink-muted">Pick all that apply. Your Gallery tabs come from Film, Music, Writing, Build, and Visual — the rest just describe your practice.</p>
             </div>
 
             <ToolsField
@@ -489,7 +489,7 @@ function EditProfile() {
                 maxLength={1000}
                 value={form.artistStatement}
                 onChange={(e) => set("artistStatement", e.target.value)}
-                placeholder="A short manifesto — what your practice is about. Sits above your Works. Leave blank to hide."
+                placeholder="A short manifesto — what your practice is about. Sits above your Gallery. Leave blank to hide."
               />
               <p className="text-right text-xs text-ink-muted">{form.artistStatement.length}/1000</p>
             </div>
@@ -534,7 +534,7 @@ function EditProfile() {
           </Section>
 
           {/* PINNED WORKS */}
-          <Section id="pinned" title="Pinned works" subtitle="Feature up to 6 of your published Works at the top of your profile." refMap={sectionRefs}>
+          <Section id="pinned" title="Pinned pieces" subtitle="Feature up to 6 of your published Works at the top of your profile." refMap={sectionRefs}>
             <PinnedWorksPicker
               works={ownedWorks}
               value={form.pinnedIds}

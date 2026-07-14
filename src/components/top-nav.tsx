@@ -103,7 +103,7 @@ export function TopNav() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem onClick={() => navigate({ to: "/works/new" })}>
-                <Briefcase className="mr-2 h-4 w-4" /> Post a Work
+                <Briefcase className="mr-2 h-4 w-4" /> Post to Gallery
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab

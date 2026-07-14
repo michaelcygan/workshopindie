@@ -54,7 +54,7 @@ export function PinnedWorksPicker({
   if (works.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
-        Publish a Work first — once you do, pin up to {MAX_PINNED} to feature them at the top of your profile.
+        Post to Gallery first — once you do, pin up to {MAX_PINNED} to feature them at the top of your profile.
       </div>
     );
   }
