@@ -229,12 +229,21 @@ export function ChannelView({
   // Inactivity guard: muted AND camera off → warn after a generous quiet window, drop later only if ignored.
   // Suppressed while the "workshop wrapped" prompt is open.
   const inactive = media.joined && media.muted && !media.cameraOn && !endedOpen;
+  const [quietSince, setQuietSince] = useState<number | null>(null);
+  const [warnSince, setWarnSince] = useState<number | null>(null);
+  const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
     if (!inactive) {
       setWarnOpen(false);
+      setQuietSince(null);
+      setWarnSince(null);
       return;
     }
-    const warnT = setTimeout(() => setWarnOpen(true), QUIET_WARN_MS);
+    setQuietSince((prev) => prev ?? Date.now());
+    const warnT = setTimeout(() => {
+      setWarnOpen(true);
+      setWarnSince(Date.now());
+    }, QUIET_WARN_MS);
     return () => clearTimeout(warnT);
   }, [inactive]);
 
@@ -250,6 +259,36 @@ export function ChannelView({
     return () => clearTimeout(kickT);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [warnOpen, inactive]);
+
+  // 1s ticker — only runs while an idle countdown is armed, to avoid noisy renders.
+  useEffect(() => {
+    if (quietSince === null && !warnOpen) return;
+    setNowTick(Date.now());
+    const id = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [quietSince, warnOpen]);
+
+  const idleMsLeft =
+    warnOpen && warnSince !== null
+      ? Math.max(0, QUIET_KICK_MS - (nowTick - warnSince))
+      : quietSince !== null
+        ? Math.max(0, QUIET_WARN_MS - (nowTick - quietSince))
+        : null;
+  const fmtCountdown = (ms: number) => {
+    const s = Math.ceil(ms / 1000);
+    const m = Math.floor(s / 60);
+    const r = s % 60;
+    return `${m}:${r.toString().padStart(2, "0")}`;
+  };
+  const idleTone =
+    idleMsLeft === null
+      ? ""
+      : idleMsLeft <= 60_000
+        ? "border-red-500/40 bg-red-500/10 text-red-600 dark:text-red-300"
+        : idleMsLeft <= 2 * 60_000
+          ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          : "border-border bg-surface/70 text-ink-muted";
+
 
   // Track first moment the room became multi-party (>=2). Used to gate auto-end:
   // a solo first-joiner should never be wrapped — only fire after a real
@@ -750,6 +789,29 @@ export function ChannelView({
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
           {/* Top-right icon cluster: focus / share / PiP / fullscreen — reads as one control group. */}
+          {idleMsLeft !== null && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuietSince(Date.now());
+                setWarnOpen(false);
+                setWarnSince(null);
+              }}
+              aria-live="polite"
+              title="Stay in this Lounge — unmute or turn your camera on to clear this timer."
+              className={cn(
+                "absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm transition hover:bg-background",
+                idleTone,
+              )}
+            >
+              <span className="relative inline-flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+              </span>
+              Auto-close in {fmtCountdown(idleMsLeft)}
+            </button>
+          )}
+
           <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <button
               type="button"
@@ -1090,11 +1152,26 @@ export function ChannelView({
               <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
                 You've been muted with camera off for a while. Keep going or unmute — otherwise
-                we'll leave this Lounge in 2 minutes.
+                we'll leave this Lounge automatically.
               </AlertDialogDescription>
+              <div
+                role="timer"
+                aria-live="polite"
+                className="mt-2 text-sm font-medium text-ink"
+              >
+                Auto-leaving in {fmtCountdown(idleMsLeft ?? QUIET_KICK_MS)}
+              </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogAction onClick={() => setWarnOpen(false)}>Keep going</AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => {
+                  setWarnOpen(false);
+                  setWarnSince(null);
+                  setQuietSince(Date.now());
+                }}
+              >
+                Keep going
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
