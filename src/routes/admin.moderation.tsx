@@ -9,7 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner";
 import {
   listModerationTerms, upsertModerationTerm, deleteModerationTerm,
-  listModRules, upsertModRule,
+  listModRules, upsertModRule, listModerationEvents,
 } from "@/lib/admin-moderation.functions";
 
 export const Route = createFileRoute("/admin/moderation")({ component: ModerationPage });
