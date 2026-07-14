@@ -177,3 +177,70 @@ export const recordWebrtcRelayEnd = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+// -----------------------------------------------------------------------------
+// Periodic per-peer quality snapshot. Client aggregates 5 samples (~20s) then
+// flushes averaged fields to the existing connection row. Best-effort — never
+// fatal to the call. All fields optional so partial samples still land.
+// -----------------------------------------------------------------------------
+export const recordWebrtcSnapshot = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        eventId: z.string().uuid(),
+        avgRttMs: z.number().int().nonnegative().max(60_000).optional(),
+        avgOutboundKbpsVideo: z.number().int().nonnegative().max(100_000).optional(),
+        avgOutboundKbpsAudio: z.number().int().nonnegative().max(1_000).optional(),
+        avgInboundKbpsVideo: z.number().int().nonnegative().max(100_000).optional(),
+        avgInboundKbpsAudio: z.number().int().nonnegative().max(1_000).optional(),
+        packetLossPctOut: z.number().nonnegative().max(100).optional(),
+        packetLossPctIn: z.number().nonnegative().max(100).optional(),
+        jitterMsIn: z.number().int().nonnegative().max(10_000).optional(),
+        framesDropped: z.number().int().nonnegative().max(1_000_000_000).optional(),
+        outboundWidth: z.number().int().nonnegative().max(8192).optional(),
+        outboundHeight: z.number().int().nonnegative().max(8192).optional(),
+        outboundFps: z.number().int().nonnegative().max(240).optional(),
+        qualityLimitationReason: z.enum(["none", "cpu", "bandwidth", "other"]).optional(),
+        iceRestarts: z.number().int().nonnegative().max(1000).optional(),
+        reconnectCount: z.number().int().nonnegative().max(1000).optional(),
+        healthState: z.enum(["ok", "degraded", "video-off"]).optional(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const patch: Record<string, unknown> = {};
+    // Only include provided fields so a missing metric doesn't clobber a good one.
+    if (data.avgRttMs !== undefined) patch.avg_rtt_ms = data.avgRttMs;
+    if (data.avgOutboundKbpsVideo !== undefined) patch.avg_outbound_kbps_video = data.avgOutboundKbpsVideo;
+    if (data.avgOutboundKbpsAudio !== undefined) patch.avg_outbound_kbps_audio = data.avgOutboundKbpsAudio;
+    if (data.avgInboundKbpsVideo !== undefined) patch.avg_inbound_kbps_video = data.avgInboundKbpsVideo;
+    if (data.avgInboundKbpsAudio !== undefined) patch.avg_inbound_kbps_audio = data.avgInboundKbpsAudio;
+    if (data.packetLossPctOut !== undefined) patch.packet_loss_pct_out = data.packetLossPctOut;
+    if (data.packetLossPctIn !== undefined) patch.packet_loss_pct_in = data.packetLossPctIn;
+    if (data.jitterMsIn !== undefined) patch.jitter_ms_in = data.jitterMsIn;
+    if (data.framesDropped !== undefined) patch.frames_dropped = data.framesDropped;
+    if (data.outboundWidth !== undefined) patch.outbound_width = data.outboundWidth;
+    if (data.outboundHeight !== undefined) patch.outbound_height = data.outboundHeight;
+    if (data.outboundFps !== undefined) patch.outbound_fps = data.outboundFps;
+    if (data.qualityLimitationReason !== undefined) patch.quality_limitation_reason = data.qualityLimitationReason;
+    if (data.iceRestarts !== undefined) patch.ice_restarts = data.iceRestarts;
+    if (data.reconnectCount !== undefined) patch.reconnect_count = data.reconnectCount;
+    if (data.healthState !== undefined) patch.health_state_terminal = data.healthState;
+    // snapshot_count is monotonic; use a tiny select-then-update since PostgREST
+    // doesn't expose atomic increment. Non-blocking on failure.
+    const { data: cur } = await supabase
+      .from("webrtc_connection_events")
+      .select("snapshot_count")
+      .eq("id", data.eventId)
+      .maybeSingle();
+    patch.snapshot_count = ((cur as { snapshot_count?: number } | null)?.snapshot_count ?? 0) + 1;
+    const { error } = await supabase
+      .from("webrtc_connection_events")
+      .update(patch as never)
+      .eq("id", data.eventId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
