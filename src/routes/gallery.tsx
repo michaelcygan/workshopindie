@@ -338,7 +338,7 @@ function GalleryPage() {
             }
           />
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <KickerChip live>Shipping now</KickerChip>
+            <KickerChip live>Recent</KickerChip>
             <p className="text-sm text-ink-muted">
               Everything people made — film, music, writing, build, visuals.
             </p>
@@ -347,7 +347,7 @@ function GalleryPage() {
       </section>
 
 
-      {/* Live "shipping right now" rail */}
+      {/* Recent works rail */}
       <FreshWorksStrip />
 
 
