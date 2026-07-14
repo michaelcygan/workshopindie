@@ -358,7 +358,7 @@ function WorkshopPreflight() {
         )}
       </div>
       {firstVisit && liveCount === 0 && (
-        <p className="mt-1 text-xs text-ink/70 italic">You're the spark tonight.</p>
+        <p className="mt-1 text-xs text-ink/70 italic">You're the spark right now.</p>
       )}
 
       <AnimatePresence>
@@ -474,7 +474,7 @@ function WorkshopPreflight() {
             <RadioTower className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-ink truncate">Hosting a session?</div>
+            <div className="text-sm font-medium text-ink truncate">Hosting a Lounge?</div>
             <p className="text-xs text-ink-muted truncate">
               Optional: name it so it stays yours to rename or end.
             </p>
@@ -502,11 +502,11 @@ function WorkshopPreflight() {
 
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
-        Everything in the Lounge is ephemeral until someone creates a{" "}
+        Lounges are ephemeral and deleted at close — start a{" "}
         <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
           Collab
         </Link>
-        .
+        {" "}to keep the work.
       </p>
 
       <LiveWorkshopsRail
