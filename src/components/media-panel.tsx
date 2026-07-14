@@ -115,9 +115,6 @@ export function MediaPanel({
         </p>
       ) : (
         <div className="mt-3 space-y-2">
-          {nextLoungeSlot && (
-            <div className="[&_button]:w-full">{nextLoungeSlot}</div>
-          )}
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
@@ -148,7 +145,9 @@ export function MediaPanel({
             </button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
-            {dockExtra ? (
+            {nextLoungeSlot ? (
+              <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+            ) : dockExtra ? (
               <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
                 {dockExtra}
               </div>
