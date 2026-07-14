@@ -421,6 +421,11 @@ export function FullscreenRoom({
   roomId,
   stageSlot,
   dockExtra,
+  pinnedSlot,
+  screeningSlot,
+  screeningActive = false,
+  collabsSlot,
+  gallerySlot,
 }: {
   m: MediaState;
   channelTitle: string;
@@ -442,6 +447,15 @@ export function FullscreenRoom({
   stageSlot?: React.ReactNode;
   /** Extra control (e.g. "New") rendered in the floating dock. */
   dockExtra?: React.ReactNode;
+  /** Optional horizontal strip rendered above the main stage — e.g. pinned Works. */
+  pinnedSlot?: React.ReactNode;
+  /** Optional stage content for Screening mode (video embed of a pinned Work). */
+  screeningSlot?: React.ReactNode;
+  /** True when the room currently has a Work being screened; enables the "Screening" layout tab. */
+  screeningActive?: boolean;
+  /** Optional side panels for the segmented Chat / Collabs / Gallery toggle. */
+  collabsSlot?: React.ReactNode;
+  gallerySlot?: React.ReactNode;
 }) {
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
