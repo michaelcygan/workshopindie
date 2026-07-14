@@ -692,10 +692,18 @@ export function FullscreenRoom({
         </div>
       </header>
 
-      {/* Main: stage/tiles + chat */}
+      {/* Main: stage/tiles + side panel */}
       <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 px-4 pb-28 md:px-6">
-        <div className="min-h-0 overflow-auto">
-          {(layoutMode === "stage" || layoutMode === "tool") && stageHasContent ? (
+        <div className="min-h-0 flex flex-col gap-2 overflow-hidden">
+          {pinnedSlot && (
+            <div className="shrink-0">{pinnedSlot}</div>
+          )}
+          <div className="min-h-0 flex-1 overflow-auto">
+          {layoutMode === "screening" && screeningActive && screeningSlot ? (
+            <div className="h-full overflow-hidden rounded-2xl ring-1 ring-background/10 bg-black">
+              {screeningSlot}
+            </div>
+          ) : (layoutMode === "stage" || layoutMode === "tool") && stageHasContent ? (
             <div className="flex h-full flex-col gap-3">
               {/* Stage surface */}
               <div className="flex-1 min-h-0 overflow-hidden rounded-2xl ring-1 ring-background/10 bg-black">
@@ -727,24 +735,49 @@ export function FullscreenRoom({
               </div>
             </div>
           )}
+          </div>
         </div>
 
-        {/* Chat — desktop side panel */}
-        <ChatPanel
-          messages={messages}
-          draft={draft}
-          setDraft={setDraft}
-          onSend={onSend}
-          sending={sending}
-          profileLookup={profileLookup}
-          meUserId={meUserId}
-          scrollRef={scrollRef}
-          className="hidden lg:flex"
-        />
+        {/* Side panel — Chat / Collabs / Gallery toggle */}
+        <div className="hidden lg:flex flex-col min-h-0 gap-2">
+          {hasSideExtras && (
+            <div className="grid grid-cols-3 gap-1 rounded-full bg-background/10 p-0.5">
+              <SideSeg active={side === "chat"} onClick={() => setSide("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
+              <SideSeg active={side === "collabs"} onClick={() => setSide("collabs")} icon={<Users className="h-3.5 w-3.5" />} label="Collabs" disabled={!collabsSlot} />
+              <SideSeg active={side === "gallery"} onClick={() => setSide("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" disabled={!gallerySlot} />
+            </div>
+          )}
+          <div className={cn("flex-1 min-h-0", side !== "chat" && "hidden")}>
+            <ChatPanel
+              messages={messages}
+              draft={draft}
+              setDraft={setDraft}
+              onSend={onSend}
+              sending={sending}
+              profileLookup={profileLookup}
+              meUserId={meUserId}
+              scrollRef={scrollRef}
+              className="flex h-full"
+            />
+          </div>
+          {collabsSlot && (
+            <div className={cn("flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur", side !== "collabs" && "hidden")}>
+              <div className="h-full overflow-y-auto p-3 text-ink [color-scheme:light]">
+                <div className="rounded-xl bg-background p-3">{collabsSlot}</div>
+              </div>
+            </div>
+          )}
+          {gallerySlot && (
+            <div className={cn("flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur", side !== "gallery" && "hidden")}>
+              <div className="h-full">{gallerySlot}</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Floating reactions overlay */}
       <ReactionsOverlay reactions={reactions} />
+
 
 
       {/* Mobile chat sheet */}
