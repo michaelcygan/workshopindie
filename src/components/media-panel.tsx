@@ -491,15 +491,27 @@ export function FullscreenRoom({
   const hasShare = !!(m.isScreenSharing && m.screenStream) || !!remoteSharer;
   const stageHasContent = hasShare || !!stageSlot;
 
-  // ── Layout mode: stage (split), grid (legacy tiles), tool (just the surface) ──
-  type LayoutMode = "stage" | "grid" | "tool";
-  const [layoutMode, setLayoutMode] = useState<LayoutMode>(stageHasContent ? "stage" : "grid");
-  // Auto-switch back to grid the moment stage has nothing to show.
+  // ── Layout mode: stage (split), grid (legacy tiles), tool (just the surface), screening (Work embed) ──
+  type LayoutMode = "stage" | "grid" | "tool" | "screening";
+  const initialMode: LayoutMode = screeningActive ? "screening" : stageHasContent ? "stage" : "grid";
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>(initialMode);
+  // Auto-transitions:
+  // • Kick into screening the moment a Work starts screening.
+  // • Fall out of screening back to a sensible default when it stops.
+  // • Fall back to grid when the stage empties out.
   useEffect(() => {
-    if (!stageHasContent && layoutMode !== "grid") setLayoutMode("grid");
+    if (screeningActive && layoutMode !== "screening") setLayoutMode("screening");
+    else if (!screeningActive && layoutMode === "screening") setLayoutMode(stageHasContent ? "stage" : "grid");
+    else if (!stageHasContent && layoutMode !== "grid" && layoutMode !== "screening") setLayoutMode("grid");
     else if (stageHasContent && layoutMode === "grid" && hasShare) setLayoutMode("stage");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stageHasContent, hasShare]);
+  }, [stageHasContent, hasShare, screeningActive]);
+
+  // ── Side panel: Chat / Collabs / Gallery ──
+  type SidePane = "chat" | "collabs" | "gallery";
+  const [side, setSide] = useState<SidePane>("chat");
+  const hasSideExtras = !!collabsSlot || !!gallerySlot;
+
 
   // ── Reactions: lightweight broadcast over a per-room channel. ──
   type Reaction = { id: string; emoji: string; from: string; ts: number };
