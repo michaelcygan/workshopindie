@@ -90,6 +90,26 @@ export function GroupPicker({
     onChange(value.filter((g) => g.id !== id));
   }
 
+  const inputWrapRef = useRef<HTMLDivElement | null>(null);
+  const [menuRect, setMenuRect] = useState<{ left: number; top: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open || !inputWrapRef.current) return;
+    const update = () => {
+      const el = inputWrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      setMenuRect({ left: r.left, top: r.bottom + 6, width: r.width });
+    };
+    update();
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open, suggestions.length]);
+
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between">
