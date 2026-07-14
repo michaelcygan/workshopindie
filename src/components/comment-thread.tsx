@@ -17,8 +17,9 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { MoreHorizontal, Reply, MessageCircle, EyeOff, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { setCommentHidden, replyToComment } from "@/lib/comments.functions";
+import { setCommentHidden, replyToComment, postComment } from "@/lib/comments.functions";
 import { openOrCreateConversation } from "@/lib/dms.functions";
+import { useModerationChecker } from "@/lib/moderation/client";
 
 type Row = {
   id: string;
