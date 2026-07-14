@@ -1,89 +1,151 @@
-## Audit findings
 
-Location of ICE config: `src/hooks/use-media-room.tsx` (only place `RTCPeerConnection` is constructed). Only server-side TURN touch point: `src/lib/turn.functions.ts` → `mintTurnCreds` (Cloudflare Realtime credentials API). Telemetry table: `public.turn_credential_grants` (grants only, no usage).
+# Lounge WebRTC reliability hardening
 
-**Good news (no fix needed):**
-- No `iceTransportPolicy: "relay"` anywhere in the codebase — production is not accidentally forcing relay.
-- Default peer creation uses `STUN_ONLY` (Google STUN). TURN is minted lazily *only* on ICE `checking` timeout (8s) or `failed`/`disconnected`, per-pair, one retry max (`pairUsedTurnRef`).
-- Cloudflare TURN token ID + API token are read from `process.env` inside the server-fn handler, never shipped to the client. Browser only receives short-lived `iceServers` from the mint response.
-- Mint is rate-limited (10/hr/user) via `check_and_bump` RPC.
-- `turn_credential_grants` inserts happen best-effort and never log the credential payload.
-- Credential TTL 600s; cached in-tab with a 30s refresh buffer via `getTurnIceServers()`.
+Scoped to `src/hooks/use-media-room.tsx` (the sole peer-connection owner) plus a light signaling-shape extension. No SFU migration, no visual redesign, no room-cap change, no signaling-provider change (Supabase Realtime broadcast + presence stays as-is). Chat, Collabs, Work, screen share, PiP behavior preserved.
 
-**Gaps to fix:**
-1. No `getStats()` inspection after connect — we can't distinguish direct vs relay, and `turn_credential_grants` tracks *grants*, not actual relayed sessions or bytes.
-2. `onicecandidateerror` is not wired, so relay auth/reachability failures are invisible.
-3. Cloudflare mint response is trusted verbatim; a malformed/empty `iceServers` array currently falls through to `createPeer` with only STUN — an explicit shape check + toast-free logged error is safer.
-4. No mechanism to refresh credentials mid-Lounge if a session outlives 10 min and a new peer joins after expiry (edge case: cache check works, but if mint failed once, `turnFetchPromiseRef` clears in finally — fine — but expired creds passed to a *new* peer connection would silently fail without a re-mint path). Add: on `upgradePeerToTurn`, if cached creds expire within 60s, force re-mint.
-5. No staging/dev test modes (forced-TURN, direct-only) — needed to validate relay path without waiting for a natural failure.
-6. No relay usage / bandwidth telemetry.
+## Audit findings (what's actually wrong today)
 
-## Changes
+Current negotiation shape:
+- Lex-greater peer sends the initial offer. `onnegotiationneeded` is also gated to lex-greater. No polite/impolite roles, no rollback, no glare handling.
+- `handleSignal("answer")` guards on `signalingState !== "stable"` but never rolls back; a duplicate/stale answer silently mismatches.
+- ICE candidates arriving before `remoteDescription` are swallowed by a bare `try/catch` — no buffer.
+- No per-connection generation id. A late signal from a closed PC, a previous room, or a previous browser session can hit `handleSignal` and be applied to whatever PC currently sits at `pcsRef.current.get(from)`.
+- `iceConnectionState === "disconnected"` immediately triggers TURN upgrade — no grace period for a 2-second Wi-Fi blip.
+- Recovery path is "tear down PC and rebuild with TURN," never `restartIce()`. That's more disruptive than needed and discards the direct path even for transient failures.
+- Screen share: `pc.addTrack` on voice-only pairs triggers `onnegotiationneeded`, but the handler is gated to lex-greater. Lex-lesser side never renegotiates → screen never delivers to some peers.
+- Signaling reconnect (channel `CHANNEL_ERROR` mid-call), tab visibility change, and `pageshow` from bfcache are not handled — the socket can be silently dead while the UI still shows "joined."
+- `leave()` doesn't stamp a "this room is over" marker; a late signal racing the removeChannel could still be delivered to `handleSignal` from the buffered broadcast queue.
 
-**`src/hooks/use-media-room.tsx`**
-- Add `WEBRTC_MODE` resolver reading `import.meta.env.VITE_WEBRTC_MODE` (`"auto"` | `"force-turn"` | `"direct-only"`, default `"auto"`). Gate:
-  - `force-turn`: prefetch TURN before first offer; create every peer with `[...STUN_ONLY, ...turn]` and `iceTransportPolicy: "relay"`. Skip the 8s upgrade timer (already relay).
-  - `direct-only`: never call `getTurnIceServers`; never arm upgrade timer. Log a warning banner in dev only.
-  - `auto`: current behavior.
-- Harden `getTurnIceServers()`: validate response is a non-empty array of objects containing `urls`; on invalid shape throw a controlled error caught by `upgradePeerToTurn` (already closes the pair on catch).
-- In `upgradePeerToTurn`, refresh creds if `turnExpiresAtRef.current < Date.now() + 60_000` by clearing the cache before calling `getTurnIceServers()`.
-- Wire `pc.onicecandidateerror` (feature-detected) to log `errorCode`/`url`/`hostCandidate` (no IP, no address field) into a per-pair diagnostic ref used by the metrics submit below.
-- After each peer reaches `connected`/`completed`, call `pc.getStats()` once, find the succeeded `candidate-pair`, resolve its `localCandidate`/`remoteCandidate` types, and submit a single privacy-safe telemetry row via new server fn `recordWebrtcConnection` (see below). Fire once per pair. On `pc.close()`, if the pair was relayed, submit a follow-up `recordWebrtcRelayEnd` with duration + `bytesSent`+`bytesReceived` totals from a final `getStats()` snapshot.
-- Fields recorded: `room_id`, `pair_index` (hashed peer pair, not user ids), `path` (`direct`/`relayed`), `local_candidate_type`, `remote_candidate_type`, `turn_attempted`, `turn_succeeded`, `connect_ms`, `participant_count`, `browser_family` (major from UA-Client-Hints w/ UA fallback bucketed to `chrome`/`firefox`/`safari`/`edge`/`other`), `device_class` (`mobile`/`desktop` from `navigator.userAgentData.mobile` or matchMedia coarse-pointer). No IPs, SDP, addresses, or user ids leave the client — server derives `user_id` from auth.
-- Force-TURN mode still records and marks `mode: "force-turn"` so staging numbers don't pollute production dashboards.
+## Design
 
-**`src/lib/turn.functions.ts`**
-- Add two new server fns in the same file:
-  - `recordWebrtcConnection` — auth-guarded, Zod-validated payload above, `INSERT` into new `webrtc_connection_events`.
-  - `recordWebrtcRelayEnd` — updates the row with `relay_ended_at`, `bytes_sent`, `bytes_received`.
-- Keep `mintTurnCreds` unchanged except: also stamp the inserted `turn_credential_grants` row with an `env_mode` column so forced-TURN staging spikes don't look like a production regression.
+### 1. Deterministic negotiation roles (perfect-negotiation pattern)
 
-**New migration `supabase/migrations/<ts>_webrtc_connection_events.sql`**
-```sql
-CREATE TABLE public.webrtc_connection_events (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  room_id uuid,
-  path text NOT NULL,                    -- 'direct' | 'relayed' | 'failed'
-  local_candidate_type text,
-  remote_candidate_type text,
-  turn_attempted boolean NOT NULL DEFAULT false,
-  turn_succeeded boolean NOT NULL DEFAULT false,
-  connect_ms integer,
-  participant_count integer,
-  browser_family text,
-  device_class text,
-  env_mode text NOT NULL DEFAULT 'auto', -- 'auto' | 'force-turn' | 'direct-only'
-  bytes_sent bigint,
-  bytes_received bigint,
-  relay_ended_at timestamptz,
-  created_at timestamptz NOT NULL DEFAULT now()
-);
-GRANT SELECT ON public.webrtc_connection_events TO authenticated;
-GRANT ALL   ON public.webrtc_connection_events TO service_role;
-ALTER TABLE public.webrtc_connection_events ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Admins read webrtc events"
-  ON public.webrtc_connection_events FOR SELECT TO authenticated
-  USING (public.has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users insert own webrtc events"
-  ON public.webrtc_connection_events FOR INSERT TO authenticated
-  WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users update own webrtc events"
-  ON public.webrtc_connection_events FOR UPDATE TO authenticated
-  USING (auth.uid() = user_id);
-CREATE INDEX ON public.webrtc_connection_events (created_at DESC);
-CREATE INDEX ON public.webrtc_connection_events (path, created_at DESC);
+- Compute `polite = myId < peerId` at PC creation. Store on a per-PC `Meta` record.
+- Track `makingOffer` and `ignoreOffer` refs per PC.
+- Rewrite `onnegotiationneeded`:
+  - Set `makingOffer = true`, `createOffer()` (no options), `setLocalDescription()`, broadcast, `makingOffer = false` in `finally`. Both sides may attempt; collision is resolved on receipt.
+  - Runs on **both** sides — no lex gate. This fixes screen-share addTrack for lex-lesser peers.
+- Rewrite `handleSignal("offer")`:
+  - `readyForOffer = !makingOffer && (signalingState === "stable" || isSettingRemoteAnswerPending)`
+  - `offerCollision = !readyForOffer`
+  - `ignoreOffer = !polite && offerCollision` → drop.
+  - If polite and colliding: `setLocalDescription({type:"rollback"})` then `setRemoteDescription(offer)`, then create/send answer.
+- `handleSignal("answer")`: if `ignoreOffer` set, drop; else `setRemoteDescription`. Clear `ignoreOffer`.
+- Remove initial-offer scheduling for lex-greater from presence `join`/re-join loops; rely on `onnegotiationneeded` after `addTrack`. Keep a small kickstart: after `addTrack`, if `signalingState==="stable"` and no ICE progress within 500ms, force one offer to cover browsers that skip the event.
 
-ALTER TABLE public.turn_credential_grants ADD COLUMN env_mode text NOT NULL DEFAULT 'auto';
+### 2. Connection generations
+
+Add three ids threaded through every signal:
+- `sessionId`: random uuid, generated once per `joinWithMode` invocation, stored in `sessionIdRef`. Cleared on `leave()`.
+- `pcGen`: monotonically increasing counter incremented every time we create a PC for a given peerId (recreations, TURN swap). Stored on the PC's Meta.
+- `roomId`: the current room. Already implicit via channel scoping but included so a stale queued broadcast from a previous channel can't land.
+
+Signal payload gains `{ room, sess, gen, targetSess }`.
+- Sender fills them from its refs / peer meta at emit time.
+- `handleSignal` drops the message unless:
+  - `room === roomIdRef.current`
+  - `sess` (remote) matches the peer's currently-known sess (learned on first offer/presence)
+  - `targetSess` (if set) matches our `sessionIdRef.current`
+  - `gen >= currentGen` for that peer (older-gen ICE and SDP discarded)
+
+`leave()` sets `sessionIdRef.current = null` and increments a `teardownEpochRef`; `handleSignal` short-circuits when session is null. Idempotent.
+
+### 3. ICE buffer + generation-aware candidate handling
+
+- Per-PC `pendingIceRef: Map<pcGen, RTCIceCandidateInit[]>`.
+- `handleSignal("ice")`:
+  - Locate PC; if none or `gen` mismatches → drop.
+  - If `pc.remoteDescription` not yet set → push into buffer keyed by gen.
+  - Else `addIceCandidate` with try/catch; on error, log once per pair and continue (never fatal, never propagates).
+- After every `setRemoteDescription`, drain that PC's buffer for its current gen; discard buffers for other gens.
+- End-of-candidates (empty candidate) accepted, forwarded to `pc.addIceCandidate(null-ish)` where supported, otherwise ignored.
+
+### 4. ICE state interpretation with grace + restart
+
+Replace the current immediate-upgrade logic:
+
+- `disconnected`: start a per-PC `disconnectTimerRef` (5s). If state returns to `connected`/`completed`, cancel. If still `disconnected`/`failed` at expiry AND we haven't restarted recently:
+  1. Refresh TURN creds if `turnExpiresAt < now + 60s` (already implemented; extend to the restart path).
+  2. Call `pc.restartIce()` on both sides implicitly; the polite/impolite handler will negotiate.
+  3. If polite/impolite happens to be us as the offerer, `onnegotiationneeded` will fire an ICE-restart offer.
+- Bounded: per-PC `restartAttemptsRef`, max 2 restart attempts within 30s. After exhaustion → run existing TURN teardown-and-recreate as a last resort. After that → `closePeer` for that peer only, keep the rest of the mesh alive.
+- `failed`: same escalation entry point (skip the 5s wait).
+- Concurrency guard: `restartInFlightRef.has(peerId)` prevents overlapping restart attempts.
+
+### 5. Signaling-socket & network transition recovery
+
+New `revalidate()` function, idempotent, cancellable:
+
+Triggers:
+- `document.visibilitychange` → visible after being hidden > 10s
+- `window.pageshow` (bfcache restore)
+- `online` event
+- Realtime channel `CHANNEL_ERROR`/`TIMED_OUT` while `joined === true`
+
+Behavior:
+- If channel is dead: `supabase.removeChannel`, recreate with same name, re-subscribe, re-`track` presence with the same session id.
+- After presence resync:
+  - For every peer in presence not in `pcsRef`: create PC (perfect negotiation drives offers).
+  - For every PC not in presence: `closePeer`.
+  - For every surviving PC whose `iceConnectionState` is not `connected|completed`: schedule an ICE restart via `restartIce()`.
+- Local tracks re-verified; if `readyState === "ended"` (device revoked on sleep), attempt a silent `getUserMedia` re-acquire and `replaceTrack` on every sender. If that fails, surface a discreet "reconnecting" error state (do not kick the user out).
+
+### 6. Screen share / track changes
+
+- Keep `replaceTrack` fast-path for video peers.
+- For voice-only pairs, keep the `addTrack` — the new bilateral `onnegotiationneeded` will actually run now.
+- On screen stop, keep `replaceTrack(camTrack)`. If camTrack is null (user was in voice mode when share started), `sender.replaceTrack(null)` and remove the extra sender via `pc.removeTrack(sender)` so onnegotiationneeded fires and the stray m-section is dropped.
+- Guard against double `startScreenShare` clicks with a `screenBusyRef`.
+- `screen` broadcast still tells peers who is sharing for the UI; no new SDP dependency.
+
+### 7. Skip / Leave / unmount
+
+- `leave()`:
+  1. Bump `teardownEpochRef`, null `sessionIdRef`.
+  2. Cancel all `disconnectTimerRef`, `pairCheckTimersRef`, `restartInFlightRef`, `screenBusyRef` timers/flags.
+  3. `closePeer` each PC (already fires relay-end telemetry).
+  4. Clear `pendingIceRef`.
+  5. Untrack presence, `removeChannel`.
+  6. Stop local + screen tracks (existing).
+- `handleSignal` first line: `if (!sessionIdRef.current) return;`
+- `HopButton` already stamps recent-exit and drops presence; keep as-is.
+
+### 8. Signal payload contract
+
+Extend `SignalEvent` (backward-tolerant: new fields optional; missing fields treated as "unknown", dropped only if `roomId`/`gen` mismatch is provable). Version bump not needed — same channel is per-room so cross-room contamination is already unlikely; the fields harden the case where a user rapidly rejoins the same room.
+
+```ts
+type SignalBase = { room: string; sess: string; gen: number; targetSess?: string };
+type SignalEvent =
+  | SignalBase & { type: "offer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
+  | SignalBase & { type: "answer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
+  | SignalBase & { type: "ice"; from: string; to: string; candidate: RTCIceCandidateInit }
+  | { type: "speaking"; from: string; speaking: boolean; room: string; sess: string }
+  | { type: "screen"; from: string; active: boolean; room: string; sess: string };
 ```
 
-**Env vars (documentation only, not committed):**
-- `VITE_WEBRTC_MODE` = `auto` (prod default), `force-turn` (staging), `direct-only` (dev). Not exposed in UI — no user-facing toggle.
+## Files changed
 
-## What is NOT changing
+- `src/hooks/use-media-room.tsx` — all of the above. Introduces small internal helpers (`makePeerMeta`, `revalidate`, `scheduleIceRestart`) but no new exported surface.
+- No changes to `src/routes/lounge.$id.tsx`, `HopButton`, `instant.functions.ts`, TURN mint fn, telemetry schema, presence schema, or Supabase migrations.
 
-- No SFU migration. No Lounge redesign. No changes to `ROOM_CAP`, presence, signaling, bandwidth governor, or the 5-participant limit. The direct-first negotiation path, per-pair upgrade timer (8s), and one-retry rule are preserved.
+## Acceptance test paths
 
-## Report format (delivered after implementation)
+Manual, in dev with two browser profiles (A/B):
+1. Both join simultaneously → single PC pair, one direction of offer wins, both end `connected`.
+2. B starts screen share while A also toggles camera → no `InvalidStateError`, both see shares/cam.
+3. Force `iceConnectionState==="disconnected"` by killing B's Wi-Fi for 3s → recovers without teardown, no toast, no black tile.
+4. Kill B's network 20s → A sees restartIce attempts (log), then TURN swap, then failure isolated to B; A's other peers stay connected.
+5. Suspend A's laptop 60s → on wake, presence rebinds, PCs revalidate; if tracks dead, silent re-acquire.
+6. Rapid Skip → new room signals never touch old PCs (session id mismatch).
+7. In `VITE_WEBRTC_MODE=force-turn`, every pair goes relay from t=0 (unchanged).
 
-Where ICE is created, whether TURN was ever forced (no), credential lifetime + refresh behavior, how relay is detected (candidate-pair stats), config errors found (Cloudflare response passed through unvalidated — fixed), files changed, test paths run (auto path via natural connect, forced-TURN via env override, direct-only smoke), and risk assessment of disabling TURN (based on the new `webrtc_connection_events` `path='relayed'` rate).
+## Non-goals
+
+- No SFU. No new signaling transport. No cap change. No UI redesign. No admin console. No new tables. No changes to bandwidth governor, TURN mint rate limit, or telemetry schema.
+
+## Known browser limitations that will remain
+
+- Safari < 16: `setParameters({ degradationPreference })` and `restartIce()` are partial; we retain existing try/catch noops. Recovery on Safari 15 falls back to teardown-and-recreate.
+- iOS Safari backgrounding still suspends WebRTC entirely; revalidate on foreground is the best we can do.
+- Firefox does not fire `onicecandidateerror` — diagnostics silently absent there; not a regression.
