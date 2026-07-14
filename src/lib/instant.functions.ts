@@ -354,7 +354,7 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
       throw new Error("You were removed from this Workshop. Try again later.");
     }
     const cap = (room as any).participant_cap ?? 5;
-    const cutoff = new Date(Date.now() - 60_000).toISOString();
+    const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
     const { count } = await supabaseAdmin
       .from("instant_presence")
       .select("user_id", { count: "exact", head: true })

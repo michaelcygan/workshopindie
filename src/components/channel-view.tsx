@@ -80,8 +80,8 @@ type Presence = {
   } | null;
 };
 
-const QUIET_WARN_MS = 2 * 60 * 1000;
-const QUIET_KICK_MS = 60 * 1000;
+const QUIET_WARN_MS = 10 * 60 * 1000;
+const QUIET_KICK_MS = 2 * 60 * 1000;
 
 export function ChannelView({
   roomId,
@@ -226,7 +226,7 @@ export function ChannelView({
     return () => window.removeEventListener("keydown", onKey);
   }, [fsView]);
 
-  // Inactivity guard: muted AND camera off → warn at 2 min, drop 1 min later.
+  // Inactivity guard: muted AND camera off → warn after a generous quiet window, drop later only if ignored.
   // Suppressed while the "workshop wrapped" prompt is open.
   const inactive = media.joined && media.muted && !media.cameraOn && !endedOpen;
   useEffect(() => {
@@ -242,7 +242,7 @@ export function ChannelView({
     if (!warnOpen) return;
     const kickT = setTimeout(() => {
       if (inactive) {
-        toast.error("Dropped from the Lounge — you went quiet.");
+        toast.error("Leaving the Lounge because you've been quiet.");
         media.leave();
         router.navigate({ to: "/lounge" });
       }
@@ -1087,14 +1087,14 @@ export function ChannelView({
         <AlertDialog open={warnOpen} onOpenChange={setWarnOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Still here?</AlertDialogTitle>
+              <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
-                You've been muted with camera off for 2 minutes. Tap Stay or unmute — otherwise
-                we'll drop you in 1 minute.
+                You've been muted with camera off for a while. Keep going or unmute — otherwise
+                we'll leave this Lounge in 2 minutes.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogAction onClick={() => setWarnOpen(false)}>Stay</AlertDialogAction>
+              <AlertDialogAction onClick={() => setWarnOpen(false)}>Keep going</AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
