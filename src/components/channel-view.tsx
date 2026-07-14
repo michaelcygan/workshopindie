@@ -789,6 +789,29 @@ export function ChannelView({
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
           )}
           {/* Top-right icon cluster: focus / share / PiP / fullscreen — reads as one control group. */}
+          {idleMsLeft !== null && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuietSince(Date.now());
+                setWarnOpen(false);
+                setWarnSince(null);
+              }}
+              aria-live="polite"
+              title="Stay in this Lounge — unmute or turn your camera on to clear this timer."
+              className={cn(
+                "absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm transition hover:bg-background",
+                idleTone,
+              )}
+            >
+              <span className="relative inline-flex h-1.5 w-1.5">
+                <span className="absolute inset-0 animate-ping rounded-full bg-current opacity-60" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-current" />
+              </span>
+              Auto-close in {fmtCountdown(idleMsLeft)}
+            </button>
+          )}
+
           <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <button
               type="button"
