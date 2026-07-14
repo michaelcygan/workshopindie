@@ -2828,6 +2828,7 @@ export type Database = {
           cc_consent_ack_at: string | null
           city_id: string | null
           cover_url: string | null
+          cover_work_id: string | null
           created_at: string
           creator_status: Database["public"]["Enums"]["creator_status"]
           deleted_at: string | null
@@ -2874,6 +2875,7 @@ export type Database = {
           cc_consent_ack_at?: string | null
           city_id?: string | null
           cover_url?: string | null
+          cover_work_id?: string | null
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
           deleted_at?: string | null
@@ -2920,6 +2922,7 @@ export type Database = {
           cc_consent_ack_at?: string | null
           city_id?: string | null
           cover_url?: string | null
+          cover_work_id?: string | null
           created_at?: string
           creator_status?: Database["public"]["Enums"]["creator_status"]
           deleted_at?: string | null
@@ -2968,6 +2971,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_city_activity_7d"
             referencedColumns: ["city_id"]
+          },
+          {
+            foreignKeyName: "profiles_cover_work_id_fkey"
+            columns: ["cover_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "profiles_home_city_id_fkey"
