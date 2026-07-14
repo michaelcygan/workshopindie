@@ -437,17 +437,10 @@ function LiveRoomPage() {
 
         {!isPromoted && user && (
           <div className="flex items-center gap-2">
-            {room?.status === "active" && (
-              <HopButton
-                roomId={id}
-                medium={(room?.medium as any) ?? null}
-                mode={mode ?? "video"}
-              />
-            )}
             <button
               type="button"
               onClick={() => setCollabOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-medium text-ink hover:bg-muted/40 transition"
               title="Post a Collab from this Lounge — it'll auto-pin here"
             >
               <Rocket className="h-3 w-3" /> New Collab
