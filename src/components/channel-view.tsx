@@ -93,6 +93,7 @@ export function ChannelView({
   medium,
   toolsSlot,
   composerLeading,
+  nextLoungeSlot,
 }: {
   roomId: string;
   title: string;
@@ -104,6 +105,8 @@ export function ChannelView({
   toolsSlot?: React.ReactNode | ((ctx: { media: ReturnType<typeof useMediaRoom>; activeTool: string | null }) => React.ReactNode);
   /** Optional control rendered to the left of the chat textarea (e.g. "+ Tool"). */
   composerLeading?: React.ReactNode;
+  /** Optional prominent slot rendered above Mute/Camera in the Lounge side panel. */
+  nextLoungeSlot?: React.ReactNode;
 }) {
 
 
