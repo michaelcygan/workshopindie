@@ -64,6 +64,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds:
 }
 
 function Hero() {
+  const { data: globePromos } = useGlobePromos();
   return (
     <section className="relative isolate overflow-hidden border-b border-border min-h-[88vh] flex items-center">
       {/* Ambient ethereal background */}
