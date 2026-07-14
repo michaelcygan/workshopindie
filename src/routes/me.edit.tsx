@@ -126,6 +126,7 @@ function EditProfile() {
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
+        artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
         avatar: data.avatar_url ?? null,
         cover: data.cover_url ?? null,
         cats: (data.categories ?? []) as Category[],
