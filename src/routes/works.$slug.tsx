@@ -134,6 +134,7 @@ async function fetchWork(slug: string) {
 function WorkDetail() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: work, isLoading } = useQuery({ queryKey: ["work", slug], queryFn: () => fetchWork(slug) });
 
   // Rate-limited view bump — RPC dedupes per (work, browser, hour).
