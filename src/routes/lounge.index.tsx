@@ -502,11 +502,11 @@ function WorkshopPreflight() {
 
 
       <p className="mt-3 text-center text-[11px] text-ink-muted">
-        Everything in the Lounge is ephemeral until someone creates a{" "}
+        Lounges are ephemeral and deleted at close — start a{" "}
         <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
           Collab
         </Link>
-        .
+        {" "}to keep the work.
       </p>
 
       <LiveWorkshopsRail
