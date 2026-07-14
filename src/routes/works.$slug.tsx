@@ -7,7 +7,7 @@ import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff } from "lucide-reac
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChips } from "@/components/category-chips";
 import { WorkActions } from "@/components/work-actions";
 import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
