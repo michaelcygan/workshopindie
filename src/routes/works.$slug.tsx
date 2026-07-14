@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff } from "lucide-react";
+import { Eye, ArrowLeft, ExternalLink, Calendar, Pin, PinOff, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -134,6 +134,7 @@ async function fetchWork(slug: string) {
 function WorkDetail() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: work, isLoading } = useQuery({ queryKey: ["work", slug], queryFn: () => fetchWork(slug) });
 
   // Rate-limited view bump — RPC dedupes per (work, browser, hour).
@@ -244,6 +245,13 @@ function WorkDetail() {
             <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4" /> {work.view_count} views</span>
           </div>
           <div className="flex items-center gap-1">
+            {user?.id === work.created_by && (
+              <Link to="/works/$slug/edit" params={{ slug: work.slug }}>
+                <Button variant="ghost" size="sm" className="rounded-full gap-1.5">
+                  <Pencil className="h-4 w-4" /> Edit
+                </Button>
+              </Link>
+            )}
             <PinToProfileButton workId={work.id} credits={credits} />
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
             <ShareSheet

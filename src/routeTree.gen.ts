@@ -77,6 +77,7 @@ import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
+import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
@@ -428,6 +429,11 @@ const WorksCollabNewRoute = WorksCollabNewRouteImport.update({
   path: '/works/collab/new',
   getParentRoute: () => rootRouteImport,
 } as any)
+const WorksSlugEditRoute = WorksSlugEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => WorksSlugRoute,
+} as any)
 const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
@@ -533,7 +539,7 @@ export interface FileRoutesByFullPath {
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
@@ -549,6 +555,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
@@ -607,7 +614,7 @@ export interface FileRoutesByTo {
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
@@ -623,6 +630,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
@@ -688,7 +696,7 @@ export interface FileRoutesById {
   '/redeem/$code': typeof RedeemCodeRoute
   '/u/$username': typeof UUsernameRoute
   '/w/$token': typeof WTokenRoute
-  '/works/$slug': typeof WorksSlugRoute
+  '/works/$slug': typeof WorksSlugRouteWithChildren
   '/works/new': typeof WorksNewRoute
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
@@ -704,6 +712,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
@@ -786,6 +795,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
@@ -860,6 +870,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
@@ -940,6 +951,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
@@ -986,7 +998,7 @@ export interface RootRouteChildren {
   RedeemCodeRoute: typeof RedeemCodeRoute
   UUsernameRoute: typeof UUsernameRoute
   WTokenRoute: typeof WTokenRoute
-  WorksSlugRoute: typeof WorksSlugRoute
+  WorksSlugRoute: typeof WorksSlugRouteWithChildren
   WorksNewRoute: typeof WorksNewRoute
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
@@ -1478,6 +1490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorksCollabNewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/works/$slug/edit': {
+      id: '/works/$slug/edit'
+      path: '/edit'
+      fullPath: '/works/$slug/edit'
+      preLoaderRoute: typeof WorksSlugEditRouteImport
+      parentRoute: typeof WorksSlugRoute
+    }
     '/collab/claim/$token': {
       id: '/collab/claim/$token'
       path: '/claim/$token'
@@ -1728,6 +1747,18 @@ const WorkshopsRouteWithChildren = WorkshopsRoute._addFileChildren(
   WorkshopsRouteChildren,
 )
 
+interface WorksSlugRouteChildren {
+  WorksSlugEditRoute: typeof WorksSlugEditRoute
+}
+
+const WorksSlugRouteChildren: WorksSlugRouteChildren = {
+  WorksSlugEditRoute: WorksSlugEditRoute,
+}
+
+const WorksSlugRouteWithChildren = WorksSlugRoute._addFileChildren(
+  WorksSlugRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1761,7 +1792,7 @@ const rootRouteChildren: RootRouteChildren = {
   RedeemCodeRoute: RedeemCodeRoute,
   UUsernameRoute: UUsernameRoute,
   WTokenRoute: WTokenRoute,
-  WorksSlugRoute: WorksSlugRoute,
+  WorksSlugRoute: WorksSlugRouteWithChildren,
   WorksNewRoute: WorksNewRoute,
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
