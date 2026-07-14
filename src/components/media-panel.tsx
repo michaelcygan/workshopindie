@@ -852,6 +852,24 @@ export function FullscreenRoom({
   );
 }
 
+function SideSeg({ active, onClick, icon, label, disabled }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string; disabled?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex items-center justify-center gap-1 rounded-full px-2 py-1 text-[11px] font-medium transition",
+        active ? "bg-background text-ink" : "text-background/80 hover:bg-background/10",
+        disabled && "opacity-40 cursor-not-allowed hover:bg-transparent",
+      )}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
+  );
+}
+
 function LayoutSeg({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
