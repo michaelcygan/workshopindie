@@ -209,11 +209,11 @@ function LiveRoomPage() {
   const isArchived = !!room && room.status === "archived";
 
 
-  // If the room is ended/archived and you're not the host, bounce back to Lounge discovery.
-  // Host stays so they can wrap up gracefully.
+  // If the room is archived, bounce everyone; if it was manually ended, non-hosts bounce.
+  // Host stays only for manual endings so they can wrap up gracefully.
   useEffect(() => {
-    if (!room || isPromoted || isHost) return;
-    if (isEnded || isArchived) {
+    if (!room || isPromoted) return;
+    if (isArchived || (isEnded && !isHost)) {
       toast(isEnded ? "This Lounge ended." : "That Lounge is no longer live.");
       router.navigate({ to: "/lounge" });
     }
@@ -224,7 +224,7 @@ function LiveRoomPage() {
   useEffect(() => {
     if (typeof window === "undefined" || !id || isPromoted) return;
     return () => {
-      if (isEnded || room?.locked) return;
+      if (isEnded || isArchived || room?.locked) return;
       try {
         window.sessionStorage.setItem(
           "workshop:last-room",
@@ -234,7 +234,7 @@ function LiveRoomPage() {
         // ignore
       }
     };
-  }, [id, title, isPromoted, isEnded, room?.locked]);
+  }, [id, title, isPromoted, isEnded, isArchived, room?.locked]);
 
   // First-Workshop receipt — one-time gentle toast on the user's first join.
   useEffect(() => {

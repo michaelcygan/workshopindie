@@ -415,7 +415,7 @@ export const listActiveInstantRooms = createServerFn({ method: "GET" })
     if (rows.length === 0) return { rooms: [] as ActiveInstantRoom[] };
 
     const roomIds = rows.map((r) => r.id);
-    const cutoff = new Date(Date.now() - 60_000).toISOString();
+    const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
     const { data: presence } = await supabaseAdmin
       .from("instant_presence")
       .select("room_id, user_id, last_seen_at")
