@@ -263,8 +263,6 @@ export function VideoStage({
     showLocalVideo || showLocalAudio || videoPeers.length > 0 || audioPeers.length > 0 || localScreen;
   if (!hasAny) return null;
 
-  const meAvatar =
-    (profileLookup.get((m as any).myId ?? "")?.avatar_url) ?? null;
 
   const renderAudioPeerTile = (p: (typeof m.peers)[number]) => {
     const prof = profileLookup.get(p.userId);
