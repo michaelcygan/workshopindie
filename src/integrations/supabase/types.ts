@@ -5679,16 +5679,27 @@ export type Database = {
             }
             Returns: string
           }
-      list_active_instant_rooms: {
-        Args: { _viewer: string }
-        Returns: {
-          created_at: string
-          id: string
-          live_count: number
-          medium: Database["public"]["Enums"]["category"]
-          title: string
-        }[]
-      }
+      list_active_instant_rooms:
+        | {
+            Args: never
+            Returns: {
+              created_at: string
+              id: string
+              live_count: number
+              medium: Database["public"]["Enums"]["category"]
+              title: string
+            }[]
+          }
+        | {
+            Args: { _viewer: string }
+            Returns: {
+              created_at: string
+              id: string
+              live_count: number
+              medium: Database["public"]["Enums"]["category"]
+              title: string
+            }[]
+          }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
