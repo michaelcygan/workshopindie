@@ -1197,12 +1197,15 @@ export type Database = {
           deleted_at: string | null
           description: string | null
           ends_at: string
+          external_organizer: string | null
+          external_url: string | null
           featured_at: string | null
           format: Database["public"]["Enums"]["group_event_format"]
           going_count: number
           group_id: string
           id: string
           is_official: boolean
+          is_recurring: boolean
           kind: Database["public"]["Enums"]["group_event_kind"]
           lineup_capacity: number | null
           lineup_reminder_sent_at: string | null
@@ -1211,11 +1214,14 @@ export type Database = {
           notified_2h_at: string | null
           notified_recap_at: string | null
           online_url: string | null
+          pinned_at: string | null
           promo_pass_months: number
+          recurrence_label: string | null
           rsvp_mode: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key: string | null
           short_code: string | null
           slug: string
+          source: string
           starts_at: string
           status: Database["public"]["Enums"]["group_event_status"]
           tagline: string | null
@@ -1240,12 +1246,15 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           ends_at: string
+          external_organizer?: string | null
+          external_url?: string | null
           featured_at?: string | null
           format?: Database["public"]["Enums"]["group_event_format"]
           going_count?: number
           group_id: string
           id?: string
           is_official?: boolean
+          is_recurring?: boolean
           kind?: Database["public"]["Enums"]["group_event_kind"]
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
@@ -1254,11 +1263,14 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          pinned_at?: string | null
           promo_pass_months?: number
+          recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
           short_code?: string | null
           slug: string
+          source?: string
           starts_at: string
           status?: Database["public"]["Enums"]["group_event_status"]
           tagline?: string | null
@@ -1283,12 +1295,15 @@ export type Database = {
           deleted_at?: string | null
           description?: string | null
           ends_at?: string
+          external_organizer?: string | null
+          external_url?: string | null
           featured_at?: string | null
           format?: Database["public"]["Enums"]["group_event_format"]
           going_count?: number
           group_id?: string
           id?: string
           is_official?: boolean
+          is_recurring?: boolean
           kind?: Database["public"]["Enums"]["group_event_kind"]
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
@@ -1297,11 +1312,14 @@ export type Database = {
           notified_2h_at?: string | null
           notified_recap_at?: string | null
           online_url?: string | null
+          pinned_at?: string | null
           promo_pass_months?: number
+          recurrence_label?: string | null
           rsvp_mode?: Database["public"]["Enums"]["group_event_rsvp_mode"]
           series_key?: string | null
           short_code?: string | null
           slug?: string
+          source?: string
           starts_at?: string
           status?: Database["public"]["Enums"]["group_event_status"]
           tagline?: string | null

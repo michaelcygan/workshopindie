@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, MapPin, Radio, Star } from "lucide-react";
+import { Calendar, ExternalLink, MapPin, Pin, Radio, Repeat, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type EventCardData = {
@@ -19,6 +19,12 @@ export type EventCardData = {
   featured_at: string | null;
   promo_pass_months: number;
   group: { slug: string; name: string; avatar_url: string | null };
+  source?: "workshop" | "external" | null;
+  external_url?: string | null;
+  external_organizer?: string | null;
+  is_recurring?: boolean | null;
+  recurrence_label?: string | null;
+  pinned_at?: string | null;
 };
 
 function formatDate(iso: string) {
@@ -31,15 +37,14 @@ function formatTime(iso: string) {
 }
 
 export function EventCard({ event, className }: { event: EventCardData; className?: string }) {
-  return (
-    <Link
-      to="/g/$slug/e/$eventSlug"
-      params={{ slug: event.group.slug, eventSlug: event.slug }}
-      className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
-        className,
-      )}
-    >
+  const isExternal = event.source === "external" && !!event.external_url;
+  const isOnline = event.format === "online" || event.format === "hybrid";
+  const locationLabel = isOnline
+    ? "Online"
+    : event.venue_name ?? event.venue_address ?? "TBA";
+
+  const Body = (
+    <>
       <div
         className={cn(
           "relative h-36 w-full",
@@ -56,25 +61,29 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
               {new Date(event.starts_at).getDate()}
             </div>
           </div>
-          {event.featured_at && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
-              <Star className="h-3 w-3" /> Featured
-            </span>
-          )}
+          <div className="flex flex-col items-end gap-1">
+            {event.featured_at && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
+                <Star className="h-3 w-3" /> Featured
+              </span>
+            )}
+            {event.pinned_at && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">
+                <Pin className="h-3 w-3" /> Pinned
+              </span>
+            )}
+            {event.is_recurring && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">
+                <Repeat className="h-3 w-3" /> {event.recurrence_label || "Recurring"}
+              </span>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <div className="flex items-center gap-1.5 text-[11px] text-ink-muted">
-          {event.format === "online" ? (
-            <Radio className="h-3 w-3" />
-          ) : (
-            <MapPin className="h-3 w-3" />
-          )}
-          <span className="truncate">
-            {event.format === "online"
-              ? "Online"
-              : event.venue_name ?? event.venue_address ?? "TBA"}
-          </span>
+          {isOnline ? <Radio className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
+          <span className="truncate">{locationLabel}</span>
         </div>
         <h3 className="font-display text-base text-ink line-clamp-2">{event.title}</h3>
         {event.tagline && <p className="text-xs text-ink-muted line-clamp-2">{event.tagline}</p>}
@@ -82,20 +91,57 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
           <span className="inline-flex items-center gap-1">
             <Calendar className="h-3 w-3" /> {formatDate(event.starts_at)} · {formatTime(event.starts_at)}
           </span>
-          <span>
-            {event.going_count} going{event.capacity ? ` / ${event.capacity}` : ""}
-          </span>
+          {isExternal ? (
+            <span className="inline-flex items-center gap-1 text-ink-soft">
+              View event <ExternalLink className="h-3 w-3" />
+            </span>
+          ) : (
+            <span>
+              {event.going_count} going{event.capacity ? ` / ${event.capacity}` : ""}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 pt-1 text-[11px] text-ink-muted">
-          <span>by</span>
-          <span className="font-medium text-ink-soft">{event.group.name}</span>
-          {event.promo_pass_months > 0 && (
+          <span>{isExternal ? "External event ·" : "by"}</span>
+          <span className="font-medium text-ink-soft">
+            {isExternal ? (event.external_organizer || event.group.name) : event.group.name}
+          </span>
+          {!isExternal && event.promo_pass_months > 0 && (
             <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
               +{event.promo_pass_months}mo Plus
             </span>
           )}
         </div>
       </div>
+    </>
+  );
+
+  if (isExternal) {
+    return (
+      <a
+        href={event.external_url!}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cn(
+          "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
+          className,
+        )}
+      >
+        {Body}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to="/g/$slug/e/$eventSlug"
+      params={{ slug: event.group.slug, eventSlug: event.slug }}
+      className={cn(
+        "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
+        className,
+      )}
+    >
+      {Body}
     </Link>
   );
 }

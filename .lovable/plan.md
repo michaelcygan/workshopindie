@@ -1,36 +1,82 @@
-## What's wrong now
+# Events MVP — Minimal Extension
 
-A Lounge is marked "empty" the moment the last user leaves (an `emptied_at` timestamp is stamped by a DB trigger). But then:
+Confirmed: **one canonical event object**, tagged to a group. That's already how the schema works today — `group_events` is just an event row with a required `group_id`. We keep it that way. Every event has exactly one group tag (its "home" group). We don't need a separate global events object.
 
-1. **Grace period is 30 minutes** before the sweeper archives it (`sweep_stale_lounges` uses `now() - 30 minutes`).
-2. The matchmaker (`join_lounge`, `join_medium_lounge`) also uses a 30-minute stale window, and while a room is in that grace window it is still **preferred** by the matchmaker (sorted higher because it was recently emptied and has capacity).
-3. Discovery (`list_active_instant_rooms`) shows these dying rooms as normal live rooms.
+If later we want an event to belong to multiple groups, we add a small join table — but not for day 1.
 
-Net effect: someone leaves → the room hangs around for up to 30 minutes, still visibly enterable and still handed out first by matchmaking.
+## 1. Migration (one file, additive)
 
-## Change (backend-only, one migration)
+Add columns to `group_events`:
+- `source` text check `('workshop','external')` default `'workshop'`
+- `external_url` text — the "View event" destination
+- `external_organizer` text — display name for external hosts
+- `is_recurring` boolean default false
+- `recurrence_label` text — free-text admin caption ("Every Tuesday", "First Friday")
+- `pinned_at` timestamptz — non-null = pinned to top of the group's Events tab
 
-**1. Short end-timer, 45 seconds.**
-- `sweep_stale_lounges`: change grace from `interval '30 minutes'` → `interval '45 seconds'`.
-- Keep the 1-minute pg_cron cadence (worst case: room archives ~1:45 after last leave, well within the 25–60s intent given cron granularity).
-- Keep the `_live_cutoff` at 5 minutes so a brief network blip doesn't kill an active room — the trigger only stamps `emptied_at` when the presence row is actually deleted (on unmount / Hop / tab close via cleanup), so real "user left" events fire immediately.
+`format` (`in_person | online`) + `online_url` already exist and cover the Zoom case — admin pastes the link, we render it. Admin-only writes already enforced by existing RLS.
 
-**2. Matchmaker ignores dying rooms.**
-- In `join_lounge` and `join_medium_lounge`:
-  - Shrink `_stale_cutoff` to 45 seconds so the pre-archive step matches the sweeper.
-  - Add `AND r.emptied_at IS NULL` to the candidate SELECT so rooms in the grace window are never picked, regardless of live-count sort.
-  - Remove the `(live_count > 0) DESC` first sort key — with dying rooms excluded, prefer follows, then live-count, then age (this stops matchmaking from stacking users into a room that's already ticking down).
+No RRULE engine, no occurrence table, no multi-group join, no timezone recompute.
 
-**3. Discovery hides dying rooms.**
-- In `list_active_instant_rooms`, add `AND r.emptied_at IS NULL` so the "Live now" list drops a room the instant its last occupant leaves. The 45s window then ends in archive without the room ever reappearing as joinable.
+## 2. Admin form (`src/routes/admin.events.tsx`)
 
-**4. No client changes.** `channel-view.tsx` already deletes the presence row on unmount, which fires the existing trigger that sets `emptied_at`. `HopButton` already deletes presence before navigating. That path is correct; only the DB timings and filters are wrong.
+Four new controls on the existing form:
+- **Source**: Workshop / External. External → require `external_url`, show `external_organizer`, hide RSVP-only fields.
+- **Format**: In person / Online (already there). Online → single "Zoom / meeting URL" field bound to `online_url`, hide venue.
+- **Recurring**: checkbox → shows `recurrence_label` text input. No date math.
+- **Pin to top**: checkbox → sets/clears `pinned_at`.
 
-## Files touched
+URL validation server-side: must be `http(s)://`, reject `javascript:` / `data:`.
 
-- New migration under `supabase/migrations/` replacing `sweep_stale_lounges`, `join_lounge`, `join_medium_lounge`, `list_active_instant_rooms` with the changes above. No table changes, no new grants beyond re-issuing the existing ones for the replaced functions.
+The event's group tag is the existing group picker — unchanged.
 
-## Out of scope
+## 3. Group Events tab (`src/routes/g.$slug.tsx` → `GroupEventsTab`)
 
-- Group-scoped lounges (`join_group_lounge`) — same treatment can follow if you want, say the word and I'll include it.
-- Workshop-paired rooms (`kind='workshop'`) are unaffected; this is lounge-only.
+Three sections, each hidden when empty:
+1. **Pinned & recurring** — `pinned_at IS NOT NULL OR is_recurring = true`, ordered `pinned_at DESC NULLS LAST, starts_at ASC`. Card shows `recurrence_label` (or "Pinned") + next date.
+2. **Upcoming** — one-time, non-recurring, `starts_at >= now()`, chronological.
+3. **Past** — leave existing behavior.
+
+Header:
+- Title becomes `Events in {group.name}` + one-line subheading.
+- Remove the inline `+ Create event (admin)` link.
+- Admin-only `+ Add event` on the right (deep-links to `/admin/events?group={id}`).
+- Hide the tab-row `+ Create` on the events tab for non-admins.
+
+Empty state: `The calendar is quiet for now.` — no member CTA.
+
+## 4. Event card (`src/components/event-card.tsx`)
+
+Small conditional tweaks driven by the same object:
+- `source = 'external'` → primary action `View event` opens `external_url` in a new tab (`rel="noopener noreferrer"` + external icon), small "External event" label, no RSVP block.
+- `source = 'workshop'` → unchanged RSVP flow.
+- `format = 'online'` → "Online" label (with platform hint if URL matches Zoom/Meet), no empty venue line.
+- `is_recurring` → show `recurrence_label` above title.
+- `pinned_at` → subtle pin indicator.
+
+Main Events page and homepage just pick up the new events automatically — same object, same queries.
+
+## Not doing on day 1
+
+- No RRULE engine or per-occurrence exceptions (recurring = a label + one canonical row the admin re-dates or clones).
+- No multi-group join.
+- No RSVP-gated Zoom links for workshop online events.
+- No external verification workflow.
+- No changes to homepage relevance rules.
+
+## Files
+
+- `supabase/migrations/<new>.sql` — additive columns only
+- `src/routes/admin.events.tsx` (+ shared form) — 4 new fields
+- `src/routes/g.$slug.tsx` — `GroupEventsTab` rewrite (~80 lines)
+- `src/components/event-card.tsx` — source/recurrence branches
+- `src/lib/group-events.functions.ts` — extend list query, add `listPinnedAndRecurringForGroup`
+
+## Verify
+
+- Workshop one-time → Upcoming.
+- Pinned "Every Tuesday" recurring → top of Pinned & recurring.
+- External event with URL → "View event" opens the URL.
+- Online workshop event with Zoom URL → attendees see the join link.
+
+Approve and I'll ship the migration first, then the code in one pass.

@@ -137,6 +137,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     venue_name: string; venue_address: string; online_url: string;
     capacity: string; promo_pass_months: number; featured: boolean;
     lineup_capacity: string;
+    // v2
+    source: "workshop" | "external";
+    external_url: string;
+    external_organizer: string;
+    is_recurring: boolean;
+    recurrence_label: string;
+    pinned: boolean;
   };
   const [form, setForm] = useState<FormState>({
     group_id: "",
@@ -155,12 +162,22 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     promo_pass_months: 1,
     featured: false,
     lineup_capacity: "",
+    source: "workshop",
+    external_url: "",
+    external_organizer: "",
+    is_recurring: false,
+    recurrence_label: "",
+    pinned: false,
   });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.group_id || !form.title || !form.starts_at || !form.ends_at) {
       toast.error("Group, title, start and end are required.");
+      return;
+    }
+    if (form.source === "external" && !form.external_url) {
+      toast.error("External events need a URL.");
       return;
     }
     try {
@@ -182,8 +199,14 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           capacity: form.capacity ? Number(form.capacity) : null,
           promo_pass_months: form.promo_pass_months,
           featured: form.featured,
-          is_official: true,
+          is_official: form.source === "workshop",
           lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
+          source: form.source,
+          external_url: form.source === "external" ? (form.external_url || null) : null,
+          external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
+          is_recurring: form.is_recurring,
+          recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+          pinned: form.pinned,
         },
       });
       toast.success("Event created");
@@ -212,6 +235,31 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+            <Label>Source</Label>
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="src" checked={form.source === "workshop"} onChange={() => setForm({ ...form, source: "workshop" })} />
+                Workshop event
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="src" checked={form.source === "external"} onChange={() => setForm({ ...form, source: "external" })} />
+                External event
+              </label>
+            </div>
+            {form.source === "external" && (
+              <div className="space-y-2">
+                <div>
+                  <Label>Event URL (required)</Label>
+                  <Input value={form.external_url} onChange={(e) => setForm({ ...form, external_url: e.target.value })} placeholder="https://…" />
+                </div>
+                <div>
+                  <Label>Organizer name (optional)</Label>
+                  <Input value={form.external_organizer} onChange={(e) => setForm({ ...form, external_organizer: e.target.value })} placeholder="Cole's Bar, Chicago Reader…" />
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <Label>Title</Label>
@@ -295,6 +343,28 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
             Feature on homepage
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} />
+            Pin to top of the group's Events tab
+          </label>
+          <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
+              Recurring event
+            </label>
+            {form.is_recurring && (
+              <div>
+                <Label>Schedule caption</Label>
+                <Input
+                  value={form.recurrence_label}
+                  onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
+                  placeholder="Every Tuesday · First Friday of the month · Weekly"
+                  maxLength={80}
+                />
+                <p className="mt-1 text-[11px] text-ink-muted">Free-text label shown on the card. Update the date/time yourself for each new occurrence.</p>
+              </div>
+            )}
+          </div>
           <div className="rounded-2xl border border-border bg-muted/30 p-3">
             <Label>Lineup spots (optional)</Label>
             <Input
