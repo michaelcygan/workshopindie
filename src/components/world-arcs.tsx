@@ -110,6 +110,9 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
   const dotAlphaRef = useRef(0);
   const inViewRef = useRef(true);
   const lastInteractionRef = useRef(0);
+  const hoveredRef = useRef(false);
+  const currentPromoRef = useRef<Pair | null>(null);
+  const router = useRouter();
 
   // Build land dots after first paint, chunked so we never block the main thread.
   useEffect(() => {
