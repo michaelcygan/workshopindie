@@ -29,7 +29,7 @@ type WorkRow = {
 };
 
 type ProfileRow = {
-  user_id: string;
+  id: string;
   display_name: string | null;
   username: string | null;
 };
@@ -99,10 +99,10 @@ export function useRoomPinsAndScreening(roomId: string | undefined, screeningWor
     queryFn: async (): Promise<ProfileRow[]> => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id,display_name,username")
-        .in("user_id", creatorIds);
+        .select("id,display_name,username")
+        .in("id", creatorIds);
       if (error) throw error;
-      return data as ProfileRow[];
+      return (data ?? []) as ProfileRow[];
     },
   });
 
@@ -113,7 +113,7 @@ export function useRoomPinsAndScreening(roomId: string | undefined, screeningWor
   }, [works]);
   const profilesById = useMemo(() => {
     const m = new Map<string, ProfileRow>();
-    profiles.forEach((p) => m.set(p.user_id, p));
+    profiles.forEach((p) => m.set(p.id, p));
     return m;
   }, [profiles]);
 
