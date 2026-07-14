@@ -68,16 +68,20 @@ export function HopButton({ roomId, medium, mode, tone = "outline", fullWidth = 
   return (
     <Button
       size="sm"
-      variant="outline"
+      variant={tone === "primary" ? "default" : "outline"}
       onClick={onHop}
       disabled={busy}
-      className="rounded-full gap-1.5"
+      className={
+        "rounded-full gap-1.5" +
+        (fullWidth ? " w-full" : "") +
+        (tone === "primary" ? " bg-primary text-primary-foreground hover:bg-primary/90" : "")
+      }
       title="Find another live Lounge"
       aria-label="Go to next Lounge"
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className="hidden sm:inline">{busy ? "Finding…" : "Next Lounge"}</span>
+      <span className={fullWidth ? "" : "hidden sm:inline"}>{busy ? "Finding…" : "Next Lounge"}</span>
     </Button>
   );
 }
