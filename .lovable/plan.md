@@ -1,27 +1,32 @@
-## Lounge sidebar button updates
+## Diagnosis
 
-Three small presentation-only tweaks to the Lounge UI. No business logic changes.
+The Lounge has multiple auto-close paths, and one is very likely causing the “closed after a minute or two” behavior:
 
-### 1. Move "Next Lounge" into the Lounge sidebar module (orange)
+- The client has a “quiet” guard: if a user is muted and camera-off, it warns after 2 minutes and drops them 1 minute later.
+- The backend presence slot claim sweeps presence rows after only 60 seconds.
+- Older database triggers/jobs can archive a Lounge when the last presence row is deleted, which can happen during cleanup/unmount/reconnect flows.
+- The Lounge page then redirects non-host users whenever the room status becomes non-active, showing “This Lounge ended.”
 
-- In `src/components/media-panel.tsx`, accept a new optional `nextLoungeSlot?: ReactNode` prop on the Lounge sidebar panel and render it at the top of the panel (above the Mute / Camera off row), full-width.
-- In `src/routes/lounge.$id.tsx`, remove the `<HopButton>` from the top-right header row and instead pass it into the `ChannelView` via a new `nextLoungeSlot` prop, which forwards to `MediaPanel`.
-- In `src/components/hop-button.tsx`, add an `orange` visual style: solid orange background, white text, rounded-full, full-width when used inside the sidebar (accept an optional `fullWidth`/`variant="sidebar"` prop rather than hardcoding). Orange uses the existing brand orange token already used by the "Create" button in the top nav — no new color tokens.
+## Implementation plan
 
-### 2. Make "Exit" a red button
+1. **Make Lounge presence more forgiving**
+   - Increase the live-presence stale window from 60 seconds to a safer grace period, so a missed heartbeat or brief tab/network pause does not make the room look empty.
+   - Update the Lounge slot-claim cleanup so it does not delete a participant after only 60 seconds.
 
-- In `src/components/media-panel.tsx`, restyle the existing Exit button from a text-only destructive link into a solid red pill button: red background, white text, rounded-full, same width behavior as the Mute/Camera buttons. Uses the existing `destructive` token.
+2. **Stop accidental archiving from normal exits/reconnects**
+   - Replace any “archive immediately when last presence leaves” behavior with the newer emptied-at grace lifecycle.
+   - Keep real manual endings intact: the named Lounge owner can still explicitly end the Lounge.
 
-### 3. Give "New Collab" more prominence (keep in current spot)
+3. **Add/adjust the “Keep going?” warning before any idle drop**
+   - Change the quiet-state popup copy to “Keep going?”
+   - Make the idle window more forgiving than the current 2-minute warning + 1-minute drop.
+   - “Keep going” will reset/dismiss the warning without closing the Lounge.
 
-- In `src/routes/lounge.$id.tsx`, keep the "New Collab" button in the top-right header (unchanged location), but restyle it from the current muted text link into a proper outlined pill: `rounded-full`, visible border (`border-border`), stronger text color (`text-ink` instead of `text-ink-muted`), subtle hover, matching the sizing of the sibling `HopButton`/`End` pills so it reads as a real UI control instead of an afterthought. Rocket icon stays.
+4. **Make the route handling less confusing**
+   - If the room is truly manually ended, keep the “This Lounge ended” path.
+   - If the room was only archived/stale, avoid messaging it as if someone ended it, and route users back more gracefully.
 
-### Technical details
-
-Files touched:
-- `src/components/media-panel.tsx` — add `nextLoungeSlot` prop; restyle Exit button.
-- `src/components/channel-view.tsx` — thread `nextLoungeSlot` prop through to `MediaPanel`.
-- `src/routes/lounge.$id.tsx` — remove `HopButton` from header, pass it into `ChannelView`; restyle "New Collab" button.
-- `src/components/hop-button.tsx` — add sidebar/full-width orange variant (keeps existing outline usage elsewhere intact if any).
-
-No new dependencies, no schema changes, no server function changes.
+5. **Verify the flow**
+   - Check the Lounge no longer closes from a short idle period.
+   - Confirm manual “End” still works.
+   - Confirm leaving/hopping still removes presence without causing premature closure for others.

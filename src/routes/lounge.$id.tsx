@@ -205,25 +205,26 @@ function LiveRoomPage() {
   const isNamer = !!user && namedByUserId === user.id;
   const isHost = isNamer; // legacy rooms with host_user_id keep rename/end rights
   const isPromoted = !!room?.promoted_at;
-  const isEnded = !!room && room.status !== "active";
+  const isEnded = !!room && room.status === "ended";
+  const isArchived = !!room && room.status === "archived";
 
 
-  // If the room is ended/archived and you're not the host, bounce home.
-  // Host stays so they can wrap up gracefully.
+  // If the room is archived, bounce everyone; if it was manually ended, non-hosts bounce.
+  // Host stays only for manual endings so they can wrap up gracefully.
   useEffect(() => {
-    if (!room || isPromoted || isHost) return;
-    if (isEnded) {
-      toast("This Lounge ended.");
+    if (!room || isPromoted) return;
+    if (isArchived || (isEnded && !isHost)) {
+      toast(isEnded ? "This Lounge ended." : "That Lounge is no longer live.");
       router.navigate({ to: "/lounge" });
     }
-  }, [room, isEnded, isHost, isPromoted, router]);
+  }, [room, isEnded, isArchived, isHost, isPromoted, router]);
 
   // Stash this room so /workshop can offer a quick "Rejoin" pill for 60s.
   // Skip when ended/locked — no point offering a rejoin into a dead room.
   useEffect(() => {
     if (typeof window === "undefined" || !id || isPromoted) return;
     return () => {
-      if (isEnded || room?.locked) return;
+      if (isEnded || isArchived || room?.locked) return;
       try {
         window.sessionStorage.setItem(
           "workshop:last-room",
@@ -233,7 +234,7 @@ function LiveRoomPage() {
         // ignore
       }
     };
-  }, [id, title, isPromoted, isEnded, room?.locked]);
+  }, [id, title, isPromoted, isEnded, isArchived, room?.locked]);
 
   // First-Workshop receipt — one-time gentle toast on the user's first join.
   useEffect(() => {
@@ -254,7 +255,7 @@ function LiveRoomPage() {
     enabled: !!user && !isPromoted,
     refetchInterval: 5000,
     queryFn: async () => {
-      const cutoff = new Date(Date.now() - 60_000).toISOString();
+      const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
       const { count } = await supabase
         .from("instant_presence")
         .select("user_id", { count: "exact", head: true })
