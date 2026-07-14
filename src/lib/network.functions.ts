@@ -60,7 +60,7 @@ export async function getCoCreditedWorks(workId: string, currentCreatedBy: strin
   const { data: works } = await supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))",
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))",
     )
     .in("id", candidateIds)
     .eq("status", "published")
@@ -150,7 +150,7 @@ export async function getNetworkFeed(userId: string, limit = 8): Promise<WorkCar
   const { data: works } = await supabase
     .from("works")
     .select(
-      "id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))",
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))",
     )
     .in("created_by", [...networkIds])
     .eq("status", "published")

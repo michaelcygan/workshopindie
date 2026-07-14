@@ -134,7 +134,7 @@ function CityPage() {
     enabled: !!city?.id,
     queryFn: async () => {
       const { data } = await supabase.from("works")
-        .select("id,title,slug,category,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
+        .select("id,title,slug,category,categories,cover_url,source_type,like_count,save_count,view_count,published_at, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username))")
         .eq("city_id", city!.id).eq("status", "published").in("visibility", ["public", "unlisted"])
         .order("published_at", { ascending: false, nullsFirst: false }).limit(6);
       type Row = {

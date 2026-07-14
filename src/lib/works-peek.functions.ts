@@ -12,7 +12,7 @@ export const getWorkPeekDetail = createServerFn({ method: "POST" })
     const { data: work, error } = await supabaseAdmin
       .from("works")
       .select(
-        "id,title,slug,category,cover_url,excerpt,description,source_type,like_count,save_count,view_count,comment_count,created_by,status,visibility,creator:profiles!works_created_by_fkey(id,display_name,username,avatar_url)",
+        "id,title,slug,category,categories,cover_url,excerpt,description,source_type,like_count,save_count,view_count,comment_count,created_by,status,visibility,creator:profiles!works_created_by_fkey(id,display_name,username,avatar_url)",
       )
       .eq("id", data.workId)
       .maybeSingle();

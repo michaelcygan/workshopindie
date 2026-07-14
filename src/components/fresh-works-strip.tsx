@@ -18,7 +18,7 @@ async function fetchFreshWorks(): Promise<FreshWork[]> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,published_at")
+    .select("id,title,slug,category,categories,cover_url,published_at")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .gte("published_at", since)

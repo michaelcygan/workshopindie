@@ -56,7 +56,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
     let q = supabase
       .from("works")
       .select(
-        "id,title,slug,category,cover_url,cover_aspect,cover_focal_x,cover_focal_y,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
+        "id,title,slug,category,categories,cover_url,cover_aspect,cover_focal_x,cover_focal_y,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
       )
       .eq("status", "published")
       .in("visibility", ["public", "unlisted"])

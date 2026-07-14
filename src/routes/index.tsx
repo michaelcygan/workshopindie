@@ -32,7 +32,7 @@ type SortKey = "newest" | "trending";
 async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds: string[]) {
   let q = supabase
     .from("works")
-    .select("id,title,slug,category,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name, username))")
+    .select("id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name, username))")
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
     .limit(12);
