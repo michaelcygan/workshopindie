@@ -1,52 +1,27 @@
-# Fix Lounge "Rendered more hooks" crash
+## Lounge sidebar button updates
 
-## Diagnosis
+Three small presentation-only tweaks to the Lounge UI. No business logic changes.
 
-Console shows: `Rendered more hooks than during the previous render.` thrown from `RoomNoteBanner` (`src/components/room-note-banner.tsx`). The Lounge-level error boundary then swallows it into the "Lounge hit a snag" screen.
+### 1. Move "Next Lounge" into the Lounge sidebar module (orange)
 
-Cause is a classic React hooks-order violation. The component has early returns:
+- In `src/components/media-panel.tsx`, accept a new optional `nextLoungeSlot?: ReactNode` prop on the Lounge sidebar panel and render it at the top of the panel (above the Mute / Camera off row), full-width.
+- In `src/routes/lounge.$id.tsx`, remove the `<HopButton>` from the top-right header row and instead pass it into the `ChannelView` via a new `nextLoungeSlot` prop, which forwards to `MediaPanel`.
+- In `src/components/hop-button.tsx`, add an `orange` visual style: solid orange background, white text, rounded-full, full-width when used inside the sidebar (accept an optional `fullWidth`/`variant="sidebar"` prop rather than hardcoding). Orange uses the existing brand orange token already used by the "Create" button in the top nav — no new color tokens.
 
-- Line 90: `if (!room || room.status !== "active") return null;`
-- Line 106: `if (!note && !canEdit) return null;`
+### 2. Make "Exit" a red button
 
-…and then AFTER those returns it declares more hooks:
+- In `src/components/media-panel.tsx`, restyle the existing Exit button from a text-only destructive link into a solid red pill button: red background, white text, rounded-full, same width behavior as the Mute/Camera buttons. Uses the existing `destructive` token.
 
-- Line 125: `const [showNudge, setShowNudge] = useState(false);`
-- Line 126: `useEffect(() => { ... }, [canEdit, note, editing, nudgeKey]);`
+### 3. Give "New Collab" more prominence (keep in current spot)
 
-First render (before the room query resolves) hits the `!room` early return and registers only the hooks above it. Once the query resolves, the component runs past the early return and React sees additional hooks appear → crash → whole Lounge unmounts into the error boundary. This is why the failure fires right after "join lounge" (the query flips from loading to loaded).
+- In `src/routes/lounge.$id.tsx`, keep the "New Collab" button in the top-right header (unchanged location), but restyle it from the current muted text link into a proper outlined pill: `rounded-full`, visible border (`border-border`), stronger text color (`text-ink` instead of `text-ink-muted`), subtle hover, matching the sizing of the sibling `HopButton`/`End` pills so it reads as a real UI control instead of an afterthought. Rocket icon stays.
 
-## Fix (single file: `src/components/room-note-banner.tsx`)
+### Technical details
 
-Move the `showNudge` state, the nudge `useEffect`, and the derived `nudgeKey` constant to the top of the component alongside the other hooks — before any early return. Everything else (`dismissNudge`, `startEdit`, `commit`, the JSX) stays exactly where it is.
+Files touched:
+- `src/components/media-panel.tsx` — add `nextLoungeSlot` prop; restyle Exit button.
+- `src/components/channel-view.tsx` — thread `nextLoungeSlot` prop through to `MediaPanel`.
+- `src/routes/lounge.$id.tsx` — remove `HopButton` from header, pass it into `ChannelView`; restyle "New Collab" button.
+- `src/components/hop-button.tsx` — add sidebar/full-width orange variant (keeps existing outline usage elsewhere intact if any).
 
-Concretely, right after the existing `useEffect` at line 83:
-
-```ts
-const nudgeKey = `room-note-nudge:${roomId}`;
-const [showNudge, setShowNudge] = useState(false);
-
-useEffect(() => {
-  if (!canEdit || note || editing) return;
-  ...
-}, [canEdit, note, editing, nudgeKey]);
-```
-
-To reference `canEdit` and `note` inside that effect (they're computed after the early returns today), compute them from `room` with safe fallbacks at the top too (both are cheap and pure):
-
-```ts
-const note = (room?.note ?? "").trim();
-const workshopHasHost = !!workshopHostId;
-const roomHasHost = !!room?.host_user_id;
-const canEdit = !!user && !!room && (
-  roomHasHost
-    ? room.host_user_id === user.id
-    : room.workshop_id
-      ? (workshopHasHost ? workshopHostId === user.id : present)
-      : room.kind === "lounge" && present
-);
-```
-
-Then delete the duplicate `const note = ...` / `const canEdit = ...` block that currently lives after the early returns, and delete the now-duplicate `nudgeKey` / `useState` / `useEffect` that live further down. The two early returns (`!room || status !== "active"` and empty+read-only) stay in place; every hook is now called unconditionally on every render, satisfying the Rules of Hooks.
-
-No other files change. No behavior change beyond the crash going away.
+No new dependencies, no schema changes, no server function changes.
