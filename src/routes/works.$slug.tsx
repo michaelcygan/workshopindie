@@ -24,6 +24,13 @@ import { getCoCreditedWorks } from "@/lib/network.functions";
 import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+
+const LICENSE_LABELS: Record<string, string> = {
+  cc_by: "CC BY",
+  rights_managed_externally: "Rights managed",
+  portfolio_credit_only: "Credit only",
+  private: "Private",
+};
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -197,8 +204,8 @@ function WorkDetail() {
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
               {SOURCE_LABELS[work.source_type] ?? work.source_type}
             </span>
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
-              {work.license_type.replace("_", " ")}
+            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-muted">
+              {LICENSE_LABELS[work.license_type] ?? work.license_type.replaceAll("_", " ")}
             </span>
           </div>
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
