@@ -386,37 +386,78 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("group_events")
-        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,promo_pass_months")
+        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,promo_pass_months,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url")
         .eq("group_id", group.id)
         .is("deleted_at", null)
         .order("starts_at", { ascending: true });
       if (error) throw error;
-      return data ?? [];
+      return (data ?? []) as unknown as EventLite[];
     },
   });
   const now = new Date();
-  const upcoming = (events ?? []).filter((e) => new Date(e.starts_at) >= now);
-  const past = (events ?? []).filter((e) => new Date(e.starts_at) < now);
+  const all = events ?? [];
+  const pinnedOrRecurring = all
+    .filter((e) => e.pinned_at || e.is_recurring)
+    .sort((a, b) => {
+      if (!!b.pinned_at !== !!a.pinned_at) return b.pinned_at ? 1 : -1;
+      return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
+    });
+  const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
+  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now);
+  const past = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) < now);
+
+  const isCity = group.kind === "city";
+  const subheading = isCity
+    ? "Open mics, screenings, workshops, meetups, and other places to connect."
+    : "Gatherings, workshops, and events connected to this community.";
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h3 className="font-display text-xl text-ink">Upcoming events</h3>
+    <div className="space-y-10">
+      <header className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="font-display text-2xl text-ink md:text-3xl">Events in {group.name}</h3>
+          <p className="mt-1 text-sm text-ink-muted">{subheading}</p>
+        </div>
         {isAdmin && (
-          <Link to="/admin/events" className="text-xs text-primary hover:underline">+ Create event (admin)</Link>
+          <Link
+            to="/admin/events"
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink-soft shadow-soft hover:bg-muted"
+          >
+            + Add event
+          </Link>
         )}
-      </div>
+      </header>
+
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
-      {!isLoading && upcoming.length === 0 && (
+
+      {!isLoading && pinnedOrRecurring.length > 0 && (
+        <section className="space-y-3">
+          <h4 className="font-display text-lg text-ink">Pinned &amp; recurring</h4>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {pinnedOrRecurring.map((e) => (
+              <EventCardLite key={e.id} groupSlug={group.slug} ev={e} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isLoading && upcoming.length > 0 && (
+        <section className="space-y-3">
+          <h4 className="font-display text-lg text-ink">Upcoming</h4>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {upcoming.map((e) => (
+              <EventCardLite key={e.id} groupSlug={group.slug} ev={e} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {!isLoading && pinnedOrRecurring.length === 0 && upcoming.length === 0 && (
         <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
-          No upcoming events yet. Your scene's quiet — RSVP first when one drops.
+          The calendar is quiet for now. New events will appear here as they are added.
         </p>
       )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {upcoming.map((e) => (
-          <EventCardLite key={e.id} groupSlug={group.slug} ev={e as EventLite} />
-        ))}
-      </div>
+
       {past.length > 0 && (
         <details className="rounded-2xl border border-border bg-surface p-4">
           <summary className="cursor-pointer text-sm font-medium text-ink-soft">Past events ({past.length})</summary>
@@ -440,16 +481,25 @@ type EventLite = {
   format: "in_person" | "online" | "hybrid"; cover_url: string | null;
   starts_at: string; venue_name: string | null; venue_address: string | null;
   going_count: number; capacity: number | null; featured_at: string | null; promo_pass_months: number;
+  source: "workshop" | "external" | null;
+  external_url: string | null;
+  external_organizer: string | null;
+  is_recurring: boolean | null;
+  recurrence_label: string | null;
+  pinned_at: string | null;
+  online_url: string | null;
 };
 
 function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) {
   const starts = new Date(ev.starts_at);
-  return (
-    <Link
-      to="/g/$slug/e/$eventSlug"
-      params={{ slug: groupSlug, eventSlug: ev.slug }}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-    >
+  const isExternal = ev.source === "external" && !!ev.external_url;
+  const isOnline = ev.format === "online" || ev.format === "hybrid";
+  const locationLine = isOnline
+    ? "Online"
+    : (ev.venue_name ?? ev.venue_address ?? "TBA");
+
+  const Inner = (
+    <>
       <div
         className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
@@ -458,21 +508,60 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
           <div className="text-[9px] font-medium uppercase text-ink-muted">{starts.toLocaleDateString(undefined, { month: "short" })}</div>
           <div className="font-display text-base leading-none text-ink">{starts.getDate()}</div>
         </div>
+        <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
+          {ev.pinned_at && (
+            <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">Pinned</span>
+          )}
+          {ev.is_recurring && (
+            <span className="rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-soft">
+              {ev.recurrence_label || "Recurring"}
+            </span>
+          )}
+        </div>
       </div>
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h4 className="font-display text-sm text-ink line-clamp-2">{ev.title}</h4>
         <div className="text-[11px] text-ink-muted">
           {starts.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}
           {" · "}
-          {ev.format === "online" ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA")}
+          {locationLine}
         </div>
         <div className="mt-auto flex items-center justify-between pt-1 text-[11px]">
-          <span className="text-ink-muted">{ev.going_count} going{ev.capacity ? ` / ${ev.capacity}` : ""}</span>
-          {ev.promo_pass_months > 0 && (
+          <span className="text-ink-muted">
+            {isExternal
+              ? `External${ev.external_organizer ? ` · ${ev.external_organizer}` : ""}`
+              : `${ev.going_count} going${ev.capacity ? ` / ${ev.capacity}` : ""}`}
+          </span>
+          {isExternal ? (
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">View event ↗</span>
+          ) : ev.promo_pass_months > 0 ? (
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">+{ev.promo_pass_months}mo Plus</span>
-          )}
+          ) : null}
         </div>
       </div>
+    </>
+  );
+
+  if (isExternal) {
+    return (
+      <a
+        href={ev.external_url!}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+      >
+        {Inner}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to="/g/$slug/e/$eventSlug"
+      params={{ slug: groupSlug, eventSlug: ev.slug }}
+      className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+    >
+      {Inner}
     </Link>
   );
 }
