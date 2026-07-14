@@ -51,6 +51,7 @@ type FormState = {
   instagram: string;
   headline: string;
   bio: string;
+  artistStatement: string;
   avatar: string | null;
   cover: string | null;
   cats: Category[];
