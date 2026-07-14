@@ -146,7 +146,10 @@ export function GroupPicker({
 
       {!atMax && (
         <div className="relative">
-          <div className="flex h-10 items-center gap-2 rounded-full border border-input bg-background px-3">
+          <div
+            ref={inputWrapRef}
+            className="flex h-10 items-center gap-2 rounded-full border border-input bg-background px-3"
+          >
             <Search className="h-3.5 w-3.5 text-ink-muted" />
             <input
               value={query}
@@ -161,36 +164,47 @@ export function GroupPicker({
             />
           </div>
 
-          {open && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 z-30 mt-1.5 max-h-72 overflow-auto rounded-2xl border border-border bg-surface p-1 shadow-lift">
-              {suggestions.map((g) => {
-                const Icon = g.kind === "city" ? MapPin : Sparkles;
-                const joined = myIdSet.has(g.id);
-                return (
-                  <button
-                    key={g.id}
-                    type="button"
-                    onMouseDown={(e) => e.preventDefault()}
-                    onClick={() => add(g)}
-                    className={cn(
-                      "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted",
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5 text-ink-muted" />
-                    <span className="flex-1 truncate text-ink">{g.name}</span>
-                    <span className="text-[10px] uppercase tracking-wide text-ink-muted">
-                      {g.kind}
-                    </span>
-                    {joined && (
-                      <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] text-ink-soft">
-                        Joined
+          {open && suggestions.length > 0 && menuRect && typeof document !== "undefined" &&
+            createPortal(
+              <div
+                style={{
+                  position: "fixed",
+                  left: menuRect.left,
+                  top: menuRect.top,
+                  width: menuRect.width,
+                  zIndex: 60,
+                }}
+                className="max-h-72 overflow-auto rounded-2xl border border-border bg-surface p-1 shadow-lift"
+              >
+                {suggestions.map((g) => {
+                  const Icon = g.kind === "city" ? MapPin : Sparkles;
+                  const joined = myIdSet.has(g.id);
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => add(g)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm hover:bg-muted",
+                      )}
+                    >
+                      <Icon className="h-3.5 w-3.5 text-ink-muted" />
+                      <span className="flex-1 truncate text-ink">{g.name}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-ink-muted">
+                        {g.kind}
                       </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+                      {joined && (
+                        <span className="rounded-full bg-ink/10 px-1.5 py-0.5 text-[10px] text-ink-soft">
+                          Joined
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>,
+              document.body,
+            )}
         </div>
       )}
 
