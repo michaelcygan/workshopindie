@@ -194,6 +194,8 @@ export function ChannelView({
 
 
   const media = useMediaRoom(roomId);
+  const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
+  const stopScreeningFn = useServerFn(stopScreening);
 
   // The lobby "Drop in" button is the consent point — auto-join with mic + camera
   // (or whatever mode was requested via ?mode=) as soon as the user is loaded.
