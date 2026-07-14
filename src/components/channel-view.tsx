@@ -347,12 +347,21 @@ export function ChannelView({
     let cancelled = false;
 
     async function join() {
-      await supabase.from("instant_presence").upsert({
-        room_id: roomId,
-        user_id: user!.id,
-        status: "active",
-        last_seen_at: new Date().toISOString(),
+      // Atomic slot claim (5-cap) — see claim_lounge_slot() migration. Returns
+      // 'joined' | 'rejoined' | 'full'. On 'full' we bounce back to /lounge so
+      // the user isn't half-in a room that has no seat.
+      const { data: claim } = await supabase.rpc("claim_lounge_slot", {
+        _room_id: roomId,
+        _user_id: user!.id,
       });
+      const status = (claim as { status?: string } | null)?.status;
+      if (status === "full") {
+        if (cancelled) return;
+        toast.error("Room filled up while you were joining.");
+        router.navigate({ to: "/lounge" });
+        return;
+      }
+
       const [msgs, pres, reax] = await Promise.all([
         supabase
           .from("instant_messages")
