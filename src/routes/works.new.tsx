@@ -70,6 +70,7 @@ function NewWork() {
   // form state
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState<WorkCategory>("visual");
+  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
   const [subtype, setSubtype] = useState<string | null>(null);
   const [excerpt, setExcerpt] = useState("");
   const [description, setDescription] = useState("");
