@@ -126,7 +126,20 @@ export function WorkPeek({
                 </button>
               )}
               <div className="flex items-center gap-4 text-xs text-ink-muted">
-                <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {formatCount(work.like_count)}</span>
+                <button
+                  type="button"
+                  onClick={onLike}
+                  disabled={like.pending}
+                  aria-pressed={like.liked}
+                  aria-label={like.liked ? "Remove from Favorites" : "Add to Favorites"}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 -mx-1.5 transition hover:bg-muted",
+                    like.liked && "text-primary",
+                  )}
+                >
+                  <Heart className={cn("h-3.5 w-3.5", like.liked && "fill-current")} />
+                  {formatCount(like.likes)}
+                </button>
                 <span className="inline-flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" /> {formatCount(work.save_count)}</span>
                 <span className="inline-flex items-center gap-1"><MessageCircle className="h-3.5 w-3.5" /> {formatCount(work.comment_count)}</span>
                 <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {formatCount(work.view_count)}</span>
@@ -134,7 +147,7 @@ export function WorkPeek({
               <div className="flex items-center justify-end pt-2">
                 <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
                   <a href={`/works/${work.slug}`} target="_blank" rel="noopener noreferrer">
-                    Open full work <ExternalLink className="h-3.5 w-3.5" />
+                    Open full piece <ExternalLink className="h-3.5 w-3.5" />
                   </a>
                 </Button>
               </div>
@@ -142,6 +155,15 @@ export function WorkPeek({
           </motion.div>
         )}
       </DialogContent>
+      <SignupGateModal
+        open={gateOpen}
+        onOpenChange={(v) => {
+          setGateOpen(v);
+          if (!v) like.clearQueued();
+        }}
+        title="Favorite this piece"
+        subtitle="Create your free account to favorite pieces and find them again in your Gallery."
+      />
     </Dialog>
   );
 }
