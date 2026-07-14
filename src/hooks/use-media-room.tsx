@@ -12,11 +12,21 @@ const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
 ];
 
-
-
 // How long to wait for ICE to reach "connected" before assuming the direct
 // peer-to-peer path won't work and upgrading this pair to TURN relay.
 const ICE_CHECKING_TIMEOUT_MS = 8000;
+
+// How long ICE may stay in "disconnected" before we escalate to restartIce.
+// Covers a brief Wi-Fi blip / packet loss burst without visible impact.
+const ICE_DISCONNECT_GRACE_MS = 5000;
+
+// Max ICE restarts per peer inside a 30s window before falling back to a TURN
+// teardown-and-recreate. Prevents restart loops during sustained loss.
+const ICE_RESTART_WINDOW_MS = 30_000;
+const ICE_RESTART_MAX_ATTEMPTS = 2;
+
+// Visibility "was hidden long enough to warrant a revalidate" threshold.
+const HIDDEN_REVALIDATE_MS = 10_000;
 
 // -----------------------------------------------------------------------------
 // WebRTC connection mode. Controlled via VITE_WEBRTC_MODE build-time env var.
@@ -34,6 +44,13 @@ const WEBRTC_MODE: WebrtcMode = (() => {
   if (raw === "force-turn" || raw === "direct-only") return raw;
   return "auto";
 })();
+
+function newSessionId(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    try { return crypto.randomUUID(); } catch { /* noop */ }
+  }
+  return `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function detectBrowserFamily(): "chrome" | "firefox" | "safari" | "edge" | "other" {
   if (typeof navigator === "undefined") return "other";
@@ -116,15 +133,54 @@ export type MediaPeer = {
   stream: MediaStream | null;
 };
 
+// -----------------------------------------------------------------------------
+// Signal envelope.
+// Every offer/answer/ICE message carries room + sender-session + pc-generation
+// so late messages from a stale room / previous browser session / closed PC
+// cannot resurrect an obsolete connection. All fields optional at parse time
+// so an older client emitting a bare payload still works.
+// -----------------------------------------------------------------------------
+type SignalMeta = {
+  room?: string;
+  sess?: string;      // sender's per-join session id
+  gen?: number;       // sender's PC generation for this pair
+  targetSess?: string; // receiver's session id (set on answers, ICE)
+};
+
 type SignalEvent =
-  | { type: "offer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
-  | { type: "answer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
-  | { type: "ice"; from: string; to: string; candidate: RTCIceCandidateInit }
-  | { type: "speaking"; from: string; speaking: boolean }
-  | { type: "screen"; from: string; active: boolean };
+  | (SignalMeta & { type: "offer"; from: string; to: string; sdp: RTCSessionDescriptionInit })
+  | (SignalMeta & { type: "answer"; from: string; to: string; sdp: RTCSessionDescriptionInit })
+  | (SignalMeta & { type: "ice"; from: string; to: string; candidate: RTCIceCandidateInit })
+  | (SignalMeta & { type: "speaking"; from: string; speaking: boolean })
+  | (SignalMeta & { type: "screen"; from: string; active: boolean });
 
+type PresenceMeta = { mode: MediaMode; joined_at: string; sess?: string };
 
-type PresenceMeta = { mode: MediaMode; joined_at: string };
+// Per-peer runtime state kept alongside the RTCPeerConnection.
+type PeerMeta = {
+  // Perfect-negotiation
+  polite: boolean;
+  makingOffer: boolean;
+  ignoreOffer: boolean;
+  isSettingRemoteAnswerPending: boolean;
+  // Session + generation identity
+  localGen: number;               // increments each createPeer for this peerId
+  remoteSess: string | null;      // learned from first inbound signal / presence
+  remoteGen: number;              // highest remoteGen seen; older discarded
+  // Recovery
+  restartAttempts: number[];      // timestamps within ICE_RESTART_WINDOW_MS
+  restartInFlight: boolean;
+  disconnectTimer: number | null;
+  // Existing telemetry
+  startedAt: number;
+  turnAttempted: boolean;
+  turnSucceeded: boolean;
+  recorded: boolean;
+  eventId: string | null;
+  finalRelayed: boolean;
+  // Buffered ICE per gen — early candidates before remoteDescription is set.
+  pendingIce: Map<number, RTCIceCandidateInit[]>;
+};
 
 export function useMediaRoom(roomId: string | undefined) {
   const { user } = useAuth();
@@ -147,49 +203,37 @@ export function useMediaRoom(roomId: string | undefined) {
 
   const localStreamRef = useRef<MediaStream | null>(null);
   const pcsRef = useRef<Map<string, RTCPeerConnection>>(new Map());
+  const peerMetaRef = useRef<Map<string, PeerMeta>>(new Map());
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const speakingStopRef = useRef<(() => void) | null>(null);
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
   const screenStreamRef = useRef<MediaStream | null>(null);
   const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
+  const screenBusyRef = useRef<boolean>(false);
 
+  // Session identity — nulled by leave() so late signals are dropped.
+  const sessionIdRef = useRef<string | null>(null);
+  const roomIdRef = useRef<string | undefined>(roomId);
+  useEffect(() => { roomIdRef.current = roomId; }, [roomId]);
+
+  // Visibility / revalidate bookkeeping
+  const hiddenSinceRef = useRef<number | null>(null);
+  const revalidateInFlightRef = useRef<boolean>(false);
 
   // ---- TURN fallback (session-cached) ---------------------------------------
-  // STUN-only is tried first for every pair (free). We only fetch TURN
-  // credentials when at least one pair has actually failed to connect.
   const turnIceServersRef = useRef<RTCIceServer[] | null>(null);
   const turnFetchPromiseRef = useRef<Promise<RTCIceServer[]> | null>(null);
   const turnExpiresAtRef = useRef<number>(0);
   const pairUsedTurnRef = useRef<Set<string>>(new Set());
   const pairCheckTimersRef = useRef<Map<string, number>>(new Map());
-  // Per-pair telemetry: when the pair started, whether TURN was attempted, and
-  // the recorded event id so we can update it with relay bytes on close.
-  const pairMetaRef = useRef<
-    Map<
-      string,
-      {
-        startedAt: number;
-        turnAttempted: boolean;
-        turnSucceeded: boolean;
-        recorded: boolean;
-        eventId: string | null;
-        finalRelayed: boolean;
-      }
-    >
-  >(new Map());
   const iceErrorRef = useRef<Map<string, number>>(new Map());
 
   // ---- bandwidth governor ---------------------------------------------------
-  // The current per-sender profile (cam kbps / fps / height + screen kbps).
-  // Mirrored in a ref so applyBudget() called from event handlers always sees
-  // the latest values without re-binding the function. Adaptive floor tracks
-  // step-downs from getStats() so we don't oscillate.
   const profileRef = useRef<BitrateProfile>(pickProfile(1, false));
   const adaptiveFloorRef = useRef<BitrateProfile | null>(null);
   const statsTimerRef = useRef<number | null>(null);
   const consecutiveBwLimitedRef = useRef<Map<string, number>>(new Map());
-
 
   async function getTurnIceServers(forceRefresh = false): Promise<RTCIceServer[]> {
     const now = Date.now();
@@ -206,8 +250,6 @@ export function useMediaRoom(roomId: string | undefined) {
       const res = await mintTurnCreds({
         data: { roomId, ttlSeconds: 600, envMode: WEBRTC_MODE },
       });
-      // Client-side shape validation — server already checks, but a defensive
-      // guard here means a bad response never lands in RTCPeerConnection.
       const servers = Array.isArray(res.iceServers) ? res.iceServers : [];
       const usable = servers.filter(
         (s) => s && typeof s === "object" && "urls" in s && (typeof s.urls === "string" || Array.isArray(s.urls)),
@@ -225,16 +267,6 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
-
-  /**
-   * Push the current bandwidth profile to every outbound video sender.
-   * Called whenever the room shape changes (join/leave, screen share start/stop,
-   * remote screen signal). Also applies camera-source constraints so the
-   * encoder isn't asked to downsize a 1080p capture every frame.
-   *
-   * Pure best-effort — every call is wrapped in try/catch and silently no-ops
-   * if a sender lacks setParameters (Safari < 16 etc).
-   */
   async function applyBudget() {
     const profile = profileRef.current;
     const screenActive = profile.screenKbps > 0;
@@ -243,15 +275,13 @@ export function useMediaRoom(roomId: string | undefined) {
       : null);
     const localScreenTrack = screenStreamRef.current?.getVideoTracks()[0] ?? null;
 
-    // Downsample the source itself so the encoder has less work to do. We
-    // skip the cam constraint while sharing — cam isn't on the wire then.
     if (localCamTrack && !screenActive) {
       try {
         await localCamTrack.applyConstraints({
           frameRate: { max: profile.camFps },
           height: { max: profile.camMaxHeight },
         });
-      } catch { /* noop — some devices reject mid-stream constraint changes */ }
+      } catch { /* noop */ }
     }
     if (localScreenTrack) {
       try {
@@ -280,19 +310,12 @@ export function useMediaRoom(roomId: string | undefined) {
           maxBitrate: kbps * 1000,
           maxFramerate: fps,
         };
-        // "maintain-framerate" keeps text legible during screen share;
-        // "balanced" lets the encoder trade resolution for smoothness on cam.
         params.degradationPreference = isScreen ? "maintain-framerate" : "balanced";
         await sender.setParameters(params);
-      } catch { /* noop — Safari pre-16 throws on degradationPreference */ }
+      } catch { /* noop */ }
     }
   }
 
-  /**
-   * Lightweight outbound-rtp poller. If a sender stays `bandwidth`-limited for
-   * 2 consecutive samples (8s), step the profile down one row and remember
-   * the floor so we never re-raise above it until the next mode/share change.
-   */
   function startStatsPoller() {
     if (statsTimerRef.current !== null) return;
     const tick = async () => {
@@ -336,15 +359,9 @@ export function useMediaRoom(roomId: string | undefined) {
     consecutiveBwLimitedRef.current.clear();
   }
 
-  /**
-   * Recompute the profile from current presence + screen-share state, honoring
-   * any adaptive floor set by the stats poller, and push it to all senders.
-   */
   function rebudget(peerCount: number, screenActive: boolean) {
     const base = pickProfile(peerCount, screenActive);
     const floor = adaptiveFloorRef.current;
-    // Floor only applies within the same screen-active state; flipping share
-    // on/off resets the budget so we can re-explore upward.
     const next = floor && (floor.screenKbps > 0) === screenActive
       ? { ...base,
           camKbps: Math.min(base.camKbps, floor.camKbps),
@@ -354,8 +371,6 @@ export function useMediaRoom(roomId: string | undefined) {
     applyBudget().catch(() => {});
   }
 
-
-
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
       ...prev,
@@ -363,8 +378,26 @@ export function useMediaRoom(roomId: string | undefined) {
     }));
   }
 
+  // -------------------------------------------------------------------------
+  // Signaling helpers — every outbound signal is stamped with the current
+  // room/session/gen so the receiver can drop stale messages.
+  // -------------------------------------------------------------------------
+  function sendSignal(peerId: string, evt: Omit<SignalEvent, "room" | "sess" | "gen" | "targetSess">) {
+    const ch = channelRef.current;
+    if (!ch || !myId || !sessionIdRef.current) return;
+    const meta = peerMetaRef.current.get(peerId);
+    const payload: SignalEvent = {
+      ...evt,
+      room: roomIdRef.current,
+      sess: sessionIdRef.current,
+      gen: meta?.localGen,
+      targetSess: meta?.remoteSess ?? undefined,
+    } as SignalEvent;
+    ch.send({ type: "broadcast", event: "signal", payload });
+  }
+
   async function submitRelayEnd(peerId: string, pc: RTCPeerConnection) {
-    const meta = pairMetaRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
     if (!meta || !meta.eventId || !meta.finalRelayed) return;
     try {
       const stats = await inspectCandidatePair(pc);
@@ -380,17 +413,32 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
-  function closePeer(peerId: string) {
+  function clearCheckTimer(peerId: string) {
     const t = pairCheckTimersRef.current.get(peerId);
-    if (t) { clearTimeout(t); pairCheckTimersRef.current.delete(peerId); }
+    if (t) {
+      clearTimeout(t);
+      pairCheckTimersRef.current.delete(peerId);
+    }
+  }
+
+  function clearDisconnectTimer(peerId: string) {
+    const meta = peerMetaRef.current.get(peerId);
+    if (meta && meta.disconnectTimer !== null) {
+      clearTimeout(meta.disconnectTimer);
+      meta.disconnectTimer = null;
+    }
+  }
+
+  function closePeer(peerId: string) {
+    clearCheckTimer(peerId);
+    clearDisconnectTimer(peerId);
     const pc = pcsRef.current.get(peerId);
     if (pc) {
-      // Fire-and-forget: submit relay-end telemetry before we close.
       void submitRelayEnd(peerId, pc);
       try { pc.close(); } catch { /* noop */ }
       pcsRef.current.delete(peerId);
     }
-    pairMetaRef.current.delete(peerId);
+    peerMetaRef.current.delete(peerId);
     iceErrorRef.current.delete(peerId);
     setPeers((prev) => {
       if (!(peerId in prev)) return prev;
@@ -400,69 +448,126 @@ export function useMediaRoom(roomId: string | undefined) {
     });
   }
 
-  function clearCheckTimer(peerId: string) {
-    const t = pairCheckTimersRef.current.get(peerId);
-    if (t) {
-      clearTimeout(t);
-      pairCheckTimersRef.current.delete(peerId);
+  // -------------------------------------------------------------------------
+  // Recovery: ICE restart with bounded retries, TURN swap as last resort.
+  // -------------------------------------------------------------------------
+  async function scheduleIceRestart(peerId: string) {
+    const pc = pcsRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
+    if (!pc || !meta) return;
+    if (meta.restartInFlight) return;
+
+    // Prune old attempt timestamps.
+    const now = Date.now();
+    meta.restartAttempts = meta.restartAttempts.filter((t) => now - t < ICE_RESTART_WINDOW_MS);
+    if (meta.restartAttempts.length >= ICE_RESTART_MAX_ATTEMPTS) {
+      // Exhausted — fall back to a TURN teardown/recreate.
+      if (WEBRTC_MODE === "auto" && !pairUsedTurnRef.current.has(peerId)) {
+        upgradePeerToTurn(peerId, peers[peerId]?.mode ?? "voice");
+      } else {
+        void maybeRecordFailed(peerId);
+        closePeer(peerId);
+      }
+      return;
+    }
+    meta.restartInFlight = true;
+    meta.restartAttempts.push(now);
+
+    try {
+      // Refresh near-expiry TURN creds so a restart doesn't inherit a dead ticket.
+      if (WEBRTC_MODE === "auto" && turnExpiresAtRef.current > 0 &&
+          turnExpiresAtRef.current < Date.now() + 60_000) {
+        try { await getTurnIceServers(true); } catch { /* noop */ }
+      }
+      // Only the impolite side proactively fires the restart offer; the polite
+      // side lets onnegotiationneeded be triggered by the incoming offer's
+      // ICE-restart. If both fire, perfect negotiation handles the glare.
+      if (!meta.polite && typeof pc.restartIce === "function") {
+        try { pc.restartIce(); } catch { /* noop — old Safari */ }
+      } else if (typeof pc.restartIce === "function") {
+        // Polite side: still call restartIce so incoming ICE-restart offer is
+        // accepted cleanly.
+        try { pc.restartIce(); } catch { /* noop */ }
+      }
+    } finally {
+      // Release after a short delay so a follow-up state change doesn't stack
+      // a second attempt immediately.
+      setTimeout(() => {
+        const m = peerMetaRef.current.get(peerId);
+        if (m) m.restartInFlight = false;
+      }, 2000);
     }
   }
 
   async function upgradePeerToTurn(peerId: string, peerMode: MediaMode) {
     if (WEBRTC_MODE === "direct-only") return;
-    if (pairUsedTurnRef.current.has(peerId)) return; // one retry per pair
+    if (pairUsedTurnRef.current.has(peerId)) return;
     pairUsedTurnRef.current.add(peerId);
     clearCheckTimer(peerId);
 
-    // If cached credentials are near expiry, force a refresh so a new peer
-    // joining late in a Lounge doesn't inherit an about-to-expire ticket.
     const nearExpiry = turnExpiresAtRef.current > 0 && turnExpiresAtRef.current < Date.now() + 60_000;
-
     let turnServers: RTCIceServer[];
     try {
       turnServers = await getTurnIceServers(nearExpiry);
     } catch (e) {
       console.warn("TURN mint failed", e);
-      const meta = pairMetaRef.current.get(peerId);
+      const meta = peerMetaRef.current.get(peerId);
       if (meta) { meta.turnAttempted = true; meta.turnSucceeded = false; }
       closePeer(peerId);
       return;
     }
 
-    const meta = pairMetaRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
     if (meta) meta.turnAttempted = true;
 
-    // Tear down the failed pc and recreate with TURN servers.
-    // closePeer wipes pairMeta — preserve turnAttempted flag for the new pc.
+    // Preserve remoteSess/gen counter across the swap so the new PC's meta
+    // still discards stale signals from the previous generation.
+    const preservedRemoteSess = meta?.remoteSess ?? null;
+    const nextGen = (meta?.localGen ?? 0) + 1;
+
     closePeer(peerId);
-    const pc = createPeer(peerId, peerMode, [...STUN_ONLY, ...turnServers]);
-    const newMeta = pairMetaRef.current.get(peerId);
-    if (newMeta) newMeta.turnAttempted = true;
-    // Only the lex-greater side re-offers (matches normal join handshake).
-    if (myId && myId > peerId) {
-      try { await makeOfferOn(pc, peerId); } catch (e) { console.warn("TURN re-offer failed", e); }
+    const pc = createPeer(peerId, peerMode, [...STUN_ONLY, ...turnServers], nextGen);
+    const newMeta = peerMetaRef.current.get(peerId);
+    if (newMeta) {
+      newMeta.turnAttempted = true;
+      newMeta.remoteSess = preservedRemoteSess;
     }
+    // Perfect negotiation will drive the offer on both sides via
+    // onnegotiationneeded now that addTrack has fired inside createPeer.
   }
 
   function createPeer(
     peerId: string,
     peerMode: MediaMode,
     iceServers: RTCIceServer[] = STUN_ONLY,
+    localGen: number = 1,
   ): RTCPeerConnection {
-    // Force-TURN staging mode: relay-only ICE policy so we exercise the TURN
-    // path even when a direct route is available. Never used in production.
     const iceTransportPolicy: RTCIceTransportPolicy | undefined =
       WEBRTC_MODE === "force-turn" ? "relay" : undefined;
     const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy });
     pcsRef.current.set(peerId, pc);
-    pairMetaRef.current.set(peerId, {
+
+    const meta: PeerMeta = {
+      polite: !!myId && myId < peerId,
+      makingOffer: false,
+      ignoreOffer: false,
+      isSettingRemoteAnswerPending: false,
+      localGen,
+      remoteSess: null,
+      remoteGen: 0,
+      restartAttempts: [],
+      restartInFlight: false,
+      disconnectTimer: null,
       startedAt: performance.now(),
       turnAttempted: WEBRTC_MODE === "force-turn",
       turnSucceeded: false,
       recorded: false,
       eventId: null,
       finalRelayed: false,
-    });
+      pendingIce: new Map(),
+    };
+    peerMetaRef.current.set(peerId, meta);
+
     setPeers((prev) => ({
       ...prev,
       [peerId]: { userId: peerId, speaking: false, mode: peerMode, stream: prev[peerId]?.stream ?? null },
@@ -471,21 +576,26 @@ export function useMediaRoom(roomId: string | undefined) {
     const local = localStreamRef.current;
     if (local) for (const t of local.getTracks()) pc.addTrack(t, local);
 
+    // If a screen share is already active locally, add its track too so the
+    // new peer immediately receives the share once negotiation completes.
+    const screen = screenStreamRef.current;
+    if (screen) {
+      for (const t of screen.getTracks()) {
+        try { pc.addTrack(t, screen); } catch { /* noop */ }
+      }
+    }
+
     pc.ontrack = (ev) => {
       const [stream] = ev.streams;
       if (stream) attachStream(peerId, stream);
     };
+
     pc.onicecandidate = (ev) => {
-      if (ev.candidate && myId && channelRef.current) {
-        channelRef.current.send({
-          type: "broadcast",
-          event: "signal",
-          payload: { type: "ice", from: myId, to: peerId, candidate: ev.candidate.toJSON() } satisfies SignalEvent,
-        });
+      if (ev.candidate) {
+        sendSignal(peerId, { type: "ice", from: myId!, to: peerId, candidate: ev.candidate.toJSON() });
       }
     };
-    // Feature-detected: not all browsers expose onicecandidateerror. Track a
-    // per-pair count for diagnostics; never log address/IP fields.
+
     try {
       (pc as unknown as { onicecandidateerror: ((e: RTCPeerConnectionIceErrorEvent) => void) | null })
         .onicecandidateerror = (e) => {
@@ -500,14 +610,16 @@ export function useMediaRoom(roomId: string | undefined) {
         }
       };
     } catch { /* noop */ }
+
     pc.oniceconnectionstatechange = () => {
       const s = pc.iceConnectionState;
+      const m = peerMetaRef.current.get(peerId);
+      if (!m) return;
       if (s === "connected" || s === "completed") {
         clearCheckTimer(peerId);
+        clearDisconnectTimer(peerId);
         void maybeRecordConnected(peerId, pc);
       } else if (s === "checking") {
-        // Arm 8s upgrade timer (only once per pair lifecycle). Skipped when
-        // force-turn (already relay) or direct-only (no fallback available).
         if (
           WEBRTC_MODE === "auto" &&
           !pairCheckTimersRef.current.has(peerId) &&
@@ -522,34 +634,55 @@ export function useMediaRoom(roomId: string | undefined) {
           }, ICE_CHECKING_TIMEOUT_MS);
           pairCheckTimersRef.current.set(peerId, t);
         }
-      } else if (s === "failed" || s === "disconnected") {
-        if (WEBRTC_MODE === "auto" && !pairUsedTurnRef.current.has(peerId)) {
-          upgradePeerToTurn(peerId, peerMode);
-        } else if (s === "failed") {
-          void maybeRecordFailed(peerId);
-          closePeer(peerId);
+      } else if (s === "disconnected") {
+        // Grace period — many transient blips resolve on their own.
+        if (m.disconnectTimer === null) {
+          m.disconnectTimer = window.setTimeout(() => {
+            m.disconnectTimer = null;
+            const cur = pcsRef.current.get(peerId);
+            if (cur !== pc) return;
+            const st = pc.iceConnectionState;
+            if (st === "disconnected" || st === "failed") {
+              scheduleIceRestart(peerId).catch(() => {});
+            }
+          }, ICE_DISCONNECT_GRACE_MS);
         }
+      } else if (s === "failed") {
+        clearDisconnectTimer(peerId);
+        scheduleIceRestart(peerId).catch(() => {});
       }
     };
+
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed" && pairUsedTurnRef.current.has(peerId)) {
-        void maybeRecordFailed(peerId);
-        closePeer(peerId);
+      if (pc.connectionState === "failed") {
+        // Escalate: try ICE restart first; if we've already exhausted, that
+        // path falls through to TURN or closePeer.
+        scheduleIceRestart(peerId).catch(() => {});
       }
     };
-    // Triggered when addTrack/removeTrack mutates the sender set after connection.
-    // Only the lex-greater side should re-offer to avoid glare; the other side
-    // gets the offer via the existing handleSignal path.
+
+    // Perfect negotiation: fires on both sides, both may attempt. Collision
+    // is resolved in handleSignal via polite/ignoreOffer.
     pc.onnegotiationneeded = async () => {
-      if (!myId || myId <= peerId) return;
-      if (pc.signalingState !== "stable") return;
-      try { await makeOfferOn(pc, peerId); } catch { /* noop */ }
+      if (!myId || !sessionIdRef.current) return;
+      try {
+        meta.makingOffer = true;
+        await pc.setLocalDescription();
+        if (pc.localDescription) {
+          sendSignal(peerId, { type: "offer", from: myId, to: peerId, sdp: pc.localDescription.toJSON() });
+        }
+      } catch (e) {
+        console.warn("negotiationneeded failed", e);
+      } finally {
+        meta.makingOffer = false;
+      }
     };
+
     return pc;
   }
 
   async function maybeRecordConnected(peerId: string, pc: RTCPeerConnection) {
-    const meta = pairMetaRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
     if (!meta || meta.recorded) return;
     meta.recorded = true;
     const stats = await inspectCandidatePair(pc);
@@ -580,7 +713,7 @@ export function useMediaRoom(roomId: string | undefined) {
   }
 
   async function maybeRecordFailed(peerId: string) {
-    const meta = pairMetaRef.current.get(peerId);
+    const meta = peerMetaRef.current.get(peerId);
     if (!meta || meta.recorded) return;
     meta.recorded = true;
     try {
@@ -602,84 +735,145 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
-
   function ensurePeer(peerId: string, peerMode: MediaMode = "voice"): RTCPeerConnection {
     const existing = pcsRef.current.get(peerId);
     if (existing) return existing;
-    // Force-TURN mode: create the pair with TURN servers from the start. We
-    // still fall through to createPeer with STUN_ONLY if the mint fails —
-    // relay-only ICE policy will then produce no candidates and the pair
-    // will simply fail to connect (correct behavior for staging tests).
     if (WEBRTC_MODE === "force-turn" && turnIceServersRef.current) {
-      return createPeer(peerId, peerMode, [...STUN_ONLY, ...turnIceServersRef.current]);
+      return createPeer(peerId, peerMode, [...STUN_ONLY, ...turnIceServersRef.current], 1);
     }
-    return createPeer(peerId, peerMode, STUN_ONLY);
-
+    return createPeer(peerId, peerMode, STUN_ONLY, 1);
   }
 
-  async function makeOfferOn(pc: RTCPeerConnection, peerId: string) {
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    if (myId && channelRef.current && pc.localDescription) {
-      channelRef.current.send({
-        type: "broadcast",
-        event: "signal",
-        payload: { type: "offer", from: myId, to: peerId, sdp: pc.localDescription.toJSON() } satisfies SignalEvent,
-      });
+  async function drainPendingIce(peerId: string, pc: RTCPeerConnection) {
+    const meta = peerMetaRef.current.get(peerId);
+    if (!meta) return;
+    const buf = meta.pendingIce.get(meta.localGen);
+    if (!buf || buf.length === 0) return;
+    meta.pendingIce.delete(meta.localGen);
+    for (const c of buf) {
+      try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch { /* noop */ }
     }
   }
 
-  async function makeOffer(peerId: string) {
-    const pc = ensurePeer(peerId);
-    await makeOfferOn(pc, peerId);
-  }
-
+  // -------------------------------------------------------------------------
+  // Perfect-negotiation signal handler.
+  // -------------------------------------------------------------------------
   async function handleSignal(ev: SignalEvent) {
-    if (!myId) return;
+    if (!myId || !sessionIdRef.current) return;
+    if (ev.room && ev.room !== roomIdRef.current) return;
     if ("to" in ev && ev.to !== myId) return;
     if (ev.from === myId) return;
+    // Reject messages addressed to a previous session of ours.
+    if (ev.targetSess && ev.targetSess !== sessionIdRef.current) return;
 
-    if (ev.type === "offer") {
-      const pc = ensurePeer(ev.from);
-      await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      if (channelRef.current && pc.localDescription) {
-        channelRef.current.send({
-          type: "broadcast",
-          event: "signal",
-          payload: { type: "answer", from: myId, to: ev.from, sdp: pc.localDescription.toJSON() } satisfies SignalEvent,
-        });
-      }
-    } else if (ev.type === "answer") {
-      const pc = pcsRef.current.get(ev.from);
-      if (pc && pc.signalingState !== "stable") {
-        await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
-      }
-    } else if (ev.type === "ice") {
-      const pc = pcsRef.current.get(ev.from);
-      if (pc) {
-        try { await pc.addIceCandidate(new RTCIceCandidate(ev.candidate)); } catch { /* noop */ }
-      }
-    } else if (ev.type === "speaking") {
+    if (ev.type === "speaking") {
       setPeers((prev) => {
         const cur = prev[ev.from];
         if (!cur || cur.speaking === ev.speaking) return prev;
         return { ...prev, [ev.from]: { ...cur, speaking: ev.speaking } };
       });
-    } else if (ev.type === "screen") {
+      return;
+    }
+    if (ev.type === "screen") {
       setScreenSharerId((cur) => {
         if (ev.active) return ev.from;
         return cur === ev.from ? null : cur;
       });
-      // Re-budget my outbound cam: a peer just started/stopped sharing, so the
-      // aggregate downlink across all peers just shifted and my cam should
-      // shrink (or expand) to keep the mesh under budget.
       adaptiveFloorRef.current = null;
       rebudget(count, ev.active || !!screenStreamRef.current);
+      return;
+    }
+
+    // For offer/answer/ice we need a PC; create on offer if none exists.
+    let pc = pcsRef.current.get(ev.from);
+    let meta = pc ? peerMetaRef.current.get(ev.from) : null;
+
+    // If the sender identifies a new session and we already had a PC for a
+    // previous session, tear it down before making a new one.
+    if (pc && meta && ev.sess && meta.remoteSess && meta.remoteSess !== ev.sess) {
+      closePeer(ev.from);
+      pc = undefined;
+      meta = null;
+    }
+
+    if (ev.type === "offer") {
+      if (!pc) {
+        pc = ensurePeer(ev.from);
+        meta = peerMetaRef.current.get(ev.from) ?? null;
+      }
+      if (!pc || !meta) return;
+
+      // Learn remote identity.
+      if (ev.sess && !meta.remoteSess) meta.remoteSess = ev.sess;
+      if (typeof ev.gen === "number") {
+        if (ev.gen < meta.remoteGen) return; // stale
+        meta.remoteGen = ev.gen;
+      }
+
+      const readyForOffer =
+        !meta.makingOffer &&
+        (pc.signalingState === "stable" || meta.isSettingRemoteAnswerPending);
+      const offerCollision = !readyForOffer;
+      meta.ignoreOffer = !meta.polite && offerCollision;
+      if (meta.ignoreOffer) return;
+
+      try {
+        // In modern browsers passing the offer directly handles implicit
+        // rollback when needed. Fall back to explicit rollback for safety.
+        if (offerCollision && meta.polite) {
+          try { await pc.setLocalDescription({ type: "rollback" } as RTCSessionDescriptionInit); }
+          catch { /* noop — implicit rollback via setRemoteDescription below */ }
+        }
+        await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+        await drainPendingIce(ev.from, pc);
+        await pc.setLocalDescription(await pc.createAnswer());
+        if (pc.localDescription) {
+          sendSignal(ev.from, { type: "answer", from: myId, to: ev.from, sdp: pc.localDescription.toJSON() });
+        }
+      } catch (e) {
+        console.warn("handleSignal(offer) failed", e);
+      }
+      return;
+    }
+
+    if (!pc || !meta) return;
+    if (ev.sess && !meta.remoteSess) meta.remoteSess = ev.sess;
+    if (typeof ev.gen === "number" && ev.gen < meta.remoteGen) return;
+
+    if (ev.type === "answer") {
+      if (meta.ignoreOffer) { meta.ignoreOffer = false; return; }
+      if (pc.signalingState !== "have-local-offer") return;
+      try {
+        meta.isSettingRemoteAnswerPending = true;
+        await pc.setRemoteDescription(new RTCSessionDescription(ev.sdp));
+        meta.isSettingRemoteAnswerPending = false;
+        await drainPendingIce(ev.from, pc);
+      } catch (e) {
+        meta.isSettingRemoteAnswerPending = false;
+        console.warn("handleSignal(answer) failed", e);
+      }
+      return;
+    }
+
+    if (ev.type === "ice") {
+      // Buffer until remoteDescription is set — otherwise addIceCandidate
+      // throws InvalidStateError silently and we lose reachability info.
+      if (!pc.remoteDescription) {
+        const buf = meta.pendingIce.get(meta.localGen) ?? [];
+        buf.push(ev.candidate);
+        meta.pendingIce.set(meta.localGen, buf);
+        return;
+      }
+      try {
+        await pc.addIceCandidate(new RTCIceCandidate(ev.candidate));
+      } catch (e) {
+        // Never fatal — a bad candidate from a stale generation shouldn't
+        // kill the pair, let alone the whole mesh.
+        if (!meta.ignoreOffer) console.debug("addIceCandidate skipped", e);
+      }
+      return;
     }
   }
-
 
   function startSpeakingDetector(stream: MediaStream) {
     const AudioCtx: typeof AudioContext =
@@ -713,7 +907,10 @@ export function useMediaRoom(roomId: string | undefined) {
           channelRef.current.send({
             type: "broadcast",
             event: "signal",
-            payload: { type: "speaking", from: myId, speaking: active } satisfies SignalEvent,
+            payload: {
+              type: "speaking", from: myId, speaking: active,
+              room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+            } satisfies SignalEvent,
           });
         }
       }
@@ -730,8 +927,6 @@ export function useMediaRoom(roomId: string | undefined) {
   }
 
   // ---- always-on lurker count subscription ----------------------------------
-  // CRITICAL: must use a DIFFERENT channel name than the join channel to avoid
-  // Supabase Realtime returning the already-subscribed instance.
   useEffect(() => {
     if (!roomId) return;
     const ch = supabase.channel(`media-lurker:${roomId}`, {
@@ -753,10 +948,7 @@ export function useMediaRoom(roomId: string | undefined) {
     }
 
     ch.on("presence", { event: "sync" }, recompute).subscribe();
-
-    return () => {
-      supabase.removeChannel(ch);
-    };
+    return () => { supabase.removeChannel(ch); };
   }, [roomId]);
 
   function teardownMedia() {
@@ -767,7 +959,7 @@ export function useMediaRoom(roomId: string | undefined) {
     for (const t of pairCheckTimersRef.current.values()) clearTimeout(t);
     pairCheckTimersRef.current.clear();
     pairUsedTurnRef.current.clear();
-    pairMetaRef.current.clear();
+    peerMetaRef.current.clear();
     iceErrorRef.current.clear();
     turnIceServersRef.current = null;
     turnExpiresAtRef.current = 0;
@@ -780,6 +972,7 @@ export function useMediaRoom(roomId: string | undefined) {
       screenStreamRef.current = null;
     }
     originalCamTrackRef.current = null;
+    screenBusyRef.current = false;
     setScreenStream(null);
     setScreenSharerId(null);
     if (speakingStopRef.current) speakingStopRef.current();
@@ -789,8 +982,10 @@ export function useMediaRoom(roomId: string | undefined) {
     lastSpeakingSentRef.current = false;
   }
 
-
   const leave = useCallback(() => {
+    // Null the session id BEFORE tearing down so any inbound signal already
+    // queued in the broadcast handler is dropped by handleSignal.
+    sessionIdRef.current = null;
     teardownMedia();
     const ch = channelRef.current;
     channelRef.current = null;
@@ -804,6 +999,90 @@ export function useMediaRoom(roomId: string | undefined) {
     setModeState("voice");
     modeRef.current = "voice";
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Revalidate: called after visibility restore, bfcache pageshow, online, or
+  // signaling-channel error. Idempotent and non-destructive to healthy peers.
+  // -------------------------------------------------------------------------
+  const revalidate = useCallback(async () => {
+    if (!joined || !myId || !roomIdRef.current || !sessionIdRef.current) return;
+    if (revalidateInFlightRef.current) return;
+    revalidateInFlightRef.current = true;
+    try {
+      // Verify local tracks still live; re-acquire silently if the OS revoked
+      // them during sleep.
+      const local = localStreamRef.current;
+      const deadAudio = local?.getAudioTracks().some((t) => t.readyState === "ended");
+      const deadVideo = modeRef.current === "video" &&
+        local?.getVideoTracks().some((t) => t.readyState === "ended");
+      if (deadAudio || deadVideo) {
+        try {
+          const fresh = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+            video: modeRef.current === "video"
+              ? { width: { ideal: 480 }, height: { ideal: 360 }, frameRate: { ideal: 24 } }
+              : false,
+          });
+          if (local) for (const t of local.getTracks()) t.stop();
+          localStreamRef.current = fresh;
+          const newAudio = fresh.getAudioTracks()[0] ?? null;
+          const newVideo = fresh.getVideoTracks()[0] ?? null;
+          for (const pc of pcsRef.current.values()) {
+            for (const s of pc.getSenders()) {
+              if (s.track?.kind === "audio" && newAudio) {
+                try { await s.replaceTrack(newAudio); } catch { /* noop */ }
+              } else if (s.track?.kind === "video" && !screenStreamRef.current && newVideo) {
+                try { await s.replaceTrack(newVideo); } catch { /* noop */ }
+              }
+            }
+          }
+          if (fresh.getAudioTracks().length > 0) startSpeakingDetector(fresh);
+        } catch (e) {
+          console.warn("revalidate: re-acquire failed", e);
+        }
+      }
+
+      // Ask each unhealthy PC to restart ICE. Perfect negotiation handles
+      // both-sides-calling-restart cleanly.
+      for (const [peerId, pc] of pcsRef.current.entries()) {
+        const s = pc.iceConnectionState;
+        if (s !== "connected" && s !== "completed") {
+          scheduleIceRestart(peerId).catch(() => {});
+        }
+      }
+    } finally {
+      revalidateInFlightRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joined, myId]);
+
+  // Visibility / bfcache / online / channel error triggers.
+  useEffect(() => {
+    if (!joined) return;
+    function onVisibility() {
+      if (document.visibilityState === "hidden") {
+        hiddenSinceRef.current = Date.now();
+      } else if (document.visibilityState === "visible") {
+        const since = hiddenSinceRef.current;
+        hiddenSinceRef.current = null;
+        if (since && Date.now() - since > HIDDEN_REVALIDATE_MS) {
+          revalidate().catch(() => {});
+        }
+      }
+    }
+    function onPageShow(e: PageTransitionEvent) {
+      if (e.persisted) revalidate().catch(() => {});
+    }
+    function onOnline() { revalidate().catch(() => {}); }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pageshow", onPageShow);
+    window.addEventListener("online", onOnline);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pageshow", onPageShow);
+      window.removeEventListener("online", onOnline);
+    };
+  }, [joined, revalidate]);
 
   const joinWithMode = useCallback(async (nextMode: MediaMode) => {
     if (!myId || !roomId) return;
@@ -824,9 +1103,9 @@ export function useMediaRoom(roomId: string | undefined) {
 
       if (joined) teardownMedia();
 
-      // Force-TURN staging mode: prefetch TURN creds so the first pair uses
-      // relay from the start. Failure is non-fatal — the pair will simply
-      // fail to establish, which is the correct outcome for a relay test.
+      // Stamp a fresh session id for this join. Cleared by leave().
+      sessionIdRef.current = newSessionId();
+
       if (WEBRTC_MODE === "force-turn") {
         try { await getTurnIceServers(); } catch (e) { console.warn("force-turn prefetch failed", e); }
       } else if (WEBRTC_MODE === "direct-only" && import.meta.env.DEV) {
@@ -842,8 +1121,6 @@ export function useMediaRoom(roomId: string | undefined) {
             : false,
         });
       } catch (e) {
-        // If we asked for video and it failed (no cam, denied, in use), retry
-        // with audio-only so the user still joins the room.
         if (effectiveMode === "video") {
           try {
             stream = await navigator.mediaDevices.getUserMedia({
@@ -911,12 +1188,16 @@ export function useMediaRoom(roomId: string | undefined) {
 
         ch.on("presence", { event: "join" }, ({ key, newPresences }) => {
           if (key === "lurker" || key === myId) return;
-          const peerMode = (((newPresences[0] as unknown) as PresenceMeta | undefined)?.mode ?? "voice") as MediaMode;
-          if (myId > key) {
-            setTimeout(() => { makeOffer(key).catch(() => {}); }, 250);
-          } else {
-            ensurePeer(key, peerMode);
-          }
+          const meta0 = (newPresences[0] as unknown) as PresenceMeta | undefined;
+          const peerMode = (meta0?.mode ?? "voice") as MediaMode;
+          const pc = ensurePeer(key, peerMode);
+          // Learn remote session id from presence so we can drop signals from
+          // any prior session of the same user without waiting for an offer.
+          const m = peerMetaRef.current.get(key);
+          if (m && meta0?.sess) m.remoteSess = meta0.sess;
+          // Perfect negotiation drives the offer via onnegotiationneeded when
+          // addTrack fires inside createPeer. No lex gate needed.
+          void pc;
         });
 
         ch.on("presence", { event: "leave" }, ({ key }) => {
@@ -931,7 +1212,11 @@ export function useMediaRoom(roomId: string | undefined) {
         await new Promise<void>((resolve, reject) => {
           ch!.subscribe(async (status) => {
             if (status === "SUBSCRIBED") {
-              await ch!.track({ mode: effectiveMode, joined_at: new Date().toISOString() } satisfies PresenceMeta);
+              await ch!.track({
+                mode: effectiveMode,
+                joined_at: new Date().toISOString(),
+                sess: sessionIdRef.current ?? undefined,
+              } satisfies PresenceMeta);
               resolve();
             } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
               reject(new Error("Couldn't connect to media channel"));
@@ -939,7 +1224,11 @@ export function useMediaRoom(roomId: string | undefined) {
           });
         });
       } else {
-        await ch.track({ mode: effectiveMode, joined_at: new Date().toISOString() } satisfies PresenceMeta);
+        await ch.track({
+          mode: effectiveMode,
+          joined_at: new Date().toISOString(),
+          sess: sessionIdRef.current ?? undefined,
+        } satisfies PresenceMeta);
       }
 
       {
@@ -949,12 +1238,12 @@ export function useMediaRoom(roomId: string | undefined) {
         );
         for (const [peerId, metas] of others) {
           const peerMode = (metas[0]?.mode ?? "voice") as MediaMode;
-          if (myId > peerId) {
-            setTimeout(() => { makeOffer(peerId).catch(() => {}); }, firstJoin ? 250 : 100);
-          } else {
-            ensurePeer(peerId, peerMode);
-          }
+          const pc = ensurePeer(peerId, peerMode);
+          const m = peerMetaRef.current.get(peerId);
+          if (m && metas[0]?.sess) m.remoteSess = metas[0].sess;
+          void pc;
         }
+        void firstJoin;
         if (stream && stream.getAudioTracks().length > 0) startSpeakingDetector(stream);
         const presentCount = Object.keys(ch.presenceState() as Record<string, unknown>).filter((k) => k !== "lurker").length;
         adaptiveFloorRef.current = null;
@@ -988,14 +1277,15 @@ export function useMediaRoom(roomId: string | undefined) {
         channelRef.current.send({
           type: "broadcast",
           event: "signal",
-          payload: { type: "speaking", from: myId, speaking: false } satisfies SignalEvent,
+          payload: {
+            type: "speaking", from: myId, speaking: false,
+            room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+          } satisfies SignalEvent,
         });
       }
     }
   }, [muted, myId]);
 
-  // Toggle camera on/off WITHOUT renegotiating peers when already on video.
-  // From voice → video, this triggers a full re-join via setMode("video").
   const setCameraEnabled = useCallback((on: boolean) => {
     const stream = localStreamRef.current;
     if (modeRef.current === "video" && stream) {
@@ -1007,18 +1297,12 @@ export function useMediaRoom(roomId: string | undefined) {
       }
     }
     if (on) {
-      // Promote voice → video (full re-acquire).
       joinWithMode("video");
     } else {
-      // Demote video → voice (full re-acquire so cam light is OFF).
       joinWithMode("voice");
     }
   }, [joinWithMode]);
 
-  // --- Screen sharing -------------------------------------------------------
-  // Uses RTCRtpSender.replaceTrack to swap the outbound video track from cam
-  // to screen and back — no SDP renegotiation needed. Requires being on video
-  // mode; if on voice we transparently upgrade first.
   const stopScreenShare = useCallback(async () => {
     const screen = screenStreamRef.current;
     const camTrack = originalCamTrackRef.current;
@@ -1031,20 +1315,32 @@ export function useMediaRoom(roomId: string | undefined) {
         channelRef.current.send({
           type: "broadcast",
           event: "signal",
-          payload: { type: "screen", from: myId, active: false } satisfies SignalEvent,
+          payload: {
+            type: "screen", from: myId, active: false,
+            room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+          } satisfies SignalEvent,
         });
       }
     }
-    // Restore cam track on every pc.
     for (const pc of pcsRef.current.values()) {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.transport));
       if (sender) {
-        try { await sender.replaceTrack(camTrack ?? null); } catch { /* noop */ }
+        try {
+          if (camTrack) {
+            await sender.replaceTrack(camTrack);
+          } else {
+            await sender.replaceTrack(null);
+            // Remove the extra sender so the stray m-section is dropped on
+            // the next negotiation cycle.
+            try { pc.removeTrack(sender); } catch { /* noop */ }
+          }
+        } catch { /* noop */ }
       }
     }
     if (screen) for (const t of screen.getTracks()) t.stop();
     adaptiveFloorRef.current = null;
     rebudget(count, false);
+    screenBusyRef.current = false;
   }, [myId, count]);
 
   const startScreenShare = useCallback(async () => {
@@ -1052,12 +1348,11 @@ export function useMediaRoom(roomId: string | undefined) {
       setError("Join the room first.");
       return;
     }
-    if (screenStreamRef.current) return; // already sharing
+    if (screenStreamRef.current || screenBusyRef.current) return;
+    screenBusyRef.current = true;
     let captured: MediaStream;
     try {
       captured = await navigator.mediaDevices.getDisplayMedia({
-        // Cap at 1080p / 15fps at the source — screenshare encoding gets
-        // expensive fast and the mesh budget tightens it further per-peer.
         video: {
           frameRate: { ideal: 12, max: 15 },
           width: { max: 1920 },
@@ -1066,30 +1361,28 @@ export function useMediaRoom(roomId: string | undefined) {
         audio: false,
       });
     } catch (e) {
+      screenBusyRef.current = false;
       const msg = e instanceof Error ? e.message : "Couldn't start screen share";
       if (!/denied|cancel/i.test(msg)) setError(msg);
       return;
     }
     const screenTrack = captured.getVideoTracks()[0];
-    if (!screenTrack) return;
+    if (!screenTrack) { screenBusyRef.current = false; return; }
     screenTrack.addEventListener("ended", () => { stopScreenShare(); });
 
-    // Remember the current cam track so we can restore it on stop.
     const cam = localStreamRef.current?.getVideoTracks()[0] ?? null;
     originalCamTrackRef.current = cam;
     screenStreamRef.current = captured;
     setScreenStream(captured);
     setScreenSharerId(myId);
 
-    // Swap outbound video for every existing peer.
     for (const pc of pcsRef.current.values()) {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video");
       if (sender) {
         try { await sender.replaceTrack(screenTrack); } catch { /* noop */ }
       } else {
-        // No video sender (voice-only peer-to-peer pair). Add one so the
-        // screen track gets delivered. addTrack triggers renegotiation via
-        // onnegotiationneeded handlers in createPeer.
+        // Voice-only pair: adding a video track triggers onnegotiationneeded
+        // on BOTH sides now (perfect negotiation), so the peer will get it.
         try { pc.addTrack(screenTrack, captured); } catch { /* noop */ }
       }
     }
@@ -1097,16 +1390,16 @@ export function useMediaRoom(roomId: string | undefined) {
     channelRef.current.send({
       type: "broadcast",
       event: "signal",
-      payload: { type: "screen", from: myId, active: true } satisfies SignalEvent,
+      payload: {
+        type: "screen", from: myId, active: true,
+        room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+      } satisfies SignalEvent,
     });
     adaptiveFloorRef.current = null;
     rebudget(count, true);
+    screenBusyRef.current = false;
   }, [myId, count, stopScreenShare]);
 
-  // Swap the outbound video track on every peer connection. Used by the
-  // Director PiP to push a composed canvas (split / cam-only) to the room
-  // without renegotiation. Passing null restores the raw screen track when
-  // a share is active.
   const setOutboundScreenTrack = useCallback(async (track: MediaStreamTrack | null) => {
     const restore = !track ? screenStreamRef.current?.getVideoTracks()[0] ?? null : track;
     if (!restore) return;
@@ -1157,4 +1450,3 @@ export function useMediaRoom(roomId: string | undefined) {
     videoCap: VIDEO_CAP,
   };
 }
-
