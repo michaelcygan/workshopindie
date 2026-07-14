@@ -99,8 +99,11 @@ export function WorkCard({
             src={work.cover_url}
             alt={work.title}
             loading="lazy"
-            style={focalStyle(work.cover_focal_x, work.cover_focal_y)}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+            style={{
+              ...focalStyle(work.cover_focal_x, work.cover_focal_y),
+              transformOrigin: `${work.cover_focal_x ?? 50}% ${work.cover_focal_y ?? 50}%`,
+            }}
+            className="ken-burns h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
         ) : (
           <div className="h-full w-full gradient-soft" />
