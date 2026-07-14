@@ -13,6 +13,7 @@ type CollabRow = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   description: string | null;
   user_id: string;
   cover_url: string | null;

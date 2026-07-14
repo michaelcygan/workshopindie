@@ -12,6 +12,7 @@ export type WorkshopCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   prompt: string | null;
   starts_at: string | null;
   location_type: "online" | "in_person" | "hybrid";

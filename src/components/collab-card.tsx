@@ -15,6 +15,7 @@ export type CollabCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   description: string | null;
   timeline_text: string | null;
   timeline_mode?: TimelineMode | null;
