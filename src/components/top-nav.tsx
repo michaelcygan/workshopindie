@@ -88,7 +88,7 @@ export function TopNav() {
             Events
           </Link>
           <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Work
+            Gallery
           </Link>
         </nav>
 
