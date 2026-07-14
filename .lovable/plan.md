@@ -1,47 +1,28 @@
-## What to build
+## Soft Ken Burns on Gallery thumbnails
 
-Three connected additions. No schema changes — reuses the existing `work_reactions` table and `toggle_work_reaction` RPC.
+Add a slow, subtle Ken Burns pan/zoom to `WorkCard` cover images so tiles with off-aspect artwork (e.g. YouTube 16:9 in a 4/5 tile, book covers in a 16:10 hero) feel alive. Pauses on hover so the existing `group-hover:scale-[1.03]` lift stays the primary interaction.
 
-### 1. `@work` mentions everywhere `@` works
+### Motion spec
 
-Extend the shared mention system so any piece on the platform can be tagged by title from any composer that already supports `@`.
+- Duration: 22s, `ease-in-out`, `alternate infinite` — imperceptible drift, never a loop pop.
+- Transform: scale 1.06 → 1.12 combined with a small translate (~2% x, ~1.5% y) so it pans as well as zooms.
+- Respects `prefers-reduced-motion` — reduces to a static `scale(1.03)` with no animation.
+- Pauses on `group-hover` (card) so hover cleanly hands off to the existing 500ms `group-hover:scale-[1.03]` transform without fighting.
+- Honors `focalStyle(cover_focal_x, cover_focal_y)` by keeping `object-position` from the focal point; the transform-origin follows the same focal point so the pan stays centered on the subject.
 
-- Add a new `MentionKind = "work"` to `src/lib/mention-suggestions.ts` and a `useWorkSuggestions(query, enabled)` hook.
-  - Searches `works` where `status='published'` and `visibility in ('public','unlisted')`, `ilike` on `title`, cap 6.
-  - Ranks the signed-in user's own works first (so "my works" are trivially reachable), then everyone else's — matches the "your collabs/groups first" pattern already in the file.
-  - Insert format: `[Title](/works/<slug>) ` — same markdown-link shape as collab mentions, so existing link rendering picks it up with zero extra work.
-- Extend `src/components/mention-popover.tsx` to render a new "Works" section (cover thumbnail as avatar, category as sublabel).
-- Turn on the section in every existing `@` surface by adding `"work"` to the `sections` array:
-  - `src/components/chat-mention-input.tsx` (Lounge + DMs)
-  - `src/components/group/today-mention-popover.tsx` (Today board)
-- No rendering changes needed — `[Title](/works/slug)` already renders as a link.
+### Where it applies
 
-### 2. Heart = favorite, clickable from the Lounge Work peek
+Single source of truth: `src/components/work-card.tsx` (used by Gallery, home rails, profile grids, etc.). No other cover surfaces change in this pass — `fresh-works-strip`, hero covers on work detail, room gallery, etc. remain untouched to keep scope tight. If you want it extended to those next, we can do a follow-up.
 
-Keep it simple: the existing heart (like) becomes the "favorite" signal. No separate save button, no new icon.
+### Technical details
 
-- In `src/components/work-peek.tsx`, make the heart interactive: clicking it toggles a like/favorite via the existing `toggle_work_reaction` RPC (`_reaction: 'like'`), with optimistic count update and filled-heart state when active.
-- Reuse the same auth-gate pattern already in `WorkActions` (prompt to sign in if not authed).
-- Extract a tiny shared hook `useWorkLike(workId, initialLikes)` so `WorkActions` (full page) and `WorkPeek` (Lounge popover) share one optimistic-toggle implementation instead of duplicating it.
-- Also add a subtle "Open" link to the full work page for parity with other peeks.
+1. Add a `@keyframes ken-burns` and a `.ken-burns` utility class in `src/styles.css` (alongside existing animations). Keyframes go from `scale(1.06) translate(-1%, -0.75%)` to `scale(1.12) translate(1%, 0.75%)`, `animation: ken-burns 22s ease-in-out infinite alternate`.
+2. Add `.group:hover .ken-burns { animation-play-state: paused; }` and a `@media (prefers-reduced-motion: reduce)` block that disables the animation and applies a static `transform: scale(1.03)`.
+3. In `WorkCard`, add `ken-burns` to the `<img>` className. Set `transform-origin` inline from the focal point (fallback 50%/50%) so the zoom stays anchored to the subject.
+4. Keep existing `transition-transform duration-500 group-hover:scale-[1.03]` — on hover the keyframe pauses and the hover scale takes over via transition.
 
-### 3. Private "Favorites" filter in Gallery
+### Out of scope
 
-Let the user filter their own Gallery view to only pieces they've hearted. Private to them — everyone else's Gallery is unaffected.
-
-- Add a third pill to the existing tab group in `src/routes/gallery.tsx`: `For you | Following | Favorites`.
-  - Extend the `tab` enum in the route's `validateSearch` to include `"favorites"`.
-  - Gate `Favorites` on being signed in (same treatment as `Following`).
-- New fetcher `fetchFavoritesPage` that:
-  1. Reads `work_reactions` for the current user where `reaction='like'`, ordered by `created_at desc`, paginated by `created_at` cursor.
-  2. Fetches the matching `works` rows with the same shape as `fetchForYouPage`, preserving heart-order.
-  3. Applies the same category / city / search / blocked filters already in use, for consistency.
-- Empty state: "Nothing favorited yet. Tap the heart on any piece to save it here." with a link back to `For you`.
-- No new table, no schema change, no RLS work — `work_reactions` already stores likes and the user reads their own under existing policies.
-
-## Out of scope
-
-- No notifications when someone `@`-mentions your work (follow-up).
-- No public "Favorites" tab on profiles — Favorites stays private to the viewer.
-- No changes to `works`, RLS, or the `toggle_work_reaction` RPC.
-- No new icon or new reaction type — heart is the single favorite signal.
+- No changes to `fresh-works-strip`, work detail hero, room gallery, or any non-`WorkCard` cover surface.
+- No new props, no per-card opt-out, no config surface.
+- No changes to focal-point picker or cover framer logic.

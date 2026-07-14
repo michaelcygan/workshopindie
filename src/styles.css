@@ -264,6 +264,21 @@
     .animate-marquee-x-reverse { animation: none; }
   }
 }
+
+@keyframes ken-burns {
+  0%   { transform: scale(1.06) translate(-1%, -0.75%); }
+  100% { transform: scale(1.12) translate(1%, 0.75%); }
+}
+@layer utilities {
+  .ken-burns {
+    animation: ken-burns 22s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  .group:hover .ken-burns { animation-play-state: paused; }
+  @media (prefers-reduced-motion: reduce) {
+    .ken-burns { animation: none; transform: scale(1.03); }
+  }
+}
 @layer utilities {
   .scrollbar-none::-webkit-scrollbar { display: none; }
   .shadow-halo {
