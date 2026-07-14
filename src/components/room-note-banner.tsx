@@ -87,13 +87,13 @@ export function RoomNoteBanner({ roomId }: Props) {
     }
   }, [editing]);
 
-  if (!room || room.status !== "active") return null;
-
-  const note = room.note?.trim() || "";
+  // Derived values (safe when room is still loading) — computed here so the
+  // hooks below can depend on them without violating rules-of-hooks.
+  const note = (room?.note ?? "").trim();
   const workshopHasHost = !!workshopHostId;
-  const roomHasHost = !!room.host_user_id;
+  const roomHasHost = !!room?.host_user_id;
   const canEdit =
-    !!user &&
+    !!user && !!room &&
     (roomHasHost
       ? room.host_user_id === user.id
       : room.workshop_id
@@ -102,8 +102,34 @@ export function RoomNoteBanner({ roomId }: Props) {
           : present
         : room.kind === "lounge" && present);
 
+  // Ambient nudge tooltip: 3.5s after mount, when empty + editable + not yet dismissed.
+  const nudgeKey = `room-note-nudge:${roomId}`;
+  const [showNudge, setShowNudge] = useState(false);
+  useEffect(() => {
+    if (!canEdit || note || editing) return;
+    if (typeof window === "undefined") return;
+    if (window.localStorage.getItem(nudgeKey)) return;
+    const tShow = window.setTimeout(() => setShowNudge(true), 3500);
+    const tHide = window.setTimeout(() => setShowNudge(false), 3500 + 12_000);
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setShowNudge(false);
+        window.localStorage.setItem(nudgeKey, "1");
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.clearTimeout(tShow);
+      window.clearTimeout(tHide);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [canEdit, note, editing, nudgeKey]);
+
+  if (!room || room.status !== "active") return null;
+
   // Read-only viewer with no note → render nothing.
   if (!note && !canEdit) return null;
+
 
   function startEdit() {
     setDraft(note);
