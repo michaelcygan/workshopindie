@@ -77,6 +77,24 @@ function promosToPairs(promos: GlobePromo[]): Pair[] {
   }));
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+  return promos.map((p) => ({
+    from: p.from,
+    to: p.to ?? p.from,
+    verb: p.verb ?? p.title,
+    kind: p.kind,
+    href: p.href,
+    title: p.title,
+  }));
+}
+
 const REDUCE_MOTION =
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches;
