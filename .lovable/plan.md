@@ -1,21 +1,52 @@
-# Audio-only tiles + speaking indicator
+# Fix Lounge "Rendered more hooks" crash
 
-The circled empty spots in the video strip are peers who joined without a camera — today `VideoStage` filters them out entirely, so they simply disappear. `AudioTile` already exists (avatar-or-initial placeholder on a dark tile) and is used inside the fullscreen layout, but not in the top strip.
+## Diagnosis
 
-## Changes (all in `src/components/media-panel.tsx`)
+Console shows: `Rendered more hooks than during the previous render.` thrown from `RoomNoteBanner` (`src/components/room-note-banner.tsx`). The Lounge-level error boundary then swallows it into the "Lounge hit a snag" screen.
 
-1. **`VideoStage` — render audio-only placeholders in the top strip**
-   - Also show a tile for the local user when they're joined but camera is off (`m.joined && !m.cameraOn`), using `AudioTile` with their avatar/name and `speaking={m.speaking && !m.muted}`, `muted={m.muted}`.
-   - Include audio-only remote peers (`m.peers` where `mode !== "video"` or no `stream`) as `AudioTile`s alongside the video tiles.
-   - Apply the same treatment inside the screen-share "spotlight" branch's thumbnail grid so audio-only participants stay visible while someone is sharing.
-   - Update the `hasAny` early-return so the strip renders whenever anyone (local or peer) is present, not only when a video track exists.
+Cause is a classic React hooks-order violation. The component has early returns:
 
-2. **Speaking indicator — make it obvious**
-   - `VideoTile` / `AudioTile`: bump the outer ring from `ring-2` → `ring-[3px]` when speaking, and add a soft pulsing `ring-primary/30` halo so the "band around the window" is unmistakable. Keep the non-speaking state unchanged.
-   - `SpeakerRow` (right sidebar): bump the avatar ring from `ring-2` → `ring-[3px] ring-primary` with the same subtle pulse when `speaking` is true, so the "M" circle in the Here-now list clearly bands when that person is talking.
+- Line 90: `if (!room || room.status !== "active") return null;`
+- Line 106: `if (!note && !canEdit) return null;`
 
-No changes to WebRTC, VAD, presence, or hooks — the `speaking` boolean is already plumbed through `media.peers[i].speaking` and `media.speaking`. This is purely a rendering change in one file.
+…and then AFTER those returns it declares more hooks:
 
-## Not in scope
-- Empty seats (rooms below cap) stay empty — placeholders only appear for people actually connected.
-- No new tokens or global CSS; uses existing `primary` semantic color.
+- Line 125: `const [showNudge, setShowNudge] = useState(false);`
+- Line 126: `useEffect(() => { ... }, [canEdit, note, editing, nudgeKey]);`
+
+First render (before the room query resolves) hits the `!room` early return and registers only the hooks above it. Once the query resolves, the component runs past the early return and React sees additional hooks appear → crash → whole Lounge unmounts into the error boundary. This is why the failure fires right after "join lounge" (the query flips from loading to loaded).
+
+## Fix (single file: `src/components/room-note-banner.tsx`)
+
+Move the `showNudge` state, the nudge `useEffect`, and the derived `nudgeKey` constant to the top of the component alongside the other hooks — before any early return. Everything else (`dismissNudge`, `startEdit`, `commit`, the JSX) stays exactly where it is.
+
+Concretely, right after the existing `useEffect` at line 83:
+
+```ts
+const nudgeKey = `room-note-nudge:${roomId}`;
+const [showNudge, setShowNudge] = useState(false);
+
+useEffect(() => {
+  if (!canEdit || note || editing) return;
+  ...
+}, [canEdit, note, editing, nudgeKey]);
+```
+
+To reference `canEdit` and `note` inside that effect (they're computed after the early returns today), compute them from `room` with safe fallbacks at the top too (both are cheap and pure):
+
+```ts
+const note = (room?.note ?? "").trim();
+const workshopHasHost = !!workshopHostId;
+const roomHasHost = !!room?.host_user_id;
+const canEdit = !!user && !!room && (
+  roomHasHost
+    ? room.host_user_id === user.id
+    : room.workshop_id
+      ? (workshopHasHost ? workshopHostId === user.id : present)
+      : room.kind === "lounge" && present
+);
+```
+
+Then delete the duplicate `const note = ...` / `const canEdit = ...` block that currently lives after the early returns, and delete the now-duplicate `nudgeKey` / `useState` / `useEffect` that live further down. The two early returns (`!room || status !== "active"` and empty+read-only) stay in place; every hook is now called unconditionally on every render, satisfying the Rules of Hooks.
+
+No other files change. No behavior change beyond the crash going away.
