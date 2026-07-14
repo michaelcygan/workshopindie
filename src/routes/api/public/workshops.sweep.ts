@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireCronSecret } from "@/lib/cron-auth";
 
 /**
  * Workshop sweep, called by pg_cron every minute. Two passes:
@@ -12,11 +13,16 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
  *  2. "No-show convert" — for scheduled workshops past starts_at+15min with
  *     nobody present, flip to a live spawned room of the same medium and
  *     notify all RSVPs that it ran without them.
+ *
+ * Requires `x-cron-secret: $CRON_SECRET` header — destructive (clears studio
+ * assets on retention), so we hard-fail without the shared secret.
  */
 export const Route = createFileRoute("/api/public/workshops/sweep")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const denied = requireCronSecret(request);
+        if (denied) return denied;
         const startingResults = await runStartingPass();
         const sweepResults = await runNoShowPass();
         const retentionResults = await runRetentionPass();

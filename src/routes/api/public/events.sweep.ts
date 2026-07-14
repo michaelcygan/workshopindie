@@ -1,15 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireCronSecret } from "@/lib/cron-auth";
 
 /**
  * Group events sweep — pg_cron POSTs every 5 minutes.
  * - flip scheduled → live → completed at the boundaries
  * - fire `event_starts_soon_24h` / `event_starts_soon_2h` once per event
  * - fire `event_recap` once, 24h after ends_at
+ *
+ * Requires `x-cron-secret: $CRON_SECRET` header.
  */
 export const Route = createFileRoute("/api/public/events/sweep")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const denied = requireCronSecret(request);
+        if (denied) return denied;
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         const now = new Date();
         const nowIso = now.toISOString();
