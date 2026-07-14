@@ -9,7 +9,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { toast } from "sonner";
 import {
   listModerationTerms, upsertModerationTerm, deleteModerationTerm,
-  listModRules, upsertModRule,
+  listModRules, upsertModRule, listModerationEvents,
 } from "@/lib/admin-moderation.functions";
 
 export const Route = createFileRoute("/admin/moderation")({ component: ModerationPage });
@@ -121,9 +121,54 @@ function ModerationPage() {
           </table>
         </div>
       </section>
+
+      <ModerationEvents />
     </div>
   );
 }
+
+function ModerationEvents() {
+  const listFn = useServerFn(listModerationEvents);
+  const { data } = useQuery({ queryKey: ["mod", "events"], queryFn: () => listFn(), staleTime: 30_000 });
+  return (
+    <section>
+      <h2 className="mb-3 font-display text-xl text-ink">Recent moderation events</h2>
+      <p className="mb-3 text-sm text-ink-muted">
+        Last 200 blocks, warnings, and flags. Raw offending text is not stored — only a hashed match token.
+      </p>
+      <div className="overflow-hidden rounded-2xl border border-border bg-surface">
+        <table className="w-full text-sm">
+          <thead className="bg-muted/50 text-xs uppercase tracking-wide text-ink-muted">
+            <tr>
+              <th className="px-3 py-2 text-left">When</th>
+              <th className="px-3 py-2 text-left">User</th>
+              <th className="px-3 py-2 text-left">Surface</th>
+              <th className="px-3 py-2 text-left">Category</th>
+              <th className="px-3 py-2 text-left">Severity</th>
+              <th className="px-3 py-2 text-left">Term</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data ?? []).map((e: any) => (
+              <tr key={e.id} className="border-t border-border">
+                <td className="px-3 py-1.5 text-xs text-ink-muted">{new Date(e.created_at).toLocaleString()}</td>
+                <td className="px-3 py-1.5">{e.profile?.username ?? e.profile?.display_name ?? (e.user_id ? e.user_id.slice(0, 8) : "—")}</td>
+                <td className="px-3 py-1.5 font-mono text-xs">{e.surface}</td>
+                <td className="px-3 py-1.5">{e.category}</td>
+                <td className="px-3 py-1.5">{e.severity}</td>
+                <td className="px-3 py-1.5 font-mono text-[10px] text-ink-muted">{e.term_hash?.slice(0, 10) ?? "—"}</td>
+              </tr>
+            ))}
+            {(data ?? []).length === 0 ? (
+              <tr><td colSpan={6} className="px-3 py-4 text-center text-ink-muted">No events yet.</td></tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 
 function RuleEditor({ onCreate }: { onCreate: (p: any) => void }) {
   const [key, setKey] = useState("");

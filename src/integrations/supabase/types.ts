@@ -2670,30 +2670,93 @@ export type Database = {
         }
         Relationships: []
       }
-      moderation_terms: {
+      moderation_events: {
         Row: {
           category: string
           created_at: string
           id: string
-          notes: string | null
           severity: string
-          term: string
+          subject_id: string | null
+          surface: string
+          term_hash: string | null
+          user_id: string | null
         }
         Insert: {
           category?: string
           created_at?: string
           id?: string
-          notes?: string | null
-          severity?: string
-          term: string
+          severity: string
+          subject_id?: string | null
+          surface: string
+          term_hash?: string | null
+          user_id?: string | null
         }
         Update: {
           category?: string
           created_at?: string
           id?: string
+          severity?: string
+          subject_id?: string | null
+          surface?: string
+          term_hash?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      moderation_lexicon_version: {
+        Row: {
+          id: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          id?: number
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          id?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      moderation_terms: {
+        Row: {
+          category: string
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          notes: string | null
+          severity: string
+          term: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          notes?: string | null
+          severity?: string
+          term: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
           notes?: string | null
           severity?: string
           term?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -5740,6 +5803,12 @@ export type Database = {
             }[]
           }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      moderation_normalize_text: { Args: { _text: string }; Returns: string }
+      moderation_recent_block_count: {
+        Args: { _user: string; _window_s: number }
+        Returns: number
+      }
+      moderation_text_is_blocked: { Args: { _text: string }; Returns: boolean }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
       realtime_can_access_dm: {

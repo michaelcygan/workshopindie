@@ -75,3 +75,23 @@ export const upsertModRule = createServerFn({ method: "POST" })
     await logAdminAction(context.supabase, "mod.rule.upsert", "mod_rule", null, payload as any);
     return { ok: true };
   });
+
+// Moderation events (admin log of blocks/warns/flags)
+export const listModerationEvents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const { data: events } = await admin
+      .from("moderation_events")
+      .select("id, user_id, surface, subject_id, category, severity, term_hash, created_at")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    const userIds = Array.from(new Set((events ?? []).map((e) => e.user_id).filter(Boolean))) as string[];
+    const { data: profs } = userIds.length
+      ? await admin.from("profiles").select("id, display_name, username").in("id", userIds)
+      : { data: [] as { id: string; display_name: string | null; username: string | null }[] };
+    const pMap = new Map((profs ?? []).map((p) => [p.id, p]));
+    return (events ?? []).map((e) => ({ ...e, profile: e.user_id ? pMap.get(e.user_id) ?? null : null }));
+  });
+

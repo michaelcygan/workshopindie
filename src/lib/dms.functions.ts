@@ -72,6 +72,15 @@ export const sendMessage = createServerFn({ method: "POST" })
     });
     if (ok === false) throw new Error("You're sending messages too fast. Slow down a sec.");
 
+    const { moderateOrThrow } = await import("@/lib/moderation/service.server");
+    await moderateOrThrow({
+      userId,
+      surface: "dm.message",
+      subjectId: data.conversationId,
+      text: data.body,
+      spam: { maxLinks: 5, maxRepeatChars: 30 },
+    });
+
     const { data: msg, error } = await supabase
       .from("messages")
       .insert({ conversation_id: data.conversationId, sender_id: userId, body: data.body })

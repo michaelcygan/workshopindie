@@ -17,8 +17,9 @@ import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import { MoreHorizontal, Reply, MessageCircle, EyeOff, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { setCommentHidden, replyToComment } from "@/lib/comments.functions";
+import { setCommentHidden, replyToComment, postComment } from "@/lib/comments.functions";
 import { openOrCreateConversation } from "@/lib/dms.functions";
+import { useModerationChecker } from "@/lib/moderation/client";
 
 type Row = {
   id: string;
@@ -44,7 +45,10 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
   const isOwner = !!user && !!ownerId && user.id === ownerId;
   const setHiddenFn = useServerFn(setCommentHidden);
   const replyFn = useServerFn(replyToComment);
+  const postFn = useServerFn(postComment);
   const openConvo = useServerFn(openOrCreateConversation);
+  const mod = useModerationChecker();
+  const [modError, setModError] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["comments", workId],
@@ -75,13 +79,23 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return navigate({ to: "/login" });
-    if (!body.trim()) return;
+    const trimmed = body.trim();
+    if (!trimmed) return;
+    setModError(null);
+    const pre = mod.check(trimmed, { maxLinks: 4, maxRepeatChars: 25 });
+    if (!pre.ok) { setModError(pre.message); return; }
     setPosting(true);
-    const { error } = await supabase.from("comments").insert({ user_id: user.id, work_id: workId, body: body.trim() });
-    setPosting(false);
-    if (error) return toast.error(error.message);
-    setBody("");
-    qc.invalidateQueries({ queryKey: ["comments", workId] });
+    try {
+      await postFn({ data: { workId, body: trimmed } });
+      setBody("");
+      qc.invalidateQueries({ queryKey: ["comments", workId] });
+    } catch (err) {
+      const msg = (err as Error).message;
+      setModError(msg);
+      toast.error(msg);
+    } finally {
+      setPosting(false);
+    }
   }
 
   async function onToggleHidden(c: Row) {
@@ -230,12 +244,19 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
       <form onSubmit={submit} className="space-y-2">
         <Textarea
           value={body}
-          onChange={(e) => setBody(e.target.value)}
+          onChange={(e) => { setBody(e.target.value); if (modError) setModError(null); }}
           placeholder={user ? "Say something thoughtful." : "Sign in to comment."}
           rows={3}
           maxLength={1000}
           disabled={!user}
+          aria-invalid={!!modError}
+          aria-describedby={modError ? "comment-mod-error" : undefined}
         />
+        {modError && (
+          <p id="comment-mod-error" role="alert" className="text-xs text-destructive">
+            {modError}
+          </p>
+        )}
         <div className="flex justify-end">
           <Button type="submit" disabled={posting || !body.trim()} className="rounded-full">
             {user ? (posting ? "Posting…" : "Post comment") : "Sign in to comment"}
