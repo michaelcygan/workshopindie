@@ -2256,6 +2256,7 @@ export type Database = {
           participant_cap: number
           promoted_at: string | null
           prompt: string | null
+          screening_work_id: string | null
           slug: string | null
           source_workshop_id: string | null
           status: Database["public"]["Enums"]["instant_status"]
@@ -2291,6 +2292,7 @@ export type Database = {
           participant_cap?: number
           promoted_at?: string | null
           prompt?: string | null
+          screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
@@ -2326,6 +2328,7 @@ export type Database = {
           participant_cap?: number
           promoted_at?: string | null
           prompt?: string | null
+          screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
           status?: Database["public"]["Enums"]["instant_status"]
@@ -2360,6 +2363,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_screening_work_id_fkey"
+            columns: ["screening_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
             referencedColumns: ["id"]
           },
           {
