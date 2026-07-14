@@ -1,48 +1,47 @@
-# Rename "Work" → "Gallery" in the UI
+## What to build
 
-Reframes the vocabulary users see without changing data models, URLs, or code identifiers. "Work" stays as the internal primitive (tables, types, route filenames, variable names, dev-facing labels). Every string a normal user reads changes.
+Three connected additions. No schema changes — reuses the existing `work_reactions` table and `toggle_work_reaction` RPC.
 
-## The rule
+### 1. `@work` mentions everywhere `@` works
 
-- **Section / collection of pieces** → **Gallery** (e.g. profile tab, submit-flow destination, cover-picker "your Gallery").
-- **A single piece** → refer to it by its title, its category (Book, Song, Film…), or the generic word "piece" / "post". Never say "your Work" in the singular.
-- **Verb for adding one** → **Post to Gallery** (was "Post a Work", "New Work", "Publish Work").
-- **URLs unchanged** — `/works/*`, `/works/new`, `/works/:slug/edit` all stay. Renaming URLs breaks inbound links, shares, SEO, and every internal `<Link to>`.
-- **Internal / code** — table names, column names, `WorkPeek`, `WorkCard`, `work_credits`, route filenames, TypeScript types, function names, admin dashboards, log lines: all untouched.
+Extend the shared mention system so any piece on the platform can be tagged by title from any composer that already supports `@`.
 
-## Scope of copy changes
+- Add a new `MentionKind = "work"` to `src/lib/mention-suggestions.ts` and a `useWorkSuggestions(query, enabled)` hook.
+  - Searches `works` where `status='published'` and `visibility in ('public','unlisted')`, `ilike` on `title`, cap 6.
+  - Ranks the signed-in user's own works first (so "my works" are trivially reachable), then everyone else's — matches the "your collabs/groups first" pattern already in the file.
+  - Insert format: `[Title](/works/<slug>) ` — same markdown-link shape as collab mentions, so existing link rendering picks it up with zero extra work.
+- Extend `src/components/mention-popover.tsx` to render a new "Works" section (cover thumbnail as avatar, category as sublabel).
+- Turn on the section in every existing `@` surface by adding `"work"` to the `sections` array:
+  - `src/components/chat-mention-input.tsx` (Lounge + DMs)
+  - `src/components/group/today-mention-popover.tsx` (Today board)
+- No rendering changes needed — `[Title](/works/slug)` already renders as a link.
 
-Sweep for every user-visible string containing "Work" / "Works" (case-insensitive) and rewrite per the rule above. Confirmed hotspots from a first pass:
+### 2. Heart = favorite, clickable from the Lounge Work peek
 
-- Top nav / mobile nav: "Post a Work" → "Post to Gallery"; any "Works" tab label → "Gallery".
-- Home (`src/routes/index.tsx`): empty state "post your work" / button "Post a Work".
-- Profile (`src/routes/u.$username.tsx`): "Works" section heading → "Gallery".
-- Profile edit (`src/routes/me.edit.tsx`): "your Works tabs", "Sits above your Works" → "your Gallery", "Sits above your Gallery".
-- Submit + edit flow (`src/routes/works.new.tsx`, `works.$slug.edit.tsx`): page title, submit CTA ("Publish Work" → "Post to Gallery"), helper copy.
-- Cover picker (`src/components/cover-image-picker.tsx`): "Select a cover from your Works" → "…from your Gallery".
-- Workshop / event rails and CTAs: "Publish Work", "Post a work →", "New Work", "Share a piece" — reworded to Gallery / plain "piece" language.
-- Nudges, share sheet, follow-button subtitle, welcome tour, signup, settings ("hides your works" → "hides your gallery"), refer, pricing, plus-gate, notifications, admin-facing user copy where end-users see it.
-- Reverse-provenance rail (`works-born-here.tsx`) heading "Works born here" → "Born here in the Gallery" (or just "Born here" — single title works for both cases).
-- SEO metadata (route `head()` titles/descriptions) rewritten to match, including profile pages, gallery route, and work detail page.
+Keep it simple: the existing heart (like) becomes the "favorite" signal. No separate save button, no new icon.
 
-Admin routes (`src/routes/admin.*`) keep "Works" — admins are internal audience and the schema label matches.
+- In `src/components/work-peek.tsx`, make the heart interactive: clicking it toggles a like/favorite via the existing `toggle_work_reaction` RPC (`_reaction: 'like'`), with optimistic count update and filled-heart state when active.
+- Reuse the same auth-gate pattern already in `WorkActions` (prompt to sign in if not authed).
+- Extract a tiny shared hook `useWorkLike(workId, initialLikes)` so `WorkActions` (full page) and `WorkPeek` (Lounge popover) share one optimistic-toggle implementation instead of duplicating it.
+- Also add a subtle "Open" link to the full work page for parity with other peeks.
 
-## Individual piece pages
+### 3. Private "Favorites" filter in Gallery
 
-On the work detail page (`src/routes/works.$slug.tsx`):
-- Page `<title>` = the piece's title only (no " · Work" suffix if any exists).
-- Breadcrumb / back-link that currently says "Works" → "Gallery" (links to `/gallery` or the creator's `/u/$username`).
-- Owner Edit button label stays "Edit"; toast / confirm copy that says "work" → "post" or the title.
+Let the user filter their own Gallery view to only pieces they've hearted. Private to them — everyone else's Gallery is unaffected.
 
-## Verification
-
-- `rg -n -i "\\bwork(s)?\\b"` sweep across `src/routes/` and `src/components/` after edits — remaining hits must be code identifiers, admin surfaces, comments, or intentional (e.g. Workshop, which is unrelated).
-- Manual click-through of: top nav → Post to Gallery; profile page shows "Gallery" tab; cover picker dialog title; workshop "Publish" button; empty-state on home.
-- Typecheck.
+- Add a third pill to the existing tab group in `src/routes/gallery.tsx`: `For you | Following | Favorites`.
+  - Extend the `tab` enum in the route's `validateSearch` to include `"favorites"`.
+  - Gate `Favorites` on being signed in (same treatment as `Following`).
+- New fetcher `fetchFavoritesPage` that:
+  1. Reads `work_reactions` for the current user where `reaction='like'`, ordered by `created_at desc`, paginated by `created_at` cursor.
+  2. Fetches the matching `works` rows with the same shape as `fetchForYouPage`, preserving heart-order.
+  3. Applies the same category / city / search / blocked filters already in use, for consistency.
+- Empty state: "Nothing favorited yet. Tap the heart on any piece to save it here." with a link back to `For you`.
+- No new table, no schema change, no RLS work — `work_reactions` already stores likes and the user reads their own under existing policies.
 
 ## Out of scope
 
-- No URL renames (`/works/*` stays).
-- No DB / schema / type / function renames.
-- No changes to Workshop, Collab, Lounge, or Group vocabulary.
-- No new features — pure copy pass.
+- No notifications when someone `@`-mentions your work (follow-up).
+- No public "Favorites" tab on profiles — Favorites stays private to the viewer.
+- No changes to `works`, RLS, or the `toggle_work_reaction` RPC.
+- No new icon or new reaction type — heart is the single favorite signal.
