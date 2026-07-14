@@ -181,6 +181,8 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
 
     const projection = geoOrthographic().clipAngle(90);
 
+    const PAIRS: Pair[] = promos && promos.length > 0 ? promosToPairs(promos) : FALLBACK_PAIRS;
+
     let nextPair = 0;
     const t0 = performance.now();
     const slots: ArcSlot[] = Array.from({ length: ACTIVE_ARCS }, (_, i) => ({
