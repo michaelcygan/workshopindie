@@ -26,11 +26,12 @@ export type CoverWorkOption = {
 type Props = {
   value: string | null;
   onChange: (url: string | null) => void;
+  onWorkChange?: (workId: string | null) => void;
   works: CoverWorkOption[];
   worksLoading?: boolean;
 };
 
-export function CoverImagePicker({ value, onChange, works, worksLoading }: Props) {
+export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLoading }: Props) {
   const { user } = useAuth();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -52,6 +53,7 @@ export function CoverImagePicker({ value, onChange, works, worksLoading }: Props
         : new File([sized], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
       const url = await uploadToBucket("covers", user.id, out);
       onChange(url);
+      onWorkChange?.(null);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
@@ -100,7 +102,7 @@ export function CoverImagePicker({ value, onChange, works, worksLoading }: Props
               {value && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onChange(null)} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onSelect={() => { onChange(null); onWorkChange?.(null); }} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Remove cover
                   </DropdownMenuItem>
@@ -141,6 +143,7 @@ export function CoverImagePicker({ value, onChange, works, worksLoading }: Props
                     type="button"
                     onClick={() => {
                       onChange(w.cover_url);
+                      onWorkChange?.(w.id);
                       setPickerOpen(false);
                     }}
                     className={cn(

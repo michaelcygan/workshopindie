@@ -124,12 +124,13 @@ type Profile = {
   aliases: string[] | null;
   city: { name: string; country: string; slug: string } | null;
   home_city: { name: string; country: string; slug: string } | null;
+  cover_work: { slug: string; status: string; visibility: string } | null;
 };
 
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -428,12 +429,39 @@ function ProfilePage() {
     <main>
       {/* Cover */}
       <div className="group relative h-56 overflow-hidden bg-surface-2 md:h-80">
-        {profile.cover_url ? (
-          <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
-        ) : (
-          <div className="h-full w-full gradient-warm opacity-70" />
-        )}
+        {(() => {
+          const linkable =
+            profile.cover_url &&
+            profile.cover_work &&
+            profile.cover_work.status === "published" &&
+            ["public", "unlisted"].includes(profile.cover_work.visibility);
+          const img = profile.cover_url ? (
+            <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <div className="h-full w-full gradient-warm opacity-70" />
+          );
+          if (linkable && profile.cover_work) {
+            return (
+              <Link
+                to="/works/$slug"
+                params={{ slug: profile.cover_work.slug }}
+                className="block h-full w-full cursor-pointer"
+                aria-label="Open the Work used as this cover"
+              >
+                {img}
+              </Link>
+            );
+          }
+          return img;
+        })()}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background/60" />
+        {profile.cover_url && profile.cover_work &&
+          profile.cover_work.status === "published" &&
+          ["public", "unlisted"].includes(profile.cover_work.visibility) && (
+          <div className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium text-ink shadow-soft backdrop-blur">
+            <ExternalLink className="h-3 w-3" /> Open Work
+          </div>
+        )}
         {isOwn && !profile.cover_url && (
           <div className="absolute inset-0 flex items-center justify-center">
             <Button
@@ -448,8 +476,8 @@ function ProfilePage() {
         {isOwn && profile.cover_url && (
           <button
             type="button"
-            onClick={() => navigate({ to: "/me/edit" })}
-            className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs text-ink shadow-soft backdrop-blur opacity-0 transition group-hover:opacity-100"
+            onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate({ to: "/me/edit" }); }}
+            className="absolute right-4 top-4 z-10 inline-flex items-center gap-1.5 rounded-full bg-background/80 px-3 py-1.5 text-xs text-ink shadow-soft backdrop-blur opacity-0 transition group-hover:opacity-100"
           >
             <ImagePlus className="h-3.5 w-3.5" /> Change cover
           </button>

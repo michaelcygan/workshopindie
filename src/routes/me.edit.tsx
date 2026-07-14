@@ -54,6 +54,7 @@ type FormState = {
   artistStatement: string;
   avatar: string | null;
   cover: string | null;
+  coverWorkId: string | null;
   cats: Category[];
   mediums: ExtraMedium[];
   tools: string[];
@@ -66,7 +67,7 @@ type FormState = {
 const EMPTY: FormState = {
   username: "",
   firstName: "", lastName: "", aliases: [], instagram: "",
-  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, cats: [], mediums: [], tools: [], links: [],
+  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
@@ -129,6 +130,7 @@ function EditProfile() {
         artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
         avatar: data.avatar_url ?? null,
         cover: data.cover_url ?? null,
+        coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
         cats: (data.categories ?? []) as Category[],
         mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
         tools: ((data.tools as string[] | null) ?? []),
@@ -213,6 +215,7 @@ function EditProfile() {
       artist_statement: form.artistStatement.trim() || null,
       avatar_url: form.avatar,
       cover_url: form.cover,
+      cover_work_id: form.cover ? form.coverWorkId : null,
       categories: form.cats,
       mediums: form.mediums,
       tools: form.tools,
@@ -312,6 +315,7 @@ function EditProfile() {
               <CoverImagePicker
                 value={form.cover}
                 onChange={(v) => set("cover", v)}
+                onWorkChange={(id) => set("coverWorkId", id)}
                 works={ownedWorks.map((w) => ({ id: w.id, title: w.title, cover_url: w.cover_url }))}
                 worksLoading={worksLoading}
               />
