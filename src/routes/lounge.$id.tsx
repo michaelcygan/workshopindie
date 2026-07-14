@@ -496,7 +496,6 @@ function LiveRoomPage() {
               medium={(room?.medium as any) ?? null}
               mode={mode ?? "video"}
               tone="primary"
-              fullWidth
             />
           ) : null
         }
