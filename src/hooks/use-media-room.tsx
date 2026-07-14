@@ -326,7 +326,8 @@ export function useMediaRoom(roomId: string | undefined) {
     }
     if (localScreenTrack) {
       try {
-        localScreenTrack.contentHint = "detail";
+        // "text" preserves edge sharpness for slides/code over motion smoothness.
+        localScreenTrack.contentHint = "text";
         await localScreenTrack.applyConstraints({ frameRate: { max: profile.screenFps } });
       } catch { /* noop */ }
     }
