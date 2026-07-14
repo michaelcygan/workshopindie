@@ -2,7 +2,7 @@ import { ExternalLink, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { CategoryChip } from "@/components/category-chip";
+import { CategoryChipsCompact } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -91,13 +91,13 @@ export function CollabPeek({
               <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
                 <img src={collab.cover_url} alt={collab.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={collab.category} />
+                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
                 </div>
               </div>
             ) : (
               <div className="relative aspect-video w-full gradient-soft">
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={collab.category} />
+                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
                 </div>
               </div>
             )}
