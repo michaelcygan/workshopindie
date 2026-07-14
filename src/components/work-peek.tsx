@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Heart, Bookmark, Eye, ExternalLink, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -7,8 +8,10 @@ import { CategoryChips } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
-import { formatCount } from "@/lib/utils";
+import { cn, formatCount } from "@/lib/utils";
 import { getWorkPeekDetail } from "@/lib/works-peek.functions";
+import { useWorkLike } from "@/hooks/use-work-like";
+import { SignupGateModal } from "@/components/signup-gate-modal";
 
 export type WorkPeekData = {
   id: string;
