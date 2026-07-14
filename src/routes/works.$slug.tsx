@@ -116,7 +116,7 @@ type WorkRow = {
 async function fetchWork(slug: string) {
   const { data, error } = await supabase
     .from("works")
-    .select("id,title,slug,category,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
+    .select("id,title,slug,category,categories,description,excerpt,cover_url,primary_url,embed_url,source_type,license_type,published_at,created_at,like_count,save_count,view_count,comment_count,vouch_count,boost_count,created_by,source_workshop_id,book_author,book_publisher,book_isbn,book_published_on,book_page_count,book_buy_links,book_excerpt_url, work_credits(id,role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url,headline))")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
