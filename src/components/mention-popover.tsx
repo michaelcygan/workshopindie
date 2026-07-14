@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Calendar, Megaphone, Users } from "lucide-react";
+import { Calendar, FileText, Megaphone, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -7,6 +7,7 @@ import {
   useGroupSuggestions,
   useMyCollabSuggestions,
   useUserSuggestions,
+  useWorkSuggestions,
   type MentionKind,
   type MentionSuggestion,
 } from "@/lib/mention-suggestions";
