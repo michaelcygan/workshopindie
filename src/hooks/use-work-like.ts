@@ -67,6 +67,8 @@ export function useWorkLike(workId: string | null, initialLikes: number) {
       setLikes(row.like_count);
       setLiked(row.liked);
     }
+    // Refresh the private Favorites tab if it's mounted.
+    qc.invalidateQueries({ queryKey: ["gallery", "favorites"] });
   }
 
   // Replay after sign-in via a modal gate.
