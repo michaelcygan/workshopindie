@@ -931,8 +931,9 @@ function SpeakerRow({
     <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
       <div className={cn(
         "relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted ring-2 transition",
-        speaking ? "ring-primary" : "ring-transparent",
+        speaking ? "ring-[3px] ring-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)]" : "ring-transparent",
       )}>
+
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName[0]?.toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
