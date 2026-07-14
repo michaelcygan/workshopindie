@@ -37,7 +37,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds:
     .in("visibility", ["public", "unlisted"])
     .limit(12);
 
-  if (category !== "all") q = q.eq("category", category);
+  if (category !== "all") q = q.contains("categories", [category]);
   if (sort === "newest") q = q.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
   else q = q.order("popularity_score", { ascending: false }).order("like_count", { ascending: false });
 
