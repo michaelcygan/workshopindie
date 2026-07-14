@@ -245,6 +245,13 @@ function WorkDetail() {
             <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4" /> {work.view_count} views</span>
           </div>
           <div className="flex items-center gap-1">
+            {user?.id === work.created_by && (
+              <Link to="/works/$slug/edit" params={{ slug: work.slug }}>
+                <Button variant="ghost" size="sm" className="rounded-full gap-1.5">
+                  <Pencil className="h-4 w-4" /> Edit
+                </Button>
+              </Link>
+            )}
             <PinToProfileButton workId={work.id} credits={credits} />
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
             <ShareSheet
