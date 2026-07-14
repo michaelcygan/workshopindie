@@ -236,6 +236,31 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               </SelectContent>
             </Select>
           </div>
+          <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+            <Label>Source</Label>
+            <div className="flex gap-4 text-sm">
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="src" checked={form.source === "workshop"} onChange={() => setForm({ ...form, source: "workshop" })} />
+                Workshop event
+              </label>
+              <label className="flex items-center gap-1.5">
+                <input type="radio" name="src" checked={form.source === "external"} onChange={() => setForm({ ...form, source: "external" })} />
+                External event
+              </label>
+            </div>
+            {form.source === "external" && (
+              <div className="space-y-2">
+                <div>
+                  <Label>Event URL (required)</Label>
+                  <Input value={form.external_url} onChange={(e) => setForm({ ...form, external_url: e.target.value })} placeholder="https://…" />
+                </div>
+                <div>
+                  <Label>Organizer name (optional)</Label>
+                  <Input value={form.external_organizer} onChange={(e) => setForm({ ...form, external_organizer: e.target.value })} placeholder="Cole's Bar, Chicago Reader…" />
+                </div>
+              </div>
+            )}
+          </div>
           <div>
             <Label>Title</Label>
             <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
