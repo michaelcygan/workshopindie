@@ -109,6 +109,7 @@ type Profile = {
   cover_url: string | null;
   bio: string | null;
   headline: string | null;
+  artist_statement: string | null;
   categories: Category[];
   mediums: string[] | null;
   tools: string[] | null;
