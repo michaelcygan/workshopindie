@@ -137,6 +137,13 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     venue_name: string; venue_address: string; online_url: string;
     capacity: string; promo_pass_months: number; featured: boolean;
     lineup_capacity: string;
+    // v2
+    source: "workshop" | "external";
+    external_url: string;
+    external_organizer: string;
+    is_recurring: boolean;
+    recurrence_label: string;
+    pinned: boolean;
   };
   const [form, setForm] = useState<FormState>({
     group_id: "",
@@ -155,12 +162,22 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     promo_pass_months: 1,
     featured: false,
     lineup_capacity: "",
+    source: "workshop",
+    external_url: "",
+    external_organizer: "",
+    is_recurring: false,
+    recurrence_label: "",
+    pinned: false,
   });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.group_id || !form.title || !form.starts_at || !form.ends_at) {
       toast.error("Group, title, start and end are required.");
+      return;
+    }
+    if (form.source === "external" && !form.external_url) {
+      toast.error("External events need a URL.");
       return;
     }
     try {
@@ -182,8 +199,14 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           capacity: form.capacity ? Number(form.capacity) : null,
           promo_pass_months: form.promo_pass_months,
           featured: form.featured,
-          is_official: true,
+          is_official: form.source === "workshop",
           lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
+          source: form.source,
+          external_url: form.source === "external" ? (form.external_url || null) : null,
+          external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
+          is_recurring: form.is_recurring,
+          recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+          pinned: form.pinned,
         },
       });
       toast.success("Event created");
