@@ -15,6 +15,7 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
+import { useGlobePromos } from "@/lib/globe-promos";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { HomePulseRail } from "@/components/home-pulse-rail";
