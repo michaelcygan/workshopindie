@@ -24,6 +24,13 @@ import { getCoCreditedWorks } from "@/lib/network.functions";
 import { getMyPinForWork, togglePinCredit } from "@/lib/works.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { SOURCE_LABELS, type Category } from "@/lib/categories";
+
+const LICENSE_LABELS: Record<string, string> = {
+  cc_by: "CC BY",
+  rights_managed_externally: "Rights managed",
+  portfolio_credit_only: "Credit only",
+  private: "Private",
+};
 import { toast } from "sonner";
 import { format } from "date-fns";
 
