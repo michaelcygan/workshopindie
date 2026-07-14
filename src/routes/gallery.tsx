@@ -492,7 +492,7 @@ function GalleryPage() {
               title="Be the first to ship here"
               body={
                 category !== "all" || citySlug !== "all"
-                  ? "No Work in this slice yet. Post yours and start the thread."
+                  ? "No pieces in this slice yet. Post yours and start the thread."
                   : "Nothing matches your search. Try fewer filters — or post something new."
               }
               cta={

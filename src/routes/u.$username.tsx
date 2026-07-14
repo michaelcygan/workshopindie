@@ -584,7 +584,7 @@ function ProfilePage() {
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
-              <p className="text-xs text-ink-muted">Publish the Work that came out of them.</p>
+              <p className="text-xs text-ink-muted">Post the piece that came out of them.</p>
             </div>
             <Link to="/me/collabs"><Button size="sm" className="rounded-full">Wrap up</Button></Link>
           </div>
@@ -748,7 +748,7 @@ function WorksTab({
       {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
         <section className="mb-10">
           <h2 className="font-display text-xl text-ink">Pinned</h2>
-          <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 Works {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
+          <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 pieces {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
             {pinnedWorks.map((w) => (
               <WorkCard
@@ -764,7 +764,7 @@ function WorksTab({
       )}
       {pinnedWorks.length === 0 && isOwn && merged.length > 0 && (
         <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
-          <p className="text-sm text-ink-muted">No pinned Work yet. Open a Work you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
+          <p className="text-sm text-ink-muted">No pinned pieces yet. Open a piece you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
         </section>
       )}
 
@@ -797,7 +797,7 @@ function WorksTab({
             value={sort}
             onChange={(e) => setSort(e.target.value as SortMode)}
             className="rounded-full border border-border bg-surface px-3 py-1 text-xs text-ink-soft focus:outline-none focus:ring-2 focus:ring-ring"
-            aria-label="Sort Works"
+            aria-label="Sort Gallery"
           >
             <option value="recent">Recent</option>
             <option value="oldest">Oldest</option>
@@ -1073,7 +1073,7 @@ function ActivityTab({
       {drafts.length > 0 && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Drafts <span className="ml-1 text-ink-muted/60">{drafts.length}</span></h2>
-          <p className="mt-1 text-xs text-ink-muted">Unfinished Works — only you can see these.</p>
+          <p className="mt-1 text-xs text-ink-muted">Unfinished drafts — only you can see these.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {drafts.map((w) => (
               <Link key={w.id} to="/works/$slug" params={{ slug: w.slug }} className="flex gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:shadow-soft">

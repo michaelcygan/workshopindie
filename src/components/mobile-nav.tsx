@@ -107,7 +107,7 @@ export function MobileNav() {
                 Explore
               </DropdownMenuLabel>
               <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
-                <LayoutGrid className="mr-2 h-4 w-4" /> Work
+                <LayoutGrid className="mr-2 h-4 w-4" /> Gallery
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => navigate({ to: "/events" })}>
                 <Calendar className="mr-2 h-4 w-4" /> Events

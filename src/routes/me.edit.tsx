@@ -534,7 +534,7 @@ function EditProfile() {
           </Section>
 
           {/* PINNED WORKS */}
-          <Section id="pinned" title="Pinned pieces" subtitle="Feature up to 6 of your published Works at the top of your profile." refMap={sectionRefs}>
+          <Section id="pinned" title="Pinned pieces" subtitle="Feature up to 6 of your published pieces at the top of your profile." refMap={sectionRefs}>
             <PinnedWorksPicker
               works={ownedWorks}
               value={form.pinnedIds}
