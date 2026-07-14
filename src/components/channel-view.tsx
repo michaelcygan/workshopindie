@@ -766,6 +766,54 @@ export function ChannelView({
               mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
             />
           }
+          pinnedSlot={
+            <PinnedScreeningStrip
+              roomId={roomId}
+              meUserId={user.id}
+              hostUserId={hostUserId ?? null}
+              screeningWorkId={screeningWorkId}
+              onOpen={openWork}
+            />
+          }
+          screeningActive={!!screeningWork}
+          screeningSlot={screeningWork ? (
+            <ScreeningStage
+              work={screeningWork}
+              onStop={() => stopScreeningFn({ data: { roomId } }).catch((e: any) => toast.error(e?.message ?? "Couldn't stop"))}
+              canStop
+            />
+          ) : null}
+          collabsSlot={
+            <WorkshopCollabsPanel
+              roomId={roomId}
+              hostUserId={hostUserId ?? null}
+              presenceUsers={[
+                {
+                  user_id: user.id,
+                  display_name: meDisplay,
+                  username: me?.username ?? null,
+                  avatar_url: meAvatar,
+                },
+                ...others.map((o) => ({
+                  user_id: o.user_id,
+                  display_name: o.profile?.display_name ?? null,
+                  username: o.profile?.username ?? null,
+                  avatar_url: o.profile?.avatar_url ?? null,
+                })),
+              ]}
+            />
+          }
+          gallerySlot={
+            <RoomGallery
+              meUserId={user.id}
+              members={galleryMembers}
+              roomId={roomId}
+              hostUserId={hostUserId ?? null}
+              onOpenWork={openWork}
+              className="h-full"
+              fullscreen
+            />
+          }
         />
       )}
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
