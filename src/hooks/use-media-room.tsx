@@ -382,7 +382,11 @@ export function useMediaRoom(roomId: string | undefined) {
   // Signaling helpers — every outbound signal is stamped with the current
   // room/session/gen so the receiver can drop stale messages.
   // -------------------------------------------------------------------------
-  function sendSignal(peerId: string, evt: Omit<SignalEvent, "room" | "sess" | "gen" | "targetSess">) {
+  type OutboundSignal =
+    | { type: "offer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
+    | { type: "answer"; from: string; to: string; sdp: RTCSessionDescriptionInit }
+    | { type: "ice"; from: string; to: string; candidate: RTCIceCandidateInit };
+  function sendSignal(peerId: string, evt: OutboundSignal) {
     const ch = channelRef.current;
     if (!ch || !myId || !sessionIdRef.current) return;
     const meta = peerMetaRef.current.get(peerId);
