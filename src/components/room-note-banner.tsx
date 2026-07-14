@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { setRoomNote } from "@/lib/host-room.functions";
+import { RenderLinks } from "@/lib/render-links";
 
 const MAX = 280;
 
@@ -246,7 +247,7 @@ export function RoomNoteBanner({ roomId }: Props) {
         <div className="group flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-ink-muted"><Pin className="h-3 w-3 text-primary/70" /> Welcome pin</div>
-            <p className="mt-0.5 whitespace-pre-wrap text-sm text-ink">{note}</p>
+            <p className="mt-0.5 whitespace-pre-wrap text-sm text-ink"><RenderLinks text={note} /></p>
           </div>
           {canEdit && (
             <div className="flex shrink-0 items-center gap-1 opacity-60 transition group-hover:opacity-100">
