@@ -49,11 +49,13 @@ export function MentionPopover({
   const includeCollabs = sections.includes("collab");
   const includeGroups = sections.includes("group");
   const includeEvents = sections.includes("event");
+  const includeWorks = sections.includes("work");
 
   const users = useUserSuggestions(query, open && includeUsers);
   const collabs = useMyCollabSuggestions(uid, query, open && includeCollabs);
   const groups = useGroupSuggestions(uid, query, open && includeGroups);
   const events = useEventSuggestions(uid, query, open && includeEvents);
+  const works = useWorkSuggestions(uid, query, open && includeWorks);
 
   const q = query.trim().toLowerCase();
 
@@ -91,6 +93,7 @@ export function MentionPopover({
     if (includeCollabs) push(collabs.data);
     if (includeGroups) push(groups.data);
     if (includeEvents) push(events.data);
+    if (includeWorks) push(works.data);
     return list;
   }, [
     filteredExtras,
@@ -98,10 +101,12 @@ export function MentionPopover({
     collabs.data,
     groups.data,
     events.data,
+    works.data,
     includeUsers,
     includeCollabs,
     includeGroups,
     includeEvents,
+    includeWorks,
   ]);
 
   const [active, setActive] = useState(0);
@@ -145,6 +150,7 @@ export function MentionPopover({
     collab: "Your collabs",
     group: "Groups",
     event: "Upcoming events",
+    work: "Works",
   };
 
   return (
