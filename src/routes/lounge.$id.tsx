@@ -248,25 +248,6 @@ function LiveRoomPage() {
     }
   }, [user, room?.id, isPromoted]);
 
-  // Keyboard shortcut: "N" skips to next Lounge (guests only).
-  useEffect(() => {
-    if (!user || !room || isHost || isPromoted || room.status !== "active") return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key !== "n" && e.key !== "N") return;
-      const tag = (e.target as HTMLElement | null)?.tagName?.toLowerCase();
-      if (
-        tag === "input" ||
-        tag === "textarea" ||
-        (e.target as HTMLElement | null)?.isContentEditable
-      )
-        return;
-      const btn = document.querySelector<HTMLButtonElement>("[data-hop-button]");
-      btn?.click();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [user, room, isHost, isPromoted]);
-
   // Live presence count for the "waiting for others" nudge.
   const { data: liveCount = 0 } = useQuery({
     queryKey: ["instant-room-live-count", id],

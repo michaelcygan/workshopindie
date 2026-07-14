@@ -122,9 +122,6 @@ export function WorkshopPresenceWorksRail({
             <p className="text-[10px] text-ink-muted/70">What people here are bringing</p>
           )}
         </div>
-        <kbd className="hidden sm:inline-flex items-center rounded border border-border bg-muted/40 px-1.5 text-[9px] font-medium text-ink-muted/80">
-          N · hop
-        </kbd>
       </div>
 
       <div
