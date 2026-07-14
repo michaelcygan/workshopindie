@@ -233,16 +233,21 @@ function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: 
 export function VideoStage({
   m,
   meDisplay,
+  meAvatar = null,
   profileLookup,
 }: {
   m: MediaState;
   meDisplay: string;
+  meAvatar?: string | null;
   profileLookup: Map<string, ProfileLite>;
   /** Deprecated: parent now owns the persistent expand button. */
   onEnterFullscreen?: () => void;
 }) {
+
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
+  const audioPeers = m.peers.filter((p) => !(p.mode === "video" && p.stream));
   const showLocalVideo = m.cameraOn && m.localStream;
+  const showLocalAudio = m.joined && !m.cameraOn;
   const sharerName = m.screenSharerId
     ? (profileLookup.get(m.screenSharerId)?.display_name
        ?? profileLookup.get(m.screenSharerId)?.username
@@ -254,8 +259,34 @@ export function VideoStage({
   const remoteSharingPeer = m.screenSharerId && !m.isScreenSharing
     ? videoPeers.find((p) => p.userId === m.screenSharerId)
     : null;
-  const hasAny = showLocalVideo || videoPeers.length > 0 || localScreen;
+  const hasAny =
+    showLocalVideo || showLocalAudio || videoPeers.length > 0 || audioPeers.length > 0 || localScreen;
   if (!hasAny) return null;
+
+
+  const renderAudioPeerTile = (p: (typeof m.peers)[number]) => {
+    const prof = profileLookup.get(p.userId);
+    const name = prof?.display_name || prof?.username || "Anon";
+    return (
+      <AudioTile
+        key={`audio-${p.userId}`}
+        displayName={name}
+        avatarUrl={prof?.avatar_url ?? null}
+        speaking={!!p.speaking}
+        muted={false}
+      />
+    );
+  };
+
+  const localAudioTile = showLocalAudio ? (
+    <AudioTile
+      key="me-audio"
+      displayName={`${meDisplay} (you)`}
+      avatarUrl={meAvatar}
+      speaking={m.speaking && !m.muted}
+      muted={m.muted}
+    />
+  ) : null;
 
   // SPOTLIGHT MODE — when anyone's sharing a screen, it dominates the stage and
   // participants shrink to a thumbnail strip below.
@@ -273,6 +304,9 @@ export function VideoStage({
     // and remote cam tiles stay visible while someone is sharing. For a REMOTE
     // sharer we hide their cam tile (their video track is already the screen).
     const gridPeers = localScreen ? videoPeers : videoPeers.filter((p) => p.userId !== m.screenSharerId);
+    const gridAudioPeers = localScreen
+      ? audioPeers
+      : audioPeers.filter((p) => p.userId !== m.screenSharerId);
     return (
       <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6 space-y-3">
         <div>
@@ -284,11 +318,12 @@ export function VideoStage({
             <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
           </div>
         </div>
-        {(showLocalVideo || gridPeers.length > 0) && (
+        {(showLocalVideo || showLocalAudio || gridPeers.length > 0 || gridAudioPeers.length > 0) && (
           <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
             {showLocalVideo && (
               <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
             )}
+            {localAudioTile}
             {gridPeers.map((p) => {
               const prof = profileLookup.get(p.userId);
               return (
@@ -300,6 +335,7 @@ export function VideoStage({
                 />
               );
             })}
+            {gridAudioPeers.map(renderAudioPeerTile)}
           </div>
         )}
       </div>
@@ -312,6 +348,7 @@ export function VideoStage({
         {showLocalVideo && (
           <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
         )}
+        {localAudioTile}
         {videoPeers.map((p) => {
           const prof = profileLookup.get(p.userId);
           return (
@@ -323,10 +360,12 @@ export function VideoStage({
             />
           );
         })}
+        {audioPeers.map(renderAudioPeerTile)}
       </div>
     </div>
   );
 }
+
 
 /** Large-format video used for the screen-share spotlight. Uses object-contain
  *  so slides/code aren't cropped, and a tall max-height so it dominates. */
@@ -893,8 +932,9 @@ function SpeakerRow({
     <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
       <div className={cn(
         "relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted ring-2 transition",
-        speaking ? "ring-primary" : "ring-transparent",
+        speaking ? "ring-[3px] ring-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)]" : "ring-transparent",
       )}>
+
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName[0]?.toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
@@ -926,8 +966,11 @@ export function VideoTile({
   return (
     <div className={cn(
       "relative aspect-video overflow-hidden rounded-2xl bg-ink ring-2 transition",
-      speaking ? "ring-primary" : "ring-transparent",
+      speaking ? "ring-[3px] ring-primary" : "ring-transparent",
     )}>
+      {speaking && (
+        <span className="pointer-events-none absolute inset-0 rounded-2xl ring-4 ring-primary/30 animate-pulse" />
+      )}
       <video
         ref={ref}
         autoPlay
@@ -942,14 +985,19 @@ export function VideoTile({
   );
 }
 
+
 export function AudioTile({
   displayName, avatarUrl, speaking, muted,
 }: { displayName: string; avatarUrl: string | null; speaking: boolean; muted: boolean }) {
   return (
     <div className={cn(
       "relative aspect-video overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] ring-2 transition flex items-center justify-center",
-      speaking ? "ring-primary" : "ring-background/10",
+      speaking ? "ring-[3px] ring-primary" : "ring-background/10",
     )}>
+      {speaking && (
+        <span className="pointer-events-none absolute inset-0 rounded-2xl ring-4 ring-primary/30 animate-pulse" />
+      )}
+
       <div className={cn(
         "relative h-20 w-20 rounded-full overflow-hidden bg-background/10 text-2xl font-medium flex items-center justify-center text-background/80 ring-2 ring-offset-2 ring-offset-[#0a0a0a] transition",
         speaking ? "ring-primary" : "ring-background/15",

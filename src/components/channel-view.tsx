@@ -813,7 +813,7 @@ export function ChannelView({
           </div>
 
           {pip.portal}
-          <VideoStage m={media} meDisplay={meDisplay} profileLookup={profileLookup} />
+          <VideoStage m={media} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
           <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
