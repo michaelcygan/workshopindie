@@ -592,7 +592,7 @@ function ProfilePage() {
 
         {/* Stats strip */}
         <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
-          <Stat label="Works" value={counts.works} />
+          <Stat label="Gallery" value={counts.works} />
           <Stat label="Worked with" value={profile.worked_with_count} />
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
@@ -1060,7 +1060,7 @@ function ActivityTab({
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">Nothing in flight. Start a draft, drop into a Lounge, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <Link to="/works/new"><Button className="rounded-full">Start a Work</Button></Link>
+          <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
           <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop into a Lounge</Button></Link>
           <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
         </div>

@@ -39,7 +39,7 @@ export const Route = createFileRoute("/works/$slug")({
   component: WorkDetail,
   errorComponent: ({ error, reset }) => (
     <main className="mx-auto max-w-3xl px-4 py-20 text-center">
-      <h1 className="font-display text-3xl text-ink">Couldn't load this Work</h1>
+      <h1 className="font-display text-3xl text-ink">Couldn't load this piece</h1>
       <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
       <div className="mt-6 flex justify-center gap-2">
         <Button onClick={reset} className="rounded-full">Try again</Button>
