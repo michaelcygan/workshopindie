@@ -102,8 +102,14 @@ function compileOne(t: LexiconTerm): CompiledRule | null {
       const pat = `(?:^|\\P{L})${parts.join("\\s+")}(?:$|\\P{L})`;
       return { id: t.id, category: t.category, regex: new RegExp(pat, "iu"), target: "spaced" };
     }
-    // exact: run against tight (whitespace-stripped) haystack as a substring.
-    // Our slur lexicon uses long, distinctive tokens so substring is safe.
+    // exact: short terms (≤4 chars) require word boundaries against `spaced`
+    // to avoid substring collisions (e.g. "kys" in "keystone"). Longer, more
+    // distinctive terms run as substring against `tight` so obfuscations like
+    // "n i g g e r" and "n.i.g.g.e.r" both match.
+    if (normTerm.length <= 4) {
+      const pat = `(?:^|\\P{L})${escapeRegex(normTerm)}(?:$|\\P{L})`;
+      return { id: t.id, category: t.category, regex: new RegExp(pat, "iu"), target: "spaced" };
+    }
     return {
       id: t.id,
       category: t.category,
