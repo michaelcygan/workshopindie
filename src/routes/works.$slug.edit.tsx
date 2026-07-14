@@ -242,7 +242,7 @@ function EditWork() {
               <SelectTrigger><SelectValue placeholder="Pick a type (optional)" /></SelectTrigger>
               <SelectContent>
                 {subtypes.map((s) => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
