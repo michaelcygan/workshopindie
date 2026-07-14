@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Play, Square, PinOff, ImageOff } from "lucide-react";
@@ -41,6 +41,7 @@ type ProfileRow = {
  */
 export function useRoomPinsAndScreening(roomId: string | undefined, screeningWorkId: string | null) {
   const qc = useQueryClient();
+  const instanceId = useId();
   const pinsKey = ["room-work-pins", roomId ?? ""];
 
   const { data: pins = [] } = useQuery({
@@ -60,7 +61,7 @@ export function useRoomPinsAndScreening(roomId: string | undefined, screeningWor
   useEffect(() => {
     if (!roomId) return;
     const ch = supabase
-      .channel(`room-work-pins-strip:${roomId}`)
+      .channel(`room-work-pins-strip:${roomId}:${instanceId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "instant_room_work_pins", filter: `room_id=eq.${roomId}` },
