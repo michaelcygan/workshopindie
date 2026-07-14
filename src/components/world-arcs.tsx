@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { geoOrthographic, geoInterpolate, geoContains } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import landRaw from "@/assets/land-110m.json";
+import type { GlobePromo } from "@/lib/globe-promos";
 
 const land = landRaw as unknown as FeatureCollection<Polygon | MultiPolygon>;
 const landFeature = {
@@ -15,7 +16,14 @@ const landFeature = {
 } as Feature<MultiPolygon>;
 
 type City = { name: string; lon: number; lat: number };
-type Pair = { from: City; to: City; verb: string };
+type Pair = {
+  from: City;
+  to: City;
+  verb: string;
+  kind?: "work" | "collab" | "group";
+  href?: string;
+  title?: string;
+};
 
 const CITIES: Record<string, City> = {
   lagos: { name: "Lagos", lon: 3.38, lat: 6.52 },
@@ -42,7 +50,7 @@ const CITIES: Record<string, City> = {
   accra: { name: "Accra", lon: -0.19, lat: 5.6 },
 };
 
-const PAIRS: Pair[] = [
+const FALLBACK_PAIRS: Pair[] = [
   { from: CITIES.lagos, to: CITIES.berlin, verb: "Scoring a short film" },
   { from: CITIES.saopaulo, to: CITIES.tokyo, verb: "Co-writing a track" },
   { from: CITIES.cdmx, to: CITIES.lisbon, verb: "Cover-photo color study" },
@@ -51,21 +59,23 @@ const PAIRS: Pair[] = [
   { from: CITIES.mumbai, to: CITIES.nyc, verb: "Voice on a chorus" },
   { from: CITIES.bali, to: CITIES.capetown, verb: "Doc footage trade" },
   { from: CITIES.buenosaires, to: CITIES.sydney, verb: "Mixing a single" },
-  { from: CITIES.toronto, to: CITIES.lagos, verb: "Beat cook-off" },
-  { from: CITIES.paris, to: CITIES.cdmx, verb: "Set design pass" },
-  { from: CITIES.tokyo, to: CITIES.nairobi, verb: "Animation cel review" },
-  { from: CITIES.berlin, to: CITIES.saopaulo, verb: "Remix swap" },
   { from: CITIES.london, to: CITIES.accra, verb: "Screenplay table read" },
   { from: CITIES.la, to: CITIES.seoul, verb: "Pitch your loglines" },
   { from: CITIES.istanbul, to: CITIES.montreal, verb: "Poetry round" },
   { from: CITIES.bangkok, to: CITIES.london, verb: "Type-spec crit" },
-  { from: CITIES.montreal, to: CITIES.bali, verb: "Synth patch trade" },
-  { from: CITIES.nyc, to: CITIES.istanbul, verb: "Story-edit pass" },
-  { from: CITIES.accra, to: CITIES.lisbon, verb: "Cover-art jam" },
-  { from: CITIES.sydney, to: CITIES.bangkok, verb: "Lyric workshop" },
   { from: CITIES.capetown, to: CITIES.la, verb: "Stills review" },
-  { from: CITIES.lisbon, to: CITIES.mumbai, verb: "Foley swap" },
 ];
+
+function promosToPairs(promos: GlobePromo[]): Pair[] {
+  return promos.map((p) => ({
+    from: p.from,
+    to: p.to ?? p.from,
+    verb: p.verb ?? p.title,
+    kind: p.kind,
+    href: p.href,
+    title: p.title,
+  }));
+}
 
 const REDUCE_MOTION =
   typeof window !== "undefined" &&
