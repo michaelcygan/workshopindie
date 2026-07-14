@@ -598,6 +598,14 @@ function ProfilePage() {
           <Stat label="Following" value={profile.following_count} />
         </div>
 
+        {/* Artist statement — hidden entirely when blank */}
+        {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
+          <blockquote className="mt-8 max-w-3xl border-l-2 border-ink/30 pl-5">
+            <p className="whitespace-pre-wrap font-display text-xl italic leading-snug text-ink-soft md:text-2xl">
+              {profile.artist_statement}
+            </p>
+          </blockquote>
+        )}
 
         {/* Tab bar */}
         <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:px-6">
