@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
+import { RenderLinks } from "@/lib/render-links";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
