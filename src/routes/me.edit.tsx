@@ -215,6 +215,7 @@ function EditProfile() {
       artist_statement: form.artistStatement.trim() || null,
       avatar_url: form.avatar,
       cover_url: form.cover,
+      cover_work_id: form.cover ? form.coverWorkId : null,
       categories: form.cats,
       mediums: form.mediums,
       tools: form.tools,
