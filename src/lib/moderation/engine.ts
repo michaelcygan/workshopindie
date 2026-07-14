@@ -16,32 +16,37 @@ export type LexiconTerm = {
 
 export type Lexicon = { version: number; terms: LexiconTerm[] };
 
-// Confusables — small, hand-curated. Covers common Cyrillic/Greek/fullwidth swaps.
+// Confusables — Cyrillic/Greek/fullwidth lookalikes that safely map to a Latin
+// letter without munging ordinary text. Numeric leetspeak (0→o, 1→i, 3→e,…)
+// and $/@ substitutions live in `LEET` and are ONLY applied inside the
+// whitespace-stripped tight haystack, so digits in normal prose ("in 2020")
+// aren't rewritten and don't cause false positives.
 const CONFUSABLES: Record<string, string> = {
-  "а": "a", "А": "a", "ɑ": "a", "α": "a", "@": "a",
-  "б": "b", "Ь": "b", "β": "b",
+  "а": "a", "А": "a", "ɑ": "a", "α": "a",
+  "б": "b", "β": "b",
   "с": "c", "С": "c", "ϲ": "c",
-  "е": "e", "Е": "e", "ε": "e", "€": "e",
-  "һ": "h", "н": "h",
-  "і": "i", "І": "i", "ι": "i", "ï": "i", "!": "i", "1": "i", "|": "i", "l": "i", "L": "i",
+  "е": "e", "Е": "e", "ε": "e",
+  "һ": "h",
+  "і": "i", "І": "i", "ι": "i",
   "ј": "j", "Ј": "j",
   "к": "k", "К": "k",
   "м": "m", "М": "m",
-  "п": "n", "и": "n",
-  "о": "o", "О": "o", "ο": "o", "Ο": "o", "0": "o", "()": "o",
+  "о": "o", "О": "o", "ο": "o", "Ο": "o",
   "р": "p", "Р": "p", "ρ": "p",
   "ԛ": "q",
-  "г": "r", "я": "r",
-  "ѕ": "s", "Ѕ": "s", "$": "s", "5": "s", "§": "s",
-  "т": "t", "Т": "t", "7": "t", "+": "t",
-  "υ": "u", "ц": "u",
+  "г": "r",
+  "ѕ": "s", "Ѕ": "s",
+  "т": "t", "Т": "t",
+  "υ": "u",
   "ν": "v", "ѵ": "v",
   "ѡ": "w", "ω": "w",
-  "х": "x", "Х": "x", "×": "x",
+  "х": "x", "Х": "x",
   "у": "y", "У": "y",
-  "з": "z", "2": "z",
-  "3": "e", "4": "a", "6": "g", "8": "b", "9": "g",
 };
+const LEET: Record<string, string> = {
+  "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s",
+};
+
 
 const ZERO_WIDTH = /[\u200B-\u200D\uFEFF\u2060\u180E]/g;
 const DIACRITICS = /[\u0300-\u036f]/g;
