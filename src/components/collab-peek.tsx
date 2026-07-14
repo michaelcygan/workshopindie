@@ -48,7 +48,7 @@ export function CollabPeek({
       const { data: c, error } = await supabase
         .from("collab_posts")
         .select(
-          "id,title,slug,category,description,user_id,cover_url,status,roles:collab_roles(id,role_name,quantity,sort_order)",
+          "id,title,slug,category,categories,description,user_id,cover_url,status,roles:collab_roles(id,role_name,quantity,sort_order)",
         )
         .eq("id", collabId!)
         .maybeSingle();
