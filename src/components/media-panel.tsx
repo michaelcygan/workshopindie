@@ -991,8 +991,12 @@ export function AudioTile({
   return (
     <div className={cn(
       "relative aspect-video overflow-hidden rounded-2xl bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] ring-2 transition flex items-center justify-center",
-      speaking ? "ring-primary" : "ring-background/10",
+      speaking ? "ring-[3px] ring-primary" : "ring-background/10",
     )}>
+      {speaking && (
+        <span className="pointer-events-none absolute inset-0 rounded-2xl ring-4 ring-primary/30 animate-pulse" />
+      )}
+
       <div className={cn(
         "relative h-20 w-20 rounded-full overflow-hidden bg-background/10 text-2xl font-medium flex items-center justify-center text-background/80 ring-2 ring-offset-2 ring-offset-[#0a0a0a] transition",
         speaking ? "ring-primary" : "ring-background/15",
