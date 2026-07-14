@@ -1152,8 +1152,15 @@ export function ChannelView({
               <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
                 You've been muted with camera off for a while. Keep going or unmute — otherwise
-                we'll leave this Lounge in 2 minutes.
+                we'll leave this Lounge automatically.
               </AlertDialogDescription>
+              <div
+                role="timer"
+                aria-live="polite"
+                className="mt-2 text-sm font-medium text-ink"
+              >
+                Auto-leaving in {fmtCountdown(idleMsLeft ?? QUIET_KICK_MS)}
+              </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogAction onClick={() => setWarnOpen(false)}>Keep going</AlertDialogAction>
