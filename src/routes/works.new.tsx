@@ -201,6 +201,7 @@ function NewWork() {
         title: title.trim(),
         slug: "",
         category: category as Category,
+        categories: [category, ...extraCategories.filter((c) => c !== category)] as Category[],
         subtype: subtype,
         excerpt: excerpt || null,
         description: description || null,
