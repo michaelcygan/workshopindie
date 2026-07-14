@@ -102,7 +102,7 @@ export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLo
               {value && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => onChange(null)} className="text-destructive focus:text-destructive">
+                  <DropdownMenuItem onSelect={() => { onChange(null); onWorkChange?.(null); }} className="text-destructive focus:text-destructive">
                     <Trash2 className="mr-2 h-4 w-4" />
                     Remove cover
                   </DropdownMenuItem>
