@@ -15,6 +15,7 @@ export type WorkPeekData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   cover_url: string | null;
   excerpt: string | null;
   description: string | null;
