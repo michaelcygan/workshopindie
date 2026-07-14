@@ -139,7 +139,8 @@ export function CollabComposer({
   }, [preselect.data]);
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<Category>("visual");
+  const [category, setCategory] = useState<WorkCategory>("visual");
+  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
   const [description, setDescription] = useState("");
   const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [timelineNote, setTimelineNote] = useState("");
