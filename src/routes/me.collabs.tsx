@@ -329,7 +329,7 @@ function MyCollabsPage() {
                           <Trash2 className="h-3.5 w-3.5" /> Delete
                         </Button>
                         <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
-                          <Sparkles className="h-3.5 w-3.5" /> Publish a Work
+                          <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
                         </Button>
                       </div>
                     ) : passed ? (

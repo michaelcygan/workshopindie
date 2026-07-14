@@ -122,14 +122,14 @@ export function CoverImagePicker({ value, onChange, works, worksLoading }: Props
       <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Select a cover from your Works</DialogTitle>
+            <DialogTitle>Select a cover from your Gallery</DialogTitle>
           </DialogHeader>
 
           {worksLoading ? (
-            <div className="py-10 text-center text-sm text-ink-muted">Loading your Works…</div>
+            <div className="py-10 text-center text-sm text-ink-muted">Loading your Gallery…</div>
           ) : worksWithCover.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-ink-muted">
-              Publish a Work with a cover image first to use this option.
+              Post to Gallery with a cover image first to use this option.
             </div>
           ) : (
             <div className="grid max-h-[60vh] grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3">

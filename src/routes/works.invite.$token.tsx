@@ -46,7 +46,7 @@ function AcceptWorkInvite() {
     return (
       <div className="container mx-auto px-4 py-12 max-w-md">
         <Card className="p-6 space-y-4">
-          <h1 className="text-xl font-semibold">You've been invited to a Work</h1>
+          <h1 className="text-xl font-semibold">You've been invited to a piece</h1>
           <p className="text-sm text-muted-foreground">
             Sign in or create an account to accept this invite. You'll sign the active rights agreement when you join.
           </p>

@@ -56,7 +56,7 @@ export function GalleryLoggedOutHero() {
             </Button>
           </Link>
           <Link to="/works/new">
-            <Button className="rounded-full">Post Work</Button>
+            <Button className="rounded-full">Post to Gallery</Button>
           </Link>
         </div>
       </div>

@@ -112,7 +112,7 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
     return (
       <Link to="/works/$slug" params={{ slug: pulse.slug }} className={cn(base)}>
         <div className="flex items-center gap-1.5">
-          <PulseChip icon={<Hammer className="h-3 w-3" />} label="Work" />
+          <PulseChip icon={<Hammer className="h-3 w-3" />} label="Gallery" />
           {(pulse.from_collab || pulse.from_workshop) && (
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
               {pulse.from_workshop ? "from Lounge" : "from Collab"}

@@ -616,7 +616,7 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
         <Textarea rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you make? How did it go?" />
         <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} placeholder="Primary URL (Vimeo, Bandcamp, GitHub, your site) — optional" />
         <div className="flex justify-end">
-          <Button onClick={ship} disabled={submitting} className="rounded-full">{submitting ? "Publishing…" : "Publish Work"}</Button>
+          <Button onClick={ship} disabled={submitting} className="rounded-full">{submitting ? "Publishing…" : "Post to Gallery"}</Button>
         </div>
       </div>
     </section>

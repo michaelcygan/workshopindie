@@ -476,7 +476,7 @@ function Grid({
             <p>
               You haven't published anything yet.
               <br />
-              Share a piece — your Workshop can see it here.
+              Share a piece — your Galleryhop can see it here.
             </p>
           ) : (
             <p>

@@ -38,7 +38,7 @@ export function WorksBornHere(props: Props) {
   const visible = props.excludeWorkId ? works.filter((w) => w.id !== props.excludeWorkId) : works;
   if (visible.length === 0) return null;
 
-  const heading = props.title ?? (visible.length === 1 ? "Born here" : "Works born here");
+  const heading = props.title ?? (visible.length === 1 ? "Born here" : "Born here");
 
   return (
     <section className="mt-10">

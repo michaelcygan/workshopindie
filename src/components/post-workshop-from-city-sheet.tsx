@@ -93,7 +93,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) { toast.error("Sign in to post a Workshop"); return; }
-    if (!title.trim()) return toast.error("Give your Workshop a title");
+    if (!title.trim()) return toast.error("Give your Galleryhop a title");
     if (where === "in_person" && !venue) return toast.error("Pick a venue in " + city.name);
     if (when === "scheduled") {
       if (!startsAt || !endsAt) return toast.error("Set a start and end time");
@@ -208,7 +208,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Post a Workshop in {city.name}</DialogTitle>
+          <DialogTitle className="font-display text-2xl">Post to Galleryshop in {city.name}</DialogTitle>
           <DialogDescription>
             Only people in {city.name} will see it. Go live right now or schedule for later.
           </DialogDescription>
@@ -330,7 +330,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
                 <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} className="mt-1" />
                 <span>
                   <span className="inline-flex items-center gap-1 font-medium text-ink"><Pin className="h-3.5 w-3.5" /> Pin as a standing Workshop for {city.name}</span>
-                  <span className="block text-xs text-ink-muted">Admin only. Pinned Workshops sit at the top of this city's Workshops tab.</span>
+                  <span className="block text-xs text-ink-muted">Admin only. Pinned pieceshops sit at the top of this city's Workshops tab.</span>
                 </span>
               </label>
             </section>

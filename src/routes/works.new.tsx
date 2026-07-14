@@ -299,7 +299,7 @@ function NewWork() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-display text-4xl text-ink">Publish a Work</h1>
+        <h1 className="font-display text-4xl text-ink">Post to Gallery</h1>
         <p className="mt-1 text-ink-muted">
           Drop a link, upload a file, or start from scratch — we'll do the rest.
         </p>
@@ -542,7 +542,7 @@ function NewWork() {
               + Add another
             </Button>
             <Button type="submit" disabled={submitting} className="rounded-full">
-              {submitting ? "Publishing…" : "Publish Work"}
+              {submitting ? "Publishing…" : "Post to Gallery"}
             </Button>
           </div>
         </form>

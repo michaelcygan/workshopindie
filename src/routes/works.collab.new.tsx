@@ -17,7 +17,7 @@ export const Route = createFileRoute("/works/collab/new")({
   component: NewCollaborativeWork,
   head: () => ({
     meta: [
-      { title: "Start a collaborative Work — Workshop" },
+      { title: "Start a collaborative piece — Workshop" },
       { name: "description", content: "Create a Work, set the splits and rights, and start collaborating." },
     ],
   }),
@@ -54,7 +54,7 @@ function NewCollaborativeWork() {
   if (!user) {
     return (
       <div className="container mx-auto p-8 max-w-md">
-        <h1 className="text-2xl font-semibold mb-2">Sign in to start a Work</h1>
+        <h1 className="text-2xl font-semibold mb-2">Sign in to post to your Gallery</h1>
         <Button asChild><Link to="/login">Sign in</Link></Button>
       </div>
     );
@@ -104,7 +104,7 @@ function NewCollaborativeWork() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <h1 className="text-2xl font-semibold mb-1">Start a collaborative Work</h1>
+      <h1 className="text-2xl font-semibold mb-1">Start a collaborative piece</h1>
       <p className="text-sm text-muted-foreground mb-6">
         One screen. Set the basics, lock in the rights and splits, and you're in.
         You can change anything later — every change is recorded.
