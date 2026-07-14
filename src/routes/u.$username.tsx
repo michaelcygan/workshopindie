@@ -109,6 +109,7 @@ type Profile = {
   cover_url: string | null;
   bio: string | null;
   headline: string | null;
+  artist_statement: string | null;
   categories: Category[];
   mediums: string[] | null;
   tools: string[] | null;
@@ -128,7 +129,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -597,6 +598,14 @@ function ProfilePage() {
           <Stat label="Following" value={profile.following_count} />
         </div>
 
+        {/* Artist statement — hidden entirely when blank */}
+        {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
+          <blockquote className="mt-8 max-w-3xl border-l-2 border-ink/30 pl-5">
+            <p className="whitespace-pre-wrap font-display text-xl italic leading-snug text-ink-soft md:text-2xl">
+              {profile.artist_statement}
+            </p>
+          </blockquote>
+        )}
 
         {/* Tab bar */}
         <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:px-6">

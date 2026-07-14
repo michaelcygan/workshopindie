@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
+import { CoverImagePicker } from "@/components/cover-image-picker";
 import { type Category, categoryClass } from "@/lib/categories";
 import {
   WORK_MEDIUMS,
@@ -50,6 +51,7 @@ type FormState = {
   instagram: string;
   headline: string;
   bio: string;
+  artistStatement: string;
   avatar: string | null;
   cover: string | null;
   cats: Category[];
@@ -64,7 +66,7 @@ type FormState = {
 const EMPTY: FormState = {
   username: "",
   firstName: "", lastName: "", aliases: [], instagram: "",
-  headline: "", bio: "", avatar: null, cover: null, cats: [], mediums: [], tools: [], links: [],
+  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, cats: [], mediums: [], tools: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
@@ -124,6 +126,7 @@ function EditProfile() {
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
+        artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
         avatar: data.avatar_url ?? null,
         cover: data.cover_url ?? null,
         cats: (data.categories ?? []) as Category[],
@@ -207,6 +210,7 @@ function EditProfile() {
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
+      artist_statement: form.artistStatement.trim() || null,
       avatar_url: form.avatar,
       cover_url: form.cover,
       categories: form.cats,
@@ -305,9 +309,13 @@ function EditProfile() {
           <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Cover image</Label>
-              <div className="w-full max-w-xs">
-                <ImageUpload value={form.cover} onChange={(v) => set("cover", v)} bucket="covers" aspect="wide" label="Upload cover (16:6)" />
-              </div>
+              <CoverImagePicker
+                value={form.cover}
+                onChange={(v) => set("cover", v)}
+                works={ownedWorks.map((w) => ({ id: w.id, title: w.title, cover_url: w.cover_url }))}
+                worksLoading={worksLoading}
+              />
+              <p className="text-xs text-ink-muted">Upload a wide image, or pick one from a Work you've published.</p>
             </div>
 
             <div className="flex gap-4 items-start">
@@ -471,6 +479,19 @@ function EditProfile() {
               <Label htmlFor="bio">Bio</Label>
               <Textarea id="bio" rows={5} maxLength={500} value={form.bio} onChange={(e) => set("bio", e.target.value)} />
               <p className="text-right text-xs text-ink-muted">{form.bio.length}/500</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="artist-statement">Artist statement</Label>
+              <Textarea
+                id="artist-statement"
+                rows={4}
+                maxLength={1000}
+                value={form.artistStatement}
+                onChange={(e) => set("artistStatement", e.target.value)}
+                placeholder="A short manifesto — what your practice is about. Sits above your Works. Leave blank to hide."
+              />
+              <p className="text-right text-xs text-ink-muted">{form.artistStatement.length}/1000</p>
             </div>
           </Section>
 
