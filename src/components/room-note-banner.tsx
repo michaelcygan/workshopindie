@@ -146,28 +146,6 @@ export function RoomNoteBanner({ roomId }: Props) {
     setEditing(false);
   }
 
-  // Ambient nudge tooltip: 3.5s after mount, when empty + editable + not yet dismissed.
-  const nudgeKey = `room-note-nudge:${roomId}`;
-  const [showNudge, setShowNudge] = useState(false);
-  useEffect(() => {
-    if (!canEdit || note || editing) return;
-    if (typeof window === "undefined") return;
-    if (window.localStorage.getItem(nudgeKey)) return;
-    const tShow = window.setTimeout(() => setShowNudge(true), 3500);
-    const tHide = window.setTimeout(() => setShowNudge(false), 3500 + 12_000);
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setShowNudge(false);
-        window.localStorage.setItem(nudgeKey, "1");
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.clearTimeout(tShow);
-      window.clearTimeout(tHide);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [canEdit, note, editing, nudgeKey]);
 
   function dismissNudge() {
     setShowNudge(false);
