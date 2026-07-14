@@ -16,6 +16,7 @@ export type WorkCardData = {
   title: string;
   slug: string;
   category: Category;
+  categories?: Category[] | null;
   cover_url: string | null;
   cover_aspect?: string | null;
   cover_focal_x?: number | null;
