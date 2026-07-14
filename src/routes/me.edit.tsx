@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUpload } from "@/components/image-upload";
+import { CoverImagePicker } from "@/components/cover-image-picker";
 import { type Category, categoryClass } from "@/lib/categories";
 import {
   WORK_MEDIUMS,
