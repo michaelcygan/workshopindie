@@ -55,6 +55,19 @@ export function WorkPeek({
   const work = (data?.work ?? null) as WorkPeekData | null;
   const creator = (data?.creator ?? null) as Creator | null;
 
+  const like = useWorkLike(work?.id ?? null, work?.like_count ?? 0);
+  const [gateOpen, setGateOpen] = useState(false);
+
+  function onLike() {
+    if (!work) return;
+    if (!like.isAuthed) {
+      like.queueForAfterAuth();
+      setGateOpen(true);
+      return;
+    }
+    void like.toggle();
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 overflow-hidden gap-0">
