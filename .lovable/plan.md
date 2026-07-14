@@ -1,30 +1,36 @@
-# Make homepage globe pills clickable
+## What's wrong now
 
-## Problem
+A Lounge is marked "empty" the moment the last user leaves (an `emptied_at` timestamp is stamped by a DB trigger). But then:
 
-In `src/components/world-arcs.tsx`, the floating pill label is rendered by rewriting `label.innerHTML` on every animation frame with a raw `<a href="...">`. Two issues make it effectively unclickable:
+1. **Grace period is 30 minutes** before the sweeper archives it (`sweep_stale_lounges` uses `now() - 30 minutes`).
+2. The matchmaker (`join_lounge`, `join_medium_lounge`) also uses a 30-minute stale window, and while a room is in that grace window it is still **preferred** by the matchmaker (sorted higher because it was recently emptied and has capacity).
+3. Discovery (`list_active_instant_rooms`) shows these dying rooms as normal live rooms.
 
-1. **The label moves every frame.** Its `transform` is updated in the RAF loop to track the currently-active arc's endpoint, so as soon as you try to click, it drifts away or gets replaced by a different promo's pill.
-2. **Raw `<a href>` bypasses TanStack Router**, so even a successful click triggers a full page reload instead of client navigation to `/works/:slug`, `/collab/:slug`, or `/g/:slug`.
+Net effect: someone leaves → the room hangs around for up to 30 minutes, still visibly enterable and still handed out first by matchmaking.
 
-## Fix (frontend / presentation only)
+## Change (backend-only, one migration)
 
-Edit `src/components/world-arcs.tsx`:
+**1. Short end-timer, 45 seconds.**
+- `sweep_stale_lounges`: change grace from `interval '30 minutes'` → `interval '45 seconds'`.
+- Keep the 1-minute pg_cron cadence (worst case: room archives ~1:45 after last leave, well within the 25–60s intent given cron granularity).
+- Keep the `_live_cutoff` at 5 minutes so a brief network blip doesn't kill an active room — the trigger only stamps `emptied_at` when the presence row is actually deleted (on unmount / Hop / tab close via cleanup), so real "user left" events fire immediately.
 
-1. **Pause tracking on hover.** Add a `hoveredRef = useRef(false)` and wire `mouseenter` / `mouseleave` on the label element. While hovered:
-   - Skip the `label.style.transform = ...` update and skip the `label.innerHTML = ...` rewrite in the RAF loop (keep the last frame frozen).
-   - Keep opacity pinned at 1 so it doesn't fade out under the cursor.
-2. **SPA navigation.** Attach a delegated `click` listener on the label div. On click, if the current promo has an `href`:
-   - `e.preventDefault()`
-   - Call `router.navigate({ to: href })` via `useRouter()` from `@tanstack/react-router`.
-   - Keep the `<a href>` in the markup as a fallback (so middle-click / cmd-click still open in a new tab and it degrades gracefully).
-3. **Guarantee hit area.** Ensure the label wrapper gets `pointer-events-auto` (not just the inner anchor) whenever an href is present — currently set via inline style, keep it, and add a small invisible padding hit-target so the pill has ≥28px tap height.
-4. Track the currently-displayed promo in a ref (`currentPromoRef`) so the click handler always uses the pill the user actually sees, not a stale closure.
+**2. Matchmaker ignores dying rooms.**
+- In `join_lounge` and `join_medium_lounge`:
+  - Shrink `_stale_cutoff` to 45 seconds so the pre-archive step matches the sweeper.
+  - Add `AND r.emptied_at IS NULL` to the candidate SELECT so rooms in the grace window are never picked, regardless of live-count sort.
+  - Remove the `(live_count > 0) DESC` first sort key — with dying rooms excluded, prefer follows, then live-count, then age (this stops matchmaking from stacking users into a room that's already ticking down).
 
-No changes to `globe-promos.ts`, routes, DB, or the arc rendering itself. All three kinds (`work` → `/works/:slug`, `collab` → `/collab/:slug`, `group` → `/g/:slug`) already have correct hrefs from `fetchPromos()`.
+**3. Discovery hides dying rooms.**
+- In `list_active_instant_rooms`, add `AND r.emptied_at IS NULL` so the "Live now" list drops a room the instant its last occupant leaves. The 45s window then ends in archive without the room ever reappearing as joinable.
 
-## Verification
+**4. No client changes.** `channel-view.tsx` already deletes the presence row on unmount, which fires the existing trigger that sets `emptied_at`. `HopButton` already deletes presence before navigating. That path is correct; only the DB timings and filters are wrong.
 
-- Hover the moving pill on the homepage globe → it should freeze in place.
-- Click it → URL changes via client-side navigation to the work / collab / group page (no full reload flash).
-- Cmd/middle-click still opens the target in a new tab.
+## Files touched
+
+- New migration under `supabase/migrations/` replacing `sweep_stale_lounges`, `join_lounge`, `join_medium_lounge`, `list_active_instant_rooms` with the changes above. No table changes, no new grants beyond re-issuing the existing ones for the replaced functions.
+
+## Out of scope
+
+- Group-scoped lounges (`join_group_lounge`) — same treatment can follow if you want, say the word and I'll include it.
+- Workshop-paired rooms (`kind='workshop'`) are unaffected; this is lounge-only.
