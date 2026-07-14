@@ -138,7 +138,7 @@ function CityPage() {
         .eq("city_id", city!.id).eq("status", "published").in("visibility", ["public", "unlisted"])
         .order("published_at", { ascending: false, nullsFirst: false }).limit(6);
       type Row = {
-        id: string; title: string; slug: string; category: WorkCardData["category"];
+        id: string; title: string; slug: string; category: WorkCardData["category"]; categories: WorkCardData["categories"];
         cover_url: string | null; source_type: WorkCardData["source_type"];
         like_count: number | null; save_count: number | null; view_count: number | null;
         work_credits: Array<{
