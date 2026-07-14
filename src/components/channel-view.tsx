@@ -38,6 +38,9 @@ import { UsernameMention } from "@/components/username-mention";
 
 
 import { WorkshopCollabsPanel } from "@/components/workshop-collabs-panel";
+import { PinnedScreeningStrip, useRoomPinsAndScreening } from "@/components/pinned-screening-strip";
+import { ScreeningStage } from "@/components/screening-stage";
+import { stopScreening } from "@/lib/room-screening.functions";
 import { ChatPolls } from "@/components/chat-polls";
 import {
   ChatMentionInput,
