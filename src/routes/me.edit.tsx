@@ -210,6 +210,7 @@ function EditProfile() {
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
+      artist_statement: form.artistStatement.trim() || null,
       avatar_url: form.avatar,
       cover_url: form.cover,
       categories: form.cats,
