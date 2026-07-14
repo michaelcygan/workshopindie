@@ -568,10 +568,14 @@ function GalleryPage() {
 
       {/* Grid */}
       <section className="mx-auto max-w-7xl px-4 py-8 md:px-6">
-        {tab === "following" && !user ? (
+        {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
-            title="Sign in to see your Following feed"
-            body="Follow people, then come back here to see what they're making."
+            title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
+            body={
+              tab === "favorites"
+                ? "Tap the heart on any piece to save it here."
+                : "Follow people, then come back here to see what they're making."
+            }
             cta={<Link to="/login"><Button className="rounded-full">Sign in</Button></Link>}
           />
         ) : isLoading ? (
@@ -585,6 +589,16 @@ function GalleryPage() {
             <EmptyState
               title="Your Following feed is empty"
               body="Follow people on their profiles to fill this up."
+              cta={
+                <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-full">
+                  Browse For you
+                </Button>
+              }
+            />
+          ) : tab === "favorites" ? (
+            <EmptyState
+              title="Nothing favorited yet"
+              body="Tap the heart on any piece to save it here for later."
               cta={
                 <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-full">
                   Browse For you
