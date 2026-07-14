@@ -255,7 +255,7 @@ function BringDialog({ eventId }: { eventId: string }) {
             )}
             {works.length > 0 && (
               <div>
-                <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-muted">Works</div>
+                <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-muted">Gallery</div>
                 <ul className="space-y-1.5">
                   {works.map((w) => (
                     <li key={w.id}>

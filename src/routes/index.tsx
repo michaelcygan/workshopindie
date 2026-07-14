@@ -233,7 +233,7 @@ function Index() {
       <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
-            <h2 className="font-display text-3xl text-ink md:text-4xl">Works</h2>
+            <h2 className="font-display text-3xl text-ink md:text-4xl">Gallery</h2>
             <p className="mt-1 text-sm text-ink-muted">Finished things people made together.</p>
           </div>
         </div>

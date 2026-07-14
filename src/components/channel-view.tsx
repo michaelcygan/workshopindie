@@ -768,7 +768,7 @@ export function ChannelView({
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
         <FullscreenShell
-          title={`${title} · Work`}
+          title={`${title} · Gallery`}
           presence={presenceStrip}
           onMinimize={() => setFsView(null)}
         >
@@ -1446,7 +1446,7 @@ function StageTabs({
   const activeOption = activeTool ? STAGE_TOOL_OPTIONS.find((o) => o.type === activeTool) : null;
   const tabs: Array<{ id: Exclude<RoomViewMode, "tools">; label: string; icon: React.ReactNode }> = [
     { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
-    { id: "gallery", label: "Work", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
+    { id: "gallery", label: "Gallery", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
     { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
   ];
   const toolsActive = value === "tools";

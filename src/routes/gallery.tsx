@@ -327,12 +327,12 @@ function GalleryPage() {
       <section className="border-b border-border">
         <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
           <PageHeaderCompact
-            title="Work"
+            title="Gallery"
             right={
               <Link to="/works/new" className="shrink-0">
                 <Button size="sm" className="rounded-full">
                   <Plus className="h-4 w-4" />
-                  Post Work
+                  Post to Gallery
                 </Button>
               </Link>
             }
@@ -497,7 +497,7 @@ function GalleryPage() {
               }
               cta={
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Link to="/works/new"><Button className="rounded-full">Post Work</Button></Link>
+                  <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
                   <Button variant="outline" onClick={clearAll} className="rounded-full">
                     Clear filters
                   </Button>
@@ -532,7 +532,7 @@ function GalleryPage() {
       >
         <Button className="rounded-full shadow-lift">
           <Plus className="h-4 w-4" />
-          Post Work
+          Post to Gallery
         </Button>
       </Link>
     </main>

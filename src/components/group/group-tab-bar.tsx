@@ -34,7 +34,7 @@ export function GroupTabBar({
   const items: { id: GroupTab; label: string; icon: typeof LayoutGrid; count: number | null }[] = [
     { id: "today", label: "Today", icon: Sun, count: null },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
-    { id: "work", label: "Work", icon: LayoutGrid, count: counts.work },
+    { id: "work", label: "Gallery", icon: LayoutGrid, count: counts.work },
     { id: "events", label: "Events", icon: Calendar, count: null },
     ...(childCount > 0
       ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childCount }]
