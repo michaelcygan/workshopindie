@@ -87,6 +87,15 @@ export const replyToComment = createServerFn({ method: "POST" })
     const ownerId = (parent as unknown as { works: { created_by: string } }).works.created_by;
     if (ownerId !== userId) throw new Error("Only the work owner can reply here");
 
+    const { moderateOrThrow } = await import("@/lib/moderation/service.server");
+    await moderateOrThrow({
+      userId,
+      surface: "work.comment.reply",
+      subjectId: parent.work_id,
+      text: data.body,
+      spam: { maxLinks: 4, maxRepeatChars: 25 },
+    });
+
     const { data: inserted, error } = await supabase
       .from("comments")
       .insert({
