@@ -47,35 +47,31 @@ const ZERO_WIDTH = /[\u200B-\u200D\uFEFF\u2060\u180E]/g;
 const DIACRITICS = /[\u0300-\u036f]/g;
 
 /**
- * Normalize for match-only use. NEVER modifies the user's original text —
- * this is only used to build a haystack the matcher runs against.
- * Steps: NFKD → strip zero-width → strip diacritics → confusables/leet →
- * lowercase → collapse repeats (>2) → collapse in-word punctuation.
+ * Normalize for match-only use. NEVER modifies the user's original text.
+ * Returns two haystacks:
+ *   - `spaced`: whitespace preserved between distinct words, in-word punctuation
+ *     stripped, repeats collapsed. Used for phrase matching + allowlist.
+ *   - `tight`: additionally strips all whitespace. Used for single-term matching
+ *     so "n i g g e r" and "n.i.g.g.e.r" both collapse to "nigger".
  */
-export function normalize(input: string): { normalized: string; keepWhitespace: string } {
-  if (!input) return { normalized: "", keepWhitespace: "" };
+export function normalize(input: string): { normalized: string; tight: string } {
+  if (!input) return { normalized: "", tight: "" };
   let s = input.normalize("NFKD");
   s = s.replace(ZERO_WIDTH, "");
   s = s.replace(DIACRITICS, "");
-  // per-codepoint confusable swap
   let out = "";
-  for (const ch of s) {
-    out += CONFUSABLES[ch] ?? ch;
-  }
+  for (const ch of s) out += CONFUSABLES[ch] ?? ch;
   s = out.toLowerCase();
-  // keep a whitespace-preserving version for phrase matching
-  const withSpace = s
-    // strip in-word punctuation (letters glued by ., -, _, *, +, etc)
-    .replace(/([a-z0-9])[\s._\-*+~'"`^]+(?=[a-z0-9])/g, "$1")
-    // collapse repeats: aaaa -> aa
+  const spaced = s
+    // strip in-word punctuation only (not whitespace)
+    .replace(/([a-z0-9])[._\-*+~'"`^]+(?=[a-z0-9])/g, "$1")
     .replace(/([a-z0-9])\1{2,}/g, "$1$1")
-    // collapse runs of whitespace
     .replace(/\s+/g, " ")
     .trim();
-  // tokenless version for exact-word matching
-  const tight = withSpace;
-  return { normalized: tight, keepWhitespace: withSpace };
+  const tight = spaced.replace(/\s+/g, "");
+  return { normalized: spaced, tight };
 }
+
 
 export type CompiledMatcher = {
   version: number;
