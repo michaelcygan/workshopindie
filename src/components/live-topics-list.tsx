@@ -194,7 +194,7 @@ export function LiveTopicsList({
           noneLive ? "bg-primary/40" : "bg-primary",
         )} />
       </span>
-      <span>{noneLive ? "Start the night" : "Live now"}</span>
+      <span>{noneLive ? "Open a Lounge" : "Live now"}</span>
       {!noneLive && (
         <span className="tabular-nums text-primary/70">· {liveCount}</span>
       )}
