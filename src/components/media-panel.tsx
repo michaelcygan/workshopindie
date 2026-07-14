@@ -980,7 +980,7 @@ function ChatPanel({
                     {!mine && prof && (
                       <div className="text-[10px] font-medium opacity-60 mb-0.5">{prof.display_name || prof.username}</div>
                     )}
-                    <div className="whitespace-pre-wrap break-words">{msg.body}</div>
+                    <div className="whitespace-pre-wrap break-words"><RenderLinks text={msg.body} /></div>
                   </div>
                 </motion.div>
               );
