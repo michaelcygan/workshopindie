@@ -1,15 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { requireCronSecret } from "@/lib/cron-auth";
 
 /**
  * Auto-cancel events that accumulate >=3 unresolved "not_an_event" reports.
  * Called by pg_cron every 15 minutes. Idempotent — skips already-canceled events.
+ *
+ * Requires `x-cron-secret: $CRON_SECRET` header.
  */
 const AUTO_CANCEL_THRESHOLD = 3;
 
 export const Route = createFileRoute("/api/public/events/report-sweep")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
+        const denied = requireCronSecret(request);
+        if (denied) return denied;
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         const { data: reports, error } = await supabaseAdmin
