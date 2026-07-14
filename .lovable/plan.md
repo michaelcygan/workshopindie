@@ -1,32 +1,27 @@
-## Diagnosis
+# Lounge "time remaining" countdown
 
-The Lounge has multiple auto-close paths, and one is very likely causing the “closed after a minute or two” behavior:
+Today the Lounge auto-closes an idle user after ~12 minutes total (10 min silent warn window, then a 2 min "Keep going?" grace period), but the timer is invisible — users only see the dialog when it's almost too late. This adds a visible countdown so nobody is surprised.
 
-- The client has a “quiet” guard: if a user is muted and camera-off, it warns after 2 minutes and drops them 1 minute later.
-- The backend presence slot claim sweeps presence rows after only 60 seconds.
-- Older database triggers/jobs can archive a Lounge when the last presence row is deleted, which can happen during cleanup/unmount/reconnect flows.
-- The Lounge page then redirects non-host users whenever the room status becomes non-active, showing “This Lounge ended.”
+## What the user sees
 
-## Implementation plan
+1. **Idle countdown pill** in the Lounge header (next to the "Live · N/5" indicator).
+   - Hidden while the user is active (mic on OR camera on OR recently interacted).
+   - Once the user has been muted + camera-off continuously, a small pill appears:
+     - `Auto-close in 9:58` — counts down the 10 min quiet window.
+     - Turns amber at ≤2 min, red at ≤1 min.
+   - Clicking the pill (or unmuting / turning camera on / moving the mouse in the Lounge) resets it and hides the pill.
+2. **"Keep going?" dialog** already exists; add a live `m:ss` countdown inside it showing the 2 min grace before auto-leave, plus a clearer "Auto-leaving in 1:47" line. "Keep going" dismisses and resets.
+3. Nothing changes for hosts ending the Lounge manually, or for the room-level lifecycle — this is purely the per-viewer idle timer surfaced visually.
 
-1. **Make Lounge presence more forgiving**
-   - Increase the live-presence stale window from 60 seconds to a safer grace period, so a missed heartbeat or brief tab/network pause does not make the room look empty.
-   - Update the Lounge slot-claim cleanup so it does not delete a participant after only 60 seconds.
+## Technical notes
 
-2. **Stop accidental archiving from normal exits/reconnects**
-   - Replace any “archive immediately when last presence leaves” behavior with the newer emptied-at grace lifecycle.
-   - Keep real manual endings intact: the named Lounge owner can still explicitly end the Lounge.
+- All changes are in `src/components/channel-view.tsx`; no server, DB, or route changes.
+- Reuse the existing `QUIET_WARN_MS` (10 min) and `QUIET_KICK_MS` (2 min) constants — the countdown is derived from the same `quietSince` timestamp that already arms the warn/kick timers, so the pill and dialog can never drift from the real close time.
+- Add a `quietSince: number | null` state (set when mic+cam go quiet, cleared on any activity) and a 1 s `setInterval` that only ticks while `quietSince != null` to avoid unnecessary renders.
+- Countdown pill is a small `rounded-full` chip matching existing header pill styling (border-border, text-[11px]); no new dependencies.
+- Accessibility: pill uses `aria-live="polite"` so screen readers get updates without spamming; dialog countdown uses `role="timer"`.
 
-3. **Add/adjust the “Keep going?” warning before any idle drop**
-   - Change the quiet-state popup copy to “Keep going?”
-   - Make the idle window more forgiving than the current 2-minute warning + 1-minute drop.
-   - “Keep going” will reset/dismiss the warning without closing the Lounge.
+## Out of scope
 
-4. **Make the route handling less confusing**
-   - If the room is truly manually ended, keep the “This Lounge ended” path.
-   - If the room was only archived/stale, avoid messaging it as if someone ended it, and route users back more gracefully.
-
-5. **Verify the flow**
-   - Check the Lounge no longer closes from a short idle period.
-   - Confirm manual “End” still works.
-   - Confirm leaving/hopping still removes presence without causing premature closure for others.
+- Changing the 10/2 min thresholds.
+- A room-wide "this Lounge closes at HH:MM" clock (rooms don't have a scheduled end — only the idle-viewer timer does).
