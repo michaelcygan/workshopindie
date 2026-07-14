@@ -82,11 +82,16 @@ export const listModerationEvents = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const { data } = await admin
+    const { data: events } = await admin
       .from("moderation_events")
-      .select("id, user_id, surface, subject_id, category, severity, term_hash, created_at, profiles:profiles!moderation_events_user_id_fkey(display_name, username)")
+      .select("id, user_id, surface, subject_id, category, severity, term_hash, created_at")
       .order("created_at", { ascending: false })
       .limit(200);
-    return data ?? [];
+    const userIds = Array.from(new Set((events ?? []).map((e) => e.user_id).filter(Boolean))) as string[];
+    const { data: profs } = userIds.length
+      ? await admin.from("profiles").select("id, display_name, username").in("id", userIds)
+      : { data: [] as { id: string; display_name: string | null; username: string | null }[] };
+    const pMap = new Map((profs ?? []).map((p) => [p.id, p]));
+    return (events ?? []).map((e) => ({ ...e, profile: e.user_id ? pMap.get(e.user_id) ?? null : null }));
   });
 
