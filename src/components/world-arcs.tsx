@@ -512,6 +512,30 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
     };
   }, [promos]);
 
+  // Hover-to-freeze + SPA-navigate on click for the floating pill.
+  useEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+    const enter = () => { hoveredRef.current = true; };
+    const leave = () => { hoveredRef.current = false; };
+    const click = (e: MouseEvent) => {
+      const href = currentPromoRef.current?.href;
+      if (!href) return;
+      // Let cmd/ctrl/middle-click open in new tab.
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
+      e.preventDefault();
+      router.navigate({ to: href });
+    };
+    label.addEventListener("mouseenter", enter);
+    label.addEventListener("mouseleave", leave);
+    label.addEventListener("click", click);
+    return () => {
+      label.removeEventListener("mouseenter", enter);
+      label.removeEventListener("mouseleave", leave);
+      label.removeEventListener("click", click);
+    };
+  }, [router]);
+
   return (
     <div ref={wrapRef} className={className ?? "relative"}>
       <canvas ref={canvasRef} className="absolute inset-0" />
