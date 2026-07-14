@@ -75,7 +75,7 @@ export function WorkPeek({
               <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
                 <img src={work.cover_url} alt={work.title} className="h-full w-full object-cover" />
                 <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChip category={work.category} />
+                  <CategoryChips primary={work.category} categories={work.categories} />
                 </div>
                 <div className="absolute right-3 top-3 rounded-full bg-surface/90 backdrop-blur px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">
                   {SOURCE_LABELS[work.source_type] ?? work.source_type}
