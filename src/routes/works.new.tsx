@@ -384,90 +384,14 @@ function NewWork() {
             />
           </section>
 
-          {/* Category */}
           <section className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <Label>Categories</Label>
-              <span className="text-xs text-ink-muted">
-                {1 + extraCategories.length}/3 · star to change primary
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {WORK_CATEGORIES.map((c) => {
-                const id = c.id as WorkCategory;
-                const isPrimary = category === id;
-                const isExtra = extraCategories.includes(id);
-                const isSelected = isPrimary || isExtra;
-                const toggle = () => {
-                  if (isPrimary) {
-                    // Unselect primary — promote first extra if any
-                    if (extraCategories.length === 0) return;
-                    const [nextPrimary, ...rest] = extraCategories;
-                    setCategory(nextPrimary);
-                    setExtraCategories(rest);
-                    setSubtype(null);
-                    return;
-                  }
-                  if (isExtra) {
-                    setExtraCategories(extraCategories.filter((x) => x !== id));
-                    return;
-                  }
-                  if (extraCategories.length >= 2) {
-                    toast.info("Up to 3 categories. Remove one first.");
-                    return;
-                  }
-                  setExtraCategories([...extraCategories, id]);
-                };
-                const promote = (e: React.MouseEvent) => {
-                  e.stopPropagation();
-                  if (isPrimary) return;
-                  // Move current primary into extras, promote clicked
-                  const nextExtras = [category, ...extraCategories.filter((x) => x !== id)].slice(0, 2);
-                  setCategory(id);
-                  setExtraCategories(nextExtras);
-                  setSubtype(null);
-                };
-                return (
-                  <span key={c.id} className="relative inline-flex">
-                    <button
-                      type="button"
-                      onClick={toggle}
-                      className={cn(
-                        "rounded-full border px-3 py-1.5 text-sm transition",
-                        isPrimary
-                          ? cn("border-transparent pl-6", categoryClass(id))
-                          : isExtra
-                            ? cn("border-transparent pr-7", categoryClass(id), "opacity-90")
-                            : "border-border bg-surface text-ink-soft hover:bg-muted",
-                      )}
-                    >
-                      {c.label}
-                    </button>
-                    {isPrimary && (
-                      <Star
-                        className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 fill-current"
-                        aria-label="Primary category"
-                      />
-                    )}
-                    {isExtra && (
-                      <button
-                        type="button"
-                        onClick={promote}
-                        className="absolute right-1 top-1/2 grid h-5 w-5 -translate-y-1/2 place-items-center rounded-full text-current hover:bg-black/10"
-                        aria-label={`Make ${c.label} the primary category`}
-                        title="Make primary"
-                      >
-                        <Star className="h-3 w-3" />
-                      </button>
-                    )}
-                    {!isSelected && null}
-                  </span>
-                );
-              })}
-            </div>
-            <p className="text-xs text-ink-muted">
-              Tap to add up to 3. Star an extra to make it the primary — cover color and share card follow the primary.
-            </p>
+            <CategoryMultiPicker
+              primary={category}
+              onPrimaryChange={(next) => setCategory(next)}
+              extras={extraCategories}
+              onExtrasChange={setExtraCategories}
+              onPrimaryReset={() => setSubtype(null)}
+            />
             {subtypeOptions.length > 0 && (
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {subtypeOptions.map((s) => (
