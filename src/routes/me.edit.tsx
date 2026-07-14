@@ -309,9 +309,15 @@ function EditProfile() {
           <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Cover image</Label>
-              <div className="w-full max-w-xs">
-                <ImageUpload value={form.cover} onChange={(v) => set("cover", v)} bucket="covers" aspect="wide" label="Upload cover (16:6)" />
-              </div>
+            <div className="space-y-2">
+              <Label>Cover image</Label>
+              <CoverImagePicker
+                value={form.cover}
+                onChange={(v) => set("cover", v)}
+                works={ownedWorks.map((w) => ({ id: w.id, title: w.title, cover_url: w.cover_url }))}
+                worksLoading={worksLoading}
+              />
+              <p className="text-xs text-ink-muted">Upload a wide image, or pick one from a Work you've published.</p>
             </div>
 
             <div className="flex gap-4 items-start">
