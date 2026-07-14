@@ -26,7 +26,7 @@ type Props = {
  * Idempotent: rapid clicks are debounced by `busy`, and a request-id ref
  * ensures a slow prior request cannot overwrite the newly selected room.
  */
-export function HopButton({ roomId, medium, mode }: Props) {
+export function HopButton({ roomId, medium, mode, tone = "outline", fullWidth = false }: Props) {
   const router = useRouter();
   const { user } = useAuth();
   const drop = useServerFn(joinLounge);
