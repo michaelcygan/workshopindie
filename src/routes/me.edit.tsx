@@ -309,8 +309,6 @@ function EditProfile() {
           <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Cover image</Label>
-            <div className="space-y-2">
-              <Label>Cover image</Label>
               <CoverImagePicker
                 value={form.cover}
                 onChange={(v) => set("cover", v)}
