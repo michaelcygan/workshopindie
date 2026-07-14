@@ -474,7 +474,7 @@ function WorkshopPreflight() {
             <RadioTower className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-ink truncate">Hosting a session?</div>
+            <div className="text-sm font-medium text-ink truncate">Hosting a Lounge?</div>
             <p className="text-xs text-ink-muted truncate">
               Optional: name it so it stays yours to rename or end.
             </p>
