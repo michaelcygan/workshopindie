@@ -493,6 +493,21 @@ function GalleryPage() {
                 >
                   Following
                 </button>
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      navigate({ to: "/login" });
+                      return;
+                    }
+                    setSearch({ tab: "favorites" });
+                  }}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-sm transition",
+                    tab === "favorites" ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  Favorites
+                </button>
               </div>
 
               <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
