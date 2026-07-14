@@ -233,14 +233,17 @@ function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: 
 export function VideoStage({
   m,
   meDisplay,
+  meAvatar = null,
   profileLookup,
 }: {
   m: MediaState;
   meDisplay: string;
+  meAvatar?: string | null;
   profileLookup: Map<string, ProfileLite>;
   /** Deprecated: parent now owns the persistent expand button. */
   onEnterFullscreen?: () => void;
 }) {
+
   const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
   const audioPeers = m.peers.filter((p) => !(p.mode === "video" && p.stream));
   const showLocalVideo = m.cameraOn && m.localStream;
