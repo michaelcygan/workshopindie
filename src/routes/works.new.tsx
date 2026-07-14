@@ -17,7 +17,7 @@ import { CoverFramer, type CoverAspect, type CoverFocal } from "@/components/cov
 import { CoCreatorPicker, type CoCreator } from "@/components/cocreator-picker";
 
 import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.functions";
-import { WORK_CATEGORIES, WORK_SUBTYPES, type Category, type WorkCategory, categoryClass } from "@/lib/categories";
+import { WORK_SUBTYPES, type Category, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
