@@ -1,27 +1,71 @@
-# Lounge "time remaining" countdown
+## What you're asking for
 
-Today the Lounge auto-closes an idle user after ~12 minutes total (10 min silent warn window, then a 2 min "Keep going?" grace period), but the timer is invisible — users only see the dialog when it's almost too late. This adds a visible countdown so nobody is surprised.
+Right now a Work has exactly one Category (Film / Music / Writing / Book / Build / Visual). Real posts often span more than one — your YouTube example is a Music release *and* a Visual piece you made. Same for a self-shot short (Film + Music), a game with your art (Build + Visual), an illustrated zine (Writing/Book + Visual), etc.
 
-## What the user sees
+I'll make Works multi-category, mark the same fix in the other two places this shows up (Collab posts and Workshops), and keep everything backward compatible.
 
-1. **Idle countdown pill** in the Lounge header (next to the "Live · N/5" indicator).
-   - Hidden while the user is active (mic on OR camera on OR recently interacted).
-   - Once the user has been muted + camera-off continuously, a small pill appears:
-     - `Auto-close in 9:58` — counts down the 10 min quiet window.
-     - Turns amber at ≤2 min, red at ≤1 min.
-   - Clicking the pill (or unmuting / turning camera on / moving the mouse in the Lounge) resets it and hides the pill.
-2. **"Keep going?" dialog** already exists; add a live `m:ss` countdown inside it showing the 2 min grace before auto-leave, plus a clearer "Auto-leaving in 1:47" line. "Keep going" dismisses and resets.
-3. Nothing changes for hosts ending the Lounge manually, or for the room-level lifecycle — this is purely the per-viewer idle timer surfaced visually.
+## Where the phenomenon repeats
+
+Grepping the schema, three tables carry a single `category` today:
+
+- `works` — hit you just described
+- `collab_posts` — a Collab can also be cross-discipline ("music video: need composer + illustrator")
+- `workshops` — a Workshop can serve multiple crafts ("Music + Visual jam")
+
+Groups and Instant Rooms also have `category`, but there it's a type discriminator (a City group is a City; a Jam room is a Jam) — those stay single.
+
+Interesting note: `works.subcategories`, `collab_posts.subcategories`, and `workshops.subcategories` already exist as unused `text[]` columns. I'll leave them alone (their name is misleading — sounds like subtypes) and add a properly typed enum array.
+
+## Plan
+
+### 1. Data model (migration)
+
+- New Postgres enum `work_category` matching `WORK_CATEGORY_IDS` in `src/lib/categories.ts` (`film`, `music`, `writing`, `writing_book`, `build`, `visual`).
+- Add `categories work_category[] NOT NULL DEFAULT '{}'` to `works`, `collab_posts`, `workshops`.
+- Backfill: `UPDATE ... SET categories = ARRAY[category::text::work_category]` so every existing row has its current category in the array.
+- Keep the existing scalar `category` column as the **primary** (drives cover color, default filter grouping, share card). The array is the *full* set including the primary.
+- GIN index on each new `categories` column for fast "match any" filtering.
+- Trigger on each table: ensure `primary` is always inside `categories`; if `categories` is empty on insert, seed it with `[category]`. Prevents drift.
+
+### 2. Compose UI
+
+`src/routes/works.new.tsx` — replace the single-select category grid with a multi-select:
+
+- Same 6 chips, tap to toggle. First one tapped becomes primary (star icon, "Primary" pill). Long-press / star icon on any selected chip promotes it to primary.
+- Cap at 3 categories to keep the card readable.
+- Subtype dropdown stays but binds to the *primary* category.
+- Book Details section only shows when `writing_book` is primary (unchanged rule).
+
+Same treatment for `src/routes/collab.new.tsx` and `src/routes/workshops.new.tsx` (and their edit routes).
+
+### 3. Display
+
+Card / peek / lightbox surfaces that render a single category chip get a small "+N" chip when there are extras, expanding to show all on hover / tap:
+
+- `src/components/work-card.tsx`, `work-peek.tsx`, `work-lightbox.tsx`
+- `src/components/collab-card.tsx`, `collab-peek.tsx`
+- `src/components/workshop-card.tsx`
+- Detail routes (`works.$slug.tsx`, `collab.$slug.tsx`, `workshops.$slug.tsx`) render the full chip row inline.
+
+Primary chip keeps `categoryClass()` styling; extras render in a neutral outline style so the primary still leads the eye.
+
+### 4. Filters & feeds
+
+Any surface filtering by category (`gallery.tsx`, `groups.index.tsx`, `cities.$slug.tsx`, `collab.index.tsx`, `me.collabs.tsx`, `workshops.index.tsx`, `fresh-works-strip.tsx`, `network.functions.ts`, `works.functions.ts`, `lobby.functions.ts`, `gallery.functions.ts`) switches from `.eq('category', c)` to `.contains('categories', [c])`. Works that were only tagged Music before still match because they were backfilled.
+
+### 5. Types
+
+Regenerate `src/integrations/supabase/types.ts` after the migration so `categories: WorkCategory[]` is typed everywhere.
+
+## Out of scope (call these out so we don't scope-creep)
+
+- `work_credits.role` and `work_collaborators` — a person's per-work role is a different axis (you as Composer *and* Director on one film). That's a related-but-separate improvement; I'll leave it alone this pass unless you want it bundled.
+- Groups / Instant Rooms `category` stays single (see reasoning above).
+- No changes to Category color tokens or the 6 category set.
 
 ## Technical notes
 
-- All changes are in `src/components/channel-view.tsx`; no server, DB, or route changes.
-- Reuse the existing `QUIET_WARN_MS` (10 min) and `QUIET_KICK_MS` (2 min) constants — the countdown is derived from the same `quietSince` timestamp that already arms the warn/kick timers, so the pill and dialog can never drift from the real close time.
-- Add a `quietSince: number | null` state (set when mic+cam go quiet, cleared on any activity) and a 1 s `setInterval` that only ticks while `quietSince != null` to avoid unnecessary renders.
-- Countdown pill is a small `rounded-full` chip matching existing header pill styling (border-border, text-[11px]); no new dependencies.
-- Accessibility: pill uses `aria-live="polite"` so screen readers get updates without spamming; dialog countdown uses `role="timer"`.
-
-## Out of scope
-
-- Changing the 10/2 min thresholds.
-- A room-wide "this Lounge closes at HH:MM" clock (rooms don't have a scheduled end — only the idle-viewer timer does).
+- Migration is additive + backfill, so nothing existing breaks mid-deploy: reads keep working off scalar `category`, new writes populate both.
+- Every read path is updated in the same PR; the scalar `category` column stays as source-of-truth for "primary" going forward (not dropped).
+- Trigger enforces the invariant `category = ANY(categories)` on insert/update so any legacy code path that only sets the scalar still produces a valid array.
+- The Compose form writes both `category` (primary) and `categories` (full set) atomically.
