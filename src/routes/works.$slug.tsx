@@ -197,8 +197,8 @@ function WorkDetail() {
             <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-soft">
               {SOURCE_LABELS[work.source_type] ?? work.source_type}
             </span>
-            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
-              {work.license_type.replace("_", " ")}
+            <span className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] text-ink-muted">
+              {LICENSE_LABELS[work.license_type] ?? work.license_type.replaceAll("_", " ")}
             </span>
           </div>
           <h1 className="font-display text-4xl leading-[1.05] text-ink md:text-6xl">{work.title}</h1>
