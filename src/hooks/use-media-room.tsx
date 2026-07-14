@@ -357,40 +357,270 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }
 
+  // -------------------------------------------------------------------------
+  // Per-pair health ladder helpers (audio-first).
+  //   ok      → normal operation
+  //   degraded → step video down and cap audio to Opus 16k
+  //   video-off → replaceTrack(null) on this pair only; audio still flows
+  // -------------------------------------------------------------------------
+  async function capAudioSender(pc: RTCPeerConnection, maxKbps: number) {
+    const audio = pc.getSenders().find((s) => s.track?.kind === "audio");
+    if (!audio) return;
+    try {
+      const params = audio.getParameters();
+      if (!params.encodings || params.encodings.length === 0) params.encodings = [{}];
+      params.encodings[0] = { ...params.encodings[0], maxBitrate: maxKbps * 1000 };
+      await audio.setParameters(params);
+    } catch { /* noop — Safari < 16 rejects audio setParameters */ }
+  }
+
+  async function transitionHealth(peerId: string, target: "ok" | "degraded" | "video-off") {
+    const meta = peerMetaRef.current.get(peerId);
+    const pc = pcsRef.current.get(peerId);
+    if (!meta || !pc || meta.healthState === target) return;
+    meta.healthState = target;
+
+    if (target === "degraded") {
+      // Step video profile down (mesh-wide) — cheap; only affects senders.
+      const screenActive = profileRef.current.screenKbps > 0;
+      const stepped = stepDown(profileRef.current, screenActive);
+      if (stepped) {
+        profileRef.current = stepped;
+        adaptiveFloorRef.current = stepped;
+        setBandwidthReduced(true);
+        applyBudget().catch(() => {});
+      }
+      // Give audio some headroom.
+      await capAudioSender(pc, 24);
+    } else if (target === "video-off") {
+      // Suspend video sender to THIS peer only — audio continues.
+      const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+      if (sender && !meta.videoOffSuspended) {
+        try { await sender.replaceTrack(null); } catch { /* noop */ }
+        meta.videoOffSuspended = true;
+      }
+      await capAudioSender(pc, 16);
+    } else if (target === "ok") {
+      // Restore video track to this peer if we suspended it.
+      if (meta.videoOffSuspended) {
+        const sender = pc.getSenders().find((s) => s.track?.kind === "video");
+        const camTrack = screenStreamRef.current?.getVideoTracks()[0]
+          ?? localStreamRef.current?.getVideoTracks()[0]
+          ?? null;
+        if (sender && camTrack) {
+          try { await sender.replaceTrack(camTrack); } catch { /* noop */ }
+        }
+        meta.videoOffSuspended = false;
+      }
+      // Release adaptive floor so pickProfile can climb back with room shape.
+      adaptiveFloorRef.current = null;
+      applyBudget().catch(() => {});
+    }
+  }
+
+  async function flushSnapshot(peerId: string, meta: PeerMeta) {
+    if (!meta.eventId || meta.snapSampleCount === 0) return;
+    const n = meta.snapSampleCount;
+    const payload = {
+      eventId: meta.eventId,
+      avgRttMs: Math.round(meta.snapAccRttMs / n),
+      avgOutboundKbpsVideo: Math.round(meta.snapAccKbpsOutV / n),
+      avgOutboundKbpsAudio: Math.round(meta.snapAccKbpsOutA / n),
+      avgInboundKbpsVideo: Math.round(meta.snapAccKbpsInV / n),
+      avgInboundKbpsAudio: Math.round(meta.snapAccKbpsInA / n),
+      jitterMsIn: Math.round((meta.snapAccJitter / n) * 1000),
+      framesDropped: meta.snapLastFramesDropped,
+      outboundWidth: meta.snapLastFrameW || undefined,
+      outboundHeight: meta.snapLastFrameH || undefined,
+      outboundFps: meta.snapLastFps || undefined,
+      qualityLimitationReason: meta.snapLastQlr,
+      iceRestarts: meta.iceRestarts,
+      reconnectCount: meta.reconnectCount,
+      healthState: meta.healthState,
+      packetLossPctOut: meta.snapLastPacketsOut > 0
+        ? Math.round((meta.snapLastRetransOut / Math.max(1, meta.snapLastPacketsOut)) * 10000) / 100
+        : undefined,
+      packetLossPctIn: (meta.snapLastPacketsInRecv + meta.snapLastPacketsInLost) > 0
+        ? Math.round((meta.snapLastPacketsInLost / (meta.snapLastPacketsInRecv + meta.snapLastPacketsInLost)) * 10000) / 100
+        : undefined,
+    };
+    // Reset accumulators for the next window.
+    meta.snapSampleCount = 0;
+    meta.snapAccRttMs = 0;
+    meta.snapAccKbpsOutV = 0;
+    meta.snapAccKbpsOutA = 0;
+    meta.snapAccKbpsInV = 0;
+    meta.snapAccKbpsInA = 0;
+    meta.snapAccJitter = 0;
+    try {
+      await recordWebrtcSnapshot({ data: payload });
+    } catch (e) {
+      // Never fatal — telemetry is best-effort.
+      if (import.meta.env.DEV) console.debug("snapshot flush failed", e);
+    }
+    void peerId;
+  }
+
   function startStatsPoller() {
     if (statsTimerRef.current !== null) return;
     const tick = async () => {
       try {
-        let shouldStepDown = false;
         for (const [peerId, pc] of pcsRef.current.entries()) {
+          const meta = peerMetaRef.current.get(peerId);
+          if (!meta) continue;
           const stats = await pc.getStats();
-          let bwLimited = false;
+
+          // Dev-only invariant: exactly one video sender per pair.
+          if (import.meta.env.DEV) {
+            const videoSenders = pc.getSenders().filter((s) => s.track?.kind === "video");
+            if (videoSenders.length > 1) {
+              console.warn(`[mesh] duplicate video senders on peer ${peerId} (${videoSenders.length})`);
+            }
+          }
+
+          // Accumulate per-sample raw counters, then compute deltas → rates.
+          let bytesOutV = 0, bytesOutA = 0, bytesInV = 0, bytesInA = 0;
+          let packetsOut = 0, retransOut = 0;
+          let packetsInLost = 0, packetsInRecv = 0;
+          let frameW = 0, frameH = 0, fps = 0, framesDropped = 0;
+          let qlr: "none" | "cpu" | "bandwidth" | "other" = "none";
+          let rttSec = 0;
+          let jitterSec = 0;
+
           stats.forEach((r) => {
-            const rec = r as { type?: string; kind?: string; qualityLimitationReason?: string };
-            if (rec.type === "outbound-rtp" && rec.kind === "video" && rec.qualityLimitationReason === "bandwidth") {
-              bwLimited = true;
+            const rec = r as {
+              type?: string; kind?: string;
+              bytesSent?: number; bytesReceived?: number;
+              packetsSent?: number; packetsLost?: number; packetsReceived?: number;
+              retransmittedPacketsSent?: number;
+              framesPerSecond?: number; frameWidth?: number; frameHeight?: number;
+              framesDropped?: number; jitter?: number;
+              qualityLimitationReason?: string;
+              currentRoundTripTime?: number; selected?: boolean; nominated?: boolean; state?: string;
+            };
+            if (rec.type === "outbound-rtp" && rec.kind === "video") {
+              bytesOutV += rec.bytesSent ?? 0;
+              packetsOut += rec.packetsSent ?? 0;
+              retransOut += rec.retransmittedPacketsSent ?? 0;
+              frameW = rec.frameWidth ?? frameW;
+              frameH = rec.frameHeight ?? frameH;
+              fps = rec.framesPerSecond ?? fps;
+              const reason = rec.qualityLimitationReason;
+              if (reason === "cpu" || reason === "bandwidth" || reason === "other" || reason === "none") {
+                qlr = reason;
+              }
+            } else if (rec.type === "outbound-rtp" && rec.kind === "audio") {
+              bytesOutA += rec.bytesSent ?? 0;
+            } else if (rec.type === "inbound-rtp" && rec.kind === "video") {
+              bytesInV += rec.bytesReceived ?? 0;
+              packetsInLost += rec.packetsLost ?? 0;
+              packetsInRecv += rec.packetsReceived ?? 0;
+              framesDropped += rec.framesDropped ?? 0;
+            } else if (rec.type === "inbound-rtp" && rec.kind === "audio") {
+              bytesInA += rec.bytesReceived ?? 0;
+              packetsInLost += rec.packetsLost ?? 0;
+              packetsInRecv += rec.packetsReceived ?? 0;
+              jitterSec = Math.max(jitterSec, rec.jitter ?? 0);
+            } else if (rec.type === "candidate-pair" && (rec.selected || (rec.nominated && rec.state === "succeeded"))) {
+              rttSec = rec.currentRoundTripTime ?? rttSec;
             }
           });
-          const prev = consecutiveBwLimitedRef.current.get(peerId) ?? 0;
-          const next = bwLimited ? prev + 1 : 0;
-          consecutiveBwLimitedRef.current.set(peerId, next);
-          if (next >= 2) shouldStepDown = true;
-        }
-        if (shouldStepDown) {
-          const screenActive = profileRef.current.screenKbps > 0;
-          const stepped = stepDown(profileRef.current, screenActive);
-          if (stepped) {
-            profileRef.current = stepped;
-            adaptiveFloorRef.current = stepped;
-            setBandwidthReduced(true);
-            consecutiveBwLimitedRef.current.clear();
-            applyBudget().catch(() => {});
+
+          // Compute deltas since last tick (4s window).
+          const dOutV = Math.max(0, bytesOutV - meta.snapLastBytesOutVideo);
+          const dOutA = Math.max(0, bytesOutA - meta.snapLastBytesOutAudio);
+          const dInV = Math.max(0, bytesInV - meta.snapLastBytesInVideo);
+          const dInA = Math.max(0, bytesInA - meta.snapLastBytesInAudio);
+          const dPktsOut = Math.max(0, packetsOut - meta.snapLastPacketsOut);
+          const dRetrans = Math.max(0, retransOut - meta.snapLastRetransOut);
+          const dPktsInLost = Math.max(0, packetsInLost - meta.snapLastPacketsInLost);
+          const dPktsInRecv = Math.max(0, packetsInRecv - meta.snapLastPacketsInRecv);
+
+          meta.snapLastBytesOutVideo = bytesOutV;
+          meta.snapLastBytesOutAudio = bytesOutA;
+          meta.snapLastBytesInVideo = bytesInV;
+          meta.snapLastBytesInAudio = bytesInA;
+          meta.snapLastPacketsOut = packetsOut;
+          meta.snapLastRetransOut = retransOut;
+          meta.snapLastPacketsInLost = packetsInLost;
+          meta.snapLastPacketsInRecv = packetsInRecv;
+          meta.snapLastFrameW = frameW;
+          meta.snapLastFrameH = frameH;
+          meta.snapLastFps = Math.round(fps);
+          meta.snapLastFramesDropped = framesDropped;
+          meta.snapLastQlr = qlr;
+
+          // First tick establishes baseline — accumulate only from the second on.
+          if (meta.snapLastBytesOutVideo === bytesOutV && meta.snapSampleCount === 0 && dOutV === 0 && dInV === 0) {
+            // seed only
+          } else {
+            const kbpsOutV = (dOutV * 8) / 1000 / 4;
+            const kbpsOutA = (dOutA * 8) / 1000 / 4;
+            const kbpsInV = (dInV * 8) / 1000 / 4;
+            const kbpsInA = (dInA * 8) / 1000 / 4;
+            meta.snapAccKbpsOutV += kbpsOutV;
+            meta.snapAccKbpsOutA += kbpsOutA;
+            meta.snapAccKbpsInV += kbpsInV;
+            meta.snapAccKbpsInA += kbpsInA;
+            meta.snapAccRttMs += rttSec * 1000;
+            meta.snapAccJitter += jitterSec;
+            meta.snapSampleCount++;
+          }
+
+          // Audio-first ladder — hysteresis on entry (2) and recovery (3).
+          const outLossPct = dPktsOut > 0 ? (dRetrans / dPktsOut) * 100 : 0;
+          const inLossPct = (dPktsInLost + dPktsInRecv) > 0
+            ? (dPktsInLost / (dPktsInLost + dPktsInRecv)) * 100
+            : 0;
+          const rttMs = rttSec * 1000;
+
+          const badForDegrade =
+            qlr === "bandwidth" || outLossPct > DEGRADE_ENTER_LOSS_PCT ||
+            rttMs > DEGRADE_ENTER_RTT_MS || inLossPct > DEGRADE_ENTER_LOSS_PCT;
+          const badForVideoOff =
+            qlr === "bandwidth" || outLossPct > VIDEO_OFF_ENTER_LOSS_PCT ||
+            inLossPct > VIDEO_OFF_ENTER_LOSS_PCT;
+          const goodEnoughToRecover =
+            qlr !== "bandwidth" &&
+            outLossPct < RECOVER_GOOD_LOSS_PCT &&
+            inLossPct < RECOVER_GOOD_LOSS_PCT &&
+            (rttMs === 0 || rttMs < RECOVER_GOOD_RTT_MS);
+
+          if (badForDegrade) {
+            meta.degradedStreak++;
+            meta.recoverStreak = 0;
+          } else if (goodEnoughToRecover) {
+            meta.recoverStreak++;
+            meta.degradedStreak = 0;
+            meta.videoOffStreak = 0;
+          } else {
+            meta.degradedStreak = Math.max(0, meta.degradedStreak - 1);
+          }
+          if (meta.healthState !== "video-off" && meta.healthState === "degraded" && badForVideoOff) {
+            meta.videoOffStreak++;
+          } else if (!badForVideoOff) {
+            meta.videoOffStreak = Math.max(0, meta.videoOffStreak - 1);
+          }
+
+          if (meta.healthState === "ok" && meta.degradedStreak >= 2) {
+            void transitionHealth(peerId, "degraded");
+          } else if (meta.healthState === "degraded" && meta.videoOffStreak >= 2) {
+            void transitionHealth(peerId, "video-off");
+          } else if (meta.healthState !== "ok" && meta.recoverStreak >= 3) {
+            void transitionHealth(peerId, "ok");
+          }
+
+          // Snapshot flush every ~20s (5 samples).
+          if (meta.snapSampleCount >= SAMPLES_PER_SNAPSHOT) {
+            void flushSnapshot(peerId, meta);
           }
         }
       } catch { /* noop */ }
     };
     statsTimerRef.current = window.setInterval(tick, 4000);
   }
+
+
 
   function stopStatsPoller() {
     if (statsTimerRef.current !== null) {
