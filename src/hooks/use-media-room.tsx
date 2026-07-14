@@ -574,14 +574,15 @@ export function useMediaRoom(roomId: string | undefined) {
             : 0;
           const rttMs = rttSec * 1000;
 
+          const qlrFinal: string = qlr;
           const badForDegrade =
-            qlr === "bandwidth" || outLossPct > DEGRADE_ENTER_LOSS_PCT ||
+            qlrFinal === "bandwidth" || outLossPct > DEGRADE_ENTER_LOSS_PCT ||
             rttMs > DEGRADE_ENTER_RTT_MS || inLossPct > DEGRADE_ENTER_LOSS_PCT;
           const badForVideoOff =
-            qlr === "bandwidth" || outLossPct > VIDEO_OFF_ENTER_LOSS_PCT ||
+            qlrFinal === "bandwidth" || outLossPct > VIDEO_OFF_ENTER_LOSS_PCT ||
             inLossPct > VIDEO_OFF_ENTER_LOSS_PCT;
           const goodEnoughToRecover =
-            qlr !== "bandwidth" &&
+            qlrFinal !== "bandwidth" &&
             outLossPct < RECOVER_GOOD_LOSS_PCT &&
             inLossPct < RECOVER_GOOD_LOSS_PCT &&
             (rttMs === 0 || rttMs < RECOVER_GOOD_RTT_MS);
