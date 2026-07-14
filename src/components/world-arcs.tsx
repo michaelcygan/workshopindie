@@ -328,32 +328,41 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
           continue;
         }
 
+        const kind = pair.kind ?? "work";
+        // Arc + accent colors per kind.
+        const arcRGB =
+          kind === "collab" ? "245,158,66" : kind === "group" ? "214,68,116" : "232,93,58";
+        const landRGB = kind === "collab" ? "245,158,66" : "214,68,116";
+        const isPin = kind === "group";
+
         const lastIdx = Math.floor(drawT * (samples.length - 1));
-        ctx.beginPath();
-        let started = false;
         let lastVisible: { x: number; y: number } | null = null;
-        for (let i = 0; i <= lastIdx; i++) {
-          const lon = samples[i][0];
-          const lat = samples[i][1];
-          const l = (lon * Math.PI) / 180 - lam;
-          const p = (lat * Math.PI) / 180;
-          const cosP = Math.cos(p);
-          const x3 = cosP * Math.sin(l);
-          const y3 = Math.sin(p);
-          const z3 = cosP * Math.cos(l);
-          const yr = y3 * cosPhi - z3 * sinPhi;
-          const zr = y3 * sinPhi + z3 * cosPhi;
-          if (zr < 0) { started = false; continue; }
-          const px = w / 2 + x3 * radius;
-          const py = h / 2 - yr * radius;
-          if (!started) { ctx.moveTo(px, py); started = true; }
-          else ctx.lineTo(px, py);
-          lastVisible = { x: px, y: py };
+        if (!isPin) {
+          ctx.beginPath();
+          let started = false;
+          for (let i = 0; i <= lastIdx; i++) {
+            const lon = samples[i][0];
+            const lat = samples[i][1];
+            const l = (lon * Math.PI) / 180 - lam;
+            const p = (lat * Math.PI) / 180;
+            const cosP = Math.cos(p);
+            const x3 = cosP * Math.sin(l);
+            const y3 = Math.sin(p);
+            const z3 = cosP * Math.cos(l);
+            const yr = y3 * cosPhi - z3 * sinPhi;
+            const zr = y3 * sinPhi + z3 * cosPhi;
+            if (zr < 0) { started = false; continue; }
+            const px = w / 2 + x3 * radius;
+            const py = h / 2 - yr * radius;
+            if (!started) { ctx.moveTo(px, py); started = true; }
+            else ctx.lineTo(px, py);
+            lastVisible = { x: px, y: py };
+          }
+          ctx.strokeStyle = `rgba(${arcRGB},${0.85 * fade})`;
+          ctx.lineWidth = 1.25;
+          ctx.lineCap = "round";
+          ctx.stroke();
         }
-        ctx.strokeStyle = `rgba(232,93,58,${0.85 * fade})`;
-        ctx.lineWidth = 1.25;
-        ctx.lineCap = "round";
-        ctx.stroke();
 
         const project = (lon: number, lat: number) => {
           const l = (lon * Math.PI) / 180 - lam;
@@ -369,15 +378,31 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
         };
         const from = project(pair.from.lon, pair.from.lat);
         if (from) {
-          const g = ctx.createRadialGradient(from.x, from.y, 0, from.x, from.y, 9);
-          g.addColorStop(0, `rgba(232,93,58,${0.55 * fade})`);
-          g.addColorStop(1, "rgba(232,93,58,0)");
+          const g = ctx.createRadialGradient(from.x, from.y, 0, from.x, from.y, isPin ? 13 : 9);
+          g.addColorStop(0, `rgba(${arcRGB},${(isPin ? 0.7 : 0.55) * fade})`);
+          g.addColorStop(1, `rgba(${arcRGB},0)`);
           ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(from.x, from.y, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = `rgba(232,93,58,${0.95 * fade})`;
-          ctx.beginPath(); ctx.arc(from.x, from.y, 2.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(from.x, from.y, isPin ? 13 : 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(${arcRGB},${0.95 * fade})`;
+          ctx.beginPath(); ctx.arc(from.x, from.y, isPin ? 3.2 : 2.4, 0, Math.PI * 2); ctx.fill();
+
+          // For groups, the "landing" is the origin pin itself — pulse it on arrival.
+          if (isPin && slot.landedAt == null && local >= DRAW_MS * 0.2) slot.landedAt = now;
+          if (isPin && slot.landedAt != null) {
+            const since = now - slot.landedAt;
+            if (since >= 0 && since < PULSE_MS) {
+              const t = since / PULSE_MS;
+              const r = 5 + t * 24;
+              const a = (1 - t) * 0.55 * fade;
+              ctx.strokeStyle = `rgba(${arcRGB},${a})`;
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.arc(from.x, from.y, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
         }
-        if (drawT >= 1 && lastVisible) {
+        if (!isPin && drawT >= 1 && lastVisible) {
           const to = project(pair.to.lon, pair.to.lat);
           const tp = to ?? lastVisible;
 
@@ -388,7 +413,7 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
               const t = since / PULSE_MS;
               const r = 4 + t * 22;
               const a = (1 - t) * 0.55 * fade;
-              ctx.strokeStyle = `rgba(214,68,116,${a})`;
+              ctx.strokeStyle = `rgba(${landRGB},${a})`;
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
@@ -397,15 +422,19 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
           }
 
           const g = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, 11);
-          g.addColorStop(0, `rgba(214,68,116,${0.6 * fade})`);
-          g.addColorStop(1, "rgba(214,68,116,0)");
+          g.addColorStop(0, `rgba(${landRGB},${0.6 * fade})`);
+          g.addColorStop(1, `rgba(${landRGB},0)`);
           ctx.fillStyle = g;
           ctx.beginPath(); ctx.arc(tp.x, tp.y, 11, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = `rgba(214,68,116,${0.95 * fade})`;
+          ctx.fillStyle = `rgba(${landRGB},${0.95 * fade})`;
           ctx.beginPath(); ctx.arc(tp.x, tp.y, 3, 0, Math.PI * 2); ctx.fill();
 
           if (!activeLabel || fade > activeLabel.opacity) {
             activeLabel = { pair, x: tp.x, y: tp.y, opacity: fade };
+          }
+        } else if (isPin && from && drawT >= 0.2) {
+          if (!activeLabel || fade > activeLabel.opacity) {
+            activeLabel = { pair, x: from.x, y: from.y, opacity: fade };
           }
         }
       }
