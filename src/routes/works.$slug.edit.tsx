@@ -151,7 +151,7 @@ function EditWork() {
         cover_url: coverUrl,
         primary_url: primaryUrl.trim() || null,
         embed_url: isBook ? null : (embedUrl.trim() || null),
-        license_type: licenseType,
+        license_type: licenseType as "cc_by" | "portfolio_credit_only" | "private" | "rights_managed_externally",
         ...bookFields,
       })
       .eq("id", work.id);
