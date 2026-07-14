@@ -15,6 +15,7 @@ import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
+import { useGlobePromos } from "@/lib/globe-promos";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { HomePulseRail } from "@/components/home-pulse-rail";
@@ -64,6 +65,7 @@ async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds:
 }
 
 function Hero() {
+  const { data: globePromos } = useGlobePromos();
   return (
     <section className="relative isolate overflow-hidden border-b border-border min-h-[88vh] flex items-center">
       {/* Ambient ethereal background */}
@@ -72,8 +74,11 @@ function Hero() {
       <div className="absolute inset-0 -z-10 bg-background/70" />
       <div className="absolute inset-0 -z-10 gradient-soft opacity-60" />
       {/* Animated globe of creative collaborations */}
-      <div className="pointer-events-none absolute inset-0 -z-[5] flex items-end justify-center overflow-hidden md:items-center">
-        <WorldArcs className="relative h-[72vh] min-h-[520px] w-full opacity-90 md:h-[100vh] md:min-h-[760px] md:w-[118vw] md:max-w-[1600px]" />
+      <div className="absolute inset-0 -z-[5] flex items-end justify-center overflow-hidden md:items-center">
+        <WorldArcs
+          className="relative h-[72vh] min-h-[520px] w-full opacity-90 md:h-[100vh] md:min-h-[760px] md:w-[118vw] md:max-w-[1600px]"
+          promos={globePromos}
+        />
       </div>
       <div className="absolute inset-0 -z-[4] bg-gradient-to-b from-background/30 via-transparent to-background/50" />
 

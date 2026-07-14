@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { geoOrthographic, geoInterpolate, geoContains } from "d3-geo";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import landRaw from "@/assets/land-110m.json";
+import type { GlobePromo } from "@/lib/globe-promos";
 
 const land = landRaw as unknown as FeatureCollection<Polygon | MultiPolygon>;
 const landFeature = {
@@ -15,7 +16,14 @@ const landFeature = {
 } as Feature<MultiPolygon>;
 
 type City = { name: string; lon: number; lat: number };
-type Pair = { from: City; to: City; verb: string };
+type Pair = {
+  from: City;
+  to: City;
+  verb: string;
+  kind?: "work" | "collab" | "group";
+  href?: string;
+  title?: string;
+};
 
 const CITIES: Record<string, City> = {
   lagos: { name: "Lagos", lon: 3.38, lat: 6.52 },
@@ -42,7 +50,7 @@ const CITIES: Record<string, City> = {
   accra: { name: "Accra", lon: -0.19, lat: 5.6 },
 };
 
-const PAIRS: Pair[] = [
+const FALLBACK_PAIRS: Pair[] = [
   { from: CITIES.lagos, to: CITIES.berlin, verb: "Scoring a short film" },
   { from: CITIES.saopaulo, to: CITIES.tokyo, verb: "Co-writing a track" },
   { from: CITIES.cdmx, to: CITIES.lisbon, verb: "Cover-photo color study" },
@@ -51,21 +59,32 @@ const PAIRS: Pair[] = [
   { from: CITIES.mumbai, to: CITIES.nyc, verb: "Voice on a chorus" },
   { from: CITIES.bali, to: CITIES.capetown, verb: "Doc footage trade" },
   { from: CITIES.buenosaires, to: CITIES.sydney, verb: "Mixing a single" },
-  { from: CITIES.toronto, to: CITIES.lagos, verb: "Beat cook-off" },
-  { from: CITIES.paris, to: CITIES.cdmx, verb: "Set design pass" },
-  { from: CITIES.tokyo, to: CITIES.nairobi, verb: "Animation cel review" },
-  { from: CITIES.berlin, to: CITIES.saopaulo, verb: "Remix swap" },
   { from: CITIES.london, to: CITIES.accra, verb: "Screenplay table read" },
   { from: CITIES.la, to: CITIES.seoul, verb: "Pitch your loglines" },
   { from: CITIES.istanbul, to: CITIES.montreal, verb: "Poetry round" },
   { from: CITIES.bangkok, to: CITIES.london, verb: "Type-spec crit" },
-  { from: CITIES.montreal, to: CITIES.bali, verb: "Synth patch trade" },
-  { from: CITIES.nyc, to: CITIES.istanbul, verb: "Story-edit pass" },
-  { from: CITIES.accra, to: CITIES.lisbon, verb: "Cover-art jam" },
-  { from: CITIES.sydney, to: CITIES.bangkok, verb: "Lyric workshop" },
   { from: CITIES.capetown, to: CITIES.la, verb: "Stills review" },
-  { from: CITIES.lisbon, to: CITIES.mumbai, verb: "Foley swap" },
 ];
+
+function promosToPairs(promos: GlobePromo[]): Pair[] {
+  return promos.map((p) => ({
+    from: p.from,
+    to: p.to ?? p.from,
+    verb: p.verb ?? p.title,
+    kind: p.kind,
+    href: p.href,
+    title: p.title,
+  }));
+}
+
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 const REDUCE_MOTION =
   typeof window !== "undefined" &&
@@ -82,7 +101,7 @@ const PULSE_MS = 1200;
 
 type ArcSlot = { pairIdx: number; start: number; landedAt: number | null };
 
-export function WorldArcs({ className }: { className?: string }) {
+export function WorldArcs({ className, promos }: { className?: string; promos?: GlobePromo[] }) {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const labelRef = useRef<HTMLDivElement | null>(null);
@@ -170,6 +189,8 @@ export function WorldArcs({ className }: { className?: string }) {
     ro.observe(wrap);
 
     const projection = geoOrthographic().clipAngle(90);
+
+    const PAIRS: Pair[] = promos && promos.length > 0 ? promosToPairs(promos) : FALLBACK_PAIRS;
 
     let nextPair = 0;
     const t0 = performance.now();
@@ -316,32 +337,41 @@ export function WorldArcs({ className }: { className?: string }) {
           continue;
         }
 
+        const kind = pair.kind ?? "work";
+        // Arc + accent colors per kind.
+        const arcRGB =
+          kind === "collab" ? "245,158,66" : kind === "group" ? "214,68,116" : "232,93,58";
+        const landRGB = kind === "collab" ? "245,158,66" : "214,68,116";
+        const isPin = kind === "group";
+
         const lastIdx = Math.floor(drawT * (samples.length - 1));
-        ctx.beginPath();
-        let started = false;
         let lastVisible: { x: number; y: number } | null = null;
-        for (let i = 0; i <= lastIdx; i++) {
-          const lon = samples[i][0];
-          const lat = samples[i][1];
-          const l = (lon * Math.PI) / 180 - lam;
-          const p = (lat * Math.PI) / 180;
-          const cosP = Math.cos(p);
-          const x3 = cosP * Math.sin(l);
-          const y3 = Math.sin(p);
-          const z3 = cosP * Math.cos(l);
-          const yr = y3 * cosPhi - z3 * sinPhi;
-          const zr = y3 * sinPhi + z3 * cosPhi;
-          if (zr < 0) { started = false; continue; }
-          const px = w / 2 + x3 * radius;
-          const py = h / 2 - yr * radius;
-          if (!started) { ctx.moveTo(px, py); started = true; }
-          else ctx.lineTo(px, py);
-          lastVisible = { x: px, y: py };
+        if (!isPin) {
+          ctx.beginPath();
+          let started = false;
+          for (let i = 0; i <= lastIdx; i++) {
+            const lon = samples[i][0];
+            const lat = samples[i][1];
+            const l = (lon * Math.PI) / 180 - lam;
+            const p = (lat * Math.PI) / 180;
+            const cosP = Math.cos(p);
+            const x3 = cosP * Math.sin(l);
+            const y3 = Math.sin(p);
+            const z3 = cosP * Math.cos(l);
+            const yr = y3 * cosPhi - z3 * sinPhi;
+            const zr = y3 * sinPhi + z3 * cosPhi;
+            if (zr < 0) { started = false; continue; }
+            const px = w / 2 + x3 * radius;
+            const py = h / 2 - yr * radius;
+            if (!started) { ctx.moveTo(px, py); started = true; }
+            else ctx.lineTo(px, py);
+            lastVisible = { x: px, y: py };
+          }
+          ctx.strokeStyle = `rgba(${arcRGB},${0.85 * fade})`;
+          ctx.lineWidth = 1.25;
+          ctx.lineCap = "round";
+          ctx.stroke();
         }
-        ctx.strokeStyle = `rgba(232,93,58,${0.85 * fade})`;
-        ctx.lineWidth = 1.25;
-        ctx.lineCap = "round";
-        ctx.stroke();
 
         const project = (lon: number, lat: number) => {
           const l = (lon * Math.PI) / 180 - lam;
@@ -357,15 +387,31 @@ export function WorldArcs({ className }: { className?: string }) {
         };
         const from = project(pair.from.lon, pair.from.lat);
         if (from) {
-          const g = ctx.createRadialGradient(from.x, from.y, 0, from.x, from.y, 9);
-          g.addColorStop(0, `rgba(232,93,58,${0.55 * fade})`);
-          g.addColorStop(1, "rgba(232,93,58,0)");
+          const g = ctx.createRadialGradient(from.x, from.y, 0, from.x, from.y, isPin ? 13 : 9);
+          g.addColorStop(0, `rgba(${arcRGB},${(isPin ? 0.7 : 0.55) * fade})`);
+          g.addColorStop(1, `rgba(${arcRGB},0)`);
           ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(from.x, from.y, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = `rgba(232,93,58,${0.95 * fade})`;
-          ctx.beginPath(); ctx.arc(from.x, from.y, 2.4, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(from.x, from.y, isPin ? 13 : 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = `rgba(${arcRGB},${0.95 * fade})`;
+          ctx.beginPath(); ctx.arc(from.x, from.y, isPin ? 3.2 : 2.4, 0, Math.PI * 2); ctx.fill();
+
+          // For groups, the "landing" is the origin pin itself — pulse it on arrival.
+          if (isPin && slot.landedAt == null && local >= DRAW_MS * 0.2) slot.landedAt = now;
+          if (isPin && slot.landedAt != null) {
+            const since = now - slot.landedAt;
+            if (since >= 0 && since < PULSE_MS) {
+              const t = since / PULSE_MS;
+              const r = 5 + t * 24;
+              const a = (1 - t) * 0.55 * fade;
+              ctx.strokeStyle = `rgba(${arcRGB},${a})`;
+              ctx.lineWidth = 1.25;
+              ctx.beginPath();
+              ctx.arc(from.x, from.y, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+          }
         }
-        if (drawT >= 1 && lastVisible) {
+        if (!isPin && drawT >= 1 && lastVisible) {
           const to = project(pair.to.lon, pair.to.lat);
           const tp = to ?? lastVisible;
 
@@ -376,7 +422,7 @@ export function WorldArcs({ className }: { className?: string }) {
               const t = since / PULSE_MS;
               const r = 4 + t * 22;
               const a = (1 - t) * 0.55 * fade;
-              ctx.strokeStyle = `rgba(214,68,116,${a})`;
+              ctx.strokeStyle = `rgba(${landRGB},${a})`;
               ctx.lineWidth = 1.25;
               ctx.beginPath();
               ctx.arc(tp.x, tp.y, r, 0, Math.PI * 2);
@@ -385,35 +431,63 @@ export function WorldArcs({ className }: { className?: string }) {
           }
 
           const g = ctx.createRadialGradient(tp.x, tp.y, 0, tp.x, tp.y, 11);
-          g.addColorStop(0, `rgba(214,68,116,${0.6 * fade})`);
-          g.addColorStop(1, "rgba(214,68,116,0)");
+          g.addColorStop(0, `rgba(${landRGB},${0.6 * fade})`);
+          g.addColorStop(1, `rgba(${landRGB},0)`);
           ctx.fillStyle = g;
           ctx.beginPath(); ctx.arc(tp.x, tp.y, 11, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = `rgba(214,68,116,${0.95 * fade})`;
+          ctx.fillStyle = `rgba(${landRGB},${0.95 * fade})`;
           ctx.beginPath(); ctx.arc(tp.x, tp.y, 3, 0, Math.PI * 2); ctx.fill();
 
           if (!activeLabel || fade > activeLabel.opacity) {
             activeLabel = { pair, x: tp.x, y: tp.y, opacity: fade };
+          }
+        } else if (isPin && from && drawT >= 0.2) {
+          if (!activeLabel || fade > activeLabel.opacity) {
+            activeLabel = { pair, x: from.x, y: from.y, opacity: fade };
           }
         }
       }
 
       if (label) {
         if (activeLabel) {
+          const p = activeLabel.pair;
+          const kind = p.kind ?? "work";
           label.style.opacity = String(activeLabel.opacity);
           label.style.transform = `translate(${activeLabel.x + 12}px, ${activeLabel.y - 30}px)`;
-          // Hairline pill with pulsing dot + workshop name
-          label.innerHTML = `
-            <span class="relative inline-flex h-1.5 w-1.5 mr-1.5">
-              <span class="absolute inset-0 animate-ping rounded-full bg-primary opacity-70"></span>
-              <span class="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary"></span>
-            </span>
-            <span class="text-ink">${activeLabel.pair.from.name} → ${activeLabel.pair.to.name}</span>
-            <span class="mx-1 text-ink-muted/60">·</span>
-            <span class="text-ink-muted">${activeLabel.pair.verb}</span>
-          `;
+          label.style.pointerEvents = p.href ? "auto" : "none";
+
+          const dotColor =
+            kind === "collab" ? "bg-[rgb(245,158,66)]" :
+            kind === "group" ? "bg-[rgb(214,68,116)]" :
+            "bg-primary";
+
+          const glyph =
+            kind === "collab"
+              ? `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgb(245,158,66)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M3 11l18-8v18l-18-8z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>`
+              : kind === "group"
+              ? `<svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="rgb(214,68,116)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-1"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>`
+              : `<span class="relative inline-flex h-1.5 w-1.5 mr-1.5"><span class="absolute inset-0 animate-ping rounded-full ${dotColor} opacity-70"></span><span class="relative inline-flex h-1.5 w-1.5 rounded-full ${dotColor}"></span></span>`;
+
+          const routeText =
+            kind === "group"
+              ? `<span class="text-ink">${p.from.name}</span>`
+              : `<span class="text-ink">${p.from.name} → ${p.to.name}</span>`;
+
+          const titleText = escapeHtml(p.title ?? p.verb ?? "");
+          const labelText = titleText
+            ? `<span class="mx-1 text-ink-muted/60">·</span><span class="text-ink-muted">${titleText}</span>`
+            : "";
+
+          const inner = `${glyph}${routeText}${labelText}`;
+
+          if (p.href) {
+            label.innerHTML = `<a href="${p.href}" class="inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
+          } else {
+            label.innerHTML = inner;
+          }
         } else {
           label.style.opacity = "0";
+          label.style.pointerEvents = "none";
         }
       }
 
@@ -425,7 +499,7 @@ export function WorldArcs({ className }: { className?: string }) {
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, []);
+  }, [promos]);
 
   return (
     <div ref={wrapRef} className={className ?? "relative"}>
