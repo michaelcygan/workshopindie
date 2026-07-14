@@ -1,46 +1,61 @@
-import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useRouter } from "@tanstack/react-router";
+import type { MouseEvent, ReactNode } from "react";
 
-// Match: [label](href) — href may be internal (/...) or absolute (http/https).
 const MD_LINK = /\[([^\]]+)\]\((\/[^\s)]+|https?:\/\/[^\s)]+)\)/g;
-// Also auto-linkify bare URLs and internal /paths surrounded by whitespace.
 const BARE_URL = /(https?:\/\/[^\s<]+)/g;
+
+function InternalLink({ href, children }: { href: string; children: ReactNode }) {
+  const router = useRouter();
+  function onClick(e: MouseEvent<HTMLAnchorElement>) {
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
+    e.preventDefault();
+    router.navigate({ to: href });
+  }
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className="text-primary underline underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </a>
+  );
+}
+
+function ExternalLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary underline underline-offset-2 hover:opacity-80"
+    >
+      {children}
+    </a>
+  );
+}
 
 /**
  * Render a plain-text string with markdown-style links `[label](href)` and
- * bare URLs turned into clickable links. Internal paths (starting with `/`)
- * use TanStack Router's <Link>; external URLs open in a new tab.
- *
- * Whitespace is preserved by the caller (use `whitespace-pre-wrap` on the
- * wrapping element).
+ * bare URLs. Internal paths (starting with `/`) navigate via the client
+ * router; external URLs open in a new tab. Whitespace is preserved by the
+ * caller (use `whitespace-pre-wrap` on the wrapping element).
  */
-export function renderLinks(text: string): ReactNode[] {
-  if (!text) return [];
+export function RenderLinks({ text }: { text: string }) {
+  if (!text) return null;
   const nodes: ReactNode[] = [];
   let lastIndex = 0;
   let key = 0;
 
-  // First pass: markdown links.
   const pushPlain = (chunk: string) => {
     if (!chunk) return;
-    // Second pass on the plain segment: bare URLs.
     let last = 0;
     let m: RegExpExecArray | null;
     BARE_URL.lastIndex = 0;
     while ((m = BARE_URL.exec(chunk)) !== null) {
       if (m.index > last) nodes.push(chunk.slice(last, m.index));
       const url = m[1];
-      nodes.push(
-        <a
-          key={`u-${key++}`}
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:opacity-80"
-        >
-          {url}
-        </a>,
-      );
+      nodes.push(<ExternalLink key={`u-${key++}`} href={url}>{url}</ExternalLink>);
       last = m.index + url.length;
     }
     if (last < chunk.length) nodes.push(chunk.slice(last));
@@ -52,30 +67,13 @@ export function renderLinks(text: string): ReactNode[] {
     if (match.index > lastIndex) pushPlain(text.slice(lastIndex, match.index));
     const [, label, href] = match;
     if (href.startsWith("/")) {
-      nodes.push(
-        <Link
-          key={`l-${key++}`}
-          to={href}
-          className="text-primary underline underline-offset-2 hover:opacity-80"
-        >
-          {label}
-        </Link>,
-      );
+      nodes.push(<InternalLink key={`l-${key++}`} href={href}>{label}</InternalLink>);
     } else {
-      nodes.push(
-        <a
-          key={`l-${key++}`}
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary underline underline-offset-2 hover:opacity-80"
-        >
-          {label}
-        </a>,
-      );
+      nodes.push(<ExternalLink key={`l-${key++}`} href={href}>{label}</ExternalLink>);
     }
     lastIndex = match.index + match[0].length;
   }
   if (lastIndex < text.length) pushPlain(text.slice(lastIndex));
-  return nodes;
+
+  return <>{nodes}</>;
 }
