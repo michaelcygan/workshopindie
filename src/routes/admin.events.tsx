@@ -343,6 +343,28 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
             Feature on homepage
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.pinned} onChange={(e) => setForm({ ...form, pinned: e.target.checked })} />
+            Pin to top of the group's Events tab
+          </label>
+          <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.is_recurring} onChange={(e) => setForm({ ...form, is_recurring: e.target.checked })} />
+              Recurring event
+            </label>
+            {form.is_recurring && (
+              <div>
+                <Label>Schedule caption</Label>
+                <Input
+                  value={form.recurrence_label}
+                  onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
+                  placeholder="Every Tuesday · First Friday of the month · Weekly"
+                  maxLength={80}
+                />
+                <p className="mt-1 text-[11px] text-ink-muted">Free-text label shown on the card. Update the date/time yourself for each new occurrence.</p>
+              </div>
+            )}
+          </div>
           <div className="rounded-2xl border border-border bg-muted/30 p-3">
             <Label>Lineup spots (optional)</Label>
             <Input
