@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { Heart, Bookmark, Eye, Play, Rocket, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { CategoryChip } from "./category-chip";
+import { CategoryChipsCompact } from "./category-chips";
 import { ProfilePeek } from "./profile-peek";
 import { providerFromUrl, providerLabel } from "./embed-player";
 import { InlineGroupChips } from "./inline-group-chips";
