@@ -79,7 +79,12 @@ export type CompiledMatcher = {
   warn: CompiledRule[];
   allow: CompiledRule[];
 };
-type CompiledRule = { id?: string; category: TermCategory; regex: RegExp };
+type CompiledRule = {
+  id?: string;
+  category: TermCategory;
+  regex: RegExp;
+  target: "spaced" | "tight";
+};
 
 function escapeRegex(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -89,18 +94,22 @@ function compileOne(t: LexiconTerm): CompiledRule | null {
   const normTerm = normalize(t.term).normalized;
   if (!normTerm || normTerm.length < 2) return null;
   try {
-    let pattern: string;
     if (t.kind === "regex") {
-      pattern = t.term; // admin-supplied regex, used verbatim
-    } else if (t.kind === "phrase") {
-      // words separated by whitespace
-      const parts = normTerm.split(/\s+/).map(escapeRegex);
-      pattern = `(?:^|\\P{L})${parts.join("\\s+")}(?:$|\\P{L})`;
-    } else {
-      // exact or allow — single token with unicode word boundaries
-      pattern = `(?:^|\\P{L})${escapeRegex(normTerm)}(?:$|\\P{L})`;
+      return { id: t.id, category: t.category, regex: new RegExp(t.term, "iu"), target: "spaced" };
     }
-    return { id: t.id, category: t.category, regex: new RegExp(pattern, "iu") };
+    if (t.kind === "phrase" || t.kind === "allow") {
+      const parts = normTerm.split(/\s+/).map(escapeRegex);
+      const pat = `(?:^|\\P{L})${parts.join("\\s+")}(?:$|\\P{L})`;
+      return { id: t.id, category: t.category, regex: new RegExp(pat, "iu"), target: "spaced" };
+    }
+    // exact: run against tight (whitespace-stripped) haystack as a substring.
+    // Our slur lexicon uses long, distinctive tokens so substring is safe.
+    return {
+      id: t.id,
+      category: t.category,
+      regex: new RegExp(escapeRegex(normTerm), "iu"),
+      target: "tight",
+    };
   } catch {
     return null;
   }
@@ -125,30 +134,32 @@ export type CheckResult =
   | { ok: true }
   | { ok: false; severity: "block" | "warn"; category: TermCategory; ruleId?: string; termHashInput: string };
 
+function testRule(r: CompiledRule, spaced: string, tight: string): boolean {
+  return r.target === "tight" ? r.regex.test(tight) : r.regex.test(spaced);
+}
+
 export function check(text: string, m: CompiledMatcher): CheckResult {
   if (!text) return { ok: true };
-  const { normalized } = normalize(text);
-  if (!normalized) return { ok: true };
+  const { normalized: spaced, tight } = normalize(text);
+  if (!spaced) return { ok: true };
 
-  // Allowlist bypass: if text matches an allow rule, skip all warn/block that
-  // it "explains". Since determining coverage is expensive, we treat allow as
-  // absolute for the whole submission: if any allow matches, we downgrade to warn-only.
-  const allowed = m.allow.some((r) => r.regex.test(normalized));
+  const allowed = m.allow.some((r) => testRule(r, spaced, tight));
 
   for (const r of m.block) {
-    if (r.regex.test(normalized)) {
+    if (testRule(r, spaced, tight)) {
       if (allowed) continue;
       return { ok: false, severity: "block", category: r.category, ruleId: r.id, termHashInput: r.regex.source };
     }
   }
   for (const r of m.warn) {
-    if (r.regex.test(normalized)) {
+    if (testRule(r, spaced, tight)) {
       if (allowed) continue;
       return { ok: false, severity: "warn", category: r.category, ruleId: r.id, termHashInput: r.regex.source };
     }
   }
   return { ok: true };
 }
+
 
 // Spam heuristics — deterministic, per-surface thresholds passed in.
 export type SpamOpts = {
