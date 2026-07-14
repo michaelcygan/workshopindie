@@ -115,6 +115,9 @@ export function MediaPanel({
         </p>
       ) : (
         <div className="mt-3 space-y-2">
+          {nextLoungeSlot && (
+            <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+          )}
           <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
@@ -155,7 +158,7 @@ export function MediaPanel({
             <button
               type="button"
               onClick={onExit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10 transition"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition"
             >
               <LogOut className="h-3.5 w-3.5" /> Exit
             </button>
