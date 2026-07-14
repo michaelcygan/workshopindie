@@ -328,7 +328,7 @@ export function LiveTopicsList({
         </h2>
         <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
           {noneLive
-            ? "Open the room — the night starts here."
+            ? "Open a room — someone's always around."
             : "Drop in, grab a seat, see where the conversation leads."}
         </p>
         <div className="mt-5">{splitCTA}</div>
