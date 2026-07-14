@@ -53,6 +53,7 @@ export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLo
         : new File([sized], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
       const url = await uploadToBucket("covers", user.id, out);
       onChange(url);
+      onWorkChange?.(null);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
