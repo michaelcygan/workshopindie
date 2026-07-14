@@ -78,7 +78,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (cat !== "all") q = q.eq("category", cat);
+  if (cat !== "all") q = q.contains("categories", [cat]);
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {
