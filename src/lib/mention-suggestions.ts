@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
  * popover being open via `enabled`.
  */
 
-export type MentionKind = "user" | "collab" | "group" | "event";
+export type MentionKind = "user" | "collab" | "group" | "event" | "work";
 
 export type MentionSuggestion = {
   kind: MentionKind;
