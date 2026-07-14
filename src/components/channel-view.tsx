@@ -1163,7 +1163,15 @@ export function ChannelView({
               </div>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogAction onClick={() => setWarnOpen(false)}>Keep going</AlertDialogAction>
+              <AlertDialogAction
+                onClick={() => {
+                  setWarnOpen(false);
+                  setWarnSince(null);
+                  setQuietSince(Date.now());
+                }}
+              >
+                Keep going
+              </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
