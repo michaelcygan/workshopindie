@@ -228,7 +228,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         <DialogHeader><DialogTitle>Create event</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="space-y-3">
           <div>
-            <Label>Group</Label>
+            <Label>Primary group</Label>
             <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })}>
               <SelectTrigger><SelectValue placeholder="Choose group" /></SelectTrigger>
               <SelectContent>
@@ -237,7 +237,45 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 ))}
               </SelectContent>
             </Select>
+            <p className="mt-1 text-[11px] text-ink-muted">Owns the event URL and notifications.</p>
           </div>
+          {form.group_id && (
+            <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
+              <Label>Also show in (optional)</Label>
+              <p className="text-[11px] text-ink-muted">The event will appear on each selected group's Events tab.</p>
+              {extraGroupIds.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {extraGroupIds.map((gid) => {
+                    const g = (groups ?? []).find((x) => x.id === gid);
+                    if (!g) return null;
+                    return (
+                      <span key={gid} className="inline-flex items-center gap-1 rounded-full bg-surface px-2 py-0.5 text-xs">
+                        {g.name}
+                        <button type="button" className="text-ink-muted hover:text-ink" onClick={() => setExtraGroupIds((prev) => prev.filter((id) => id !== gid))}>
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+              <Select
+                value=""
+                onValueChange={(v) => {
+                  if (v && !extraGroupIds.includes(v)) setExtraGroupIds((prev) => [...prev, v]);
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Add another group…" /></SelectTrigger>
+                <SelectContent>
+                  {(groups ?? [])
+                    .filter((g) => g.id !== form.group_id && !extraGroupIds.includes(g.id))
+                    .map((g) => (
+                      <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="rounded-2xl border border-border bg-muted/30 p-3 space-y-2">
             <Label>Source</Label>
             <div className="flex gap-4 text-sm">
