@@ -101,7 +101,7 @@ export const createEvent = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { featured, status, cover_url, pinned, ...rest } = data;
+    const { featured, status, cover_url, pinned, extra_group_ids, ...rest } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
     const insertRow = {
       ...rest,
@@ -119,6 +119,17 @@ export const createEvent = createServerFn({ method: "POST" })
       .select("id,slug,group_id")
       .single();
     if (error) throw new Error(error.message);
+
+    // Tag the event to its primary group + any extras. Primary is always included.
+    {
+      const allGroupIds = Array.from(new Set([data.group_id, ...(extra_group_ids ?? [])]));
+      const links = allGroupIds.map((gid) => ({ event_id: row.id, group_id: gid }));
+      const { error: linkErr } = await supabase
+        .from("event_groups")
+        .upsert(links, { onConflict: "event_id,group_id", ignoreDuplicates: true });
+      if (linkErr) throw new Error(linkErr.message);
+    }
+
 
     // Notify all group members (except the creator) of the new event. Skip for drafts.
     if (insertRow.status !== "draft") try {
