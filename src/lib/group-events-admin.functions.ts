@@ -60,6 +60,7 @@ const safeHttpUrl = z
 
 const baseSchema = z.object({
   group_id: z.string().uuid(),
+  extra_group_ids: z.array(z.string().uuid()).max(20).optional(),
   title: z.string().min(2).max(120),
   tagline: z.string().max(140).nullable().optional(),
   description: z.string().max(6000).nullable().optional(),
@@ -85,9 +86,7 @@ const baseSchema = z.object({
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
   series_key: z.string().max(60).nullable().optional(),
-  // Lineup config: blank = no lineup, number = capacity.
   lineup_capacity: z.number().int().min(1).max(200).nullable().optional(),
-  // v2: source + recurrence + pin
   source: z.enum(["workshop", "external"]).optional(),
   external_url: safeHttpUrl.nullable().optional(),
   external_organizer: z.string().max(140).nullable().optional(),
