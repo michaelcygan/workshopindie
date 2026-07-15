@@ -51,10 +51,18 @@ export const listGroupEvents = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupId: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
     const supabase = publicClient();
+    // Events tagged to this group via event_groups (includes each event's primary group).
+    const { data: links, error: linkErr } = await supabase
+      .from("event_groups")
+      .select("event_id")
+      .eq("group_id", data.groupId);
+    if (linkErr) throw new Error(linkErr.message);
+    const eventIds = (links ?? []).map((l) => l.event_id as string);
+    if (eventIds.length === 0) return [];
     const { data: rows, error } = await supabase
       .from("group_events")
       .select(EVENT_FIELDS)
-      .eq("group_id", data.groupId)
+      .in("id", eventIds)
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })
       .limit(50);

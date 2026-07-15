@@ -1,82 +1,58 @@
-# Events MVP — Minimal Extension
+## Goal
 
-Confirmed: **one canonical event object**, tagged to a group. That's already how the schema works today — `group_events` is just an event row with a required `group_id`. We keep it that way. Every event has exactly one group tag (its "home" group). We don't need a separate global events object.
+Let admins attach one event to one OR many groups when creating it, so a Chicago open mic can appear in "Chicago" and "Chicago · Folk" at the same time without duplicating the record.
 
-If later we want an event to belong to multiple groups, we add a small join table — but not for day 1.
+## Approach
 
-## 1. Migration (one file, additive)
+Keep the event as a single canonical row. Introduce a lightweight join table so extra groups can be tagged in addition to the event's primary `group_id` (which stays required — it owns the event slug, URL, and ownership).
 
-Add columns to `group_events`:
-- `source` text check `('workshop','external')` default `'workshop'`
-- `external_url` text — the "View event" destination
-- `external_organizer` text — display name for external hosts
-- `is_recurring` boolean default false
-- `recurrence_label` text — free-text admin caption ("Every Tuesday", "First Friday")
-- `pinned_at` timestamptz — non-null = pinned to top of the group's Events tab
+### 1. Migration — `event_groups` join table
 
-`format` (`in_person | online`) + `online_url` already exist and cover the Zoom case — admin pastes the link, we render it. Admin-only writes already enforced by existing RLS.
+```
+event_groups
+  event_id  uuid  → group_events(id)  on delete cascade
+  group_id  uuid  → groups(id)        on delete cascade
+  primary key (event_id, group_id)
+  created_at timestamptz default now()
+```
 
-No RRULE engine, no occurrence table, no multi-group join, no timezone recompute.
+- Grants: `authenticated` select, `service_role` all.
+- RLS: select allowed to anyone who can see the underlying event; insert/update/delete restricted to admins (mirrors `group_events` admin policy).
+- Backfill: `INSERT INTO event_groups (event_id, group_id) SELECT id, group_id FROM group_events` so every existing event has itself listed. From now on, the primary `group_id` is always mirrored into `event_groups` too.
 
-## 2. Admin form (`src/routes/admin.events.tsx`)
+### 2. Server function — `createEvent` in `src/lib/group-events-admin.functions.ts`
 
-Four new controls on the existing form:
-- **Source**: Workshop / External. External → require `external_url`, show `external_organizer`, hide RSVP-only fields.
-- **Format**: In person / Online (already there). Online → single "Zoom / meeting URL" field bound to `online_url`, hide venue.
-- **Recurring**: checkbox → shows `recurrence_label` text input. No date math.
-- **Pin to top**: checkbox → sets/clears `pinned_at`.
+- Accept a new optional `group_ids: string[]` alongside existing `group_id`.
+- Treat `group_id` as the primary/canonical group (used for slug and route).
+- After insert, upsert rows into `event_groups` for every id in `group_ids ∪ {group_id}` (dedup). No-op if only the primary is selected.
+- Same treatment for the update path (if/when admin edit lands) — out of scope for this pass unless trivial.
 
-URL validation server-side: must be `http(s)://`, reject `javascript:` / `data:`.
+### 3. Admin form — `src/routes/admin.events.tsx`
 
-The event's group tag is the existing group picker — unchanged.
+Replace the current single `Group` `<Select>` with:
 
-## 3. Group Events tab (`src/routes/g.$slug.tsx` → `GroupEventsTab`)
+- **Primary group** — the existing `<Select>` (required). Determines URL/slug/ownership.
+- **Also show in** — a multi-select chip picker underneath, listing all other groups from `adminListGroups`. Selecting one adds a removable pill. Empty by default.
+- Submit sends `group_id` (primary) plus `group_ids` (extras, primary excluded to keep the payload clean; server re-adds it).
 
-Three sections, each hidden when empty:
-1. **Pinned & recurring** — `pinned_at IS NOT NULL OR is_recurring = true`, ordered `pinned_at DESC NULLS LAST, starts_at ASC`. Card shows `recurrence_label` (or "Pinned") + next date.
-2. **Upcoming** — one-time, non-recurring, `starts_at >= now()`, chronological.
-3. **Past** — leave existing behavior.
+Small, self-contained component inside `admin.events.tsx` — no new files needed. Uses existing shadcn primitives (Command / Popover) to stay consistent with the rest of admin UI.
 
-Header:
-- Title becomes `Events in {group.name}` + one-line subheading.
-- Remove the inline `+ Create event (admin)` link.
-- Admin-only `+ Add event` on the right (deep-links to `/admin/events?group={id}`).
-- Hide the tab-row `+ Create` on the events tab for non-admins.
+### 4. Read paths — where multi-group takes effect
 
-Empty state: `The calendar is quiet for now.` — no member CTA.
+- **Group Events tab (`g.$slug.tsx`)** — swap the current `group_events.group_id = :group.id` filter for `event_id IN (SELECT event_id FROM event_groups WHERE group_id = :group.id)`. This is the whole point: an event tagged to N groups shows up under each.
+- **Main events page + homepage** — no change; they already read from `group_events` directly and each event still has exactly one row. Dedup is automatic.
+- **Admin table** — no change (still one row per event, primary group shown). Optionally show a `+N` chip if extras exist — nice-to-have, will include if it's a 3-line addition.
 
-## 4. Event card (`src/components/event-card.tsx`)
+### 5. Not doing on day 1
 
-Small conditional tweaks driven by the same object:
-- `source = 'external'` → primary action `View event` opens `external_url` in a new tab (`rel="noopener noreferrer"` + external icon), small "External event" label, no RSVP block.
-- `source = 'workshop'` → unchanged RSVP flow.
-- `format = 'online'` → "Online" label (with platform hint if URL matches Zoom/Meet), no empty venue line.
-- `is_recurring` → show `recurrence_label` above title.
-- `pinned_at` → subtle pin indicator.
+- No UI for members to see "also posted in" list on the event detail page. Can add later as a small footer chip row.
+- No changing the event's primary group after creation.
+- No per-group visibility overrides (e.g. hide from one but keep in others).
 
-Main Events page and homepage just pick up the new events automatically — same object, same queries.
+## Files touched
 
-## Not doing on day 1
-
-- No RRULE engine or per-occurrence exceptions (recurring = a label + one canonical row the admin re-dates or clones).
-- No multi-group join.
-- No RSVP-gated Zoom links for workshop online events.
-- No external verification workflow.
-- No changes to homepage relevance rules.
-
-## Files
-
-- `supabase/migrations/<new>.sql` — additive columns only
-- `src/routes/admin.events.tsx` (+ shared form) — 4 new fields
-- `src/routes/g.$slug.tsx` — `GroupEventsTab` rewrite (~80 lines)
-- `src/components/event-card.tsx` — source/recurrence branches
-- `src/lib/group-events.functions.ts` — extend list query, add `listPinnedAndRecurringForGroup`
-
-## Verify
-
-- Workshop one-time → Upcoming.
-- Pinned "Every Tuesday" recurring → top of Pinned & recurring.
-- External event with URL → "View event" opens the URL.
-- Online workshop event with Zoom URL → attendees see the join link.
-
-Approve and I'll ship the migration first, then the code in one pass.
+- New migration (join table + backfill + RLS + grants)
+- `src/lib/group-events-admin.functions.ts` — extend `createEvent` payload + writes
+- `src/lib/group-events.functions.ts` — group-scoped list query switches to join-table filter
+- `src/routes/admin.events.tsx` — add multi-select "Also show in"
+- `src/routes/g.$slug.tsx` — pick up the new query shape (types only if any)
