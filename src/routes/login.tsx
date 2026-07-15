@@ -80,7 +80,7 @@ function Login() {
       </h1>
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="space-y-3">
-          <GoogleSignIn />
+          <GoogleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
@@ -102,7 +102,14 @@ function Login() {
           </Button>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
-          New to Workshop? <Link to="/signup" className="text-gradient-motion hover:underline">Create an account</Link>
+          New to Workshop?{" "}
+          <Link
+            to="/signup"
+            search={search.redirect ? { redirect: search.redirect } : undefined}
+            className="text-gradient-motion hover:underline"
+          >
+            Create an account
+          </Link>
         </p>
       </div>
     </div>

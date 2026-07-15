@@ -3,14 +3,24 @@ import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export function GoogleSignIn({ label = "Continue with Google" }: { label?: string }) {
+export function GoogleSignIn({
+  label = "Continue with Google",
+  redirectTo,
+}: {
+  label?: string;
+  /** Same-origin path (must start with "/") to return to after Google sign-in. */
+  redirectTo?: string;
+}) {
   const [loading, setLoading] = useState(false);
+  const safeRedirect =
+    redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : null;
 
   const handleClick = async () => {
     setLoading(true);
     try {
+      const returnUrl = safeRedirect ? window.location.origin + safeRedirect : window.location.origin;
       const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+        redirect_uri: returnUrl,
       });
       if (result.error) {
         toast.error(result.error.message ?? "Google sign-in failed");
@@ -18,8 +28,8 @@ export function GoogleSignIn({ label = "Continue with Google" }: { label?: strin
         return;
       }
       if (result.redirected) return; // browser will redirect
-      // Session set inline; reload to pick it up
-      window.location.assign("/");
+      // Session set inline; navigate to intended target
+      window.location.assign(safeRedirect ?? "/");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
