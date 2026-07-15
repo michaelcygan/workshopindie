@@ -27,6 +27,7 @@ export const Route = createFileRoute("/signup")({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
+    redirect: typeof s.redirect === "string" ? s.redirect : undefined,
   }),
 });
 
@@ -106,11 +107,15 @@ function Signup() {
     }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
+    const safeRedirect =
+      search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
+        ? search.redirect
+        : null;
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo: `${window.location.origin}${safeRedirect ?? "/"}`,
         data: {
           first_name: first,
           last_name: last,
@@ -153,6 +158,10 @@ function Signup() {
       navigate({ to: "/g/$slug", params: { slug: search.group } });
       return;
     }
+    if (safeRedirect && data.session) {
+      window.location.assign(safeRedirect);
+      return;
+    }
     navigate({ to: "/onboarding" });
   };
 
@@ -175,7 +184,7 @@ function Signup() {
       </p>
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
-          <GoogleSignIn label="Sign up with Google" />
+          <GoogleSignIn label="Sign up with Google" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
