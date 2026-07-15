@@ -85,6 +85,7 @@ import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$tok
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
@@ -476,6 +477,11 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   id: '/$tool',
   path: '/$tool',
@@ -582,6 +588,7 @@ export interface FileRoutesByFullPath {
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -661,6 +668,7 @@ export interface FileRoutesByTo {
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -747,6 +755,7 @@ export interface FileRoutesById {
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
@@ -834,6 +843,7 @@ export interface FileRouteTypes {
     | '/lounge/'
     | '/me/'
     | '/workshops/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -913,6 +923,7 @@ export interface FileRouteTypes {
     | '/lounge'
     | '/me'
     | '/workshops'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -998,6 +1009,7 @@ export interface FileRouteTypes {
     | '/lounge/'
     | '/me/'
     | '/workshops/'
+    | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
@@ -1057,6 +1069,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
+  DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
@@ -1601,6 +1614,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workshops/$slug/tools/$tool': {
       id: '/workshops/$slug/tools/$tool'
       path: '/$tool'
@@ -1884,6 +1904,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
+  DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
