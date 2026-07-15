@@ -799,6 +799,39 @@ export type Database = {
           },
         ]
       }
+      event_groups: {
+        Row: {
+          created_at: string
+          event_id: string
+          group_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          group_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_groups_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_groups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_signups: {
         Row: {
           created_at: string
