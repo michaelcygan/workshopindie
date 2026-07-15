@@ -17,6 +17,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ReferRouteImport } from './routes/refer'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoungeRouteImport } from './routes/lounge'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as InProgressRouteImport } from './routes/in-progress'
@@ -73,6 +74,8 @@ import { Route as AdminEventsRouteImport } from './routes/admin.events'
 import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
 import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
@@ -81,6 +84,7 @@ import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
 import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
 import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
@@ -127,6 +131,11 @@ const PricingRoute = PricingRouteImport.update({
 const OnboardingRoute = OnboardingRouteImport.update({
   id: '/onboarding',
   path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoungeRoute = LoungeRouteImport.update({
@@ -409,6 +418,18 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
@@ -449,6 +470,12 @@ const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AdminUsersRoute,
 } as any)
+const Char91DotmcpChar93InvokeToolToolRoute =
+  Char91DotmcpChar93InvokeToolToolRouteImport.update({
+    id: '/.mcp/invoke-tool/$tool',
+    path: '/.mcp/invoke-tool/$tool',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
   id: '/$tool',
   path: '/$tool',
@@ -500,6 +527,7 @@ export interface FileRoutesByFullPath {
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/lounge': typeof LoungeRouteWithChildren
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -508,6 +536,8 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
@@ -552,6 +582,7 @@ export interface FileRoutesByFullPath {
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -576,6 +607,7 @@ export interface FileRoutesByTo {
   '/goodbye': typeof GoodbyeRoute
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -583,6 +615,8 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
@@ -627,6 +661,7 @@ export interface FileRoutesByTo {
   '/lounge': typeof LoungeIndexRoute
   '/me': typeof MeIndexRoute
   '/workshops': typeof WorkshopsIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -657,6 +692,7 @@ export interface FileRoutesById {
   '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/lounge': typeof LoungeRouteWithChildren
+  '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
   '/pricing': typeof PricingRoute
   '/refer': typeof ReferRoute
@@ -665,6 +701,8 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/workshops': typeof WorkshopsRouteWithChildren
+  '/.mcp/list-tools': typeof Char91DotmcpChar93ListToolsRoute
+  '/.well-known/oauth-protected-resource': typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/badges': typeof AdminBadgesRoute
   '/admin/engagement': typeof AdminEngagementRoute
@@ -709,6 +747,7 @@ export interface FileRoutesById {
   '/lounge/': typeof LoungeIndexRoute
   '/me/': typeof MeIndexRoute
   '/workshops/': typeof WorkshopsIndexRoute
+  '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -740,6 +779,7 @@ export interface FileRouteTypes {
     | '/in-progress'
     | '/login'
     | '/lounge'
+    | '/mcp'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -748,6 +788,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/workshops'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/audit'
     | '/admin/badges'
     | '/admin/engagement'
@@ -792,6 +834,7 @@ export interface FileRouteTypes {
     | '/lounge/'
     | '/me/'
     | '/workshops/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -816,6 +859,7 @@ export interface FileRouteTypes {
     | '/goodbye'
     | '/in-progress'
     | '/login'
+    | '/mcp'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -823,6 +867,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/signup'
     | '/sitemap.xml'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/audit'
     | '/admin/badges'
     | '/admin/engagement'
@@ -867,6 +913,7 @@ export interface FileRouteTypes {
     | '/lounge'
     | '/me'
     | '/workshops'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -896,6 +943,7 @@ export interface FileRouteTypes {
     | '/in-progress'
     | '/login'
     | '/lounge'
+    | '/mcp'
     | '/onboarding'
     | '/pricing'
     | '/refer'
@@ -904,6 +952,8 @@ export interface FileRouteTypes {
     | '/signup'
     | '/sitemap.xml'
     | '/workshops'
+    | '/.mcp/list-tools'
+    | '/.well-known/oauth-protected-resource'
     | '/admin/audit'
     | '/admin/badges'
     | '/admin/engagement'
@@ -948,6 +998,7 @@ export interface FileRouteTypes {
     | '/lounge/'
     | '/me/'
     | '/workshops/'
+    | '/.mcp/invoke-tool/$tool'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -978,6 +1029,7 @@ export interface RootRouteChildren {
   InProgressRoute: typeof InProgressRoute
   LoginRoute: typeof LoginRoute
   LoungeRoute: typeof LoungeRouteWithChildren
+  McpRoute: typeof McpRoute
   OnboardingRoute: typeof OnboardingRoute
   PricingRoute: typeof PricingRoute
   ReferRoute: typeof ReferRoute
@@ -986,6 +1038,8 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
+  Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
+  Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   ECodeRoute: typeof ECodeRoute
@@ -1003,6 +1057,7 @@ export interface RootRouteChildren {
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
+  Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
   ApiPublicEventsReportSweepRoute: typeof ApiPublicEventsReportSweepRoute
@@ -1068,6 +1123,13 @@ declare module '@tanstack/react-router' {
       path: '/onboarding'
       fullPath: '/onboarding'
       preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lounge': {
@@ -1462,6 +1524,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/list-tools': {
+      id: '/.mcp/list-tools'
+      path: '/.mcp/list-tools'
+      fullPath: '/.mcp/list-tools'
+      preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/workshops/$slug/tools': {
       id: '/workshops/$slug/tools'
       path: '/tools'
@@ -1517,6 +1593,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users/$id'
       preLoaderRoute: typeof AdminUsersIdRouteImport
       parentRoute: typeof AdminUsersRoute
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/workshops/$slug/tools/$tool': {
       id: '/workshops/$slug/tools/$tool'
@@ -1772,6 +1855,7 @@ const rootRouteChildren: RootRouteChildren = {
   InProgressRoute: InProgressRoute,
   LoginRoute: LoginRoute,
   LoungeRoute: LoungeRouteWithChildren,
+  McpRoute: McpRoute,
   OnboardingRoute: OnboardingRoute,
   PricingRoute: PricingRoute,
   ReferRoute: ReferRoute,
@@ -1780,6 +1864,9 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorkshopsRoute: WorkshopsRouteWithChildren,
+  Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
+  Char91DotwellKnownChar93OauthProtectedResourceRoute:
+    Char91DotwellKnownChar93OauthProtectedResourceRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   ECodeRoute: ECodeRoute,
@@ -1797,6 +1884,7 @@ const rootRouteChildren: RootRouteChildren = {
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
+  Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
   ApiPublicEventsReportSweepRoute: ApiPublicEventsReportSweepRoute,
