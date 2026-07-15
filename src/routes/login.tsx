@@ -76,7 +76,7 @@ function Login() {
       </div>
 
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
-        Make something tonight.
+        Make something today.
       </h1>
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="space-y-3">

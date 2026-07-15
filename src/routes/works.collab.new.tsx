@@ -115,7 +115,7 @@ function NewCollaborativeWork() {
         <Card className="p-4 space-y-4">
           <div>
             <Label>Title</Label>
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. The Late Night Sessions" maxLength={200} />
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. The Sunday Sessions" maxLength={200} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
