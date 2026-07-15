@@ -335,8 +335,8 @@ export const createEventSeries = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { recurrence_rule, occurrence_count, featured, status, cover_url, pinned: _pinned, ...rest } = data;
-    void _pinned;
+    const { recurrence_rule, occurrence_count, featured, status, cover_url, pinned: _pinned, extra_group_ids: _extra, ...rest } = data;
+    void _pinned; void _extra;
     const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const baseStart = new Date(rest.starts_at);
     const baseEnd = new Date(rest.ends_at);
