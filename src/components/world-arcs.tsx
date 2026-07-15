@@ -55,7 +55,7 @@ const FALLBACK_PAIRS: Pair[] = [
   { from: CITIES.lagos, to: CITIES.berlin, verb: "Scoring a short film" },
   { from: CITIES.saopaulo, to: CITIES.tokyo, verb: "Co-writing a track" },
   { from: CITIES.cdmx, to: CITIES.lisbon, verb: "Cover-photo color study" },
-  { from: CITIES.nairobi, to: CITIES.toronto, verb: "Late-night edit pass" },
+  { from: CITIES.nairobi, to: CITIES.toronto, verb: "Editing session" },
   { from: CITIES.seoul, to: CITIES.paris, verb: "Album artwork crit" },
   { from: CITIES.mumbai, to: CITIES.nyc, verb: "Voice on a chorus" },
   { from: CITIES.bali, to: CITIES.capetown, verb: "Doc footage trade" },

@@ -153,9 +153,9 @@ export const ROOM_PROMPTS: RoomPrompt[] = [
   // ── Co-working (6) ──
   { title: "Cameras on, mics off — 2 hours", medium: "coworking", weight: "obvious" },
   { title: "Heads-down work session", medium: "coworking", weight: "obvious" },
-  { title: "Morning pages, then deep work", medium: "coworking", weight: "obvious" },
+  { title: "Warm-up pages, then deep work", medium: "coworking", weight: "obvious" },
   { title: "Sunday plan-the-week", medium: "coworking", weight: "obvious" },
-  { title: "Late-night ship sprint", medium: "coworking", weight: "wild" },
+  { title: "Ship-it sprint", medium: "coworking", weight: "wild" },
   { title: "Pomodoro × 4, then show & tell", medium: "coworking", weight: "wild" },
 ];
 

@@ -36,7 +36,7 @@ export function EventShowcaseStrip({ eventId, eventTitle, canBring }: Props) {
     <section className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <h3 className="font-display text-lg text-ink">Bringing tonight</h3>
+          <h3 className="font-display text-lg text-ink">What people are bringing</h3>
           <p className="text-xs text-ink-muted">
             Works and open collabs people are bringing to {eventTitle}.
           </p>

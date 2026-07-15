@@ -95,7 +95,7 @@ function AdminLinks() {
           <div className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="wl-title">Workshop title</Label>
-              <Input id="wl-title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Tonight: Songwriters' Critique" />
+              <Input id="wl-title" value={title} maxLength={120} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Songwriters' Critique — Thursday" />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="wl-prompt">Prompt / what to expect</Label>
