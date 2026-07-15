@@ -208,6 +208,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           is_recurring: form.is_recurring,
           recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
           pinned: form.pinned,
+          extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
         },
       });
       toast.success("Event created");
