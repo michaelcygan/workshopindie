@@ -169,6 +169,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     recurrence_label: "",
     pinned: false,
   });
+  const [extraGroupIds, setExtraGroupIds] = useState<string[]>([]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
