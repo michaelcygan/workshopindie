@@ -1,18 +1,17 @@
-Refine the mobile profile tile Ken Burns slideshow timing so the row-to-row cadence is more elegantly varied.
+## Fix: make cover banner clickable for the owner
 
-What we change
-- Increase the base transition offset between rows from 1.5s to 3s per row.
-- Add a stable per-row variance of up to 3s, derived from the category id so the same category always behaves the same and the pattern doesn't look mechanical.
-- Apply the same variance idea to the Ken Burns animation phase so each row's drift is also uniquely offset.
-- Keep the existing 8s slide interval and 1.2s crossfade; only the stagger spacing changes.
+**Problem**
+On the profile cover, the banner only becomes a `<Link>` to the sourced Work when `cover_work.status === "published"` AND `visibility ∈ {public, unlisted}`. If the owner's sourced Work is a draft or private, `linkable` is false and the banner is a plain `<img>` — so clicking does nothing. That's why tapping your own banner didn't navigate.
 
-Where the changes go
-- `src/routes/u.$username.tsx` — pass the category id to `CategoryTileMedia` and compute the final delay as `index * 3000ms + stableVariance(categoryId, 0–3000ms)`.
-- `src/styles.css` — no changes needed; the existing `animate-kenburns` utility is used with inline `animationDelay`.
+**Change (single file: `src/routes/u.$username.tsx`, cover block ~L460–493)**
+- Compute `linkable` as:
+  - `isOwn && profile.cover_work` (owner can always open their own sourced Work), OR
+  - existing public/unlisted + published rule (for visitors).
+- Show the "Open Work" pill using the same `linkable` condition.
+- Keep the "Change cover" button on top (already `z-10`) so the owner's edit affordance still works; it calls `stopPropagation`/`preventDefault`, so the wrapping `<Link>` won't fire when tapping it.
+- No changes to data queries, routes, or the mobile Ken Burns tiles.
 
-Why this approach
-- The variance is tied to the category id so it is stable across re-renders and doesn't feel random or jittery.
-- The base 3s per row gives clear separation, while the extra 0–3s variance makes the timing feel organic.
-
-Verification
-- Preview the mobile profile and observe that the Film, Music, Book tiles transition at clearly different, non-uniform moments over 20–30s.
+**Verification**
+- As owner with a draft/private sourced cover Work: tapping the banner routes to `/works/$slug`.
+- As a visitor viewing someone else's profile whose cover Work is private/draft: banner remains non-clickable (unchanged).
+- Public/unlisted case: unchanged.
