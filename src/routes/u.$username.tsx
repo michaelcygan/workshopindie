@@ -917,7 +917,7 @@ function WorksTab({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+        <div className={cn("rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted", showMobileTiles && "hidden md:block")}>
           {isOwn ? `Nothing here yet.` : "Nothing matches this filter."}{" "}
           <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
         </div>
