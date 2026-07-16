@@ -424,10 +424,12 @@ function WorkshopPreflight() {
       )}
 
 
-      {/* Live decision surface */}
-      <div className="mt-4">
+      {/* Live decision surface — stack on mobile, split on desktop.
+          Both mount the same LiveTopicsList; its internal useQuery(["instant-active-rooms"])
+          dedupes across instances, so no extra fetch. */}
+      <div className="mt-4 md:hidden">
         <LiveTopicsList
-          layout="split"
+          layout="stack"
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
           onPickFlavor={handleUsePrompt}
@@ -444,6 +446,24 @@ function WorkshopPreflight() {
           }
         />
       </div>
+      <div className="mt-4 hidden md:block">
+        <LiveTopicsList
+          layout="split"
+          busyKey={busy === "drop" ? busyMedium : null}
+          onPick={handlePick}
+          onPickFlavor={handleUsePrompt}
+          disabled={busy !== null}
+          featuredFooter={
+            <RoomPromptMarquee
+              onUsePrompt={handleUsePrompt}
+              onJoinLive={(m) => handlePick(m)}
+              liveByMedium={liveByMedium}
+              disabled={busy !== null || !canDrop}
+            />
+          }
+        />
+      </div>
+
 
       {devices && !canDrop && (
         <div className="mt-3 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center gap-3">
