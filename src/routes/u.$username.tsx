@@ -3,7 +3,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowLeft, ArrowRight } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowRight } from "lucide-react";
+import { CategoryScroller } from "@/components/category-scroller";
+
 
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
@@ -564,9 +566,24 @@ function ProfilePage() {
               </a>
             )}
           </div>
-          {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
+          {profile.headline && <p className="mt-2 text-sm text-ink-soft md:text-base">{profile.headline}</p>}
+
+          {/* Mobile-only compact link pills (IG + external_links) — sit right under the identity line */}
+          <LinkPills
+            className="mt-3 md:hidden"
+            instagram={profile.instagram_handle}
+            links={profile.external_links ?? []}
+          />
+
+          {/* Mobile bio (short public blurb). Desktop bio still lives in the About tab. */}
+          {profile.bio && profile.bio.trim().length > 0 && (
+            <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
+              {profile.bio}
+            </p>
+          )}
+
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-ink-muted md:flex">
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
@@ -587,12 +604,7 @@ function ProfilePage() {
           )}
         </div>
 
-        {/* Mobile-only compact link pills (existing IG + external_links) */}
-        <LinkPills
-          className="mt-3 md:hidden"
-          instagram={profile.instagram_handle}
-          links={profile.external_links ?? []}
-        />
+
 
         {/* Owner-only primary CTAs (desktop; on mobile they live in the top nav / composer) */}
         {isOwn && (
@@ -832,6 +844,20 @@ function WorksTab({
         </section>
       )}
 
+      {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
+      {availableCats.length > 0 && (
+        <div className="mb-4 md:hidden">
+          <CategoryScroller
+            tabs={[
+              { id: "all" as const, label: "All" },
+              ...availableCats.map((c) => ({ id: c.id as Category, label: c.label })),
+            ]}
+            value={activeCat}
+            onChange={(v) => setActiveCat(v as Category | "all")}
+          />
+        </div>
+      )}
+
       {/* Mobile category tiles — tap to filter */}
       {showMobileTiles && (
         <div className="mb-6 space-y-3 md:hidden">
@@ -856,27 +882,21 @@ function WorksTab({
                 )}
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/85 via-background/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-                  <h3 className="font-display text-2xl leading-tight text-ink drop-shadow-sm">{c.label}</h3>
+                  <span className="inline-flex items-center rounded-full bg-ink/75 px-3 py-1 font-display text-lg leading-none text-background backdrop-blur">
+                    {c.label}
+                  </span>
                   <span className="rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-ink-soft backdrop-blur">
                     {count} {count === 1 ? "piece" : "pieces"}
                   </span>
                 </div>
+
               </button>
             );
           })}
         </div>
       )}
 
-      {/* Mobile: back to category tiles */}
-      {!showMobileTiles && availableCats.length > 0 && activeCat !== "all" && (
-        <button
-          type="button"
-          onClick={() => setActiveCat("all")}
-          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft md:hidden"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> All categories
-        </button>
-      )}
+
 
       <div className={cn("mb-5 flex flex-wrap items-center gap-2", showMobileTiles && "hidden md:flex")}>
         {/* Role chips — only show when there's a mix */}
