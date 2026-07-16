@@ -717,14 +717,14 @@ function ProfilePage() {
         )}
 
         {/* Tab bar */}
-        <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:px-6">
+        <div className="sticky top-0 z-20 mt-4 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-8 md:px-6">
           <nav className="flex gap-1 overflow-x-auto">
             {visibleTabs.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={cn(
-                  "relative whitespace-nowrap px-3.5 py-3 text-sm capitalize transition",
+                  "relative whitespace-nowrap px-3.5 py-2.5 text-sm capitalize transition md:py-3",
                   defaultTab === t ? "text-ink" : "text-ink-muted hover:text-ink",
                 )}
               >
@@ -739,7 +739,7 @@ function ProfilePage() {
           </nav>
         </div>
 
-        <div className="py-8 pb-20">
+        <div className="py-4 pb-24 md:py-8 md:pb-20">
           {defaultTab === "works" && (
             <WorksTab
               owned={ownedWorks ?? []}
