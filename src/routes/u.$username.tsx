@@ -876,7 +876,7 @@ function WorksTab({
       {/* Mobile category tiles — tap to filter */}
       {showMobileTiles && (
         <div className="mb-6 space-y-3 md:hidden">
-          {availableCats.map((c) => {
+          {availableCats.map((c, catIndex) => {
             const cid = c.id as Category;
             const covers = Array.from(
               new Set(
@@ -895,7 +895,7 @@ function WorksTab({
                 className="group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl text-left"
               >
                 {covers.length > 0 ? (
-                  <CategoryTileMedia covers={covers} />
+                  <CategoryTileMedia covers={covers} index={catIndex} />
                 ) : (
                   <div className={cn("h-full w-full", categoryClass(cid))} />
                 )}
@@ -1053,7 +1053,7 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
   );
 }
 
-function CategoryTileMedia({ covers }: { covers: string[] }) {
+function CategoryTileMedia({ covers, index = 0 }: { covers: string[]; index?: number }) {
   const [i, setI] = useState(0);
   const [reduce, setReduce] = useState(false);
 
@@ -1070,16 +1070,17 @@ function CategoryTileMedia({ covers }: { covers: string[] }) {
     let id: number | null = null;
     const start = () => {
       if (id != null) return;
-      id = window.setInterval(() => setI((n) => (n + 1) % covers.length), 5000);
+      id = window.setInterval(() => setI((n) => (n + 1) % covers.length), 8000);
     };
     const stop = () => {
       if (id != null) { window.clearInterval(id); id = null; }
     };
     const onVis = () => (document.visibilityState === "hidden" ? stop() : start());
-    start();
+    // Stagger each row so transitions never synchronize.
+    const initialDelay = window.setTimeout(start, index * 1500);
     document.addEventListener("visibilitychange", onVis);
-    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
-  }, [covers.length, reduce]);
+    return () => { stop(); window.clearTimeout(initialDelay); document.removeEventListener("visibilitychange", onVis); };
+  }, [covers.length, reduce, index]);
 
   return (
     <>
@@ -1092,10 +1093,11 @@ function CategoryTileMedia({ covers }: { covers: string[] }) {
           decoding="async"
           draggable={false}
           className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out",
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-[1200ms] ease-in-out",
             idx === i ? "opacity-100" : "opacity-0",
             !reduce && idx === i && "animate-kenburns",
           )}
+          style={!reduce && idx === i ? { animationDelay: `-${index * 4000}ms` } : undefined}
         />
       ))}
     </>
