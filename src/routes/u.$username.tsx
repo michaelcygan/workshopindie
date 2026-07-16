@@ -560,12 +560,12 @@ function ProfilePage() {
         </div>
 
         {/* Identity block — sits below the cover, never clipped */}
-        <div className="mt-4">
+        <div className="mt-3 md:mt-4">
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl text-ink md:text-4xl">{name}</h1>
+            <h1 className="font-display text-[22px] leading-tight text-ink md:text-4xl">{name}</h1>
             <CreatorBadge status={profile.creator_status} />
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
             {profile.username && <span>@{profile.username}</span>}
             {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
               <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
@@ -595,18 +595,18 @@ function ProfilePage() {
               </a>
             )}
           </div>
-          {profile.headline && <p className="mt-2 text-sm text-ink-soft md:text-base">{profile.headline}</p>}
+          {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
           {/* Mobile-only compact link pills (IG + external_links) — sit right under the identity line */}
           <LinkPills
-            className="mt-3 md:hidden"
+            className="mt-2 md:hidden"
             instagram={profile.instagram_handle}
             links={profile.external_links ?? []}
           />
 
           {/* Mobile bio (short public blurb). Desktop bio still lives in the About tab. */}
           {profile.bio && profile.bio.trim().length > 0 && (
-            <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
+            <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
               {profile.bio}
             </p>
           )}
