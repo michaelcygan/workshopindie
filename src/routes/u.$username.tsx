@@ -863,10 +863,14 @@ function WorksTab({
         <div className="mb-6 space-y-3 md:hidden">
           {availableCats.map((c) => {
             const cid = c.id as Category;
-            const cover =
-              pinnedWorks.find((w) => w.category === cid && w.cover_url)?.cover_url
-              ?? roleFiltered.find((w) => w.category === cid && w.cover_url)?.cover_url
-              ?? null;
+            const covers = Array.from(
+              new Set(
+                [
+                  ...pinnedWorks.filter((w) => w.category === cid).map((w) => w.cover_url),
+                  ...roleFiltered.filter((w) => w.category === cid).map((w) => w.cover_url),
+                ].filter((u): u is string => typeof u === "string" && u.length > 0),
+              ),
+            ).slice(0, 5);
             const count = catCounts.get(cid) ?? 0;
             return (
               <button
@@ -875,8 +879,8 @@ function WorksTab({
                 onClick={() => setActiveCat(cid)}
                 className="group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl text-left"
               >
-                {cover ? (
-                  <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-active:scale-[1.02]" />
+                {covers.length > 0 ? (
+                  <CategoryTileMedia covers={covers} />
                 ) : (
                   <div className={cn("h-full w-full", categoryClass(cid))} />
                 )}
@@ -893,6 +897,7 @@ function WorksTab({
               </button>
             );
           })}
+
         </div>
       )}
 
