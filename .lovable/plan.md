@@ -1,18 +1,18 @@
-Refine the Ken Burns slideshow on the profile medium tiles so the transitions feel elegant rather than synchronized.
+Refine the mobile profile tile Ken Burns slideshow timing so the row-to-row cadence is more elegantly varied.
 
 What we change
-- Pass the tile's row index into `CategoryTileMedia` so each row can have its own staggered animation phase.
-- Increase the slide interval from 5s to 8s, and the crossfade duration from 700ms to 1200ms.
-- Offset the Ken Burns drift and the slideshow start time per row by roughly 1.5s per row, so Film, Music, Book, etc. never all transition together.
-- Keep the existing `prefers-reduced-motion` guard and visibility-pause behavior.
+- Increase the base transition offset between rows from 1.5s to 3s per row.
+- Add a stable per-row variance of up to 3s, derived from the category id so the same category always behaves the same and the pattern doesn't look mechanical.
+- Apply the same variance idea to the Ken Burns animation phase so each row's drift is also uniquely offset.
+- Keep the existing 8s slide interval and 1.2s crossfade; only the stagger spacing changes.
 
 Where the changes go
-- `src/routes/u.$username.tsx` — update `CategoryTileMedia` to accept `index`, derive the staggered start, and wire it into the medium tile loop.
-- `src/styles.css` — keep `@keyframes kenburns`; optionally add a staggered delay helper if needed, but prefer in-component offsets for clarity.
+- `src/routes/u.$username.tsx` — pass the category id to `CategoryTileMedia` and compute the final delay as `index * 3000ms + stableVariance(categoryId, 0–3000ms)`.
+- `src/styles.css` — no changes needed; the existing `animate-kenburns` utility is used with inline `animationDelay`.
 
 Why this approach
-- The request is purely visual/timing; no data or API changes are needed.
-- In-component offsets are easier to tune than multiple CSS utilities and keep the effect tied to the actual tile count.
+- The variance is tied to the category id so it is stable across re-renders and doesn't feel random or jittery.
+- The base 3s per row gives clear separation, while the extra 0–3s variance makes the timing feel organic.
 
 Verification
-- Preview a profile on mobile and desktop to confirm tiles fade at different moments, and that the motion still pauses with reduced motion and on hidden tabs.
+- Preview the mobile profile and observe that the Film, Music, Book tiles transition at clearly different, non-uniform moments over 20–30s.

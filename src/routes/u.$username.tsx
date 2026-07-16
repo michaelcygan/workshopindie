@@ -895,7 +895,7 @@ function WorksTab({
                 className="group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl text-left"
               >
                 {covers.length > 0 ? (
-                  <CategoryTileMedia covers={covers} index={catIndex} />
+                  <CategoryTileMedia covers={covers} index={catIndex} categoryId={cid} />
                 ) : (
                   <div className={cn("h-full w-full", categoryClass(cid))} />
                 )}
@@ -1053,9 +1053,24 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
   );
 }
 
-function CategoryTileMedia({ covers, index = 0 }: { covers: string[]; index?: number }) {
+function stableOffsetMs(str: string, min: number, max: number) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash * 31 + str.charCodeAt(i)) % 1000000;
+  }
+  return min + (hash % (max - min + 1));
+}
+
+function CategoryTileMedia({ covers, index = 0, categoryId }: { covers: string[]; index?: number; categoryId?: string }) {
   const [i, setI] = useState(0);
   const [reduce, setReduce] = useState(false);
+
+  const variance = useMemo(() => {
+    return categoryId ? stableOffsetMs(categoryId, 0, 3000) : 0;
+  }, [categoryId]);
+
+  const slideDelay = index * 3000 + variance;
+  const kenBurnsDelay = index * 4000 + variance;
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1076,11 +1091,11 @@ function CategoryTileMedia({ covers, index = 0 }: { covers: string[]; index?: nu
       if (id != null) { window.clearInterval(id); id = null; }
     };
     const onVis = () => (document.visibilityState === "hidden" ? stop() : start());
-    // Stagger each row so transitions never synchronize.
-    const initialDelay = window.setTimeout(start, index * 1500);
+    // Stagger each row with a stable per-category variance so transitions never synchronize.
+    const initialDelay = window.setTimeout(start, slideDelay);
     document.addEventListener("visibilitychange", onVis);
     return () => { stop(); window.clearTimeout(initialDelay); document.removeEventListener("visibilitychange", onVis); };
-  }, [covers.length, reduce, index]);
+  }, [covers.length, reduce, slideDelay]);
 
   return (
     <>
@@ -1097,7 +1112,7 @@ function CategoryTileMedia({ covers, index = 0 }: { covers: string[]; index?: nu
             idx === i ? "opacity-100" : "opacity-0",
             !reduce && idx === i && "animate-kenburns",
           )}
-          style={!reduce && idx === i ? { animationDelay: `-${index * 4000}ms` } : undefined}
+          style={!reduce && idx === i ? { animationDelay: `-${kenBurnsDelay}ms` } : undefined}
         />
       ))}
     </>
