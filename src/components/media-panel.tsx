@@ -865,29 +865,58 @@ export function FullscreenRoom({
 
 
 
-      {/* Mobile chat sheet */}
+      {/* Mobile bottom sheet — Chat / Work / Collabs */}
       <AnimatePresence>
-        {chatOpen && (
+        {mobileSheet && (
           <motion.div
+            key={mobileSheet}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="lg:hidden fixed inset-x-0 bottom-0 z-[60] h-[70vh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur p-4 pb-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : "Collabs"}
+            className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
+            style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
-            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-background/20" />
-            <ChatPanel
-              messages={messages}
-              draft={draft}
-              setDraft={setDraft}
-              onSend={onSend}
-              sending={sending}
-              profileLookup={profileLookup}
-              meUserId={meUserId}
-              scrollRef={scrollRef}
-              className="flex h-full"
-              onClose={() => setChatOpen(false)}
-            />
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-background/20 shrink-0" />
+            {mobileSheet === "chat" && (
+              <ChatPanel
+                messages={messages}
+                draft={draft}
+                setDraft={setDraft}
+                onSend={onSend}
+                sending={sending}
+                profileLookup={profileLookup}
+                meUserId={meUserId}
+                scrollRef={scrollRef}
+                className="flex flex-1 min-h-0"
+                onClose={() => setMobileSheet(null)}
+              />
+            )}
+            {mobileSheet === "work" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Work</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto text-ink [color-scheme:light]">
+                  <div className="bg-background min-h-full">{gallerySlot}</div>
+                </div>
+              </div>
+            )}
+            {mobileSheet === "collabs" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Collabs</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto p-3 text-ink [color-scheme:light]">
+                  <div className="rounded-xl bg-background p-3">{collabsSlot}</div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
