@@ -877,7 +877,7 @@ function WorksTab({
 
       {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
       {availableCats.length > 0 && (
-        <div className="mb-4 md:hidden">
+        <div className="mb-3 md:hidden">
           <CategoryScroller
             tabs={[
               { id: "all" as const, label: "All" },
