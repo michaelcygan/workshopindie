@@ -306,6 +306,8 @@ function ProfilePage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [statementExpanded, setStatementExpanded] = useState(false);
+
 
   const { data: profile, isLoading } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username) });
   const { data: ownedWorks } = useQuery({
