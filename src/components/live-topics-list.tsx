@@ -41,12 +41,14 @@ export function LiveTopicsList({
   const fetchRooms = useServerFn(listActiveInstantRooms);
   const listRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["instant-active-rooms"],
     queryFn: () => fetchRooms(),
     refetchInterval: 5000,
   });
+
 
   const rooms = data?.rooms ?? [];
   const liveCount = rooms.reduce((acc, r) => acc + r.live_count, 0);
