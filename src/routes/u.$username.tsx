@@ -976,6 +976,56 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
   );
 }
 
+function CategoryTileMedia({ covers }: { covers: string[] }) {
+  const [i, setI] = useState(0);
+  const [reduce, setReduce] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduce(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (reduce || covers.length < 2) return;
+    let id: number | null = null;
+    const start = () => {
+      if (id != null) return;
+      id = window.setInterval(() => setI((n) => (n + 1) % covers.length), 5000);
+    };
+    const stop = () => {
+      if (id != null) { window.clearInterval(id); id = null; }
+    };
+    const onVis = () => (document.visibilityState === "hidden" ? stop() : start());
+    start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+  }, [covers.length, reduce]);
+
+  return (
+    <>
+      {covers.map((src, idx) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out",
+            idx === i ? "opacity-100" : "opacity-0",
+            !reduce && idx === i && "animate-kenburns",
+          )}
+        />
+      ))}
+    </>
+  );
+}
+
+
 /* ---------------- COLLABS TAB ---------------- */
 
 function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]; isOwn: boolean; ownerName: string; isLoading: boolean }) {
