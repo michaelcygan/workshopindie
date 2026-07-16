@@ -844,6 +844,20 @@ function WorksTab({
         </section>
       )}
 
+      {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
+      {availableCats.length > 0 && (
+        <div className="mb-4 md:hidden">
+          <CategoryScroller
+            tabs={[
+              { id: "all" as const, label: "All" },
+              ...availableCats.map((c) => ({ id: c.id as Category, label: c.label })),
+            ]}
+            value={activeCat}
+            onChange={(v) => setActiveCat(v as Category | "all")}
+          />
+        </div>
+      )}
+
       {/* Mobile category tiles — tap to filter */}
       {showMobileTiles && (
         <div className="mb-6 space-y-3 md:hidden">
@@ -882,16 +896,7 @@ function WorksTab({
         </div>
       )}
 
-      {/* Mobile: back to category tiles */}
-      {!showMobileTiles && availableCats.length > 0 && activeCat !== "all" && (
-        <button
-          type="button"
-          onClick={() => setActiveCat("all")}
-          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft md:hidden"
-        >
-          <ArrowLeft className="h-3.5 w-3.5" /> All categories
-        </button>
-      )}
+
 
       <div className={cn("mb-5 flex flex-wrap items-center gap-2", showMobileTiles && "hidden md:flex")}>
         {/* Role chips — only show when there's a mix */}
