@@ -850,7 +850,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]")}>
+      <div className={cn("mt-4 grid gap-4", videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
