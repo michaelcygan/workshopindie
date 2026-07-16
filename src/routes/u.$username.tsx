@@ -558,7 +558,7 @@ function ProfilePage() {
                 href={`https://instagram.com/${profile.instagram_handle}`}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 text-gradient-motion hover:underline"
+                className="hidden md:inline-flex items-center gap-1 text-gradient-motion hover:underline"
               >
                 IG @{profile.instagram_handle}
               </a>
