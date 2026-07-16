@@ -558,8 +558,8 @@ function EditProfile() {
       {/* Sticky save bar */}
       <div
         className={cn(
-          "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-background/95 backdrop-blur transition-transform",
-          dirty ? "translate-y-0" : "translate-y-full",
+          "fixed inset-x-0 bottom-20 z-40 mx-3 rounded-2xl border border-border bg-background/95 shadow-lg backdrop-blur transition-transform md:bottom-0 md:mx-0 md:rounded-none md:border-x-0 md:border-t md:shadow-none",
+          dirty ? "translate-y-0" : "translate-y-[calc(100%+1rem)] md:translate-y-full",
         )}
       >
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
