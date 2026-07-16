@@ -531,7 +531,7 @@ function ProfilePage() {
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-4">
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
+            <h1 className="font-display text-2xl text-ink md:text-4xl">{name}</h1>
             <CreatorBadge status={profile.creator_status} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
