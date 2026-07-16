@@ -306,6 +306,8 @@ function ProfilePage() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [statementExpanded, setStatementExpanded] = useState(false);
+
 
   const { data: profile, isLoading } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username) });
   const { data: ownedWorks } = useQuery({
@@ -458,7 +460,7 @@ function ProfilePage() {
   return (
     <main>
       {/* Cover */}
-      <div className="group relative h-40 overflow-hidden bg-surface-2 md:h-80">
+      <div className="group relative h-32 overflow-hidden bg-surface-2 md:h-80">
         {(() => {
           const linkable =
             !!profile.cover_work &&
@@ -518,8 +520,8 @@ function ProfilePage() {
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
         {/* Avatar + action buttons row — only the avatar overlaps the cover */}
-        <div className="-mt-10 flex items-end justify-between gap-3 md:-mt-16 md:gap-4">
-          <Avatar className="h-20 w-20 ring-4 ring-background md:h-32 md:w-32">
+        <div className="-mt-8 flex items-end justify-between gap-3 md:-mt-16 md:gap-4">
+          <Avatar className="h-[72px] w-[72px] ring-4 ring-background md:h-32 md:w-32">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
@@ -560,12 +562,12 @@ function ProfilePage() {
         </div>
 
         {/* Identity block — sits below the cover, never clipped */}
-        <div className="mt-4">
+        <div className="mt-3 md:mt-4">
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-2xl text-ink md:text-4xl">{name}</h1>
+            <h1 className="font-display text-[22px] leading-tight text-ink md:text-4xl">{name}</h1>
             <CreatorBadge status={profile.creator_status} />
           </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
             {profile.username && <span>@{profile.username}</span>}
             {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
               <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
@@ -595,24 +597,24 @@ function ProfilePage() {
               </a>
             )}
           </div>
-          {profile.headline && <p className="mt-2 text-sm text-ink-soft md:text-base">{profile.headline}</p>}
+          {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
           {/* Mobile-only compact link pills (IG + external_links) — sit right under the identity line */}
           <LinkPills
-            className="mt-3 md:hidden"
+            className="mt-2 md:hidden"
             instagram={profile.instagram_handle}
             links={profile.external_links ?? []}
           />
 
           {/* Mobile bio (short public blurb). Desktop bio still lives in the About tab. */}
           {profile.bio && profile.bio.trim().length > 0 && (
-            <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
+            <p className="mt-2 line-clamp-2 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
               {profile.bio}
             </p>
           )}
 
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted md:mt-3">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
@@ -677,10 +679,21 @@ function ProfilePage() {
 
         {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-6 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
-            <p className="whitespace-pre-wrap font-display text-lg italic leading-snug text-ink-soft md:text-2xl">
-              {profile.artist_statement}
-            </p>
+          <blockquote className="mt-3 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+            <button
+              type="button"
+              onClick={() => setStatementExpanded((v) => !v)}
+              aria-expanded={statementExpanded}
+              className="block w-full text-left md:pointer-events-none"
+            >
+              <p className={cn(
+                "whitespace-pre-wrap font-display italic leading-snug text-ink-soft",
+                "text-[15px] md:text-2xl",
+                !statementExpanded && "line-clamp-2 md:line-clamp-none",
+              )}>
+                {profile.artist_statement}
+              </p>
+            </button>
           </blockquote>
         )}
 
@@ -704,14 +717,14 @@ function ProfilePage() {
         )}
 
         {/* Tab bar */}
-        <div className="sticky top-0 z-20 mt-8 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:px-6">
+        <div className="sticky top-0 z-20 mt-4 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-8 md:px-6">
           <nav className="flex gap-1 overflow-x-auto">
             {visibleTabs.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
                 className={cn(
-                  "relative whitespace-nowrap px-3.5 py-3 text-sm capitalize transition",
+                  "relative whitespace-nowrap px-3.5 py-2.5 text-sm capitalize transition md:py-3",
                   defaultTab === t ? "text-ink" : "text-ink-muted hover:text-ink",
                 )}
               >
@@ -726,7 +739,7 @@ function ProfilePage() {
           </nav>
         </div>
 
-        <div className="py-8 pb-20">
+        <div className="py-4 pb-24 md:py-8 md:pb-20">
           {defaultTab === "works" && (
             <WorksTab
               owned={ownedWorks ?? []}
@@ -864,7 +877,7 @@ function WorksTab({
 
       {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
       {availableCats.length > 0 && (
-        <div className="mb-4 md:hidden">
+        <div className="mb-3 md:hidden">
           <CategoryScroller
             tabs={[
               { id: "all" as const, label: "All" },
@@ -991,17 +1004,17 @@ function PinBar({
   if (total === 0) {
     if (!isOwn || !hasAnyContent) return null;
     return (
-      <section className="mb-8 rounded-2xl border border-dashed border-border bg-surface p-5 text-center">
+      <section className="mb-6 rounded-2xl border border-dashed border-border bg-surface p-5 text-center md:mb-8">
         <p className="text-sm text-ink-muted">
-          No pins yet. Open a Work or Collab you're on and tap <span className="font-medium text-ink">Pin</span> to feature it here.
+          Nothing featured yet. Open a Work or Collab you're on and tap <span className="font-medium text-ink">Pin</span> to feature it here.
         </p>
       </section>
     );
   }
   return (
-    <section className="mb-8">
-      <h2 className="font-display text-lg text-ink">Pinned</h2>
-      <div className="mt-3 -mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="mb-6 md:mb-8">
+      <h2 className="font-display text-lg text-ink">Featured</h2>
+      <div className="mt-2 -mx-4 overflow-x-auto px-4 pb-2 md:mt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <ul className="flex snap-x snap-mandatory gap-3">
           {pinnedWorks.map((w) => (
             <li key={`w-${w.id}`} className="snap-start shrink-0">
