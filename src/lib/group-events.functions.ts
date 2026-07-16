@@ -21,7 +21,7 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     const supabase = publicClient();
     const { data: row, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
       .eq("slug", data.eventSlug)
       .is("deleted_at", null)
       .maybeSingle();
@@ -36,7 +36,7 @@ export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(asyn
   const supabase = publicClient();
   const { data, error } = await supabase
     .from("group_events")
-    .select(`${EVENT_FIELDS},group:groups!inner(slug,name,avatar_url)`)
+    .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`)
     .not("featured_at", "is", null)
     .gt("starts_at", new Date().toISOString())
     .is("deleted_at", null)
@@ -79,7 +79,7 @@ export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
     if (ids.length === 0) return [];
     const { data, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!inner(slug,name,avatar_url)`)
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`)
       .in("group_id", ids)
       .gt("starts_at", new Date().toISOString())
       .is("deleted_at", null)
@@ -167,7 +167,7 @@ export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("group_event_rsvps")
-      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!inner(slug,name,avatar_url))`)
+      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`)
       .eq("user_id", userId)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: false });
@@ -184,7 +184,7 @@ export const listMyPastRsvps = createServerFn({ method: "GET" })
     const { supabase, userId } = context;
     const { data, error } = await supabase
       .from("group_event_rsvps")
-      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!inner(slug,name,avatar_url))`)
+      .select(`status,plus_ones,event:group_events!inner(${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url))`)
       .eq("user_id", userId)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: false });
