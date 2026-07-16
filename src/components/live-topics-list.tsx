@@ -120,6 +120,30 @@ export function LiveTopicsList({
     });
   }, [liveByMedium]);
 
+  // Mobile-only: cap to 5 category rows. Prioritize live mediums, then
+  // critique/coworking, then fill from `sorted`. Dedupe.
+  const MOBILE_CAP = 5;
+  const mobileVisible = useMemo(() => {
+    const picked: Category[] = [];
+    const push = (id: Category) => {
+      if (picked.length >= MOBILE_CAP) return;
+      if (!picked.includes(id)) picked.push(id);
+    };
+    // 1) currently live, by count desc
+    [...liveByMedium.entries()]
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([id]) => push(id));
+    // 2) pinned priorities
+    push("critique" as Category);
+    push("coworking" as Category);
+    // 3) fill from sorted
+    for (const c of sorted) push(c.id);
+    return sorted.filter((c) => picked.includes(c.id))
+      .sort((a, b) => picked.indexOf(a.id) - picked.indexOf(b.id));
+  }, [liveByMedium, sorted]);
+
+
 
   // Arrow-key navigation between topic rows
   function handleListKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
