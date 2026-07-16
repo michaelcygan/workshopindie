@@ -1,58 +1,62 @@
-## Goal
 
-Let admins attach one event to one OR many groups when creating it, so a Chicago open mic can appear in "Chicago" and "Chicago · Folk" at the same time without duplicating the record.
+Scope: presentation-only changes in `src/routes/u.$username.tsx`, active below the existing `md` breakpoint. Desktop layout, data fetchers, tab state, filtering, sharing, Collab detail flow, and the DM/apply behavior are untouched.
 
-## Approach
+## What changes on mobile (`< md`)
 
-Keep the event as a single canonical row. Introduce a lightweight join table so extra groups can be tagged in addition to the event's primary `group_id` (which stays required — it owns the event slug, URL, and ownership).
+### 1. Tighter header stack
+- Reduce cover height (`h-40` on mobile, keep `md:h-80`).
+- Avatar becomes `h-20 w-20`, overlap `-mt-10`.
+- Action buttons (Follow, Message, Share, Report, Block on visitors — Share + Edit on owner) collapse to a single icon-button row that sits inline with the avatar, no wrapping. Existing components reused; only the `size` and label-hiding change on mobile.
+- Name / handle / location / headline collapse into a compact 3-line block. Aliases + tools chips hide on mobile (they remain in About).
+- Owner-only "Post to Gallery / Post a Collab / Drop into a Lounge" row hides on mobile (still visible `md:flex`); the completion chip and wrap-up nudge also move below the tab bar on mobile so the first screen leads with imagery and identity.
 
-### 1. Migration — `event_groups` join table
+### 2. Compact link row (reuses existing fields)
+- New small presentational component `LinkPills` inside the same file. On mobile only, renders a horizontally scrollable row of pill buttons built from:
+  - `profile.instagram_handle` → Instagram pill (existing `Instagram` icon from `lucide-react`).
+  - Each `profile.external_links[]` entry → pill using the saved label (falls back to hostname) and a generic `Link` icon; special-cased icons for common hosts (youtube, tiktok, x/twitter, spotify, soundcloud, bandcamp, vimeo, github, substack, are.na) picked from `lucide-react`.
+- No new DB fields, no link-management UI, no provider registry beyond the icon lookup table.
+- Placed directly under the identity block, above the artist statement.
 
-```
-event_groups
-  event_id  uuid  → group_events(id)  on delete cascade
-  group_id  uuid  → groups(id)        on delete cascade
-  primary key (event_id, group_id)
-  created_at timestamptz default now()
-```
+### 3. Artist statement lifts above the portfolio
+- The existing `blockquote` for `artist_statement` (already conditionally rendered) is kept where it is — on mobile it sits directly below the link row and above the tab bar, matching the current DOM order. Typography scales down a touch on mobile (`text-lg` vs `text-xl md:text-2xl`).
 
-- Grants: `authenticated` select, `service_role` all.
-- RLS: select allowed to anyone who can see the underlying event; insert/update/delete restricted to admins (mirrors `group_events` admin policy).
-- Backfill: `INSERT INTO event_groups (event_id, group_id) SELECT id, group_id FROM group_events` so every existing event has itself listed. From now on, the primary `group_id` is always mirrored into `event_groups` too.
+### 4. Category tiles → existing Work filter
+- Inside `WorksTab`, on mobile only (`md:hidden`), when `activeCat === "all"` and `roleFilter === "all"`, render category tiles instead of the desktop chip strip + 3-col grid:
+  - One tile per entry in `availableCats` (derived from the merged Works — already computed).
+  - Each tile is a full-width vertical card (`aspect-[3/2]`) stacked in `space-y-3`.
+  - Cover source, in order: cover of the top pinned Work in that category (from `pinnedWorks`), else cover of the most recent published Work in that category (from `filtered`/`roleFiltered`), else the existing category color via `categoryClass(cat)` used as the tile background.
+  - Overlay: category label + count in the same type scale as the existing hero card.
+  - Tapping a tile calls `setActiveCat(cat)` — reuses the existing local filter state. The grid then renders the same `WorkCard` list already used.
+  - When a category is active on mobile, show a small "← All categories" button that calls `setActiveCat("all")` to return to the tile view. Sort dropdown remains available.
+- Desktop keeps the current chip + grid layout unchanged (tiles are `md:hidden`, the chip strip stays `hidden md:flex`).
+- Pinned strip continues to appear above the tiles on mobile only when it's non-empty AND at least 2 pinned pieces exist, so we don't double up when there's only one Work.
 
-### 2. Server function — `createEvent` in `src/lib/group-events-admin.functions.ts`
+### 5. Open Collabs banner (mobile only)
+- Above the tab bar on mobile, when `!isOwn && (openCollabs?.length ?? 0) > 0`, render a single compact pill/button: `Open to collaborate · N Collab{s}`.
+- Tapping it calls `setTab("collabs")` — reuses the existing tab route + Collabs list. Nothing renders when there are no open Collabs.
+- Owners: the same pill shows with an "Open" label but taps switch to the Collabs tab too (no apply implication for them). No banner appears on desktop.
 
-- Accept a new optional `group_ids: string[]` alongside existing `group_id`.
-- Treat `group_id` as the primary/canonical group (used for slug and route).
-- After insert, upsert rows into `event_groups` for every id in `group_ids ∪ {group_id}` (dedup). No-op if only the primary is selected.
-- Same treatment for the update path (if/when admin edit lands) — out of scope for this pass unless trivial.
+### 6. Secondary info drops below portfolio on mobile
+- The existing "Stats strip" (Gallery / Worked with / Followers / Following) moves below the tabbed content on mobile via a second render slot (`md:hidden`) — the desktop copy stays where it is (`hidden md:flex`).
+- Tools chip row and aliases already hidden per §1; they remain visible in the About tab.
+- The About tab, Groups section, and Frequent Collaborators are unchanged and remain reachable via the tab bar.
 
-### 3. Admin form — `src/routes/admin.events.tsx`
+### 7. Collab apply flow — mobile spacing check only
+- Read `src/routes/collab.$slug.tsx` to confirm the existing "I'm in" action, short application note, and DM handoff are already gated on `!isOwner` (line 296 shows `isOwner = user?.id === post.user_id`; owner CTAs render under `isOwner &&` and visitor CTAs under `!isOwner &&`, so owners already cannot apply — no logic change).
+- Apply small mobile-only tweaks in that file: full-width primary button below `sm`, dialog padding tightened (`p-4 sm:p-6`), and the application note textarea gets `text-base` on mobile to prevent iOS zoom. No new state, no new dialogs.
 
-Replace the current single `Group` `<Select>` with:
-
-- **Primary group** — the existing `<Select>` (required). Determines URL/slug/ownership.
-- **Also show in** — a multi-select chip picker underneath, listing all other groups from `adminListGroups`. Selecting one adds a removable pill. Empty by default.
-- Submit sends `group_id` (primary) plus `group_ids` (extras, primary excluded to keep the payload clean; server re-adds it).
-
-Small, self-contained component inside `admin.events.tsx` — no new files needed. Uses existing shadcn primitives (Command / Popover) to stay consistent with the rest of admin UI.
-
-### 4. Read paths — where multi-group takes effect
-
-- **Group Events tab (`g.$slug.tsx`)** — swap the current `group_events.group_id = :group.id` filter for `event_id IN (SELECT event_id FROM event_groups WHERE group_id = :group.id)`. This is the whole point: an event tagged to N groups shows up under each.
-- **Main events page + homepage** — no change; they already read from `group_events` directly and each event still has exactly one row. Dedup is automatic.
-- **Admin table** — no change (still one row per event, primary group shown). Optionally show a `+N` chip if extras exist — nice-to-have, will include if it's a 3-line addition.
-
-### 5. Not doing on day 1
-
-- No UI for members to see "also posted in" list on the event detail page. Can add later as a small footer chip row.
-- No changing the event's primary group after creation.
-- No per-group visibility overrides (e.g. hide from one but keep in others).
+## Non-goals (explicitly out of scope)
+- No new tables, columns, RLS, functions, migrations, or Supabase queries.
+- No new route files, no changes to `routeTree.gen.ts`, no auth changes.
+- No QR codes, camera, or event-networking mode.
+- No new npm dependencies (all icons come from `lucide-react`, already installed).
+- No redesign of `WorkCard`, `CategoryChip`, `ShareSheet`, `MessageButton`, `FollowButton`, or the Collab detail page beyond the spacing tweaks above.
+- Desktop layout at `md+` is unchanged pixel-for-pixel.
 
 ## Files touched
+- `src/routes/u.$username.tsx` — the mobile changes above; adds one internal `LinkPills` component and one internal `CategoryTiles` component in the same file.
+- `src/routes/collab.$slug.tsx` — small mobile spacing / textarea size tweaks only.
 
-- New migration (join table + backfill + RLS + grants)
-- `src/lib/group-events-admin.functions.ts` — extend `createEvent` payload + writes
-- `src/lib/group-events.functions.ts` — group-scoped list query switches to join-table filter
-- `src/routes/admin.events.tsx` — add multi-select "Also show in"
-- `src/routes/g.$slug.tsx` — pick up the new query shape (types only if any)
+## Verification
+- Playwright at 375×812 and 414×896: capture screenshots of a profile with Works across ≥2 categories, one with open Collabs, and one without; confirm no horizontal overflow (`document.documentElement.scrollWidth <= innerWidth`), category tile tap reveals filtered Work cards, "Open to collaborate" pill switches to the Collabs tab, and the desktop viewport (1280×900) is visually identical to before.
+- Verify owner viewing their own profile: no apply CTA visible on their own Collab detail page (existing behavior confirmed above); "Open to collaborate" pill hidden for anonymous visitors when no open Collabs.
