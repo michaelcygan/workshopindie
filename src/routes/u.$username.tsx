@@ -248,6 +248,27 @@ async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
     }));
 }
 
+type PinnedCollab = {
+  id: string;
+  title: string;
+  slug: string;
+  category: Category;
+  pinned_at: string;
+  status: string;
+};
+async function fetchPinnedCollabs(userId: string): Promise<PinnedCollab[]> {
+  const { data, error } = await supabase
+    .from("collab_posts")
+    .select("id,title,slug,category,pinned_at,status")
+    .eq("user_id", userId)
+    .not("pinned_at", "is", null)
+    .neq("status", "draft")
+    .order("pinned_at", { ascending: false })
+    .limit(6);
+  if (error) throw error;
+  return (data ?? []) as PinnedCollab[];
+}
+
 
 type CollabRow = { id: string; title: string; slug: string; category: Category; description: string | null; created_at: string };
 async function fetchOpenCollabs(userId: string): Promise<CollabRow[]> {
@@ -304,6 +325,11 @@ function ProfilePage() {
   const { data: pinnedWorks } = useQuery({
     queryKey: ["profile-pinned", profile?.id],
     queryFn: () => fetchPinnedWorks(profile!.id),
+    enabled: !!profile?.id,
+  });
+  const { data: pinnedCollabs } = useQuery({
+    queryKey: ["profile-pinned-collabs", profile?.id],
+    queryFn: () => fetchPinnedCollabs(profile!.id),
     enabled: !!profile?.id,
   });
   const { data: workshops } = useQuery({
@@ -703,6 +729,7 @@ function ProfilePage() {
               owned={ownedWorks ?? []}
               credited={creditedWorks ?? []}
               pinnedWorks={pinnedWorks ?? []}
+              pinnedCollabs={pinnedCollabs ?? []}
               isOwn={isOwn}
               ownerName={name}
               isLoading={!ownedWorks || !creditedWorks}
@@ -757,11 +784,12 @@ type MergedWork = WorkCardData & {
 type SortMode = "recent" | "oldest" | "loved";
 
 function WorksTab({
-  owned, credited, pinnedWorks, isOwn, ownerName, isLoading,
+  owned, credited, pinnedWorks, pinnedCollabs, isOwn, ownerName, isLoading,
 }: {
   owned: OwnedWork[];
   credited: CreditWork[];
   pinnedWorks: WorkCardData[];
+  pinnedCollabs: PinnedCollab[];
   isOwn: boolean;
   ownerName: string;
   isLoading: boolean;
@@ -801,7 +829,7 @@ function WorksTab({
     return <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />)}</div>;
   }
 
-  if (merged.length === 0 && pinnedWorks.length === 0) {
+  if (merged.length === 0 && pinnedWorks.length === 0 && pinnedCollabs.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
@@ -821,28 +849,15 @@ function WorksTab({
 
   return (
     <>
-      {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
-        <section className={cn("mb-10", pinnedWorks.length < 2 && "hidden md:block")}>
-          <h2 className="font-display text-xl text-ink">Pinned</h2>
-          <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 pieces {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
-          <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
-            {pinnedWorks.map((w) => (
-              <WorkCard
-                key={w.id}
-                work={w}
-                density="hero"
-                showAvatars
-                showCounters
-              />
-            ))}
-          </div>
-        </section>
+      {activeCat === "all" && roleFilter === "all" && (
+        <PinBar
+          pinnedWorks={pinnedWorks}
+          pinnedCollabs={pinnedCollabs}
+          isOwn={isOwn}
+          hasAnyContent={merged.length > 0}
+        />
       )}
-      {pinnedWorks.length === 0 && isOwn && merged.length > 0 && (
-        <section className="mb-10 rounded-2xl border border-dashed border-border bg-surface p-6 text-center">
-          <p className="text-sm text-ink-muted">No pinned pieces yet. Open a piece you're credited on and tap <span className="font-medium text-ink">Pin</span> to feature it here.</p>
-        </section>
-      )}
+
 
       {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
       {availableCats.length > 0 && (

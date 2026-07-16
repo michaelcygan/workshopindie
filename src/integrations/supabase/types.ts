@@ -378,6 +378,7 @@ export type Database = {
           id: string
           live_workshop_id: string | null
           location_mode: Database["public"]["Enums"]["location_type"]
+          pinned_at: string | null
           resulting_work_id: string | null
           rights_arrangement: string | null
           slug: string
@@ -410,6 +411,7 @@ export type Database = {
           id?: string
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
+          pinned_at?: string | null
           resulting_work_id?: string | null
           rights_arrangement?: string | null
           slug: string
@@ -442,6 +444,7 @@ export type Database = {
           id?: string
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
+          pinned_at?: string | null
           resulting_work_id?: string | null
           rights_arrangement?: string | null
           slug?: string

@@ -1,33 +1,56 @@
-Give the mobile medium tiles subtle life — a slow cross-fade slideshow through that medium's covers with a gentle Ken Burns zoom/pan. Presentation-only, mobile tiles only, no data changes.
+## Goal
+
+Turn the "Pinned" area on the profile (currently works-only) into a unified **Pin Bar** — a compact, horizontally-scrollable "featured / quick-select" row that mixes pinned Works and pinned Collabs. Works on mobile and desktop. Pinning uses the same flow already established on the Work detail page (a Pin button on the item itself), extended to Collabs.
 
 ## Scope
-- File: `src/routes/u.$username.tsx` only.
-- Affects the mobile `showMobileTiles` block inside `WorksTab` (the Film / Music / Books tiles). Desktop layout untouched.
 
-## New internal component: `CategoryTileMedia`
-Small component defined in the same file. Props: `covers: string[]` (deduped, ordered pinned-first then recent), `className?`.
+- Add collab pinning that mirrors work pinning.
+- Replace the current "Pinned" section on `u.$username` with a single Pin Bar.
+- Keep the existing empty-state copy intent, updated to mention both.
 
-Behavior:
-- Picks up to 5 covers for the category from `pinnedWorks` + `roleFiltered` (existing arrays already in scope), deduped, dropping any without a `cover_url`. Falls back to the existing colored panel when there are 0 covers, and stays static when there is exactly 1.
-- Renders each cover as a stacked `<img class="absolute inset-0 h-full w-full object-cover">`; the "active" one has opacity 1, others 0, transitioning with a plain CSS `transition-opacity duration-700`.
-- A single `setInterval` advances the index every ~5s. Only one interval per tile; cleared on unmount and paused via `document.visibilityState === "hidden"` so background tabs don't churn.
-- Ken Burns: apply `animation: kenburns 12s ease-in-out infinite alternate` to the active image. Two keyframes only (`scale(1) translate(0,0)` → `scale(1.06) translate(-1.5%, -1%)`) — very subtle drift + slight zoom.
-- Respects `prefers-reduced-motion`: no interval, no keyframes; renders the first cover statically.
-- `loading="lazy"` on all imgs; `decoding="async"`; `draggable={false}`.
+Out of scope: reordering (pins stay sorted by `pinned_at desc`), groups/events, changing the mediums chip row below.
 
-## Wiring in `WorksTab`
-Replace the single-cover `<img>`/color-block inside the existing tile button with `<CategoryTileMedia covers={...} />`. Everything else about the tile (aspect ratio, rounded corners, bottom gradient, label pill, count pill, tap handler) stays exactly as it is.
+## Data
 
-## CSS
-Add the `@keyframes kenburns` block once in `src/styles.css` (top-level, after existing keyframes if any) so no Tailwind config changes are needed.
+Mirror the existing `work_credits.pinned_at` pattern.
 
-## Non-goals
-- No new data fetch, no schema/RLS changes, no new deps, no changes to `WorkCard`, desktop grid, or the chip scroller.
-- No autoplay video, no parallax on scroll, no per-tile audio — just cross-fade + slow Ken Burns.
+- `collab_posts.pinned_at timestamptz null` — nullable, indexed. Pinnable only by the post owner (`user_id = auth.uid()`), enforced in the server fn (RLS already restricts updates to owner).
+- No schema change for works — keep `work_credits.pinned_at` as-is.
+- Combined cap of **6 pins total** across works + collabs (matches the current `MAX_PINS = 6`). Enforced server-side.
 
-## Verification
-- Playwright at 375×812 on a profile where Film and Music each have 2+ covers: capture the tile at frame 0 and again after ~6s; the active cover changes and the crop drifts subtly.
-- Category with exactly 1 cover: no fade, gentle Ken Burns only.
-- Category with 0 covers: colored fallback panel, no motion.
-- With `prefers-reduced-motion: reduce`: static first cover, no animation.
-- Desktop 1280×900: pixel-identical.
+## Server functions (`src/lib/`)
+
+- `togglePinCollab({ collabId })` — mirrors `togglePinCredit`; sets/clears `collab_posts.pinned_at`; enforces owner + combined 6-pin cap (counts work_credits pins + collab pins for this user).
+- `getMyPinForCollab({ collabId })` — mirrors `getMyPinForWork`; returns `{ pinned, totalPinned, maxPins }`.
+- Update `togglePinCredit` cap check to also count collab pins so the ceiling is shared.
+
+## UI
+
+**Collab detail page (`src/routes/collab.$slug.tsx`)** — add the same Pin/Unpin button used on the Work page (visible only to the owner), reusing the styling from the `PinButton` in `works.$slug.tsx`.
+
+**Profile Pin Bar (`src/routes/u.$username.tsx`)**
+- New `fetchPinnedCollabs(userId)` alongside `fetchPinnedWorks`; merge into a single `pins: PinItem[]` sorted by `pinned_at desc` (max 6).
+- Replace the existing "Pinned" `<section>` (and the mobile-hidden branch) with a `PinBar` component:
+  - Horizontal `overflow-x-auto snap-x` row of compact cards (~140px wide on mobile, ~180px on desktop): cover thumbnail, title, small type badge ("Work" / "Collab"), tap → item route.
+  - Shown whenever `pins.length > 0`, on both mobile and desktop, above the medium chip row.
+  - Empty state (own profile only, when there are items to pin): "No pins yet. Open a Work or Collab you're on and tap **Pin** to feature it here."
+
+## Edit-profile flow
+
+The `Pinned pieces` section in `src/routes/me.edit.tsx` already syncs `pinned_work_ids` on save; leave the current works picker in place but relabel the section "Pinned works" and add a short caption noting collabs are pinned from the collab page (matches the works flow — no new picker needed, keeping "same established flow").
+
+## Technical notes
+
+- One migration: add `pinned_at` column + index on `collab_posts`; no new grants (table already has them).
+- Type regen for `collab_posts` picks up the new column automatically.
+- Query keys: `["profile-pinned-collabs", profile.id]`; invalidate alongside existing `profile-pinned` on toggle.
+- Verification: Playwright at 375×812 and 1280×900 — pin a work, pin a collab, confirm both appear in the bar in most-recent-first order, unpin removes them, 7th pin shows the cap toast.
+
+## Files
+
+- new migration adding `collab_posts.pinned_at`
+- `src/lib/works.functions.ts` — extend cap check
+- `src/lib/collabs.functions.ts` (or nearest existing collab functions file) — add `togglePinCollab`, `getMyPinForCollab`
+- `src/routes/collab.$slug.tsx` — Pin button
+- `src/routes/u.$username.tsx` — new `PinBar`, replace old Pinned section, merged fetch
+- `src/routes/me.edit.tsx` — label/caption tweak only

@@ -1,0 +1,2 @@
+ALTER TABLE public.collab_posts ADD COLUMN IF NOT EXISTS pinned_at timestamptz;
+CREATE INDEX IF NOT EXISTS collab_posts_pinned_at_idx ON public.collab_posts (user_id, pinned_at) WHERE pinned_at IS NOT NULL;
