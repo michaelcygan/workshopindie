@@ -209,13 +209,21 @@ export const togglePinCredit = createServerFn({ method: "POST" })
       return { pinned: false };
     }
 
-    const { count } = await supabase
-      .from("work_credits")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .not("pinned_at", "is", null);
-    if ((count ?? 0) >= MAX_PINS) {
-      throw new Error(`You can pin up to ${MAX_PINS} Works. Unpin one first.`);
+    const [workRes, collabRes] = await Promise.all([
+      supabase
+        .from("work_credits")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+      supabase
+        .from("collab_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+    ]);
+    const total = (workRes.count ?? 0) + (collabRes.count ?? 0);
+    if (total >= MAX_PINS) {
+      throw new Error(`You can pin up to ${MAX_PINS} items. Unpin one first.`);
     }
 
     const { error } = await supabase
@@ -233,7 +241,7 @@ export const getMyPinForWork = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const [credit, total] = await Promise.all([
+    const [credit, workTotal, collabTotal] = await Promise.all([
       supabase
         .from("work_credits")
         .select("id,pinned_at")
@@ -245,11 +253,16 @@ export const getMyPinForWork = createServerFn({ method: "POST" })
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId)
         .not("pinned_at", "is", null),
+      supabase
+        .from("collab_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
     ]);
     return {
       creditId: credit.data?.id ?? null,
       pinned: !!credit.data?.pinned_at,
-      totalPinned: total.count ?? 0,
+      totalPinned: (workTotal.count ?? 0) + (collabTotal.count ?? 0),
       maxPins: MAX_PINS,
     };
   });

@@ -713,3 +713,88 @@ export const getMyCollabMembership = createServerFn({ method: "POST" })
     };
   });
 
+
+/* ---------------- Portfolio pinning ---------------- */
+
+const MAX_PROFILE_PINS = 6;
+
+export const togglePinCollab = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { collabId: string }) =>
+    z.object({ collabId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row, error: rErr } = await supabase
+      .from("collab_posts")
+      .select("id,user_id,pinned_at")
+      .eq("id", data.collabId)
+      .maybeSingle();
+    if (rErr) throw new Error(rErr.message);
+    if (!row || row.user_id !== userId) throw new Error("Not your collab");
+
+    if (row.pinned_at) {
+      const { error } = await supabase
+        .from("collab_posts")
+        .update({ pinned_at: null })
+        .eq("id", row.id);
+      if (error) throw new Error(error.message);
+      return { pinned: false };
+    }
+
+    const [workRes, collabRes] = await Promise.all([
+      supabase
+        .from("work_credits")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+      supabase
+        .from("collab_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+    ]);
+    const total = (workRes.count ?? 0) + (collabRes.count ?? 0);
+    if (total >= MAX_PROFILE_PINS) {
+      throw new Error(`You can pin up to ${MAX_PROFILE_PINS} items. Unpin one first.`);
+    }
+
+    const { error } = await supabase
+      .from("collab_posts")
+      .update({ pinned_at: new Date().toISOString() })
+      .eq("id", row.id);
+    if (error) throw new Error(error.message);
+    return { pinned: true };
+  });
+
+export const getMyPinForCollab = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { collabId: string }) =>
+    z.object({ collabId: z.string().uuid() }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const [row, workRes, collabRes] = await Promise.all([
+      supabase
+        .from("collab_posts")
+        .select("user_id,pinned_at")
+        .eq("id", data.collabId)
+        .maybeSingle(),
+      supabase
+        .from("work_credits")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+      supabase
+        .from("collab_posts")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .not("pinned_at", "is", null),
+    ]);
+    return {
+      isOwner: row.data?.user_id === userId,
+      pinned: !!row.data?.pinned_at,
+      totalPinned: (workRes.count ?? 0) + (collabRes.count ?? 0),
+      maxPins: MAX_PROFILE_PINS,
+    };
+  });

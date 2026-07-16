@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff } from "lucide-react";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -17,7 +17,7 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
-import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab } from "@/lib/collab.functions";
+import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
 import { WorksBornHere } from "@/components/works-born-here";
@@ -390,6 +390,7 @@ function CollabDetail() {
                     </Link>
                   </Button>
                 )}
+                {!isDraft && <PinCollabButton collabId={post.id} />}
                 {post.status === "open" && (
                   <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                     <CheckCircle2 className="h-3.5 w-3.5" /> Close
@@ -700,3 +701,46 @@ function CollabDetail() {
   );
 }
 
+
+function PinCollabButton({ collabId }: { collabId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const fetchPin = useServerFn(getMyPinForCollab);
+  const togglePin = useServerFn(togglePinCollab);
+  const [busy, setBusy] = useState(false);
+  const { data, refetch } = useQuery({
+    queryKey: ["my-pin-collab", collabId, user?.id],
+    enabled: !!user,
+    queryFn: () => fetchPin({ data: { collabId } }),
+    staleTime: 30_000,
+  });
+  if (!user || !data?.isOwner) return null;
+  const pinned = data.pinned;
+  const onClick = async () => {
+    setBusy(true);
+    try {
+      const res = await togglePin({ data: { collabId } });
+      toast.success(res.pinned ? "Pinned to your profile" : "Unpinned");
+      await refetch();
+      qc.invalidateQueries({ queryKey: ["profile-pinned-collabs"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't update pin");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const Icon = pinned ? PinOff : Pin;
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      onClick={onClick}
+      disabled={busy}
+      className="rounded-full gap-1"
+      title={pinned ? "Unpin from your profile" : `Pin to your profile (${data.totalPinned}/${data.maxPins})`}
+    >
+      <Icon className="h-3.5 w-3.5" />
+      <span>{pinned ? "Pinned" : "Pin"}</span>
+    </Button>
+  );
+}
