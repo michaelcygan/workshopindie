@@ -711,6 +711,14 @@ function ProfilePage() {
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
           )}
+
+          {/* Mobile-only stats strip (below the portfolio) */}
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:hidden">
+            <Stat label="Gallery" value={counts.works} />
+            <Stat label="Worked with" value={profile.worked_with_count} />
+            <Stat label="Followers" value={profile.follower_count} />
+            <Stat label="Following" value={profile.following_count} />
+          </div>
         </div>
       </div>
     </main>
