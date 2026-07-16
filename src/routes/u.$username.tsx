@@ -614,7 +614,7 @@ function ProfilePage() {
           )}
 
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted md:mt-3">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
