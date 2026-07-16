@@ -413,7 +413,7 @@
 }
 
 @utility animate-kenburns {
-  animation: kenburns 12s ease-in-out infinite alternate;
+  animation: kenburns 16s ease-in-out infinite alternate;
 }
 
 @media (prefers-reduced-motion: reduce) {
