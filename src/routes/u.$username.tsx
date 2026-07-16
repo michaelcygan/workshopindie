@@ -876,14 +876,7 @@ function WorksTab({
 
   return (
     <>
-      {activeCat === "all" && roleFilter === "all" && (
-        <PinBar
-          pinnedWorks={pinnedWorks}
-          pinnedCollabs={pinnedCollabs}
-          isOwn={isOwn}
-          hasAnyContent={merged.length > 0}
-        />
-      )}
+
 
 
       {/* Mobile swipeable medium selector — always visible on mobile when there are categories */}
