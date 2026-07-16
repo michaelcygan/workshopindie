@@ -679,10 +679,21 @@ function ProfilePage() {
 
         {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-6 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
-            <p className="whitespace-pre-wrap font-display text-lg italic leading-snug text-ink-soft md:text-2xl">
-              {profile.artist_statement}
-            </p>
+          <blockquote className="mt-3 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+            <button
+              type="button"
+              onClick={() => setStatementExpanded((v) => !v)}
+              aria-expanded={statementExpanded}
+              className="block w-full text-left md:pointer-events-none"
+            >
+              <p className={cn(
+                "whitespace-pre-wrap font-display italic leading-snug text-ink-soft",
+                "text-[15px] md:text-2xl",
+                !statementExpanded && "line-clamp-2 md:line-clamp-none",
+              )}>
+                {profile.artist_statement}
+              </p>
+            </button>
           </blockquote>
         )}
 
