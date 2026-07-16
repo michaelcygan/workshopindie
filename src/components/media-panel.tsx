@@ -972,13 +972,14 @@ export function FullscreenRoom({
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 rounded-full border border-background/15 bg-background/10 backdrop-blur-md px-2 py-2 shadow-2xl"
+        className="fixed left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 rounded-full border border-background/15 bg-background/10 backdrop-blur-md px-2 py-2 shadow-2xl min-h-[52px]"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
       >
-        <DockButton onClick={m.toggleMute} active={!m.muted}>
+        <DockButton onClick={m.toggleMute} active={!m.muted} ariaLabel={m.muted ? "Unmute" : "Mute"}>
           {m.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           <span className="hidden sm:inline">{m.muted ? "Unmute" : "Mute"}</span>
         </DockButton>
-        <DockButton onClick={() => m.setCameraEnabled(!m.cameraOn)} active={m.cameraOn} disabled={m.busy}>
+        <DockButton onClick={() => m.setCameraEnabled(!m.cameraOn)} active={m.cameraOn} disabled={m.busy} ariaLabel={m.cameraOn ? "Camera off" : "Camera on"}>
           {m.cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
           <span className="hidden sm:inline">{m.cameraOn ? "Camera off" : "Camera on"}</span>
         </DockButton>
@@ -988,7 +989,8 @@ export function FullscreenRoom({
         <button
           type="button"
           onClick={onExit}
-          className="inline-flex items-center gap-1.5 rounded-full bg-destructive/90 hover:bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition"
+          aria-label="Exit"
+          className="inline-flex items-center gap-1.5 rounded-full bg-destructive/90 hover:bg-destructive px-4 min-h-11 py-2 text-sm font-medium text-destructive-foreground transition"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Exit</span>
