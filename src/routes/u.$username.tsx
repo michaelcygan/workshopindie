@@ -460,10 +460,11 @@ function ProfilePage() {
       <div className="group relative h-40 overflow-hidden bg-surface-2 md:h-80">
         {(() => {
           const linkable =
-            profile.cover_url &&
-            profile.cover_work &&
-            profile.cover_work.status === "published" &&
-            ["public", "unlisted"].includes(profile.cover_work.visibility);
+            !!profile.cover_work &&
+            (isOwn ||
+              (profile.cover_url &&
+                profile.cover_work.status === "published" &&
+                ["public", "unlisted"].includes(profile.cover_work.visibility)));
           const img = profile.cover_url ? (
             <img src={profile.cover_url} alt="" className="h-full w-full object-cover" />
           ) : (
@@ -485,8 +486,9 @@ function ProfilePage() {
         })()}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent to-background/60" />
         {profile.cover_url && profile.cover_work &&
-          profile.cover_work.status === "published" &&
-          ["public", "unlisted"].includes(profile.cover_work.visibility) && (
+          (isOwn ||
+            (profile.cover_work.status === "published" &&
+              ["public", "unlisted"].includes(profile.cover_work.visibility))) && (
           <div className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/85 px-2.5 py-1 text-[11px] font-medium text-ink shadow-soft backdrop-blur">
             <ExternalLink className="h-3 w-3" /> Open Work
           </div>
