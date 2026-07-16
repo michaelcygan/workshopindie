@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowRight } from "lucide-react";
 import { CategoryScroller } from "@/components/category-scroller";
@@ -863,10 +863,14 @@ function WorksTab({
         <div className="mb-6 space-y-3 md:hidden">
           {availableCats.map((c) => {
             const cid = c.id as Category;
-            const cover =
-              pinnedWorks.find((w) => w.category === cid && w.cover_url)?.cover_url
-              ?? roleFiltered.find((w) => w.category === cid && w.cover_url)?.cover_url
-              ?? null;
+            const covers = Array.from(
+              new Set(
+                [
+                  ...pinnedWorks.filter((w) => w.category === cid).map((w) => w.cover_url),
+                  ...roleFiltered.filter((w) => w.category === cid).map((w) => w.cover_url),
+                ].filter((u): u is string => typeof u === "string" && u.length > 0),
+              ),
+            ).slice(0, 5);
             const count = catCounts.get(cid) ?? 0;
             return (
               <button
@@ -875,8 +879,8 @@ function WorksTab({
                 onClick={() => setActiveCat(cid)}
                 className="group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl text-left"
               >
-                {cover ? (
-                  <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-active:scale-[1.02]" />
+                {covers.length > 0 ? (
+                  <CategoryTileMedia covers={covers} />
                 ) : (
                   <div className={cn("h-full w-full", categoryClass(cid))} />
                 )}
@@ -893,6 +897,7 @@ function WorksTab({
               </button>
             );
           })}
+
         </div>
       )}
 
@@ -970,6 +975,56 @@ function MediumChip({ active, onClick, label, count }: { active: boolean; onClic
     </button>
   );
 }
+
+function CategoryTileMedia({ covers }: { covers: string[] }) {
+  const [i, setI] = useState(0);
+  const [reduce, setReduce] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduce(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (reduce || covers.length < 2) return;
+    let id: number | null = null;
+    const start = () => {
+      if (id != null) return;
+      id = window.setInterval(() => setI((n) => (n + 1) % covers.length), 5000);
+    };
+    const stop = () => {
+      if (id != null) { window.clearInterval(id); id = null; }
+    };
+    const onVis = () => (document.visibilityState === "hidden" ? stop() : start());
+    start();
+    document.addEventListener("visibilitychange", onVis);
+    return () => { stop(); document.removeEventListener("visibilitychange", onVis); };
+  }, [covers.length, reduce]);
+
+  return (
+    <>
+      {covers.map((src, idx) => (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          draggable={false}
+          className={cn(
+            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700 ease-in-out",
+            idx === i ? "opacity-100" : "opacity-0",
+            !reduce && idx === i && "animate-kenburns",
+          )}
+        />
+      ))}
+    </>
+  );
+}
+
 
 /* ---------------- COLLABS TAB ---------------- */
 
