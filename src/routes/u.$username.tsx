@@ -805,6 +805,7 @@ function WorksTab({
 
   const createdCount = merged.filter((w) => w._role === "created").length;
   const creditedCount = merged.filter((w) => w._role === "credited").length;
+  const showMobileTiles = activeCat === "all" && roleFilter === "all" && availableCats.length > 0;
 
   return (
     <>
