@@ -662,13 +662,13 @@ function CollabDetail() {
       </motion.div>
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
-        <DialogContent>
+        <DialogContent className="p-4 sm:p-6">
           <DialogHeader><DialogTitle>Tell {(hostUser?.display_name || "the host")} you're in</DialogTitle></DialogHeader>
-          <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quick intro: who you are, why this caught your eye, links to your work…" />
+          <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quick intro: who you are, why this caught your eye, links to your work…" className="text-base sm:text-sm" />
           <p className="text-xs text-ink-muted">They'll get a notification with your message and a link to your profile.</p>
-          <DialogFooter>
-            <Button variant="ghost" className="rounded-full" onClick={() => setContactOpen(false)}>Cancel</Button>
-            <Button className="rounded-full" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
+            <Button variant="ghost" className="w-full rounded-full sm:w-auto" onClick={() => setContactOpen(false)}>Cancel</Button>
+            <Button className="w-full rounded-full sm:w-auto" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
               {sendContact.isPending ? "Sending…" : "Send"}
             </Button>
           </DialogFooter>
