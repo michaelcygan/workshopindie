@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { RenderLinks } from "@/lib/render-links";
 
