@@ -976,6 +976,68 @@ function WorksTab({
   );
 }
 
+function PinBar({
+  pinnedWorks, pinnedCollabs, isOwn, hasAnyContent,
+}: {
+  pinnedWorks: WorkCardData[];
+  pinnedCollabs: PinnedCollab[];
+  isOwn: boolean;
+  hasAnyContent: boolean;
+}) {
+  const total = pinnedWorks.length + pinnedCollabs.length;
+  if (total === 0) {
+    if (!isOwn || !hasAnyContent) return null;
+    return (
+      <section className="mb-8 rounded-2xl border border-dashed border-border bg-surface p-5 text-center">
+        <p className="text-sm text-ink-muted">
+          No pins yet. Open a Work or Collab you're on and tap <span className="font-medium text-ink">Pin</span> to feature it here.
+        </p>
+      </section>
+    );
+  }
+  return (
+    <section className="mb-8">
+      <h2 className="font-display text-lg text-ink">Pinned</h2>
+      <div className="mt-3 -mx-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex snap-x snap-mandatory gap-3">
+          {pinnedWorks.map((w) => (
+            <li key={`w-${w.id}`} className="snap-start shrink-0">
+              <Link
+                to="/works/$slug"
+                params={{ slug: w.slug }}
+                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+              >
+                <div className={cn("relative aspect-square overflow-hidden rounded-2xl bg-surface-2", !w.cover_url && categoryClass(w.category))}>
+                  {w.cover_url && (
+                    <img src={w.cover_url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  )}
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Work</span>
+                </div>
+                <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{w.title}</p>
+              </Link>
+            </li>
+          ))}
+          {pinnedCollabs.map((c) => (
+            <li key={`c-${c.id}`} className="snap-start shrink-0">
+              <Link
+                to="/collab/$slug"
+                params={{ slug: c.slug }}
+                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+              >
+                <div className={cn("relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-3", categoryClass(c.category))}>
+                  <span className="line-clamp-3 text-center text-xs font-medium text-white/90">{c.title}</span>
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Collab</span>
+                </div>
+                <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{c.title}</p>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
 function MediumChip({ active, onClick, label, count }: { active: boolean; onClick: () => void; label: string; count: number }) {
   return (
     <button
