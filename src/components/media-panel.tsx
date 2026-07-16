@@ -689,14 +689,83 @@ export function FullscreenRoom({
               )}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setChatOpen((v) => !v)}
-            className="lg:hidden inline-flex items-center gap-1.5 rounded-full bg-background/10 px-3 py-1.5 text-xs text-background/90 hover:bg-background/15"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat {messages.length > 0 && `(${messages.length})`}
-          </button>
+          {/* Mobile: Chat / Work / Collabs pill group + More overflow. */}
+          <div className="lg:hidden flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setMobileSheet((s) => (s === "chat" ? null : "chat"))}
+              aria-pressed={mobileSheet === "chat"}
+              className={cn(
+                "relative inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                mobileSheet === "chat" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+              )}
+              aria-label="Chat"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Chat</span>
+              {unread && (
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-[#0a0a0a]" />
+              )}
+            </button>
+            {gallerySlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "work" ? null : "work"))}
+                aria-pressed={mobileSheet === "work"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "work" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Work"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span>Work</span>
+              </button>
+            )}
+            {collabsSlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "collabs" ? null : "collabs"))}
+                aria-pressed={mobileSheet === "collabs"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "collabs" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Collabs"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>Collabs</span>
+              </button>
+            )}
+            {/* More: screen share (functionality preserved on mobile). */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More controls"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/10 text-background/90 hover:bg-background/15"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-52 p-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (m.isScreenSharing) await m.stopScreenShare();
+                      else await m.startScreenShare();
+                    } catch { /* ignore */ }
+                  }}
+                  disabled={!m.joined || (!!m.screenSharerId && !m.isScreenSharing)}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ink hover:bg-muted disabled:opacity-40"
+                >
+                  {m.isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorPlay className="h-4 w-4" />}
+                  <span>{m.isScreenSharing ? "Stop sharing" : m.screenSharerId ? "Someone else is sharing" : "Share screen"}</span>
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
           <button
             type="button"
             onClick={onMinimize}
