@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowLeft, ArrowRight } from "lucide-react";
-import { categoryClass } from "@/lib/categories";
+
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
