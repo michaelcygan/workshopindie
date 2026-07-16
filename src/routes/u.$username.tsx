@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowLeft, ArrowRight } from "lucide-react";
+
 import { z } from "zod";
 import { zodValidator } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +26,7 @@ import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, type Category } from "@/lib/categories";
+import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
 const TAB_VALUES = ["works", "collabs", "activity", "about"] as const;
@@ -428,7 +429,7 @@ function ProfilePage() {
   return (
     <main>
       {/* Cover */}
-      <div className="group relative h-56 overflow-hidden bg-surface-2 md:h-80">
+      <div className="group relative h-40 overflow-hidden bg-surface-2 md:h-80">
         {(() => {
           const linkable =
             profile.cover_url &&
@@ -486,8 +487,8 @@ function ProfilePage() {
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
         {/* Avatar + action buttons row — only the avatar overlaps the cover */}
-        <div className="-mt-12 flex items-end justify-between gap-4 md:-mt-16">
-          <Avatar className="h-24 w-24 ring-4 ring-background md:h-32 md:w-32">
+        <div className="-mt-10 flex items-end justify-between gap-3 md:-mt-16 md:gap-4">
+          <Avatar className="h-20 w-20 ring-4 ring-background md:h-32 md:w-32">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
@@ -530,7 +531,7 @@ function ProfilePage() {
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-4">
           <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl text-ink md:text-4xl">{name}</h1>
+            <h1 className="font-display text-2xl text-ink md:text-4xl">{name}</h1>
             <CreatorBadge status={profile.creator_status} />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
@@ -557,7 +558,7 @@ function ProfilePage() {
                 href={`https://instagram.com/${profile.instagram_handle}`}
                 target="_blank"
                 rel="noreferrer noopener"
-                className="inline-flex items-center gap-1 text-gradient-motion hover:underline"
+                className="hidden md:inline-flex items-center gap-1 text-gradient-motion hover:underline"
               >
                 IG @{profile.instagram_handle}
               </a>
@@ -565,7 +566,7 @@ function ProfilePage() {
           </div>
           {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-ink-muted md:flex">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
@@ -573,7 +574,7 @@ function ProfilePage() {
             </div>
           )}
           {(profile.tools?.length ?? 0) > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <div className="mt-2 hidden flex-wrap items-center gap-1.5 md:flex">
               {(profile.tools ?? []).slice(0, 6).map((t, i) => (
                 <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">{t}</span>
               ))}
@@ -586,19 +587,26 @@ function ProfilePage() {
           )}
         </div>
 
-        {/* Owner-only primary CTAs */}
+        {/* Mobile-only compact link pills (existing IG + external_links) */}
+        <LinkPills
+          className="mt-3 md:hidden"
+          instagram={profile.instagram_handle}
+          links={profile.external_links ?? []}
+        />
+
+        {/* Owner-only primary CTAs (desktop; on mobile they live in the top nav / composer) */}
         {isOwn && (
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 hidden flex-wrap gap-2 md:flex">
             <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post to Gallery</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
             <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Lounge</Button></Link>
           </div>
         )}
 
-        {/* Owner-only: profile completion chip */}
+        {/* Owner-only: profile completion chip (desktop only; visible in About on mobile) */}
         {isOwn && (
           <ProfileCompletionChip
-            className="mt-4"
+            className="mt-4 hidden md:flex"
             hasAvatar={!!profile.avatar_url}
             hasHomeCity={!!profile.home_city}
             hasBio={!!(profile.bio && profile.bio.trim().length > 0)}
@@ -608,7 +616,7 @@ function ProfilePage() {
 
         {/* Wrap-up nudges now live in /me/collabs to keep the public profile clean. */}
         {isOwn && closedNudges.length > 0 && (
-          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <div className="mt-6 hidden flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 md:flex">
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
@@ -618,21 +626,40 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Stats strip */}
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
+        {/* Stats strip (desktop) */}
+        <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:flex">
           <Stat label="Gallery" value={counts.works} />
           <Stat label="Worked with" value={profile.worked_with_count} />
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
         </div>
 
-        {/* Artist statement — hidden entirely when blank */}
+        {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-8 max-w-3xl border-l-2 border-ink/30 pl-5">
-            <p className="whitespace-pre-wrap font-display text-xl italic leading-snug text-ink-soft md:text-2xl">
+          <blockquote className="mt-6 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+            <p className="whitespace-pre-wrap font-display text-lg italic leading-snug text-ink-soft md:text-2xl">
               {profile.artist_statement}
             </p>
           </blockquote>
+        )}
+
+        {/* Mobile-only Open-to-collaborate pill (visitors only, when open Collabs exist) */}
+        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && (
+          <button
+            type="button"
+            onClick={() => setTab("collabs")}
+            className="mt-6 inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left text-sm md:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              <span className="font-medium text-ink">Open to collaborate</span>
+              <span className="text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 text-ink-muted" />
+          </button>
         )}
 
         {/* Tab bar */}
@@ -684,6 +711,14 @@ function ProfilePage() {
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
           )}
+
+          {/* Mobile-only stats strip (below the portfolio) */}
+          <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:hidden">
+            <Stat label="Gallery" value={counts.works} />
+            <Stat label="Worked with" value={profile.worked_with_count} />
+            <Stat label="Followers" value={profile.follower_count} />
+            <Stat label="Following" value={profile.following_count} />
+          </div>
         </div>
       </div>
     </main>
@@ -770,11 +805,12 @@ function WorksTab({
 
   const createdCount = merged.filter((w) => w._role === "created").length;
   const creditedCount = merged.filter((w) => w._role === "credited").length;
+  const showMobileTiles = activeCat === "all" && roleFilter === "all" && availableCats.length > 0;
 
   return (
     <>
       {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
-        <section className="mb-10">
+        <section className={cn("mb-10", pinnedWorks.length < 2 && "hidden md:block")}>
           <h2 className="font-display text-xl text-ink">Pinned</h2>
           <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 pieces {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -796,7 +832,53 @@ function WorksTab({
         </section>
       )}
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
+      {/* Mobile category tiles — tap to filter */}
+      {showMobileTiles && (
+        <div className="mb-6 space-y-3 md:hidden">
+          {availableCats.map((c) => {
+            const cid = c.id as Category;
+            const cover =
+              pinnedWorks.find((w) => w.category === cid && w.cover_url)?.cover_url
+              ?? roleFiltered.find((w) => w.category === cid && w.cover_url)?.cover_url
+              ?? null;
+            const count = catCounts.get(cid) ?? 0;
+            return (
+              <button
+                key={cid}
+                type="button"
+                onClick={() => setActiveCat(cid)}
+                className="group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl text-left"
+              >
+                {cover ? (
+                  <img src={cover} alt="" loading="lazy" className="h-full w-full object-cover transition duration-500 group-active:scale-[1.02]" />
+                ) : (
+                  <div className={cn("h-full w-full", categoryClass(cid))} />
+                )}
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/85 via-background/10 to-transparent" />
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
+                  <h3 className="font-display text-2xl leading-tight text-ink drop-shadow-sm">{c.label}</h3>
+                  <span className="rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-ink-soft backdrop-blur">
+                    {count} {count === 1 ? "piece" : "pieces"}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Mobile: back to category tiles */}
+      {!showMobileTiles && availableCats.length > 0 && activeCat !== "all" && (
+        <button
+          type="button"
+          onClick={() => setActiveCat("all")}
+          className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft md:hidden"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" /> All categories
+        </button>
+      )}
+
+      <div className={cn("mb-5 flex flex-wrap items-center gap-2", showMobileTiles && "hidden md:flex")}>
         {/* Role chips — only show when there's a mix */}
         {createdCount > 0 && creditedCount > 0 && (
           <div className="flex flex-wrap gap-1.5">
@@ -835,12 +917,12 @@ function WorksTab({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+        <div className={cn("rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted", showMobileTiles && "hidden md:block")}>
           {isOwn ? `Nothing here yet.` : "Nothing matches this filter."}{" "}
           <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cn("grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
           {filtered.map((w) => (
             <WorkCard
               key={`${w._role}-${w.id}`}
@@ -1191,5 +1273,63 @@ function ActivityTab({
     </div>
   );
 }
+
+/* ---------------- LINK PILLS (mobile) ---------------- */
+
+const HOST_ICON: { pattern: RegExp; label: string; Icon: typeof LinkIcon }[] = [
+  { pattern: /(^|\.)instagram\.com$/i, label: "Instagram", Icon: Instagram },
+  { pattern: /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i, label: "YouTube", Icon: Youtube },
+  { pattern: /(^|\.)twitter\.com$|(^|\.)x\.com$/i, label: "X", Icon: Twitter },
+  { pattern: /(^|\.)github\.com$/i, label: "GitHub", Icon: Github },
+  { pattern: /(^|\.)soundcloud\.com$|(^|\.)spotify\.com$|(^|\.)bandcamp\.com$/i, label: "Music", Icon: Music2 },
+];
+
+function pillFor(url: string, savedLabel?: string): { label: string; Icon: typeof LinkIcon } {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./i, "");
+    const match = HOST_ICON.find((h) => h.pattern.test(host));
+    return { label: savedLabel?.trim() || match?.label || host, Icon: match?.Icon ?? LinkIcon };
+  } catch {
+    return { label: savedLabel?.trim() || url, Icon: LinkIcon };
+  }
+}
+
+function LinkPills({
+  className,
+  instagram,
+  links,
+}: {
+  className?: string;
+  instagram: string | null;
+  links: { label: string; url: string }[];
+}) {
+  const items: { key: string; href: string; label: string; Icon: typeof LinkIcon }[] = [];
+  if (instagram) {
+    items.push({ key: "ig", href: `https://instagram.com/${instagram}`, label: `@${instagram}`, Icon: Instagram });
+  }
+  for (const [i, l] of links.entries()) {
+    if (!l?.url) continue;
+    const { label, Icon } = pillFor(l.url, l.label);
+    items.push({ key: `l-${i}`, href: l.url, label, Icon });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className={cn("-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1", className)}>
+      {items.map((it) => (
+        <a
+          key={it.key}
+          href={it.href}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+        >
+          <it.Icon className="h-3.5 w-3.5" />
+          <span className="max-w-[10rem] truncate">{it.label}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 
 
