@@ -458,7 +458,7 @@ function ProfilePage() {
   return (
     <main>
       {/* Cover */}
-      <div className="group relative h-40 overflow-hidden bg-surface-2 md:h-80">
+      <div className="group relative h-32 overflow-hidden bg-surface-2 md:h-80">
         {(() => {
           const linkable =
             !!profile.cover_work &&
