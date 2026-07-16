@@ -1227,4 +1227,62 @@ function ActivityTab({
   );
 }
 
+/* ---------------- LINK PILLS (mobile) ---------------- */
+
+const HOST_ICON: { pattern: RegExp; label: string; Icon: typeof LinkIcon }[] = [
+  { pattern: /(^|\.)instagram\.com$/i, label: "Instagram", Icon: Instagram },
+  { pattern: /(^|\.)youtube\.com$|(^|\.)youtu\.be$/i, label: "YouTube", Icon: Youtube },
+  { pattern: /(^|\.)twitter\.com$|(^|\.)x\.com$/i, label: "X", Icon: Twitter },
+  { pattern: /(^|\.)github\.com$/i, label: "GitHub", Icon: Github },
+  { pattern: /(^|\.)soundcloud\.com$|(^|\.)spotify\.com$|(^|\.)bandcamp\.com$/i, label: "Music", Icon: Music2 },
+];
+
+function pillFor(url: string, savedLabel?: string): { label: string; Icon: typeof LinkIcon } {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./i, "");
+    const match = HOST_ICON.find((h) => h.pattern.test(host));
+    return { label: savedLabel?.trim() || match?.label || host, Icon: match?.Icon ?? LinkIcon };
+  } catch {
+    return { label: savedLabel?.trim() || url, Icon: LinkIcon };
+  }
+}
+
+function LinkPills({
+  className,
+  instagram,
+  links,
+}: {
+  className?: string;
+  instagram: string | null;
+  links: { label: string; url: string }[];
+}) {
+  const items: { key: string; href: string; label: string; Icon: typeof LinkIcon }[] = [];
+  if (instagram) {
+    items.push({ key: "ig", href: `https://instagram.com/${instagram}`, label: `@${instagram}`, Icon: Instagram });
+  }
+  for (const [i, l] of links.entries()) {
+    if (!l?.url) continue;
+    const { label, Icon } = pillFor(l.url, l.label);
+    items.push({ key: `l-${i}`, href: l.url, label, Icon });
+  }
+  if (items.length === 0) return null;
+  return (
+    <div className={cn("-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1", className)}>
+      {items.map((it) => (
+        <a
+          key={it.key}
+          href={it.href}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+        >
+          <it.Icon className="h-3.5 w-3.5" />
+          <span className="max-w-[10rem] truncate">{it.label}</span>
+        </a>
+      ))}
+    </div>
+  );
+}
+
+
 
