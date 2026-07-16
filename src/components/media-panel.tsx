@@ -1060,15 +1060,17 @@ function ReactionsOverlay({ reactions }: { reactions: Array<{ id: string; emoji:
 
 
 function DockButton({
-  children, onClick, active, disabled,
-}: { children: React.ReactNode; onClick: () => void; active?: boolean; disabled?: boolean }) {
+  children, onClick, active, disabled, ariaLabel,
+}: { children: React.ReactNode; onClick: () => void; active?: boolean; disabled?: boolean; ariaLabel?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50",
+        "inline-flex items-center gap-1.5 rounded-full px-4 min-h-11 min-w-11 py-2 text-sm font-medium transition disabled:opacity-50 justify-center",
         active
           ? "bg-background/90 text-ink hover:bg-background"
           : "bg-background/10 text-background/90 hover:bg-background/20",
