@@ -657,8 +657,40 @@ export function FullscreenRoom({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-background"
+      className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-background h-[100dvh]"
     >
+      {/* Mobile "Here now" strip — up to 5 tappable avatars from the room. */}
+      {others.length > 0 && (
+        <div className="lg:hidden flex items-center gap-2 px-4 pt-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-background/50 shrink-0">Here now</span>
+          <div className="flex items-center -space-x-2 min-w-0">
+            {others.slice(0, 5).map((o) => {
+              const p = profileLookup.get(o.user_id) ?? (o.profile ? {
+                display_name: o.profile.display_name,
+                username: o.profile.username,
+                avatar_url: o.profile.avatar_url,
+              } : undefined);
+              const initial = (p?.display_name || p?.username || "?")[0]?.toUpperCase() || "?";
+              return (
+                <ProfilePeek key={o.user_id} userId={o.user_id} roomId={roomId}>
+                  <button
+                    type="button"
+                    aria-label={p?.display_name || p?.username || "Member"}
+                    className="h-7 w-7 rounded-full ring-2 ring-[#0a0a0a] bg-background/10 overflow-hidden text-[11px] flex items-center justify-center text-background/70"
+                  >
+                    {p?.avatar_url
+                      ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                      : initial}
+                  </button>
+                </ProfilePeek>
+              );
+            })}
+            {others.length > 5 && (
+              <span className="ml-2 rounded-full bg-background/10 px-1.5 py-0.5 text-[10px] text-background/70">+{others.length - 5}</span>
+            )}
+          </div>
+        </div>
+      )}
       {/* Top bar */}
       <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
         <div className="flex items-center gap-2 min-w-0">
