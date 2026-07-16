@@ -373,7 +373,7 @@ export function LiveTopicsList({
         </div>
         <ul className="flex flex-col gap-0.5 p-2.5">
           {loungeRow}
-          {sorted.map((c) => {
+          {(mobileExpanded ? sorted : mobileVisible).map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
             return (
               <motion.li key={c.id} layout transition={{ duration: 0.2 }}>
@@ -395,7 +395,19 @@ export function LiveTopicsList({
             );
           })}
         </ul>
+        {sorted.length > mobileVisible.length && (
+          <button
+            type="button"
+            onClick={() => setMobileExpanded((v) => !v)}
+            className="w-full min-h-11 border-t border-border/50 px-5 py-3 text-[12px] font-medium text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+          >
+            {mobileExpanded
+              ? "Show fewer"
+              : `View all topics (${sorted.length})`}
+          </button>
+        )}
       </div>
+
       {featuredFooter && (
         <div className="border-t border-border/50 bg-background/40">{featuredFooter}</div>
       )}
