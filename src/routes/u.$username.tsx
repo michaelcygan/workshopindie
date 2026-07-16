@@ -922,7 +922,7 @@ function WorksTab({
           <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={cn("grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
           {filtered.map((w) => (
             <WorkCard
               key={`${w._role}-${w.id}`}
