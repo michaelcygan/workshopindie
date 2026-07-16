@@ -26,7 +26,7 @@ import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, type Category } from "@/lib/categories";
+import { CATEGORIES, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
 const TAB_VALUES = ["works", "collabs", "activity", "about"] as const;
