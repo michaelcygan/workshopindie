@@ -810,7 +810,7 @@ function WorksTab({
   return (
     <>
       {pinnedWorks.length > 0 && activeCat === "all" && roleFilter === "all" && (
-        <section className="mb-10">
+        <section className={cn("mb-10", pinnedWorks.length < 2 && "hidden md:block")}>
           <h2 className="font-display text-xl text-ink">Pinned</h2>
           <p className="mt-1 text-xs text-ink-muted">A curated portfolio — up to 6 pieces {isOwn ? "you've" : `${ownerName} has`} pinned.</p>
           <div className="mt-3 grid grid-cols-1 gap-5 md:grid-cols-2">
