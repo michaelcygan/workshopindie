@@ -259,7 +259,7 @@ function EditProfile() {
   if (!hydrated) return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-8 pb-32 md:px-6 md:py-12">
+    <main className="mx-auto max-w-6xl px-4 py-8 pb-40 md:px-6 md:py-12 md:pb-32">
       <header className="mb-6">
         <h1 className="font-display text-3xl text-ink md:text-4xl">Edit profile</h1>
         <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Lounges, and across the network.</p>
