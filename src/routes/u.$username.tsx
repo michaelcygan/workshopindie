@@ -564,9 +564,24 @@ function ProfilePage() {
               </a>
             )}
           </div>
-          {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
+          {profile.headline && <p className="mt-2 text-sm text-ink-soft md:text-base">{profile.headline}</p>}
+
+          {/* Mobile-only compact link pills (IG + external_links) — sit right under the identity line */}
+          <LinkPills
+            className="mt-3 md:hidden"
+            instagram={profile.instagram_handle}
+            links={profile.external_links ?? []}
+          />
+
+          {/* Mobile bio (short public blurb). Desktop bio still lives in the About tab. */}
+          {profile.bio && profile.bio.trim().length > 0 && (
+            <p className="mt-3 line-clamp-3 whitespace-pre-wrap text-sm text-ink-soft md:hidden">
+              {profile.bio}
+            </p>
+          )}
+
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-ink-muted md:flex">
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
@@ -587,12 +602,7 @@ function ProfilePage() {
           )}
         </div>
 
-        {/* Mobile-only compact link pills (existing IG + external_links) */}
-        <LinkPills
-          className="mt-3 md:hidden"
-          instagram={profile.instagram_handle}
-          links={profile.external_links ?? []}
-        />
+
 
         {/* Owner-only primary CTAs (desktop; on mobile they live in the top nav / composer) */}
         {isOwn && (
