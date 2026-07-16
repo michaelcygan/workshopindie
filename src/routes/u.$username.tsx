@@ -487,8 +487,8 @@ function ProfilePage() {
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
         {/* Avatar + action buttons row — only the avatar overlaps the cover */}
-        <div className="-mt-12 flex items-end justify-between gap-4 md:-mt-16">
-          <Avatar className="h-24 w-24 ring-4 ring-background md:h-32 md:w-32">
+        <div className="-mt-10 flex items-end justify-between gap-3 md:-mt-16 md:gap-4">
+          <Avatar className="h-20 w-20 ring-4 ring-background md:h-32 md:w-32">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
