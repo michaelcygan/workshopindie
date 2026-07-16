@@ -1,75 +1,89 @@
-# Mobile profile: lift Featured above the fold
+# Mobile-only refinement: Lounge selector + active Lounge room
 
-Scope: `src/routes/u.$username.tsx` only. Every change is gated with mobile‑only classes (`md:` restores the current desktop look 1:1). No data, query, or business logic changes.
+Scope: mobile only (`< md`). Desktop (`md+`) stays byte-equivalent. No new components, no new queries, no schema/media/presence changes. Reuse existing primitives.
 
-## Goals
+Files touched:
+- `src/routes/lounge.index.tsx` — responsive layout on the selector.
+- `src/components/live-topics-list.tsx` — remove fixed 420px scroller on mobile.
+- `src/components/channel-view.tsx` — mount the existing `FullscreenRoom` as the default mobile shell.
+- `src/components/media-panel.tsx` — extend the existing mobile chat sheet into a Chat / Work / Collabs sheet + safe-area dock.
+- `src/components/live-workshops-rail.tsx` — light padding pass, no logic change.
 
-1. On a 390px viewport, the "Featured" strip (and, when it fits, the medium chip bar) is visible without scrolling — so a profile scanned in‑person or from a link‑in‑bio instantly reads as "real portfolio."
-2. Keep the design minimal and distinct: identity block stays elegant, just denser and more purposeful.
-3. Rename user‑facing copy "Pinned" → "Featured" on the profile.
+Nothing new is created; the pieces the brief lists (`FullscreenRoom`, `VideoStage`, `StageTabs`, `RoomGallery`, `WorkshopCollabsPanel`, `WorkshopPresenceWorksRail`, `WorkPeek`, `ProfilePeek`) stay authoritative.
 
-## What changes (mobile only)
+---
 
-### 1. Cover + avatar (line ~461, ~521)
-- Cover height `h-40` → `h-32` on mobile (`md:h-80` unchanged). Reclaims ~32px.
-- Avatar overlap `-mt-10` → `-mt-8` on mobile; avatar size `h-20 w-20` → `h-[72px] w-[72px]` on mobile. Frees another ~12px and lets the action buttons sit tighter.
+## 1. Lounge selector (`/lounge`)
 
-### 2. Identity block (line ~562–634)
-- Wrapper `mt-4` → `mt-3` mobile.
-- Name `text-2xl` → `text-[22px] leading-tight` on mobile.
-- Meta row (`@handle · city`) unchanged in content, but `mt-1` → `mt-0.5`.
-- Headline "Outsider artist": `mt-2 text-sm` → `mt-1.5 text-[13px]` on mobile.
-- LinkPills `mt-3` → `mt-2` mobile.
-- Bio: `mt-3 line-clamp-3` → `mt-2 line-clamp-2` on mobile (desktop unchanged; it lives in About).
-- Aliases row: `mt-3` → `mt-2`, and cap to first 2 aliases inline on mobile with a `+N` chip that opens About; unchanged on desktop.
+**Problem:** the route forces `LiveTopicsList layout="split"`, and split has a `style={{ height: 420 }}` inner scroller. On phones the featured column stacks on top and the topic list becomes a small, nested scroll region.
 
-### 3. Artist statement (line ~679)
-- Currently `mt-6 … text-lg italic md:text-2xl` — very tall on mobile.
-- Mobile: `mt-3 text-[15px] leading-snug line-clamp-2` with a subtle tap‑to‑expand (`aria-expanded` toggle, no library). Desktop unchanged.
-- This is the single biggest above‑the‑fold win.
+**Change (mobile only, no data changes):**
 
-### 4. Tab bar + tab content spacing (line ~707, ~729)
-- Sticky tab bar `mt-8` → `mt-4 md:mt-8`.
-- Tab content wrapper `py-8 pb-20` → `py-4 pb-24 md:py-8 md:pb-20`.
+- In `src/routes/lounge.index.tsx`, render two copies of `LiveTopicsList` inside a single wrapper — one `md:hidden` with `layout="stack"`, one `hidden md:block` with `layout="split"`. Both consume the same `busy`, `disabled`, `onLiveCountChange`, `onLiveByMediumChange`, and `onPick*` handlers already on the page. The shared `useQuery(["instant-active-rooms"])` inside the component dedupes automatically, so this does not double-fetch.
+- The stack layout already renders the "Lounge" featured block, prompt/topic list, `featuredFooter`, and CTA — reuse it as-is with the same `featuredFooter={<RoomPromptMarquee …/>}`.
+- In `src/components/live-topics-list.tsx`, remove the `style={{ height: 420 }}` inner scroller from the split layout at `< md` widths only (guard the height style behind `md:` via inline media, or keep the fixed height only when the parent renders it). The stack layout already lets the page scroll naturally.
 
-### 5. Featured section (PinBar, line ~982–1003)
-- Rename the heading `Pinned` → `Featured` (line 1003). This is the only copy string; internal identifiers (`pinnedWorks`, `PinBar`, `pinned_work_ids`, DB columns) stay untouched.
-- Tighten section top spacing on mobile so the heading + first row of covers appear immediately after the tab bar.
-- Reduce mobile cover grid gap from default to `gap-2` on mobile; keep desktop as-is. Featured Works and Featured Collabs stay side‑by‑side categories exactly as today.
+Hierarchy on mobile (top → bottom):
+1. Compact header (already exists): back, "Lounge", live dot + count, mic/cam toggles.
+2. One-line subtitle + optional 24h recap chip (already exists).
+3. Rejoin pill / first-visit / idle nudge (already exist).
+4. `LiveTopicsList layout="stack"` — featured Lounge, primary "Drop In" CTA, topics with live counts and participant avatars, prompt marquee inline as `featuredFooter`.
+5. `LiveWorkshopsRail` — active rooms as tappable cards (already renders as rows; ensure horizontal padding matches surrounding blocks: `px-1` inner, and no `overflow-x` clipping on 320–430px).
+6. Host strip (secondary): keep the existing `flex-col sm:flex-row` layout, but on mobile promote clarity — the input becomes full-width `h-11` (44px tap target), the "Open the Lounge" button is `w-full`, wrapped on its own line. Camera stays optional (already: `canDrop = effMic || effCam`).
 
-### 6. Medium chip scroller (line ~866)
-- `mb-4` → `mb-3` on mobile, and move the scroller so it sits *directly above* the category tiles (no change in DOM order, just tighter margin). The auto‑scrolling pill bar already exists; this just gives it a better neighborhood.
+Camera-optional copy stays put; the toast already says "Connect a mic or camera to continue."
 
-## What does NOT change
+---
 
-- No changes to queries, fetchers, PinBar internals, Category tiles logic, or desktop layout.
-- No changes to routing, tabs list, or default tab.
-- No new components, no new dependencies.
-- Backend, RLS, and moderation untouched.
+## 2. Active Lounge room (`/lounge/:id`)
 
-## Estimated above‑the‑fold gain @ 390×735
+**Problem:** `ChannelView`'s default surface is the desktop 2-column grid (`mt-4 grid md:grid-cols-[1fr_260px]`). On mobile the grid becomes a single column with the *tall* chat block on top and `MediaPanel` (participants, mic/cam controls) pushed way below. Panels use `h-[60vh]` and cause nested scrolling and clipping.
 
-Rough budget (px) reclaimed vs. current:
-```text
-cover                 ~ 32
-avatar/actions row    ~ 12
-identity spacing      ~ 18
-headline size         ~  6
-bio clamp (3→2)       ~ 20
-artist statement      ~ 60  (biggest single win)
-tab bar mt            ~ 16
-py-8 → py-4           ~ 16
-                     -----
-                    ~ 180 px
-```
-That's enough to bring the "Featured" heading + a strip of thumbnails (and, on many profiles, the medium chip bar too) above the fold on a 390×735 iPhone.
+**Change (mobile only):**
 
-## Files touched
+The existing `FullscreenRoom` in `media-panel.tsx` is already a stage-first, safe-area-friendly full-viewport shell with a fixed dock, a mobile chat sheet, and — critically — accepts `collabsSlot` and `gallerySlot`. Today it is only rendered when the user hits the desktop fullscreen expand button (`fsView === "chat"`). We'll flip its default to *on* at `< md` and *off* at `md+`, reusing the exact same props already wired at `src/components/channel-view.tsx:749–823`.
 
-- `src/routes/u.$username.tsx` (spacing/typography classes + one copy string)
+Concrete edits in `channel-view.tsx`:
+1. Add `const isMobile = useIsMobile()` (hook already exists at `src/hooks/use-mobile.tsx`).
+2. `fsView` init: `useState<null | "chat" | "gallery">(isMobile ? "chat" : null)` and re-sync in an effect when `isMobile` changes so a resize back to desktop drops the fullscreen shell. This mounts the *same* `FullscreenRoom` instance that already receives `chat / collabs / gallery` slots — no second `useMediaRoom`.
+3. Wrap the desktop layout block (`<div className="mt-4 grid …">…`) in `<div className={cn(isMobile && "hidden")}>` so it stops rendering on mobile. `MediaPanel`, chat scroller, and the `h-[60vh]` regions belong to that block, so their nested-scroll and clipping issues disappear on mobile.
+4. The desktop expand-button-to-fullscreen behavior remains untouched (`md+` renders as before; fullscreen expand still works).
 
-## Verification
+Concrete edits in `media-panel.tsx` (inside `FullscreenRoom`):
+5. Promote the current mobile "Chat" sheet toggle into a segmented **Chat / Work / Collabs** control. Reuse the existing `SideSeg` component. On mobile, the top-bar button opens a bottom sheet whose contents switch between `messages` (existing `ChatPanel`), `gallerySlot`, and `collabsSlot`. Label the Gallery slot as "Work" on mobile (visible label only — internal names, DB, and desktop labels stay "Gallery"). Only one sheet is open at a time (this matches the brief).
+6. Container becomes `h-[100dvh]`, and the floating dock + reactions tray + sheet all switch to `pb-[max(0.75rem,env(safe-area-inset-bottom))]` so iOS home indicator and the mobile keyboard don't clip controls. The sheet uses `max-h-[85dvh]` with an inner flex column: header (drag handle + tabs), scrollable body, then the `ChatMentionInput`/`ChatPanel` composer pinned at the bottom. When the keyboard opens, the sheet re-lays inside `100dvh` and the composer stays visible.
+7. Dock on mobile: `Mic`, `Camera`, `Next/Hop` (`dockExtra` already passes `HopButton`), `Exit`. Screen share, PiP, and Fullscreen collapse into a single "More" overflow (a small popover using shadcn `Popover` we already import) rendered next to the layout segmented control in the top bar. Screen share stays functional through the same handler already living in `channel-view.tsx`; we just move the button's *visual* placement on mobile. On unsupported browsers the entry stays disabled with the current title copy.
+8. "Here now" strip on mobile: a horizontal row of tappable avatars (reusing `ProfilePeek` — already imported by `media-panel.tsx`) rendered directly under the top bar, above the video stage. Compact `-space-x-2` avatars for up to 5 members; overflow shows `+N`. Zero new queries; feed from the same `others` prop already passed in.
+9. Add `role="dialog" aria-modal="true"` only when the sheet is open, so screen readers behave correctly with the video stage behind it.
 
-- Preview at 390×735: confirm `Featured` heading is visible without scroll, thumbnails start to peek, tab bar remains sticky.
-- Preview at ≥768: confirm layout is byte‑equivalent to today (all edits gated by `md:`).
-- Search the repo for user‑visible "Pinned" on the profile route — only the PinBar `<h2>` should change; workshop/group/room pins keep their own copy.
+Camera-off path: `VideoStage` and the audio tiles already render `AudioTile` when there is no local video — no change needed. Media-permission-denied path: `media.error` already routes the user back to `/lounge` (existing effect at ~L212).
+
+Empty Work/Collabs: existing `RoomGallery` and `WorkshopCollabsPanel` render their own empty states; the sheet just hosts them. Long chat history: `ChatPanel` already uses `scrollRef` with auto-scroll; that keeps working.
+
+---
+
+## 3. Design guardrails (applied inline)
+
+- 44px minimum: dock buttons `h-11 min-w-11`, sheet tab buttons `h-11`, host input `h-11`.
+- `100dvh` + safe-area: `FullscreenRoom` wrapper + sheet + dock only (desktop uses today's chrome).
+- No horizontal overflow: audit `LiveWorkshopsRail`, host strip, and the "Here now" strip at 320px with `min-w-0` on flex children and `overflow-x-hidden` on the root main.
+- Selected / unread: sheet tabs use existing `SideSeg` `active` variant; unread chat count = `messages.length - lastSeenLenRef` shown as a small dot on the Chat tab (state lives inside `FullscreenRoom`, reset when the sheet opens on Chat).
+- Landscape: the `100dvh` shell + `flex` stage handle it; verify no fixed heights leak in.
+
+---
+
+## 4. Verification (manual checks at 320 / 375 / 390 / 430 px)
+
+- `/lounge`: featured Lounge → Drop In → topics → active rooms → host strip; no nested scrollers; camera-disabled state shows correct "no mic/cam" strip and Drop-In disables.
+- `/lounge/:id` on mobile: `FullscreenRoom` mounts by default, stage visible above the fold, presence strip shows peers, sheet opens with Chat/Work/Collabs tabs, composer visible with keyboard open, exit/hop/mic/cam land in the bottom dock, screen share reachable via the overflow.
+- Desktop (`md+`) unchanged at 1024/1280.
+- No new instances of `useMediaRoom`; only the existing single call in `ChannelView`.
+- `bun x tsgo --noEmit` clean.
+
+## Files edited
+
+- `src/routes/lounge.index.tsx`
+- `src/components/live-topics-list.tsx`
+- `src/components/channel-view.tsx`
+- `src/components/media-panel.tsx`
+- `src/components/live-workshops-rail.tsx` (padding only)

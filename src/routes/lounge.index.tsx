@@ -424,10 +424,12 @@ function WorkshopPreflight() {
       )}
 
 
-      {/* Live decision surface */}
-      <div className="mt-4">
+      {/* Live decision surface — stack on mobile, split on desktop.
+          Both mount the same LiveTopicsList; its internal useQuery(["instant-active-rooms"])
+          dedupes across instances, so no extra fetch. */}
+      <div className="mt-4 md:hidden">
         <LiveTopicsList
-          layout="split"
+          layout="stack"
           busyKey={busy === "drop" ? busyMedium : null}
           onPick={handlePick}
           onPickFlavor={handleUsePrompt}
@@ -444,6 +446,24 @@ function WorkshopPreflight() {
           }
         />
       </div>
+      <div className="mt-4 hidden md:block">
+        <LiveTopicsList
+          layout="split"
+          busyKey={busy === "drop" ? busyMedium : null}
+          onPick={handlePick}
+          onPickFlavor={handleUsePrompt}
+          disabled={busy !== null}
+          featuredFooter={
+            <RoomPromptMarquee
+              onUsePrompt={handleUsePrompt}
+              onJoinLive={(m) => handlePick(m)}
+              liveByMedium={liveByMedium}
+              disabled={busy !== null || !canDrop}
+            />
+          }
+        />
+      </div>
+
 
       {devices && !canDrop && (
         <div className="mt-3 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center gap-3">
@@ -480,19 +500,19 @@ function WorkshopPreflight() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:shrink-0">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:shrink-0 w-full sm:w-auto">
           <input
             type="text"
             value={hostTitle}
             onChange={(e) => setHostTitle(e.target.value.slice(0, 80))}
             placeholder="Name this Lounge (optional)"
             maxLength={80}
-            className="h-9 min-w-0 flex-1 sm:w-56 rounded-full border border-border bg-background px-3 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/40"
+            className="h-11 sm:h-9 min-w-0 w-full sm:w-56 rounded-full border border-border bg-background px-3 text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none focus:ring-2 focus:ring-primary/40"
           />
           <Button
             onClick={handleHost}
             disabled={!canDrop || busy !== null}
-            className="shrink-0 rounded-full h-9 gap-2 px-4"
+            className="shrink-0 rounded-full h-11 sm:h-9 gap-2 px-4 w-full sm:w-auto justify-center"
           >
             {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
             {busy === "host" ? "Opening…" : hostLabel ? `Open a ${hostLabel} Lounge` : "Open the Lounge"}

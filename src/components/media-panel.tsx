@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, Maximize2 } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { RenderLinks } from "@/lib/render-links";
 
@@ -469,8 +470,22 @@ export function FullscreenRoom({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // Mobile chat sheet toggle.
-  const [chatOpen, setChatOpen] = useState(false);
+  // Mobile bottom sheet: single surface open at a time.
+  type MobileSheet = null | "chat" | "work" | "collabs";
+  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+  const chatOpen = mobileSheet === "chat";
+  // Unread indicator on the Chat tab: bumps whenever new messages arrive while
+  // the chat sheet isn't the visible surface.
+  const lastSeenLenRef = useRef(0);
+  const [unread, setUnread] = useState(false);
+  useEffect(() => {
+    if (mobileSheet === "chat") {
+      lastSeenLenRef.current = messages.length;
+      setUnread(false);
+    } else if (messages.length > lastSeenLenRef.current) {
+      setUnread(true);
+    }
+  }, [messages.length, mobileSheet]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -642,8 +657,40 @@ export function FullscreenRoom({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-background"
+      className="fixed inset-0 z-50 flex flex-col bg-[#0a0a0a] text-background h-[100dvh]"
     >
+      {/* Mobile "Here now" strip — up to 5 tappable avatars from the room. */}
+      {others.length > 0 && (
+        <div className="lg:hidden flex items-center gap-2 px-4 pt-2">
+          <span className="text-[10px] font-medium uppercase tracking-wider text-background/50 shrink-0">Here now</span>
+          <div className="flex items-center -space-x-2 min-w-0">
+            {others.slice(0, 5).map((o) => {
+              const p = profileLookup.get(o.user_id) ?? (o.profile ? {
+                display_name: o.profile.display_name,
+                username: o.profile.username,
+                avatar_url: o.profile.avatar_url,
+              } : undefined);
+              const initial = (p?.display_name || p?.username || "?")[0]?.toUpperCase() || "?";
+              return (
+                <ProfilePeek key={o.user_id} userId={o.user_id} roomId={roomId}>
+                  <button
+                    type="button"
+                    aria-label={p?.display_name || p?.username || "Member"}
+                    className="h-7 w-7 rounded-full ring-2 ring-[#0a0a0a] bg-background/10 overflow-hidden text-[11px] flex items-center justify-center text-background/70"
+                  >
+                    {p?.avatar_url
+                      ? <img src={p.avatar_url} alt="" className="h-full w-full object-cover" />
+                      : initial}
+                  </button>
+                </ProfilePeek>
+              );
+            })}
+            {others.length > 5 && (
+              <span className="ml-2 rounded-full bg-background/10 px-1.5 py-0.5 text-[10px] text-background/70">+{others.length - 5}</span>
+            )}
+          </div>
+        </div>
+      )}
       {/* Top bar */}
       <header className="flex items-center justify-between gap-3 px-4 py-3 md:px-6">
         <div className="flex items-center gap-2 min-w-0">
@@ -674,14 +721,83 @@ export function FullscreenRoom({
               )}
             </div>
           )}
-          <button
-            type="button"
-            onClick={() => setChatOpen((v) => !v)}
-            className="lg:hidden inline-flex items-center gap-1.5 rounded-full bg-background/10 px-3 py-1.5 text-xs text-background/90 hover:bg-background/15"
-          >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Chat {messages.length > 0 && `(${messages.length})`}
-          </button>
+          {/* Mobile: Chat / Work / Collabs pill group + More overflow. */}
+          <div className="lg:hidden flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setMobileSheet((s) => (s === "chat" ? null : "chat"))}
+              aria-pressed={mobileSheet === "chat"}
+              className={cn(
+                "relative inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                mobileSheet === "chat" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+              )}
+              aria-label="Chat"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              <span>Chat</span>
+              {unread && (
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary ring-2 ring-[#0a0a0a]" />
+              )}
+            </button>
+            {gallerySlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "work" ? null : "work"))}
+                aria-pressed={mobileSheet === "work"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "work" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Work"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span>Work</span>
+              </button>
+            )}
+            {collabsSlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "collabs" ? null : "collabs"))}
+                aria-pressed={mobileSheet === "collabs"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "collabs" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Collabs"
+              >
+                <Users className="h-3.5 w-3.5" />
+                <span>Collabs</span>
+              </button>
+            )}
+            {/* More: screen share (functionality preserved on mobile). */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More controls"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/10 text-background/90 hover:bg-background/15"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="end" sideOffset={6} className="w-52 p-1">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (m.isScreenSharing) await m.stopScreenShare();
+                      else await m.startScreenShare();
+                    } catch { /* ignore */ }
+                  }}
+                  disabled={!m.joined || (!!m.screenSharerId && !m.isScreenSharing)}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ink hover:bg-muted disabled:opacity-40"
+                >
+                  {m.isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorPlay className="h-4 w-4" />}
+                  <span>{m.isScreenSharing ? "Stop sharing" : m.screenSharerId ? "Someone else is sharing" : "Share screen"}</span>
+                </button>
+              </PopoverContent>
+            </Popover>
+          </div>
           <button
             type="button"
             onClick={onMinimize}
@@ -781,29 +897,58 @@ export function FullscreenRoom({
 
 
 
-      {/* Mobile chat sheet */}
+      {/* Mobile bottom sheet — Chat / Work / Collabs */}
       <AnimatePresence>
-        {chatOpen && (
+        {mobileSheet && (
           <motion.div
+            key={mobileSheet}
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             exit={{ y: "100%" }}
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
-            className="lg:hidden fixed inset-x-0 bottom-0 z-[60] h-[70vh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur p-4 pb-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : "Collabs"}
+            className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
+            style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
-            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-background/20" />
-            <ChatPanel
-              messages={messages}
-              draft={draft}
-              setDraft={setDraft}
-              onSend={onSend}
-              sending={sending}
-              profileLookup={profileLookup}
-              meUserId={meUserId}
-              scrollRef={scrollRef}
-              className="flex h-full"
-              onClose={() => setChatOpen(false)}
-            />
+            <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-background/20 shrink-0" />
+            {mobileSheet === "chat" && (
+              <ChatPanel
+                messages={messages}
+                draft={draft}
+                setDraft={setDraft}
+                onSend={onSend}
+                sending={sending}
+                profileLookup={profileLookup}
+                meUserId={meUserId}
+                scrollRef={scrollRef}
+                className="flex flex-1 min-h-0"
+                onClose={() => setMobileSheet(null)}
+              />
+            )}
+            {mobileSheet === "work" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Work</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto text-ink [color-scheme:light]">
+                  <div className="bg-background min-h-full">{gallerySlot}</div>
+                </div>
+              </div>
+            )}
+            {mobileSheet === "collabs" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Collabs</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto p-3 text-ink [color-scheme:light]">
+                  <div className="rounded-xl bg-background p-3">{collabsSlot}</div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -827,13 +972,14 @@ export function FullscreenRoom({
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 rounded-full border border-background/15 bg-background/10 backdrop-blur-md px-2 py-2 shadow-2xl"
+        className="fixed left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 rounded-full border border-background/15 bg-background/10 backdrop-blur-md px-2 py-2 shadow-2xl min-h-[52px]"
+        style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
       >
-        <DockButton onClick={m.toggleMute} active={!m.muted}>
+        <DockButton onClick={m.toggleMute} active={!m.muted} ariaLabel={m.muted ? "Unmute" : "Mute"}>
           {m.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
           <span className="hidden sm:inline">{m.muted ? "Unmute" : "Mute"}</span>
         </DockButton>
-        <DockButton onClick={() => m.setCameraEnabled(!m.cameraOn)} active={m.cameraOn} disabled={m.busy}>
+        <DockButton onClick={() => m.setCameraEnabled(!m.cameraOn)} active={m.cameraOn} disabled={m.busy} ariaLabel={m.cameraOn ? "Camera off" : "Camera on"}>
           {m.cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
           <span className="hidden sm:inline">{m.cameraOn ? "Camera off" : "Camera on"}</span>
         </DockButton>
@@ -843,7 +989,8 @@ export function FullscreenRoom({
         <button
           type="button"
           onClick={onExit}
-          className="inline-flex items-center gap-1.5 rounded-full bg-destructive/90 hover:bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground transition"
+          aria-label="Exit"
+          className="inline-flex items-center gap-1.5 rounded-full bg-destructive/90 hover:bg-destructive px-4 min-h-11 py-2 text-sm font-medium text-destructive-foreground transition"
         >
           <LogOut className="h-4 w-4" />
           <span className="hidden sm:inline">Exit</span>
@@ -913,15 +1060,17 @@ function ReactionsOverlay({ reactions }: { reactions: Array<{ id: string; emoji:
 
 
 function DockButton({
-  children, onClick, active, disabled,
-}: { children: React.ReactNode; onClick: () => void; active?: boolean; disabled?: boolean }) {
+  children, onClick, active, disabled, ariaLabel,
+}: { children: React.ReactNode; onClick: () => void; active?: boolean; disabled?: boolean; ariaLabel?: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
+      aria-pressed={active}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium transition disabled:opacity-50",
+        "inline-flex items-center gap-1.5 rounded-full px-4 min-h-11 min-w-11 py-2 text-sm font-medium transition disabled:opacity-50 justify-center",
         active
           ? "bg-background/90 text-ink hover:bg-background"
           : "bg-background/10 text-background/90 hover:bg-background/20",

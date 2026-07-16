@@ -11,6 +11,7 @@ import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRoles } from "@/hooks/use-user-role";
 import {
   MediaPanel,
@@ -127,7 +128,17 @@ export function ChannelView({
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [warnOpen, setWarnOpen] = useState(false);
+  const isMobile = useIsMobile();
   const [fsView, setFsView] = useState<null | "chat" | "gallery">(null);
+  // On mobile the FullscreenRoom shell IS the default UI — flip fsView to "chat"
+  // when the viewport is mobile, and clear it when the user resizes back to desktop.
+  useEffect(() => {
+    setFsView((prev) => {
+      if (isMobile) return prev ?? "chat";
+      // Desktop: drop the fullscreen shell iff it was auto-mounted (i.e. "chat").
+      return prev === "chat" ? null : prev;
+    });
+  }, [isMobile]);
   const [endedOpen, setEndedOpen] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(30);
   const [joiningNew, setJoiningNew] = useState(false);
@@ -839,7 +850,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className={"mt-4 grid gap-4 " + (videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]")}>
+      <div className={cn("mt-4 grid gap-4", videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
