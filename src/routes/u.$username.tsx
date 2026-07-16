@@ -213,33 +213,34 @@ async function fetchCreditedWorks(userId: string): Promise<CreditWork[]> {
   return [...seen.values()];
 }
 
-async function fetchPinnedWorks(userId: string): Promise<WorkCardData[]> {
+async function fetchPinnedWorks(pinnedIds: string[]): Promise<WorkCardData[]> {
+  if (!pinnedIds || pinnedIds.length === 0) return [];
+  const ids = pinnedIds.slice(0, 6);
   const { data, error } = await supabase
-    .from("work_credits")
-    .select("pinned_at, work:works!inner(id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url)))")
-    .eq("user_id", userId)
-    .not("pinned_at", "is", null)
-    .order("pinned_at", { ascending: false })
-    .limit(6);
+    .from("works")
+    .select("id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,status,visibility, work_credits(role_label,sort_order,display_name, profiles(id,display_name,username,avatar_url))")
+    .in("id", ids);
   if (error) throw error;
   type Row = {
-    pinned_at: string;
-    work: {
-      id: string; title: string; slug: string; category: Category;
-      cover_url: string | null; embed_url: string | null; source_type: string;
-      like_count: number; save_count: number; view_count: number;
-      published_at: string | null; status: string; visibility: string;
-      work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
-    };
+    id: string; title: string; slug: string; category: Category;
+    cover_url: string | null; embed_url: string | null; source_type: string;
+    like_count: number; save_count: number; view_count: number;
+    published_at: string | null; status: string; visibility: string;
+    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null; avatar_url: string | null } | null }[];
   };
-  return ((data as unknown as Row[]) ?? [])
-    .filter((r) => r.work && r.work.status === "published" && (r.work.visibility === "public" || r.work.visibility === "unlisted"))
+  const rows = ((data as unknown as Row[]) ?? []).filter(
+    (w) => w.status === "published" && (w.visibility === "public" || w.visibility === "unlisted"),
+  );
+  const byId = new Map(rows.map((r) => [r.id, r]));
+  return ids
+    .map((id) => byId.get(id))
+    .filter((r): r is Row => !!r)
     .map<WorkCardData>((r) => ({
-      id: r.work.id, title: r.work.title, slug: r.work.slug, category: r.work.category,
-      cover_url: r.work.cover_url, embed_url: r.work.embed_url, source_type: r.work.source_type,
-      like_count: r.work.like_count, save_count: r.work.save_count, view_count: r.work.view_count,
-      published_at: r.work.published_at,
-      credits: (r.work.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order).map((c) => ({
+      id: r.id, title: r.title, slug: r.slug, category: r.category,
+      cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
+      like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+      published_at: r.published_at,
+      credits: (r.work_credits ?? []).sort((a, b) => a.sort_order - b.sort_order).map((c) => ({
         id: c.profiles?.id ?? null,
         display_name: c.profiles?.display_name ?? c.display_name ?? null,
         username: c.profiles?.username ?? null,
@@ -323,8 +324,8 @@ function ProfilePage() {
     enabled: !!profile?.id,
   });
   const { data: pinnedWorks } = useQuery({
-    queryKey: ["profile-pinned", profile?.id],
-    queryFn: () => fetchPinnedWorks(profile!.id),
+    queryKey: ["profile-pinned", profile?.id, profile?.pinned_work_ids],
+    queryFn: () => fetchPinnedWorks(profile?.pinned_work_ids ?? []),
     enabled: !!profile?.id,
   });
   const { data: pinnedCollabs } = useQuery({

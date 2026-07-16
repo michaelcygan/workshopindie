@@ -1,14 +1,32 @@
-## Fix: Save bar hidden behind mobile bottom nav on /me/edit
+## Fix: Pinned pieces from Edit Profile don't show on the profile Pin Bar
 
-**Problem**
-The sticky save bar (`src/routes/me.edit.tsx` L559–576) is `fixed bottom-0 z-30`. The mobile island nav (`src/components/mobile-nav.tsx`) sits `fixed bottom-3 z-50 md:hidden` and floats over the save bar on mobile, so Save/Discard are unreachable.
+**Root cause**
+Two disconnected data models for pinned Works:
+- `src/routes/me.edit.tsx` saves the user's picks to `profiles.pinned_work_ids` (ordered array; L193/L224).
+- `src/routes/u.$username.tsx` `fetchPinnedWorks` (L216–248) reads from `work_credits.pinned_at`.
 
-**Change (one file: `src/routes/me.edit.tsx`)**
-- Save bar wrapper: replace `bottom-0` with `bottom-20 md:bottom-0` so it clears the ~64px mobile island (island height + `bottom-3` gap) while staying flush on desktop.
-- Add `mx-3 md:mx-0 rounded-2xl md:rounded-none border md:border-t md:border-x-0 shadow-lg md:shadow-none` so the lifted mobile bar reads as an intentional floating card matching the island, and stays a plain edge-to-edge bar on desktop.
-- Bump the main container's mobile bottom padding from `pb-32` to `pb-40` so the last form section isn't obscured when the save bar is visible.
+Nothing bridges them, so the Pin Bar is always empty for Works pinned via Edit Profile. (Pinned Collabs use `collab_posts.pinned_at`, which is written elsewhere and works correctly — no change there.)
 
-No changes to the mobile nav component, desktop layout, or any other route.
+**Fix — single source of truth: `profiles.pinned_work_ids`**
+Rewrite `fetchPinnedWorks(userId)` in `src/routes/u.$username.tsx`:
+
+1. Read the profile's `pinned_work_ids` array (either accept it as a parameter from the already-loaded profile, or fetch it here). Simpler: change the signature to `fetchPinnedWorks(pinnedIds: string[])` and update the caller to pass `profile.pinned_work_ids`.
+2. Early-return `[]` when the array is empty.
+3. Query `works` with `.in("id", pinnedIds)` selecting the same columns as today (+ `work_credits(...)` join for credit chips), filtered by `status = 'published'` and `visibility in ('public','unlisted')`.
+4. Re-sort the returned rows to match the `pinnedIds` array order (array position = display order) and slice to 6.
+5. Map to `WorkCardData` exactly as today.
+
+Update the caller:
+- `useQuery` key becomes `["profile-pinned", profile?.id, profile?.pinned_work_ids]` so it refetches when the array changes.
+- `enabled: !!profile?.id`.
+- `queryFn: () => fetchPinnedWorks(profile!.pinned_work_ids ?? [])`.
+
+No schema migration needed; the `work_credits.pinned_at` column can remain unused for now (not touched by this change).
 
 **Verification**
-Mobile viewport on `/me/edit` with a dirty form: Save and Discard buttons are fully visible and tappable above the island; desktop unchanged.
+- On `/u/<me>` after pinning items in `/me/edit`, the Pin Bar shows the selected Works in the chosen order.
+- Re-ordering / removing in Edit Profile updates the Pin Bar after save.
+- Pinned Collabs continue to show via the unchanged `fetchPinnedCollabs`.
+
+**Files touched**
+- `src/routes/u.$username.tsx` only (fetcher + caller). No other files, no DB changes.
