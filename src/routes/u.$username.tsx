@@ -324,8 +324,8 @@ function ProfilePage() {
     enabled: !!profile?.id,
   });
   const { data: pinnedWorks } = useQuery({
-    queryKey: ["profile-pinned", profile?.id],
-    queryFn: () => fetchPinnedWorks(profile!.id),
+    queryKey: ["profile-pinned", profile?.id, profile?.pinned_work_ids],
+    queryFn: () => fetchPinnedWorks(profile?.pinned_work_ids ?? []),
     enabled: !!profile?.id,
   });
   const { data: pinnedCollabs } = useQuery({
