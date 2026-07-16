@@ -11,6 +11,7 @@ import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useUserRoles } from "@/hooks/use-user-role";
 import {
   MediaPanel,
