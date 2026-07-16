@@ -1063,16 +1063,70 @@ function stableOffsetMs(str: string, min: number, max: number) {
   return min + (hash % (max - min + 1));
 }
 
+/* ---- Slideshow conductor: shared wave scheduler for mobile category tiles ---- */
+type Advancer = () => void;
+const advancers = new Map<number, Advancer>();
+let waveTimer: number | null = null;
+const rowTimers: number[] = [];
+let running = false;
+let paused = false;
+
+function clearRowTimers() {
+  while (rowTimers.length) window.clearTimeout(rowTimers.pop()!);
+}
+function scheduleNextWave() {
+  if (waveTimer != null) { window.clearTimeout(waveTimer); waveTimer = null; }
+  const gap = 2000 + Math.random() * 8000; // 2–10s ambient pause
+  waveTimer = window.setTimeout(runWave, gap);
+}
+function runWave() {
+  waveTimer = null;
+  if (paused || advancers.size === 0) { scheduleNextWave(); return; }
+  const indices = [...advancers.keys()];
+  for (let k = indices.length - 1; k > 0; k--) {
+    const j = Math.floor(Math.random() * (k + 1));
+    [indices[k], indices[j]] = [indices[j], indices[k]];
+  }
+  let cumulative = 0;
+  indices.forEach((idx) => {
+    const t = window.setTimeout(() => advancers.get(idx)?.(), cumulative);
+    rowTimers.push(t);
+    cumulative += 700 + Math.random() * 700; // 0.7–1.4s between rows
+  });
+  waveTimer = window.setTimeout(() => { clearRowTimers(); scheduleNextWave(); }, cumulative + 200);
+}
+function ensureRunning() {
+  if (running) return;
+  running = true;
+  paused = document.visibilityState === "hidden";
+  if (!paused) scheduleNextWave();
+  document.addEventListener("visibilitychange", onConductorVis);
+}
+function stopConductor() {
+  running = false;
+  if (waveTimer != null) { window.clearTimeout(waveTimer); waveTimer = null; }
+  clearRowTimers();
+  document.removeEventListener("visibilitychange", onConductorVis);
+}
+function onConductorVis() {
+  if (document.visibilityState === "hidden") {
+    paused = true;
+    if (waveTimer != null) { window.clearTimeout(waveTimer); waveTimer = null; }
+    clearRowTimers();
+  } else {
+    paused = false;
+    if (running) scheduleNextWave();
+  }
+}
+
 function CategoryTileMedia({ covers, index = 0, categoryId }: { covers: string[]; index?: number; categoryId?: string }) {
   const [i, setI] = useState(0);
   const [reduce, setReduce] = useState(false);
 
-  const variance = useMemo(() => {
-    return categoryId ? stableOffsetMs(categoryId, 0, 3000) : 0;
-  }, [categoryId]);
-
-  const slideDelay = index * 3000 + variance;
-  const kenBurnsDelay = index * 4000 + variance;
+  const kenBurnsDelay = useMemo(() => {
+    const variance = categoryId ? stableOffsetMs(categoryId, 0, 3000) : 0;
+    return index * 4000 + variance;
+  }, [categoryId, index]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -1084,20 +1138,14 @@ function CategoryTileMedia({ covers, index = 0, categoryId }: { covers: string[]
 
   useEffect(() => {
     if (reduce || covers.length < 2) return;
-    let id: number | null = null;
-    const start = () => {
-      if (id != null) return;
-      id = window.setInterval(() => setI((n) => (n + 1) % covers.length), 8000);
+    const advance = () => setI((n) => (n + 1) % covers.length);
+    advancers.set(index, advance);
+    ensureRunning();
+    return () => {
+      advancers.delete(index);
+      if (advancers.size === 0) stopConductor();
     };
-    const stop = () => {
-      if (id != null) { window.clearInterval(id); id = null; }
-    };
-    const onVis = () => (document.visibilityState === "hidden" ? stop() : start());
-    // Stagger each row with a stable per-category variance so transitions never synchronize.
-    const initialDelay = window.setTimeout(start, slideDelay);
-    document.addEventListener("visibilitychange", onVis);
-    return () => { stop(); window.clearTimeout(initialDelay); document.removeEventListener("visibilitychange", onVis); };
-  }, [covers.length, reduce, slideDelay]);
+  }, [covers.length, reduce, index]);
 
   return (
     <>
