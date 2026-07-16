@@ -866,11 +866,14 @@ function WorksTab({
                 )}
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/85 via-background/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
-                  <h3 className="font-display text-2xl leading-tight text-ink drop-shadow-sm">{c.label}</h3>
+                  <span className="inline-flex items-center rounded-full bg-ink/75 px-3 py-1 font-display text-lg leading-none text-background backdrop-blur">
+                    {c.label}
+                  </span>
                   <span className="rounded-full bg-background/85 px-2 py-0.5 text-[11px] font-medium text-ink-soft backdrop-blur">
                     {count} {count === 1 ? "piece" : "pieces"}
                   </span>
                 </div>
+
               </button>
             );
           })}
