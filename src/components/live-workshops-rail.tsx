@@ -19,7 +19,10 @@ type Props = {
   canJoin: boolean;
   medium?: Category | null;
   onTakeSeat: (roomId: string) => Promise<void> | void;
+  /** "cards" = desktop default; "compact-pills" = mobile horizontal pill row. */
+  variant?: "cards" | "compact-pills";
 };
+
 
 function labelFor(medium: Category | null) {
   if (!medium) return "Open topic";
