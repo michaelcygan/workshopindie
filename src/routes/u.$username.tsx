@@ -566,7 +566,7 @@ function ProfilePage() {
           </div>
           {profile.headline && <p className="mt-2 text-ink-soft">{profile.headline}</p>}
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+            <div className="mt-2 hidden flex-wrap items-center gap-1.5 text-xs text-ink-muted md:flex">
               <span>also known as</span>
               {profile.aliases.map((a, i) => (
                 <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
@@ -574,7 +574,7 @@ function ProfilePage() {
             </div>
           )}
           {(profile.tools?.length ?? 0) > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <div className="mt-2 hidden flex-wrap items-center gap-1.5 md:flex">
               {(profile.tools ?? []).slice(0, 6).map((t, i) => (
                 <span key={`${t}-${i}`} className="inline-flex items-center rounded-full border border-border bg-surface px-2 py-0.5 text-[11px] text-ink-soft">{t}</span>
               ))}
@@ -586,6 +586,13 @@ function ProfilePage() {
             </div>
           )}
         </div>
+
+        {/* Mobile-only compact link pills (existing IG + external_links) */}
+        <LinkPills
+          className="mt-3 md:hidden"
+          instagram={profile.instagram_handle}
+          links={profile.external_links ?? []}
+        />
 
         {/* Owner-only primary CTAs */}
         {isOwn && (
