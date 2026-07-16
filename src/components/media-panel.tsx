@@ -470,8 +470,22 @@ export function FullscreenRoom({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // Mobile chat sheet toggle.
-  const [chatOpen, setChatOpen] = useState(false);
+  // Mobile bottom sheet: single surface open at a time.
+  type MobileSheet = null | "chat" | "work" | "collabs";
+  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+  const chatOpen = mobileSheet === "chat";
+  // Unread indicator on the Chat tab: bumps whenever new messages arrive while
+  // the chat sheet isn't the visible surface.
+  const lastSeenLenRef = useRef(0);
+  const [unread, setUnread] = useState(false);
+  useEffect(() => {
+    if (mobileSheet === "chat") {
+      lastSeenLenRef.current = messages.length;
+      setUnread(false);
+    } else if (messages.length > lastSeenLenRef.current) {
+      setUnread(true);
+    }
+  }, [messages.length, mobileSheet]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
