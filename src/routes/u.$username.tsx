@@ -594,19 +594,19 @@ function ProfilePage() {
           links={profile.external_links ?? []}
         />
 
-        {/* Owner-only primary CTAs */}
+        {/* Owner-only primary CTAs (desktop; on mobile they live in the top nav / composer) */}
         {isOwn && (
-          <div className="mt-5 flex flex-wrap gap-2">
+          <div className="mt-5 hidden flex-wrap gap-2 md:flex">
             <Link to="/works/new"><Button className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post to Gallery</Button></Link>
             <Link to="/collab/new"><Button variant="outline" className="rounded-full gap-1.5"><Plus className="h-4 w-4" /> Post a Collab</Button></Link>
             <Link to="/lounge"><Button variant="ghost" className="rounded-full gap-1.5"><Sparkles className="h-4 w-4" /> Drop into a Lounge</Button></Link>
           </div>
         )}
 
-        {/* Owner-only: profile completion chip */}
+        {/* Owner-only: profile completion chip (desktop only; visible in About on mobile) */}
         {isOwn && (
           <ProfileCompletionChip
-            className="mt-4"
+            className="mt-4 hidden md:flex"
             hasAvatar={!!profile.avatar_url}
             hasHomeCity={!!profile.home_city}
             hasBio={!!(profile.bio && profile.bio.trim().length > 0)}
@@ -616,7 +616,7 @@ function ProfilePage() {
 
         {/* Wrap-up nudges now live in /me/collabs to keep the public profile clean. */}
         {isOwn && closedNudges.length > 0 && (
-          <div className="mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4">
+          <div className="mt-6 hidden flex-wrap items-center gap-3 rounded-2xl border border-primary/30 bg-primary/5 p-4 md:flex">
             <Sparkles className="h-5 w-5 text-primary" />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
@@ -626,21 +626,40 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Stats strip */}
-        <div className="mt-6 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm">
+        {/* Stats strip (desktop) */}
+        <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:flex">
           <Stat label="Gallery" value={counts.works} />
           <Stat label="Worked with" value={profile.worked_with_count} />
           <Stat label="Followers" value={profile.follower_count} />
           <Stat label="Following" value={profile.following_count} />
         </div>
 
-        {/* Artist statement — hidden entirely when blank */}
+        {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-8 max-w-3xl border-l-2 border-ink/30 pl-5">
-            <p className="whitespace-pre-wrap font-display text-xl italic leading-snug text-ink-soft md:text-2xl">
+          <blockquote className="mt-6 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+            <p className="whitespace-pre-wrap font-display text-lg italic leading-snug text-ink-soft md:text-2xl">
               {profile.artist_statement}
             </p>
           </blockquote>
+        )}
+
+        {/* Mobile-only Open-to-collaborate pill (visitors only, when open Collabs exist) */}
+        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && (
+          <button
+            type="button"
+            onClick={() => setTab("collabs")}
+            className="mt-6 inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left text-sm md:hidden"
+          >
+            <span className="flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              <span className="font-medium text-ink">Open to collaborate</span>
+              <span className="text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
+            </span>
+            <ArrowRight className="h-4 w-4 text-ink-muted" />
+          </button>
         )}
 
         {/* Tab bar */}
