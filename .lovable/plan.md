@@ -1,30 +1,44 @@
-## Problem
+## 1. Shorten the Lounge chat window
 
-Published-site worker logs show:
+The chat pane currently clamps to `h-[clamp(320px,46vh,560px)] xl:h-[60vh]`. When cameras are on, `46vh`/`60vh` still grows the pane too tall on laptops. Tighten it.
 
-```
-Error: Server function info not found for fetchGroupNews
-GET /_serverFn/fetchGroupNews → 500
-```
+**`src/components/channel-view.tsx`** — replace all 5 occurrences of the clamp class:
+- From: `h-[clamp(320px,46vh,560px)] xl:h-[60vh]`
+- To: `h-[clamp(280px,38vh,440px)] xl:h-[52vh]`
 
-Preview works; production 500s. Root cause matches the documented failure mode: `src/lib/group-news.functions.ts` imports `supabaseAdmin` from `@/integrations/supabase/client.server` at **module scope**. Server-function modules only strip handler bodies from the client bundle — top-level imports remain in the client graph, and the router's import-protection on `.server.*` files breaks the production server-fn manifest, so the deployed worker can't resolve `fetchGroupNews`.
+Applies to the Chat, Gallery, Collabs, Links, and composer scroll containers so the panel height stays consistent across tabs.
 
-Separately, the marquee currently uses `durationSec = Math.max(90, items.length * 14)` — user wants scroll speed halved.
+## 2. Normalize bare URLs in chat (clickable + Links tab + moderation)
 
-## Changes
+Today only `https?://` URLs are detected. Pasting `www.instagram.com` or `instagram.com/foo` renders as plain text, doesn't appear in Links, and bypasses the blocklist.
 
-**1. `src/lib/group-news.functions.ts`** — move admin client to a lazy import inside the handler.
+### A. Shared URL extraction — `src/lib/moderation/url-blocklist.ts`
 
-- Remove top-level `import { supabaseAdmin } from "@/integrations/supabase/client.server"`.
-- Inside `.handler(...)`: `const { supabaseAdmin } = await import("@/integrations/supabase/client.server");` before the `.from("groups")` call.
-- Everything else unchanged.
+- Add a second regex for bare URLs:
+  - `www.` prefix, or a hostname with a known TLD, followed by optional `/path?query#frag`.
+  - Practical shape: `\b(?:www\.[^\s<>()"']+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>()"']*)?)`
+- Update `extractUrls(body)` to return **normalized absolute URLs**: if the match lacks a scheme, prepend `https://`. Keep trimming trailing `),.;!?`.
+- Skip matches whose "hostname" doesn't parse via `new URL(...)` after normalization (avoids catching things like `hello.world` in prose — require a real TLD via a small allowlist of length ≥ 2 and reject if `URL` construction throws).
+- `findBlockedUrl` / `isBlockedUrl` then automatically cover bare URLs since they get normalized upstream.
 
-This restores the server-fn manifest entry on the published worker so `/_serverFn/fetchGroupNews` returns 200.
+### B. Chat rendering — `src/components/chat-mention-input.tsx`
 
-**2. `src/components/group/group-news-ticker.tsx`** — halve scroll speed.
+In the `ln` component's parser (around line 219):
+- Replace the single `urlRe` pass with two passes: one for `https?://…` (unchanged), one for bare URLs matching the same pattern as in (A).
+- For bare matches, produce `{ type: "link", text: rawMatch, href: "https://" + rawMatch }` so the visible text stays as typed but the anchor points to the normalized URL.
+- Guard against overlap with existing hits (mentions, markdown links) using the existing `hits.some(...)` check.
 
-- Change `const durationSec = Math.max(90, items.length * 14);` to `const durationSec = Math.max(180, items.length * 28);` (double the duration = half the speed).
+### C. Links tab — `src/components/lounge-links.tsx`
 
-## Verification
+No change needed: it consumes `extractUrls`, which will now return normalized `https://…` strings for bare URLs. Dedup key and favicon fetch continue to work.
 
-After deploy: hit `/g/chicago` on workshopindie.com, confirm the ticker renders and headlines scroll at ~half the previous pace. Check worker logs — no more "Server function info not found".
+### D. Moderation on send — `src/lib/chat.functions.ts`
+
+No change needed: `findBlockedUrl` calls `extractUrls`, so `instagram.com/hate-site-x` typed without a scheme is now caught by the same blocklist.
+
+### Verification
+
+- Type `www.instagram.com` in Lounge chat → renders as clickable link, opens `https://www.instagram.com`, appears in the Links tab.
+- Type `pornhub.com` (no scheme) → send is rejected by the blocklist.
+- Existing `https://…` links continue to work and are not double-linkified.
+- Chat pane on a laptop stays shorter with camera tiles visible above.
