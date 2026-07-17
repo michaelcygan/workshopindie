@@ -20,7 +20,6 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as McpRouteImport } from './routes/mcp'
 import { Route as LoungeRouteImport } from './routes/lounge'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as InProgressRouteImport } from './routes/in-progress'
 import { Route as GroupsRouteImport } from './routes/groups'
 import { Route as GoodbyeRouteImport } from './routes/goodbye'
 import { Route as GalleryRouteImport } from './routes/gallery'
@@ -147,11 +146,6 @@ const LoungeRoute = LoungeRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const InProgressRoute = InProgressRouteImport.update({
-  id: '/in-progress',
-  path: '/in-progress',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GroupsRoute = GroupsRouteImport.update({
@@ -530,7 +524,6 @@ export interface FileRoutesByFullPath {
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
-  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/lounge': typeof LoungeRouteWithChildren
   '/mcp': typeof McpRoute
@@ -612,7 +605,6 @@ export interface FileRoutesByTo {
   '/g': typeof GRouteWithChildren
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
-  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/mcp': typeof McpRoute
   '/onboarding': typeof OnboardingRoute
@@ -697,7 +689,6 @@ export interface FileRoutesById {
   '/gallery': typeof GalleryRoute
   '/goodbye': typeof GoodbyeRoute
   '/groups': typeof GroupsRouteWithChildren
-  '/in-progress': typeof InProgressRoute
   '/login': typeof LoginRoute
   '/lounge': typeof LoungeRouteWithChildren
   '/mcp': typeof McpRoute
@@ -785,7 +776,6 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/goodbye'
     | '/groups'
-    | '/in-progress'
     | '/login'
     | '/lounge'
     | '/mcp'
@@ -867,7 +857,6 @@ export interface FileRouteTypes {
     | '/g'
     | '/gallery'
     | '/goodbye'
-    | '/in-progress'
     | '/login'
     | '/mcp'
     | '/onboarding'
@@ -951,7 +940,6 @@ export interface FileRouteTypes {
     | '/gallery'
     | '/goodbye'
     | '/groups'
-    | '/in-progress'
     | '/login'
     | '/lounge'
     | '/mcp'
@@ -1038,7 +1026,6 @@ export interface RootRouteChildren {
   GalleryRoute: typeof GalleryRoute
   GoodbyeRoute: typeof GoodbyeRoute
   GroupsRoute: typeof GroupsRouteWithChildren
-  InProgressRoute: typeof InProgressRoute
   LoginRoute: typeof LoginRoute
   LoungeRoute: typeof LoungeRouteWithChildren
   McpRoute: typeof McpRoute
@@ -1157,13 +1144,6 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/in-progress': {
-      id: '/in-progress'
-      path: '/in-progress'
-      fullPath: '/in-progress'
-      preLoaderRoute: typeof InProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/groups': {
@@ -1872,7 +1852,6 @@ const rootRouteChildren: RootRouteChildren = {
   GalleryRoute: GalleryRoute,
   GoodbyeRoute: GoodbyeRoute,
   GroupsRoute: GroupsRouteWithChildren,
-  InProgressRoute: InProgressRoute,
   LoginRoute: LoginRoute,
   LoungeRoute: LoungeRouteWithChildren,
   McpRoute: McpRoute,
