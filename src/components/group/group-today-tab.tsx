@@ -379,17 +379,18 @@ type RecentCollabRow = {
 };
 
 function RecentCollabs({ group }: { group: GroupRefForToday }) {
-  const { data: collabs = [], isLoading } = useQuery({
+  const { data: collabs = [], isLoading, error, refetch } = useQuery({
     queryKey: ["group", group.id, "today-recent-collabs"],
     queryFn: async (): Promise<RecentCollabRow[]> => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("group_collabs")
         .select(
-          "added_at,collab:collab_posts(id,title,slug,status,category,author:profiles!collab_posts_user_id_fkey(username,display_name,avatar_url))",
+          "created_at,collab:collab_posts!collab_post_id(id,title,slug,status,category,author:profiles!collab_posts_user_id_fkey(username,display_name,avatar_url))",
         )
         .eq("group_id", group.id)
-        .order("added_at", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(12);
+      if (error) throw error;
       return (data ?? [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.collab)
@@ -412,8 +413,16 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
             <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/40" />
           ))}
         </div>
+      ) : error ? (
+        <p className="text-xs text-ink-muted">
+          Couldn't load.{" "}
+          <button type="button" onClick={() => refetch()} className="underline hover:text-ink">
+            Retry
+          </button>
+        </p>
       ) : collabs.length === 0 ? (
         <p className="text-xs text-ink-muted">No collabs yet.</p>
+
       ) : (
         <ul className="space-y-1">
           {collabs.map((c) => {
