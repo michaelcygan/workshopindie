@@ -1,27 +1,68 @@
-## Problem
+## What the news ticker is
 
-In `src/components/channel-view.tsx`, the Chat view renders `<PinnedMessage>` as a sibling *above* the scrollable messages container. The scroll container itself has a fixed height (`h-[clamp(280px,38vh,440px)] xl:h-[52vh]`). So when a pin appears, the pin's height is added on top of the chat area, pushing the composer below the viewport on laptop screens.
+`GroupNewsTicker` (`src/components/group/group-news-ticker.tsx`) sits between the group hero and the tab bar on `/g/$slug`. It's a scrolling marquee pill with a "In the news" chip; clicking the chip opens a popover of headlines. Feed URL is stored per group in `groups.news_feed_url` and rendered by parsing RSS/Atom server-side.
 
-The other tab views (Gallery / Collabs / Links) don't have this issue because they don't render the pin above their fixed-height container.
+Today the chain is:
+1. Client component calls `useQuery(fetchGroupNews)` (a TanStack `createServerFn`).
+2. `fetchGroupNews` reads `groups.news_feed_url` via `supabaseAdmin` (dynamic import), fetches the feed, regex-parses items, returns `{ items }`.
+3. When `items.length === 0`, the component returns `null` — nothing renders.
 
-## Fix
+## Root cause on production
 
-Keep the outer chat area a single fixed-height block, and let the pinned message consume space *inside* it (not on top of it).
+I confirmed on the published site (`workshopindie.com/g/chicago`):
 
-In the Chat branch (around lines 1009–1029):
+- Chicago's `news_feed_url` is set (Google News RSS query).
+- The browser fires the server-fn request:
+  `GET /_serverFn/97b29a…?payload=…` → **HTTP 200, `content-length: 0`, empty body**.
+- Directly fetching the same Google News RSS from outside works (HTTP 200, ~29 KB).
+- The component treats an empty response as `items = []` and returns `null`, so the ticker never appears.
 
-1. Wrap `<PinnedMessage>` + the scrollable `<div ref={scrollRef}>` in a single flex column with the same height clamp the scroll div uses today:
-   ```
-   <div className="flex h-[clamp(280px,38vh,440px)] xl:h-[52vh] flex-col">
-     <PinnedMessage … />           ← natural height, shrink-0
-     <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-4 py-4 md:px-6"> … </div>
-   </div>
-   ```
-2. Remove the height clamp from the inner scroll `<div>` (it becomes `flex-1 min-h-0`), and move the clamp to the new wrapper.
-3. Leave `ChatPolls` where it is (above the wrapper) since it wasn't part of the reported regression; only the pin was pushing the composer out.
+So the pipeline is intact everywhere except the production TanStack server-fn response: the worker returns an empty 200 for `fetchGroupNews`. Preview works because it's a different deployment. This lines up with the earlier "publish once and the ticker appears in preview but not prod" symptom — the current published worker build simply isn't returning the JSON body for this fn.
 
-Result: total Chat block height is unchanged whether or not a message is pinned. The pinned banner just eats into the messages scroll area instead of extending the whole chat.
+## Fix — rebuild the news pipe on a simpler, cacheable primitive
+
+Instead of another poke at server-fn encoding, replace the fragile server-fn hop with a plain public GET endpoint that returns JSON. This is what news feeds want anyway (CDN-cacheable, no auth, no per-user middleware).
+
+### 1. New route: `src/routes/api/public/group-news.$slug.ts`
+
+- `createFileRoute("/api/public/group-news/$slug")` with a `GET` handler.
+- Look up the group by `slug` via `supabaseAdmin`, read `news_feed_url` and `id`.
+- If no URL → return `{ items: [] }` with `Cache-Control: public, max-age=300`.
+- Fetch the feed with the existing UA + 6s timeout, run the same RSS/Atom regex parser (extracted to a small helper). Cap items at 12.
+- Return `Response.json({ items }, { headers: { "Cache-Control": "public, max-age=1800, s-maxage=1800, stale-while-revalidate=86400" } })`.
+- On fetch/parse error return `{ items: [] }` with a short cache so a bad feed doesn't hammer the origin.
+- Uses `/api/public/*` so no auth middleware runs on published site.
+
+### 2. Shrink `src/lib/group-news.functions.ts`
+
+- Delete the server-fn `fetchGroupNews` (unused after this).
+- Move the RSS/Atom parser + decode helper into `src/lib/group-news.ts` (pure, browser-safe) and re-use it inside the new route.
+
+### 3. Rewire the component
+
+`src/components/group/group-news-ticker.tsx`:
+
+- Drop `useServerFn`/`fetchGroupNews`.
+- `useQuery({ queryKey: ["group-news", slug], queryFn: () => fetch(\`/api/public/group-news/${slug}\`).then(r => r.json()), staleTime: 30*60*1000 })`.
+- Take `slug` as a prop instead of `groupId` (matches the new endpoint and avoids a second lookup client-side).
+- Same render logic, same "return null when empty".
+
+### 4. Update the call site
+
+`src/routes/g.$slug.tsx`: change `<GroupNewsTicker groupId={group.id} />` to `<GroupNewsTicker slug={group.slug} />`. No other consumers.
+
+### 5. Verify
+
+- After publish, curl `https://workshopindie.com/api/public/group-news/chicago` and confirm a non-empty `items` array + cache headers.
+- Reload `/g/chicago` and confirm the pill renders and scrolls.
+- If Google News is blocked from the Cloudflare Worker (empty items even from curl), swap the source to a workshop-hosted proxy or a different RSS aggregator — but I expect direct fetch to work; the current failure is at the server-fn transport, not at the RSS fetch.
 
 ## Files touched
 
-- `src/components/channel-view.tsx` — Chat branch only (~lines 1009–1029). No other components, no CSS tokens, no logic changes.
+- **New:** `src/routes/api/public/group-news.$slug.ts`
+- **New:** `src/lib/group-news.ts` (shared parser)
+- **Edited:** `src/components/group/group-news-ticker.tsx` (prop change + fetch)
+- **Edited:** `src/routes/g.$slug.tsx` (prop change at call site)
+- **Deleted:** `src/lib/group-news.functions.ts`
+
+No DB migrations, no schema changes, no impact on any other flow.

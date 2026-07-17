@@ -1,22 +1,27 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
-import { fetchGroupNews } from "@/lib/group-news.functions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ExternalLink } from "lucide-react";
 
+type NewsItem = { title: string; link: string; published_at: string | null };
 
 /**
  * Group news rail — a contained pill that sits between the hero and the
  * tab bar, aligned to the same max-w-7xl container as the rest of the page.
  * Anchored "In the news" chip on the left; headlines scroll calmly through
  * the remaining space. Returns null when no feed or no items.
+ *
+ * Backed by the public JSON endpoint `/api/public/group-news/$slug` so the
+ * response is CDN-cacheable and independent of the server-fn RPC transport.
  */
-export function GroupNewsTicker({ groupId }: { groupId: string }) {
-  const fetchNews = useServerFn(fetchGroupNews);
+export function GroupNewsTicker({ slug }: { slug: string }) {
   const { data } = useQuery({
-    queryKey: ["group", groupId, "news"],
-    queryFn: () => fetchNews({ data: { group_id: groupId, limit: 12 } }),
+    queryKey: ["group-news", slug],
+    queryFn: async (): Promise<{ items: NewsItem[] }> => {
+      const res = await fetch(`/api/public/group-news/${encodeURIComponent(slug)}`);
+      if (!res.ok) return { items: [] };
+      return (await res.json()) as { items: NewsItem[] };
+    },
     staleTime: 30 * 60 * 1000,
   });
   const items = data?.items ?? [];
@@ -24,6 +29,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   const [open, setOpen] = useState(false);
   if (items.length === 0) return null;
   const paused = hovering;
+
 
   const durationSec = Math.max(180, items.length * 28);
   const loop = [...items, ...items];
