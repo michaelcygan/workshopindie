@@ -388,31 +388,54 @@ function EditProfile() {
                     size="sm"
                     variant="ghost"
                     className="rounded-full gap-1 shrink-0"
-                    onClick={() => set("aliases", [...form.aliases, ""])}
+                    onClick={() => {
+                      set("aliases", [...form.aliases, ""]);
+                      set("aliasUrls", [...form.aliasUrls, ""]);
+                    }}
                   >
                     <Plus className="h-3.5 w-3.5" /> Add alias
                   </Button>
                 )}
               </div>
               {form.aliases.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {form.aliases.map((a, i) => (
-                    <div key={i} className="flex gap-2">
+                    <div key={i} className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={a}
+                          maxLength={40}
+                          placeholder="e.g. DJ Nightowl"
+                          onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remove alias"
+                          onClick={() => {
+                            set("aliases", form.aliases.filter((_, j) => j !== i));
+                            set("aliasUrls", form.aliasUrls.filter((_, j) => j !== i));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <Input
-                        value={a}
-                        maxLength={40}
-                        placeholder="e.g. DJ Nightowl"
-                        onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                        type="url"
+                        value={form.aliasUrls[i] ?? ""}
+                        maxLength={200}
+                        placeholder="Website for this alias (optional) — https://…"
+                        onChange={(e) => {
+                          const next = [...form.aliasUrls];
+                          while (next.length < form.aliases.length) next.push("");
+                          next[i] = e.target.value;
+                          set("aliasUrls", next);
+                        }}
+                        className="text-xs"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => set("aliases", form.aliases.filter((_, j) => j !== i))}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
+
                   ))}
                 </div>
               )}
