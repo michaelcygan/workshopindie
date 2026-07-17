@@ -101,12 +101,12 @@ export function WorkshopProgressBar({
       </div>
       {isHost && !hasCollab && (
         <p className="mt-2 text-[11px] text-ink-muted">
-          When there's something worth shipping, turn this Workshop into a Collab from the live room.
+          When there's something worth publishing, turn this Workshop into a Collab from the live room.
         </p>
       )}
       {isHost && hasCollab && !hasWork && (
         <p className="mt-2 text-[11px] text-ink-muted">
-          Ready to ship?{" "}
+          Ready to publish?{" "}
           <Link to="/works/new" className="underline hover:text-ink">Publish the Work</Link>{" "}
           and it'll show in the Gallery.
         </p>

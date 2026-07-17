@@ -137,7 +137,7 @@ function ToolPage() {
           <h1 className="font-display text-4xl text-ink md:text-5xl">{cap(tool)}</h1>
         </div>
         <p className="mt-2 text-ink-soft">
-          {tool === "tasks" && "Lightweight checklist to actually ship within the session."}
+          {tool === "tasks" && "Lightweight checklist to actually finish within the session."}
           {tool === "drive" && "Drop files and paste cloud links collaborators need."}
           {tool === "docs" && "Shared notes, scripts, treatments, lyrics."}
         </p>
@@ -260,7 +260,7 @@ function Tasks({ workshopId }: { workshopId: string }) {
           <ul className="mt-6 space-y-1.5">
             {open.length === 0 && (
               <li className="rounded-2xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
-                No open tasks. Add one to start shipping.
+                No open tasks. Add one to start finishing.
               </li>
             )}
             {open.map((t) => (

@@ -596,7 +596,7 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
     }).eq("id", ws.id);
 
     setSubmitting(false);
-    toast.success("Shipped to the Gallery");
+    toast.success("Published to the Gallery");
     onShipped();
     navigate({ to: "/works/$slug", params: { slug: work.slug } });
   }
@@ -636,7 +636,7 @@ function ShippedBanner({ workshopId }: { workshopId: string }) {
   return (
     <section className="mt-10 rounded-3xl border border-primary/30 bg-primary/5 p-6 text-center">
       <span className="gradient-motion mx-auto inline-flex h-11 w-11 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-6 w-6" /></span>
-      <h2 className="mt-2 font-display text-2xl text-ink">Shipped: {work.title}</h2>
+      <h2 className="mt-2 font-display text-2xl text-ink">Published: {work.title}</h2>
       <p className="mt-1 text-xs text-ink-muted">The studio auto-clears after 30 days of inactivity — any new doc, task, file, poll, or chat message resets the clock. Grab an archive any time.</p>
       <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
         <Link to="/works/$slug" params={{ slug: work.slug }}>
