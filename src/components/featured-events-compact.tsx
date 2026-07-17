@@ -39,7 +39,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
           <LiveDot live />
           <h2 className="font-display text-lg text-ink">Featured events</h2>
         </div>
-        <span className="text-[11px] text-ink-muted">RSVP = free trial</span>
+        
       </div>
 
       {upcoming.length === 0 ? (
