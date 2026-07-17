@@ -151,7 +151,6 @@ export function TopNav() {
                     <Briefcase className="mr-2 h-4 w-4" /> My stuff
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-52">
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                       <Briefcase className="mr-2 h-4 w-4" /> My Collabs
                     </DropdownMenuItem>
