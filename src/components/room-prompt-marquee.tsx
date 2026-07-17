@@ -21,7 +21,19 @@ type Props = {
   perRow?: number;
   /** Visible rows. Default 4 (responsive). Use 2 for mobile-only contexts. */
   maxRows?: 2 | 3 | 4;
+  /** "marquee" = animated rows (desktop); "static-row" = single mobile scroll row. */
+  variant?: "marquee" | "static-row";
 };
+
+const MOBILE_QUICK_START_TITLES = [
+  "Heads-down work session",
+  "Portfolio review",
+  "Mix feedback — bring stems",
+  "Co-writing sprint",
+  "Pair-program on a bug",
+  "Dailies critique",
+];
+
 
 const ROW_DURATIONS_MS = [130_000, 145_000, 118_000, 135_000];
 
