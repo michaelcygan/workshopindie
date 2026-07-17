@@ -607,96 +607,114 @@ function ProfilePage() {
 
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-3 md:mt-4">
-          {/* Name + mobile action stack. On mobile: 2-col grid so Follow/DM sit
-              on the name line. On desktop: block; actions live in avatar row above. */}
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 md:block">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
-                <CreatorBadge status={profile.creator_status} />
+          {(() => {
+            const metaRow = (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
+                {profile.username && <span>@{profile.username}</span>}
+                {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
+                  <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                    <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
+                  </Link>
+                )}
+                {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
+                    , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
+                  </span>
+                )}
+                {!profile.home_city && profile.city && (
+                  <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                    <MapPin className="h-3.5 w-3.5" />{profile.city.name}
+                  </Link>
+                )}
+                {profile.instagram_handle && (
+                  <a
+                    href={`https://instagram.com/${profile.instagram_handle}`}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    className="hidden md:inline-flex items-center gap-1 text-gradient-motion hover:underline"
+                  >
+                    IG @{profile.instagram_handle}
+                  </a>
+                )}
               </div>
-            </div>
-            <div className="flex w-[9.5rem] shrink-0 flex-col items-stretch gap-1.5 md:hidden">
-              {isOwn ? (
-                <>
-                  <Button variant="outline" size="sm" className="w-full rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                    <Pencil className="h-4 w-4" /> Edit profile
-                  </Button>
-                  <div className="flex justify-end">
-                    <ShareSheet
-                      entity={{
-                        type: "profile",
-                        id: profile.id,
-                        url: `https://workshopindie.com/u/${profile.username}`,
-                        title: name,
-                        subtitle: profile.headline ?? undefined,
-                      }}
+            );
+            return (
+              <>
+                {/* Name + mobile action stack. On mobile: 2-col grid so Follow/DM sit
+                    on the name line, and meta+link pills stack in the left column so
+                    they read parallel to the action stack. Desktop uses block. */}
+                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-1.5 md:block">
+                  <div className="min-w-0 flex flex-col gap-1.5 md:contents">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
+                      <CreatorBadge status={profile.creator_status} />
+                    </div>
+                    {/* Mobile-only meta + link pills, tucked into left column */}
+                    <div className="md:hidden">{metaRow}</div>
+                    <LinkPills
+                      className="md:hidden"
+                      instagram={profile.instagram_handle}
+                      links={profile.external_links ?? []}
                     />
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5 [&>button]:h-9 [&>button]:flex-1">
-                    <FollowButton targetUserId={profile.id} compact />
-                    <MessageButton otherUserId={profile.id} />
+                  <div className="flex w-[9.5rem] shrink-0 flex-col items-stretch gap-1.5 md:hidden">
+                    {isOwn ? (
+                      <>
+                        <Button variant="outline" size="sm" className="w-full rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                          <Pencil className="h-4 w-4" /> Edit profile
+                        </Button>
+                        <div className="flex justify-end">
+                          <ShareSheet
+                            entity={{
+                              type: "profile",
+                              id: profile.id,
+                              url: `https://workshopindie.com/u/${profile.username}`,
+                              title: name,
+                              subtitle: profile.headline ?? undefined,
+                            }}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-1.5 [&>button]:h-9 [&>button]:flex-1">
+                          <FollowButton targetUserId={profile.id} compact />
+                          <MessageButton otherUserId={profile.id} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5 [&_button]:w-full [&_button]:justify-center">
+                          <ShareSheet
+                            entity={{
+                              type: "profile",
+                              id: profile.id,
+                              url: `https://workshopindie.com/u/${profile.username}`,
+                              title: name,
+                              subtitle: profile.headline ?? undefined,
+                            }}
+                          />
+                          <ReportDialog entityType="profile" entityId={profile.id} />
+                        </div>
+                      </>
+                    )}
                   </div>
-                  <div className="grid grid-cols-2 gap-1.5 [&_button]:w-full [&_button]:justify-center">
-                    <ShareSheet
-                      entity={{
-                        type: "profile",
-                        id: profile.id,
-                        url: `https://workshopindie.com/u/${profile.username}`,
-                        title: name,
-                        subtitle: profile.headline ?? undefined,
-                      }}
-                    />
-                    <ReportDialog entityType="profile" entityId={profile.id} />
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+                </div>
 
-
-
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
-            {profile.username && <span>@{profile.username}</span>}
-            {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
-              <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
-                <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
-              </Link>
-            )}
-            {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-3.5 w-3.5" />
-                Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
-                , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
-              </span>
-            )}
-            {!profile.home_city && profile.city && (
-              <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
-                <MapPin className="h-3.5 w-3.5" />{profile.city.name}
-              </Link>
-            )}
-            {profile.instagram_handle && (
-              <a
-                href={`https://instagram.com/${profile.instagram_handle}`}
-                target="_blank"
-                rel="noreferrer noopener"
-                className="hidden md:inline-flex items-center gap-1 text-gradient-motion hover:underline"
-              >
-                IG @{profile.instagram_handle}
-              </a>
-            )}
-          </div>
+                {/* Desktop meta row (mobile version lives inside the grid above) */}
+                <div className="mt-1 hidden md:block">{metaRow}</div>
+              </>
+            );
+          })()}
           {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
-          {/* Mobile-only compact link pills (IG + external_links) — sit right under the identity line */}
+          {/* Desktop-only link pills (mobile version lives inside the grid above) */}
           <LinkPills
-            className="mt-2 md:hidden"
+            className="mt-2 hidden md:flex"
             instagram={profile.instagram_handle}
             links={profile.external_links ?? []}
           />
+
+
 
           {/* Mobile bio (short public blurb). Desktop bio still lives in the About tab. */}
           {profile.bio && profile.bio.trim().length > 0 && (
