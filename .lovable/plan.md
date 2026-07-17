@@ -1,31 +1,30 @@
+## Problem
 
-## Goal
+Published-site worker logs show:
 
-Remove the "In Progress" tracker/board from v1 without breaking any surface. The underlying `workshop_tasks` table (per-workshop tasks) stays — only the cross-app aggregator, its page, badge, and pickup surfaces are cut.
+```
+Error: Server function info not found for fetchGroupNews
+GET /_serverFn/fetchGroupNews → 500
+```
 
-## Scope (verified)
+Preview works; production 500s. Root cause matches the documented failure mode: `src/lib/group-news.functions.ts` imports `supabaseAdmin` from `@/integrations/supabase/client.server` at **module scope**. Server-function modules only strip handler bodies from the client bundle — top-level imports remain in the client graph, and the router's import-protection on `.server.*` files breaks the production server-fn manifest, so the deployed worker can't resolve `fetchGroupNews`.
 
-Feature-only files to delete:
-- `src/routes/in-progress.tsx` — the `/in-progress` page (310 lines)
-- `src/lib/in-progress.functions.ts` — the aggregator server fn (201 lines)
-- `src/hooks/use-in-progress-badge.ts` — badge query hook (55 lines)
-- `src/components/pickup-card.tsx` — signed-in homepage "resume" card (87 lines)
+Separately, the marquee currently uses `durationSec = Math.max(90, items.length * 14)` — user wants scroll speed halved.
 
-Surfaces to edit (remove imports + JSX only):
-- `src/routes/index.tsx` — drop `PickupCard` import and its render at line 220.
-- `src/components/mobile-nav.tsx` — drop `useInProgressBadge`; remove the count badge overlay on the "You" avatar.
-- `src/components/top-nav.tsx` — drop `useInProgressBadge`, the `InProgressBadgeDot` component, the `InProgressCountPill` component, and the "In progress" dropdown menu item.
-- `src/components/settings-menu-button.tsx` — drop `useInProgressBadge` and the "In progress" menu item + its count pill.
+## Changes
 
-Route tree (`src/routeTree.gen.ts`) regenerates automatically once `in-progress.tsx` is gone — do not edit by hand.
+**1. `src/lib/group-news.functions.ts`** — move admin client to a lazy import inside the handler.
 
-## Not touched (intentionally)
+- Remove top-level `import { supabaseAdmin } from "@/integrations/supabase/client.server"`.
+- Inside `.handler(...)`: `const { supabaseAdmin } = await import("@/integrations/supabase/client.server");` before the `.from("groups")` call.
+- Everything else unchanged.
 
-- `workshop_tasks` table, its RLS, and any per-workshop task UI inside a Workshop stay as-is — v1 workshops still track their own tasks; only the cross-app tracker leaves.
-- Copy strings that happen to say "in progress" (`me.collabs.tsx` "drafts in progress", `events.index.tsx` "work-in-progress nights") are unrelated and stay.
-- No DB migration needed.
+This restores the server-fn manifest entry on the published worker so `/_serverFn/fetchGroupNews` returns 200.
 
-## Verification after edits
+**2. `src/components/group/group-news-ticker.tsx`** — halve scroll speed.
 
-- `rg "in-progress|InProgress|useInProgressBadge|PickupCard"` under `src/` (excluding `routeTree.gen.ts`) returns no hits.
-- Build passes; `/in-progress` 404s (expected); homepage, top nav, mobile nav, and settings menu render without the removed items.
+- Change `const durationSec = Math.max(90, items.length * 14);` to `const durationSec = Math.max(180, items.length * 28);` (double the duration = half the speed).
+
+## Verification
+
+After deploy: hit `/g/chicago` on workshopindie.com, confirm the ticker renders and headlines scroll at ~half the previous pace. Check worker logs — no more "Server function info not found".
