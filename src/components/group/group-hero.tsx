@@ -58,7 +58,7 @@ export function GroupHero({
   return (
     <>
       {/* Compact identity row — no banner. */}
-      <div className="relative z-10 px-4 py-3 md:px-6 md:py-4">
+      <div className="relative z-10 px-4 py-2 md:px-6 md:py-2.5">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
           {/* Avatar tile */}
           <div className="relative isolate flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-14 sm:w-14">
@@ -117,7 +117,7 @@ export function GroupHero({
               )}
             </div>
             {group.tagline && (
-              <p className="mt-0.5 line-clamp-1 text-xs text-ink-muted md:text-sm">
+              <p className="line-clamp-1 text-xs text-ink-muted md:text-sm">
                 {group.tagline}
               </p>
             )}

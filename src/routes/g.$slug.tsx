@@ -327,7 +327,7 @@ function GroupPage() {
         </div>
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         <GroupHero group={group} nextEvent={nextEvent} />
 
         <GroupNewsTicker slug={group.slug} />
