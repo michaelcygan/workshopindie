@@ -1036,10 +1036,10 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 params={{ slug: w.slug }}
                 className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl">
+                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl isolate transform-gpu">
                   <div
                     className={cn(
-                      "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]",
+                      "absolute inset-0 transition-transform duration-300 will-change-transform group-hover:scale-[1.03]",
                       w.cover_url ? "bg-cover bg-center" : "bg-surface-2",
                     )}
                     style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
