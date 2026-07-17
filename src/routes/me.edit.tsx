@@ -48,6 +48,8 @@ type FormState = {
   firstName: string;
   lastName: string;
   aliases: string[];
+  aliasUrls: string[];
+
   instagram: string;
   headline: string;
   bio: string;
