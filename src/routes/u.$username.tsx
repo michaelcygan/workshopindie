@@ -125,6 +125,8 @@ type Profile = {
   creator_status: string;
   pinned_work_ids: string[];
   aliases: string[] | null;
+  alias_urls: string[] | null;
+
   city: { name: string; country: string; slug: string } | null;
   home_city: { name: string; country: string; slug: string } | null;
   cover_work: { slug: string; status: string; visibility: string } | null;
