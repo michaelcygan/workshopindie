@@ -221,7 +221,7 @@ function WorkDetail() {
           )}
 
           {/* Date line — the only temporal chrome */}
-          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} />
+          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} isOwner={user?.id === work.created_by} slug={work.slug} />
         </motion.header>
 
 
@@ -245,13 +245,7 @@ function WorkDetail() {
             <span className="inline-flex items-center gap-1.5"><Eye className="h-4 w-4" /> {work.view_count} views</span>
           </div>
           <div className="flex items-center gap-1">
-            {user?.id === work.created_by && (
-              <Link to="/works/$slug/edit" params={{ slug: work.slug }}>
-                <Button variant="ghost" size="sm" className="rounded-full gap-1.5">
-                  <Pencil className="h-4 w-4" /> Edit
-                </Button>
-              </Link>
-            )}
+
             <PinToProfileButton workId={work.id} credits={credits} />
             <WorkActions workId={work.id} initialLikes={work.like_count} initialSaves={work.save_count} />
             <ShareSheet
@@ -386,7 +380,7 @@ function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: 
   );
 }
 
-function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | null; sourceWorkshopId: string | null }) {
+function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedAt: string | null; sourceWorkshopId: string | null; isOwner?: boolean; slug?: string }) {
   const { data: workshop } = useQuery({
     queryKey: ["work-source-workshop", sourceWorkshopId],
     enabled: !!sourceWorkshopId,
@@ -402,7 +396,7 @@ function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | nul
     },
     staleTime: 5 * 60_000,
   });
-  if (!publishedAt && !workshop) return null;
+  if (!publishedAt && !workshop && !isOwner) return null;
   return (
     <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
       <Calendar className="h-4 w-4" />
@@ -420,6 +414,18 @@ function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | nul
               {workshop.title}
             </Link>
           </span>
+        </>
+      )}
+      {isOwner && slug && (
+        <>
+          <span aria-hidden>·</span>
+          <Link
+            to="/works/$slug/edit"
+            params={{ slug }}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-ink hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit Work
+          </Link>
         </>
       )}
     </p>
