@@ -236,3 +236,25 @@ export const setRoomNote = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
+/**
+ * Pin or unpin a chat message in a lounge room.
+ * Any user present in the room can pin any message (replaces the current pin).
+ * Only the user who set the pin can unpin. Pass messageId=null to unpin.
+ */
+export const setRoomPin = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; messageId: string | null }) =>
+    z.object({
+      roomId: z.string().uuid(),
+      messageId: z.string().uuid().nullable(),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("set_room_pin", {
+      _room: data.roomId,
+      _message: data.messageId,
+    } as any);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });

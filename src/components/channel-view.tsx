@@ -26,7 +26,7 @@ import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { setRoomTitle } from "@/lib/host-room.functions";
-import { RoomNoteBanner } from "@/components/room-note-banner";
+import { PinnedMessage, PinMessageButton, useRoomPin } from "@/components/pinned-message";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { getPurposeSuggestions, getPurposePool, type PurposeSuggestion } from "@/lib/topic-prompts";
@@ -208,6 +208,7 @@ export function ChannelView({
 
   const media = useMediaRoom(roomId);
   const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
+  const { pinnedId: pinnedMessageId } = useRoomPin(roomId);
   const stopScreeningFn = useServerFn(stopScreening);
 
   // The lobby "Drop in" button is the consent point — auto-join with mic + camera
@@ -1007,7 +1008,16 @@ export function ChannelView({
 
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
-              {roomId && <RoomNoteBanner roomId={roomId} />}
+              {roomId && (
+                <PinnedMessage
+                  roomId={roomId}
+                  messages={messages}
+                  profileLookup={profileLookup}
+                  mentionCandidates={mentionCandidates}
+                  meUsername={me?.username ?? null}
+                  meUserId={user?.id ?? null}
+                />
+              )}
               <div className="relative">
               <div
                 ref={scrollRef}
@@ -1136,6 +1146,13 @@ export function ChannelView({
                                 title={new Date(m.created_at).toLocaleString()}
                               >
                                 <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
+                                {user && (
+                                  <PinMessageButton
+                                    roomId={roomId}
+                                    messageId={m.id}
+                                    isPinned={pinnedMessageId === m.id}
+                                  />
+                                )}
                                 <ReactionPills
                                   reactions={msgReactions}
                                   meUserId={user?.id}
