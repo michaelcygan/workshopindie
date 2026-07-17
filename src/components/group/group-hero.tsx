@@ -1,5 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
-import { Calendar, MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
+import { MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { JoinGroupButton } from "@/components/join-group-button";
