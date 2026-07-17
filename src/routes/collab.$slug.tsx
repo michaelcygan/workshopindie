@@ -497,6 +497,10 @@ function CollabDetail() {
         )}
 
 
+        {/* Private workspace — visible only to owner + accepted collaborators */}
+        {!isDraft && (isOwner || membership?.isMember) && (
+          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
+        )}
 
 
         {/* Owner activity meter (open state) */}
