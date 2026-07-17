@@ -152,10 +152,24 @@ export function ApplicantsPanel({ postId }: Props) {
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-col items-stretch gap-1.5 md:items-end">
+                  {m.accepted ? (
+                    <span className="inline-flex items-center gap-1 self-start rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 ring-1 ring-emerald-500/20 md:self-end">
+                      <Check className="h-3 w-3" /> Accepted
+                    </span>
+                  ) : (
+                    <Button
+                      size="sm"
+                      className="rounded-full gap-1"
+                      disabled={accept.isPending}
+                      onClick={() => accept.mutate({ applicantUserId: m.sender_user_id })}
+                    >
+                      <Check className="h-3.5 w-3.5" /> Accept
+                    </Button>
+                  )}
                   {m.conversation_id && (
-                    <Button asChild size="sm" className="rounded-full gap-1">
+                    <Button asChild size="sm" variant={m.accepted ? "secondary" : "outline"} className="rounded-full gap-1">
                       <Link to="/dms/$conversationId" params={{ conversationId: m.conversation_id }}>
-                        <Send className="h-3.5 w-3.5" /> Reply
+                        <Send className="h-3.5 w-3.5" /> {m.accepted ? "Message" : "Reply"}
                       </Link>
                     </Button>
                   )}
