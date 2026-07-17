@@ -149,7 +149,7 @@ export function ChannelView({
     if (typeof window === "undefined") return "chat";
     try {
       const v = window.sessionStorage.getItem(`room-view:${roomId}`);
-      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs") return v;
+      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs" || v === "links") return v;
     } catch {}
     return "chat";
   });
