@@ -527,9 +527,9 @@ function ProfilePage() {
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-wrap items-center justify-end gap-2 pb-2">
+          <div className="flex flex-col items-end justify-end gap-2 pb-2 md:flex-row md:flex-wrap md:items-center">
             {isOwn ? (
-              <>
+              <div className="flex items-center gap-2">
                 <ShareSheet
                   entity={{
                     type: "profile",
@@ -542,25 +542,30 @@ function ProfilePage() {
                 <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
                   <Pencil className="h-4 w-4" /> Edit profile
                 </Button>
-              </>
+              </div>
             ) : (
               <>
-                <FollowButton targetUserId={profile.id} />
-                <MessageButton otherUserId={profile.id} />
-                <ShareSheet
-                  entity={{
-                    type: "profile",
-                    id: profile.id,
-                    url: `https://workshopindie.com/u/${profile.username}`,
-                    title: name,
-                    subtitle: profile.headline ?? undefined,
-                  }}
-                />
-                <ReportDialog entityType="profile" entityId={profile.id} />
-                <BlockButton targetUserId={profile.id} />
+                <div className="flex items-center gap-2">
+                  <FollowButton targetUserId={profile.id} />
+                  <MessageButton otherUserId={profile.id} />
+                </div>
+                <div className="flex items-center gap-2">
+                  <ShareSheet
+                    entity={{
+                      type: "profile",
+                      id: profile.id,
+                      url: `https://workshopindie.com/u/${profile.username}`,
+                      title: name,
+                      subtitle: profile.headline ?? undefined,
+                    }}
+                  />
+                  <ReportDialog entityType="profile" entityId={profile.id} />
+                  <BlockButton targetUserId={profile.id} />
+                </div>
               </>
             )}
           </div>
+
         </div>
 
         {/* Identity block — sits below the cover, never clipped */}
