@@ -417,6 +417,32 @@ function ProfilePage() {
     image: profile.avatar_url ?? undefined,
   } : null);
 
+  // Open-to-collab alert: dismiss once viewer has seen the latest collab.
+  // NOTE: these hooks MUST live above the isLoading / !profile early returns
+  // below, otherwise the hook count changes between renders (React #310).
+  const latestCollabKey = useMemo(() => {
+    if (!openCollabs || openCollabs.length === 0) return null;
+    return openCollabs.reduce<string>((max, c) => (c.created_at > max ? c.created_at : max), openCollabs[0].created_at);
+  }, [openCollabs]);
+  const dismissKey = profile ? `profile-collab-seen:${profile.id}` : null;
+  useEffect(() => {
+    if (!dismissKey || typeof window === "undefined") return;
+    setSeenCollabKey(window.localStorage.getItem(dismissKey));
+  }, [dismissKey]);
+  const currentTab: ProfileTab = search.tab ?? "works";
+  useEffect(() => {
+    if (currentTab !== "collabs") return;
+    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
+    window.localStorage.setItem(dismissKey, latestCollabKey);
+    setSeenCollabKey(latestCollabKey);
+  }, [currentTab, latestCollabKey, dismissKey]);
+  const hasUnseenCollab = !!latestCollabKey && seenCollabKey !== latestCollabKey;
+  const markCollabsSeen = () => {
+    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
+    window.localStorage.setItem(dismissKey, latestCollabKey);
+    setSeenCollabKey(latestCollabKey);
+  };
+
   if (isLoading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-10">
