@@ -707,10 +707,17 @@ function ProfilePage() {
           })()}
           {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
-          {/* Desktop-only link pills (mobile version lives inside the grid above) */}
-          <div className="hidden md:block">
+          {/* Desktop-only combined stats + external-link pills row */}
+          <div className="mt-2 hidden flex-wrap items-center justify-between gap-2 md:flex">
+            <ProfileStats
+              username={username}
+              works={counts.works}
+              workedWith={profile.worked_with_count}
+              followers={profile.follower_count}
+              following={profile.following_count}
+            />
             <LinkPills
-              className="mt-2"
+              variant="inline"
               instagram={profile.instagram_handle}
               links={profile.external_links ?? []}
             />
