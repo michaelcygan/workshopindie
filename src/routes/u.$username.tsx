@@ -1675,10 +1675,12 @@ function LinkPills({
   className,
   instagram,
   links,
+  variant = "scroll",
 }: {
   className?: string;
   instagram: string | null;
   links: { label: string; url: string }[];
+  variant?: "scroll" | "inline";
 }) {
   const items: { key: string; href: string; label: string; Icon: typeof LinkIcon }[] = [];
   if (instagram) {
@@ -1691,14 +1693,23 @@ function LinkPills({
   }
   if (items.length === 0) return null;
   return (
-    <div className={cn("-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1", className)}>
+    <div className={cn(
+      "flex items-center gap-2",
+      variant === "scroll"
+        ? "-mx-4 snap-x snap-mandatory overflow-x-auto px-4 pb-1"
+        : "flex-wrap",
+      className,
+    )}>
       {items.map((it) => (
         <a
           key={it.key}
           href={it.href}
           target="_blank"
           rel="noreferrer noopener"
-          className="inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink",
+            variant === "scroll" && "shrink-0 snap-start",
+          )}
         >
           <it.Icon className="h-3.5 w-3.5" />
           <span className="max-w-[10rem] truncate">{it.label}</span>
