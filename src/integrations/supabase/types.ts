@@ -729,6 +729,8 @@ export type Database = {
       conversations: {
         Row: {
           context_collab_post_id: string | null
+          context_comment_id: string | null
+          context_work_id: string | null
           context_workshop_id: string | null
           created_at: string
           id: string
@@ -739,6 +741,8 @@ export type Database = {
         }
         Insert: {
           context_collab_post_id?: string | null
+          context_comment_id?: string | null
+          context_work_id?: string | null
           context_workshop_id?: string | null
           created_at?: string
           id?: string
@@ -749,6 +753,8 @@ export type Database = {
         }
         Update: {
           context_collab_post_id?: string | null
+          context_comment_id?: string | null
+          context_work_id?: string | null
           context_workshop_id?: string | null
           created_at?: string
           id?: string
@@ -763,6 +769,20 @@ export type Database = {
             columns: ["context_collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_context_comment_id_fkey"
+            columns: ["context_comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_context_work_id_fkey"
+            columns: ["context_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
             referencedColumns: ["id"]
           },
           {
