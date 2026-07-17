@@ -386,7 +386,7 @@ function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: 
   );
 }
 
-function DateLine({ publishedAt, sourceWorkshopId }: { publishedAt: string | null; sourceWorkshopId: string | null }) {
+function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedAt: string | null; sourceWorkshopId: string | null; isOwner?: boolean; slug?: string }) {
   const { data: workshop } = useQuery({
     queryKey: ["work-source-workshop", sourceWorkshopId],
     enabled: !!sourceWorkshopId,
