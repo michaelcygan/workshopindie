@@ -528,10 +528,11 @@ export function FullscreenRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageHasContent, hasShare, screeningActive]);
 
-  // ── Side panel: Chat / Collabs / Gallery ──
-  type SidePane = "chat" | "collabs" | "gallery";
+  // ── Side panel: Chat / Collabs / Gallery / Links ──
+  type SidePane = "chat" | "collabs" | "gallery" | "links";
   const [side, setSide] = useState<SidePane>("chat");
-  const hasSideExtras = !!collabsSlot || !!gallerySlot;
+  const hasSideExtras = !!collabsSlot || !!gallerySlot || !!linksSlot;
+
 
 
   // ── Reactions: lightweight broadcast over a per-room channel. ──
