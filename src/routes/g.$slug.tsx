@@ -871,29 +871,107 @@ function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
 
 
 /* ---------- WORKS ---------- */
+type WorkAuthor = { username: string | null; display_name: string | null; avatar_url: string | null };
 type WorkRow = {
   id: string; title: string; slug: string; cover_url: string | null;
+  category: Category | null;
+  published_at: string | null;
+  author: WorkAuthor | null;
 };
 
 function GroupWorkTab({ group }: { group: GroupRow }) {
+  const [sort, setSort] = useState<"recent" | "trending">("recent");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [q, setQ] = useState("");
+
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "works"],
     queryFn: async (): Promise<WorkRow[]> => {
       const { data } = await supabase
         .from("group_works")
-        .select("work:works(id,title,slug,cover_url,published_at)")
+        .select("work:works(id,title,slug,cover_url,category,published_at, author:profiles!works_created_by_fkey(username,display_name,avatar_url))")
         .eq("group_id", group.id)
         .limit(48);
       return (data ?? [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.work)
-        .filter((w: WorkRow | null) => !!w && (w as unknown as { published_at?: string | null }).published_at) as WorkRow[];
+        .filter((w: WorkRow | null) => !!w && w.published_at) as WorkRow[];
     },
   });
+
+  const filtered = (() => {
+    const query = q.trim().toLowerCase();
+    let list = query ? works.filter((w) => w.title.toLowerCase().includes(query)) : works.slice();
+    const now = Date.now();
+    if (sort === "trending") {
+      list.sort((a, b) => {
+        const ap = a.published_at ? Date.parse(a.published_at) : 0;
+        const bp = b.published_at ? Date.parse(b.published_at) : 0;
+        const aRecent = now - ap < 30 * 24 * 60 * 60 * 1000 ? 1 : 0;
+        const bRecent = now - bp < 30 * 24 * 60 * 60 * 1000 ? 1 : 0;
+        if (aRecent !== bRecent) return bRecent - aRecent;
+        return bp - ap;
+      });
+    } else {
+      list.sort((a, b) => {
+        const ap = a.published_at ? Date.parse(a.published_at) : 0;
+        const bp = b.published_at ? Date.parse(b.published_at) : 0;
+        return bp - ap;
+      });
+    }
+    return list;
+  })();
 
   return (
     <div>
       <AddMineToGroup group={group} entity="work" />
+
+      {/* Utility strip */}
+      <div className="mt-3 flex items-center justify-end gap-1 text-ink-muted">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+              {sort === "trending" ? "Trending" : "Recent"}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-36">
+            <DropdownMenuItem onClick={() => setSort("recent")}>Recent</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {searchOpen ? (
+          <div className="flex items-center gap-1">
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+              onBlur={() => { if (!q) setSearchOpen(false); }}
+              placeholder={`Search in ${group.name}…`}
+              className="h-8 w-[200px] text-xs"
+            />
+            {q && (
+              <button
+                onClick={() => { setQ(""); setSearchOpen(false); }}
+                className="rounded-full p-1 hover:bg-surface-2"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="rounded-full p-1.5 hover:bg-surface-2"
+            aria-label={`Search in ${group.name}`}
+          >
+            <Search className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
       {isLoading ? (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -912,33 +990,71 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             </Button>
           }
         />
-
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 text-center text-sm text-ink-muted">
+          No Works match “{q}”.{" "}
+          <button onClick={() => { setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+        </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {works.map((w) => (
-            <Link
-              key={w.id}
-              to="/works/$slug"
-              params={{ slug: w.slug }}
-              className="overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
-            >
-              <div
-                className={cn(
-                  "h-32 w-full",
-                  w.cover_url ? "bg-cover bg-center" : "bg-surface-2",
-                )}
-                style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
-              />
-              <div className="p-3">
-                <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
-              </div>
-            </Link>
-          ))}
+          {filtered.map((w) => {
+            const author = w.author;
+            const authorName = author?.display_name || author?.username || "";
+            const initials = (authorName || "?").slice(0, 1).toUpperCase();
+            return (
+              <Link
+                key={w.id}
+                to="/works/$slug"
+                params={{ slug: w.slug }}
+                className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
+              >
+                <div className="relative h-32 w-full overflow-hidden">
+                  <div
+                    className={cn(
+                      "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]",
+                      w.cover_url ? "bg-cover bg-center" : "bg-surface-2",
+                    )}
+                    style={w.cover_url ? { backgroundImage: `url(${w.cover_url})` } : undefined}
+                  />
+                  {w.category && CATEGORY_LABELS[w.category] && (
+                    <span
+                      aria-hidden
+                      className="absolute right-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur"
+                    >
+                      {CATEGORY_LABELS[w.category]}
+                    </span>
+                  )}
+                  {author?.username && (
+                    <Link
+                      to="/u/$username"
+                      params={{ username: author.username }}
+                      onClick={(e) => e.stopPropagation()}
+                      aria-label={`View ${authorName || author.username}'s profile`}
+                      className="absolute -bottom-3 left-3 z-10"
+                    >
+                      <Avatar className="h-7 w-7 ring-2 ring-background">
+                        {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
+                        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  )}
+                </div>
+                <div className="p-3 pt-4">
+                  <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
+                  {authorName && (
+                    <div className="mt-0.5 text-xs text-ink-muted">by {authorName}</div>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
+
 
 /* ---------- COLLABS ---------- */
 type CollabRow = {
