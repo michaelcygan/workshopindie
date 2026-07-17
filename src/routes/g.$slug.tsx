@@ -397,22 +397,57 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
       return (data ?? []) as unknown as EventLite[];
     },
   });
+  const [kind, setKind] = useState<string>("all");
+  const [format, setFormat] = useState<"all" | "in_person" | "online">("all");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const now = new Date();
   const all = events ?? [];
+  const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
+
+  const matches = (e: EventLite) => {
+    if (kind !== "all" && e.kind !== kind) return false;
+    if (format !== "all") {
+      if (format === "in_person" && e.format === "online") return false;
+      if (format === "online" && e.format === "in_person") return false;
+    }
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${e.title} ${e.tagline ?? ""} ${e.venue_name ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  };
+
   const pinnedOrRecurring = all
-    .filter((e) => e.pinned_at || e.is_recurring)
+    .filter((e) => (e.pinned_at || e.is_recurring) && matches(e))
     .sort((a, b) => {
       if (!!b.pinned_at !== !!a.pinned_at) return b.pinned_at ? 1 : -1;
       return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
     });
   const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
-  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now);
+  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now && matches(e));
   const past = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) < now);
+  const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
+  const hasFilters = kind !== "all" || format !== "all" || q.trim().length > 0;
 
   const isCity = group.kind === "city";
   const subheading = isCity
     ? "Open mics, screenings, workshops, meetups, and other places to connect."
     : "Gatherings, workshops, and events connected to this community.";
+
+  const KIND_LABELS: Record<string, string> = {
+    open_mic: "Open mic",
+    screening: "Screening",
+    workshop: "Workshop",
+    meetup: "Meetup",
+    show: "Show",
+    reading: "Reading",
+    class: "Class",
+    other: "Other",
+  };
+  const kindLabel = (k: string) => KIND_LABELS[k] ?? k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="space-y-10">
@@ -430,6 +465,63 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
           </Link>
         )}
       </header>
+
+      {/* Utility strip */}
+      {all.length > 0 && (
+        <div className="-mt-6 flex flex-wrap items-center justify-end gap-1 text-ink-muted">
+          {availableKinds.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                  {kind === "all" ? "All kinds" : kindLabel(kind)}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setKind("all")}>All kinds</DropdownMenuItem>
+                {availableKinds.map((k) => (
+                  <DropdownMenuItem key={k} onClick={() => setKind(k)}>{kindLabel(k)}</DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {format === "all" ? "Any format" : format === "in_person" ? "In-person" : "Online"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => setFormat("all")}>Any format</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFormat("in_person")}>In-person</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFormat("online")}>Online</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+                onBlur={() => { if (!q) setSearchOpen(false); }}
+                placeholder={`Search events…`}
+                className="h-8 w-[200px] text-xs"
+              />
+              {q && (
+                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search events">
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
 
@@ -455,8 +547,13 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
         </section>
       )}
 
-      {!isLoading && pinnedOrRecurring.length === 0 && upcoming.length === 0 && (
-        isAdmin ? (
+      {!isLoading && !hasAnyMatch && (
+        hasFilters ? (
+          <div className="text-center text-sm text-ink-muted">
+            No events match your filters.{" "}
+            <button onClick={() => { setKind("all"); setFormat("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          </div>
+        ) : isAdmin ? (
           <Link
             to="/admin/events"
             className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-soft transition hover:border-border-strong hover:bg-muted"
