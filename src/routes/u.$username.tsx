@@ -1027,7 +1027,7 @@ function PinBar({
   if (total === 0) {
     if (!isOwn || !hasAnyContent) return null;
     return (
-      <section className="mb-6 rounded-2xl border border-dashed border-border bg-surface p-5 text-center md:mb-8">
+      <section className="mb-3 rounded-2xl border border-dashed border-border bg-surface p-5 text-center md:mb-8">
         <p className="text-sm text-ink-muted">
           Nothing featured yet. Open a Work or Collab you're on and tap <span className="font-medium text-ink">Pin</span> to feature it here.
         </p>
@@ -1035,9 +1035,10 @@ function PinBar({
     );
   }
   return (
-    <section className="mb-6 md:mb-8">
-      <h2 className="font-display text-lg text-ink">Featured</h2>
-      <div className="mt-2 -mx-4 overflow-x-auto px-4 pb-2 md:mt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="mb-3 md:mb-8">
+      <h2 className="font-display text-base text-ink md:text-lg">Featured</h2>
+      <div className="mt-1.5 -mx-4 overflow-x-auto px-4 pb-1 md:mt-3 md:pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
         <ul className="flex snap-x snap-mandatory gap-3">
           {pinnedWorks.map((w) => (
             <li key={`w-${w.id}`} className="snap-start shrink-0">
