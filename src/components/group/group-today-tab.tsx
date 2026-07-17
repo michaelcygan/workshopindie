@@ -110,7 +110,10 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       setMention(null);
       qc.invalidateQueries({ queryKey: ["group", group.id, "today-posts"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      console.error("[today-post] client", e);
+      toast.error(e?.message || "Could not post message.");
+    },
   });
 
   const deletePost = useMutation({
