@@ -940,8 +940,8 @@ export function FullscreenRoom({
             role="dialog"
             aria-modal="true"
             aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : mobileSheet === "links" ? "Links" : "Collabs"}
-            className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
-            style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+            className="lg:hidden fixed inset-x-0 bottom-0 z-[70] flex flex-col h-[85dvh] max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
+            style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 84px)" }}
           >
             <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-background/20 shrink-0" />
             {mobileSheet === "chat" && (
