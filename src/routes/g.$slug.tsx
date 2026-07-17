@@ -901,9 +901,14 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(works.map((w) => w.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+  );
+
   const filtered = (() => {
     const query = q.trim().toLowerCase();
     let list = query ? works.filter((w) => w.title.toLowerCase().includes(query)) : works.slice();
+    if (category !== "all") list = list.filter((w) => w.category === category);
     const now = Date.now();
     if (sort === "trending") {
       list.sort((a, b) => {
@@ -923,6 +928,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     }
     return list;
   })();
+
 
   return (
     <div>
