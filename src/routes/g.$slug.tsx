@@ -1346,19 +1346,20 @@ function AddMineToGroup({
   return (
     <div
       className={cn(
-        "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
-        compact && "relative inline-block",
+        compact ? "relative inline-block" : "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
       )}
     >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink",
-          compact ? "inline-flex" : "w-full",
+          "flex items-center gap-2 font-medium text-ink-soft hover:text-ink",
+          compact
+            ? "inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2"
+            : "w-full text-sm",
         )}
       >
-        {open ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+        {open ? <X className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} /> : <Plus className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />}
         {open ? "Close" : compact ? `Add ${labelMap[entity]}` : `Add your ${labelMap[entity]} to ${group.name}`}
       </button>
       {open && (

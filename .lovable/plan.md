@@ -1,15 +1,12 @@
-## Fix: gallery cards square off at top corners on hover
+Change the Group gallery utility strip so the "Add Work" control reads as inline clickable text instead of a bordered dashed box, sitting cleanly alongside the existing filter/sort/search controls.
 
-### Cause
-In `src/routes/g.$slug.tsx` the group Gallery card is a `rounded-2xl` bordered `<Link>` (no `overflow-hidden`, so the author avatar can overhang), containing a `rounded-t-2xl overflow-hidden` image wrapper whose inner `<div>` scales to `1.03` on hover while the outer Link simultaneously runs `hover:-translate-y-0.5`. Chrome loses sub-pixel precision on the rounded clip mask during that combined transform, so the top-left/top-right corners visibly flatten to square on hover. It is not the avatar or the shadow.
+Current state (verified in `src/routes/g.$slug.tsx`):
+- `GroupWorkTab` renders `<AddMineToGroup group={group} entity="work" compact />` on the left of the utility strip.
+- The `compact` variant still wraps the button in `rounded-2xl border border-dashed border-border bg-surface/60 p-3`, which creates the boxy look the user circled.
 
-### Change (one file)
-`src/routes/g.$slug.tsx`, gallery card only (around lines 1039–1046):
+Changes:
+1. Update `AddMineToGroup` so the `compact` variant renders the trigger as plain inline text (same sizing/color/hover as the adjacent "All" / "Recent" filter buttons) and removes the surrounding dashed box.
+2. Preserve existing behavior: dropdown still opens below the text, lists the user’s works, and toggles tagging/untagging.
+3. Leave the non-compact `AddMineToGroup` (used on the Collabs tab) unchanged so it keeps its bordered empty-state-style button.
 
-1. On the image wrapper (`div` currently `relative h-32 w-full overflow-hidden rounded-t-2xl`) add `isolate` and `transform-gpu` so the rounded clip is promoted to its own compositor layer and the mask stays crisp while the parent translates.
-2. On the inner scaling div (currently `absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]`) add `will-change-transform` so the scale animates on its own layer instead of forcing the rounded mask to re-rasterize each frame.
-
-No other files change. No radius, border, hover lift, avatar overhang, category chip, or shadow behavior is altered — only compositing hints on two elements of the gallery card.
-
-### Verify
-On `/g/chicago?t=work`, hover any card and confirm the top-left/top-right corners stay rounded through the full hover animation, on both light and dark backgrounds.
+No backend, data, or auth changes. Only presentation code in the existing component.
