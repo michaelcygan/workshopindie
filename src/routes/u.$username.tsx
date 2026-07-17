@@ -437,6 +437,45 @@ function ProfilePage() {
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
 
+  const renderProfileActions = () => (
+    isOwn ? (
+      <div className="flex items-center gap-2">
+        <ShareSheet
+          entity={{
+            type: "profile",
+            id: profile.id,
+            url: `https://workshopindie.com/u/${profile.username}`,
+            title: name,
+            subtitle: profile.headline ?? undefined,
+          }}
+        />
+        <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+          <Pencil className="h-4 w-4" /> Edit profile
+        </Button>
+      </div>
+    ) : (
+      <>
+        <div className="flex items-center gap-2">
+          <FollowButton targetUserId={profile.id} />
+          <MessageButton otherUserId={profile.id} />
+        </div>
+        <div className="flex items-center gap-2">
+          <ShareSheet
+            entity={{
+              type: "profile",
+              id: profile.id,
+              url: `https://workshopindie.com/u/${profile.username}`,
+              title: name,
+              subtitle: profile.headline ?? undefined,
+            }}
+          />
+          <ReportDialog entityType="profile" entityId={profile.id} />
+          <BlockButton targetUserId={profile.id} />
+        </div>
+      </>
+    )
+  );
+
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
