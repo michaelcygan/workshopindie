@@ -359,6 +359,52 @@ export type Database = {
           },
         ]
       }
+      collab_messages: {
+        Row: {
+          author_id: string
+          body: string
+          collab_post_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          collab_post_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          collab_post_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_messages_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_posts: {
         Row: {
           also_cities: string[]
@@ -589,6 +635,49 @@ export type Database = {
             columns: ["collab_post_id"]
             isOneToOne: false
             referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collab_workspace_settings: {
+        Row: {
+          collab_post_id: string
+          meeting_url: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          collab_post_id: string
+          meeting_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          collab_post_id?: string
+          meeting_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_workspace_settings_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: true
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_workspace_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_workspace_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -6228,6 +6317,10 @@ export type Database = {
       }
       is_adult: { Args: { _user_id: string }; Returns: boolean }
       is_blocked_pair: { Args: { _a: string; _b: string }; Returns: boolean }
+      is_collab_member: {
+        Args: { _collab: string; _user: string }
+        Returns: boolean
+      }
       is_event_host: {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
