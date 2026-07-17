@@ -880,10 +880,11 @@ export function FullscreenRoom({
         {/* Side panel — Chat / Collabs / Gallery toggle */}
         <div className="hidden lg:flex flex-col min-h-0 gap-2">
           {hasSideExtras && (
-            <div className="grid grid-cols-3 gap-1 rounded-full bg-background/10 p-0.5">
+            <div className="grid grid-cols-4 gap-1 rounded-full bg-background/10 p-0.5">
               <SideSeg active={side === "chat"} onClick={() => setSide("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
               <SideSeg active={side === "collabs"} onClick={() => setSide("collabs")} icon={<Users className="h-3.5 w-3.5" />} label="Collabs" disabled={!collabsSlot} />
               <SideSeg active={side === "gallery"} onClick={() => setSide("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" disabled={!gallerySlot} />
+              <SideSeg active={side === "links"} onClick={() => setSide("links")} icon={<Link2 className="h-3.5 w-3.5" />} label="Links" disabled={!linksSlot} />
             </div>
           )}
           <div className={cn("flex-1 min-h-0", side !== "chat" && "hidden")}>
@@ -911,6 +912,14 @@ export function FullscreenRoom({
               <div className="h-full">{gallerySlot}</div>
             </div>
           )}
+          {linksSlot && (
+            <div className={cn("flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur", side !== "links" && "hidden")}>
+              <div className="h-full overflow-y-auto text-ink [color-scheme:light]">
+                <div className="bg-background min-h-full">{linksSlot}</div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
