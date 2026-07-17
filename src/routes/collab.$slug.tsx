@@ -815,3 +815,42 @@ function PinCollabButton({ collabId }: { collabId: string }) {
     </Button>
   );
 }
+
+function PinCollabMenuItem({ collabId }: { collabId: string }) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const fetchPin = useServerFn(getMyPinForCollab);
+  const togglePin = useServerFn(togglePinCollab);
+  const [busy, setBusy] = useState(false);
+  const { data, refetch } = useQuery({
+    queryKey: ["my-pin-collab", collabId, user?.id],
+    enabled: !!user,
+    queryFn: () => fetchPin({ data: { collabId } }),
+    staleTime: 30_000,
+  });
+  if (!user || !data?.isOwner) return null;
+  const pinned = data.pinned;
+  const Icon = pinned ? PinOff : Pin;
+  const onSelect = async (e: Event) => {
+    e.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await togglePin({ data: { collabId } });
+      toast.success(res.pinned ? "Pinned to your profile" : "Unpinned");
+      await refetch();
+      qc.invalidateQueries({ queryKey: ["profile-pinned-collabs"] });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Couldn't update pin");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <DropdownMenuItem onSelect={onSelect} disabled={busy}>
+      <Icon className="h-4 w-4 mr-2" />
+      {pinned ? "Unpin from profile" : "Pin to profile"}
+    </DropdownMenuItem>
+  );
+}
+
