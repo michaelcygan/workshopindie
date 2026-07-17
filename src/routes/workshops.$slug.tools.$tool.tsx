@@ -453,7 +453,7 @@ function Drive({ workshopId }: { workshopId: string }) {
       </form>
 
       <p className="mt-3 text-xs text-ink-muted">
-        Direct file uploads ship next. For now, paste cloud links — they're cleaner anyway.
+        Direct file uploads coming soon. For now, paste cloud links — they're cleaner anyway.
       </p>
 
       {isLoading ? (

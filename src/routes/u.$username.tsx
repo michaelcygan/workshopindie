@@ -1038,7 +1038,7 @@ function WorksTab({
   if (merged.length === 0 && pinnedWorks.length === 0 && pinnedCollabs.length === 0) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
-        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't shipped a Work yet.`}</p>
+        <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't published a Work yet.`}</p>
         {isOwn && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
             <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>

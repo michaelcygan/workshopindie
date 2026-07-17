@@ -372,7 +372,7 @@ function AlsoWorkedTogether({ workId, createdBy }: { workId: string; createdBy: 
   return (
     <section className="mt-14">
       <h2 className="font-display text-2xl text-ink">Also made together</h2>
-      <p className="mt-1 text-sm text-ink-muted">Other Works these collaborators have shipped as a group.</p>
+      <p className="mt-1 text-sm text-ink-muted">Other Works these collaborators have published as a group.</p>
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {data.slice(0, 3).map((w) => <WorkCard key={w.id} work={w} showAvatars />)}
       </div>

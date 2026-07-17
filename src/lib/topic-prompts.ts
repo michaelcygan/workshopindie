@@ -119,7 +119,7 @@ export const ROOM_PROMPTS: RoomPrompt[] = [
   { title: "Pair-program on a bug", medium: "build", weight: "obvious" },
   { title: "Design review my landing page", medium: "build", weight: "obvious" },
   { title: "Code review, BYO PR", medium: "build", weight: "obvious" },
-  { title: "Ship a feature in an hour", medium: "build", weight: "obvious" },
+  { title: "Publish a feature in an hour", medium: "build", weight: "obvious" },
   { title: "Solo founder accountability", medium: "build", weight: "obvious" },
   { title: "Mental health hackathon", medium: "build", weight: "wild" },
   { title: "Build-in-public, cameras on", medium: "build", weight: "wild" },
@@ -155,7 +155,7 @@ export const ROOM_PROMPTS: RoomPrompt[] = [
   { title: "Heads-down work session", medium: "coworking", weight: "obvious" },
   { title: "Warm-up pages, then deep work", medium: "coworking", weight: "obvious" },
   { title: "Sunday plan-the-week", medium: "coworking", weight: "obvious" },
-  { title: "Ship-it sprint", medium: "coworking", weight: "wild" },
+  { title: "Publish-it sprint", medium: "coworking", weight: "wild" },
   { title: "Pomodoro × 4, then show & tell", medium: "coworking", weight: "wild" },
 ];
 

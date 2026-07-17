@@ -324,7 +324,7 @@ function CollabDetail() {
     : post.status === "open"
       ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
       : isShipped
-        ? <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
+        ? <StateBadge tone="closed" label="Closed" sublabel="Published" />
         : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;

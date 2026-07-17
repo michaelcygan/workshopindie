@@ -122,7 +122,7 @@ export function CollabCard({
         {post.status === "open" ? (
           <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
         ) : isShipped ? (
-          <StateBadge tone="closed" label="Closed" sublabel="Shipped" />
+          <StateBadge tone="closed" label="Closed" sublabel="Published" />
         ) : null}
         {isLive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">

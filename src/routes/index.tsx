@@ -134,7 +134,7 @@ function Hero() {
             <div>
               <div className="font-display text-xl md:text-2xl leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm text-ink-muted">
-                Describe what you're making and accept applications. Ship the thing, credit the cast, keep the receipts.
+                Describe what you're making and accept applications. Publish the thing, credit the cast, keep the receipts.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">

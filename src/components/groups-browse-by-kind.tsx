@@ -8,7 +8,7 @@ const KIND_META: Record<Kind, { label: string; blurb: string; icon: typeof MapPi
   city: { label: "Cities", blurb: "Where your scene meets in person.", icon: MapPin },
   genre: { label: "Genres", blurb: "Find your craft, find your peers.", icon: Sparkles },
   scene: { label: "Scenes", blurb: "Aesthetics, eras, vibes.", icon: Flame },
-  micro: { label: "Micro", blurb: "Short sprints. Shipping crews.", icon: Zap },
+  micro: { label: "Micro", blurb: "Short sprints. Publishing crews.", icon: Zap },
 };
 
 type Props = {
