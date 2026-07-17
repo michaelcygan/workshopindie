@@ -69,26 +69,12 @@ export const BLOCKED_HOST_SUFFIXES: readonly string[] = [
   "kiwifarms.cc",
 ];
 
+import { normalizeUrl as tryNormalize } from "@/lib/url-normalize";
+
 const URL_RE = /\bhttps?:\/\/[^\s<>()"']+/gi;
 const BARE_URL_RE =
   /\b(?:www\.[^\s<>()"']+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<>()"']*)?)/gi;
 
-function stripTrail(u: string): string {
-  return u.replace(/[),.;!?]+$/g, "");
-}
-
-function tryNormalize(raw: string): string | null {
-  const trimmed = stripTrail(raw);
-  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-  try {
-    const u = new URL(withScheme);
-    if (u.protocol !== "http:" && u.protocol !== "https:") return null;
-    if (!u.hostname.includes(".")) return null;
-    return u.toString();
-  } catch {
-    return null;
-  }
-}
 
 /** Extract normalized absolute URL strings from a message body (bare URLs get https:// prepended). */
 export function extractUrls(body: string): string[] {
