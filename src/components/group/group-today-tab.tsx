@@ -198,8 +198,9 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
       <div
         ref={scrollerRef}
-        className="h-[calc(100vh-22rem)] min-h-[480px] max-h-[72vh] space-y-3 overflow-y-auto px-4 py-4"
+        className="h-[clamp(280px,42vh,460px)] space-y-3 overflow-y-auto px-4 py-4 xl:h-[56vh]"
       >
+
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
