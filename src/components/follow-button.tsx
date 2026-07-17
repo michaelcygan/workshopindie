@@ -113,15 +113,31 @@ export function FollowButton({
 
   return (
     <>
-      <Button
-        onClick={toggle}
-        disabled={loading}
-        variant={following ? "outline" : "default"}
-        className="rounded-full gap-1.5"
-      >
-        {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {following ? "Following" : (followLabel ?? "Follow")}
-      </Button>
+      {compact && following ? (
+        <Button
+          onClick={toggle}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          aria-label="Following — tap to unfollow"
+          title="Following"
+          className="rounded-full gap-1 px-2.5"
+        >
+          <UserRound className="h-3.5 w-3.5" />
+          <Check className="h-3.5 w-3.5 text-primary" />
+        </Button>
+      ) : (
+        <Button
+          onClick={toggle}
+          disabled={loading}
+          variant={following ? "outline" : "default"}
+          className="rounded-full gap-1.5"
+        >
+          {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {following ? "Following" : (followLabel ?? "Follow")}
+        </Button>
+      )}
+
       <SignupGateModal
         open={gateOpen}
         onOpenChange={(v) => {
