@@ -221,7 +221,7 @@ function WorkDetail() {
           )}
 
           {/* Date line — the only temporal chrome */}
-          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} />
+          <DateLine publishedAt={work.published_at ?? work.created_at} sourceWorkshopId={work.source_workshop_id} isOwner={user?.id === work.created_by} slug={work.slug} />
         </motion.header>
 
 
