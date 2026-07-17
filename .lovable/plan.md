@@ -1,29 +1,44 @@
-## What I found so far
+## Goal
+Remove "ship/shipped/shipping" language from user-facing copy across non-main flows. Keep internal identifiers (DB enum values, type names, code comments) untouched so nothing breaks.
 
-- The Today composer calls `postTodayMessage` (`src/lib/today-chat.functions.ts`), which inserts into `group_today_posts` after a member check.
-- On success, the mutation in `src/components/group/group-today-tab.tsx` clears the input (`setBody("")`) — this explains "my message is deleted": the client thinks the call succeeded.
-- The list query filters `.gt("expires_at", now())`. The BEFORE INSERT trigger `tg_gtp_set_expiry` sets `expires_at` via `next_local_midnight_utc(profile.home_city timezone)`, which always returns a future timestamp — so a successful insert should be visible.
-- There are three BEFORE INSERT triggers on `group_today_posts`: `gtp_set_expiry`, `tg_group_today_posts_rate_limit` (5 posts / 10s), and `trg_moderate_group_today_posts` (raises `moderation_block` via `moderation_text_is_blocked`).
-- The last row in the Chicago group is from 2026‑07‑16; nothing from today. No postgres ERROR logs mention `group_today_posts` in the recent window, and no worker logs for `postTodayMessage` are captured in the last hour. That means either the request never hit the worker, or it was recorded before the log window.
-- No client console/network entries for the composer are present in the current snapshot (user is on `/groups`, not the group page).
+## Replacement vocabulary
+- "shipped" (past-tense action on a Work) → "published"
+- "ship" / "ship it" (call-to-action) → "publish" or "post" depending on context
+- "shipping" (descriptor, e.g. "Shipping crews") → "publishing" or context-appropriate rewrite
+- Workshop → Gallery finalize flow: "Shipped to the Gallery" → "Published to the Gallery"
+- Collab StateBadge sublabel: "Shipped" → "Published"
 
-Root cause is not yet confirmed. I want to add just enough instrumentation to surface the exact failure the next time the user hits Send, then fix that cause.
+## Files to update (display strings only)
 
-## Plan
+**Notifications (the flagged surface)**
+- `src/components/notifications-bell.tsx`
+  - `"${actor} just shipped their first Work"` → `"${actor} just published their first Work"`
+  - `"${actor} shipped — you're credited"` → `"${actor} published a Work — you're credited"`
 
-1. **Surface real errors in the composer.** In `src/components/group/group-today-tab.tsx`, delay clearing the input until we've confirmed a server response, log the server error to console with a stable prefix (`[today-post]`), and make the toast show the underlying message (RLS, moderation, rate‑limit) instead of a generic string.
-2. **Add server-side logging + moderation compliance.** In `postTodayMessage`:
-   - Wrap the insert with a `console.error("[today-post]", …)` on failure so the worker log names the exact Postgres error (RLS `42501`, moderation `moderation_block`, rate limit, etc.).
-   - Route the body through `moderateOrThrow` from `@/lib/moderation/service.server` before insert (this is the project's Core rule for user‑generated text; the DB trigger stays as the last line of defense). This also gives us a clean, user‑facing "message blocked" toast instead of a Postgres exception surfacing raw.
-3. **Reproduce and confirm.** After (1) and (2) ship, ask the user to try posting once more in Chicago Today. Read `server-function-logs` for `[today-post]` and read the client console to identify which of these it is:
-   - RLS INSERT blocked (would mean `is_adult` / membership issue — user profile currently passes both, so unlikely but possible if session cookie is stale).
-   - Moderation block on the specific words typed.
-   - Rate limiter tripped.
-   - Something else entirely (e.g. mentions notification write failing before we swallow it — currently we only swallow in the mentions block; a JSON/enum mismatch elsewhere would bubble).
-4. **Ship the targeted fix.** Based on the log, apply the minimal fix: adjust the trigger, relax a check, or correct a serialization bug. No speculative changes before the diagnostic pass.
+**Profile / Gallery / Works**
+- `src/routes/u.$username.tsx`: "hasn't shipped a Work yet" → "hasn't published a Work yet"
+- `src/routes/gallery.tsx`: three "shipped" strings in meta/description + "Be the first to ship here" → "published" / "Be the first to publish here"
+- `src/components/gallery-logged-out-hero.tsx`: "Works shipped this week" → "Works published this week"; "Ship your own." → "Publish your own."
+- `src/routes/works.$slug.tsx`: "shipped as a group" → "published as a group"
+- `src/routes/works.new.tsx`: "invite people to ship it with you" → "invite people to publish it with you"
 
-## Notes / non‑goals
+**Workshops / Collabs (finalize + badges)**
+- `src/routes/workshops.$slug.tsx`: toast "Shipped to the Gallery" → "Published to the Gallery"; heading "Shipped: {title}" → "Published: {title}". Leave the internal `status === "shipped"` checks, `ship()` function name, `ShippedBanner` component name, and `onShipped` prop untouched (internal identifiers).
+- `src/routes/collab.$slug.tsx` + `src/components/collab-card.tsx`: StateBadge `sublabel="Shipped"` → `sublabel="Published"`. Leave `isShipped` variable name.
+- `src/components/workshop-progress-bar.tsx`: "worth shipping, turn this Workshop into a Collab…" → "worth publishing…"; "Ready to ship?" → "Ready to publish?"
+- `src/routes/workshops.$slug.tools.$tool.tsx`: "ship within the session" → "finish within the session"; "start shipping" → "start finishing"
 
-- No schema changes on `group_today_posts` in this pass — triggers and policies look correct on paper.
-- No changes to the realtime subscription, expiry logic, or the desktop/mobile layout.
-- All changes stay inside the composer component + the one server function.
+**Browse / Prompts / Marketing copy**
+- `src/components/groups-browse-by-kind.tsx`: "Shipping crews." → "Publishing crews."
+- `src/lib/topic-prompts.ts`: "Ship a feature in an hour" → "Publish a feature in an hour"; "Ship-it sprint" → "Publish-it sprint"
+- `src/routes/index.tsx`: "Ship the thing, credit the cast…" → "Publish the thing, credit the cast…"
+
+## Explicitly leaving alone (not user-facing or would break things)
+- `src/integrations/supabase/types.ts` enum values ("shipped") — DB column values
+- Type/variable/function names: `ShippedToolType`, `isShipped`, `ShippedBanner`, `onShipped`, `ship()`, workshop `status: "shipped"` string literals in queries and `sitemap.xml.ts`
+- Code comments referencing "shipped tools" / "ships next"
+- Admin dashboards (`admin.index.tsx`, `admin.marketplace.tsx`) — internal staff copy
+- `pricing.tsx` / `plus-gate.tsx` "features as they ship" — standard English for product releases, not the flagged "ship a Work" flow
+
+## Verification
+After edits, `rg -in "ship" src` and confirm every remaining hit is either an internal identifier, DB enum, comment, or the intentionally-preserved marketing line about feature releases.

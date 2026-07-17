@@ -38,9 +38,9 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Work — Workshop" },
-      { name: "description", content: "Browse everything people have shipped on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
+      { name: "description", content: "Browse everything people have published on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
       { property: "og:title", content: "Work — Workshop" },
-      { property: "og:description", content: "Browse everything people have shipped on Workshop." },
+      { property: "og:description", content: "Browse everything people have published on Workshop." },
       { property: "og:url", content: "https://workshopindie.com/gallery" },
       { property: "og:type", content: "website" },
     ],
@@ -52,7 +52,7 @@ export const Route = createFileRoute("/gallery")({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           name: "Work — Workshop",
-          description: "Browse everything people have shipped on Workshop.",
+          description: "Browse everything people have published on Workshop.",
           url: "https://workshopindie.com/gallery",
           isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
         }),
@@ -607,7 +607,7 @@ function GalleryPage() {
             />
           ) : (
             <EmptyState
-              title="Be the first to ship here"
+              title="Be the first to publish here"
               body={
                 category !== "all" || citySlug !== "all"
                   ? "No pieces in this slice yet. Post yours and start the thread."

@@ -307,7 +307,7 @@ function NewWork() {
           href="/works/collab/new"
           className="mt-3 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
         >
-          Or start a collaborative Work — invite people to ship it with you →
+          Or start a collaborative Work — invite people to publish it with you →
         </a>
       </motion.div>
 

@@ -39,14 +39,14 @@ export function GalleryLoggedOutHero() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
             {week > 0
-              ? `${week.toLocaleString()} Works shipped this week · ${day} in the last 24h`
+              ? `${week.toLocaleString()} Works published this week · ${day} in the last 24h`
               : "Live creative network"}
           </div>
           <h2 className="font-display text-2xl text-ink md:text-3xl">
             Real Work, made by real people.
           </h2>
           <p className="mt-1 max-w-xl text-sm text-ink-muted">
-            Follow the people you make things with. Vouch for what moves you. Ship your own.
+            Follow the people you make things with. Vouch for what moves you. Publish your own.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">

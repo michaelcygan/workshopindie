@@ -96,7 +96,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
     }
     case "first_work_shipped":
       return {
-        title: `${actor} just shipped their first Work`,
+        title: `${actor} just published their first Work`,
         subtitle: (n.payload?.title as string) ?? "",
         href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
       };
@@ -108,7 +108,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       };
     case "collab_first_ship":
       return {
-        title: `${actor} shipped — you're credited`,
+        title: `${actor} published a Work — you're credited`,
         subtitle: (n.payload?.title as string) ?? "",
         href: n.payload?.slug ? `/works/${n.payload.slug}` : "/",
       };
