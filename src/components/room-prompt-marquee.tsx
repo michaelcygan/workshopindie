@@ -50,7 +50,39 @@ export function RoomPromptMarquee({
   disabled,
   perRow = 14,
   maxRows = 4,
+  variant = "marquee",
 }: Props) {
+  if (variant === "static-row") {
+    const picks = MOBILE_QUICK_START_TITLES
+      .map((t) => ROOM_PROMPTS.find((p) => p.title === t))
+      .filter((p): p is RoomPrompt => Boolean(p));
+    return (
+      <div className="px-4 py-3">
+        <div className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+          Quick starts
+        </div>
+        <div className="-mx-4 px-4 flex gap-2 overflow-x-auto snap-x scrollbar-none pb-1">
+          {picks.map((p) => (
+            <div key={p.title} className="snap-start shrink-0">
+              <PromptChip
+                prompt={p}
+                liveCount={p.medium ? liveByMedium?.get(p.medium) ?? 0 : 0}
+                onConfirm={() => !disabled && onUsePrompt(p)}
+                onJoinLive={
+                  p.medium && onJoinLive
+                    ? () => !disabled && onJoinLive(p.medium as Category)
+                    : undefined
+                }
+                disabled={disabled}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+
   // Stable per-mount shuffle (so HMR / re-renders don't reshuffle).
   const rowsRef = useRef<RoomPrompt[][] | null>(null);
   if (!rowsRef.current) {
