@@ -774,6 +774,22 @@ export function FullscreenRoom({
                 <span>Collabs</span>
               </button>
             )}
+            {linksSlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "links" ? null : "links"))}
+                aria-pressed={mobileSheet === "links"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "links" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Links"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                <span>Links</span>
+              </button>
+            )}
+
             {/* More: screen share (functionality preserved on mobile). */}
             <Popover>
               <PopoverTrigger asChild>
