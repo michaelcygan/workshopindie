@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 import { deriveDisplayName } from "@/lib/display-name";
-import { setMyBirthdate } from "@/lib/profile-age.functions";
+import { setMyBirthdate, getMyAgeFields } from "@/lib/profile-age.functions";
 import { claimAutoUsername } from "@/lib/account.functions";
 import { attributeReferral, setReferredBy } from "@/lib/share.functions";
 import { OnboardingGroupsStep } from "@/components/onboarding-groups-step";
@@ -30,6 +30,7 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const saveBirthdate = useServerFn(setMyBirthdate);
+  const fetchAge = useServerFn(getMyAgeFields);
   const claimHandle = useServerFn(claimAutoUsername);
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
@@ -67,20 +68,22 @@ function Onboarding() {
     (async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("first_name,last_name,birthdate,bio,city_id,home_city_id,categories,mediums")
+        .select("first_name,last_name,bio,city_id,home_city_id,categories,mediums")
         .eq("id", user.id)
         .maybeSingle();
       if (!data) return;
       if (data.first_name) { setFirstName(data.first_name); }
       if (data.last_name) { setLastName(data.last_name); }
       if (data.first_name && data.last_name) setHasNameAlready(true);
-      if (data.birthdate) { setBirthdate(String(data.birthdate)); setHasDobAlready(true); }
       if (data.bio) setBio(data.bio);
       if (data.home_city_id || data.city_id) setCityId(String(data.home_city_id ?? data.city_id));
       if (Array.isArray(data.categories)) setCats(data.categories as Category[]);
       if (Array.isArray(data.mediums)) setMediums(data.mediums as ExtraMedium[]);
     })();
-  }, [user]);
+    fetchAge().then((r) => {
+      if (r.birthdate) { setBirthdate(String(r.birthdate)); setHasDobAlready(true); }
+    }).catch(() => { /* ignore */ });
+  }, [user, fetchAge]);
 
   const toggleCat = (c: Category) =>
     setCats((cur) => (cur.includes(c) ? cur.filter((x) => x !== c) : [...cur, c]));
