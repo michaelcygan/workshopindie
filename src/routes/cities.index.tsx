@@ -101,7 +101,7 @@ function CitiesIndex() {
               const creators = c.creators?.[0]?.count ?? 0;
               return (
                 <li key={c.id}>
-                  <Link to="/cities/$slug" params={{ slug: c.slug }} className="block">
+                  <Link to="/g/$slug" params={{ slug: c.slug }} className="block">
                     <DottedRow
                       label={c.name}
                       live={meetups > 0}
@@ -148,7 +148,7 @@ function CitiesIndex() {
                   const creators = c.creators?.[0]?.count ?? 0;
                   return (
                     <li key={c.id}>
-                      <Link to="/cities/$slug" params={{ slug: c.slug }} className="block">
+                      <Link to="/g/$slug" params={{ slug: c.slug }} className="block">
                         <DottedRow
                           label={
                             <span className="inline-flex items-center gap-1.5">

@@ -612,19 +612,19 @@ function ProfilePage() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted">
                 {profile.username && <span>@{profile.username}</span>}
                 {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
-                  <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <Link to="/g/$slug" params={{ slug: profile.home_city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
                     <MapPin className="h-3.5 w-3.5" />{profile.home_city.name}
                   </Link>
                 )}
                 {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
                   <span className="inline-flex items-center gap-1">
                     <MapPin className="h-3.5 w-3.5" />
-                    Based in <Link to="/cities/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
-                    , currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
+                    Based in <Link to="/g/$slug" params={{ slug: profile.home_city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.home_city.name}</Link>
+                    , currently in <Link to="/g/$slug" params={{ slug: profile.city.slug }} className="hover:text-ink underline-offset-2 hover:underline">{profile.city.name}</Link>
                   </span>
                 )}
                 {!profile.home_city && profile.city && (
-                  <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
+                  <Link to="/g/$slug" params={{ slug: profile.city.slug }} className="inline-flex items-center gap-1 hover:text-ink">
                     <MapPin className="h-3.5 w-3.5" />{profile.city.name}
                   </Link>
                 )}
@@ -1408,7 +1408,7 @@ function GroupsSection({ home, city }: { home: { name: string; country: string; 
       <h2 className="text-xs uppercase tracking-wider text-ink-muted">City groups</h2>
       <div className="mt-2 grid gap-3 sm:grid-cols-2">
         {groups.map((g) => (
-          <Link key={g.slug} to="/cities/$slug" params={{ slug: g.slug }} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
+          <Link key={g.slug} to="/g/$slug" params={{ slug: g.slug }} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-ink"><Layers className="h-5 w-5" /></span>
             <div className="min-w-0 flex-1">
               <h3 className="truncate font-medium text-ink">{g.name}</h3>
@@ -1431,12 +1431,12 @@ function AboutTab({ profile }: { profile: Profile }) {
       {based && (
         <section>
           <h2 className="text-xs uppercase tracking-wider text-ink-muted">Based in</h2>
-          <Link to="/cities/$slug" params={{ slug: based.slug }} className="mt-2 inline-flex items-center gap-1.5 text-ink-soft hover:text-ink">
+          <Link to="/g/$slug" params={{ slug: based.slug }} className="mt-2 inline-flex items-center gap-1.5 text-ink-soft hover:text-ink">
             <MapPin className="h-4 w-4" />{based.name}{based.country ? `, ${based.country}` : ""}
           </Link>
           {profile.home_city && profile.city && profile.city.slug !== profile.home_city.slug && (
             <p className="mt-1 text-xs text-ink-muted">
-              Currently in <Link to="/cities/$slug" params={{ slug: profile.city.slug }} className="underline-offset-2 hover:underline">{profile.city.name}</Link>
+              Currently in <Link to="/g/$slug" params={{ slug: profile.city.slug }} className="underline-offset-2 hover:underline">{profile.city.name}</Link>
             </p>
           )}
         </section>
