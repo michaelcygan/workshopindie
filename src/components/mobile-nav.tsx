@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Radio, Users, Sparkles, Home } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useInProgressBadge } from "@/hooks/use-in-progress-badge";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const tabBase =
