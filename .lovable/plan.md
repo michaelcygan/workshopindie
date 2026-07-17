@@ -1,71 +1,37 @@
-## Problem
+## Group Gallery — richer cards + low-impact utility
 
-On mobile, the collab detail page header (`src/routes/collab.$slug.tsx` lines ~354–414) stuffs the category chip, state badge, "Posted today" chip, and up to 5 owner actions (Share, Edit, Pin, Close, Delete) into one horizontal row. The row overflows the viewport, so a delete-icon button sits partially off-screen and the whole page reads as "zoomed out" because the row forces horizontal scroll / shrink.
+Scope: only `GroupWorkTab` in `src/routes/g.$slug.tsx` (the "Gallery" tab). Everything else in the group page stays as-is.
 
-Non-owners can hit a similar overflow when Leave + Report are both present next to Share.
+### 1. Card overlays (context at a glance)
+Update the query to also select `category` and the author profile (`author:profiles!works_author_id_fkey(username, display_name, avatar_url)`).
 
-## Fix
+On each card:
+- **Category chip** — top-right of the cover image, small pill (`CategoryChip` reused from collabs, `size="xs"` styling: bg `bg-black/55 text-white backdrop-blur`, text-[10px], rounded-full). Shows Film / Music / Book / etc.
+- **Author avatar** — bottom-left of the cover image, overlapping the image/title divider by ~50%. 28px circle with white ring (`ring-2 ring-background`). Wrapped in its own `<Link to="/u/$username">` with `e.stopPropagation()` so it navigates to the profile instead of the work.
+- Keep the existing title below. Add a second line under the title: small muted `by {display_name}` (text-xs text-ink-muted) so context reads even without hovering the avatar.
 
-Restructure that header into two rows on mobile, and collapse secondary owner actions behind a kebab (`⋯`) dropdown menu. Desktop stays exactly as today.
-
-### Row layout
-
-Row 1 — status/context chips (wrap allowed):
-- Category chip
-- State badge (Open · Casting, Draft, Closed, etc.)
-- "Posted today" / "Open Nd" chip
-- "Closes in Nd" chip when applicable
-
-Row 2 — actions, right-aligned:
-- Always visible: `Share`
-- Owner, mobile: single primary action visible inline based on state:
-  - Draft → `Publish`
-  - Open → `Edit`
-  - else → `Pin/Pinned`
-- Owner, mobile: everything else moves into a `DropdownMenu` triggered by a kebab icon button:
-  - `Edit` (when not the inline primary)
-  - `Pin` / `Unpin` (when not the inline primary)
-  - `Close` (when open)
-  - `Delete` (destructive, styled red)
-- Owner, desktop (`sm:` and up): keep the current flat row — all buttons inline, no kebab.
-- Non-owner: `Share` + inline `Leave` (if member) + `Report`; if both Leave and Report are present on mobile, fold `Report` into the same kebab.
-
-### Structural change
-
-Replace the single `<div className="mb-4 flex items-center gap-2">` wrapper with:
+### 2. Low-impact utility strip
+A single thin row directly under the "Add your Work" button, right-aligned, matching the mock's small marks in the top-right:
 
 ```
-<div className="mb-4 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
-  <div className="flex flex-wrap items-center gap-2 min-w-0">
-    {chips}
-  </div>
-  <div className="flex items-center gap-2 sm:ml-auto justify-end">
-    {actions}
-  </div>
-</div>
+                                              [Sort ▾]  [🔎]
 ```
 
-- Add `min-w-0` on the chip container and `truncate` where needed so long state sublabels can't push the row wide.
-- Confirm handlers (`confirm(...)`) currently called from Close/Delete/Leave stay identical; only the trigger surface moves into `DropdownMenuItem`s.
-- `PinCollabButton` gains an optional `variant="menu-item"` render path (or is wrapped by a small inline adapter in this file) so it can appear inside the dropdown without changing its click/toggle logic. Icon + label + toast behavior unchanged.
+- **Sort dropdown** — shadcn `DropdownMenu` triggered by a ghost button showing the current sort (default "Recent"). Options: `Recent`, `Trending` (trending = simple client-side sort by `published_at` within last 30d, falls back to recent). Text-xs, no border, just a chevron.
+- **Search icon** — icon-only ghost button; click expands inline into a small `Input` (200px) that filters the visible works by title (client-side `includes`, case-insensitive). Escape or blur-when-empty collapses it back to the icon. Scope label placeholder: `Search in {group.name}…`.
 
-### Files touched
+Both controls live in a `flex items-center gap-1` container, `text-ink-muted`, so they read as utility not UI weight.
 
-- `src/routes/collab.$slug.tsx` — header block only (lines ~354–414). No changes to data fetching, mutations, or the rest of the page.
-- `src/components/pin-collab-button.tsx` (only if needed to render inside a `DropdownMenuItem`; otherwise wrap inline in the route file).
+### 3. Nice-to-haves included
+- Empty-filter state: if search yields 0, show a one-line "No Works match "{query}"" with a Clear button — reuses `GroupEmpty` styling minimal variant.
+- Hover: keep the existing `-translate-y-0.5 hover:shadow-lift`; add subtle `group-hover:scale-[1.02]` on the cover image via a wrapping `overflow-hidden` div (already present) for a bit of life without motion libs.
+- Accessibility: avatar link gets `aria-label={`View ${author.display_name}'s profile`}`; chip is decorative (`aria-hidden`).
 
-### Out of scope
+### Not in scope
+- No schema changes; `category` and author fk already exist on `works`.
+- No changes to Today / Collabs / Events / Members / About tabs.
+- No changes to the shared `/gallery` route.
 
-- No copy changes to badges, chips, or button labels.
-- No changes to the "Share it — that's how applicants find you" nudge card below the header (that one already fits).
-- No changes to bottom nav, back-to-profile link, or the rest of the page layout.
-
-## Verification
-
-1. Switch preview to mobile (375px). Confirm:
-   - Chips wrap onto one row without horizontal scroll.
-   - Actions sit on their own row, right-aligned, fully visible.
-   - Kebab opens a menu containing Edit/Pin/Close/Delete as applicable.
-   - Delete item is styled destructively and still shows the `confirm(...)` dialog.
-2. Switch to desktop. Confirm the row looks unchanged from today (all owner buttons inline, no kebab).
-3. Log-out view: header still shows chips + Share, no owner actions.
+### Technical notes
+- Reuse `CategoryChip` from `@/components/category-chip` (already used on collab page). If it doesn't accept overlay styling cleanly, render a plain `<span>` using `CATEGORY_LABELS[category]` from `@/lib/categories` to avoid coupling.
+- Trending heuristic stays client-side for v1 (no new server function): sort by `published_at desc`, boost items with `published_at` within last 30d — good enough at 48-row cap; can be swapped for a real trending score later without UI changes.
