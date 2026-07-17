@@ -39,8 +39,9 @@ export function useTitleBadge() {
     }
     load();
 
+    const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
     const ch = supabase
-      .channel(`title-notifs:${user.id}`)
+      .channel(`title-notifs:${user.id}:${uid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
