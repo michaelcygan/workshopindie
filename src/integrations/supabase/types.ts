@@ -2405,6 +2405,9 @@ export type Database = {
           note_updated_at: string | null
           note_updated_by: string | null
           participant_cap: number
+          pinned_at: string | null
+          pinned_by_user_id: string | null
+          pinned_message_id: string | null
           promoted_at: string | null
           prompt: string | null
           screening_work_id: string | null
@@ -2441,6 +2444,9 @@ export type Database = {
           note_updated_at?: string | null
           note_updated_by?: string | null
           participant_cap?: number
+          pinned_at?: string | null
+          pinned_by_user_id?: string | null
+          pinned_message_id?: string | null
           promoted_at?: string | null
           prompt?: string | null
           screening_work_id?: string | null
@@ -2477,6 +2483,9 @@ export type Database = {
           note_updated_at?: string | null
           note_updated_by?: string | null
           participant_cap?: number
+          pinned_at?: string | null
+          pinned_by_user_id?: string | null
+          pinned_message_id?: string | null
           promoted_at?: string | null
           prompt?: string | null
           screening_work_id?: string | null
@@ -2514,6 +2523,27 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_pinned_by_user_id_fkey"
+            columns: ["pinned_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_pinned_by_user_id_fkey"
+            columns: ["pinned_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "instant_rooms_pinned_message_id_fkey"
+            columns: ["pinned_message_id"]
+            isOneToOne: false
+            referencedRelation: "instant_messages"
             referencedColumns: ["id"]
           },
           {
@@ -6330,6 +6360,10 @@ export type Database = {
       }
       set_room_note: {
         Args: { _room_id: string; _text: string }
+        Returns: undefined
+      }
+      set_room_pin: {
+        Args: { _message: string; _room: string }
         Returns: undefined
       }
       slugify: { Args: { _in: string }; Returns: string }
