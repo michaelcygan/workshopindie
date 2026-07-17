@@ -82,7 +82,7 @@ function Hero() {
       </div>
       <div className="absolute inset-0 -z-[4] bg-gradient-to-b from-background/30 via-transparent to-background/50" />
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center">
+      <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center pb-[calc(env(safe-area-inset-bottom)+112px)] md:pb-14">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
@@ -108,7 +108,7 @@ function Hero() {
         >
           <Link
             to="/lounge"
-            className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
+            className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition md:hover:-translate-y-0.5 md:hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
               <Radio className="h-5 w-5" />
@@ -126,7 +126,7 @@ function Hero() {
 
           <Link
             to="/collab/new"
-            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition md:hover:-translate-y-0.5 md:hover:shadow-lift md:p-7"
           >
             <span className="gradient-motion inline-flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground">
               <Megaphone className="h-5 w-5" />
@@ -144,7 +144,7 @@ function Hero() {
 
           <Link
             to="/events"
-            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition md:hover:-translate-y-0.5 md:hover:shadow-lift md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Calendar className="h-5 w-5" />
