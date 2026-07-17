@@ -1197,29 +1197,114 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
 /* ---------- COLLABS ---------- */
 type CollabRow = {
   id: string; title: string; slug: string; description: string | null;
+  status?: string | null; resulting_work_id?: string | null;
+  category?: Category | null;
 };
 
 function GroupCollabTab({ group }: { group: GroupRow }) {
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [status, setStatus] = useState<"open" | "completed" | "all">("open");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "collabs"],
     queryFn: async (): Promise<CollabRow[]> => {
       const { data } = await supabase
         .from("group_collabs")
-        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id)")
+        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id,category)")
         .eq("group_id", group.id)
         .limit(48);
       return (data ?? [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.collab)
-        .filter((c: (CollabRow & { status?: string; resulting_work_id?: string | null }) | null) =>
-          !!c && (c.status === "open" || (c.status === "closed" && !!c.resulting_work_id)),
-        ) as CollabRow[];
+        .filter((c: CollabRow | null) => !!c) as CollabRow[];
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(rows.map((r) => r.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+  );
+
+  const filtered = rows.filter((c) => {
+    // status: "open" = status==="open"; "completed" = closed && has resulting work
+    if (status === "open" && c.status !== "open") return false;
+    if (status === "completed" && !(c.status === "closed" && !!c.resulting_work_id)) return false;
+    if (status === "all") {
+      // hide closed-without-work (spam / abandoned)
+      if (c.status === "closed" && !c.resulting_work_id) return false;
+    }
+    if (category !== "all" && c.category !== category) return false;
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${c.title} ${c.description ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = category !== "all" || status !== "open" || q.trim().length > 0;
+
   return (
     <div>
-      <AddMineToGroup group={group} entity="collab" />
+      {/* Utility strip */}
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-ink-muted">
+        <AddMineToGroup group={group} entity="collab" compact />
+        <div className="flex items-center gap-1">
+          {availableCategories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                  {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
+                {availableCategories.map((c) => (
+                  <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {status === "open" ? "Open" : status === "completed" ? "Completed" : "All"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => setStatus("open")}>Open</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatus("completed")}>Completed</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatus("all")}>All</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+                onBlur={() => { if (!q) setSearchOpen(false); }}
+                placeholder="Search collabs…"
+                className="h-8 w-[200px] text-xs"
+              />
+              {q && (
+                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search collabs">
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -1238,10 +1323,16 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
             </Button>
           }
         />
-
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 text-center text-sm text-ink-muted">
+          No Collabs match your filters.{" "}
+          {hasFilters && (
+            <button onClick={() => { setCategory("all"); setStatus("open"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          )}
+        </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {rows.map((c) => (
+          {filtered.map((c) => (
             <Link
               key={c.id}
               to="/collab/$slug"
