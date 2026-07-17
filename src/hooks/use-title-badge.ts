@@ -82,8 +82,9 @@ export function useTitleBadge() {
       convIds = (convs ?? []).map((c) => c.id);
       await loadUnread();
       if (!convIds.length) return;
+      const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
       channel = supabase
-        .channel(`title-dm:${user!.id}`)
+        .channel(`title-dm:${user!.id}:${uid}`)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => {
           const m = p.new as { conversation_id: string };
           if (convIds.includes(m.conversation_id)) schedule();
