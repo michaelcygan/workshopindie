@@ -881,8 +881,10 @@ type WorkRow = {
 
 function GroupWorkTab({ group }: { group: GroupRow }) {
   const [sort, setSort] = useState<"recent" | "trending">("recent");
+  const [category, setCategory] = useState<Category | "all">("all");
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+
 
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "works"],
@@ -899,9 +901,14 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(works.map((w) => w.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+  );
+
   const filtered = (() => {
     const query = q.trim().toLowerCase();
     let list = query ? works.filter((w) => w.title.toLowerCase().includes(query)) : works.slice();
+    if (category !== "all") list = list.filter((w) => w.category === category);
     const now = Date.now();
     if (sort === "trending") {
       list.sort((a, b) => {
@@ -922,12 +929,31 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     return list;
   })();
 
+
   return (
     <div>
       <AddMineToGroup group={group} entity="work" />
 
       {/* Utility strip */}
       <div className="mt-3 flex items-center justify-end gap-1 text-ink-muted">
+        {availableCategories.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
+              {availableCategories.map((c) => (
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
+                  {CATEGORY_LABELS[c]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
@@ -940,6 +966,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
         {searchOpen ? (
           <div className="flex items-center gap-1">
             <Input
@@ -1006,9 +1033,9 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 key={w.id}
                 to="/works/$slug"
                 params={{ slug: w.slug }}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
+                className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <div className="relative h-32 w-full overflow-hidden">
+                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl">
                   <div
                     className={cn(
                       "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]",
@@ -1024,28 +1051,29 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                       {CATEGORY_LABELS[w.category]}
                     </span>
                   )}
-                  {author?.username && (
-                    <Link
-                      to="/u/$username"
-                      params={{ username: author.username }}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`View ${authorName || author.username}'s profile`}
-                      className="absolute -bottom-3 left-3 z-10"
-                    >
-                      <Avatar className="h-7 w-7 ring-2 ring-background">
-                        {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
-                        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-                      </Avatar>
-                    </Link>
-                  )}
                 </div>
-                <div className="p-3 pt-4">
+                {author?.username && (
+                  <Link
+                    to="/u/$username"
+                    params={{ username: author.username }}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`View ${authorName || author.username}'s profile`}
+                    className="absolute left-3 top-32 z-10 -translate-y-1/2"
+                  >
+                    <Avatar className="h-8 w-8 ring-2 ring-background">
+                      {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
+                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                    </Avatar>
+                  </Link>
+                )}
+                <div className="p-3 pt-5">
                   <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
                   {authorName && (
                     <div className="mt-0.5 text-xs text-ink-muted">by {authorName}</div>
                   )}
                 </div>
               </Link>
+
             );
           })}
         </div>
