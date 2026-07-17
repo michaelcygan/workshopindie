@@ -12,6 +12,7 @@ import { WorkActions } from "@/components/work-actions";
 import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
+import { MessageButton } from "@/components/message-button";
 import { ShareSheet } from "@/components/share-sheet";
 import { type CreditChip } from "@/components/credit-strip";
 import { WorkCreditLayer } from "@/components/work-credit-layer";
@@ -258,7 +259,9 @@ function WorkDetail() {
               }}
             />
             <ReportDialog entityType="work" entityId={work.id} />
+            <MessageButton otherUserId={work.created_by} contextWorkId={work.id} />
           </div>
+
         </div>
 
 

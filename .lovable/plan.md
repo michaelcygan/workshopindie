@@ -1,44 +1,54 @@
 ## Goal
-Remove "ship/shipped/shipping" language from user-facing copy across non-main flows. Keep internal identifiers (DB enum values, type names, code comments) untouched so nothing breaks.
+Extend the DM "Re: …" context tag that already exists for Collabs and Workshops to also cover **Works** and **Comments**, and wire up the entry-point Message buttons that pass that context. Recipients will see a clickable pill like "Re: {Work title}" or "Re: comment on {Work title}" at the top of the DM thread that jumps back to the source.
 
-## Replacement vocabulary
-- "shipped" (past-tense action on a Work) → "published"
-- "ship" / "ship it" (call-to-action) → "publish" or "post" depending on context
-- "shipping" (descriptor, e.g. "Shipping crews") → "publishing" or context-appropriate rewrite
-- Workshop → Gallery finalize flow: "Shipped to the Gallery" → "Published to the Gallery"
-- Collab StateBadge sublabel: "Shipped" → "Published"
+## Current state (already shipped, don't rebuild)
+- `conversations.context_collab_post_id` and `conversations.context_workshop_id` columns exist.
+- `openOrCreateConversation` (in `src/lib/dms.functions.ts`) accepts and stores those two context IDs on first insert.
+- `src/routes/dms.$conversationId.tsx` header already renders a "Re: {title}" pill for both, linking back to `/collab/$slug` or `/workshops/$slug`.
+- `<MessageButton>` on `collab.$slug.tsx` and `workshops.$slug.tsx` already passes the right context prop.
 
-## Files to update (display strings only)
+## What's missing
+- No Work context. No Comment context. No Message button on the Work page or on comment authors.
 
-**Notifications (the flagged surface)**
-- `src/components/notifications-bell.tsx`
-  - `"${actor} just shipped their first Work"` → `"${actor} just published their first Work"`
-  - `"${actor} shipped — you're credited"` → `"${actor} published a Work — you're credited"`
+## Plan
 
-**Profile / Gallery / Works**
-- `src/routes/u.$username.tsx`: "hasn't shipped a Work yet" → "hasn't published a Work yet"
-- `src/routes/gallery.tsx`: three "shipped" strings in meta/description + "Be the first to ship here" → "published" / "Be the first to publish here"
-- `src/components/gallery-logged-out-hero.tsx`: "Works shipped this week" → "Works published this week"; "Ship your own." → "Publish your own."
-- `src/routes/works.$slug.tsx`: "shipped as a group" → "published as a group"
-- `src/routes/works.new.tsx`: "invite people to ship it with you" → "invite people to publish it with you"
+### 1. Database migration
+Add two nullable context columns to `conversations` (same pattern as workshop migration):
+- `context_work_id uuid REFERENCES public.works(id) ON DELETE SET NULL`
+- `context_comment_id uuid REFERENCES public.comments(id) ON DELETE SET NULL`
+Add matching indexes. No RLS/GRANT changes (columns inherit table policies).
 
-**Workshops / Collabs (finalize + badges)**
-- `src/routes/workshops.$slug.tsx`: toast "Shipped to the Gallery" → "Published to the Gallery"; heading "Shipped: {title}" → "Published: {title}". Leave the internal `status === "shipped"` checks, `ship()` function name, `ShippedBanner` component name, and `onShipped` prop untouched (internal identifiers).
-- `src/routes/collab.$slug.tsx` + `src/components/collab-card.tsx`: StateBadge `sublabel="Shipped"` → `sublabel="Published"`. Leave `isShipped` variable name.
-- `src/components/workshop-progress-bar.tsx`: "worth shipping, turn this Workshop into a Collab…" → "worth publishing…"; "Ready to ship?" → "Ready to publish?"
-- `src/routes/workshops.$slug.tools.$tool.tsx`: "ship within the session" → "finish within the session"; "start shipping" → "start finishing"
+### 2. Server function — `src/lib/dms.functions.ts`
+Extend `openOrCreateConversation`:
+- Add `contextWorkId?: string | null` and `contextCommentId?: string | null` to the input validator.
+- Include them in the initial `insertRow` when the conversation is created (existing behavior: never overwrite context on an existing conversation — same as collab/workshop today).
 
-**Browse / Prompts / Marketing copy**
-- `src/components/groups-browse-by-kind.tsx`: "Shipping crews." → "Publishing crews."
-- `src/lib/topic-prompts.ts`: "Ship a feature in an hour" → "Publish a feature in an hour"; "Ship-it sprint" → "Publish-it sprint"
-- `src/routes/index.tsx`: "Ship the thing, credit the cast…" → "Publish the thing, credit the cast…"
+### 3. `<MessageButton>` — `src/components/message-button.tsx`
+Add two optional props: `contextWorkId`, `contextCommentId`. Pass them through to `openOrCreateConversation`. No visual change to the button.
 
-## Explicitly leaving alone (not user-facing or would break things)
-- `src/integrations/supabase/types.ts` enum values ("shipped") — DB column values
-- Type/variable/function names: `ShippedToolType`, `isShipped`, `ShippedBanner`, `onShipped`, `ship()`, workshop `status: "shipped"` string literals in queries and `sitemap.xml.ts`
-- Code comments referencing "shipped tools" / "ships next"
-- Admin dashboards (`admin.index.tsx`, `admin.marketplace.tsx`) — internal staff copy
-- `pricing.tsx` / `plus-gate.tsx` "features as they ship" — standard English for product releases, not the flagged "ship a Work" flow
+### 4. DM header — `src/routes/dms.$conversationId.tsx`
+- Extend the initial fetch to also select `context_work_id, context_comment_id`, and load the referenced Work (title, slug) and Comment (id, body preview, and its parent Work slug/title so we can link back).
+- Extend the header pill block (currently a single collab-or-workshop ternary) into a small `ContextPill` that renders one of:
+  - Collab → "Re: {title}" → `/collab/$slug` (existing)
+  - Workshop → "Re: {title}" → `/workshops/$slug` (existing)
+  - Work → "Re: {title}" → `/works/$slug` (new)
+  - Comment → "Re: comment on {work title}" → `/works/$slug#comment-{id}` (new)
+- Keep the same rounded-pill visual language; use `bg-primary/10` for Collab/Work and `bg-violet/10` for Workshop/Comment so the tag reads as an at-a-glance source badge.
+
+### 5. Message buttons on new surfaces
+- **Work page (`src/routes/works.$slug.tsx`)**: add a `<MessageButton otherUserId={author.id} contextWorkId={work.id} />` next to the author's name/actions row (only shown when not the owner — the component already gates on mutual-follow / open-DM permission).
+- **Comments**: locate the comment card renderer used on Works (and on Collabs if it's shared) and add a `<MessageButton otherUserId={comment.author_id} contextCommentId={comment.id} />` inline in the author's meta row, again gated by the component's existing DM permission check.
+  - I'll confirm the exact comment component during implementation; if none exists as a shared component, the button goes into whichever component renders the comment author line on the Work page.
+
+### 6. Fallback anchor for comment jump
+Ensure the comment list on `/works/$slug` renders each comment with `id="comment-{id}"` so the "Re: comment on …" pill link scrolls to the exact comment. Add the `id` attribute if not already present.
+
+## Explicitly out of scope
+- Per-message context tags on individual bubbles (the annotated circles). The header pill covers "why this DM exists" for the whole thread; per-message context would require a schema change on `messages` and a larger UI refactor — happy to do it as a follow-up if you want it.
+- Retroactive context for conversations that already exist without a context row.
+- Notifications copy changes.
 
 ## Verification
-After edits, `rg -in "ship" src` and confirm every remaining hit is either an internal identifier, DB enum, comment, or the intentionally-preserved marketing line about feature releases.
+- Start a new DM from a Work → recipient sees "Re: {Work title}" pill linking to the Work.
+- Reply to a comment via the new Message button → recipient sees "Re: comment on {Work title}" pill that scrolls to the exact comment.
+- Existing Collab/Workshop DMs continue to render their pills unchanged.

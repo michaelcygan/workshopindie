@@ -110,7 +110,7 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
 
   async function onMessage(c: Row) {
     try {
-      const r = await openConvo({ data: { otherUserId: c.user_id } });
+      const r = await openConvo({ data: { otherUserId: c.user_id, contextCommentId: c.id, contextWorkId: workId } });
       navigate({ to: "/dms/$conversationId", params: { conversationId: r.conversationId } });
     } catch (err) {
       toast.error((err as Error).message);
@@ -140,7 +140,7 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
     const dimmed = c.owner_hidden;
 
     return (
-      <div key={c.id} className={cn("flex gap-3", opts.isReply && "ml-11")}>
+      <div key={c.id} id={`comment-${c.id}`} className={cn("flex gap-3 scroll-mt-24", opts.isReply && "ml-11")}>
         <Avatar className="h-9 w-9 mt-0.5">
           <AvatarImage src={c.profiles?.avatar_url ?? undefined} />
           <AvatarFallback className="text-xs">{name[0]}</AvatarFallback>
