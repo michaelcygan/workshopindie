@@ -30,6 +30,7 @@ function Onboarding() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const saveBirthdate = useServerFn(setMyBirthdate);
+  const fetchAge = useServerFn(getMyAgeFields);
   const claimHandle = useServerFn(claimAutoUsername);
   const lookupRef = useServerFn(attributeReferral);
   const writeRef = useServerFn(setReferredBy);
