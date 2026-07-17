@@ -162,11 +162,23 @@ function LiveRoomPage() {
   const { data: room, isFetched } = useQuery({
     queryKey: ["instant-room", id],
     queryFn: async () => {
-      const { room } = await fetchRoom({ data: { roomId: id } });
-      return (room as Room | null) ?? null;
+      try {
+        const { room } = await fetchRoom({ data: { roomId: id } });
+        return (room as Room | null) ?? null;
+      } catch (e: any) {
+        // On flaky mobile/in-app browsers the Supabase bearer sometimes isn't
+        // attached on the first call. Treat auth errors as "no room yet" so
+        // we render the friendly NotFound instead of the scary error boundary;
+        // the 5s refetch will recover once auth hydrates.
+        const msg = String(e?.message ?? "");
+        if (/unauthor/i.test(msg) || /401/.test(msg)) return null;
+        throw e;
+      }
     },
     refetchInterval: 5000,
+    retry: 1,
   });
+
 
   // Bad room ID → render inline NotFound AFTER all hooks (never mid-render — that
   // would change the hook count between renders and trip the React hooks-order guard).
