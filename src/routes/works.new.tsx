@@ -26,6 +26,7 @@ import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/g
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
+import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -133,16 +134,12 @@ function NewWork() {
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
     if (!url) return toast.error("Paste a link first.");
-    try {
-      new URL(url.startsWith("http") ? url : `https://${url}`);
-    } catch {
-      return toast.error("That doesn't look like a URL.");
-    }
+    const normalized = normalizeUrl(url);
+    if (!normalized) return toast.error("That doesn't look like a URL.");
+    setUrlInput(normalized);
     setExtracting(true);
     try {
-      const result = await extract({
-        data: { url: url.startsWith("http") ? url : `https://${url}` },
-      });
+      const result = await extract({ data: { url: normalized } });
       applyExtracted(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not read that link.";
