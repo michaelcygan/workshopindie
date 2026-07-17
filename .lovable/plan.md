@@ -1,46 +1,51 @@
-# Link in Bio — copy your profile URL
+## What's happening
 
-The Share sheet already handles the share flow (Copy link works on the profile share). We'll add a **subtle Link-in-Bio row inside Profile Edit** so users find it when they're setting up their profile.
+The bottom island menu links to `/collab` and `/events`. Both routes validate their URL search params with a Zod schema, and both crash with the same Zod v4 error:
 
-## What to build
-
-A small, quiet row in `/me/edit` → **Identity** section, tucked right under the Username field (which already says "Your public @handle — used in your profile URL"). It looks like a compact pill showing the URL with a copy icon on the right.
-
-### Visual
-
-```text
-Username: [ michael-cygan            ]
-Your public @handle — used in your profile URL.
-
-┌─────────────────────────────────────────────────┐
-│ 🔗  workshopindie.com/u/michael-cygan   [Copy] │
-└─────────────────────────────────────────────────┘
-Use as your link in bio — Instagram, TikTok, email signature.
+```
+[
+  { "code":"invalid_type","expected":"nonoptional","path":["city"] },
+  { "code":"invalid_type","expected":"nonoptional","path":["cityName"] }
+]
 ```
 
-- Rounded row, `bg-surface` border, single line, truncates the URL on small screens.
-- Right-aligned `Copy` button → toggles to `Copied` with a check for ~1.8s (matches ShareSheet pattern).
-- Muted helper caption below.
-- Only shows when `form.username` is non-empty; if empty, replace with a one-line muted hint: *"Pick a username to get your link-in-bio URL."*
-- No new component file needed — inline in `me.edit.tsx`.
+## Root cause
 
-### Behavior
+`@tanstack/zod-adapter@1.167` (peer-declares `zod ^3`) ships this helper:
 
-- URL = `${window.location.origin}/u/${form.username}` (recomputed as they edit the username).
-- Copy uses `navigator.clipboard.writeText`, `toast.success("Link copied")` on success, `toast.error` on failure.
-- Reuses `Copy`/`Check` icons from `lucide-react` (already imported elsewhere in the file if not, add).
-- No backend, no schema, no new routes.
+```ts
+export const fallback = (schema, fallback) =>
+  z.custom().pipe(schema.catch(fallback));
+```
 
-## Share sheet
+The project uses `zod@4.4.3`. In Zod v4, an object field is only treated as optional if its **outermost** schema is `.optional()`/`.default()`. `fallback(...)` wraps the inner schema in `z.custom().pipe(...)`, so the outermost is `ZodPipe`, not `ZodOptional`. When the URL has no `city`/`cityName` param, Zod v4 sees a missing required field and throws `expected: "nonoptional"`.
 
-Leaving `src/components/share-sheet.tsx` untouched — the existing "Copy link" already covers the share flow the user confirmed works.
+It only shows up on `/collab` and `/events` because those are the only routes whose `fallback(...)` fields use `.optional()` without `.default()`. The other `fallback(...)` calls in `groups.index.tsx` and `gallery.tsx` all chain `.default(...)`, which sidesteps the bug.
+
+## Fix
+
+Bypass the broken adapter helper for the optional fields — build the schema directly so `.optional()` stays on the outside:
+
+`src/routes/collab.index.tsx` (lines 27-28) and `src/routes/events.index.tsx` (lines 32-33):
+
+```ts
+// before
+city:     fallback(z.string().uuid().optional(), undefined),
+cityName: fallback(z.string().optional(), undefined),
+
+// after
+city:     z.string().uuid().catch(undefined).optional(),
+cityName: z.string().catch(undefined).optional(),
+```
+
+Same runtime behavior (bad value → `undefined`; missing → `undefined`), but the field is genuinely optional under Zod v4.
+
+## Not doing
+
+- No package changes. Upgrading/downgrading `@tanstack/zod-adapter` or `zod` would ripple through the whole app; a two-file schema tweak is safer and matches the pattern already used elsewhere.
+- Leaving `fallback(...)` in place for the `.default(...)` fields — they aren't affected.
 
 ## Files
 
-- `src/routes/me.edit.tsx` — add the row inside the Identity section, right after the username input's helper `<p>` (around line 373). Add small `useState` for the copied flag and helper function alongside the existing form state.
-
-## Out of scope
-
-- No new /settings surface.
-- No QR code or vanity-link generation.
-- No changes to the profile page itself.
+- `src/routes/collab.index.tsx` — swap the two optional field schemas.
+- `src/routes/events.index.tsx` — swap the two optional field schemas.
