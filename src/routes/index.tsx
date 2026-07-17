@@ -24,7 +24,7 @@ import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail"
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
-import { PickupCard } from "@/components/pickup-card";
+
 
 export const Route = createFileRoute("/")({ component: Index });
 
