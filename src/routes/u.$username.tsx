@@ -946,6 +946,46 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
+function ProfileStats({
+  username,
+  works,
+  workedWith,
+  followers,
+  following,
+}: {
+  username: string;
+  works: number;
+  workedWith: number;
+  followers: number;
+  following: number;
+}) {
+  const items: { label: string; value: number; tab: ProfileTab }[] = [
+    { label: "Gallery", value: works, tab: "works" },
+    { label: "Worked with", value: workedWith, tab: "about" },
+    { label: "Followers", value: followers, tab: "about" },
+    { label: "Following", value: following, tab: "about" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.label}
+          to="/u/$username"
+          params={{ username }}
+          search={{ tab: item.tab }}
+          replace
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+        >
+          <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-muted px-1.5 py-0 text-[11px] font-display text-ink">
+            {item.value}
+          </span>
+          <span>{item.label}</span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 /* ---------------- WORKS TAB (unified: created + credited) ---------------- */
 
 type MergedWork = WorkCardData & {
