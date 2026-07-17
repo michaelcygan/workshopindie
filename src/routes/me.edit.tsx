@@ -68,7 +68,7 @@ type FormState = {
 
 const EMPTY: FormState = {
   username: "",
-  firstName: "", lastName: "", aliases: [], instagram: "",
+  firstName: "", lastName: "", aliases: [], aliasUrls: [], instagram: "",
   headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
