@@ -1,7 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   Settings as SettingsIcon,
-  ListChecks,
   Briefcase,
   Users,
   Ticket,
@@ -10,7 +9,6 @@ import {
   Gift,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useInProgressBadge } from "@/hooks/use-in-progress-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -25,7 +23,6 @@ import {
 export function SettingsMenuButton() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { count } = useInProgressBadge();
 
   if (!user) return null;
 
@@ -43,14 +40,6 @@ export function SettingsMenuButton() {
           className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-soft ring-1 ring-border hover:bg-muted"
         >
           <SettingsIcon className="h-4 w-4" />
-          {count > 0 && (
-            <span
-              aria-label={`${count} in progress`}
-              className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground"
-            >
-              {count > 9 ? "9+" : count}
-            </span>
-          )}
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-60">
@@ -72,14 +61,6 @@ export function SettingsMenuButton() {
         <DropdownMenuLabel className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
           Your stuff
         </DropdownMenuLabel>
-        <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
-          <ListChecks className="mr-2 h-4 w-4" /> In Progress
-          {count > 0 && (
-            <span className="ml-auto inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-              {count > 9 ? "9+" : count}
-            </span>
-          )}
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
           <Briefcase className="mr-2 h-4 w-4" /> My Collabs
         </DropdownMenuItem>
