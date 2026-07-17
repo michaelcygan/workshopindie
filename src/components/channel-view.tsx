@@ -26,7 +26,7 @@ import { joinLounge } from "@/lib/instant.functions";
 import { sendChatMessage } from "@/lib/chat.functions";
 import { purgeRoomWhiteboard } from "@/lib/room-views.functions";
 import { setRoomTitle } from "@/lib/host-room.functions";
-import { RoomNoteBanner } from "@/components/room-note-banner";
+import { PinnedMessage, PinMessageButton } from "@/components/pinned-message";
 import { WorkPeek } from "@/components/work-peek";
 import { RoomGallery } from "@/components/room-gallery";
 import { getPurposeSuggestions, getPurposePool, type PurposeSuggestion } from "@/lib/topic-prompts";
