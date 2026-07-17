@@ -196,7 +196,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
       <div
         ref={scrollerRef}
-        className="h-[clamp(280px,44vh,460px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[54vh]"
+        className="h-[clamp(240px,34vh,380px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[46vh]"
       >
         {isLoading ? (
           <div className="space-y-2">
@@ -394,7 +394,7 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.collab)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .filter((c: any) => c && c.status === "open")
+        .filter((c: any) => c)
         .slice(0, 5) as RecentCollabRow[];
     },
     staleTime: 60_000,
@@ -413,11 +413,12 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
           ))}
         </div>
       ) : collabs.length === 0 ? (
-        <p className="text-xs text-ink-muted">No open collabs yet.</p>
+        <p className="text-xs text-ink-muted">No collabs yet.</p>
       ) : (
         <ul className="space-y-1">
           {collabs.map((c) => {
             const name = c.author?.display_name ?? c.author?.username ?? "Member";
+            const showStatus = c.status && c.status !== "open";
             return (
               <li key={c.id}>
                 <Link
@@ -431,6 +432,11 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
                     {c.category && CATEGORY_LABELS[c.category] && (
                       <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-ink-soft">
                         {CATEGORY_LABELS[c.category]}
+                      </span>
+                    )}
+                    {showStatus && (
+                      <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] capitalize text-ink-soft">
+                        {c.status}
                       </span>
                     )}
                   </div>
