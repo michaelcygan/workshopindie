@@ -569,7 +569,7 @@ export function CollabComposer({
           </section>
         </div>
 
-        {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
+        {/* Accepted collaborators get a private chat, shared Links, and a meeting button right on the Collab page. */}
 
 
         {/* Inline action bar — always visible on mobile, and on all sizes when embedded (dialog has no room for a fixed footer). */}
