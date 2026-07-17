@@ -607,49 +607,57 @@ function ProfilePage() {
 
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-3 md:mt-4">
-          <div className="min-w-0">
-            <div className="flex min-w-0 items-center gap-2">
-              <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
-              <CreatorBadge status={profile.creator_status} />
+          {/* Name + mobile action stack. On mobile: 2-col grid so Follow/DM sit
+              on the name line. On desktop: block; actions live in avatar row above. */}
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-2 md:block">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
+                <CreatorBadge status={profile.creator_status} />
+              </div>
+            </div>
+            <div className="flex w-[9.5rem] shrink-0 flex-col items-stretch gap-1.5 md:hidden">
+              {isOwn ? (
+                <>
+                  <Button variant="outline" size="sm" className="w-full rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                    <Pencil className="h-4 w-4" /> Edit profile
+                  </Button>
+                  <div className="flex justify-end">
+                    <ShareSheet
+                      entity={{
+                        type: "profile",
+                        id: profile.id,
+                        url: `https://workshopindie.com/u/${profile.username}`,
+                        title: name,
+                        subtitle: profile.headline ?? undefined,
+                      }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5 [&>button]:h-9 [&>button]:flex-1">
+                    <FollowButton targetUserId={profile.id} compact />
+                    <MessageButton otherUserId={profile.id} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 [&_button]:w-full [&_button]:justify-center">
+                    <ShareSheet
+                      entity={{
+                        type: "profile",
+                        id: profile.id,
+                        url: `https://workshopindie.com/u/${profile.username}`,
+                        title: name,
+                        subtitle: profile.headline ?? undefined,
+                      }}
+                    />
+                    <ReportDialog entityType="profile" entityId={profile.id} />
+                  </div>
+                </>
+              )}
             </div>
           </div>
-          {/* Mobile action row: full-width under the name, one line at every width */}
-          <div className="mt-2 flex items-center gap-2 md:hidden">
-            {isOwn ? (
-              <>
-                <Button variant="outline" className="flex-1 rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                  <Pencil className="h-4 w-4" /> Edit profile
-                </Button>
-                <ShareSheet
-                  entity={{
-                    type: "profile",
-                    id: profile.id,
-                    url: `https://workshopindie.com/u/${profile.username}`,
-                    title: name,
-                    subtitle: profile.headline ?? undefined,
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <div className="flex-1 min-w-0 [&>button]:w-full">
-                  <FollowButton targetUserId={profile.id} />
-                </div>
-                <MessageButton otherUserId={profile.id} />
-                <ShareSheet
-                  entity={{
-                    type: "profile",
-                    id: profile.id,
-                    url: `https://workshopindie.com/u/${profile.username}`,
-                    title: name,
-                    subtitle: profile.headline ?? undefined,
-                  }}
-                />
-                <ReportDialog entityType="profile" entityId={profile.id} />
-                <BlockButton targetUserId={profile.id} />
-              </>
-            )}
-          </div>
+
+
 
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
             {profile.username && <span>@{profile.username}</span>}

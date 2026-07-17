@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { SignupGateModal } from "@/components/signup-gate-modal";
+
 
 export function FollowButton({
   targetUserId,
@@ -15,12 +16,17 @@ export function FollowButton({
   followLabel,
   /** Optional display name for the signup CTA copy. */
   targetName,
+  /** When true and the viewer already follows, render an icon-only pill
+   * (person + check) to signal mutual/following in a compact header row. */
+  compact = false,
 }: {
   targetUserId: string;
   roomId?: string;
   followLabel?: string;
   targetName?: string;
+  compact?: boolean;
 }) {
+
   const { user } = useAuth();
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -107,15 +113,31 @@ export function FollowButton({
 
   return (
     <>
-      <Button
-        onClick={toggle}
-        disabled={loading}
-        variant={following ? "outline" : "default"}
-        className="rounded-full gap-1.5"
-      >
-        {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {following ? "Following" : (followLabel ?? "Follow")}
-      </Button>
+      {compact && following ? (
+        <Button
+          onClick={toggle}
+          disabled={loading}
+          variant="outline"
+          size="sm"
+          aria-label="Following — tap to unfollow"
+          title="Following"
+          className="rounded-full gap-1 px-2.5"
+        >
+          <UserRound className="h-3.5 w-3.5" />
+          <Check className="h-3.5 w-3.5 text-primary" />
+        </Button>
+      ) : (
+        <Button
+          onClick={toggle}
+          disabled={loading}
+          variant={following ? "outline" : "default"}
+          className="rounded-full gap-1.5"
+        >
+          {following ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+          {following ? "Following" : (followLabel ?? "Follow")}
+        </Button>
+      )}
+
       <SignupGateModal
         open={gateOpen}
         onOpenChange={(v) => {
