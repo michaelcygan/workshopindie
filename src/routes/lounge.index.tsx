@@ -542,14 +542,17 @@ function WorkshopPreflight() {
         {" "}to keep the work.
       </p>
 
-      <LiveWorkshopsRail
-        canJoin={canDrop && busy === null}
-        medium={null}
-        onTakeSeat={async (roomId) => {
-          const mode = await preGrantMedia();
-          router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
-        }}
-      />
+      <div className="hidden md:block">
+        <LiveWorkshopsRail
+          canJoin={canDrop && busy === null}
+          medium={null}
+          onTakeSeat={async (roomId) => {
+            const mode = await preGrantMedia();
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+          }}
+        />
+      </div>
+
     </main>
   );
 }
