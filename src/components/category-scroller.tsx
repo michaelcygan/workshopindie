@@ -31,18 +31,19 @@ export function CategoryScroller<T extends string>({
     const current = tabs.find((t) => t.id === value);
     const label = current?.label ?? "All";
     return (
-      <div className={cn("inline-flex", className)}>
+      <div className={cn("flex w-full", className)}>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink shadow-soft hover:bg-muted"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm text-ink shadow-soft hover:bg-muted"
               aria-label="Filter by category"
             >
               <span>{label}</span>
               <ChevronDown className="h-3.5 w-3.5 text-ink-muted" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="max-h-[60vh] w-48 overflow-y-auto">
+          <DropdownMenuContent align="center" className="max-h-[60vh] w-56 overflow-y-auto">
+
             {tabs.map((t) => {
               const active = t.id === value;
               return (
