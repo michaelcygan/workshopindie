@@ -708,11 +708,14 @@ function ProfilePage() {
           {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
           {/* Desktop-only link pills (mobile version lives inside the grid above) */}
-          <LinkPills
-            className="mt-2 hidden md:flex"
-            instagram={profile.instagram_handle}
-            links={profile.external_links ?? []}
-          />
+          <div className="hidden md:block">
+            <LinkPills
+              className="mt-2"
+              instagram={profile.instagram_handle}
+              links={profile.external_links ?? []}
+            />
+          </div>
+
 
 
 
