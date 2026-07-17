@@ -437,6 +437,45 @@ function ProfilePage() {
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
 
+  const renderProfileActions = () => (
+    isOwn ? (
+      <div className="flex items-center gap-2">
+        <ShareSheet
+          entity={{
+            type: "profile",
+            id: profile.id,
+            url: `https://workshopindie.com/u/${profile.username}`,
+            title: name,
+            subtitle: profile.headline ?? undefined,
+          }}
+        />
+        <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+          <Pencil className="h-4 w-4" /> Edit profile
+        </Button>
+      </div>
+    ) : (
+      <>
+        <div className="flex items-center gap-2">
+          <FollowButton targetUserId={profile.id} />
+          <MessageButton otherUserId={profile.id} />
+        </div>
+        <div className="flex items-center gap-2">
+          <ShareSheet
+            entity={{
+              type: "profile",
+              id: profile.id,
+              url: `https://workshopindie.com/u/${profile.username}`,
+              title: name,
+              subtitle: profile.headline ?? undefined,
+            }}
+          />
+          <ReportDialog entityType="profile" entityId={profile.id} />
+          <BlockButton targetUserId={profile.id} />
+        </div>
+      </>
+    )
+  );
+
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
@@ -521,58 +560,29 @@ function ProfilePage() {
       </div>
 
       <div className="mx-auto max-w-5xl px-4 md:px-6">
-        {/* Avatar + action buttons row — only the avatar overlaps the cover */}
+        {/* Avatar overlaps the cover; actions move below on mobile */}
         <div className="-mt-8 flex items-end justify-between gap-3 md:-mt-16 md:gap-4">
           <Avatar className="h-[72px] w-[72px] ring-4 ring-background md:h-32 md:w-32">
             <AvatarImage src={profile.avatar_url ?? undefined} />
             <AvatarFallback className="text-2xl">{name[0]}</AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-end justify-end gap-2 pb-2 md:flex-row md:flex-wrap md:items-center">
-            {isOwn ? (
-              <div className="flex items-center gap-2">
-                <ShareSheet
-                  entity={{
-                    type: "profile",
-                    id: profile.id,
-                    url: `https://workshopindie.com/u/${profile.username}`,
-                    title: name,
-                    subtitle: profile.headline ?? undefined,
-                  }}
-                />
-                <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
-                  <Pencil className="h-4 w-4" /> Edit profile
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <FollowButton targetUserId={profile.id} />
-                  <MessageButton otherUserId={profile.id} />
-                </div>
-                <div className="flex items-center gap-2">
-                  <ShareSheet
-                    entity={{
-                      type: "profile",
-                      id: profile.id,
-                      url: `https://workshopindie.com/u/${profile.username}`,
-                      title: name,
-                      subtitle: profile.headline ?? undefined,
-                    }}
-                  />
-                  <ReportDialog entityType="profile" entityId={profile.id} />
-                  <BlockButton targetUserId={profile.id} />
-                </div>
-              </>
-            )}
+          <div className="hidden md:flex md:flex-row md:flex-wrap md:items-center gap-2 pb-2">
+            {renderProfileActions()}
           </div>
-
         </div>
 
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-3 md:mt-4">
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-[22px] leading-tight text-ink md:text-4xl">{name}</h1>
-            <CreatorBadge status={profile.creator_status} />
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h1 className="font-display text-[22px] leading-tight text-ink md:text-4xl">{name}</h1>
+                <CreatorBadge status={profile.creator_status} />
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-2 md:hidden">
+              {renderProfileActions()}
+            </div>
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
             {profile.username && <span>@{profile.username}</span>}
