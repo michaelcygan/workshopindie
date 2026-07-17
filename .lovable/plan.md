@@ -1,19 +1,18 @@
-## Change
-Replace the hardcoded "Work" chip on Featured cards (profile page) with the work's category label.
+## Problem
+The floating "route → route · title" pill on the landing globe renders an `<a href="/works/…">` inside a label div that intercepts click and calls `router.navigate({ to: href })`. Two issues make the click a no-op:
 
-**File:** `src/routes/u.$username.tsx` (line 1054)
+1. `router.navigate({ to: <raw string> })` — TanStack Router's typed navigate does not always resolve dynamic string paths like `/works/some-slug` or `/g/some-slug`; the click is swallowed by `e.preventDefault()` and nothing happens.
+2. The inner `<a>` sits inside a div with Tailwind's `pointer-events-none`. The RAF loop flips the parent's inline `pointerEvents` to `auto` only when an active promo with `href` is drawn — in rapid frame updates the anchor briefly loses pointer events, so the mouseenter/click that would "freeze" the pill sometimes misses.
 
-Import `CATEGORY_LABELS` (already sourced from `@/lib/categories`) and swap:
-```tsx
-<span …>Work</span>
-```
-for:
-```tsx
-<span …>{CATEGORY_LABELS[w.category] ?? "Work"}</span>
-```
+## Fix
+**File:** `src/components/world-arcs.tsx`
 
-The "Collab" chip on pinned collabs (line 1069) is left as-is per user scope (only the Work chip was called out).
+1. **Reliable SPA navigation** — replace `router.navigate({ to: href })` with `router.history.push(href)`, which accepts any string path and performs a client-side navigation.
+2. **Guaranteed hit target** — add `pointer-events-auto` on the inner `<a>` template so the link is always clickable once rendered (line 494), independent of the RAF-controlled parent inline style.
+3. **Fallback** — if `router.history.push` is unavailable, `window.location.assign(href)` as a last resort inside the same click handler.
+
+No changes to the pill visual, promo data pipeline, or globe animation.
 
 ## Scope
-- One file, one JSX text swap plus adding `CATEGORY_LABELS` to the existing import from `@/lib/categories`.
-- No styling, layout, or data changes.
+- One file: `src/components/world-arcs.tsx`
+- Click handler + one class on the anchor template string
