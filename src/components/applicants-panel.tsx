@@ -16,7 +16,7 @@ import {
   Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { listApplicants, updateGuestApplicationStatus } from "@/lib/collab.functions";
+import { acceptCollabApplicant, listApplicants, updateGuestApplicationStatus } from "@/lib/collab.functions";
 import { toast } from "sonner";
 
 
