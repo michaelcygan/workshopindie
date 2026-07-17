@@ -125,6 +125,8 @@ type Profile = {
   creator_status: string;
   pinned_work_ids: string[];
   aliases: string[] | null;
+  alias_urls: string[] | null;
+
   city: { name: string; country: string; slug: string } | null;
   home_city: { name: string; country: string; slug: string } | null;
   cover_work: { slug: string; status: string; visibility: string } | null;
@@ -133,7 +135,7 @@ type Profile = {
 async function fetchProfile(username: string) {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)")
+    .select("id,username,display_name,avatar_url,cover_url,bio,headline,artist_statement,categories,mediums,tools,external_links,instagram_handle,follower_count,following_count,work_count,worked_with_count,creator_status,pinned_work_ids,aliases,alias_urls,city:cities!profiles_city_id_fkey(name,country,slug),home_city:cities!profiles_home_city_id_fkey(name,country,slug),cover_work:works!profiles_cover_work_id_fkey(slug,status,visibility)")
     .eq("username", username)
     .maybeSingle();
   if (error) throw error;
@@ -614,13 +616,29 @@ function ProfilePage() {
           )}
 
           {profile.aliases && profile.aliases.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted md:mt-3">
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted md:mt-3">
               <span>also known as</span>
-              {profile.aliases.map((a, i) => (
-                <span key={i} className="rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft">{a}</span>
-              ))}
+              {profile.aliases.map((a, i) => {
+                const url = profile.alias_urls?.[i]?.trim();
+                const chipCls = "inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2 py-0.5 text-ink-soft";
+                return url ? (
+                  <a
+                    key={i}
+                    href={url}
+                    target="_blank"
+                    rel="noopener nofollow ugc"
+                    className={cn(chipCls, "hover:border-ink/40 hover:text-ink transition")}
+                  >
+                    {a}
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </a>
+                ) : (
+                  <span key={i} className={chipCls}>{a}</span>
+                );
+              })}
             </div>
           )}
+
           {(profile.tools?.length ?? 0) > 0 && (
             <div className="mt-2 hidden flex-wrap items-center gap-1.5 md:flex">
               {(profile.tools ?? []).slice(0, 6).map((t, i) => (
@@ -679,7 +697,7 @@ function ProfilePage() {
 
         {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-3 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+          <blockquote className="mt-2 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
             <button
               type="button"
               onClick={() => setStatementExpanded((v) => !v)}
@@ -717,7 +735,7 @@ function ProfilePage() {
         )}
 
         {/* Featured (persists across tabs) */}
-        <div className="mt-6 md:mt-8">
+        <div className="mt-3 md:mt-8">
           <PinBar
             pinnedWorks={pinnedWorks ?? []}
             pinnedCollabs={pinnedCollabs ?? []}
@@ -727,7 +745,8 @@ function ProfilePage() {
         </div>
 
         {/* Tab bar */}
-        <div className="sticky top-0 z-20 mt-4 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-6 md:px-6">
+        <div className="sticky top-0 z-20 mt-2 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-6 md:px-6">
+
 
           <nav className="flex gap-1 overflow-x-auto">
             {visibleTabs.map((t) => (
@@ -1008,7 +1027,7 @@ function PinBar({
   if (total === 0) {
     if (!isOwn || !hasAnyContent) return null;
     return (
-      <section className="mb-6 rounded-2xl border border-dashed border-border bg-surface p-5 text-center md:mb-8">
+      <section className="mb-3 rounded-2xl border border-dashed border-border bg-surface p-5 text-center md:mb-8">
         <p className="text-sm text-ink-muted">
           Nothing featured yet. Open a Work or Collab you're on and tap <span className="font-medium text-ink">Pin</span> to feature it here.
         </p>
@@ -1016,9 +1035,10 @@ function PinBar({
     );
   }
   return (
-    <section className="mb-6 md:mb-8">
-      <h2 className="font-display text-lg text-ink">Featured</h2>
-      <div className="mt-2 -mx-4 overflow-x-auto px-4 pb-2 md:mt-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+    <section className="mb-3 md:mb-8">
+      <h2 className="font-display text-base text-ink md:text-lg">Featured</h2>
+      <div className="mt-1.5 -mx-4 overflow-x-auto px-4 pb-1 md:mt-3 md:pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+
         <ul className="flex snap-x snap-mandatory gap-3">
           {pinnedWorks.map((w) => (
             <li key={`w-${w.id}`} className="snap-start shrink-0">

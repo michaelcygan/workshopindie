@@ -48,6 +48,8 @@ type FormState = {
   firstName: string;
   lastName: string;
   aliases: string[];
+  aliasUrls: string[];
+
   instagram: string;
   headline: string;
   bio: string;
@@ -66,7 +68,7 @@ type FormState = {
 
 const EMPTY: FormState = {
   username: "",
-  firstName: "", lastName: "", aliases: [], instagram: "",
+  firstName: "", lastName: "", aliases: [], aliasUrls: [], instagram: "",
   headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
@@ -124,6 +126,12 @@ function EditProfile() {
         firstName: first,
         lastName: last,
         aliases: ((data.aliases as string[] | null) ?? []),
+        aliasUrls: (() => {
+          const a = ((data.aliases as string[] | null) ?? []);
+          const u = (((data as { alias_urls?: string[] | null }).alias_urls) ?? []);
+          return a.map((_, i) => u[i] ?? "");
+        })(),
+
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
@@ -193,9 +201,21 @@ function EditProfile() {
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
     const finalDisplay = `${first} ${last}`.trim();
     const seenAlias = new Set<string>();
-    const cleanAliases = form.aliases
-      .map((a) => a.trim())
-      .filter((a) => {
+    const normalizeAliasUrl = (raw: string): string => {
+      const t = raw.trim();
+      if (!t) return "";
+      const withScheme = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+      try {
+        const u = new URL(withScheme);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+        return u.toString().slice(0, 500);
+      } catch {
+        return "";
+      }
+    };
+    const pairs = form.aliases
+      .map((a, i) => ({ a: a.trim(), u: form.aliasUrls[i] ?? "" }))
+      .filter(({ a }) => {
         if (!a || a.length > 40) return false;
         const k = a.toLowerCase();
         if (seenAlias.has(k)) return false;
@@ -203,12 +223,16 @@ function EditProfile() {
         return true;
       })
       .slice(0, 5);
+    const cleanAliases = pairs.map((p) => p.a);
+    const cleanAliasUrls = pairs.map((p) => normalizeAliasUrl(p.u));
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
       first_name: first,
       last_name: last,
       aliases: cleanAliases,
+      alias_urls: cleanAliasUrls,
+
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
@@ -364,31 +388,54 @@ function EditProfile() {
                     size="sm"
                     variant="ghost"
                     className="rounded-full gap-1 shrink-0"
-                    onClick={() => set("aliases", [...form.aliases, ""])}
+                    onClick={() => {
+                      set("aliases", [...form.aliases, ""]);
+                      set("aliasUrls", [...form.aliasUrls, ""]);
+                    }}
                   >
                     <Plus className="h-3.5 w-3.5" /> Add alias
                   </Button>
                 )}
               </div>
               {form.aliases.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {form.aliases.map((a, i) => (
-                    <div key={i} className="flex gap-2">
+                    <div key={i} className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2">
+                      <div className="flex gap-2">
+                        <Input
+                          value={a}
+                          maxLength={40}
+                          placeholder="e.g. DJ Nightowl"
+                          onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label="Remove alias"
+                          onClick={() => {
+                            set("aliases", form.aliases.filter((_, j) => j !== i));
+                            set("aliasUrls", form.aliasUrls.filter((_, j) => j !== i));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
                       <Input
-                        value={a}
-                        maxLength={40}
-                        placeholder="e.g. DJ Nightowl"
-                        onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                        type="url"
+                        value={form.aliasUrls[i] ?? ""}
+                        maxLength={200}
+                        placeholder="Website for this alias (optional) — https://…"
+                        onChange={(e) => {
+                          const next = [...form.aliasUrls];
+                          while (next.length < form.aliases.length) next.push("");
+                          next[i] = e.target.value;
+                          set("aliasUrls", next);
+                        }}
+                        className="text-xs"
                       />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => set("aliases", form.aliases.filter((_, j) => j !== i))}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
                     </div>
+
                   ))}
                 </div>
               )}

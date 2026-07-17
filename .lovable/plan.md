@@ -1,66 +1,49 @@
-## Mobile Lounge selector — focused hierarchy pass
+## Two mobile polish + edit-flow additions
 
-Mobile only (`<md`). Desktop split layout, full topic scroller, marquee, and rail cards stay exactly as they are.
+### 1. Tighten mobile spacing below Featured (`src/routes/u.$username.tsx`)
 
-### 1. Shorten the mobile topic list — `src/components/live-topics-list.tsx` (stack branch only)
+Goal: shave vertical space between the identity block, Featured carousel, and the tabs bar on mobile only. Desktop spacing unchanged.
 
-- Compute a `mobileVisible` list capped at 5 category rows using existing `sorted` + `liveByMedium`:
-  1. Start with categories where `liveByMedium.get(id) > 0`, ordered by count desc.
-  2. Append `critique`, then `coworking`.
-  3. Fill from `sorted` in order until 5.
-  4. Dedupe by id.
-- Add local `const [expanded, setExpanded] = useState(false)`.
-- Render `loungeRow` + (`expanded ? sorted : mobileVisible`).
-- Below the list, render a quiet full-width button: "View all topics (N)" ⇄ "Show fewer", min-height 44px, subtle border-top, no icon-heavy styling. Toggles `expanded`. Only rendered when `sorted.length > mobileVisible.length`.
-- No changes to `TopicRow`, `onPick`, `onPickFlavor`, sub-options, or the split branch.
+- Aliases row: `mt-2 … md:mt-3` → `mt-1.5 … md:mt-3`.
+- Artist statement blockquote: `mt-3 … md:mt-8` → `mt-2 … md:mt-8`.
+- Featured wrapper (line ~720): `mt-6 md:mt-8` → `mt-3 md:mt-8`.
+- `PinBar` (line ~1019): outer `mb-6 md:mb-8` → `mb-3 md:mb-8`; heading `text-lg` → `text-base md:text-lg`; scroller `mt-2 … md:mt-3` → `mt-1.5 … md:mt-3` and reduce `pb-2` → `pb-1`.
+- Tabs sticky wrapper (line ~730): `mt-4 … md:mt-6` → `mt-2 … md:mt-6`.
 
-### 2. Compact mobile "Live now" rail — `src/components/live-workshops-rail.tsx`
+No desktop `md:` values change. No layout or content restructure.
 
-- Add a `variant?: "cards" | "compact-pills"` prop (default `"cards"` — preserves desktop).
-- When `variant === "compact-pills"`:
-  - Reuse the existing `["instant-active-rooms"]` query, `joinSpecificInstantRoom`, and `onTakeSeat` flow already in the file — no new query, no new server fn.
-  - Render a single horizontally scrollable row (`overflow-x-auto snap-x scrollbar-none`) of pill cards, one per joinable room.
-  - Each pill: room title (truncate), small topic dot + label, up to 3 stacked participant avatars (reuse existing avatar rendering), `count/5` seat text. Min height 44px, min tap width ~200px.
-  - If the filtered list is empty → return `null` (parent decides layout).
-- No changes to the desktop `"cards"` branch.
+### 2. Link a website to each artist alias
 
-### 3. Wire the compact rail into `src/routes/lounge.index.tsx`
+Data model — add a parallel `alias_urls text[]` on `profiles` (aliases stay `text[]`, index-aligned):
 
-- Move the existing `<LiveWorkshopsRail>` to render **above** the topic list on mobile only, wrapped in `md:hidden`, with `variant="compact-pills"`. Show a small "Live now · N" eyebrow above it. Omit entirely when no rooms.
-- Keep the current desktop `<LiveWorkshopsRail>` block as-is, wrapped in `hidden md:block` (currently unconstrained — this narrows it to desktop so we don't double-render).
-- `onTakeSeat` and `canJoin` behavior unchanged (still uses `preGrantMedia`).
+- Supabase migration:
+  - `ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS alias_urls text[] NOT NULL DEFAULT '{}'::text[];`
+  - Existing profile grants already cover the column; no new GRANT/RLS work.
 
-### 4. Mobile quick-start pills — `src/components/room-prompt-marquee.tsx`
+Edit flow — `src/routes/me.edit.tsx`:
 
-- Add `variant?: "marquee" | "static-row"` (default `"marquee"` — desktop unchanged).
-- When `variant === "static-row"`:
-  - Pick ~6 curated prompts from the existing `ROOM_PROMPTS` export by exact `title` match: "Heads-down work session", "Portfolio review", "Mix feedback — bring stems", "Co-writing sprint", "Pair-program on a bug", "Dailies critique". Filter to those actually present; no new data.
-  - Render as a single horizontally scrollable, non-animated row of pills (`overflow-x-auto snap-x scrollbar-none`), each ≥44px tall.
-  - Keep the existing tap behavior: if `liveByMedium.get(prompt.medium) > 0` → confirm "Join a live one" → `onJoinLive(medium)`; else → "Start now" → `onUsePrompt(prompt)`. Reuse the current confirm popover/logic — don't fork it.
-- In `lounge.index.tsx`, pass `variant="static-row"` only for the mobile `LiveTopicsList`'s `featuredFooter`; the desktop instance keeps the marquee.
+- Add `aliasUrls: string[]` to `FormState` and `EMPTY`.
+- Load `alias_urls` alongside `aliases` (pad/trim to match `aliases.length`).
+- In the aliases card, render a small second input under each alias row:
+  - `Website (optional)` — `type="url"`, `placeholder="https://…"`, `maxLength={200}`.
+  - When adding/removing an alias, keep `aliasUrls` in lockstep (push `""` / splice same index).
+- On submit, after computing `cleanAliases`:
+  - Build `cleanAliasUrls` at the same indices; trim; if non-empty and missing scheme, prepend `https://`; validate via `new URL(...)` in a try/catch — invalid → `""`.
+  - Truncate to `cleanAliases.length`.
+  - Persist as `alias_urls: cleanAliasUrls` in the `profiles.update({...})` call.
 
-### 5. Mobile page order in `lounge.index.tsx` (`md:hidden` block)
+Public profile — `src/routes/u.$username.tsx`:
 
-1. Header + subtitle (unchanged)
-2. `SplitOpenButton` / "Match me to a seat" (already inside `LiveTopicsList` featured section — keep)
-3. New compact `LiveWorkshopsRail variant="compact-pills"` (only when rooms exist)
-4. Shortened topic list + "View all topics"
-5. Quick-start static-row pills (as `featuredFooter`)
-6. Host strip + fine print (unchanged)
+- Add `alias_urls` to the profile SELECT list.
+- Add `alias_urls: string[] | null` to the profile type.
+- In the aliases render block, use `alias_urls?.[i]`:
+  - When a non-empty URL exists, render an `<a href={url} target="_blank" rel="noopener nofollow ugc">` styled like today's chip, with a subtle hover underline and a tiny `ExternalLink` icon (h-3 w-3) after the label; block-list check via existing `render-links` helpers is not required for user-owned profile links but reuse the existing `LinkPills` sanitizer if it exposes one — otherwise a plain absolute URL check is fine.
+  - Otherwise keep the current `<span>` chip.
 
-### Constraints honored
-
-- Single React Query key `["instant-active-rooms"]` — no new fetchers.
-- `onPick → handlePick → joinLounge/joinMediumLounge` untouched.
-- No auto-motion on mobile (no marquee, no auto-scroll).
-- Horizontal scroll confined to the two pill rows; page stays vertical.
-- 44px tap targets on all new controls; overflow tested mentally at 320–430px.
-- Desktop code paths are gated behind existing `md:` wrappers and new `variant` defaults.
-- No schema, route, Supabase, or media-permission changes.
+Constraints: reuse the established save flow (single `profiles.update`), no new server functions, no schema changes to `aliases` itself, no join tables.
 
 ### Files touched
 
-- `src/components/live-topics-list.tsx` — stack branch: mobileVisible cap + expand toggle.
-- `src/components/live-workshops-rail.tsx` — add `compact-pills` variant.
-- `src/components/room-prompt-marquee.tsx` — add `static-row` variant.
-- `src/routes/lounge.index.tsx` — reorder mobile block, gate desktop rail, pass new variants.
+- `src/routes/u.$username.tsx` — spacing tweaks + alias link rendering + SELECT column + type.
+- `src/routes/me.edit.tsx` — `aliasUrls` in state, per-row URL input, save normalization.
+- `supabase/migrations/<new>.sql` — add `alias_urls text[]` to `profiles`.
