@@ -1356,6 +1356,10 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
 
 /* ---------- MEMBERS ---------- */
 function GroupMembersTab({ group }: { group: GroupRow }) {
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "members"],
     queryFn: async () => {
@@ -1368,40 +1372,111 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
       if (ids.length === 0) return [];
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id,username,display_name,avatar_url,hide_group_memberships")
+        .select("id,username,display_name,avatar_url,hide_group_memberships,categories")
         .in("id", ids);
       return (profs ?? []).filter((p) => !p.hide_group_memberships) as {
         id: string; username: string | null; display_name: string | null; avatar_url: string | null;
+        categories: Category[] | null;
       }[];
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(
+      members.flatMap((m) => m.categories ?? []).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c]),
+    ),
+  );
+
+  const filtered = members.filter((m) => {
+    if (category !== "all" && !(m.categories ?? []).includes(category)) return false;
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${m.display_name ?? ""} ${m.username ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = category !== "all" || q.trim().length > 0;
 
   if (isLoading) return <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />;
   if (members.length === 0) {
     return <EmptyState label="No public members yet." cta="Be the first to join" to="/g/$slug" toParams={{ slug: group.slug }} />;
   }
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {members.map((m) => (
-        <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
-          <Link
-            to="/u/$username"
-            params={{ username: m.username ?? "" }}
-            className="flex min-w-0 flex-1 items-center gap-3"
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={m.avatar_url ?? undefined} />
-              <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
-              {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
-            </div>
-          </Link>
-          <MessageButton otherUserId={m.id} />
+    <div>
+      {/* Utility strip */}
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-1 text-ink-muted">
+        {availableCategories.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {category === "all" ? "All crafts" : CATEGORY_LABELS[category] ?? "All crafts"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => setCategory("all")}>All crafts</DropdownMenuItem>
+              {availableCategories.map((c) => (
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {searchOpen ? (
+          <div className="flex items-center gap-1">
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+              onBlur={() => { if (!q) setSearchOpen(false); }}
+              placeholder="Search members…"
+              className="h-8 w-[200px] text-xs"
+            />
+            {q && (
+              <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search members">
+            <Search className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center text-sm text-ink-muted">
+          No members match your filters.{" "}
+          {hasFilters && (
+            <button onClick={() => { setCategory("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          )}
         </div>
-      ))}
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((m) => (
+            <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
+              <Link
+                to="/u/$username"
+                params={{ username: m.username ?? "" }}
+                className="flex min-w-0 flex-1 items-center gap-3"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={m.avatar_url ?? undefined} />
+                  <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
+                  {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
+                </div>
+              </Link>
+              <MessageButton otherUserId={m.id} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
