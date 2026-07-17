@@ -5,7 +5,6 @@ import { MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { checkCanDm, openOrCreateConversation } from "@/lib/dms.functions";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 
 export function MessageButton({ otherUserId, variant = "outline", size = "sm", contextCollabPostId, contextWorkshopId }: {
@@ -30,9 +29,10 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm", c
   }, [user?.id, otherUserId, check]);
 
   if (!user || user.id === otherUserId) return null;
+  // Only show when the viewer is actually allowed to DM (mutual follow, open-DM opt-in, or allowed collab/workshop context).
+  if (canDm !== true) return null;
 
   async function onClick() {
-    if (!canDm) return;
     setBusy(true);
     try {
       const r = await open({ data: { otherUserId, contextCollabPostId: contextCollabPostId ?? null, contextWorkshopId: contextWorkshopId ?? null } });
@@ -44,11 +44,11 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm", c
     }
   }
 
-  const btn = (
+  return (
     <Button
       type="button"
       onClick={onClick}
-      disabled={!canDm || busy}
+      disabled={busy}
       variant={variant}
       size={size}
       className="rounded-full gap-1.5"
@@ -56,15 +56,5 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm", c
       <MessageCircle className="h-3.5 w-3.5" />
       Message
     </Button>
-  );
-
-  if (canDm) return btn;
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild><span>{btn}</span></TooltipTrigger>
-        <TooltipContent>Follow each other to send a message.</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
   );
 }
