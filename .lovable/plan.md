@@ -1,32 +1,28 @@
 ## Diagnosis
 
-Logged-out visitors (including the Instagram in-app browser) hit "Profile not found" on `/u/@michaelcygan` because the `public.profiles` table has **no `SELECT` grant to `anon`**.
+Preview crashes with:
+> cannot add `postgres_changes` callbacks for realtime:notifs:… after `subscribe()`
 
-Verified against the backend:
-- RLS on `profiles` has a `profiles public read` policy `USING (true)` for `{anon, authenticated}` — good.
-- But `has_table_privilege('anon','public.profiles','SELECT')` returns **false**.
-- PostgREST checks table-level GRANTs *before* RLS, so anon requests to `profiles` fail silently and `fetchProfile()` returns `null` → the "No creator with the handle" screen.
-- Sibling public tables (`works`, `work_credits`, `cities`, `collab_posts`, `collab_roles`, `follows`) all already have anon SELECT, which is why only the profile page breaks for logged-out users.
+Web (production) is stable because there's no StrictMode double-mount / HMR remount. In preview, the previous effect run's channel is still in supabase-js's internal channel list when the next run calls `supabase.channel("notifs:<uid>")`; supabase-js hands back the already-subscribed channel, then `.on("postgres_changes", …)` throws.
 
-Authenticated users see profiles fine because `authenticated` does have SELECT — that's why this only reproduces in the IG browser / signed-out sessions.
+Three subscriptions share this bug — all with static, per-user topic names:
+- `src/components/notifications-bell.tsx` → `notifs:${user.id}`
+- `src/hooks/use-title-badge.ts` → `title-notifs:${user.id}` and `title-dm:${user.id}`
 
 ## Fix
 
-Single migration that grants anon read on `profiles` to match the existing RLS policy:
+Make each mount's channel topic unique so cleanup/creation races can never collide, and defensively remove any pre-existing channel on the same topic before subscribing.
 
-```sql
-GRANT SELECT ON public.profiles TO anon;
-```
+For each of the three subscriptions:
 
-No schema, RLS, code, or column changes. No new dependencies. The existing `profiles public read` policy already scopes what anon can see (it's `true`, matching the intent that profile pages are public just like `/works/*` and `/collab/*`).
+1. Generate a per-mount suffix inside the effect (`crypto.randomUUID()` with `Math.random()` fallback) and use it in the channel name, e.g. `notifs:${user.id}:${uid}`.
+2. Keep the existing `.on(...).subscribe()` chain — order is already correct.
+3. Cleanup calls `supabase.removeChannel(channel)` as today (unique topic means no cross-mount interference).
 
-## Why not restrict columns instead
-
-The current design already treats profile pages as fully public content (SEO loader indexes them, share URLs are meant for logged-out visitors). Matching the existing policy with a table-level GRANT is the minimum change that restores the intended behavior without altering the security model.
+No behavior change for users; only the internal channel topic strings change. No schema, RLS, or server-fn changes.
 
 ## Verification
 
-After the migration:
-1. Re-check `has_table_privilege('anon','public.profiles','SELECT')` → should be `true`.
-2. Load `/u/michaelcygan` in a private window (no session) — profile renders.
-3. Reload in the IG in-app browser — profile renders.
+- Reload every preview page while signed in — no "cannot add postgres_changes callbacks…" error, no branded error page.
+- Confirm a new notification still appears live in the bell and the tab-title badge still updates.
+- Signed-out preview pages still render (these hooks early-return when there's no user).
