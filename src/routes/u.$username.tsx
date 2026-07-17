@@ -1051,7 +1051,7 @@ function PinBar({
                   {w.cover_url && (
                     <img src={w.cover_url} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   )}
-                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Work</span>
+                  <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">{CATEGORY_LABELS[w.category] ?? "Work"}</span>
                 </div>
                 <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{w.title}</p>
               </Link>
