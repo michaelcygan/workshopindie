@@ -7,12 +7,14 @@ import { checkCanDm, openOrCreateConversation } from "@/lib/dms.functions";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
-export function MessageButton({ otherUserId, variant = "outline", size = "sm", contextCollabPostId, contextWorkshopId }: {
+export function MessageButton({ otherUserId, variant = "outline", size = "sm", contextCollabPostId, contextWorkshopId, contextWorkId, contextCommentId }: {
   otherUserId: string;
   variant?: "outline" | "default";
   size?: "sm" | "default";
   contextCollabPostId?: string | null;
   contextWorkshopId?: string | null;
+  contextWorkId?: string | null;
+  contextCommentId?: string | null;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -35,7 +37,13 @@ export function MessageButton({ otherUserId, variant = "outline", size = "sm", c
   async function onClick() {
     setBusy(true);
     try {
-      const r = await open({ data: { otherUserId, contextCollabPostId: contextCollabPostId ?? null, contextWorkshopId: contextWorkshopId ?? null } });
+      const r = await open({ data: {
+        otherUserId,
+        contextCollabPostId: contextCollabPostId ?? null,
+        contextWorkshopId: contextWorkshopId ?? null,
+        contextWorkId: contextWorkId ?? null,
+        contextCommentId: contextCommentId ?? null,
+      } });
       navigate({ to: "/dms/$conversationId", params: { conversationId: r.conversationId } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open conversation");

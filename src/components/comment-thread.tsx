@@ -110,7 +110,7 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
 
   async function onMessage(c: Row) {
     try {
-      const r = await openConvo({ data: { otherUserId: c.user_id } });
+      const r = await openConvo({ data: { otherUserId: c.user_id, contextCommentId: c.id, contextWorkId: workId } });
       navigate({ to: "/dms/$conversationId", params: { conversationId: r.conversationId } });
     } catch (err) {
       toast.error((err as Error).message);
