@@ -85,6 +85,11 @@ function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void
       <p className="mt-2 text-sm text-ink-muted">
         A temporary problem interrupted this Lounge. Try reconnecting, or head back to Lounge discovery.
       </p>
+      {error?.message && (
+        <p className="mt-3 mx-auto max-w-md break-words text-[11px] text-ink-muted/70">
+          {error.message}
+        </p>
+      )}
       <div className="mt-6 flex flex-wrap justify-center gap-2">
         <button
           onClick={async () => {
