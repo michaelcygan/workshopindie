@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { findBlockedUrl } from "@/lib/moderation/url-blocklist";
+
 
 /**
  * Send a chat message to a live room. Accepts optional `mentions` (user ids)
