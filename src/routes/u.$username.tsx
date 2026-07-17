@@ -439,7 +439,7 @@ function ProfilePage() {
 
   const renderProfileActions = () => (
     isOwn ? (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <ShareSheet
           entity={{
             type: "profile",
@@ -455,11 +455,11 @@ function ProfilePage() {
       </div>
     ) : (
       <>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-nowrap items-center gap-1.5">
           <FollowButton targetUserId={profile.id} />
           <MessageButton otherUserId={profile.id} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-nowrap items-center justify-end gap-1">
           <ShareSheet
             entity={{
               type: "profile",
@@ -475,6 +475,7 @@ function ProfilePage() {
       </>
     )
   );
+
 
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
