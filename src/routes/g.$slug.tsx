@@ -397,22 +397,57 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
       return (data ?? []) as unknown as EventLite[];
     },
   });
+  const [kind, setKind] = useState<string>("all");
+  const [format, setFormat] = useState<"all" | "in_person" | "online">("all");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const now = new Date();
   const all = events ?? [];
+  const availableKinds = Array.from(new Set(all.map((e) => e.kind).filter(Boolean)));
+
+  const matches = (e: EventLite) => {
+    if (kind !== "all" && e.kind !== kind) return false;
+    if (format !== "all") {
+      if (format === "in_person" && e.format === "online") return false;
+      if (format === "online" && e.format === "in_person") return false;
+    }
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${e.title} ${e.tagline ?? ""} ${e.venue_name ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  };
+
   const pinnedOrRecurring = all
-    .filter((e) => e.pinned_at || e.is_recurring)
+    .filter((e) => (e.pinned_at || e.is_recurring) && matches(e))
     .sort((a, b) => {
       if (!!b.pinned_at !== !!a.pinned_at) return b.pinned_at ? 1 : -1;
       return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
     });
   const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
-  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now);
+  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now && matches(e));
   const past = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) < now);
+  const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
+  const hasFilters = kind !== "all" || format !== "all" || q.trim().length > 0;
 
   const isCity = group.kind === "city";
   const subheading = isCity
     ? "Open mics, screenings, workshops, meetups, and other places to connect."
     : "Gatherings, workshops, and events connected to this community.";
+
+  const KIND_LABELS: Record<string, string> = {
+    open_mic: "Open mic",
+    screening: "Screening",
+    workshop: "Workshop",
+    meetup: "Meetup",
+    show: "Show",
+    reading: "Reading",
+    class: "Class",
+    other: "Other",
+  };
+  const kindLabel = (k: string) => KIND_LABELS[k] ?? k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="space-y-10">
@@ -430,6 +465,63 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
           </Link>
         )}
       </header>
+
+      {/* Utility strip */}
+      {all.length > 0 && (
+        <div className="-mt-6 flex flex-wrap items-center justify-end gap-1 text-ink-muted">
+          {availableKinds.length > 1 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                  {kind === "all" ? "All kinds" : kindLabel(kind)}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setKind("all")}>All kinds</DropdownMenuItem>
+                {availableKinds.map((k) => (
+                  <DropdownMenuItem key={k} onClick={() => setKind(k)}>{kindLabel(k)}</DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {format === "all" ? "Any format" : format === "in_person" ? "In-person" : "Online"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => setFormat("all")}>Any format</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFormat("in_person")}>In-person</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setFormat("online")}>Online</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+                onBlur={() => { if (!q) setSearchOpen(false); }}
+                placeholder={`Search events…`}
+                className="h-8 w-[200px] text-xs"
+              />
+              {q && (
+                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search events">
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
 
       {isLoading && <p className="text-sm text-ink-muted">Loading…</p>}
 
@@ -455,8 +547,13 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
         </section>
       )}
 
-      {!isLoading && pinnedOrRecurring.length === 0 && upcoming.length === 0 && (
-        isAdmin ? (
+      {!isLoading && !hasAnyMatch && (
+        hasFilters ? (
+          <div className="text-center text-sm text-ink-muted">
+            No events match your filters.{" "}
+            <button onClick={() => { setKind("all"); setFormat("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          </div>
+        ) : isAdmin ? (
           <Link
             to="/admin/events"
             className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-soft transition hover:border-border-strong hover:bg-muted"
@@ -1100,29 +1197,114 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
 /* ---------- COLLABS ---------- */
 type CollabRow = {
   id: string; title: string; slug: string; description: string | null;
+  status?: string | null; resulting_work_id?: string | null;
+  category?: Category | null;
 };
 
 function GroupCollabTab({ group }: { group: GroupRow }) {
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [status, setStatus] = useState<"open" | "completed" | "all">("open");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "collabs"],
     queryFn: async (): Promise<CollabRow[]> => {
       const { data } = await supabase
         .from("group_collabs")
-        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id)")
+        .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id,category)")
         .eq("group_id", group.id)
         .limit(48);
       return (data ?? [])
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .map((r: any) => r.collab)
-        .filter((c: (CollabRow & { status?: string; resulting_work_id?: string | null }) | null) =>
-          !!c && (c.status === "open" || (c.status === "closed" && !!c.resulting_work_id)),
-        ) as CollabRow[];
+        .filter((c: CollabRow | null) => !!c) as CollabRow[];
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(rows.map((r) => r.category).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c])),
+  );
+
+  const filtered = rows.filter((c) => {
+    // status: "open" = status==="open"; "completed" = closed && has resulting work
+    if (status === "open" && c.status !== "open") return false;
+    if (status === "completed" && !(c.status === "closed" && !!c.resulting_work_id)) return false;
+    if (status === "all") {
+      // hide closed-without-work (spam / abandoned)
+      if (c.status === "closed" && !c.resulting_work_id) return false;
+    }
+    if (category !== "all" && c.category !== category) return false;
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${c.title} ${c.description ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = category !== "all" || status !== "open" || q.trim().length > 0;
+
   return (
     <div>
-      <AddMineToGroup group={group} entity="collab" />
+      {/* Utility strip */}
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-ink-muted">
+        <AddMineToGroup group={group} entity="collab" compact />
+        <div className="flex items-center gap-1">
+          {availableCategories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                  {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
+                {availableCategories.map((c) => (
+                  <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {status === "open" ? "Open" : status === "completed" ? "Completed" : "All"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => setStatus("open")}>Open</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatus("completed")}>Completed</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setStatus("all")}>All</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+                onBlur={() => { if (!q) setSearchOpen(false); }}
+                placeholder="Search collabs…"
+                className="h-8 w-[200px] text-xs"
+              />
+              {q && (
+                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search collabs">
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {isLoading ? (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
@@ -1141,10 +1323,16 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
             </Button>
           }
         />
-
+      ) : filtered.length === 0 ? (
+        <div className="mt-8 text-center text-sm text-ink-muted">
+          No Collabs match your filters.{" "}
+          {hasFilters && (
+            <button onClick={() => { setCategory("all"); setStatus("open"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          )}
+        </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {rows.map((c) => (
+          {filtered.map((c) => (
             <Link
               key={c.id}
               to="/collab/$slug"
@@ -1168,6 +1356,10 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
 
 /* ---------- MEMBERS ---------- */
 function GroupMembersTab({ group }: { group: GroupRow }) {
+  const [category, setCategory] = useState<Category | "all">("all");
+  const [q, setQ] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
+
   const { data: members = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "members"],
     queryFn: async () => {
@@ -1180,40 +1372,111 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
       if (ids.length === 0) return [];
       const { data: profs } = await supabase
         .from("profiles")
-        .select("id,username,display_name,avatar_url,hide_group_memberships")
+        .select("id,username,display_name,avatar_url,hide_group_memberships,categories")
         .in("id", ids);
       return (profs ?? []).filter((p) => !p.hide_group_memberships) as {
         id: string; username: string | null; display_name: string | null; avatar_url: string | null;
+        categories: Category[] | null;
       }[];
     },
   });
 
+  const availableCategories = Array.from(
+    new Set(
+      members.flatMap((m) => m.categories ?? []).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c]),
+    ),
+  );
+
+  const filtered = members.filter((m) => {
+    if (category !== "all" && !(m.categories ?? []).includes(category)) return false;
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      const hay = `${m.display_name ?? ""} ${m.username ?? ""}`.toLowerCase();
+      if (!hay.includes(needle)) return false;
+    }
+    return true;
+  });
+
+  const hasFilters = category !== "all" || q.trim().length > 0;
 
   if (isLoading) return <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />;
   if (members.length === 0) {
     return <EmptyState label="No public members yet." cta="Be the first to join" to="/g/$slug" toParams={{ slug: group.slug }} />;
   }
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      {members.map((m) => (
-        <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
-          <Link
-            to="/u/$username"
-            params={{ username: m.username ?? "" }}
-            className="flex min-w-0 flex-1 items-center gap-3"
-          >
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={m.avatar_url ?? undefined} />
-              <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
-              {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
-            </div>
-          </Link>
-          <MessageButton otherUserId={m.id} />
+    <div>
+      {/* Utility strip */}
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-1 text-ink-muted">
+        {availableCategories.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {category === "all" ? "All crafts" : CATEGORY_LABELS[category] ?? "All crafts"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => setCategory("all")}>All crafts</DropdownMenuItem>
+              {availableCategories.map((c) => (
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        {searchOpen ? (
+          <div className="flex items-center gap-1">
+            <Input
+              autoFocus
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+              onBlur={() => { if (!q) setSearchOpen(false); }}
+              placeholder="Search members…"
+              className="h-8 w-[200px] text-xs"
+            />
+            {q && (
+              <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        ) : (
+          <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search members">
+            <Search className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="text-center text-sm text-ink-muted">
+          No members match your filters.{" "}
+          {hasFilters && (
+            <button onClick={() => { setCategory("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          )}
         </div>
-      ))}
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((m) => (
+            <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
+              <Link
+                to="/u/$username"
+                params={{ username: m.username ?? "" }}
+                className="flex min-w-0 flex-1 items-center gap-3"
+              >
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={m.avatar_url ?? undefined} />
+                  <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
+                  {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
+                </div>
+              </Link>
+              <MessageButton otherUserId={m.id} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
