@@ -309,6 +309,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [statementExpanded, setStatementExpanded] = useState(false);
+  const [seenCollabKey, setSeenCollabKey] = useState<string | null>(null);
 
 
   const { data: profile, isLoading } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username) });
@@ -439,7 +440,7 @@ function ProfilePage() {
 
   const renderProfileActions = () => (
     isOwn ? (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-nowrap items-center justify-end gap-2">
         <ShareSheet
           entity={{
             type: "profile",
@@ -455,11 +456,11 @@ function ProfilePage() {
       </div>
     ) : (
       <>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-nowrap items-center gap-1.5">
           <FollowButton targetUserId={profile.id} />
           <MessageButton otherUserId={profile.id} />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 flex-nowrap items-center justify-end gap-1">
           <ShareSheet
             entity={{
               type: "profile",
@@ -476,6 +477,7 @@ function ProfilePage() {
     )
   );
 
+
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
@@ -490,6 +492,28 @@ function ProfilePage() {
   const defaultTab: ProfileTab = search.tab ?? "works";
 
   const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
+
+  // Open-to-collab alert: dismiss once viewer has seen the latest collab.
+  const latestCollabKey = useMemo(() => {
+    if (!openCollabs || openCollabs.length === 0) return null;
+    return openCollabs.reduce<string>((max, c) => (c.created_at > max ? c.created_at : max), openCollabs[0].created_at);
+  }, [openCollabs]);
+  const dismissKey = profile ? `profile-collab-seen:${profile.id}` : null;
+  useEffect(() => {
+    if (!dismissKey || typeof window === "undefined") return;
+    setSeenCollabKey(window.localStorage.getItem(dismissKey));
+  }, [dismissKey]);
+  const markCollabsSeen = () => {
+    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
+    window.localStorage.setItem(dismissKey, latestCollabKey);
+    setSeenCollabKey(latestCollabKey);
+  };
+  useEffect(() => {
+    if (defaultTab === "collabs") markCollabsSeen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultTab, latestCollabKey, dismissKey]);
+  const hasUnseenCollab = !!latestCollabKey && seenCollabKey !== latestCollabKey;
+
 
   const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
     if (t === "activity") return isOwn; // owner-only
@@ -573,14 +597,14 @@ function ProfilePage() {
 
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-3 md:mt-4">
-          <div className="flex items-start justify-between gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-[22px] leading-tight text-ink md:text-4xl">{name}</h1>
+              <div className="flex min-w-0 items-center gap-2">
+                <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
                 <CreatorBadge status={profile.creator_status} />
               </div>
             </div>
-            <div className="flex flex-col items-end gap-2 md:hidden">
+            <div className="flex shrink-0 flex-col items-end gap-1.5 md:hidden">
               {renderProfileActions()}
             </div>
           </div>
@@ -730,24 +754,33 @@ function ProfilePage() {
           </blockquote>
         )}
 
-        {/* Mobile-only Open-to-collaborate pill (visitors only, when open Collabs exist) */}
-        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && (
-          <button
-            type="button"
-            onClick={() => setTab("collabs")}
-            className="mt-6 inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left text-sm md:hidden"
-          >
-            <span className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+        {/* Mobile-only Open-to-collaborate alert (visitors only; dismisses until a new collab is posted) */}
+        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && hasUnseenCollab && (
+          <div className="mt-6 flex w-full items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 pl-4 pr-2 py-2 text-sm md:hidden">
+            <button
+              type="button"
+              onClick={() => { markCollabsSeen(); setTab("collabs"); }}
+              className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
+            >
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              <span className="font-medium text-ink">Open to collaborate</span>
-              <span className="text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
-            </span>
-            <ArrowRight className="h-4 w-4 text-ink-muted" />
-          </button>
+              <span className="truncate font-medium text-ink">Open to collaborate</span>
+              <span className="shrink-0 text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
+              <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-ink-muted" />
+            </button>
+            <button
+              type="button"
+              onClick={markCollabsSeen}
+              aria-label="Dismiss"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-primary/10 hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
+
 
         {/* Featured (persists across tabs) */}
         <div className="mt-3 md:mt-8">

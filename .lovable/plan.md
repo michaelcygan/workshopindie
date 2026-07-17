@@ -1,51 +1,39 @@
-## What's happening
+Two small, mobile-only polish fixes to `src/routes/u.$username.tsx`. No schema, routes, or business logic changes.
 
-The bottom island menu links to `/collab` and `/events`. Both routes validate their URL search params with a Zod schema, and both crash with the same Zod v4 error:
+## 1. Header layout — stop the name/actions squish
 
-```
-[
-  { "code":"invalid_type","expected":"nonoptional","path":["city"] },
-  { "code":"invalid_type","expected":"nonoptional","path":["cityName"] }
-]
-```
+Current problem: on narrow widths (IG in-app browser, 390px), the name row and the mobile action stack (Follow on top, Share/Report/Block below) both compete for horizontal space. When "Michael Cygan" plus Follow don't fit cleanly, the name wraps or leaves ugly dead space under it.
 
-## Root cause
+Fix — make the identity row a real responsive grid with a shrinkable name column:
 
-`@tanstack/zod-adapter@1.167` (peer-declares `zod ^3`) ships this helper:
+- Wrap the mobile name + actions row in `grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3` so the name column always gets remaining width and the action column stays at intrinsic width (never wraps under).
+- Name `<h1>`: add `min-w-0 text-balance`, scale from `text-[20px]` → `text-[22px]` → `md:text-4xl` via `text-[clamp(20px,6vw,26px)]` on mobile so it fits at 320–430 without forcing the sibling column to wrap.
+- Mobile Follow button: use `size="sm"` with `px-3` and a `shrink-0` wrapper so it hugs the top-right without pushing the name.
+- Second action row (Share / Report / Block on visitor view; Edit on owner view): render right-aligned, `flex-nowrap justify-end`, using icon-only buttons with `aria-label`s under `sm:` (keep the labelled versions from `sm` up). This removes the stacked "Share · Report" block that sits ugly under the name today and keeps the whole action cluster in a single tight column.
+- On owner view, the mobile Edit affordance stays as the compact pencil pill already used elsewhere; no change to desktop.
 
-```ts
-export const fallback = (schema, fallback) =>
-  z.custom().pipe(schema.catch(fallback));
-```
+Verify at 320 / 360 / 375 / 390 / 430 with short and long display names — no wrap, no dead space, no horizontal overflow. Desktop (`md:` and up) layout is untouched.
 
-The project uses `zod@4.4.3`. In Zod v4, an object field is only treated as optional if its **outermost** schema is `.optional()`/`.default()`. `fallback(...)` wraps the inner schema in `z.custom().pipe(...)`, so the outermost is `ZodPipe`, not `ZodOptional`. When the URL has no `city`/`cityName` param, Zod v4 sees a missing required field and throws `expected: "nonoptional"`.
+## 2. Open-to-collaborate pill — behave like a new-collab alert
 
-It only shows up on `/collab` and `/events` because those are the only routes whose `fallback(...)` fields use `.optional()` without `.default()`. The other `fallback(...)` calls in `groups.index.tsx` and `gallery.tsx` all chain `.default(...)`, which sidesteps the bug.
+Current problem: the pill is shown whenever the visitor is not on the Collabs tab AND there are open collabs. It reappears every time the user leaves the Collabs tab.
 
-## Fix
+Fix — treat it as a dismissable alert keyed by "latest collab you've seen":
 
-Bypass the broken adapter helper for the optional fields — build the schema directly so `.optional()` stays on the outside:
+- Compute `latestCollabKey` = max `created_at` (or fallback `id`) across `openCollabs` for this profile.
+- Persist `dismissed:${profile.id}` → `latestCollabKey` in `localStorage` (SSR-safe via `useEffect` hydration, matching the pattern used elsewhere in this file).
+- Show the pill only when: mobile, visitor, `openCollabs.length > 0`, current tab ≠ `collabs`, AND the stored key ≠ `latestCollabKey` (i.e. there's an unseen collab).
+- Dismiss on first interaction: clicking the pill (which already switches to the Collabs tab) OR switching to the Collabs tab by any other means writes `latestCollabKey` into storage, so it stays gone across tab switches until a newer collab appears.
+- Add a small `×` on the pill that dismisses without navigating, using the same storage write, for users who don't want to open Collabs.
 
-`src/routes/collab.index.tsx` (lines 27-28) and `src/routes/events.index.tsx` (lines 32-33):
+No changes to the Collabs tab content, application flow, or collab queries — just the visibility gate of the mobile alert pill.
 
-```ts
-// before
-city:     fallback(z.string().uuid().optional(), undefined),
-cityName: fallback(z.string().optional(), undefined),
+## Technical notes
 
-// after
-city:     z.string().uuid().catch(undefined).optional(),
-cityName: z.string().catch(undefined).optional(),
-```
-
-Same runtime behavior (bad value → `undefined`; missing → `undefined`), but the field is genuinely optional under Zod v4.
-
-## Not doing
-
-- No package changes. Upgrading/downgrading `@tanstack/zod-adapter` or `zod` would ripple through the whole app; a two-file schema tweak is safer and matches the pattern already used elsewhere.
-- Leaving `fallback(...)` in place for the `.default(...)` fields — they aren't affected.
-
-## Files
-
-- `src/routes/collab.index.tsx` — swap the two optional field schemas.
-- `src/routes/events.index.tsx` — swap the two optional field schemas.
+- Files touched: `src/routes/u.$username.tsx` only.
+- No new dependencies. Uses existing `useEffect`, `localStorage`, `cn`, `Button` primitives.
+- Verify via preview at mobile widths that:
+  - name never wraps into the button; no empty band below name
+  - pill disappears after first tap on the Collabs tab and does not return on Works/Activity/About
+  - pill reappears if a new collab (newer `created_at`) is added
+  - desktop profile is visually identical to today
