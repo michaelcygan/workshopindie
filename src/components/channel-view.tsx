@@ -35,6 +35,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { ProfilePeek } from "@/components/profile-peek";
+import { LoungeLinks } from "@/components/lounge-links";
+
 import { UsernameMention } from "@/components/username-mention";
 
 
