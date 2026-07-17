@@ -402,7 +402,7 @@ function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedA
     },
     staleTime: 5 * 60_000,
   });
-  if (!publishedAt && !workshop) return null;
+  if (!publishedAt && !workshop && !isOwner) return null;
   return (
     <p className="flex flex-wrap items-center gap-1.5 text-sm text-ink-muted">
       <Calendar className="h-4 w-4" />
@@ -420,6 +420,18 @@ function DateLine({ publishedAt, sourceWorkshopId, isOwner, slug }: { publishedA
               {workshop.title}
             </Link>
           </span>
+        </>
+      )}
+      {isOwner && slug && (
+        <>
+          <span aria-hidden>·</span>
+          <Link
+            to="/works/$slug/edit"
+            params={{ slug }}
+            className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-ink hover:bg-muted"
+          >
+            <Pencil className="h-3.5 w-3.5" /> Edit Work
+          </Link>
         </>
       )}
     </p>
