@@ -970,6 +970,18 @@ export function FullscreenRoom({
                 </div>
               </div>
             )}
+            {mobileSheet === "links" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Links shared here</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto text-ink [color-scheme:light]">
+                  <div className="bg-background min-h-full">{linksSlot}</div>
+                </div>
+              </div>
+            )}
+
           </motion.div>
         )}
       </AnimatePresence>
