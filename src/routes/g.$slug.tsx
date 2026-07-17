@@ -1232,9 +1232,11 @@ function EmptyState({
 function AddMineToGroup({
   group,
   entity,
+  compact,
 }: {
   group: GroupRow;
   entity: "work" | "collab" | "workshop";
+  compact?: boolean;
 }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
