@@ -217,6 +217,8 @@ export function MessageBody({
     const collabRe = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
     const mentionRe = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
     const urlRe = /\bhttps?:\/\/[^\s<]+/g;
+    const bareUrlRe =
+      /\b(?:www\.[^\s<]+|(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,24}(?:\/[^\s<]*)?)/gi;
 
     let m: RegExpExecArray | null;
     while ((m = eventRe.exec(body))) {
@@ -244,12 +246,31 @@ export function MessageBody({
     }
     while ((m = urlRe.exec(body))) {
       if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      const raw = m[0].replace(/[),.;!?]+$/g, "");
       hits.push({
         start: m.index,
-        end: m.index + m[0].length,
-        seg: { type: "link", text: m[0], href: m[0] },
+        end: m.index + raw.length,
+        seg: { type: "link", text: raw, href: raw },
       });
     }
+    while ((m = bareUrlRe.exec(body))) {
+      const start = m.index;
+      const raw = m[0].replace(/[),.;!?]+$/g, "");
+      const end = start + raw.length;
+      if (/^https?:\/\//i.test(raw)) continue;
+      if (hits.some((h) => start < h.end && end > h.start)) continue;
+      // Require a hostname that parses cleanly.
+      let href: string;
+      try {
+        const u = new URL(`https://${raw}`);
+        if (!u.hostname.includes(".")) continue;
+        href = u.toString();
+      } catch {
+        continue;
+      }
+      hits.push({ start, end, seg: { type: "link", text: raw, href } });
+    }
+
     while ((m = mentionRe.exec(body))) {
       const at = m.index + (m[1]?.length ?? 0);
       const end = at + 1 + m[2].length;
