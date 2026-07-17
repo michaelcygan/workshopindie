@@ -404,7 +404,7 @@ function CityMeetupsStrip() {
         {data.map((m) => (
           <Link
             key={m.id}
-            to="/cities/$slug"
+            to="/g/$slug"
             params={{ slug: m.city?.slug ?? "" }}
             className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft"
           >
