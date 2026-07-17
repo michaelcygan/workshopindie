@@ -22,7 +22,7 @@ import {
 } from "@/lib/mediums";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { Plus, X, User, Sparkles, MapPin, Link2, Pin } from "lucide-react";
+import { Plus, X, User, Sparkles, MapPin, Link2, Pin, Copy, Check } from "lucide-react";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
 import { RequireAuth } from "@/components/require-auth";
 import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-picker";
