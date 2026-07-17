@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 /**
  * Fetch and parse a group's configured news source. Supports RSS 2.0 and
@@ -16,6 +15,7 @@ export const fetchGroupNews = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const limit = data.limit ?? 5;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: g, error } = await supabaseAdmin
       .from("groups")
       .select("news_feed_url")

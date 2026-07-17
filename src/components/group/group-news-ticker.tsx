@@ -25,7 +25,7 @@ export function GroupNewsTicker({ groupId }: { groupId: string }) {
   if (items.length === 0) return null;
   const paused = hovering;
 
-  const durationSec = Math.max(90, items.length * 14);
+  const durationSec = Math.max(180, items.length * 28);
   const loop = [...items, ...items];
 
   return (
