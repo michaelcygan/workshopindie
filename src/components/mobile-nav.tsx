@@ -44,14 +44,6 @@ export function MobileNav() {
                 <AvatarImage src={user.user_metadata?.avatar_url} />
                 <AvatarFallback className="text-[9px]">{initial}</AvatarFallback>
               </Avatar>
-              {count > 0 && (
-                <span
-                  aria-label={`${count} in progress`}
-                  className="absolute -right-1 -top-1 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
-                >
-                  {count > 9 ? "9+" : count}
-                </span>
-              )}
             </span>
             <span>You</span>
           </Link>
