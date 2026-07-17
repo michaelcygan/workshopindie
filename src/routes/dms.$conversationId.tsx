@@ -497,9 +497,9 @@ function DmsThread() {
             <p className="truncate text-xs text-ink-muted">@{other.username}</p>
           ) : null}
 
-          {(collab || workshop) && (
-            <div className="mt-1">
-              {collab ? (
+          {(collab || workshop || work || comment) && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {collab && (
                 <Link
                   to="/collab/$slug"
                   params={{ slug: collab.slug }}
@@ -508,7 +508,8 @@ function DmsThread() {
                 >
                   <span className="truncate">Re: {collab.title}</span>
                 </Link>
-              ) : workshop ? (
+              )}
+              {workshop && (
                 <Link
                   to="/workshops/$slug"
                   params={{ slug: workshop.slug }}
@@ -517,9 +518,31 @@ function DmsThread() {
                 >
                   <span className="truncate">Re: {workshop.title ?? "Workshop"}</span>
                 </Link>
-              ) : null}
+              )}
+              {work && (
+                <Link
+                  to="/works/$slug"
+                  params={{ slug: work.slug }}
+                  className="inline-flex max-w-full items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/15"
+                  title={`Re: ${work.title}`}
+                >
+                  <span className="truncate">Re: {work.title}</span>
+                </Link>
+              )}
+              {comment && (
+                <Link
+                  to="/works/$slug"
+                  params={{ slug: comment.workSlug }}
+                  hash={`comment-${comment.commentId}`}
+                  className="inline-flex max-w-full items-center rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft hover:bg-muted/70"
+                  title={`From a comment: ${comment.snippet}`}
+                >
+                  <span className="truncate">From a comment{comment.snippet ? `: "${comment.snippet}${comment.snippet.length >= 60 ? "…" : ""}"` : ""}</span>
+                </Link>
+              )}
             </div>
           )}
+
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
