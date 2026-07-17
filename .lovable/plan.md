@@ -1,25 +1,41 @@
-## Discovery
-Everything the request needs already exists:
+## Two mobile fixes
 
-- **DB gate** (`public.can_dm` RPC): mutual follow OR collab allowance OR workshop host↔participant OR target has `dm_policy = 'everyone'`; blocks and `dm_policy = 'nobody'` deny.
-- **Settings UI** (`src/routes/settings.tsx`): user can pick `mutuals` / `everyone` / `nobody`. "Open DMs" opt-in = `everyone`.
-- **`MessageButton`** (`src/components/message-button.tsx`) already calls `checkCanDm` and is rendered on the profile (`src/routes/u.$username.tsx` line 549) next to Follow / Share / Report / Block.
+### 1) Persistent "Workshop" brand header on mobile
+Today `TopNav` is `hidden md:block`, so on mobile there's no visible "Workshop" wordmark anywhere (only the bottom `MobileNav` with icon tabs).
 
-The one gap vs. the ask: today `MessageButton` renders even when `canDm === false` as a **disabled** button with a "follow each other" tooltip. The user wants it to be visible **only** when DMs are actually possible — so it becomes a real signal of "you can DM this person right now."
+**Add** a slim mobile-only top header rendered from `src/routes/__root.tsx` just above `<Outlet />`, `md:hidden`, sticky at top:
+- Left: gradient dot + `Workshop` wordmark, links to `/`.
+- Right: existing `NotificationsBell` + `MessagesInboxButton` (compact, reused from TopNav) so the row is functional, not just decorative.
+- Height ~44px, `bg-background/80 backdrop-blur border-b border-border/70`, matching the desktop header aesthetic.
 
-## Change
-**File:** `src/components/message-button.tsx`
+New file: `src/components/mobile-brand-header.tsx`. Mount it in `__root.tsx` between `<PaymentTestModeBanner />` and `<TopNav />`. Adjust body top padding only if content is currently clipped — the sticky header sits above scroll flow so no page changes are needed.
 
-Replace the disabled-with-tooltip fallback with an early `return null` whenever `canDm !== true` (still returns `null` for self / signed-out, unchanged).
+### 2) Small "Back to profile" affordance at the bottom of the collab page (mobile)
+**File:** `src/routes/collab.$slug.tsx`
 
-Effect:
-- Mutual followers → button appears next to Follow on the profile header.
-- Target has `dm_policy = 'everyone'` (open DMs opt-in) → button appears for any signed-in viewer.
-- Otherwise (not mutual, target on `mutuals`/`nobody`, blocked, self, or signed-out) → button is hidden entirely.
+Just after the roles/description section, before `</main>` (~line 700), render a small mobile-only link:
 
-Placement stays where it is (profile action row alongside Follow / Share) — that's the natural spot and matches the screenshot.
+```tsx
+{hostUser?.username && (
+  <div className="mt-10 md:hidden">
+    <Link
+      to="/u/$username"
+      params={{ username: hostUser.username }}
+      className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-muted hover:bg-surface-2 hover:text-ink transition"
+    >
+      <ArrowLeft className="h-3.5 w-3.5" />
+      Back to {hostUser.display_name || hostUser.username}'s profile
+    </Link>
+  </div>
+)}
+```
+
+Add `ArrowLeft` to the existing `lucide-react` import.
+
+Desktop is unchanged (the host card up top already serves as the back path).
 
 ## Scope
-- One file changed (`message-button.tsx`).
-- No schema, RPC, settings, or profile-layout changes.
-- Removes now-unused Tooltip imports in the same edit.
+- New file: `src/components/mobile-brand-header.tsx`
+- Edit: `src/routes/__root.tsx` (mount the header)
+- Edit: `src/routes/collab.$slug.tsx` (bottom back link + import)
+- No schema, no server functions, no desktop changes.

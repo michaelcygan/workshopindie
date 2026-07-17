@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { TopNav } from "@/components/top-nav";
+import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { WelcomeTour } from "@/components/welcome-tour";
@@ -139,6 +140,7 @@ function RootComponent() {
       <AuthProvider>
         <div className="min-h-screen bg-background pb-28 md:pb-0">
           <PaymentTestModeBanner />
+          <MobileBrandHeader />
           <TopNav />
           <Outlet />
           <MobileNav />

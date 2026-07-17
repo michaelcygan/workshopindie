@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft } from "lucide-react";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -697,6 +697,19 @@ function CollabDetail() {
 
       {/* Reverse provenance — public Works born from this Collab. */}
       <WorksBornHere collabPostId={post.id} excludeWorkId={post.resulting_work_id ?? null} />
+
+      {hostUser?.username && (
+        <div className="mt-10 md:hidden">
+          <Link
+            to="/u/$username"
+            params={{ username: hostUser.username }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-muted hover:bg-surface-2 hover:text-ink transition"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to {hostUser.display_name || hostUser.username}'s profile
+          </Link>
+        </div>
+      )}
     </main>
   );
 }
