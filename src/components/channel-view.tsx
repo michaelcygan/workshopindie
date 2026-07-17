@@ -1146,6 +1146,13 @@ export function ChannelView({
                                 title={new Date(m.created_at).toLocaleString()}
                               >
                                 <ReactionAddButton onToggle={(e) => toggleReaction(m.id, e)} />
+                                {user && (
+                                  <PinMessageButton
+                                    roomId={roomId}
+                                    messageId={m.id}
+                                    isPinned={pinnedMessageId === m.id}
+                                  />
+                                )}
                                 <ReactionPills
                                   reactions={msgReactions}
                                   meUserId={user?.id}
