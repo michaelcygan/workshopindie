@@ -1,54 +1,71 @@
-## Goal
-Extend the DM "Re: …" context tag that already exists for Collabs and Workshops to also cover **Works** and **Comments**, and wire up the entry-point Message buttons that pass that context. Recipients will see a clickable pill like "Re: {Work title}" or "Re: comment on {Work title}" at the top of the DM thread that jumps back to the source.
+## Problem
 
-## Current state (already shipped, don't rebuild)
-- `conversations.context_collab_post_id` and `conversations.context_workshop_id` columns exist.
-- `openOrCreateConversation` (in `src/lib/dms.functions.ts`) accepts and stores those two context IDs on first insert.
-- `src/routes/dms.$conversationId.tsx` header already renders a "Re: {title}" pill for both, linking back to `/collab/$slug` or `/workshops/$slug`.
-- `<MessageButton>` on `collab.$slug.tsx` and `workshops.$slug.tsx` already passes the right context prop.
+On mobile, the collab detail page header (`src/routes/collab.$slug.tsx` lines ~354–414) stuffs the category chip, state badge, "Posted today" chip, and up to 5 owner actions (Share, Edit, Pin, Close, Delete) into one horizontal row. The row overflows the viewport, so a delete-icon button sits partially off-screen and the whole page reads as "zoomed out" because the row forces horizontal scroll / shrink.
 
-## What's missing
-- No Work context. No Comment context. No Message button on the Work page or on comment authors.
+Non-owners can hit a similar overflow when Leave + Report are both present next to Share.
 
-## Plan
+## Fix
 
-### 1. Database migration
-Add two nullable context columns to `conversations` (same pattern as workshop migration):
-- `context_work_id uuid REFERENCES public.works(id) ON DELETE SET NULL`
-- `context_comment_id uuid REFERENCES public.comments(id) ON DELETE SET NULL`
-Add matching indexes. No RLS/GRANT changes (columns inherit table policies).
+Restructure that header into two rows on mobile, and collapse secondary owner actions behind a kebab (`⋯`) dropdown menu. Desktop stays exactly as today.
 
-### 2. Server function — `src/lib/dms.functions.ts`
-Extend `openOrCreateConversation`:
-- Add `contextWorkId?: string | null` and `contextCommentId?: string | null` to the input validator.
-- Include them in the initial `insertRow` when the conversation is created (existing behavior: never overwrite context on an existing conversation — same as collab/workshop today).
+### Row layout
 
-### 3. `<MessageButton>` — `src/components/message-button.tsx`
-Add two optional props: `contextWorkId`, `contextCommentId`. Pass them through to `openOrCreateConversation`. No visual change to the button.
+Row 1 — status/context chips (wrap allowed):
+- Category chip
+- State badge (Open · Casting, Draft, Closed, etc.)
+- "Posted today" / "Open Nd" chip
+- "Closes in Nd" chip when applicable
 
-### 4. DM header — `src/routes/dms.$conversationId.tsx`
-- Extend the initial fetch to also select `context_work_id, context_comment_id`, and load the referenced Work (title, slug) and Comment (id, body preview, and its parent Work slug/title so we can link back).
-- Extend the header pill block (currently a single collab-or-workshop ternary) into a small `ContextPill` that renders one of:
-  - Collab → "Re: {title}" → `/collab/$slug` (existing)
-  - Workshop → "Re: {title}" → `/workshops/$slug` (existing)
-  - Work → "Re: {title}" → `/works/$slug` (new)
-  - Comment → "Re: comment on {work title}" → `/works/$slug#comment-{id}` (new)
-- Keep the same rounded-pill visual language; use `bg-primary/10` for Collab/Work and `bg-violet/10` for Workshop/Comment so the tag reads as an at-a-glance source badge.
+Row 2 — actions, right-aligned:
+- Always visible: `Share`
+- Owner, mobile: single primary action visible inline based on state:
+  - Draft → `Publish`
+  - Open → `Edit`
+  - else → `Pin/Pinned`
+- Owner, mobile: everything else moves into a `DropdownMenu` triggered by a kebab icon button:
+  - `Edit` (when not the inline primary)
+  - `Pin` / `Unpin` (when not the inline primary)
+  - `Close` (when open)
+  - `Delete` (destructive, styled red)
+- Owner, desktop (`sm:` and up): keep the current flat row — all buttons inline, no kebab.
+- Non-owner: `Share` + inline `Leave` (if member) + `Report`; if both Leave and Report are present on mobile, fold `Report` into the same kebab.
 
-### 5. Message buttons on new surfaces
-- **Work page (`src/routes/works.$slug.tsx`)**: add a `<MessageButton otherUserId={author.id} contextWorkId={work.id} />` next to the author's name/actions row (only shown when not the owner — the component already gates on mutual-follow / open-DM permission).
-- **Comments**: locate the comment card renderer used on Works (and on Collabs if it's shared) and add a `<MessageButton otherUserId={comment.author_id} contextCommentId={comment.id} />` inline in the author's meta row, again gated by the component's existing DM permission check.
-  - I'll confirm the exact comment component during implementation; if none exists as a shared component, the button goes into whichever component renders the comment author line on the Work page.
+### Structural change
 
-### 6. Fallback anchor for comment jump
-Ensure the comment list on `/works/$slug` renders each comment with `id="comment-{id}"` so the "Re: comment on …" pill link scrolls to the exact comment. Add the `id` attribute if not already present.
+Replace the single `<div className="mb-4 flex items-center gap-2">` wrapper with:
 
-## Explicitly out of scope
-- Per-message context tags on individual bubbles (the annotated circles). The header pill covers "why this DM exists" for the whole thread; per-message context would require a schema change on `messages` and a larger UI refactor — happy to do it as a follow-up if you want it.
-- Retroactive context for conversations that already exist without a context row.
-- Notifications copy changes.
+```
+<div className="mb-4 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+  <div className="flex flex-wrap items-center gap-2 min-w-0">
+    {chips}
+  </div>
+  <div className="flex items-center gap-2 sm:ml-auto justify-end">
+    {actions}
+  </div>
+</div>
+```
+
+- Add `min-w-0` on the chip container and `truncate` where needed so long state sublabels can't push the row wide.
+- Confirm handlers (`confirm(...)`) currently called from Close/Delete/Leave stay identical; only the trigger surface moves into `DropdownMenuItem`s.
+- `PinCollabButton` gains an optional `variant="menu-item"` render path (or is wrapped by a small inline adapter in this file) so it can appear inside the dropdown without changing its click/toggle logic. Icon + label + toast behavior unchanged.
+
+### Files touched
+
+- `src/routes/collab.$slug.tsx` — header block only (lines ~354–414). No changes to data fetching, mutations, or the rest of the page.
+- `src/components/pin-collab-button.tsx` (only if needed to render inside a `DropdownMenuItem`; otherwise wrap inline in the route file).
+
+### Out of scope
+
+- No copy changes to badges, chips, or button labels.
+- No changes to the "Share it — that's how applicants find you" nudge card below the header (that one already fits).
+- No changes to bottom nav, back-to-profile link, or the rest of the page layout.
 
 ## Verification
-- Start a new DM from a Work → recipient sees "Re: {Work title}" pill linking to the Work.
-- Reply to a comment via the new Message button → recipient sees "Re: comment on {Work title}" pill that scrolls to the exact comment.
-- Existing Collab/Workshop DMs continue to render their pills unchanged.
+
+1. Switch preview to mobile (375px). Confirm:
+   - Chips wrap onto one row without horizontal scroll.
+   - Actions sit on their own row, right-aligned, fully visible.
+   - Kebab opens a menu containing Edit/Pin/Close/Delete as applicable.
+   - Delete item is styled destructively and still shows the `confirm(...)` dialog.
+2. Switch to desktop. Confirm the row looks unchanged from today (all owner buttons inline, no kebab).
+3. Log-out view: header still shows chips + Share, no owner actions.
