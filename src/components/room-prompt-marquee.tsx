@@ -74,9 +74,11 @@ export function RoomPromptMarquee({
                     : undefined
                 }
                 disabled={disabled}
+                size="md"
               />
             </div>
           ))}
+
         </div>
       </div>
     );
