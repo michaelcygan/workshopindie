@@ -15,6 +15,7 @@ export const fetchGroupNews = createServerFn({ method: "GET" })
   )
   .handler(async ({ data }) => {
     const limit = data.limit ?? 5;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: g, error } = await supabaseAdmin
       .from("groups")
       .select("news_feed_url")
