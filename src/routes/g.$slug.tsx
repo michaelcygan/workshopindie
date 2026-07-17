@@ -932,71 +932,72 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
 
   return (
     <div>
-      <AddMineToGroup group={group} entity="work" />
-
       {/* Utility strip */}
-      <div className="mt-3 flex items-center justify-end gap-1 text-ink-muted">
-        {availableCategories.length > 0 && (
+      <div className="mt-3 flex flex-wrap items-start justify-between gap-3 text-ink-muted">
+        <AddMineToGroup group={group} entity="work" compact />
+        <div className="flex items-center gap-1">
+          {availableCategories.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                  {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
+                {availableCategories.map((c) => (
+                  <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
+                    {CATEGORY_LABELS[c]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                {sort === "trending" ? "Trending" : "Recent"}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
-              {availableCategories.map((c) => (
-                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
-                  {CATEGORY_LABELS[c]}
-                </DropdownMenuItem>
-              ))}
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => setSort("recent")}>Recent</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        )}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-              {sort === "trending" ? "Trending" : "Recent"}
-              <ChevronDown className="h-3 w-3" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-36">
-            <DropdownMenuItem onClick={() => setSort("recent")}>Recent</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
-        {searchOpen ? (
-          <div className="flex items-center gap-1">
-            <Input
-              autoFocus
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
-              onBlur={() => { if (!q) setSearchOpen(false); }}
-              placeholder={`Search in ${group.name}…`}
-              className="h-8 w-[200px] text-xs"
-            />
-            {q && (
-              <button
-                onClick={() => { setQ(""); setSearchOpen(false); }}
-                className="rounded-full p-1 hover:bg-surface-2"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        ) : (
-          <button
-            onClick={() => setSearchOpen(true)}
-            className="rounded-full p-1.5 hover:bg-surface-2"
-            aria-label={`Search in ${group.name}`}
-          >
-            <Search className="h-4 w-4" />
-          </button>
-        )}
+          {searchOpen ? (
+            <div className="flex items-center gap-1">
+              <Input
+                autoFocus
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
+                onBlur={() => { if (!q) setSearchOpen(false); }}
+                placeholder={`Search in ${group.name}…`}
+                className="h-8 w-[200px] text-xs"
+              />
+              {q && (
+                <button
+                  onClick={() => { setQ(""); setSearchOpen(false); }}
+                  className="rounded-full p-1 hover:bg-surface-2"
+                  aria-label="Clear search"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="rounded-full p-1.5 hover:bg-surface-2"
+              aria-label={`Search in ${group.name}`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
@@ -1232,9 +1233,11 @@ function EmptyState({
 function AddMineToGroup({
   group,
   entity,
+  compact,
 }: {
   group: GroupRow;
   entity: "work" | "collab" | "workshop";
+  compact?: boolean;
 }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -1341,17 +1344,25 @@ function AddMineToGroup({
   const labelMap = { work: "Work", collab: "Collab", workshop: "Lounge" };
 
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-3">
+    <div
+      className={cn(
+        "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
+        compact && "relative inline-block",
+      )}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink"
+        className={cn(
+          "flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink",
+          compact ? "inline-flex" : "w-full",
+        )}
       >
         {open ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {open ? "Close" : `Add your ${labelMap[entity]} to ${group.name}`}
+        {open ? "Close" : compact ? `Add ${labelMap[entity]}` : `Add your ${labelMap[entity]} to ${group.name}`}
       </button>
       {open && (
-        <div className="mt-3 space-y-1.5">
+        <div className={cn("space-y-1.5", compact ? "absolute left-0 top-full z-20 mt-2 w-[min(320px,90vw)]" : "mt-3")}>
           {myPostsQuery.isLoading ? (
             <p className="text-xs text-ink-muted">Loading your {labelMap[entity]}…</p>
           ) : (myPostsQuery.data ?? []).length === 0 ? (
