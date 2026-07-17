@@ -62,13 +62,13 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   // Mention popover state.
   const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: posts = [], isLoading, error: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["group", group.id, "today-posts"],
     queryFn: async (): Promise<TodayPost[]> => {
       const { data, error } = await supabase
         .from("group_today_posts")
         .select(
-          "id,author_id,body,created_at,expires_at,author:profiles!group_today_posts_author_id_fkey(username,display_name,avatar_url)",
+          "id,author_id,body,created_at,expires_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)",
         )
         .eq("group_id", group.id)
         .gt("expires_at", new Date().toISOString())
@@ -79,6 +79,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     },
     refetchInterval: 60_000,
   });
+
 
   useEffect(() => {
     const ch = supabase
@@ -203,8 +204,21 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
               <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/40" />
             ))}
           </div>
+        ) : postsError ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+            <p className="text-destructive">Couldn't load the board.</p>
+            <p className="mt-1 text-xs text-ink-muted">{(postsError as Error)?.message ?? "Unknown error"}</p>
+            <button
+              type="button"
+              onClick={() => refetchPosts()}
+              className="mt-2 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+            >
+              Retry
+            </button>
+          </div>
         ) : posts.length === 0 ? (
           <p className="text-center text-sm text-ink-muted">Nothing yet today. Be the first to say hi.</p>
+
         ) : (
           posts.map((p) => {
             const name = p.author?.display_name ?? p.author?.username ?? "Member";

@@ -1569,6 +1569,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "group_today_posts_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_today_posts_author_profile_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "group_today_posts_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
