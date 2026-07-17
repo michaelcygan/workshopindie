@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -323,6 +324,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                     placeholder="https://eventbrite.com/e/... or https://partiful.com/e/..."
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
+                    onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))}
                     required
                   />
                   <p className="mt-1 text-xs text-ink-muted">

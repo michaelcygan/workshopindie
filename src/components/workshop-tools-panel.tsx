@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -569,7 +570,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
             placeholder={preset.bodyPlaceholder ?? "Notes…"} />
         )}
         {preset.fields.includes("url") && (
-          <Input value={url} onChange={(e) => setUrl(e.target.value)} type="url" maxLength={500}
+          <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))} type="url" maxLength={500}
             placeholder={preset.urlPlaceholder ?? "https://…"} />
         )}
         <div className="flex justify-end">

@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -437,6 +438,7 @@ function Drive({ workshopId }: { workshopId: string }) {
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))}
           placeholder="Paste a link (Drive, Figma, Notion, GitHub…)"
           type="url"
         />

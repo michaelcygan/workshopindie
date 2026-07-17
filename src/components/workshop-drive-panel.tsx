@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link as LinkIcon, ExternalLink, Loader2, Trash2 } from "lucide-react";
@@ -115,7 +116,7 @@ export function WorkshopDrivePanel({ scope }: { scope: DrivePanelScope }) {
         onSubmit={add}
         className="grid gap-2 rounded-2xl border border-border bg-surface p-3 sm:grid-cols-[1fr_1fr_auto]"
       >
-        <Input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="Paste a link (Drive, Figma, Notion, GitHub…)" type="url" />
+        <Input value={url} onChange={(e) => setUrl(e.target.value)} onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))} placeholder="Paste a link (Drive, Figma, Notion, GitHub…)" type="url" />
         <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Optional label" maxLength={120} />
         <Button type="submit" className="rounded-full gap-2" disabled={!url.trim() || adding}>
           <LinkIcon className="h-4 w-4" /> {adding ? "Adding…" : "Add"}

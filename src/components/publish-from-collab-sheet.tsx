@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useState, useMemo } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
@@ -118,7 +119,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
                 <summary className="cursor-pointer text-ink-soft">Edit description or add a link</summary>
                 <div className="mt-3 space-y-3">
                   <Textarea rows={4} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you make? Who's it for?" />
-                  <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} placeholder="https://… (Vimeo, Bandcamp, your site)" />
+                  <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} onBlur={(e) => setPrimaryUrl(normalizeUrlOrKeep(e.target.value))} placeholder="https://… (Vimeo, Bandcamp, your site)" />
                 </div>
               </details>
             </>

@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -468,6 +469,12 @@ function EditProfile() {
                           const next = [...form.aliasUrls];
                           while (next.length < form.aliases.length) next.push("");
                           next[i] = e.target.value;
+                          set("aliasUrls", next);
+                        }}
+                        onBlur={(e) => {
+                          const next = [...form.aliasUrls];
+                          while (next.length < form.aliases.length) next.push("");
+                          next[i] = normalizeUrlOrKeep(e.target.value);
                           set("aliasUrls", next);
                         }}
                         className="text-xs"

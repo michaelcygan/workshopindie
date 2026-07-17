@@ -26,6 +26,7 @@ import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/g
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
+import { normalizeUrl, normalizeUrlOrKeep } from "@/lib/url-normalize";
 
 const newWorkSearch = z.object({
   import: z.string().optional(),
@@ -133,16 +134,12 @@ function NewWork() {
   async function runExtract(rawUrl: string) {
     const url = rawUrl.trim();
     if (!url) return toast.error("Paste a link first.");
-    try {
-      new URL(url.startsWith("http") ? url : `https://${url}`);
-    } catch {
-      return toast.error("That doesn't look like a URL.");
-    }
+    const normalized = normalizeUrl(url);
+    if (!normalized) return toast.error("That doesn't look like a URL.");
+    setUrlInput(normalized);
     setExtracting(true);
     try {
-      const result = await extract({
-        data: { url: url.startsWith("http") ? url : `https://${url}` },
-      });
+      const result = await extract({ data: { url: normalized } });
       applyExtracted(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Could not read that link.";
@@ -161,14 +158,14 @@ function NewWork() {
     let bookFields: Record<string, unknown> = {};
     if (isBook) {
       const cleanLinks = book.buyLinks
-        .map((l) => ({ label: (l.label || "").trim(), url: (l.url || "").trim() }))
+        .map((l) => ({ label: (l.label || "").trim(), url: normalizeUrlOrKeep(l.url || "") }))
         .filter((l) => l.url.length > 0);
-      // Validate URLs
       for (const l of cleanLinks) {
-        try { new URL(l.url); } catch { return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`); }
+        if (!normalizeUrl(l.url)) return toast.error(`"${l.label || "Buy link"}" isn't a valid URL.`);
       }
-      if (book.excerptUrl) {
-        try { new URL(book.excerptUrl); } catch { return toast.error("Sample chapter link isn't a valid URL."); }
+      const normalizedExcerpt = book.excerptUrl ? normalizeUrl(book.excerptUrl) : null;
+      if (book.excerptUrl && !normalizedExcerpt) {
+        return toast.error("Sample chapter link isn't a valid URL.");
       }
       bookFields = {
         book_author: book.author.trim() || null,
@@ -177,7 +174,7 @@ function NewWork() {
         book_published_on: book.publishedOn || null,
         book_page_count: book.pageCount ? Number(book.pageCount) || null : null,
         book_buy_links: cleanLinks,
-        book_excerpt_url: book.excerptUrl.trim() || null,
+        book_excerpt_url: normalizedExcerpt,
       };
     }
 
@@ -499,6 +496,7 @@ function NewWork() {
                         type="url"
                         value={primaryUrl}
                         onChange={(e) => setPrimaryUrl(e.target.value)}
+                        onBlur={(e) => setPrimaryUrl(normalizeUrlOrKeep(e.target.value))}
                         placeholder="https://…"
                       />
                       <p className="text-xs text-ink-muted">Where the original lives — Vimeo, Bandcamp, GitHub, your site.</p>
@@ -588,6 +586,7 @@ function DropStep({
               type="url"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
+              onBlur={(e) => setUrlInput(normalizeUrlOrKeep(e.target.value))}
               placeholder="https://…"
               className="pl-9 h-12 text-base"
               disabled={extracting}

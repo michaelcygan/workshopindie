@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Play, Plus, SkipForward, Trash2, ListMusic } from "lucide-react";
@@ -115,6 +116,7 @@ export function WorkshopPlayerTool({
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))}
           type="url"
           maxLength={500}
           placeholder="Paste a link — YouTube, Vimeo, SoundCloud, Spotify, Apple Music, Bandcamp, TikTok…"

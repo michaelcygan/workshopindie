@@ -1,3 +1,4 @@
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -614,7 +615,7 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
         <Input maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
         <Input maxLength={180} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="One-line excerpt" />
         <Textarea rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you make? How did it go?" />
-        <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} placeholder="Primary URL (Vimeo, Bandcamp, GitHub, your site) — optional" />
+        <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} onBlur={(e) => setPrimaryUrl(normalizeUrlOrKeep(e.target.value))} placeholder="Primary URL (Vimeo, Bandcamp, GitHub, your site) — optional" />
         <div className="flex justify-end">
           <Button onClick={ship} disabled={submitting} className="rounded-full">{submitting ? "Publishing…" : "Post to Gallery"}</Button>
         </div>
@@ -783,7 +784,7 @@ function ScheduleDraftPanel({ ws, onScheduled }: { ws: Workshop; onScheduled: ()
                 <div className="text-xs text-ink-muted">Only invitees see and can join.</div>
               </button>
             </div>
-            <Input type="url" placeholder="External call URL (optional)" className="mt-3" value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} />
+            <Input type="url" placeholder="External call URL (optional)" className="mt-3" value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} onBlur={(e) => setExternalCallUrl(normalizeUrlOrKeep(e.target.value))} />
             <div className="mt-3 flex justify-end">
               <Button size="sm" className="rounded-full" onClick={submit} disabled={busy}>{busy ? "Scheduling…" : "Schedule Workshop"}</Button>
             </div>

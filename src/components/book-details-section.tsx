@@ -3,6 +3,7 @@ import { Plus, X, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 
@@ -112,6 +113,7 @@ export function BookDetailsSection({
                 type="url"
                 value={link.url}
                 onChange={(e) => patchLink(i, { url: e.target.value })}
+                onBlur={(e) => patchLink(i, { url: normalizeUrlOrKeep(e.target.value) })}
                 placeholder="https://…"
                 className="flex-1"
               />
@@ -151,6 +153,7 @@ export function BookDetailsSection({
           type="url"
           value={value.excerptUrl}
           onChange={(e) => patch({ excerptUrl: e.target.value })}
+          onBlur={(e) => patch({ excerptUrl: normalizeUrlOrKeep(e.target.value) })}
           placeholder="Google Doc, Substack post, PDF on your site…"
         />
       </div>
