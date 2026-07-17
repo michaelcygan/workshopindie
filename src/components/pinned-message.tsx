@@ -8,6 +8,43 @@ import { MessageBody, type MentionCandidate } from "@/components/chat-mention-in
 import { UsernameMention } from "@/components/username-mention";
 import { ProfilePeek } from "@/components/profile-peek";
 
+/** Subscribes to a room's pinned-message state via realtime. */
+export function useRoomPin(roomId: string) {
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [pinnedBy, setPinnedBy] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("instant_rooms")
+        .select("pinned_message_id, pinned_by_user_id")
+        .eq("id", roomId)
+        .maybeSingle();
+      if (cancelled) return;
+      setPinnedId((data as any)?.pinned_message_id ?? null);
+      setPinnedBy((data as any)?.pinned_by_user_id ?? null);
+    })();
+    const ch = supabase
+      .channel(`room-pin:${roomId}:${Math.random().toString(36).slice(2, 8)}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "instant_rooms", filter: `id=eq.${roomId}` },
+        (payload) => {
+          const row = payload.new as any;
+          setPinnedId(row?.pinned_message_id ?? null);
+          setPinnedBy(row?.pinned_by_user_id ?? null);
+        },
+      )
+      .subscribe();
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(ch);
+    };
+  }, [roomId]);
+  return { pinnedId, pinnedBy };
+}
+
+
 type Msg = {
   id: string;
   user_id: string;
