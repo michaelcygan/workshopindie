@@ -126,7 +126,7 @@ function Hero() {
 
           <Link
             to="/collab/new"
-            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift md:p-7"
+            className="group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl border border-border bg-surface/95 backdrop-blur p-6 text-left text-ink shadow-soft transition md:hover:-translate-y-0.5 md:hover:shadow-lift md:p-7"
           >
             <span className="gradient-motion inline-flex h-10 w-10 items-center justify-center rounded-full text-primary-foreground">
               <Megaphone className="h-5 w-5" />
