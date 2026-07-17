@@ -371,7 +371,7 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
       const { data } = await supabase
         .from("group_collabs")
         .select(
-          "added_at,collab:collab_posts(id,title,slug,status,category,author:profiles!collab_posts_created_by_fkey(username,display_name,avatar_url))",
+          "added_at,collab:collab_posts(id,title,slug,status,category,author:profiles!collab_posts_user_id_fkey(username,display_name,avatar_url))",
         )
         .eq("group_id", group.id)
         .order("added_at", { ascending: false })
