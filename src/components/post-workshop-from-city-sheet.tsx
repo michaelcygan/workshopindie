@@ -305,7 +305,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
               <div className="mt-2"><VenueSearch value={venue} onChange={setVenue} /></div>
             ) : (
               <Input className="mt-2" type="url" placeholder="Call URL (Zoom, Meet… optional)"
-                value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} />
+                value={externalCallUrl} onChange={(e) => setExternalCallUrl(e.target.value)} onBlur={(e) => setExternalCallUrl(normalizeUrlOrKeep(e.target.value))} />
             )}
           </section>
 

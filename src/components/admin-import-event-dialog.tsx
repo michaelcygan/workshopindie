@@ -323,6 +323,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                     placeholder="https://eventbrite.com/e/... or https://partiful.com/e/..."
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
+                    onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))}
                     required
                   />
                   <p className="mt-1 text-xs text-ink-muted">

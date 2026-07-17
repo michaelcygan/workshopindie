@@ -437,6 +437,7 @@ function Drive({ workshopId }: { workshopId: string }) {
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
+          onBlur={(e) => setUrl(normalizeUrlOrKeep(e.target.value))}
           placeholder="Paste a link (Drive, Figma, Notion, GitHub…)"
           type="url"
         />

@@ -470,6 +470,12 @@ function EditProfile() {
                           next[i] = e.target.value;
                           set("aliasUrls", next);
                         }}
+                        onBlur={(e) => {
+                          const next = [...form.aliasUrls];
+                          while (next.length < form.aliases.length) next.push("");
+                          next[i] = normalizeUrlOrKeep(e.target.value);
+                          set("aliasUrls", next);
+                        }}
                         className="text-xs"
                       />
                     </div>

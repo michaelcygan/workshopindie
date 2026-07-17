@@ -563,7 +563,7 @@ export function CollabComposer({
             <p className="text-[11px] text-ink-muted">In-app keeps your email private — applicants land in your inbox.</p>
             {contactMode === "external_link" && (
               <Input className="mt-2" type="url" placeholder="https://… (your contact form, IG, email, etc.)"
-                value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} />
+                value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)} onBlur={(e) => setExternalUrl(normalizeUrlOrKeep(e.target.value))} />
             )}
           </section>
         </div>
