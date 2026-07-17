@@ -137,7 +137,8 @@ function EditProfile() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("*").eq("id", user.id).maybeSingle().then(({ data }) => {
+    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
+      if (error) { toast.error(error.message); setHydrated(true); return; }
       if (!data) return;
       const first = (data.first_name as string | null) ?? "";
       const last = (data.last_name as string | null) ?? "";
