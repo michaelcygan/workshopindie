@@ -309,6 +309,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [statementExpanded, setStatementExpanded] = useState(false);
+  const [seenCollabKey, setSeenCollabKey] = useState<string | null>(null);
 
 
   const { data: profile, isLoading } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username) });
