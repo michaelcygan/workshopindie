@@ -216,8 +216,6 @@ function Index() {
     <main>
       <Hero />
 
-      {/* Signed-in pickup card — first surface above the pulse rail when there's something to resume */}
-      {user && <PickupCard />}
 
       {/* Ambient pulse — first thing below the fold */}
       <HomePulseRail />
