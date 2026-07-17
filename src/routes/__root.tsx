@@ -139,6 +139,7 @@ function RootComponent() {
       <AuthProvider>
         <div className="min-h-screen bg-background pb-28 md:pb-0">
           <PaymentTestModeBanner />
+          <MobileBrandHeader />
           <TopNav />
           <Outlet />
           <MobileNav />
