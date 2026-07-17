@@ -953,7 +953,7 @@ export function ChannelView({
           <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
-            <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
+            <div className="h-[clamp(320px,46vh,560px)] xl:h-[60vh] overflow-y-auto p-3 md:p-4">
               {(typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot) ?? (
                 <div className="flex h-full items-center justify-center text-sm text-ink-muted">
                   No tools available in this room.
@@ -962,7 +962,7 @@ export function ChannelView({
             </div>
 
           ) : viewMode === "collabs" && user ? (
-            <div className="h-[60vh] overflow-y-auto p-3 md:p-4">
+            <div className="h-[clamp(320px,46vh,560px)] xl:h-[60vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
                 roomId={roomId}
                 hostUserId={hostUserId ?? null}
@@ -983,7 +983,7 @@ export function ChannelView({
               />
             </div>
           ) : viewMode === "gallery" && user ? (
-            <div className="h-[60vh] p-3 md:p-4">
+            <div className="h-[clamp(320px,46vh,560px)] xl:h-[60vh] p-3 md:p-4">
               {fsView === "gallery" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
                   Work open in fullscreen…
@@ -1000,7 +1000,7 @@ export function ChannelView({
               )}
             </div>
           ) : viewMode === "links" ? (
-            <div className="h-[60vh] overflow-y-auto">
+            <div className="h-[clamp(320px,46vh,560px)] xl:h-[60vh] overflow-y-auto">
               <LoungeLinks messages={messages} profileLookup={profileLookup} />
             </div>
           ) : (
@@ -1015,7 +1015,7 @@ export function ChannelView({
                   const el = e.currentTarget;
                   if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setHasNewBelow(false);
                 }}
-                className="h-[60vh] overflow-y-auto px-4 py-4 md:px-6"
+                className="h-[clamp(320px,46vh,560px)] xl:h-[60vh] overflow-y-auto px-4 py-4 md:px-6"
               >
 
                 {messages.length === 0 ? (
