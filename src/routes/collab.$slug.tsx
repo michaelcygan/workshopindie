@@ -435,12 +435,7 @@ function CollabDetail() {
                           </Link>
                         </DropdownMenuItem>
                       )}
-                      {!isDraft && post.status !== "open" && (
-                        <PinCollabMenuItem collabId={post.id} />
-                      )}
-                      {post.status === "open" && !isDraft && (
-                        <PinCollabMenuItem collabId={post.id} />
-                      )}
+                      {!isDraft && <PinCollabMenuItem collabId={post.id} />}
                       {post.status === "open" && (
                         <DropdownMenuItem onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                           <CheckCircle2 className="h-4 w-4 mr-2" /> Close
