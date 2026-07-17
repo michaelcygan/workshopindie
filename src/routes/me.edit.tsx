@@ -84,6 +84,25 @@ function EditProfile() {
   const [birthdate, setBirthdate] = useState<string>("");      // YYYY-MM-DD
   const [birthdateLocked, setBirthdateLocked] = useState(false);
   const [savingBirthdate, setSavingBirthdate] = useState(false);
+  const [bioLinkCopied, setBioLinkCopied] = useState(false);
+
+  const bioLinkUrl = useMemo(() => {
+    if (!form.username) return "";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://workshopindie.com";
+    return `${origin}/u/${form.username}`;
+  }, [form.username]);
+
+  async function copyBioLink() {
+    if (!bioLinkUrl) return;
+    try {
+      await navigator.clipboard.writeText(bioLinkUrl);
+      setBioLinkCopied(true);
+      toast.success("Link copied");
+      setTimeout(() => setBioLinkCopied(false), 1800);
+    } catch {
+      toast.error("Couldn't copy — try again");
+    }
+  }
 
   const fetchAge = useServerFn(getMyAgeFields);
   const saveBirthdateFn = useServerFn(setMyBirthdate);
