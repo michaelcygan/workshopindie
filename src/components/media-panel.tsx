@@ -1139,7 +1139,7 @@ function ChatPanel({
   onClose?: () => void;
 }) {
   return (
-    <div className={cn("flex-col rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur overflow-hidden", className)}>
+    <div className={cn("flex flex-col rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur overflow-hidden", className)}>
       <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5">
         <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Chat</span>
         {onClose && (
