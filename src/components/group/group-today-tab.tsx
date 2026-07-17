@@ -204,8 +204,21 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
               <div key={i} className="h-10 animate-pulse rounded-lg bg-muted/40" />
             ))}
           </div>
+        ) : postsError ? (
+          <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3 text-sm">
+            <p className="text-destructive">Couldn't load the board.</p>
+            <p className="mt-1 text-xs text-ink-muted">{(postsError as Error)?.message ?? "Unknown error"}</p>
+            <button
+              type="button"
+              onClick={() => refetchPosts()}
+              className="mt-2 rounded-md border border-border px-2 py-1 text-xs hover:bg-surface-2"
+            >
+              Retry
+            </button>
+          </div>
         ) : posts.length === 0 ? (
           <p className="text-center text-sm text-ink-muted">Nothing yet today. Be the first to say hi.</p>
+
         ) : (
           posts.map((p) => {
             const name = p.author?.display_name ?? p.author?.username ?? "Member";
