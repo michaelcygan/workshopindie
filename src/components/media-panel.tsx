@@ -475,8 +475,9 @@ export function FullscreenRoom({
   }, []);
 
   // Mobile bottom sheet: single surface open at a time.
-  type MobileSheet = null | "chat" | "work" | "collabs";
+  type MobileSheet = null | "chat" | "work" | "collabs" | "links";
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+
   const chatOpen = mobileSheet === "chat";
   // Unread indicator on the Chat tab: bumps whenever new messages arrive while
   // the chat sheet isn't the visible surface.
