@@ -417,6 +417,32 @@ function ProfilePage() {
     image: profile.avatar_url ?? undefined,
   } : null);
 
+  // Open-to-collab alert: dismiss once viewer has seen the latest collab.
+  // NOTE: these hooks MUST live above the isLoading / !profile early returns
+  // below, otherwise the hook count changes between renders (React #310).
+  const latestCollabKey = useMemo(() => {
+    if (!openCollabs || openCollabs.length === 0) return null;
+    return openCollabs.reduce<string>((max, c) => (c.created_at > max ? c.created_at : max), openCollabs[0].created_at);
+  }, [openCollabs]);
+  const dismissKey = profile ? `profile-collab-seen:${profile.id}` : null;
+  useEffect(() => {
+    if (!dismissKey || typeof window === "undefined") return;
+    setSeenCollabKey(window.localStorage.getItem(dismissKey));
+  }, [dismissKey]);
+  const currentTab: ProfileTab = search.tab ?? "works";
+  useEffect(() => {
+    if (currentTab !== "collabs") return;
+    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
+    window.localStorage.setItem(dismissKey, latestCollabKey);
+    setSeenCollabKey(latestCollabKey);
+  }, [currentTab, latestCollabKey, dismissKey]);
+  const hasUnseenCollab = !!latestCollabKey && seenCollabKey !== latestCollabKey;
+  const markCollabsSeen = () => {
+    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
+    window.localStorage.setItem(dismissKey, latestCollabKey);
+    setSeenCollabKey(latestCollabKey);
+  };
+
   if (isLoading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-10">
@@ -489,30 +515,14 @@ function ProfilePage() {
   };
 
   // Default tab: always Works for a portfolio surface.
-  const defaultTab: ProfileTab = search.tab ?? "works";
+  const defaultTab: ProfileTab = currentTab;
 
-  const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
-
-  // Open-to-collab alert: dismiss once viewer has seen the latest collab.
-  const latestCollabKey = useMemo(() => {
-    if (!openCollabs || openCollabs.length === 0) return null;
-    return openCollabs.reduce<string>((max, c) => (c.created_at > max ? c.created_at : max), openCollabs[0].created_at);
-  }, [openCollabs]);
-  const dismissKey = profile ? `profile-collab-seen:${profile.id}` : null;
-  useEffect(() => {
-    if (!dismissKey || typeof window === "undefined") return;
-    setSeenCollabKey(window.localStorage.getItem(dismissKey));
-  }, [dismissKey]);
-  const markCollabsSeen = () => {
-    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
-    window.localStorage.setItem(dismissKey, latestCollabKey);
-    setSeenCollabKey(latestCollabKey);
+  const setTab = (t: ProfileTab) => {
+    if (t === "collabs") markCollabsSeen();
+    navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
   };
-  useEffect(() => {
-    if (defaultTab === "collabs") markCollabsSeen();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultTab, latestCollabKey, dismissKey]);
-  const hasUnseenCollab = !!latestCollabKey && seenCollabKey !== latestCollabKey;
+
+
 
 
   const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
@@ -597,17 +607,50 @@ function ProfilePage() {
 
         {/* Identity block — sits below the cover, never clipped */}
         <div className="mt-3 md:mt-4">
-          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-            <div className="min-w-0">
-              <div className="flex min-w-0 items-center gap-2">
-                <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
-                <CreatorBadge status={profile.creator_status} />
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-col items-end gap-1.5 md:hidden">
-              {renderProfileActions()}
+          <div className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <h1 className="min-w-0 truncate font-display text-[clamp(20px,6vw,26px)] leading-tight text-ink md:text-4xl">{name}</h1>
+              <CreatorBadge status={profile.creator_status} />
             </div>
           </div>
+          {/* Mobile action row: full-width under the name, one line at every width */}
+          <div className="mt-2 flex items-center gap-2 md:hidden">
+            {isOwn ? (
+              <>
+                <Button variant="outline" className="flex-1 rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                  <Pencil className="h-4 w-4" /> Edit profile
+                </Button>
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
+              </>
+            ) : (
+              <>
+                <div className="flex-1 min-w-0 [&>button]:w-full">
+                  <FollowButton targetUserId={profile.id} />
+                </div>
+                <MessageButton otherUserId={profile.id} />
+                <ShareSheet
+                  entity={{
+                    type: "profile",
+                    id: profile.id,
+                    url: `https://workshopindie.com/u/${profile.username}`,
+                    title: name,
+                    subtitle: profile.headline ?? undefined,
+                  }}
+                />
+                <ReportDialog entityType="profile" entityId={profile.id} />
+                <BlockButton targetUserId={profile.id} />
+              </>
+            )}
+          </div>
+
           <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-ink-muted md:mt-1">
             {profile.username && <span>@{profile.username}</span>}
             {profile.home_city && (!profile.city || profile.city.slug === profile.home_city.slug) && (
