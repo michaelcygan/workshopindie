@@ -1,44 +1,29 @@
-## 1. Shorten the Lounge chat window
+## Add a visible "Edit Work" button on the work page
 
-The chat pane currently clamps to `h-[clamp(320px,46vh,560px)] xl:h-[60vh]`. When cameras are on, `46vh`/`60vh` still grows the pane too tall on laptops. Tighten it.
+There IS already an Edit link on the work page, but it lives in the actions row inside the meta strip alongside Like/Save/Share, so it's easy to miss and doesn't read as an owner affordance. The circle in the screenshot is right next to the "Published …" byline row — that's the natural spot.
 
-**`src/components/channel-view.tsx`** — replace all 5 occurrences of the clamp class:
-- From: `h-[clamp(320px,46vh,560px)] xl:h-[60vh]`
-- To: `h-[clamp(280px,38vh,440px)] xl:h-[52vh]`
+### Change — `src/routes/works.$slug.tsx`
 
-Applies to the Chat, Gallery, Collabs, Links, and composer scroll containers so the panel height stays consistent across tabs.
+**1. Add an "Edit Work" pill next to the Published date (owner only).**
 
-## 2. Normalize bare URLs in chat (clickable + Links tab + moderation)
+The `PublishedMeta` component (line ~407) renders the `Calendar · Published Jul 17, 2026 · from Lounge …` row. Extend it to accept an `isOwner` boolean and, when true, append a compact button:
 
-Today only `https?://` URLs are detected. Pasting `www.instagram.com` or `instagram.com/foo` renders as plain text, doesn't appear in Links, and bypasses the blocklist.
+```tsx
+{isOwner && (
+  <>
+    <span aria-hidden>·</span>
+    <Link to="/works/$slug/edit" params={{ slug }} className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-0.5 text-xs font-medium text-ink hover:bg-muted">
+      <Pencil className="h-3.5 w-3.5" /> Edit Work
+    </Link>
+  </>
+)}
+```
 
-### A. Shared URL extraction — `src/lib/moderation/url-blocklist.ts`
+Pass `isOwner={user?.id === work.created_by}` and `slug={work.slug}` from the parent where `PublishedMeta` is rendered.
 
-- Add a second regex for bare URLs:
-  - `www.` prefix, or a hostname with a known TLD, followed by optional `/path?query#frag`.
-  - Practical shape: `\b(?:www\.[^\s<>()"']+|(?:[a-z0-9-]+\.)+[a-z]{2,}(?:\/[^\s<>()"']*)?)`
-- Update `extractUrls(body)` to return **normalized absolute URLs**: if the match lacks a scheme, prepend `https://`. Keep trimming trailing `),.;!?`.
-- Skip matches whose "hostname" doesn't parse via `new URL(...)` after normalization (avoids catching things like `hello.world` in prose — require a real TLD via a small allowlist of length ≥ 2 and reject if `URL` construction throws).
-- `findBlockedUrl` / `isBlockedUrl` then automatically cover bare URLs since they get normalized upstream.
+**2. Remove the duplicate small Edit button** from the meta strip (line ~248–254) so there's a single, obvious owner CTA in the byline area and the actions row stays focused on Like / Save / Share / Report / Pin.
 
-### B. Chat rendering — `src/components/chat-mention-input.tsx`
-
-In the `ln` component's parser (around line 219):
-- Replace the single `urlRe` pass with two passes: one for `https?://…` (unchanged), one for bare URLs matching the same pattern as in (A).
-- For bare matches, produce `{ type: "link", text: rawMatch, href: "https://" + rawMatch }` so the visible text stays as typed but the anchor points to the normalized URL.
-- Guard against overlap with existing hits (mentions, markdown links) using the existing `hits.some(...)` check.
-
-### C. Links tab — `src/components/lounge-links.tsx`
-
-No change needed: it consumes `extractUrls`, which will now return normalized `https://…` strings for bare URLs. Dedup key and favicon fetch continue to work.
-
-### D. Moderation on send — `src/lib/chat.functions.ts`
-
-No change needed: `findBlockedUrl` calls `extractUrls`, so `instagram.com/hate-site-x` typed without a scheme is now caught by the same blocklist.
-
-### Verification
-
-- Type `www.instagram.com` in Lounge chat → renders as clickable link, opens `https://www.instagram.com`, appears in the Links tab.
-- Type `pornhub.com` (no scheme) → send is rejected by the blocklist.
-- Existing `https://…` links continue to work and are not double-linkified.
-- Chat pane on a laptop stays shorter with camera tiles visible above.
+### Notes
+- Gating is unchanged (`user?.id === work.created_by`), so non-owners see nothing new.
+- Edit destination is unchanged (`/works/$slug/edit`), which already handles description, cover, credits/tagging, links, etc.
+- No backend or schema changes.
