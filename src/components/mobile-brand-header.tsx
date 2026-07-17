@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
+import { SettingsMenuButton } from "@/components/settings-menu-button";
 
 export function MobileBrandHeader() {
   return (
@@ -17,6 +18,7 @@ export function MobileBrandHeader() {
           </span>
         </Link>
         <div className="ml-auto flex items-center gap-1">
+          <SettingsMenuButton />
           <MessagesInboxButton />
           <NotificationsBell />
         </div>
