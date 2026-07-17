@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+
 import { toast } from "sonner";
 import { joinGroupLounge } from "@/lib/instant.functions";
 
