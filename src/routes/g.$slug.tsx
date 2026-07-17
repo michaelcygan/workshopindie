@@ -1343,17 +1343,25 @@ function AddMineToGroup({
   const labelMap = { work: "Work", collab: "Collab", workshop: "Lounge" };
 
   return (
-    <div className="rounded-2xl border border-dashed border-border bg-surface/60 p-3">
+    <div
+      className={cn(
+        "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
+        compact && "inline-block",
+      )}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink"
+        className={cn(
+          "flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink",
+          compact ? "inline-flex" : "w-full",
+        )}
       >
         {open ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-        {open ? "Close" : `Add your ${labelMap[entity]} to ${group.name}`}
+        {open ? "Close" : compact ? `Add ${labelMap[entity]}` : `Add your ${labelMap[entity]} to ${group.name}`}
       </button>
       {open && (
-        <div className="mt-3 space-y-1.5">
+        <div className={cn("space-y-1.5", compact ? "absolute left-0 top-full z-20 mt-2 w-[min(320px,90vw)]" : "mt-3")}>
           {myPostsQuery.isLoading ? (
             <p className="text-xs text-ink-muted">Loading your {labelMap[entity]}…</p>
           ) : (myPostsQuery.data ?? []).length === 0 ? (
