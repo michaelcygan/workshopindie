@@ -929,7 +929,7 @@ export function FullscreenRoom({
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
             role="dialog"
             aria-modal="true"
-            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : "Collabs"}
+            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : mobileSheet === "links" ? "Links" : "Collabs"}
             className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
             style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
