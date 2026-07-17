@@ -1346,7 +1346,7 @@ function AddMineToGroup({
     <div
       className={cn(
         "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
-        compact && "inline-block",
+        compact && "relative inline-block",
       )}
     >
       <button
