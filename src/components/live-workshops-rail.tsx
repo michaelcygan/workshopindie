@@ -29,7 +29,7 @@ function labelFor(medium: Category | null) {
   return CATEGORIES.find((c) => c.id === medium)?.label ?? medium;
 }
 
-export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
+export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant = "cards" }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
   const joinRoom = useServerFn(joinSpecificInstantRoom);
   const qc = useQueryClient();
