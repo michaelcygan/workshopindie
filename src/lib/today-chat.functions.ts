@@ -27,7 +27,22 @@ export const postTodayMessage = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!member) throw new Error("Join the group to post here.");
 
-    // expires_at is populated by the column default (now() + 24 hours).
+    // App-level moderation (Core rule). DB trigger stays as last line of defense.
+    try {
+      const { moderateOrThrow } = await import("@/lib/moderation/service.server");
+      await moderateOrThrow({
+        userId,
+        surface: "group.today",
+        subjectId: data.groupId,
+        text: body,
+        spam: { maxLinks: 4, maxRepeatChars: 25 },
+      });
+    } catch (err) {
+      console.error("[today-post] moderation", err);
+      throw err;
+    }
+
+    // expires_at is populated by the BEFORE INSERT trigger tg_gtp_set_expiry.
     const { data: inserted, error: insertError } = await supabase
       .from("group_today_posts")
       .insert({
@@ -37,7 +52,28 @@ export const postTodayMessage = createServerFn({ method: "POST" })
       } as never)
       .select("id,created_at,expires_at")
       .single();
-    if (insertError) throw new Error(insertError.message);
+    if (insertError) {
+      console.error("[today-post] insert failed", {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        userId,
+        groupId: data.groupId,
+      });
+      // Surface the underlying trigger message (moderation_block, rate limit, RLS)
+      // to the client so the toast is actionable instead of generic.
+      if (insertError.message?.includes("moderation_block")) {
+        throw new Error("Your message was blocked by moderation.");
+      }
+      if (insertError.message?.includes("Slow down")) {
+        throw new Error(insertError.message);
+      }
+      if (insertError.code === "42501") {
+        throw new Error("You don't have permission to post here.");
+      }
+      throw new Error(insertError.message || "Could not post message.");
+    }
 
     const postId = (inserted as { id: string }).id;
 
