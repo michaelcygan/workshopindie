@@ -1522,7 +1522,9 @@ function StageTabs({
     { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
     { id: "gallery", label: "Gallery", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
     { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
+    { id: "links", label: "Links", icon: <Link2 className="h-3.5 w-3.5" /> },
   ];
+
   const toolsActive = value === "tools";
   return (
     <div
