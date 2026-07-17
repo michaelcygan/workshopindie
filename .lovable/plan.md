@@ -1,49 +1,62 @@
-## Two mobile polish + edit-flow additions
+# Lounge chat "Links" tab + URL safety
 
-### 1. Tighten mobile spacing below Featured (`src/routes/u.$username.tsx`)
+Add a fourth tab, **Links**, alongside Chat / Gallery / Collabs in the live Lounge. It shows every URL shared in this Lounge's chat as a scannable, tappable card list. In the same pass, wire URL safety so hate-speech and adult domains can't be posted or displayed.
 
-Goal: shave vertical space between the identity block, Featured carousel, and the tabs bar on mobile only. Desktop spacing unchanged.
+## What ships
 
-- Aliases row: `mt-2 … md:mt-3` → `mt-1.5 … md:mt-3`.
-- Artist statement blockquote: `mt-3 … md:mt-8` → `mt-2 … md:mt-8`.
-- Featured wrapper (line ~720): `mt-6 md:mt-8` → `mt-3 md:mt-8`.
-- `PinBar` (line ~1019): outer `mb-6 md:mb-8` → `mb-3 md:mb-8`; heading `text-lg` → `text-base md:text-lg`; scroller `mt-2 … md:mt-3` → `mt-1.5 … md:mt-3` and reduce `pb-2` → `pb-1`.
-- Tabs sticky wrapper (line ~730): `mt-4 … md:mt-6` → `mt-2 … md:mt-6`.
+### 1) "Links" tab in the Lounge
 
-No desktop `md:` values change. No layout or content restructure.
+- Desktop: appears in `StageTabs` (`src/components/channel-view.tsx`) after Collabs, using the same `Link2` icon style as the other tabs.
+- Mobile: appears in the `FullscreenRoom` bottom pill row (`src/components/media-panel.tsx`) after Collabs, with the same 44px tap-target treatment, and opens the existing bottom sheet with `"links"` preselected.
+- Uses the chat message stream already loaded in `ChannelView` (`messages` state) — no new DB reads, no extra query. Renders live: any new chat message with a URL appears immediately.
 
-### 2. Link a website to each artist alias
+### 2) Link card list
 
-Data model — add a parallel `alias_urls text[]` on `profiles` (aliases stay `text[]`, index-aligned):
+For each URL found in `messages.body` (deduped, newest first):
 
-- Supabase migration:
-  - `ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS alias_urls text[] NOT NULL DEFAULT '{}'::text[];`
-  - Existing profile grants already cover the column; no new GRANT/RLS work.
+```
+┌─────────────────────────────────────────────────┐
+│ 🌐  example.com                                 │
+│     "Here's the reference I mentioned…"         │
+│     Alex · 2m ago                    [Open ↗]   │
+└─────────────────────────────────────────────────┘
+```
 
-Edit flow — `src/routes/me.edit.tsx`:
+- Extract URLs from message bodies with a shared helper `extractUrls(body)` (regex based on the existing `URL_RE` in `src/lib/moderation/engine.ts`, exported once and reused).
+- Each card shows: favicon (Google favicon service via hostname), hostname, one-line message snippet, sender display name + relative time, and an "Open" button that opens in a new tab with `rel="noopener noreferrer nofollow"`.
+- Deduplicate by normalized URL (lowercase host + pathname); keep the earliest occurrence's context but a "shared N times" chip if it recurs.
+- Empty state: "No links shared yet. Paste one in chat and it'll appear here."
 
-- Add `aliasUrls: string[]` to `FormState` and `EMPTY`.
-- Load `alias_urls` alongside `aliases` (pad/trim to match `aliases.length`).
-- In the aliases card, render a small second input under each alias row:
-  - `Website (optional)` — `type="url"`, `placeholder="https://…"`, `maxLength={200}`.
-  - When adding/removing an alias, keep `aliasUrls` in lockstep (push `""` / splice same index).
-- On submit, after computing `cleanAliases`:
-  - Build `cleanAliasUrls` at the same indices; trim; if non-empty and missing scheme, prepend `https://`; validate via `new URL(...)` in a try/catch — invalid → `""`.
-  - Truncate to `cleanAliases.length`.
-  - Persist as `alias_urls: cleanAliasUrls` in the `profiles.update({...})` call.
+### 3) URL safety — block bad domains on send and on display
 
-Public profile — `src/routes/u.$username.tsx`:
+- New file `src/lib/moderation/url-blocklist.ts` (browser-safe, no server imports): exports a curated `BLOCKED_HOSTS: Set<string>` and a `BLOCKED_HOST_SUFFIXES: string[]` covering:
+  - Well-known adult sites (pornhub, xvideos, xhamster, redtube, youporn, onlyfans, chaturbate, stripchat, spankbang, etc.).
+  - Known hate/extremist hubs (stormfront, dailystormer, kiwifarms, 4chan `/pol/` domain aliases, gab specifically for extremism-hosting subs, iron-march archives, etc.).
+  - Common shortener wrappers that mask the above (`bit.ly` etc. are NOT blocked outright, but flagged for future expansion — no false positives shipped).
+- Exports `isBlockedUrl(url: string): boolean` that normalizes host, strips `www.`, and matches exact host OR any suffix in `BLOCKED_HOST_SUFFIXES`.
+- **Server enforcement** in `sendChatMessage` (`src/lib/chat.functions.ts`):
+  - After the existing Zod parse, extract URLs from `data.body` and reject with a friendly error (`"That link isn't allowed in Lounge."`) if any match `isBlockedUrl`. Runs before the DB insert so blocked links never persist.
+  - Keep the existing `moderateOrThrow` flow in place — this is an additive URL filter, not a replacement.
+- **Client defense-in-depth** in the Links tab: filter out any URL where `isBlockedUrl(url)` is true, so legacy pre-block messages don't surface unsafe links.
 
-- Add `alias_urls` to the profile SELECT list.
-- Add `alias_urls: string[] | null` to the profile type.
-- In the aliases render block, use `alias_urls?.[i]`:
-  - When a non-empty URL exists, render an `<a href={url} target="_blank" rel="noopener nofollow ugc">` styled like today's chip, with a subtle hover underline and a tiny `ExternalLink` icon (h-3 w-3) after the label; block-list check via existing `render-links` helpers is not required for user-owned profile links but reuse the existing `LinkPills` sanitizer if it exposes one — otherwise a plain absolute URL check is fine.
-  - Otherwise keep the current `<span>` chip.
+### 4) Copy + polish
 
-Constraints: reuse the established save flow (single `profiles.update`), no new server functions, no schema changes to `aliases` itself, no join tables.
+- Tab label: **Links**; icon: `Link2` from lucide-react.
+- Sheet header title on mobile: "Links shared here".
+- Toast on blocked send: `"Link blocked — this domain isn't allowed in Lounge."` (uses `toast.error` already used in the file).
 
-### Files touched
+## Scope guardrails
 
-- `src/routes/u.$username.tsx` — spacing tweaks + alias link rendering + SELECT column + type.
-- `src/routes/me.edit.tsx` — `aliasUrls` in state, per-row URL input, save normalization.
-- `supabase/migrations/<new>.sql` — add `alias_urls text[]` to `profiles`.
+- No schema changes, no new tables, no new server functions beyond editing `sendChatMessage`.
+- No changes to matching, media/WebRTC, presence, or the outer Lounge page.
+- Desktop and mobile both get the tab; only the layout wrapping differs, matching the existing Chat/Gallery/Collabs pattern.
+- Blocklist is a static curated list, not a live external feed — safe for edge runtime, no network at send time.
+
+## Files edited
+
+- `src/components/channel-view.tsx` — add "Links" to `StageTabs`, add `links` view mode branch, render `<LoungeLinks messages={messages} profileLookup={profileLookup} />`.
+- `src/components/media-panel.tsx` — add "Links" pill + `mobileSheet === "links"` branch that renders the same component.
+- `src/components/lounge-links.tsx` — **new**, presentational list of link cards with dedupe + empty state.
+- `src/lib/moderation/url-blocklist.ts` — **new**, curated blocklist + `isBlockedUrl` + `extractUrls` helper.
+- `src/lib/moderation/engine.ts` — export the URL regex (or re-export from the new helper) so there's one source of truth.
+- `src/lib/chat.functions.ts` — call `isBlockedUrl` on extracted URLs before insert; throw a user-friendly error on match.

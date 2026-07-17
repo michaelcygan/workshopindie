@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
@@ -35,6 +35,8 @@ import { useQueryClient } from "@tanstack/react-query";
 
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { ProfilePeek } from "@/components/profile-peek";
+import { LoungeLinks } from "@/components/lounge-links";
+
 import { UsernameMention } from "@/components/username-mention";
 
 
@@ -149,7 +151,7 @@ export function ChannelView({
     if (typeof window === "undefined") return "chat";
     try {
       const v = window.sessionStorage.getItem(`room-view:${roomId}`);
-      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs") return v;
+      if (v === "chat" || v === "tools" || v === "gallery" || v === "collabs" || v === "links") return v;
     } catch {}
     return "chat";
   });
@@ -830,7 +832,9 @@ export function ChannelView({
               fullscreen
             />
           }
+          linksSlot={<LoungeLinks messages={messages} profileLookup={profileLookup} />}
         />
+
       )}
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
@@ -995,7 +999,12 @@ export function ChannelView({
                 />
               )}
             </div>
+          ) : viewMode === "links" ? (
+            <div className="h-[60vh] overflow-y-auto">
+              <LoungeLinks messages={messages} profileLookup={profileLookup} />
+            </div>
           ) : (
+
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
               {roomId && <RoomNoteBanner roomId={roomId} />}
@@ -1515,7 +1524,9 @@ function StageTabs({
     { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
     { id: "gallery", label: "Gallery", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
     { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
+    { id: "links", label: "Links", icon: <Link2 className="h-3.5 w-3.5" /> },
   ];
+
   const toolsActive = value === "tools";
   return (
     <div

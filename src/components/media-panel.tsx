@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, Video, VideoOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,7 +28,7 @@ function screenSourceLabel(stream: MediaStream | null | undefined): string | nul
   return (m ? m[1] : raw).trim() || null;
 }
 
-export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs";
+export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs" | "links";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 
@@ -428,7 +428,9 @@ export function FullscreenRoom({
   screeningActive = false,
   collabsSlot,
   gallerySlot,
+  linksSlot,
 }: {
+
   m: MediaState;
   channelTitle: string;
   meDisplay: string;
@@ -455,10 +457,12 @@ export function FullscreenRoom({
   screeningSlot?: React.ReactNode;
   /** True when the room currently has a Work being screened; enables the "Screening" layout tab. */
   screeningActive?: boolean;
-  /** Optional side panels for the segmented Chat / Collabs / Gallery toggle. */
+  /** Optional side panels for the segmented Chat / Collabs / Gallery / Links toggle. */
   collabsSlot?: React.ReactNode;
   gallerySlot?: React.ReactNode;
+  linksSlot?: React.ReactNode;
 }) {
+
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
   const showLocalVideo = m.cameraOn && m.localStream;
@@ -471,8 +475,9 @@ export function FullscreenRoom({
   }, []);
 
   // Mobile bottom sheet: single surface open at a time.
-  type MobileSheet = null | "chat" | "work" | "collabs";
+  type MobileSheet = null | "chat" | "work" | "collabs" | "links";
   const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+
   const chatOpen = mobileSheet === "chat";
   // Unread indicator on the Chat tab: bumps whenever new messages arrive while
   // the chat sheet isn't the visible surface.
@@ -523,10 +528,11 @@ export function FullscreenRoom({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stageHasContent, hasShare, screeningActive]);
 
-  // ── Side panel: Chat / Collabs / Gallery ──
-  type SidePane = "chat" | "collabs" | "gallery";
+  // ── Side panel: Chat / Collabs / Gallery / Links ──
+  type SidePane = "chat" | "collabs" | "gallery" | "links";
   const [side, setSide] = useState<SidePane>("chat");
-  const hasSideExtras = !!collabsSlot || !!gallerySlot;
+  const hasSideExtras = !!collabsSlot || !!gallerySlot || !!linksSlot;
+
 
 
   // ── Reactions: lightweight broadcast over a per-room channel. ──
@@ -769,6 +775,22 @@ export function FullscreenRoom({
                 <span>Collabs</span>
               </button>
             )}
+            {linksSlot && (
+              <button
+                type="button"
+                onClick={() => setMobileSheet((s) => (s === "links" ? null : "links"))}
+                aria-pressed={mobileSheet === "links"}
+                className={cn(
+                  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-[11px] font-medium transition",
+                  mobileSheet === "links" ? "bg-background text-ink" : "bg-background/10 text-background/90 hover:bg-background/15",
+                )}
+                aria-label="Links"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                <span>Links</span>
+              </button>
+            )}
+
             {/* More: screen share (functionality preserved on mobile). */}
             <Popover>
               <PopoverTrigger asChild>
@@ -858,10 +880,11 @@ export function FullscreenRoom({
         {/* Side panel — Chat / Collabs / Gallery toggle */}
         <div className="hidden lg:flex flex-col min-h-0 gap-2">
           {hasSideExtras && (
-            <div className="grid grid-cols-3 gap-1 rounded-full bg-background/10 p-0.5">
+            <div className="grid grid-cols-4 gap-1 rounded-full bg-background/10 p-0.5">
               <SideSeg active={side === "chat"} onClick={() => setSide("chat")} icon={<MessageCircle className="h-3.5 w-3.5" />} label="Chat" />
               <SideSeg active={side === "collabs"} onClick={() => setSide("collabs")} icon={<Users className="h-3.5 w-3.5" />} label="Collabs" disabled={!collabsSlot} />
               <SideSeg active={side === "gallery"} onClick={() => setSide("gallery")} icon={<LayoutGrid className="h-3.5 w-3.5" />} label="Gallery" disabled={!gallerySlot} />
+              <SideSeg active={side === "links"} onClick={() => setSide("links")} icon={<Link2 className="h-3.5 w-3.5" />} label="Links" disabled={!linksSlot} />
             </div>
           )}
           <div className={cn("flex-1 min-h-0", side !== "chat" && "hidden")}>
@@ -889,6 +912,14 @@ export function FullscreenRoom({
               <div className="h-full">{gallerySlot}</div>
             </div>
           )}
+          {linksSlot && (
+            <div className={cn("flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04] backdrop-blur", side !== "links" && "hidden")}>
+              <div className="h-full overflow-y-auto text-ink [color-scheme:light]">
+                <div className="bg-background min-h-full">{linksSlot}</div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
 
@@ -908,7 +939,7 @@ export function FullscreenRoom({
             transition={{ type: "spring", damping: 28, stiffness: 280 }}
             role="dialog"
             aria-modal="true"
-            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : "Collabs"}
+            aria-label={mobileSheet === "chat" ? "Chat" : mobileSheet === "work" ? "Work" : mobileSheet === "links" ? "Links" : "Collabs"}
             className="lg:hidden fixed inset-x-0 bottom-0 z-[60] flex flex-col max-h-[85dvh] rounded-t-3xl border-t border-background/10 bg-[#0a0a0a]/95 backdrop-blur px-3 pt-2"
             style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
           >
@@ -949,6 +980,18 @@ export function FullscreenRoom({
                 </div>
               </div>
             )}
+            {mobileSheet === "links" && (
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden rounded-2xl border border-background/10 bg-background/[0.04]">
+                <div className="flex items-center justify-between border-b border-background/10 px-4 py-2.5 shrink-0">
+                  <span className="text-[11px] font-medium uppercase tracking-wider text-background/60">Links shared here</span>
+                  <button onClick={() => setMobileSheet(null)} className="text-xs text-background/60 hover:text-background">Close</button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto text-ink [color-scheme:light]">
+                  <div className="bg-background min-h-full">{linksSlot}</div>
+                </div>
+              </div>
+            )}
+
           </motion.div>
         )}
       </AnimatePresence>
