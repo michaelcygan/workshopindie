@@ -997,7 +997,12 @@ export function ChannelView({
                 />
               )}
             </div>
+          ) : viewMode === "links" ? (
+            <div className="h-[60vh] overflow-y-auto">
+              <LoungeLinks messages={messages} profileLookup={profileLookup} />
+            </div>
           ) : (
+
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
               {roomId && <RoomNoteBanner roomId={roomId} />}
