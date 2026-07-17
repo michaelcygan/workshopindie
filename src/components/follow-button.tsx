@@ -16,12 +16,17 @@ export function FollowButton({
   followLabel,
   /** Optional display name for the signup CTA copy. */
   targetName,
+  /** When true and the viewer already follows, render an icon-only pill
+   * (person + check) to signal mutual/following in a compact header row. */
+  compact = false,
 }: {
   targetUserId: string;
   roomId?: string;
   followLabel?: string;
   targetName?: string;
+  compact?: boolean;
 }) {
+
   const { user } = useAuth();
   const [following, setFollowing] = useState(false);
   const [loading, setLoading] = useState(false);
