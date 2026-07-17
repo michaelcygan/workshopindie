@@ -881,8 +881,10 @@ type WorkRow = {
 
 function GroupWorkTab({ group }: { group: GroupRow }) {
   const [sort, setSort] = useState<"recent" | "trending">("recent");
+  const [category, setCategory] = useState<Category | "all">("all");
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
+
 
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "works"],
