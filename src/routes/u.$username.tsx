@@ -754,24 +754,33 @@ function ProfilePage() {
           </blockquote>
         )}
 
-        {/* Mobile-only Open-to-collaborate pill (visitors only, when open Collabs exist) */}
-        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && (
-          <button
-            type="button"
-            onClick={() => setTab("collabs")}
-            className="mt-6 inline-flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-3 text-left text-sm md:hidden"
-          >
-            <span className="flex items-center gap-2">
-              <span className="relative flex h-2 w-2">
+        {/* Mobile-only Open-to-collaborate alert (visitors only; dismisses until a new collab is posted) */}
+        {!isOwn && (openCollabs?.length ?? 0) > 0 && defaultTab !== "collabs" && hasUnseenCollab && (
+          <div className="mt-6 flex w-full items-center gap-2 rounded-2xl border border-primary/30 bg-primary/5 pl-4 pr-2 py-2 text-sm md:hidden">
+            <button
+              type="button"
+              onClick={() => { markCollabsSeen(); setTab("collabs"); }}
+              className="flex min-w-0 flex-1 items-center gap-2 py-1 text-left"
+            >
+              <span className="relative flex h-2 w-2 shrink-0">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              <span className="font-medium text-ink">Open to collaborate</span>
-              <span className="text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
-            </span>
-            <ArrowRight className="h-4 w-4 text-ink-muted" />
-          </button>
+              <span className="truncate font-medium text-ink">Open to collaborate</span>
+              <span className="shrink-0 text-ink-muted">· {openCollabs!.length} Collab{openCollabs!.length === 1 ? "" : "s"}</span>
+              <ArrowRight className="ml-auto h-4 w-4 shrink-0 text-ink-muted" />
+            </button>
+            <button
+              type="button"
+              onClick={markCollabsSeen}
+              aria-label="Dismiss"
+              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-primary/10 hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         )}
+
 
         {/* Featured (persists across tabs) */}
         <div className="mt-3 md:mt-8">
