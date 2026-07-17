@@ -1033,9 +1033,9 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 key={w.id}
                 to="/works/$slug"
                 params={{ slug: w.slug }}
-                className="group relative overflow-hidden rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
+                className="group relative rounded-2xl border border-border bg-surface transition hover:-translate-y-0.5 hover:shadow-lift"
               >
-                <div className="relative h-32 w-full overflow-hidden">
+                <div className="relative h-32 w-full overflow-hidden rounded-t-2xl">
                   <div
                     className={cn(
                       "absolute inset-0 transition-transform duration-300 group-hover:scale-[1.03]",
@@ -1051,28 +1051,29 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                       {CATEGORY_LABELS[w.category]}
                     </span>
                   )}
-                  {author?.username && (
-                    <Link
-                      to="/u/$username"
-                      params={{ username: author.username }}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`View ${authorName || author.username}'s profile`}
-                      className="absolute -bottom-3 left-3 z-10"
-                    >
-                      <Avatar className="h-7 w-7 ring-2 ring-background">
-                        {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
-                        <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
-                      </Avatar>
-                    </Link>
-                  )}
                 </div>
-                <div className="p-3 pt-4">
+                {author?.username && (
+                  <Link
+                    to="/u/$username"
+                    params={{ username: author.username }}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`View ${authorName || author.username}'s profile`}
+                    className="absolute left-3 top-32 z-10 -translate-y-1/2"
+                  >
+                    <Avatar className="h-8 w-8 ring-2 ring-background">
+                      {author.avatar_url && <AvatarImage src={author.avatar_url} alt="" />}
+                      <AvatarFallback className="text-[10px]">{initials}</AvatarFallback>
+                    </Avatar>
+                  </Link>
+                )}
+                <div className="p-3 pt-5">
                   <div className="font-display text-base text-ink line-clamp-2">{w.title}</div>
                   {authorName && (
                     <div className="mt-0.5 text-xs text-ink-muted">by {authorName}</div>
                   )}
                 </div>
               </Link>
+
             );
           })}
         </div>
