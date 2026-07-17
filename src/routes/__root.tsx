@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import appCss from "../styles.css?url";
 import { AuthProvider } from "@/hooks/use-auth";
 import { TopNav } from "@/components/top-nav";
+import { MobileBrandHeader } from "@/components/mobile-brand-header";
 import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { WelcomeTour } from "@/components/welcome-tour";
