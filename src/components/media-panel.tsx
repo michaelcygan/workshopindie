@@ -457,10 +457,12 @@ export function FullscreenRoom({
   screeningSlot?: React.ReactNode;
   /** True when the room currently has a Work being screened; enables the "Screening" layout tab. */
   screeningActive?: boolean;
-  /** Optional side panels for the segmented Chat / Collabs / Gallery toggle. */
+  /** Optional side panels for the segmented Chat / Collabs / Gallery / Links toggle. */
   collabsSlot?: React.ReactNode;
   gallerySlot?: React.ReactNode;
+  linksSlot?: React.ReactNode;
 }) {
+
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
   const showLocalVideo = m.cameraOn && m.localStream;
