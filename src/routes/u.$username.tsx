@@ -628,16 +628,6 @@ function ProfilePage() {
                     <MapPin className="h-3.5 w-3.5" />{profile.city.name}
                   </Link>
                 )}
-                {profile.instagram_handle && (
-                  <a
-                    href={`https://instagram.com/${profile.instagram_handle}`}
-                    target="_blank"
-                    rel="noreferrer noopener"
-                    className="hidden md:inline-flex items-center gap-1 text-gradient-motion hover:underline"
-                  >
-                    IG @{profile.instagram_handle}
-                  </a>
-                )}
               </div>
             );
             return (
