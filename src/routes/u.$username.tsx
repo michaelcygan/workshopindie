@@ -735,7 +735,7 @@ function ProfilePage() {
         )}
 
         {/* Featured (persists across tabs) */}
-        <div className="mt-6 md:mt-8">
+        <div className="mt-3 md:mt-8">
           <PinBar
             pinnedWorks={pinnedWorks ?? []}
             pinnedCollabs={pinnedCollabs ?? []}
@@ -745,7 +745,8 @@ function ProfilePage() {
         </div>
 
         {/* Tab bar */}
-        <div className="sticky top-0 z-20 mt-4 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-6 md:px-6">
+        <div className="sticky top-0 z-20 mt-2 -mx-4 border-b border-border bg-background/90 px-4 backdrop-blur md:-mx-6 md:mt-6 md:px-6">
+
 
           <nav className="flex gap-1 overflow-x-auto">
             {visibleTabs.map((t) => (
