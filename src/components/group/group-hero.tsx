@@ -24,10 +24,10 @@ export type GroupHeroData = {
 
 export function GroupHero({
   group,
-  nextEvent,
 }: {
   group: GroupHeroData;
-  nextEvent: { slug: string; title: string; starts_at: string } | null | undefined;
+  /** @deprecated Next event now lives in the Today tab sidebar. */
+  nextEvent?: { slug: string; title: string; starts_at: string } | null;
 }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
