@@ -1,6 +1,7 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Radio, Users, Sparkles, Home } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -11,6 +12,11 @@ const tabActive =
 
 export function MobileNav() {
   const { user } = useAuth();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+
+  // Logged-out visitors on a public profile see it as a portfolio — no bottom nav.
+  if (!user && pathname.startsWith("/u/")) return null;
+
 
   const initial =
     ((user?.user_metadata?.display_name as string | undefined) ??

@@ -1,24 +1,25 @@
-## Change
+## 1. Hide mobile bottom nav for logged-out profile viewers
 
-Replace the horizontal marquee `CategoryScroller` on the mobile profile Works tab with a single dropdown pill.
+In `src/routes/u.$username.tsx`, add a body class (e.g. `data-hide-mobile-nav`) or use a context flag when `!user`, and update `src/components/mobile-nav.tsx` to return `null` when on a `/u/$username` route AND the viewer is logged out.
 
-## Behavior
+Cleanest approach: in `mobile-nav.tsx`, read `useAuth()` and `useRouterState({ select: s => s.location.pathname })`. If `!user && pathname.startsWith("/u/")`, return `null`. This scopes the hide to logged-out profile views only — every other page (Home, Groups, etc.) keeps the island for logged-out users as it is today.
 
-- Renders as one pill showing the current selection (defaults to "All").
-- Tapping opens a dropdown listing all categories; selecting one closes the menu and updates the filter.
-- The active item is checked in the menu; "All" is first.
-- Desktop keeps the current wrapping pill row (no marquee issue there).
+Result: an IG in-app browser visitor landing on a profile sees a clean portfolio-style page. The sticky "Workshop" header in `mobile-brand-header.tsx` remains the only way back into the app.
 
-## Implementation
+## 2. Redesign the mobile category pill
 
-- Update `src/components/category-scroller.tsx`:
-  - On mobile (`useIsMobile()`), render a shadcn `DropdownMenu` with a rounded-pill trigger styled to match existing filter pills (`rounded-full border border-border bg-surface px-3 py-1.5 text-sm` + `ChevronDown`).
-  - Trigger label = label of the currently selected tab (fallback "All").
-  - Menu items iterate `tabs`; onClick calls `onChange(t.id)`.
-  - Remove the RAF auto-scroll, pointer-drag, and duplicated-list logic from the mobile branch.
-  - Desktop branch unchanged.
-- No API change — all call sites (`src/routes/u.$username.tsx`, etc.) keep passing `tabs`, `value`, `onChange`.
+In `src/components/category-scroller.tsx`, update the mobile branch:
 
-## Files
+- Change wrapper from `inline-flex` to full-width `flex` so the trigger stretches to the row.
+- Change the trigger `<button>` to `w-full justify-center` (currently `inline-flex items-center gap-1.5`) so the label is centered with the chevron sitting just to its right.
+- Keep border, radius, background, and font size consistent with the medium chip row it sits next to — so it visually reads as a peer control, flush and aligned, not a small orphan.
+- Widen the dropdown content (`w-56`) so the option list matches the wider trigger.
 
-- `src/components/category-scroller.tsx`
+The desktop branch is unchanged.
+
+## Files touched
+
+- `src/components/mobile-nav.tsx` — conditional early return for logged-out `/u/*`.
+- `src/components/category-scroller.tsx` — full-width centered mobile trigger.
+
+No backend, no data, no other flows affected.
