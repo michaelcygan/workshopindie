@@ -220,8 +220,9 @@ export function NotificationsBell() {
 
   useEffect(() => {
     if (!user) return;
+    const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
     const channel = supabase
-      .channel(`notifs:${user.id}`)
+      .channel(`notifs:${user.id}:${uid}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },

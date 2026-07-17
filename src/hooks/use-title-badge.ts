@@ -39,8 +39,9 @@ export function useTitleBadge() {
     }
     load();
 
+    const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
     const ch = supabase
-      .channel(`title-notifs:${user.id}`)
+      .channel(`title-notifs:${user.id}:${uid}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
@@ -81,8 +82,9 @@ export function useTitleBadge() {
       convIds = (convs ?? []).map((c) => c.id);
       await loadUnread();
       if (!convIds.length) return;
+      const uid = (globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2));
       channel = supabase
-        .channel(`title-dm:${user!.id}`)
+        .channel(`title-dm:${user!.id}:${uid}`)
         .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, (p) => {
           const m = p.new as { conversation_id: string };
           if (convIds.includes(m.conversation_id)) schedule();
