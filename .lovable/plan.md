@@ -1,30 +1,27 @@
-# Fix `/me/edit` stuck on "Loading…"
+# Fix: Group Today board PGRST200
 
 ## Root cause (confirmed)
+`group_today_posts.author_id` has only one FK: `group_today_posts_author_id_fkey → auth.users(id)`. The Today tab embeds `author:profiles!group_today_posts_author_id_fkey(...)`, but that constraint points at `auth.users`, not `public.profiles`. PostgREST returns PGRST200 and the board renders empty even though inserts succeed.
 
-The recent PII hardening revoked table-level `SELECT` on `public.profiles` from `authenticated` and re-granted `SELECT` only on non-sensitive columns (birthdate/age fields stay owner-only via `getMyAgeFields`). Verified via `pg_class.relacl`: `authenticated` has `awdDxtm` — no `r` (SELECT) at the table level.
+## Changes
 
-`src/routes/me.edit.tsx` still hydrates the form with:
+### 1. Migration (reversible, additive)
+- Add a second FK on `public.group_today_posts.author_id` referencing `public.profiles(id) ON DELETE CASCADE`, named `group_today_posts_author_profile_fkey`.
+- Keep the existing `group_today_posts_author_id_fkey → auth.users(id)` constraint untouched.
+- No data changes; every author already has a matching `profiles` row (profiles.id mirrors auth.users.id via the standard onboarding trigger). If the migration validation fails on legacy rows, add it `NOT VALID` then `VALIDATE CONSTRAINT` — no row deletions.
+- Run `NOTIFY pgrst, 'reload schema';` at the end so PostgREST picks up the new relationship immediately.
 
-```ts
-supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
-```
+### 2. `src/components/group/group-today-tab.tsx`
+- Update the embedded select on line 71 to use the new constraint name exactly:
+  `author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)`
+- Add a visible error state for the posts query: when `useQuery` returns `error`, render an inline error card with the message and a "Retry" button that calls `refetch()`, so a failed fetch never looks like an empty board. Empty-state and loading behavior stay as-is.
 
-`select("*")` expands to include the revoked columns (`birthdate`, etc.) → PostgREST returns a permission error → `data` is `null` → the code does `if (!data) return;` and never flips `hydrated` to `true`. The route stays on the "Loading…" placeholder forever (matches the screenshot).
+### 3. Not changed
+- `postTodayMessage`, membership/authorization checks, moderation, expiry logic, and the board's visual design remain untouched.
+- The sidebar (Fresh Collabs / Recent Works) is unaffected.
 
-This is the same class of bug that would bite any other place still doing `select("*")` on `profiles`.
-
-## Fix
-
-1. **`src/routes/me.edit.tsx`** — replace `select("*")` with an explicit column list matching the fields the form actually reads:
-   `id, username, first_name, last_name, aliases, alias_urls, instagram_handle, headline, bio, artist_statement, avatar_url, cover_url, cover_work_id, categories, mediums, tools, external_links, city_id, pinned_work_ids`.
-   Also surface `error` from the response: if present, `toast.error(error.message)` and still set `hydrated(true)` so the user sees the form (empty) instead of an infinite spinner.
-
-2. **Audit other `profiles` reads for `select("*")`** and narrow them the same way. Grep `select("*")` / `select('*')` against `from("profiles")` across `src/` and fix any hits (read-only investigation this turn; edits happen in build mode).
-
-3. **No schema/grant changes.** The PII lockdown stays as-is — `birthdate` continues to be owner-only via `getMyAgeFields`, which the page already calls.
-
-## Out of scope
-
-- No changes to age/birthdate flow — that already uses `getMyAgeFields`.
-- No RLS or grant changes.
+## Acceptance
+- Chicago member posts → message appears with avatar, persists after refresh.
+- Existing active posts become visible.
+- Non-members still blocked by existing RLS/postTodayMessage checks.
+- No PGRST200 in console/network.
