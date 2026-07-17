@@ -1,34 +1,46 @@
-## Goal
-Add a persistent Settings gear to the mobile header (next to DM + Notifications) and simplify the bottom nav's "You" tab so it navigates straight to the profile.
+# Link in Bio — copy your profile URL
 
-## Changes
+The Share sheet already handles the share flow (Copy link works on the profile share). We'll add a **subtle Link-in-Bio row inside Profile Edit** so users find it when they're setting up their profile.
 
-### 1. `src/components/mobile-brand-header.tsx`
-Add a new `SettingsMenuButton` to the right cluster so the header shows three circular icons: **Settings · DM · Bell**.
+## What to build
 
-The gear opens a dropdown (same shape as today's avatar dropdown) containing:
-- Your stuff: In Progress (with badge), My Collabs, Network, My RSVPs
-- Explore: Gallery, Events
-- Refer & Earn
-- Settings
-- Sign out
+A small, quiet row in `/me/edit` → **Identity** section, tucked right under the Username field (which already says "Your public @handle — used in your profile URL"). It looks like a compact pill showing the URL with a copy icon on the right.
 
-Also includes a top row linking to `/me` (avatar + display name + "View your profile") for parity with the current menu.
+### Visual
 
-### 2. `src/components/settings-menu-button.tsx` (new)
-Extract the dropdown currently living inside `MobileNav`. Trigger is a 9×9 circular icon button matching the DM/Bell styling (`ring-1 ring-border`, `hover:bg-muted`, `Settings` icon from lucide). Uses `useAuth`, `useInProgressBadge`, `supabase.auth.signOut`, `useNavigate`. Renders nothing when signed out.
+```text
+Username: [ michael-cygan            ]
+Your public @handle — used in your profile URL.
 
-### 3. `src/components/mobile-nav.tsx`
-Replace the `DropdownMenu`-wrapped "You" button with a plain `<Link to="/me">` that shows the avatar + in-progress badge + "You" label, with active styling. Signed-out state (Sign in link) is unchanged. Remove now-unused imports (DropdownMenu*, supabase, useNavigate, most lucide icons — keep only what the remaining tabs use).
+┌─────────────────────────────────────────────────┐
+│ 🔗  workshopindie.com/u/michael-cygan   [Copy] │
+└─────────────────────────────────────────────────┘
+Use as your link in bio — Instagram, TikTok, email signature.
+```
 
-### 4. Desktop untouched
-`MobileBrandHeader` is `md:hidden`, so the gear is mobile-only. Desktop header/nav keep their current avatar dropdown.
+- Rounded row, `bg-surface` border, single line, truncates the URL on small screens.
+- Right-aligned `Copy` button → toggles to `Copied` with a check for ~1.8s (matches ShareSheet pattern).
+- Muted helper caption below.
+- Only shows when `form.username` is non-empty; if empty, replace with a one-line muted hint: *"Pick a username to get your link-in-bio URL."*
+- No new component file needed — inline in `me.edit.tsx`.
 
-## Notes
-- Badge on gear: if the in-progress count > 0, show the same small pill on the gear button so users don't lose the "something needs attention" cue that used to sit on the avatar.
-- No routing changes, no backend changes.
+### Behavior
+
+- URL = `${window.location.origin}/u/${form.username}` (recomputed as they edit the username).
+- Copy uses `navigator.clipboard.writeText`, `toast.success("Link copied")` on success, `toast.error` on failure.
+- Reuses `Copy`/`Check` icons from `lucide-react` (already imported elsewhere in the file if not, add).
+- No backend, no schema, no new routes.
+
+## Share sheet
+
+Leaving `src/components/share-sheet.tsx` untouched — the existing "Copy link" already covers the share flow the user confirmed works.
 
 ## Files
-- edit `src/components/mobile-brand-header.tsx`
-- edit `src/components/mobile-nav.tsx`
-- new  `src/components/settings-menu-button.tsx`
+
+- `src/routes/me.edit.tsx` — add the row inside the Identity section, right after the username input's helper `<p>` (around line 373). Add small `useState` for the copied flag and helper function alongside the existing form state.
+
+## Out of scope
+
+- No new /settings surface.
+- No QR code or vanity-link generation.
+- No changes to the profile page itself.
