@@ -25,7 +25,15 @@ export const sendChatMessage = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Block known-bad domains (adult / extremist hubs) before persisting.
+    const blocked = findBlockedUrl(data.body);
+    if (blocked) {
+      throw new Error("That link isn't allowed in Lounge.");
+    }
+
     const mentions = Array.from(new Set(data.mentions ?? [])).filter((id) => id !== userId);
+
 
     const { data: inserted, error } = await supabase
       .from("instant_messages")
