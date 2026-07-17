@@ -1,36 +1,30 @@
-## Goal
-Typing `www.google.com` (or `google.com`) into any link field auto-normalizes to `https://google.com/` so extractors, validators, and saved records all get a proper URL.
+# Fix `/me/edit` stuck on "Loading…"
 
-## Approach
-Extract the existing `tryNormalize` logic from `src/lib/moderation/url-blocklist.ts` into a shared helper and apply it on blur/submit across every URL input, starting with Post to Gallery.
+## Root cause (confirmed)
 
-### 1. New shared helper — `src/lib/url-normalize.ts`
-- Export `normalizeUrl(raw: string): string | null` — trims, strips trailing punctuation, prepends `https://` if no scheme, validates via `URL`, requires a `.` in the hostname. Same logic as the existing `tryNormalize`.
-- Export a small `normalizeUrlOrKeep(raw)` convenience that returns the normalized value if valid, otherwise the trimmed original (used for onBlur so we never silently blank the field).
-- Update `src/lib/moderation/url-blocklist.ts` to re-use the shared helper (no behavior change to the moderation/Links tab pipeline).
+The recent PII hardening revoked table-level `SELECT` on `public.profiles` from `authenticated` and re-granted `SELECT` only on non-sensitive columns (birthdate/age fields stay owner-only via `getMyAgeFields`). Verified via `pg_class.relacl`: `authenticated` has `awdDxtm` — no `r` (SELECT) at the table level.
 
-### 2. Post to Gallery (`src/routes/works.new.tsx`)
-- On the main "Paste a link" input:
-  - onBlur → set input to `normalizeUrlOrKeep(value)` so the user visibly sees `https://…`.
-  - On submit (`runExtract`) — replace the inline `url.startsWith("http") ? … : https://${url}` with `normalizeUrl(url)`; reject with a friendly toast if it returns null.
-- Same normalize-on-blur for the Source URL field (line ~499).
+`src/routes/me.edit.tsx` still hydrates the form with:
 
-### 3. Site-wide URL inputs (blur-normalize)
-Apply the same onBlur normalization (no other logic changes) to every `type="url"` input already identified:
-- `src/components/book-details-section.tsx` (buy links, sample chapter)
-- `src/components/publish-from-collab-sheet.tsx` (primary URL)
-- `src/components/post-workshop-from-city-sheet.tsx` (call URL)
-- `src/components/workshop-drive-panel.tsx`, `src/components/workshop-tools-panel.tsx`, `src/components/workshop-player-tool.tsx`
-- `src/routes/workshops.$slug.tsx` (primary URL, external call URL)
-- `src/routes/workshops.$slug.tools.$tool.tsx`
-- `src/routes/me.edit.tsx` (profile link)
-- `src/routes/collab.new.tsx` (contact URL)
-- `src/components/admin-import-event-dialog.tsx`
+```ts
+supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+```
 
-### 4. Validation sites that call `new URL(...)`
-In `works.new.tsx` buy-links / excerpt validation (lines ~168–171), normalize before validating so a bare domain passes.
+`select("*")` expands to include the revoked columns (`birthdate`, etc.) → PostgREST returns a permission error → `data` is `null` → the code does `if (!data) return;` and never flips `hydrated` to `true`. The route stays on the "Loading…" placeholder forever (matches the screenshot).
+
+This is the same class of bug that would bite any other place still doing `select("*")` on `profiles`.
+
+## Fix
+
+1. **`src/routes/me.edit.tsx`** — replace `select("*")` with an explicit column list matching the fields the form actually reads:
+   `id, username, first_name, last_name, aliases, alias_urls, instagram_handle, headline, bio, artist_statement, avatar_url, cover_url, cover_work_id, categories, mediums, tools, external_links, city_id, pinned_work_ids`.
+   Also surface `error` from the response: if present, `toast.error(error.message)` and still set `hydrated(true)` so the user sees the form (empty) instead of an infinite spinner.
+
+2. **Audit other `profiles` reads for `select("*")`** and narrow them the same way. Grep `select("*")` / `select('*')` against `from("profiles")` across `src/` and fix any hits (read-only investigation this turn; edits happen in build mode).
+
+3. **No schema/grant changes.** The PII lockdown stays as-is — `birthdate` continues to be owner-only via `getMyAgeFields`, which the page already calls.
 
 ## Out of scope
-- Chat/messages URL rendering — already handled by `extractUrls` + linkifier.
-- Changing what "valid URL" means (still requires a dot in the hostname).
-- Any UI redesign of the inputs.
+
+- No changes to age/birthdate flow — that already uses `getMyAgeFields`.
+- No RLS or grant changes.
