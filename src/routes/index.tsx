@@ -82,7 +82,7 @@ function Hero() {
       </div>
       <div className="absolute inset-0 -z-[4] bg-gradient-to-b from-background/30 via-transparent to-background/50" />
 
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center">
+      <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center pb-[calc(env(safe-area-inset-bottom)+112px)] md:pb-14">
         <motion.div
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
