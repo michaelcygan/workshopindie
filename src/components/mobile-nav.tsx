@@ -11,7 +11,6 @@ const tabActive =
 
 export function MobileNav() {
   const { user } = useAuth();
-  const { count } = useInProgressBadge();
 
   const initial =
     ((user?.user_metadata?.display_name as string | undefined) ??
