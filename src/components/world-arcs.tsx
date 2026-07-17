@@ -524,7 +524,11 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
       // Let cmd/ctrl/middle-click open in new tab.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
       e.preventDefault();
-      router.navigate({ to: href });
+      try {
+        router.history.push(href);
+      } catch {
+        window.location.assign(href);
+      }
     };
     label.addEventListener("mouseenter", enter);
     label.addEventListener("mouseleave", leave);
