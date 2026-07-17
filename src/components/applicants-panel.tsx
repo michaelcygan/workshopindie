@@ -25,8 +25,20 @@ type Props = { postId: string };
 export function ApplicantsPanel({ postId }: Props) {
   const fetchApplicants = useServerFn(listApplicants);
   const updateStatus = useServerFn(updateGuestApplicationStatus);
+  const acceptFn = useServerFn(acceptCollabApplicant);
   const qc = useQueryClient();
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  const accept = useMutation({
+    mutationFn: (vars: { applicantUserId: string }) =>
+      acceptFn({ data: { collabPostId: postId, applicantUserId: vars.applicantUserId } }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
+      qc.invalidateQueries({ queryKey: ["collab-members", postId] });
+      toast.success("Accepted — they can now join the workspace.");
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   async function copyClaimLink(token: string) {
     const url = `${window.location.origin}/collab/claim/${token}`;
