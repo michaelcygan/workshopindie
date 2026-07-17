@@ -108,7 +108,7 @@ function Hero() {
         >
           <Link
             to="/lounge"
-            className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition hover:-translate-y-0.5 hover:shadow-xl md:p-7"
+            className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition md:hover:-translate-y-0.5 md:hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
               <Radio className="h-5 w-5" />
