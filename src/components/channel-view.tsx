@@ -832,7 +832,9 @@ export function ChannelView({
               fullscreen
             />
           }
+          linksSlot={<LoungeLinks messages={messages} profileLookup={profileLookup} />}
         />
+
       )}
       {/* Board moved to Workshop Tools — no fullscreen board view in live room. */}
       {fsView === "gallery" && user && (
