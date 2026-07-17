@@ -428,7 +428,9 @@ export function FullscreenRoom({
   screeningActive = false,
   collabsSlot,
   gallerySlot,
+  linksSlot,
 }: {
+
   m: MediaState;
   channelTitle: string;
   meDisplay: string;
