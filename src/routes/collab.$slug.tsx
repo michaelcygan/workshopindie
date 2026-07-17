@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { motion } from "framer-motion";
-import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft } from "lucide-react";
+import { Clock, MapPin, DollarSign, ExternalLink, MessageCircle, Trash2, CheckCircle2, Sparkles, Scale, Share2, Users, Inbox, Archive, Pencil, LogOut, AlertTriangle, Eye, Pin, PinOff, ArrowLeft, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -351,20 +352,22 @@ function CollabDetail() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 md:py-14">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="mb-4 flex items-center gap-2">
-          <CategoryChip category={post.category as Category} />
-          {stateBadge}
-          {post.status === "open" && (
-            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-              {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
-            </span>
-          )}
-          {post.status === "open" && closingSoon && daysToDeadline !== null && (
-            <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-              Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
-            </span>
-          )}
-          <div className="ml-auto flex items-center gap-2">
+        <div className="mb-4 space-y-2 sm:space-y-0 sm:flex sm:items-center sm:gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <CategoryChip category={post.category as Category} />
+            {stateBadge}
+            {post.status === "open" && (
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
+                {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
+              </span>
+            )}
+            {post.status === "open" && closingSoon && daysToDeadline !== null && (
+              <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 sm:ml-auto justify-end">
             <ShareCollabSheet
               postId={post.id}
               slug={post.slug}
@@ -378,27 +381,81 @@ function CollabDetail() {
             />
             {isOwner ? (
               <>
-                {isDraft && (
-                  <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
-                    <Eye className="h-3.5 w-3.5" /> Publish
+                {/* Desktop: keep the flat action row */}
+                <div className="hidden sm:flex sm:items-center sm:gap-2">
+                  {isDraft && (
+                    <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                      <Eye className="h-3.5 w-3.5" /> Publish
+                    </Button>
+                  )}
+                  {(post.status === "open" || isDraft) && (
+                    <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                      <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Link>
+                    </Button>
+                  )}
+                  {!isDraft && <PinCollabButton collabId={post.id} />}
+                  {post.status === "open" && (
+                    <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Close
+                    </Button>
+                  )}
+                  <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
+                    <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
-                )}
-                {(post.status === "open" || isDraft) && (
-                  <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
-                    <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
-                      <Pencil className="h-3.5 w-3.5" /> Edit
-                    </Link>
-                  </Button>
-                )}
-                {!isDraft && <PinCollabButton collabId={post.id} />}
-                {post.status === "open" && (
-                  <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Close
-                  </Button>
-                )}
-                <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-                  <Trash2 className="h-3.5 w-3.5" /> Delete
-                </Button>
+                </div>
+
+                {/* Mobile: one inline primary + kebab for the rest */}
+                <div className="flex items-center gap-2 sm:hidden">
+                  {isDraft ? (
+                    <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                      <Eye className="h-3.5 w-3.5" /> Publish
+                    </Button>
+                  ) : post.status === "open" ? (
+                    <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                      <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </Link>
+                    </Button>
+                  ) : (
+                    <PinCollabButton collabId={post.id} />
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="outline" className="rounded-full h-9 w-9" aria-label="More actions">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      {!isDraft && post.status === "open" && (
+                        <DropdownMenuItem asChild>
+                          <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
+                            <Pencil className="h-4 w-4 mr-2" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                      )}
+                      {!isDraft && post.status !== "open" && (
+                        <PinCollabMenuItem collabId={post.id} />
+                      )}
+                      {post.status === "open" && !isDraft && (
+                        <PinCollabMenuItem collabId={post.id} />
+                      )}
+                      {post.status === "open" && (
+                        <DropdownMenuItem onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" /> Close
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" /> Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </>
             ) : (
               <>
@@ -412,6 +469,7 @@ function CollabDetail() {
             )}
           </div>
         </div>
+
 
         {/* Draft banner */}
         {isOwner && isDraft && (
