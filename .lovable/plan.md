@@ -1,27 +1,22 @@
-# Fix: Group Today board PGRST200
+# Groups page: remove hero banner, reclaim space
 
-## Root cause (confirmed)
-`group_today_posts.author_id` has only one FK: `group_today_posts_author_id_fkey → auth.users(id)`. The Today tab embeds `author:profiles!group_today_posts_author_id_fkey(...)`, but that constraint points at `auth.users`, not `public.profiles`. PostgREST returns PGRST200 and the board renders empty even though inserts succeed.
+## 1. Remove the gradient banner (`src/components/group/group-hero.tsx`)
+- Delete the `h-16 md:h-20` hero band + fade overlay entirely.
+- Keep the avatar tile, name, kind/Official/Featured chips, member count, tagline, and the right-side action cluster (Lounge / Share / Join).
+- Drop the negative offsets (`-mt-5` on avatar, `-mt-1` on title block) that only existed to overlap the banner. Identity row sits directly under the top nav on a plain background.
+- Tighten vertical padding on the identity row (e.g. `py-3 md:py-4`) so the block reads as a compact header rather than a hero.
 
-## Changes
+Net effect: ~80–96px of vertical space reclaimed above the fold on desktop, ~64px on mobile — the Today board and sidebar move up correspondingly.
 
-### 1. Migration (reversible, additive)
-- Add a second FK on `public.group_today_posts.author_id` referencing `public.profiles(id) ON DELETE CASCADE`, named `group_today_posts_author_profile_fkey`.
-- Keep the existing `group_today_posts_author_id_fkey → auth.users(id)` constraint untouched.
-- No data changes; every author already has a matching `profiles` row (profiles.id mirrors auth.users.id via the standard onboarding trigger). If the migration validation fails on legacy rows, add it `NOT VALID` then `VALIDATE CONSTRAINT` — no row deletions.
-- Run `NOTIFY pgrst, 'reload schema';` at the end so PostgREST picks up the new relationship immediately.
+## 2. Downstream space wins enabled by the shorter header
+- **Tab bar:** collapse the divider gap above tabs; the tabs become the first visual anchor.
+- **Today tab (`group-today-tab.tsx`):** with the header shorter, bump the chat scroller clamp from `h-[clamp(240px,36vh,380px)] xl:h-[46vh]` to `h-[clamp(280px,44vh,460px)] xl:h-[54vh]` so more messages are visible without the composer falling below the fold.
+- **Right sidebar (Next event / Recent collabs):** tighten card padding from `p-4` to `p-3` and reduce empty-state skeleton row heights so both modules fit above the fold on a laptop instead of pushing "Recent Works" below.
 
-### 2. `src/components/group/group-today-tab.tsx`
-- Update the embedded select on line 71 to use the new constraint name exactly:
-  `author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)`
-- Add a visible error state for the posts query: when `useQuery` returns `error`, render an inline error card with the message and a "Retry" button that calls `refetch()`, so a failed fetch never looks like an empty board. Empty-state and loading behavior stay as-is.
+## 3. Not changed
+- Avatar, name, chips, tagline, and action buttons stay exactly as they are.
+- No changes to tab labels, order, counts, or any data queries.
+- Cover image support remains in the schema; this only removes the always-on gradient fallback (a group with `cover_url` also loses its banner on this page for consistency — cover images still appear elsewhere if used).
 
-### 3. Not changed
-- `postTodayMessage`, membership/authorization checks, moderation, expiry logic, and the board's visual design remain untouched.
-- The sidebar (Fresh Collabs / Recent Works) is unaffected.
-
-## Acceptance
-- Chicago member posts → message appears with avatar, persists after refresh.
-- Existing active posts become visible.
-- Non-members still blocked by existing RLS/postTodayMessage checks.
-- No PGRST200 in console/network.
+## Open question
+Do you want the cover image (`group.cover_url`) removed from this header too (as above), or kept as a slim 48px strip only when the group has uploaded a real cover? Default plan: remove it here for full consistency.

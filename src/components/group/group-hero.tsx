@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+
 import { toast } from "sonner";
 import { joinGroupLounge } from "@/lib/instant.functions";
 
@@ -57,23 +57,12 @@ export function GroupHero({
 
   return (
     <>
-      {/* Hero band — title sits BELOW it, so no clipping. */}
-      <div
-        className={cn(
-          "relative h-16 w-full md:h-20",
-          group.cover_url ? "bg-cover bg-center" : "gradient-motion",
-        )}
-        style={group.cover_url ? { backgroundImage: `url(${group.cover_url})` } : undefined}
-      >
-        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-b from-transparent to-background" />
-      </div>
-
-      {/* Title block — relative + z-10 so its own stacking context paints
-          cleanly above the hero gradient regardless of sibling order. */}
-      <div className="relative z-10 -mt-1 px-4 md:px-6">
+      {/* Compact identity row — no banner. */}
+      <div className="relative z-10 px-4 py-3 md:px-6 md:py-4">
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 sm:gap-4">
-          {/* Avatar tile — smaller, isolate for stacking context above the hero fade. */}
-          <div className="relative isolate -mt-5 flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-2 ring-background shadow-lift sm:h-14 sm:w-14">
+          {/* Avatar tile */}
+          <div className="relative isolate flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-surface ring-1 ring-border shadow-sm sm:h-14 sm:w-14">
+
             {group.avatar_url ? (
               <img
                 src={group.avatar_url}
