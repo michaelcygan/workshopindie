@@ -1,12 +1,20 @@
-Change the Group gallery utility strip so the "Add Work" control reads as inline clickable text instead of a bordered dashed box, sitting cleanly alongside the existing filter/sort/search controls.
+## Easier event creation for admins
 
-Current state (verified in `src/routes/g.$slug.tsx`):
-- `GroupWorkTab` renders `<AddMineToGroup group={group} entity="work" compact />` on the left of the utility strip.
-- The `compact` variant still wraps the button in `rounded-2xl border border-dashed border-border bg-surface/60 p-3`, which creates the boxy look the user circled.
+Two small additions, both admin-only, both pointing to `/admin/events` (the existing admin event creation surface).
 
-Changes:
-1. Update `AddMineToGroup` so the `compact` variant renders the trigger as plain inline text (same sizing/color/hover as the adjacent "All" / "Recent" filter buttons) and removes the surrounding dashed box.
-2. Preserve existing behavior: dropdown still opens below the text, lists the user’s works, and toggles tagging/untagging.
-3. Leave the non-compact `AddMineToGroup` (used on the Collabs tab) unchanged so it keeps its bordered empty-state-style button.
+### 1. Group Events tab — clickable empty state
+File: `src/routes/g.$slug.tsx` (around lines 458–462)
 
-No backend, data, or auth changes. Only presentation code in the existing component.
+Replace the static "The calendar is quiet…" paragraph with a variant that depends on `isAdmin`:
+- If admin: render a dashed-border `<Link to="/admin/events">` styled as a full-width empty-state button with a `+` icon and copy "Add the first event to {group.name}" (subtext: "New events will appear here as they are added.").
+- If not admin: keep the current passive message unchanged.
+
+The existing small "+ Add event" pill in the header stays — this just makes the big empty area itself clickable so it matches the annotated screenshot.
+
+### 2. Top-nav "+ Create" menu — add "Add event" (admins only)
+File: `src/components/top-nav.tsx` (Create `DropdownMenuContent`, lines 104–111)
+
+`isAdmin` is already destructured from `useUserRoles()` at the top of the file. Append a third `DropdownMenuItem`, gated by `{isAdmin && …}`, that navigates to `/admin/events` with a `Calendar` icon (already available in lucide) and label "Add event". Placed after "Post a Collab", separated by a `DropdownMenuSeparator` so it reads as an admin action rather than a standard user option.
+
+### Out of scope
+No changes to `/admin/events` itself, no per-group prefill, no new routes, no mobile Create menu changes (the existing pill in the group header already covers mobile admins on the Events tab).

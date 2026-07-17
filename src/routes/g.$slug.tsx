@@ -456,9 +456,21 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
       )}
 
       {!isLoading && pinnedOrRecurring.length === 0 && upcoming.length === 0 && (
-        <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
-          The calendar is quiet for now. New events will appear here as they are added.
-        </p>
+        isAdmin ? (
+          <Link
+            to="/admin/events"
+            className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-soft transition hover:border-border-strong hover:bg-muted"
+          >
+            <span className="inline-flex items-center gap-2 font-medium text-ink">
+              <Plus className="h-4 w-4" /> Add the first event to {group.name}
+            </span>
+            <span className="text-xs text-ink-muted">New events will appear here as they are added.</span>
+          </Link>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
+            The calendar is quiet for now. New events will appear here as they are added.
+          </p>
+        )
       )}
 
       {past.length > 0 && (
