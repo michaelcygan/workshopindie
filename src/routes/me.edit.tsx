@@ -126,6 +126,12 @@ function EditProfile() {
         firstName: first,
         lastName: last,
         aliases: ((data.aliases as string[] | null) ?? []),
+        aliasUrls: (() => {
+          const a = ((data.aliases as string[] | null) ?? []);
+          const u = (((data as { alias_urls?: string[] | null }).alias_urls) ?? []);
+          return a.map((_, i) => u[i] ?? "");
+        })(),
+
         instagram: data.instagram_handle ?? "",
         headline: data.headline ?? "",
         bio: data.bio ?? "",
