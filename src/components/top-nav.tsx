@@ -30,7 +30,7 @@ import {
   LayoutGrid,
   Calendar,
 
-  ListChecks,
+  
 
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
