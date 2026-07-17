@@ -188,12 +188,14 @@ function PromptChip({
   onConfirm,
   onJoinLive,
   disabled,
+  size = "sm",
 }: {
   prompt: RoomPrompt;
   liveCount: number;
   onConfirm: () => void;
   onJoinLive?: () => void;
   disabled?: boolean;
+  size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
   const mediumLabel = prompt.medium
@@ -210,7 +212,10 @@ function PromptChip({
           title={`Open: ${prompt.title}`}
           className={cn(
             "relative shrink-0 whitespace-nowrap rounded-full border border-border/70 bg-surface",
-            "px-3 py-1.5 text-[11.5px] text-ink-soft transition",
+            size === "md"
+              ? "min-h-11 px-4 py-2.5 text-[13px]"
+              : "px-3 py-1.5 text-[11.5px]",
+            "text-ink-soft transition",
             "hover:border-ink/40 hover:text-ink hover:bg-muted/40",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
             "disabled:opacity-60",
@@ -218,6 +223,7 @@ function PromptChip({
             hasLive && "border-primary/40",
           )}
         >
+
           {hasLive && (
             <span
               aria-hidden
