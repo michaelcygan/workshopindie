@@ -515,30 +515,14 @@ function ProfilePage() {
   };
 
   // Default tab: always Works for a portfolio surface.
-  const defaultTab: ProfileTab = search.tab ?? "works";
+  const defaultTab: ProfileTab = currentTab;
 
-  const setTab = (t: ProfileTab) => navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
-
-  // Open-to-collab alert: dismiss once viewer has seen the latest collab.
-  const latestCollabKey = useMemo(() => {
-    if (!openCollabs || openCollabs.length === 0) return null;
-    return openCollabs.reduce<string>((max, c) => (c.created_at > max ? c.created_at : max), openCollabs[0].created_at);
-  }, [openCollabs]);
-  const dismissKey = profile ? `profile-collab-seen:${profile.id}` : null;
-  useEffect(() => {
-    if (!dismissKey || typeof window === "undefined") return;
-    setSeenCollabKey(window.localStorage.getItem(dismissKey));
-  }, [dismissKey]);
-  const markCollabsSeen = () => {
-    if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
-    window.localStorage.setItem(dismissKey, latestCollabKey);
-    setSeenCollabKey(latestCollabKey);
+  const setTab = (t: ProfileTab) => {
+    if (t === "collabs") markCollabsSeen();
+    navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
   };
-  useEffect(() => {
-    if (defaultTab === "collabs") markCollabsSeen();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [defaultTab, latestCollabKey, dismissKey]);
-  const hasUnseenCollab = !!latestCollabKey && seenCollabKey !== latestCollabKey;
+
+
 
 
   const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
