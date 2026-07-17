@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Radio, Users, Sparkles, Home } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { useInProgressBadge } from "@/hooks/use-in-progress-badge";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const tabBase =
@@ -11,7 +11,6 @@ const tabActive =
 
 export function MobileNav() {
   const { user } = useAuth();
-  const { count } = useInProgressBadge();
 
   const initial =
     ((user?.user_metadata?.display_name as string | undefined) ??
@@ -45,14 +44,6 @@ export function MobileNav() {
                 <AvatarImage src={user.user_metadata?.avatar_url} />
                 <AvatarFallback className="text-[9px]">{initial}</AvatarFallback>
               </Avatar>
-              {count > 0 && (
-                <span
-                  aria-label={`${count} in progress`}
-                  className="absolute -right-1 -top-1 inline-flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-primary px-1 text-[9px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
-                >
-                  {count > 9 ? "9+" : count}
-                </span>
-              )}
             </span>
             <span>You</span>
           </Link>

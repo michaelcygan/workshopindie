@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
-import { useInProgressBadge } from "@/hooks/use-in-progress-badge";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,7 +30,7 @@ import {
   LayoutGrid,
   Calendar,
 
-  ListChecks,
+  
 
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
@@ -123,7 +123,6 @@ export function TopNav() {
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">{initial}</AvatarFallback>
                   </Avatar>
-                  <InProgressBadgeDot />
                 </button>
 
               </DropdownMenuTrigger>
@@ -152,10 +151,6 @@ export function TopNav() {
                     <Briefcase className="mr-2 h-4 w-4" /> My stuff
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent className="w-52">
-                    <DropdownMenuItem onClick={() => navigate({ to: "/in-progress" })}>
-                      <ListChecks className="mr-2 h-4 w-4" /> In Progress
-                      <InProgressCountPill />
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
                       <Briefcase className="mr-2 h-4 w-4" /> My Collabs
                     </DropdownMenuItem>
@@ -214,27 +209,4 @@ export function TopNav() {
   );
 }
 
-
-function InProgressBadgeDot() {
-  const { count } = useInProgressBadge();
-  if (count <= 0) return null;
-  return (
-    <span
-      aria-label={`${count} in progress`}
-      className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground ring-2 ring-background"
-    >
-      {count > 9 ? "9+" : count}
-    </span>
-  );
-}
-
-function InProgressCountPill() {
-  const { count } = useInProgressBadge();
-  if (count <= 0) return null;
-  return (
-    <span className="ml-auto inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold text-primary-foreground">
-      {count > 9 ? "9+" : count}
-    </span>
-  );
-}
 
