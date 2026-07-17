@@ -390,6 +390,25 @@ function EditProfile() {
                   <Label htmlFor="un">Username</Label>
                   <Input id="un" value={form.username} onChange={(e) => set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
                   <p className="text-xs text-ink-muted">Your public @handle — used in your profile URL.</p>
+                  {form.username ? (
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
+                        <Link2 className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
+                        <span className="min-w-0 flex-1 truncate text-xs text-ink">{bioLinkUrl.replace(/^https?:\/\//, "")}</span>
+                        <button
+                          type="button"
+                          onClick={copyBioLink}
+                          className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+                        >
+                          {bioLinkCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {bioLinkCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-ink-muted">Use as your link in bio — Instagram, TikTok, email signature.</p>
+                    </div>
+                  ) : (
+                    <p className="mt-2 text-[11px] text-ink-muted">Pick a username to get your link-in-bio URL.</p>
+                  )}
                 </div>
               </div>
             </div>
