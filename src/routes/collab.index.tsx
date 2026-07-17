@@ -24,8 +24,8 @@ import { KickerChip } from "@/components/kicker-chip";
 
 const searchSchema = z.object({
   cat: fallback(z.enum(["all", "film", "music", "writing", "build", "visual"]), "all").default("all"),
-  city: fallback(z.string().uuid().optional(), undefined),
-  cityName: fallback(z.string().optional(), undefined),
+  city: z.string().uuid().catch(undefined as unknown as string).optional(),
+  cityName: z.string().catch(undefined as unknown as string).optional(),
   online: fallback(z.boolean(), false).default(false),
 });
 

@@ -29,8 +29,8 @@ type When = "upcoming" | "past";
 const searchSchema = z.object({
   when: fallback(z.enum(["upcoming", "past"]), "upcoming").default("upcoming"),
   format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
-  city: fallback(z.string().uuid().optional(), undefined),
-  cityName: fallback(z.string().optional(), undefined),
+  city: z.string().uuid().catch(undefined as unknown as string).optional(),
+  cityName: z.string().catch(undefined as unknown as string).optional(),
   mine: fallback(z.boolean(), false).default(false),
 });
 
