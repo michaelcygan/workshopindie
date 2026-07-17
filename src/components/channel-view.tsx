@@ -1007,7 +1007,16 @@ export function ChannelView({
 
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
-              {roomId && <RoomNoteBanner roomId={roomId} />}
+              {roomId && (
+                <PinnedMessage
+                  roomId={roomId}
+                  messages={messages}
+                  profileLookup={profileLookup}
+                  mentionCandidates={mentionCandidates}
+                  meUsername={me?.username ?? null}
+                  meUserId={user?.id ?? null}
+                />
+              )}
               <div className="relative">
               <div
                 ref={scrollRef}
