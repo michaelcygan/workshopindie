@@ -1,25 +1,19 @@
-## Problem
-On laptop-height screens (≈900px tall) the Lounge desktop chat container is fixed at `h-[60vh]`, which combined with the video stage (max 70vh) pushes the composer below the fold. On tall desktop monitors current sizing is perfect.
+## Change
+Replace the hardcoded "Work" chip on Featured cards (profile page) with the work's category label.
 
-## Fix
-Replace the fixed `h-[60vh]` with a responsive clamp so the container shrinks on laptop viewports and matches today's height on tall monitors — no changes to video, sidebar, or mobile fullscreen shell.
+**File:** `src/routes/u.$username.tsx` (line 1054)
 
-**File:** `src/components/channel-view.tsx`
-
-Change all five occurrences (lines 956, 965, 986, 1003, 1018) from:
+Import `CATEGORY_LABELS` (already sourced from `@/lib/categories`) and swap:
+```tsx
+<span …>Work</span>
 ```
-h-[60vh]
-```
-to:
-```
-h-[clamp(320px,46vh,560px)] xl:h-[60vh]
+for:
+```tsx
+<span …>{CATEGORY_LABELS[w.category] ?? "Work"}</span>
 ```
 
-Result:
-- Short laptops (~800–900px tall): ~46vh (≈380–415px) → composer visible without scroll
-- Tall desktops (≥1280px wide, typically ≥900px tall): reverts to `60vh` exactly as today
-- Never smaller than 320px, never larger than 560px on laptop range
+The "Collab" chip on pinned collabs (line 1069) is left as-is per user scope (only the Work chip was called out).
 
 ## Scope
-- Desktop chat/gallery/collabs/links/tools tab containers only
-- No changes to VideoStage, sidebar, mobile `FullscreenRoom`, or any logic
+- One file, one JSX text swap plus adding `CATEGORY_LABELS` to the existing import from `@/lib/categories`.
+- No styling, layout, or data changes.
