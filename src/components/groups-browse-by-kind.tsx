@@ -23,7 +23,7 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
     <section>
       <div className="mb-3 flex items-baseline justify-between px-1">
         <h2 className="font-display text-xl text-ink md:text-2xl">Browse by kind</h2>
-        <span className="text-xs text-ink-muted">Four flavors of room</span>
+        <span className="text-xs text-ink-muted">Find your people</span>
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {kinds.map((k) => {
