@@ -569,7 +569,7 @@ export function CollabComposer({
           </section>
         </div>
 
-        {/* Every Collab gets a private Lounge automatically — accepted collaborators can open it from the Collab page. */}
+        {/* Accepted collaborators get a private chat, shared Links, and a meeting button right on the Collab page. */}
 
 
         {/* Inline action bar — always visible on mobile, and on all sizes when embedded (dialog has no room for a fixed footer). */}
@@ -667,7 +667,7 @@ export function CollabComposer({
           <DialogHeader>
             <DialogTitle>Your Collab is live.</DialogTitle>
             <DialogDescription>
-              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account. Accepted collaborators can open this Collab's private Lounge from the Collab page whenever you want to meet live.
+              It's open for applications, review, edits, and sharing. Anyone with the link can view it or apply — they don't need an account. Once you accept a collaborator, they can chat, share links, and hop into a meeting with you right on the Collab page.
             </DialogDescription>
           </DialogHeader>
           <div className="mt-1 space-y-1.5">

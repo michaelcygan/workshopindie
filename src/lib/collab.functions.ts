@@ -221,14 +221,27 @@ export const listApplicants = createServerFn({ method: "POST" })
       }
     }
 
+    // Which senders are already accepted collaborators?
+    const acceptedSet = new Set<string>();
+    if (senderIds.length > 0) {
+      const { data: invites } = await supabase
+        .from("collab_invites")
+        .select("invitee_user_id,status")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("status", "accepted")
+        .in("invitee_user_id", senderIds);
+      for (const i of invites ?? []) acceptedSet.add(i.invitee_user_id);
+    }
 
     const members = events.map((e) => ({
       id: e.id,
       sent_at: e.sent_at,
       message_preview: e.message_preview,
       collab_role_id: e.collab_role_id,
+      sender_user_id: e.sender_user_id,
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
+      accepted: acceptedSet.has(e.sender_user_id),
     }));
 
     return { members, guests: guestRows };
@@ -796,5 +809,151 @@ export const getMyPinForCollab = createServerFn({ method: "POST" })
       pinned: !!row.data?.pinned_at,
       totalPinned: (workRes.count ?? 0) + (collabRes.count ?? 0),
       maxPins: MAX_PROFILE_PINS,
+    };
+  });
+
+/* ─── Collab acceptance + membership (workspace) ──────────────────── */
+
+export const acceptCollabApplicant = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        collabPostId: z.string().uuid(),
+        applicantUserId: z.string().uuid(),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    // 1. Verify caller owns the Collab.
+    const { data: post, error: postErr } = await supabase
+      .from("collab_posts")
+      .select("id,user_id,title,slug,terms_version")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (postErr) throw new Error(postErr.message);
+    if (!post) throw new Error("Collab not found");
+    if (post.user_id !== userId) throw new Error("Only the Collab owner can accept applicants");
+    if (data.applicantUserId === userId) throw new Error("You can't accept yourself");
+
+    // 2. Verify the applicant actually applied.
+    const { data: contact } = await supabase
+      .from("collab_contact_events")
+      .select("id,collab_role_id")
+      .eq("collab_post_id", data.collabPostId)
+      .eq("sender_user_id", data.applicantUserId)
+      .order("sent_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (!contact) throw new Error("No application found from this user");
+
+    // 3. Idempotent upsert into collab_invites as 'accepted'.
+    const { data: existing } = await supabaseAdmin
+      .from("collab_invites")
+      .select("id,status,collab_role_id")
+      .eq("collab_post_id", data.collabPostId)
+      .eq("invitee_user_id", data.applicantUserId)
+      .maybeSingle();
+
+    const nowIso = new Date().toISOString();
+    const termsVersion = (post as { terms_version?: number | null }).terms_version ?? 1;
+
+    if (existing) {
+      if (existing.status !== "accepted") {
+        const { error } = await supabaseAdmin
+          .from("collab_invites")
+          .update({
+            status: "accepted",
+            responded_at: nowIso,
+            accepted_terms_version: termsVersion,
+            collab_role_id: existing.collab_role_id ?? contact.collab_role_id ?? null,
+          })
+          .eq("id", existing.id);
+        if (error) throw new Error(error.message);
+      }
+    } else {
+      const { error } = await supabaseAdmin.from("collab_invites").insert({
+        collab_post_id: data.collabPostId,
+        collab_role_id: contact.collab_role_id ?? null,
+        inviter_user_id: userId,
+        invitee_user_id: data.applicantUserId,
+        status: "accepted",
+        responded_at: nowIso,
+        accepted_terms_version: termsVersion,
+      });
+      if (error) throw new Error(error.message);
+    }
+
+    // 4. Notify the accepted user (best-effort).
+    await supabaseAdmin
+      .from("notifications")
+      .insert({
+        user_id: data.applicantUserId,
+        kind: "collab_accepted",
+        actor_user_id: userId,
+        entity_type: "collab_post",
+        entity_id: data.collabPostId,
+        payload: {
+          collab_title: post.title ?? null,
+          collab_slug: post.slug ?? null,
+          url: post.slug ? `/collab/${post.slug}` : null,
+        },
+      })
+      .then(() => null, () => null);
+
+    return { ok: true as const };
+  });
+
+export const listCollabMembers = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ collabPostId: z.string().uuid() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post) throw new Error("Collab not found");
+
+    // Check membership via helper (owner OR accepted invite).
+    const isOwner = post.user_id === userId;
+    let isMember = isOwner;
+    if (!isMember) {
+      const { data: mine } = await supabase
+        .from("collab_invites")
+        .select("id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("invitee_user_id", userId)
+        .eq("status", "accepted")
+        .maybeSingle();
+      isMember = !!mine;
+    }
+    if (!isMember) throw new Error("Not a member of this Collab");
+
+    const { data: invites } = await supabase
+      .from("collab_invites")
+      .select("invitee_user_id")
+      .eq("collab_post_id", data.collabPostId)
+      .eq("status", "accepted");
+
+    const memberIds = [post.user_id, ...(invites ?? []).map((i) => i.invitee_user_id)];
+    const uniqueIds = Array.from(new Set(memberIds));
+
+    const { data: profs } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id", uniqueIds);
+
+    const byId = Object.fromEntries((profs ?? []).map((p) => [p.id, p]));
+    return {
+      isOwner,
+      ownerId: post.user_id,
+      members: uniqueIds
+        .map((id) => byId[id])
+        .filter(Boolean) as { id: string; username: string | null; display_name: string | null; avatar_url: string | null }[],
     };
   });

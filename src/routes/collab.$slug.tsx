@@ -16,6 +16,7 @@ import { ReportDialog } from "@/components/report-dialog";
 import { ShareCollabSheet } from "@/components/share-collab-sheet";
 import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
+import { CollabWorkspace } from "@/components/collab/collab-workspace";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
@@ -497,6 +498,10 @@ function CollabDetail() {
         )}
 
 
+        {/* Private workspace — visible only to owner + accepted collaborators */}
+        {!isDraft && (isOwner || membership?.isMember) && (
+          <CollabWorkspace collabPostId={post.id} ownerId={post.user_id} isOwner={isOwner} />
+        )}
 
 
         {/* Owner activity meter (open state) */}
