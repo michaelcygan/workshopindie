@@ -201,9 +201,21 @@ function EditProfile() {
     const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
     const finalDisplay = `${first} ${last}`.trim();
     const seenAlias = new Set<string>();
-    const cleanAliases = form.aliases
-      .map((a) => a.trim())
-      .filter((a) => {
+    const normalizeAliasUrl = (raw: string): string => {
+      const t = raw.trim();
+      if (!t) return "";
+      const withScheme = /^https?:\/\//i.test(t) ? t : `https://${t}`;
+      try {
+        const u = new URL(withScheme);
+        if (u.protocol !== "http:" && u.protocol !== "https:") return "";
+        return u.toString().slice(0, 500);
+      } catch {
+        return "";
+      }
+    };
+    const pairs = form.aliases
+      .map((a, i) => ({ a: a.trim(), u: form.aliasUrls[i] ?? "" }))
+      .filter(({ a }) => {
         if (!a || a.length > 40) return false;
         const k = a.toLowerCase();
         if (seenAlias.has(k)) return false;
@@ -211,12 +223,16 @@ function EditProfile() {
         return true;
       })
       .slice(0, 5);
+    const cleanAliases = pairs.map((p) => p.a);
+    const cleanAliasUrls = pairs.map((p) => normalizeAliasUrl(p.u));
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
       first_name: first,
       last_name: last,
       aliases: cleanAliases,
+      alias_urls: cleanAliasUrls,
+
       instagram_handle: ig || null,
       headline: form.headline || null,
       bio: form.bio || null,
