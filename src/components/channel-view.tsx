@@ -1008,24 +1008,26 @@ export function ChannelView({
 
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
+              <div className="relative flex h-[clamp(280px,38vh,440px)] xl:h-[52vh] flex-col">
               {roomId && (
-                <PinnedMessage
-                  roomId={roomId}
-                  messages={messages}
-                  profileLookup={profileLookup}
-                  mentionCandidates={mentionCandidates}
-                  meUsername={me?.username ?? null}
-                  meUserId={user?.id ?? null}
-                />
+                <div className="shrink-0">
+                  <PinnedMessage
+                    roomId={roomId}
+                    messages={messages}
+                    profileLookup={profileLookup}
+                    mentionCandidates={mentionCandidates}
+                    meUsername={me?.username ?? null}
+                    meUserId={user?.id ?? null}
+                  />
+                </div>
               )}
-              <div className="relative">
               <div
                 ref={scrollRef}
                 onScroll={(e) => {
                   const el = e.currentTarget;
                   if (el.scrollHeight - el.scrollTop - el.clientHeight < 40) setHasNewBelow(false);
                 }}
-                className="h-[clamp(280px,38vh,440px)] xl:h-[52vh] overflow-y-auto px-4 py-4 md:px-6"
+                className="flex-1 min-h-0 overflow-y-auto px-4 py-4 md:px-6"
               >
 
                 {messages.length === 0 ? (
