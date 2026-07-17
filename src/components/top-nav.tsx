@@ -123,7 +123,6 @@ export function TopNav() {
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="text-xs">{initial}</AvatarFallback>
                   </Avatar>
-                  <InProgressBadgeDot />
                 </button>
 
               </DropdownMenuTrigger>
