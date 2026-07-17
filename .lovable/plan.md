@@ -1,43 +1,63 @@
-Two fixes in `src/routes/u.$username.tsx`.
 
-## 1. React error #310 — hook count changes between renders
+Only `src/routes/u.$username.tsx` changes. The desktop (`md:`) layout is untouched.
 
-**Root cause (confirmed by reading the file):** the `useMemo` at line 497 and the two `useEffect`s at lines 502 and 511 (plus `useState(seenCollabKey)` at 312 — that one is already above the returns, fine) are declared AFTER two early returns:
+## What's wrong today
 
-- `if (isLoading) return …` at line 420
-- `if (!profile) return …` at line 428
+On mobile, the identity block renders name on its own line, then a single horizontal action row underneath: `[ Follow ][Msg][Share][Report][Block]`. That squeezes secondary actions into the primary row and makes the header read as a hasty toolbar instead of an intentional hierarchy.
 
-On the first render (loading) only the hooks above line 420 run. On the next render (profile loaded) three more hooks run — React aborts with "Rendered more hooks than during the previous render" (minified #310). This is why the profile crashes in the IG in-app browser, where the render sequence is more likely to hit the loading path first.
+## Target layout (matches upload 2 + upload 3)
 
-**Fix:** move the collab-alert hook block (the `latestCollabKey` `useMemo`, both `useEffect`s, and the `dismissKey` / `hasUnseenCollab` derivations) to sit ABOVE the two early returns, alongside the other `useQuery`s and the existing `useState(seenCollabKey)`. Guard them against `profile` being `null`:
+The identity block becomes a 2‑column grid on mobile: name/handle/meta on the left, action stack on the right, both starting on the same horizontal line as the name.
 
-- `dismissKey = profile ? \`profile-collab-seen:${profile.id}\` : null` (already null-safe).
-- `latestCollabKey` `useMemo` already handles empty `openCollabs`.
-- Both `useEffect`s already early-return when `dismissKey` is null.
+```text
+Avatar (overlaps cover, left)
 
-No other hooks live below the returns, so this single move restores a stable hook order across every render path. `markCollabsSeen` is a plain function (not a hook) and can stay where it is or move with the block — no ordering impact.
+Michael Cygan                    [  + Follow      ]
+@michaelcygan  · Chicago         [ Share ] [ Report ]
+[IG @f.o.to] [Website]
+Outsider artist
+also known as [DJ Climate Crisis]
+"There's art in everything…"
+```
 
-## 2. Mobile header — stop the Follow / Share / Report cluster from squishing the name
+### Visitor, not mutual (default)
+- **Right column, row 1:** `FollowButton` — full width of the right column, primary orange pill, `+ Follow` label. Horizontally aligned with the `<h1>` baseline.
+- **Right column, row 2:** two equally-sized icon+label ghost pills, smaller than Follow: `Share` and `Report`. `Block` moves out of the header row entirely and appears at the bottom of the About tab (already the pattern for less-frequent destructive actions) — it's noise in a first-impression header.
+- No Message button in this state (mutual-only, already enforced by `MessageButton` returning null).
 
-**Current layout (lines 599–610):** the identity block on mobile is a two-column grid `grid-cols-[minmax(0,1fr)_auto]` where the right column stacks Follow on top, then a Share + Report + Block row underneath. At IG's ~390 px the right column is wide enough to force the name column narrow AND still leaves the ugly dead band under the name that the screenshot circles.
+### Visitor, mutual (Message eligible) — matches upload 3
+- **Right column, row 1:** two pills side-by-side.
+  - `FollowButton` collapses to an **icon-only** compact pill: `person` icon + `check` icon (signals "following, mutual"), same height as the DM pill, `aria-label="Following — mutual"`.
+  - `MessageButton` sits to its right as a compact primary pill: `message` icon + `DM` label.
+- **Right column, row 2:** `Share` + `Report` ghost pills, same as the default state.
+- The compact Follow state is triggered by adding a `compact` prop to `FollowButton` that (a) drops the text label, (b) swaps the "Following" check for a `Users` + `Check` icon pair, (c) keeps the existing unfollow-on-click behavior via the existing dropdown/confirm path. Non-mutual still renders the full `+ Follow` pill.
 
-**Fix — stop competing for the same row on mobile.** Restructure the mobile identity block so:
+### Owner (isOwn)
+- **Right column, row 1:** `Edit profile` primary pill (full width of the right column).
+- **Right column, row 2:** `Share` ghost pill (single, right-aligned; no Report/Block for self).
 
-- The name row is full-width: just `<h1>` + `CreatorBadge`, no action column beside it. Drop the grid on mobile; keep the current desktop layout untouched (`md:` and up already renders actions in the avatar row via the block at line 593).
-- Directly under the name row (still inside the identity block, still `md:hidden`), render a single full-width action row: `flex items-center gap-2` with `<FollowButton>` taking `flex-1` (or `w-full` inside a `flex-1` wrapper) so it grows to fill available space, followed by icon-only `MessageButton`, `ShareSheet`, `ReportDialog`, `BlockButton` at `shrink-0`. Owner view collapses to `<Edit profile>` full-width + `ShareSheet` icon.
-- To keep visitor/owner branches tidy, split `renderProfileActions` into `renderMobileActions()` (full-width row, icon-only secondaries) and keep the existing `renderProfileActions()` for the desktop avatar row unchanged.
+### Grid mechanics
+- Wrap identity in `grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 items-start md:block` on mobile only.
+- Left column: `min-w-0` so name truncates cleanly. Contains `<h1>` + `CreatorBadge`, then the existing meta line (`@handle`, city, IG), then LinkPills, headline, bio, aliases — all unchanged.
+- Right column: `shrink-0 flex flex-col items-stretch gap-1.5 w-[9.5rem]` (fixed 152 px so Follow never fights the name for width; comfortably fits `+ Follow` and the `[Share][Report]` pair at 375 px).
+- Row-2 secondary buttons: `h-8 px-2.5 text-xs rounded-full` icon+label, split via a nested `grid grid-cols-2 gap-1.5` inside the right column so Share and Report are the same width and read as a pair.
 
-This makes the header dynamic across 320 / 360 / 375 / 390 / 430:
-- Name always gets the full row width — no squish, no wrap into the buttons, no dead space under the name.
-- The action row below is one line at every width because the secondary buttons are icon-only on mobile (each already exposes an `aria-label`). Follow stays the visually dominant primary action.
-- Desktop (`md:` and up) is byte-for-byte unchanged.
-
-## Verification
-
-- Load `/u/michaelcygan` in the preview at mobile widths (375, 390, 430) — name is full-width, action row is one line below, no clipping.
-- Reload the profile URL in the IG in-app browser on iPhone — no "Couldn't load this profile" #310 crash; profile renders through the loading → loaded transition.
-- Desktop `md:` layout visually identical to today.
+### Why this is better
+- **Hierarchy is visible at a glance.** Primary action (Follow / DM) sits on the name line and dominates. Secondary actions (Share, Report) are visibly smaller and grouped underneath — the eye stops caring about them until it needs to.
+- **No dead band under the name.** The old layout left horizontal air between the h1 and a wide action row; the grid tucks actions alongside the name so the header is compact and the bio starts higher.
+- **Mutual state is legible.** The person+check + DM pair reads as "we're connected, message me" — the exact behavioral affordance mutual-follow unlocks. Collapsing Follow to an icon in this state reclaims room for the DM pill without needing a wider header.
+- **Owner and visitor use the same grid**, so switching accounts doesn't reflow the page structure — only the button contents change.
 
 ## Files touched
 
-- `src/routes/u.$username.tsx` only. No schema, routing, or business-logic changes.
+- `src/routes/u.$username.tsx` — replace the mobile identity block (roughly lines 608–652) with the grid layout above; the desktop branch at 603–606 is unchanged.
+- `src/components/follow-button.tsx` — add optional `compact?: boolean` prop. When `compact && following`, render icon-only (`Users` + `Check`, `size="icon"`, `aria-label="Following"`), keep unfollow behavior. When `compact && !following`, still render the full `+ Follow` pill (compact only affects the mutual/following state, per the sketch).
+
+No schema, routing, business-logic, or desktop changes.
+
+## Verification
+
+- `/u/michaelcygan` at 320 / 360 / 375 / 390 / 430 px: name is full-width in its column and never wraps into buttons; Follow sits on the name line; Share/Report are a matched pair below.
+- Sign in as a mutual of that profile: Follow collapses to person+check icon pill, DM pill appears beside it, Share/Report unchanged below.
+- Owner view (`/u/<self>`): Edit profile primary on the name line, Share alone below.
+- Desktop `md:` and up: byte-for-byte identical to today.

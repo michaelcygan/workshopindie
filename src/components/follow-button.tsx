@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Check, Plus } from "lucide-react";
+import { Check, Plus, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { SignupGateModal } from "@/components/signup-gate-modal";
+
 
 export function FollowButton({
   targetUserId,
