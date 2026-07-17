@@ -330,7 +330,7 @@ function GroupPage() {
       <div className="space-y-4">
         <GroupHero group={group} nextEvent={nextEvent} />
 
-        <GroupNewsTicker groupId={group.id} />
+        <GroupNewsTicker slug={group.slug} />
 
         <div className="px-4 md:px-6">
           <GroupTabBar
