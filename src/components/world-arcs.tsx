@@ -491,7 +491,7 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
           const inner = `${glyph}${routeText}${labelText}`;
 
           if (p.href) {
-            label.innerHTML = `<a href="${p.href}" data-pill-link="1" class="inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
+            label.innerHTML = `<a href="${p.href}" data-pill-link="1" class="pointer-events-auto inline-flex items-center transition-shadow hover:shadow-md rounded-full -m-2.5 px-2.5 py-1">${inner}</a>`;
           } else {
             label.innerHTML = inner;
           }
@@ -524,7 +524,11 @@ export function WorldArcs({ className, promos }: { className?: string; promos?: 
       // Let cmd/ctrl/middle-click open in new tab.
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button === 1) return;
       e.preventDefault();
-      router.navigate({ to: href });
+      try {
+        router.history.push(href);
+      } catch {
+        window.location.assign(href);
+      }
     };
     label.addEventListener("mouseenter", enter);
     label.addEventListener("mouseleave", leave);
