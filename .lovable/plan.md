@@ -1,42 +1,24 @@
-## Group page: space + reliability pass
+## Two real fixes on the Group Today tab
 
-Three focused fixes on `/g/$slug` — no redesign, just squeezing wasted space and correcting the Recent Collabs query so the module never lies.
+### 1. Recent Collabs is broken by a schema mismatch — not the filter
 
-### 1. Reclaim header space above the news ticker
+The `group_collabs` table actually has columns `group_id`, `collab_post_id`, `added_by`, `created_at`. The `RecentCollabs` query in `src/components/group/group-today-tab.tsx` selects `added_at` (doesn't exist) and embeds `collab:collab_posts(...)` without an FK hint. Supabase returns an error, the query resolves to `[]`, and the module renders empty — regardless of my previous status-filter change.
 
-Currently `GroupHero` uses `py-3 md:py-4` and its parent stack uses `space-y-4`, producing ~28–32px of dead space between the identity row and the "IN THE NEWS" ticker (the small circle in the screenshot).
+Chicago has 3 real `group_collabs` rows; the module still shows empty because the query itself fails.
 
-- In `src/routes/g.$slug.tsx`: change the wrapper `<div className="space-y-4">` around the hero + ticker + tab bar to `space-y-2` so the ticker sits closer to the identity row. Tab bar keeps its own breathing room via its section padding.
-- In `src/components/group/group-hero.tsx`: tighten identity row padding to `px-4 py-2 md:px-6 md:py-2.5` (was `py-3 md:py-4`). Also drop the tagline's `mt-0.5` → `mt-0` (already tight).
+Fix in `RecentCollabs`:
+- Replace `added_at` → `created_at` in both `.select(...)` and `.order(...)`.
+- Add an explicit FK hint on the embed: `collab:collab_posts!collab_post_id(...)` so PostgREST resolves the relationship deterministically.
+- Keep the "show any status, subtle pill when not open" behavior from the previous pass.
+- Surface fetch errors via `useQuery`'s `error` so silent failures like this don't happen again: render a tiny "Couldn't load — retry" line in the sidebar card instead of the empty state when `error` is set.
 
-Result: ~20–24px reclaimed above the fold, ticker reads as part of the header.
+### 2. Chat container still bleeds past the fold
 
-### 2. Shorten the Today chat so the composer stays above the fold on laptops
+Current clamp is `h-[clamp(240px,34vh,380px)] xl:h-[46vh]`. On the user's laptop viewport (~800px, below the `xl` 1280 breakpoint) the scroller + header + composer + page chrome push the "Send" button below the fold.
 
-`group-today-tab.tsx` line 199 currently clamps to `h-[clamp(280px,44vh,460px)] xl:h-[54vh]`. On the reported ~735px viewport, 44vh ≈ 323px plus header (~130px) + ticker (~40px) + tab bar (~48px) + composer (~64px) pushes past the fold.
+Tighten to `h-[clamp(180px,26vh,300px)] xl:h-[38vh]`. That keeps the scroller visible on the smallest laptops (~180px) while allowing large desktops to breathe. Composer stays anchored at the bottom of the section, which itself now fits inside a standard laptop viewport with the whole Group header + tab bar above it.
 
-- Change the scroller clamp to `h-[clamp(240px,34vh,380px)] xl:h-[46vh]`.
-- Keep the outer flex column so pinned messages still consume internal space (no container growth).
+### Files touched
+- `src/components/group/group-today-tab.tsx` — RecentCollabs query fix + error surfacing, chat scroller clamp reduction.
 
-### 3. Fix Recent Collabs so it populates whenever collabs exist
-
-Bug is in `RecentCollabs` inside `src/components/group/group-today-tab.tsx` (~L381–401). The query pulls the 12 most recent `group_collabs` rows, then client-filters `c.status === "open"`. Any recent collabs that are `full`, `closed`, `wrapped`, etc. get dropped, and — worse — if the 12 most recent all happen to be non-open the module reads "No open collabs yet" even though the Collabs tab shows 3.
-
-Rule the user stated: **if any collabs are posted into the group, Recent Collabs must never be blank.**
-
-Fix:
-- Remove the `status === "open"` client filter entirely. Show the 5 most-recently-added collabs regardless of status.
-- Rename the empty-state copy to `"No collabs yet."` (only shown when the group truly has zero collabs).
-- Surface status subtly on each row: append a tiny status pill next to the category pill when status is not `open` (e.g. `Full`, `Closed`, `Wrapped`) so users still see state at a glance. Uses existing muted pill styling — no new tokens.
-- Keep `limit(12)` → `.slice(0, 5)` so we still de-dupe/order client-side without an extra RPC.
-
-No schema, RLS, or server-fn changes.
-
-### Technical details
-
-- Files touched:
-  - `src/routes/g.$slug.tsx` (spacing wrapper)
-  - `src/components/group/group-hero.tsx` (identity row padding)
-  - `src/components/group/group-today-tab.tsx` (chat clamp + RecentCollabs query & row rendering)
-- No migrations, no new deps.
-- Verify by reloading `/g/chicago` on a 1280×735 viewport: composer visible without scroll, Recent Collabs lists the 3 existing Chicago collabs, header sits tight against the news ticker.
+No schema, no server-fn, no other files.
