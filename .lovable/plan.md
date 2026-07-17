@@ -1,18 +1,25 @@
-## Problem
-The floating "route → route · title" pill on the landing globe renders an `<a href="/works/…">` inside a label div that intercepts click and calls `router.navigate({ to: href })`. Two issues make the click a no-op:
+## Discovery
+Everything the request needs already exists:
 
-1. `router.navigate({ to: <raw string> })` — TanStack Router's typed navigate does not always resolve dynamic string paths like `/works/some-slug` or `/g/some-slug`; the click is swallowed by `e.preventDefault()` and nothing happens.
-2. The inner `<a>` sits inside a div with Tailwind's `pointer-events-none`. The RAF loop flips the parent's inline `pointerEvents` to `auto` only when an active promo with `href` is drawn — in rapid frame updates the anchor briefly loses pointer events, so the mouseenter/click that would "freeze" the pill sometimes misses.
+- **DB gate** (`public.can_dm` RPC): mutual follow OR collab allowance OR workshop host↔participant OR target has `dm_policy = 'everyone'`; blocks and `dm_policy = 'nobody'` deny.
+- **Settings UI** (`src/routes/settings.tsx`): user can pick `mutuals` / `everyone` / `nobody`. "Open DMs" opt-in = `everyone`.
+- **`MessageButton`** (`src/components/message-button.tsx`) already calls `checkCanDm` and is rendered on the profile (`src/routes/u.$username.tsx` line 549) next to Follow / Share / Report / Block.
 
-## Fix
-**File:** `src/components/world-arcs.tsx`
+The one gap vs. the ask: today `MessageButton` renders even when `canDm === false` as a **disabled** button with a "follow each other" tooltip. The user wants it to be visible **only** when DMs are actually possible — so it becomes a real signal of "you can DM this person right now."
 
-1. **Reliable SPA navigation** — replace `router.navigate({ to: href })` with `router.history.push(href)`, which accepts any string path and performs a client-side navigation.
-2. **Guaranteed hit target** — add `pointer-events-auto` on the inner `<a>` template so the link is always clickable once rendered (line 494), independent of the RAF-controlled parent inline style.
-3. **Fallback** — if `router.history.push` is unavailable, `window.location.assign(href)` as a last resort inside the same click handler.
+## Change
+**File:** `src/components/message-button.tsx`
 
-No changes to the pill visual, promo data pipeline, or globe animation.
+Replace the disabled-with-tooltip fallback with an early `return null` whenever `canDm !== true` (still returns `null` for self / signed-out, unchanged).
+
+Effect:
+- Mutual followers → button appears next to Follow on the profile header.
+- Target has `dm_policy = 'everyone'` (open DMs opt-in) → button appears for any signed-in viewer.
+- Otherwise (not mutual, target on `mutuals`/`nobody`, blocked, self, or signed-out) → button is hidden entirely.
+
+Placement stays where it is (profile action row alongside Follow / Share) — that's the natural spot and matches the screenshot.
 
 ## Scope
-- One file: `src/components/world-arcs.tsx`
-- Click handler + one class on the anchor template string
+- One file changed (`message-button.tsx`).
+- No schema, RPC, settings, or profile-layout changes.
+- Removes now-unused Tooltip imports in the same edit.
