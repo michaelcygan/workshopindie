@@ -697,7 +697,7 @@ function ProfilePage() {
 
         {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
-          <blockquote className="mt-3 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
+          <blockquote className="mt-2 max-w-3xl border-l-2 border-ink/30 pl-4 md:mt-8 md:pl-5">
             <button
               type="button"
               onClick={() => setStatementExpanded((v) => !v)}
