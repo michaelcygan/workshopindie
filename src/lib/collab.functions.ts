@@ -221,14 +221,27 @@ export const listApplicants = createServerFn({ method: "POST" })
       }
     }
 
+    // Which senders are already accepted collaborators?
+    const acceptedSet = new Set<string>();
+    if (senderIds.length > 0) {
+      const { data: invites } = await supabase
+        .from("collab_invites")
+        .select("invitee_user_id,status")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("status", "accepted")
+        .in("invitee_user_id", senderIds);
+      for (const i of invites ?? []) acceptedSet.add(i.invitee_user_id);
+    }
 
     const members = events.map((e) => ({
       id: e.id,
       sent_at: e.sent_at,
       message_preview: e.message_preview,
       collab_role_id: e.collab_role_id,
+      sender_user_id: e.sender_user_id,
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
+      accepted: acceptedSet.has(e.sender_user_id),
     }));
 
     return { members, guests: guestRows };
