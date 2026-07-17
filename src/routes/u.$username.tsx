@@ -707,10 +707,17 @@ function ProfilePage() {
           })()}
           {profile.headline && <p className="mt-1.5 text-[13px] text-ink-soft md:mt-2 md:text-base">{profile.headline}</p>}
 
-          {/* Desktop-only link pills (mobile version lives inside the grid above) */}
-          <div className="hidden md:block">
+          {/* Desktop-only combined stats + external-link pills row */}
+          <div className="mt-2 hidden flex-wrap items-center justify-between gap-2 md:flex">
+            <ProfileStats
+              username={username}
+              works={counts.works}
+              workedWith={profile.worked_with_count}
+              followers={profile.follower_count}
+              following={profile.following_count}
+            />
             <LinkPills
-              className="mt-2"
+              variant="inline"
               instagram={profile.instagram_handle}
               links={profile.external_links ?? []}
             />
@@ -798,13 +805,6 @@ function ProfilePage() {
           </div>
         )}
 
-        {/* Stats strip (desktop) */}
-        <div className="mt-6 hidden flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:flex">
-          <Stat label="Gallery" value={counts.works} />
-          <Stat label="Worked with" value={profile.worked_with_count} />
-          <Stat label="Followers" value={profile.follower_count} />
-          <Stat label="Following" value={profile.following_count} />
-        </div>
 
         {/* Artist statement — hidden entirely when blank. Sits above the portfolio on mobile. */}
         {profile.artist_statement && profile.artist_statement.trim().length > 0 && (
@@ -935,6 +935,46 @@ function Stat({ label, value }: { label: string; value: number }) {
     <div>
       <span className="font-display text-lg text-ink">{value}</span>{" "}
       <span className="text-ink-muted">{label}</span>
+    </div>
+  );
+}
+
+function ProfileStats({
+  username,
+  works,
+  workedWith,
+  followers,
+  following,
+}: {
+  username: string;
+  works: number;
+  workedWith: number;
+  followers: number;
+  following: number;
+}) {
+  const items: { label: string; value: number; tab: ProfileTab }[] = [
+    { label: "Gallery", value: works, tab: "works" },
+    { label: "Worked with", value: workedWith, tab: "about" },
+    { label: "Followers", value: followers, tab: "about" },
+    { label: "Following", value: following, tab: "about" },
+  ];
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {items.map((item) => (
+        <Link
+          key={item.label}
+          to="/u/$username"
+          params={{ username }}
+          search={{ tab: item.tab }}
+          replace
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+        >
+          <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-muted px-1.5 py-0 text-[11px] font-display text-ink">
+            {item.value}
+          </span>
+          <span>{item.label}</span>
+        </Link>
+      ))}
     </div>
   );
 }
@@ -1675,10 +1715,12 @@ function LinkPills({
   className,
   instagram,
   links,
+  variant = "scroll",
 }: {
   className?: string;
   instagram: string | null;
   links: { label: string; url: string }[];
+  variant?: "scroll" | "inline";
 }) {
   const items: { key: string; href: string; label: string; Icon: typeof LinkIcon }[] = [];
   if (instagram) {
@@ -1691,14 +1733,23 @@ function LinkPills({
   }
   if (items.length === 0) return null;
   return (
-    <div className={cn("-mx-4 flex snap-x snap-mandatory gap-2 overflow-x-auto px-4 pb-1", className)}>
+    <div className={cn(
+      "flex items-center gap-2",
+      variant === "scroll"
+        ? "-mx-4 snap-x snap-mandatory overflow-x-auto px-4 pb-1"
+        : "flex-wrap",
+      className,
+    )}>
       {items.map((it) => (
         <a
           key={it.key}
           href={it.href}
           target="_blank"
           rel="noreferrer noopener"
-          className="inline-flex shrink-0 snap-start items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
+          className={cn(
+            "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink",
+            variant === "scroll" && "shrink-0 snap-start",
+          )}
         >
           <it.Icon className="h-3.5 w-3.5" />
           <span className="max-w-[10rem] truncate">{it.label}</span>
