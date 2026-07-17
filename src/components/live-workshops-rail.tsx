@@ -19,14 +19,17 @@ type Props = {
   canJoin: boolean;
   medium?: Category | null;
   onTakeSeat: (roomId: string) => Promise<void> | void;
+  /** "cards" = desktop default; "compact-pills" = mobile horizontal pill row. */
+  variant?: "cards" | "compact-pills";
 };
+
 
 function labelFor(medium: Category | null) {
   if (!medium) return "Open topic";
   return CATEGORIES.find((c) => c.id === medium)?.label ?? medium;
 }
 
-export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props) {
+export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant = "cards" }: Props) {
   const fetchRooms = useServerFn(listActiveInstantRooms);
   const joinRoom = useServerFn(joinSpecificInstantRoom);
   const qc = useQueryClient();
@@ -66,7 +69,72 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat }: Props)
     );
   }
 
+  if (variant === "compact-pills") {
+    if (!data || rooms.length === 0) return null;
+    return (
+      <section className="mt-4">
+        <div className="mb-2 flex items-baseline justify-between px-1">
+          <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+            Live now
+          </div>
+          <span className="text-[10.5px] font-semibold tabular-nums text-primary">
+            {rooms.length} joinable
+          </span>
+        </div>
+        <div className="-mx-4 px-4 flex gap-2 overflow-x-auto snap-x snap-mandatory scrollbar-none pb-1">
+          {rooms.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => takeSeat(r)}
+              disabled={!canJoin || busyRoom !== null}
+              className="snap-start shrink-0 min-w-[220px] max-w-[260px] min-h-11 flex flex-col justify-between gap-1.5 rounded-2xl border border-border/70 bg-surface px-3 py-2.5 text-left shadow-soft transition hover:border-primary/40 hover:shadow-lift disabled:opacity-60"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="relative inline-flex h-1.5 w-1.5 shrink-0">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-primary opacity-70" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-primary truncate">
+                  {labelFor(r.medium as Category | null)}
+                </span>
+                <span className="ml-auto text-[10px] tabular-nums text-ink-muted shrink-0">
+                  {r.live_count}/5
+                </span>
+              </div>
+              <div className="truncate text-[13px] font-medium text-ink">
+                {formatRoomTitle(r.title, r.medium)}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex -space-x-1.5">
+                  {r.participants.slice(0, 3).map((p) => {
+                    const name = p.display_name || p.username || "Anon";
+                    return (
+                      <Avatar key={p.user_id} className="h-5 w-5 ring-2 ring-surface">
+                        <AvatarImage src={p.avatar_url ?? undefined} />
+                        <AvatarFallback className="text-[9px]">{name[0]}</AvatarFallback>
+                      </Avatar>
+                    );
+                  })}
+                  {r.participants.length === 0 && (
+                    <div className="h-5 w-5 rounded-full bg-muted ring-2 ring-surface" />
+                  )}
+                </div>
+                {busyRoom === r.id ? (
+                  <Loader2 className="ml-auto h-3.5 w-3.5 animate-spin text-ink-muted" />
+                ) : (
+                  <span className="ml-auto text-[10.5px] font-medium text-primary">Take seat</span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
   if (!data) {
+
     return (
       <section className="mt-10">
         <RailHeader subtitle="Loading live rooms…" />

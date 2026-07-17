@@ -21,7 +21,19 @@ type Props = {
   perRow?: number;
   /** Visible rows. Default 4 (responsive). Use 2 for mobile-only contexts. */
   maxRows?: 2 | 3 | 4;
+  /** "marquee" = animated rows (desktop); "static-row" = single mobile scroll row. */
+  variant?: "marquee" | "static-row";
 };
+
+const MOBILE_QUICK_START_TITLES = [
+  "Heads-down work session",
+  "Portfolio review",
+  "Mix feedback — bring stems",
+  "Co-writing sprint",
+  "Pair-program on a bug",
+  "Dailies critique",
+];
+
 
 const ROW_DURATIONS_MS = [130_000, 145_000, 118_000, 135_000];
 
@@ -38,7 +50,41 @@ export function RoomPromptMarquee({
   disabled,
   perRow = 14,
   maxRows = 4,
+  variant = "marquee",
 }: Props) {
+  if (variant === "static-row") {
+    const picks = MOBILE_QUICK_START_TITLES
+      .map((t) => ROOM_PROMPTS.find((p) => p.title === t))
+      .filter((p): p is RoomPrompt => Boolean(p));
+    return (
+      <div className="px-4 py-3">
+        <div className="mb-2 text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
+          Quick starts
+        </div>
+        <div className="-mx-4 px-4 flex gap-2 overflow-x-auto snap-x scrollbar-none pb-1">
+          {picks.map((p) => (
+            <div key={p.title} className="snap-start shrink-0">
+              <PromptChip
+                prompt={p}
+                liveCount={p.medium ? liveByMedium?.get(p.medium) ?? 0 : 0}
+                onConfirm={() => !disabled && onUsePrompt(p)}
+                onJoinLive={
+                  p.medium && onJoinLive
+                    ? () => !disabled && onJoinLive(p.medium as Category)
+                    : undefined
+                }
+                disabled={disabled}
+                size="md"
+              />
+            </div>
+          ))}
+
+        </div>
+      </div>
+    );
+  }
+
+
   // Stable per-mount shuffle (so HMR / re-renders don't reshuffle).
   const rowsRef = useRef<RoomPrompt[][] | null>(null);
   if (!rowsRef.current) {
@@ -144,12 +190,14 @@ function PromptChip({
   onConfirm,
   onJoinLive,
   disabled,
+  size = "sm",
 }: {
   prompt: RoomPrompt;
   liveCount: number;
   onConfirm: () => void;
   onJoinLive?: () => void;
   disabled?: boolean;
+  size?: "sm" | "md";
 }) {
   const [open, setOpen] = useState(false);
   const mediumLabel = prompt.medium
@@ -166,7 +214,10 @@ function PromptChip({
           title={`Open: ${prompt.title}`}
           className={cn(
             "relative shrink-0 whitespace-nowrap rounded-full border border-border/70 bg-surface",
-            "px-3 py-1.5 text-[11.5px] text-ink-soft transition",
+            size === "md"
+              ? "min-h-11 px-4 py-2.5 text-[13px]"
+              : "px-3 py-1.5 text-[11.5px]",
+            "text-ink-soft transition",
             "hover:border-ink/40 hover:text-ink hover:bg-muted/40",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/20",
             "disabled:opacity-60",
@@ -174,6 +225,7 @@ function PromptChip({
             hasLive && "border-primary/40",
           )}
         >
+
           {hasLive && (
             <span
               aria-hidden

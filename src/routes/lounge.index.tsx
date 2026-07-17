@@ -428,24 +428,37 @@ function WorkshopPreflight() {
           Both mount the same LiveTopicsList; its internal useQuery(["instant-active-rooms"])
           dedupes across instances, so no extra fetch. */}
       <div className="mt-4 md:hidden">
-        <LiveTopicsList
-          layout="stack"
-          busyKey={busy === "drop" ? busyMedium : null}
-          onPick={handlePick}
-          onPickFlavor={handleUsePrompt}
-          onLiveCountChange={setLiveCount}
-          onLiveByMediumChange={setLiveByMedium}
-          disabled={busy !== null}
-          featuredFooter={
-            <RoomPromptMarquee
-              onUsePrompt={handleUsePrompt}
-              onJoinLive={(m) => handlePick(m)}
-              liveByMedium={liveByMedium}
-              disabled={busy !== null || !canDrop}
-            />
-          }
+        <LiveWorkshopsRail
+          variant="compact-pills"
+          canJoin={canDrop && busy === null}
+          medium={null}
+          onTakeSeat={async (roomId) => {
+            const mode = await preGrantMedia();
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+          }}
         />
+        <div className="mt-3">
+          <LiveTopicsList
+            layout="stack"
+            busyKey={busy === "drop" ? busyMedium : null}
+            onPick={handlePick}
+            onPickFlavor={handleUsePrompt}
+            onLiveCountChange={setLiveCount}
+            onLiveByMediumChange={setLiveByMedium}
+            disabled={busy !== null}
+            featuredFooter={
+              <RoomPromptMarquee
+                variant="static-row"
+                onUsePrompt={handleUsePrompt}
+                onJoinLive={(m) => handlePick(m)}
+                liveByMedium={liveByMedium}
+                disabled={busy !== null || !canDrop}
+              />
+            }
+          />
+        </div>
       </div>
+
       <div className="mt-4 hidden md:block">
         <LiveTopicsList
           layout="split"
@@ -529,14 +542,17 @@ function WorkshopPreflight() {
         {" "}to keep the work.
       </p>
 
-      <LiveWorkshopsRail
-        canJoin={canDrop && busy === null}
-        medium={null}
-        onTakeSeat={async (roomId) => {
-          const mode = await preGrantMedia();
-          router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
-        }}
-      />
+      <div className="hidden md:block">
+        <LiveWorkshopsRail
+          canJoin={canDrop && busy === null}
+          medium={null}
+          onTakeSeat={async (roomId) => {
+            const mode = await preGrantMedia();
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+          }}
+        />
+      </div>
+
     </main>
   );
 }

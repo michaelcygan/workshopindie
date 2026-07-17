@@ -41,12 +41,14 @@ export function LiveTopicsList({
   const fetchRooms = useServerFn(listActiveInstantRooms);
   const listRef = useRef<HTMLDivElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [mobileExpanded, setMobileExpanded] = useState(false);
 
   const { data } = useQuery({
     queryKey: ["instant-active-rooms"],
     queryFn: () => fetchRooms(),
     refetchInterval: 5000,
   });
+
 
   const rooms = data?.rooms ?? [];
   const liveCount = rooms.reduce((acc, r) => acc + r.live_count, 0);
@@ -117,6 +119,30 @@ export function LiveTopicsList({
       return lb - la;
     });
   }, [liveByMedium]);
+
+  // Mobile-only: cap to 5 category rows. Prioritize live mediums, then
+  // critique/coworking, then fill from `sorted`. Dedupe.
+  const MOBILE_CAP = 5;
+  const mobileVisible = useMemo(() => {
+    const picked: Category[] = [];
+    const push = (id: Category) => {
+      if (picked.length >= MOBILE_CAP) return;
+      if (!picked.includes(id)) picked.push(id);
+    };
+    // 1) currently live, by count desc
+    [...liveByMedium.entries()]
+      .filter(([, n]) => n > 0)
+      .sort((a, b) => b[1] - a[1])
+      .forEach(([id]) => push(id));
+    // 2) pinned priorities
+    push("critique" as Category);
+    push("coworking" as Category);
+    // 3) fill from sorted
+    for (const c of sorted) push(c.id);
+    return sorted.filter((c) => picked.includes(c.id))
+      .sort((a, b) => picked.indexOf(a.id) - picked.indexOf(b.id));
+  }, [liveByMedium, sorted]);
+
 
 
   // Arrow-key navigation between topic rows
@@ -347,7 +373,7 @@ export function LiveTopicsList({
         </div>
         <ul className="flex flex-col gap-0.5 p-2.5">
           {loungeRow}
-          {sorted.map((c) => {
+          {(mobileExpanded ? sorted : mobileVisible).map((c) => {
             const live = liveByMedium.get(c.id) ?? 0;
             return (
               <motion.li key={c.id} layout transition={{ duration: 0.2 }}>
@@ -369,7 +395,19 @@ export function LiveTopicsList({
             );
           })}
         </ul>
+        {sorted.length > mobileVisible.length && (
+          <button
+            type="button"
+            onClick={() => setMobileExpanded((v) => !v)}
+            className="w-full min-h-11 border-t border-border/50 px-5 py-3 text-[12px] font-medium text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+          >
+            {mobileExpanded
+              ? "Show fewer"
+              : `View all topics (${sorted.length})`}
+          </button>
+        )}
       </div>
+
       {featuredFooter && (
         <div className="border-t border-border/50 bg-background/40">{featuredFooter}</div>
       )}
