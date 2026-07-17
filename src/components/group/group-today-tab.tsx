@@ -62,13 +62,13 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   // Mention popover state.
   const [mention, setMention] = useState<{ start: number; query: string } | null>(null);
 
-  const { data: posts = [], isLoading } = useQuery({
+  const { data: posts = [], isLoading, error: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["group", group.id, "today-posts"],
     queryFn: async (): Promise<TodayPost[]> => {
       const { data, error } = await supabase
         .from("group_today_posts")
         .select(
-          "id,author_id,body,created_at,expires_at,author:profiles!group_today_posts_author_id_fkey(username,display_name,avatar_url)",
+          "id,author_id,body,created_at,expires_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)",
         )
         .eq("group_id", group.id)
         .gt("expires_at", new Date().toISOString())
@@ -79,6 +79,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     },
     refetchInterval: 60_000,
   });
+
 
   useEffect(() => {
     const ch = supabase
