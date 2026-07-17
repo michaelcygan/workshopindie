@@ -936,6 +936,24 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
 
       {/* Utility strip */}
       <div className="mt-3 flex items-center justify-end gap-1 text-ink-muted">
+        {availableCategories.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
+                {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-40">
+              <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
+              {availableCategories.map((c) => (
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
+                  {CATEGORY_LABELS[c]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
@@ -948,6 +966,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             <DropdownMenuItem onClick={() => setSort("trending")}>Trending</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
         {searchOpen ? (
           <div className="flex items-center gap-1">
             <Input
