@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "presence authenticated read" ON public.instant_presence;
