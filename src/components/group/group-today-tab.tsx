@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Send, Trash2, Sparkles, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { Send, Trash2, Sparkles, ArrowRight, Image as ImageIcon, Maximize2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { GroupNextEvent } from "@/components/group/group-next-event";
 import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
@@ -18,6 +19,8 @@ import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
+import { useAdjacentGroups } from "@/components/adjacent-groups-rail";
+
 
 type TodayPost = {
   id: string;
