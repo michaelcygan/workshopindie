@@ -70,6 +70,15 @@ function tokenize(body: string): Segment[] {
       seg: { type: "collab", label: m[1], slug: m[2] },
     });
   }
+  WORK_LINK_RE.lastIndex = 0;
+  while ((m = WORK_LINK_RE.exec(body)) !== null) {
+    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: { type: "work", label: m[1], slug: m[2] },
+    });
+  }
   URL_RE.lastIndex = 0;
   while ((m = URL_RE.exec(body)) !== null) {
     if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
