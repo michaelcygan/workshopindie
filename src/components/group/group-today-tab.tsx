@@ -403,6 +403,8 @@ type RecentCollabRow = {
 };
 
 function RecentCollabs({ group }: { group: GroupRefForToday }) {
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
   const { data: collabs = [], isLoading, error, refetch } = useQuery({
     queryKey: ["group", group.id, "today-recent-collabs"],
     queryFn: async (): Promise<RecentCollabRow[]> => {
@@ -426,6 +428,7 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
   });
 
   return (
+    <>
     <SidebarCard
       icon={Sparkles}
       label="Recent collabs"
@@ -454,10 +457,13 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
             const showStatus = c.status && c.status !== "open";
             return (
               <li key={c.id}>
-                <Link
-                  to="/collab/$slug"
-                  params={{ slug: c.slug }}
-                  className="block rounded-lg px-2 py-1.5 transition hover:bg-muted/50"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeekId(c.id);
+                    setPeekOpen(true);
+                  }}
+                  className="block w-full rounded-lg px-2 py-1.5 text-left transition hover:bg-muted/50"
                 >
                   <div className="line-clamp-1 text-sm font-medium text-ink">{c.title}</div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
@@ -473,13 +479,15 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
                       </span>
                     )}
                   </div>
-                </Link>
+                </button>
               </li>
             );
           })}
         </ul>
       )}
     </SidebarCard>
+    <CollabPeek collabId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
+    </>
   );
 }
 
