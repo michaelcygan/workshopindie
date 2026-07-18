@@ -26,6 +26,8 @@ import {
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
+import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
+import { CoverImagePicker } from "@/components/event/cover-image-picker";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
