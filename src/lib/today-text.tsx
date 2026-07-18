@@ -269,40 +269,6 @@ function WorkPill({ label, slug }: { label: string; slug: string }) {
     </>
   );
 }
-    // URL
-    let host = "";
-    try {
-      host = new URL(s.href).host;
-    } catch {
-      return <Fragment key={i}>{s.href}</Fragment>;
-    }
-    if (isBlockedHost(host)) {
-      return (
-        <span
-          key={i}
-          className="mx-0.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 align-baseline text-[12px] text-ink-muted"
-          title="Hidden by Workshop · adult / unsafe domain"
-        >
-          link hidden · adult content
-        </span>
-      );
-    }
-    const flagged = isShortenerHost(host);
-    return (
-      <a
-        key={i}
-        href={s.href}
-        target="_blank"
-        rel="noopener noreferrer nofollow ugc"
-        className="break-words text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
-        title={flagged ? `Shortener · resolves through ${host}` : s.href}
-      >
-        {flagged ? "⚠︎ " : ""}
-        {truncateMiddle(s.href.replace(/^https?:\/\//, ""))}
-      </a>
-    );
-  });
-}
 
 /** Strip markdown links (collab/group/event) to plain labels for snippets. */
 export function flattenTodayBodyToText(body: string): string {
