@@ -262,19 +262,46 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
   }
 
   return (
-    <section className="flex h-[clamp(360px,52vh,560px)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <section className={cn(
+      "flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface",
+      expanded ? "h-full" : "h-[clamp(360px,52vh,560px)]",
+    )}>
       <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
           <TodayPresenceBubbles groupId={group.id} />
         </div>
-        <span
-          title="Messages clear 24 hours after posting"
-          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
-        >
-          {today} · {posts.length}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!expanded && user && (
+            <button
+              type="button"
+              onClick={() => setShowExpanded(true)}
+              aria-label="Expand chat"
+              title="Expand chat"
+              className="grid h-7 w-7 place-items-center rounded-full text-ink-soft transition hover:bg-muted hover:text-ink"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <span
+            title="Messages clear 24 hours after posting"
+            className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
+          >
+            {today} · {posts.length}
+          </span>
+        </div>
       </header>
+
+      {!expanded && (
+        <Dialog open={showExpanded} onOpenChange={setShowExpanded}>
+          <DialogContent className="h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
+            <DialogTitle className="sr-only">Today in {group.name}</DialogTitle>
+            <TodayChat group={group} expanded />
+          </DialogContent>
+        </Dialog>
+      )}
+
+
 
       {!user ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
