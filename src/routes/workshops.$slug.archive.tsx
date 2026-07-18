@@ -85,13 +85,12 @@ function ArchivePage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      <Link
-        to="/workshops/$slug"
-        params={{ slug }}
+      <button
+        onClick={goBack}
         className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Workshop
-      </Link>
+      </button>
 
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="flex items-center gap-3">
