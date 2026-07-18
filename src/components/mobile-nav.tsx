@@ -14,8 +14,9 @@ export function MobileNav() {
   const { user } = useAuth();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  // Logged-out visitors on a public profile see it as a portfolio — no bottom nav.
-  if (!user && pathname.startsWith("/u/")) return null;
+  // Logged-out visitors on a public profile or work page see it as a standalone surface — no bottom nav.
+  if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) return null;
+
 
 
   const initial =
