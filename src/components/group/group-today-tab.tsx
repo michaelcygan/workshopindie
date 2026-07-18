@@ -247,28 +247,27 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
             const mine = user?.id === p.author_id;
             return (
               <div key={p.id} className="flex gap-2.5">
-                {p.author?.avatar_url ? (
-                  <img
-                    src={p.author.avatar_url}
-                    alt=""
-                    className="h-8 w-8 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-8 w-8 shrink-0 rounded-full bg-muted" />
-                )}
+                <ProfilePeek userId={p.author_id}>
+                  {p.author?.avatar_url ? (
+                    <img
+                      src={p.author.avatar_url}
+                      alt=""
+                      className="h-8 w-8 shrink-0 cursor-pointer rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 shrink-0 cursor-pointer rounded-full bg-muted" />
+                  )}
+                </ProfilePeek>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
-                    {p.author?.username ? (
-                      <Link
-                        to="/u/$username"
-                        params={{ username: p.author.username }}
+                    <ProfilePeek userId={p.author_id}>
+                      <button
+                        type="button"
                         className="truncate text-sm font-medium text-ink hover:underline"
                       >
                         {name}
-                      </Link>
-                    ) : (
-                      <span className="truncate text-sm font-medium text-ink">{name}</span>
-                    )}
+                      </button>
+                    </ProfilePeek>
                     <span className="text-[11px] text-ink-muted">
                       {new Date(p.created_at).toLocaleTimeString(undefined, {
                         hour: "numeric",
