@@ -504,6 +504,8 @@ type RecentWorkRow = {
 };
 
 function RecentWorks({ group }: { group: GroupRefForToday }) {
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "today-recent-works"],
     queryFn: async (): Promise<RecentWorkRow[]> => {
@@ -526,6 +528,7 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
   });
 
   return (
+    <>
     <SidebarCard
       icon={ImageIcon}
       label="Recent works"
@@ -545,10 +548,13 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
             const name = w.author?.display_name ?? w.author?.username ?? "Member";
             return (
               <li key={w.id}>
-                <Link
-                  to="/works/$slug"
-                  params={{ slug: w.slug }}
-                  className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition hover:bg-muted/50"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeekId(w.id);
+                    setPeekOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left transition hover:bg-muted/50"
                 >
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
                     {w.cover_url ? (
@@ -566,12 +572,14 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
                       )}
                     </div>
                   </div>
-                </Link>
+                </button>
               </li>
             );
           })}
         </ul>
       )}
     </SidebarCard>
+    <WorkPeek workId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
+    </>
   );
 }
