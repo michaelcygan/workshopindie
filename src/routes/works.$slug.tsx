@@ -194,9 +194,7 @@ function WorkDetail() {
   return (
     <main>
       <div className="mx-auto max-w-4xl px-4 pt-6 md:px-6">
-        <button onClick={() => navigate({ to: "/" })} className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </button>
+        <BackButton />
       </div>
 
       <article className="mx-auto max-w-4xl px-4 py-6 md:px-6 md:py-10">
