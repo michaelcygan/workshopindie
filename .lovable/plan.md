@@ -1,32 +1,30 @@
-## Problem
+## Group "Today" tab: Who's here + chat height alignment
 
-On the Work detail page (`src/routes/works.$slug.tsx`), the "← Back" button is hardcoded to `navigate({ to: "/" })`. So navigating from Profile → Work → Back drops the user on Home instead of returning to the profile they came from. A few other surfaces have similar dead-end "Back" affordances (e.g., `settings.tsx` "Back to profile" always goes to `/`).
+### 1. "Who's here" presence bubbles
 
-## Fix
+Add a live avatar cluster in the "Today in {group}" header showing signed-in users currently viewing the tab.
 
-Introduce a small `useSmartBack(fallback)` helper and swap the hardcoded back handlers to use it. Behavior:
+- **New component** `src/components/group/today-presence-bubbles.tsx`
+  - Stacked avatar cluster (up to 5 visible, `-space-x-2`), with a `+N` overflow chip
+  - Tooltip on each avatar showing display name / handle
+  - Accepts `groupId` prop; internally manages presence state
+- **Realtime Presence wiring**
+  - Channel key: `gtp-presence-${groupId}-${uniqueSuffix}` (unique suffix to avoid the postgres_changes-after-subscribe race we hit before)
+  - Track `{ user_id, display_name, avatar_url, handle }` on `SUBSCRIBED`
+  - Sync avatar list from `presenceState()` on `sync`/`join`/`leave`
+  - Tear down channel on unmount
+- **Integrate into** `src/components/group/group-today-tab.tsx` header, right side of the "Today in {group}" title row
+- **Gating**: only render when the viewer is signed in (matches existing Today board signed-in-only rule); logged-out users see nothing
+- **No DB / no migration** — presence is ephemeral
 
-1. If `window.history.length > 1` AND `document.referrer` is same-origin (or empty in SPA nav after an internal push), call `router.history.back()` — this restores scroll and preserves the prior route's state/search params.
-2. Otherwise, navigate to the provided fallback (e.g., `/gallery` for works, `/me` for settings).
+### 2. Chat container bottom alignment
 
-This matches user intent ("back = previous page") without breaking direct-link entries (opening a Work from an external link still gets a sensible fallback instead of a broken back stack).
+The chat card currently stretches to match the taller right sidebar (Recent Collabs + Recent Works), leaving awkward empty space below the composer.
 
-### Files to change
+- In `src/components/group/group-today-tab.tsx`, add `self-start` to the chat `<section>` so it sizes to its content rather than filling the grid row
+- Increase the desktop scroller clamp on the messages list from `xl:h-[38vh]` → `xl:h-[46vh]` so the card visually ends near the bottom of the Recent Collabs module (the red line in your annotation)
+- Preserve existing mobile clamps unchanged
 
-- **New:** `src/hooks/use-smart-back.ts` — exports `useSmartBack(fallback: LinkOptions)` returning a `() => void` handler.
-- **`src/routes/works.$slug.tsx`** — replace the top "← Back" button's `navigate({ to: "/" })` with `useSmartBack({ to: "/gallery" })`.
-- **`src/routes/settings.tsx`** (line 117 area, "Back to profile") — use `useSmartBack({ to: "/me" })`.
-- **`src/routes/workshops.$slug.archive.tsx`** ("Back to Workshop" arrow) — use `useSmartBack({ to: "/workshops/$slug", params: {...} })`.
-- **`src/routes/works.$slug.edit.tsx`** ("Back to Gallery" arrow at line 194) — use `useSmartBack({ to: "/works/$slug", params: {...} })` so editors return to the work, not gallery.
-
-### Out of scope (intentional)
-
-- Named "Back to Gallery" / "Back to Collab Board" / "Back to Lounge" links stay as-is — those are labeled destinations, not generic back affordances, and users expect them to go where the label says.
-- Error/notFound fallback buttons (also labeled) stay as-is.
-- No changes to auth redirects (`login`, `onboarding`, `reset-password`) — those correctly land on `/` post-action.
-
-## Verification
-
-- From `/u/<me>` click a work → click "← Back" → land back on the profile with scroll preserved.
-- Open a work via direct URL (new tab) → click "← Back" → land on `/gallery` (fallback).
-- From `/me` → Settings → "Back to profile" → returns to `/me`.
+### Out of scope
+- No changes to sidebar modules, chat composer, or message rendering
+- No DB schema or RLS changes
