@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,6 +84,7 @@ const HASH_ALIASES: Record<string, SectionId> = {
 };
 
 function SettingsPage() {
+  const goBack = useSmartBack({ to: "/me" });
   const [active, setActive] = useState<SectionId>("account");
   const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({
     account: null,
@@ -113,9 +115,9 @@ function SettingsPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 md:py-12">
-      <Link to="/me" className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink">
+      <button onClick={goBack} className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink">
         <ArrowLeft className="h-4 w-4" /> Back to profile
-      </Link>
+      </button>
       <h1 className="mt-3 font-display text-3xl text-ink md:text-4xl">Settings</h1>
       <p className="mt-1 text-sm text-ink-muted">
         Account, membership, and privacy. Looking to edit your bio or pinned works?{" "}

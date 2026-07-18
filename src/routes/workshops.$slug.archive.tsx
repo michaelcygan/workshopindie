@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/workshops/$slug/archive")({
 
 function ArchivePage() {
   const { slug } = Route.useParams();
+  const goBack = useSmartBack({ to: "/workshops/$slug", params: { slug } });
   const [workshopId, setWorkshopId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -85,13 +87,12 @@ function ArchivePage() {
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-12">
-      <Link
-        to="/workshops/$slug"
-        params={{ slug }}
+      <button
+        onClick={goBack}
         className="inline-flex items-center gap-1 text-sm text-ink-muted hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" /> Back to Workshop
-      </Link>
+      </button>
 
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="flex items-center gap-3">

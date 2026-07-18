@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -36,6 +37,7 @@ function EditWork() {
   const { slug } = Route.useParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const goBack = useSmartBack({ to: "/works/$slug", params: { slug } });
   const queryClient = useQueryClient();
 
   const { data: work, isLoading } = useQuery({
@@ -186,13 +188,12 @@ function EditWork() {
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
-      <Link
-        to="/works/$slug"
-        params={{ slug }}
+      <button
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition"
       >
-        <ArrowLeft className="h-4 w-4" /> Back to Gallery
-      </Link>
+        <ArrowLeft className="h-4 w-4" /> Back
+      </button>
 
       <h1 className="mt-4 font-display text-4xl text-ink md:text-5xl">Edit</h1>
       <p className="mt-1 text-sm text-ink-muted">Changes save immediately when you hit Save.</p>

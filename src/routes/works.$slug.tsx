@@ -1,4 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -134,7 +135,7 @@ async function fetchWork(slug: string) {
 
 function WorkDetail() {
   const { slug } = Route.useParams();
-  const navigate = useNavigate();
+  const goBack = useSmartBack({ to: "/gallery" });
   const { user } = useAuth();
   const { data: work, isLoading } = useQuery({ queryKey: ["work", slug], queryFn: () => fetchWork(slug) });
 
@@ -194,7 +195,7 @@ function WorkDetail() {
   return (
     <main>
       <div className="mx-auto max-w-4xl px-4 pt-6 md:px-6">
-        <button onClick={() => navigate({ to: "/" })} className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition">
+        <button onClick={goBack} className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink transition">
           <ArrowLeft className="h-4 w-4" /> Back
         </button>
       </div>
