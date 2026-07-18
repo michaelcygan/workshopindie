@@ -275,7 +275,8 @@ export function flattenTodayBodyToText(body: string): string {
   return body
     .replace(EVENT_LINK_RE, (_f, label: string) => label)
     .replace(GROUP_LINK_RE, (_f, label: string) => label)
-    .replace(COLLAB_LINK_RE, (_f, label: string) => label);
+    .replace(COLLAB_LINK_RE, (_f, label: string) => label)
+    .replace(WORK_LINK_RE, (_f, label: string) => label);
 }
 
 /** Extract @username tokens (deduped, lowercase). */
