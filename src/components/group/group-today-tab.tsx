@@ -41,7 +41,7 @@ type GroupRefForToday = {
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
-    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <TodayChat group={group} />
       <aside className="space-y-4">
         <GroupNextEvent group={group} />
@@ -187,7 +187,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   }
 
   return (
-    <section className="flex flex-col self-start overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
       <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
@@ -202,7 +202,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       </header>
 
       {!user ? (
-        <div className="flex h-[clamp(180px,26vh,300px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-[38vh]">
+        <div className="flex h-[clamp(220px,32vh,340px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-auto xl:flex-1 xl:min-h-0">
           <p className="text-sm text-ink-soft">
             Sign in to see what's happening in {group.name} today.
           </p>
@@ -218,7 +218,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       <>
       <div
         ref={scrollerRef}
-        className="h-[clamp(180px,26vh,300px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[46vh]"
+        className="h-[clamp(220px,32vh,340px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-auto xl:flex-1 xl:min-h-0"
       >
 
 
