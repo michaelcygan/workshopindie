@@ -210,10 +210,12 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           </Link>
         </div>
       ) : (
+      <>
       <div
         ref={scrollerRef}
         className="h-[clamp(180px,26vh,300px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[38vh]"
       >
+
 
         {isLoading ? (
           <div className="space-y-2">
