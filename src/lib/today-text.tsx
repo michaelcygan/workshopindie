@@ -138,17 +138,10 @@ export function renderTodayBody(body: string): ReactNode {
       );
     }
     if (s.type === "collab") {
-      return (
-        <Link
-          key={i}
-          to="/collab/$slug"
-          params={{ slug: s.slug }}
-          className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
-        >
-          <Megaphone className="h-3 w-3" />
-          {s.label}
-        </Link>
-      );
+      return <CollabPill key={i} label={s.label} slug={s.slug} />;
+    }
+    if (s.type === "work") {
+      return <WorkPill key={i} label={s.label} slug={s.slug} />;
     }
     if (s.type === "group") {
       return (
@@ -178,6 +171,104 @@ export function renderTodayBody(body: string): ReactNode {
         </EventPeek>
       );
     }
+    if (s.type === "url") {
+      return <UrlSegment key={i} href={s.href} />;
+    }
+    return null;
+  });
+}
+
+function UrlSegment({ href }: { href: string }) {
+  let host = "";
+  try {
+    host = new URL(href).host;
+  } catch {
+    return <>{href}</>;
+  }
+  if (isBlockedHost(host)) {
+    return (
+      <span
+        className="mx-0.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 align-baseline text-[12px] text-ink-muted"
+        title="Hidden by Workshop · adult / unsafe domain"
+      >
+        link hidden · adult content
+      </span>
+    );
+  }
+  const flagged = isShortenerHost(host);
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow ugc"
+      className="break-words text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+      title={flagged ? `Shortener · resolves through ${host}` : href}
+    >
+      {flagged ? "⚠︎ " : ""}
+      {truncateMiddle(href.replace(/^https?:\/\//, ""))}
+    </a>
+  );
+}
+
+function CollabPill({ label, slug }: { label: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useQuery({
+    queryKey: ["collab-id-by-slug", slug],
+    enabled: open,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      return (data?.id as string | undefined) ?? null;
+    },
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
+      >
+        <Megaphone className="h-3 w-3" />
+        {label}
+      </button>
+      <CollabPeek collabId={id ?? null} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
+function WorkPill({ label, slug }: { label: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useQuery({
+    queryKey: ["work-id-by-slug", slug],
+    enabled: open,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("works")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      return (data?.id as string | undefined) ?? null;
+    },
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+      >
+        <ImageIcon className="h-3 w-3" />
+        {label}
+      </button>
+      <WorkPeek workId={id ?? null} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
     // URL
     let host = "";
     try {
