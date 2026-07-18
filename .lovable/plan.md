@@ -1,30 +1,16 @@
-## Group "Today" tab: Who's here + chat height alignment
+## Chat container: fill the sidebar height
 
-### 1. "Who's here" presence bubbles
+The red line sits near the bottom of the Recent Works module — meaning the chat card should stretch to match the full right-sidebar height, not size to its own content. My last pass went the opposite way (`self-start` + fixed clamp), which is why it still ends short.
 
-Add a live avatar cluster in the "Today in {group}" header showing signed-in users currently viewing the tab.
+### Changes in `src/components/group/group-today-tab.tsx`
 
-- **New component** `src/components/group/today-presence-bubbles.tsx`
-  - Stacked avatar cluster (up to 5 visible, `-space-x-2`), with a `+N` overflow chip
-  - Tooltip on each avatar showing display name / handle
-  - Accepts `groupId` prop; internally manages presence state
-- **Realtime Presence wiring**
-  - Channel key: `gtp-presence-${groupId}-${uniqueSuffix}` (unique suffix to avoid the postgres_changes-after-subscribe race we hit before)
-  - Track `{ user_id, display_name, avatar_url, handle }` on `SUBSCRIBED`
-  - Sync avatar list from `presenceState()` on `sync`/`join`/`leave`
-  - Tear down channel on unmount
-- **Integrate into** `src/components/group/group-today-tab.tsx` header, right side of the "Today in {group}" title row
-- **Gating**: only render when the viewer is signed in (matches existing Today board signed-in-only rule); logged-out users see nothing
-- **No DB / no migration** — presence is ephemeral
-
-### 2. Chat container bottom alignment
-
-The chat card currently stretches to match the taller right sidebar (Recent Collabs + Recent Works), leaving awkward empty space below the composer.
-
-- In `src/components/group/group-today-tab.tsx`, add `self-start` to the chat `<section>` so it sizes to its content rather than filling the grid row
-- Increase the desktop scroller clamp on the messages list from `xl:h-[38vh]` → `xl:h-[46vh]` so the card visually ends near the bottom of the Recent Collabs module (the red line in your annotation)
-- Preserve existing mobile clamps unchanged
+1. **Chat `<section>`**: remove `self-start` and switch to full-height flex so the grid row stretches it to match the sidebar.
+   - `flex flex-col self-start overflow-hidden …` → `flex h-full flex-col overflow-hidden …`
+2. **Messages scroller**: drop the fixed `xl:h-[46vh]` clamp and let it fill remaining space inside the card.
+   - `h-[clamp(180px,26vh,300px)] … xl:h-[46vh]` → `h-[clamp(220px,32vh,340px)] … xl:h-auto xl:flex-1 xl:min-h-0`
+   - Keeps mobile clamp intact; on `xl` the scroller grows/shrinks to fill whatever height the sidebar dictates.
+3. **Signed-out placeholder**: mirror the same responsive height so the card doesn't collapse when the viewer is logged out (`xl:h-auto xl:flex-1`).
+4. **Grid wrapper**: remove `items-start` (added last pass) so the row stretches both columns to equal height again.
 
 ### Out of scope
-- No changes to sidebar modules, chat composer, or message rendering
-- No DB schema or RLS changes
+- No sidebar module changes, no composer changes, no DB.
