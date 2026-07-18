@@ -26,6 +26,8 @@ import {
 } from "@/lib/group-events-admin.functions";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
+import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
+import { CoverImagePicker } from "@/components/event/cover-image-picker";
 
 export const Route = createFileRoute("/admin/events")({
   component: AdminEventsPage,
@@ -340,33 +342,49 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label>Starts</Label>
-              <Input type="datetime-local" value={form.starts_at} onChange={(e) => setForm({ ...form, starts_at: e.target.value })} />
+              <Input
+                type="datetime-local"
+                className="rounded-xl"
+                value={form.starts_at}
+                onChange={(e) => {
+                  const starts_at = e.target.value;
+                  setForm((prev) => {
+                    let ends_at = prev.ends_at;
+                    if (!ends_at && starts_at) {
+                      try {
+                        const d = new Date(starts_at);
+                        d.setHours(d.getHours() + 2);
+                        const pad = (n: number) => String(n).padStart(2, "0");
+                        ends_at = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+                      } catch { /* ignore */ }
+                    }
+                    return { ...prev, starts_at, ends_at };
+                  });
+                }}
+              />
             </div>
             <div>
               <Label>Ends</Label>
-              <Input type="datetime-local" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} />
+              <Input type="datetime-local" className="rounded-xl" value={form.ends_at} onChange={(e) => setForm({ ...form, ends_at: e.target.value })} />
             </div>
           </div>
-          <div>
-            <Label>Cover image URL</Label>
-            <Input value={form.cover_url} onChange={(e) => setForm({ ...form, cover_url: e.target.value })} placeholder="https://…" />
-          </div>
+          <CoverImagePicker
+            value={form.cover_url}
+            onChange={(url) => setForm({ ...form, cover_url: url })}
+          />
           {(form.format === "in_person" || form.format === "hybrid") && (
-            <>
-              <div>
-                <Label>Venue name</Label>
-                <Input value={form.venue_name} onChange={(e) => setForm({ ...form, venue_name: e.target.value })} />
-              </div>
-              <div>
-                <Label>Venue address</Label>
-                <Input value={form.venue_address} onChange={(e) => setForm({ ...form, venue_address: e.target.value })} />
-              </div>
-            </>
+            <VenueAutocomplete
+              venueName={form.venue_name}
+              venueAddress={form.venue_address}
+              onChange={({ venue_name, venue_address }) =>
+                setForm({ ...form, venue_name, venue_address })
+              }
+            />
           )}
           {(form.format === "online" || form.format === "hybrid") && (
             <div>
               <Label>Online URL (Zoom etc.)</Label>
-              <Input value={form.online_url} onChange={(e) => setForm({ ...form, online_url: e.target.value })} />
+              <Input className="rounded-xl" value={form.online_url} onChange={(e) => setForm({ ...form, online_url: e.target.value })} />
             </div>
           )}
           <div className="grid grid-cols-2 gap-3">

@@ -1,50 +1,51 @@
-## Suggested prompt bubbles for Today chat
+## Goal
 
-Add a horizontal row of tappable "suggested message" chips just above the composer in the Group Today chat (the area circled in the screenshot). Tapping a chip pre-fills the composer with that text (focused, editable) so the user can send or tweak it — a low-friction nudge, not an auto-send.
+Turn the admin "Create event" dialog (also reused when admins hit "+ Create → Event") into a fast, 2027-feeling flow with a photo picker instead of a raw URL field and a live venue search that suggests real places by name or address — no paid API keys.
 
-### When they show
-- **Empty state:** no messages in today's board yet.
-- **Stale state:** the most recent message is older than ~45 minutes.
-- Otherwise hidden, so an active chat isn't cluttered.
+## Scope
 
-### Behavior
-- Show 4–5 chips at a time, randomly sampled from the pool of 25, reshuffled each mount and each time the stale state re-triggers.
-- Horizontally scrollable on mobile, wrap-friendly on desktop.
-- Chips are city-agnostic (work across every group) — no `{city}` templating for v1.
-- Tap → fills `TodayChat` composer textarea, focuses it, moves caret to end. No auto-send.
-- Signed-out viewers don't see them (they already see the sign-in CTA).
+- File: `src/routes/admin.events.tsx` — the `CreateEventDialog` component from the screenshot.
+- New small component: `src/components/event/venue-autocomplete.tsx`.
+- Reuse: `uploadToBucket("covers", ...)` from `src/lib/storage.ts` and the existing `useAuth()` user id.
 
-### The 25 prompts (credible 2026 creative-scene talk)
-1. Who wants to make a short film this month?
-2. Photo walk today?
-3. Looking for a scene partner to run lines this week
-4. Anyone free to read a 10-page script tonight?
-5. Need a second shooter Saturday — trade favors?
-6. Coffee + co-writing session tomorrow morning?
-7. Who's editing this weekend and wants company?
-8. Open mic tonight — anyone going?
-9. Need a composer for a 3-min short, small budget
-10. Looking for an actor, mid-20s, one-day shoot
-11. Anyone want to swap portfolio feedback?
-12. Free studio time Thursday if someone needs it
-13. Cyanotype / darkroom day — who's in?
-14. Building a table read group, DM me
-15. Want to jam? Bass + drums looking for a guitarist
-16. Anyone shooting on 16mm this month?
-17. Need a location scout partner for a Sunday drive
-18. Looking for a colorist rec that isn't booked out
-19. Who wants to hit a gallery opening tonight?
-20. Free tickets to a screening tomorrow — first two DMs
-21. Anyone up for a writer's room this week?
-22. Need feedback on a 30-sec teaser cut
-23. Looking to co-direct something small this summer
-24. Zine trade — bring one, take one, this weekend
-25. Sound mixer available Saturday if anyone's shooting
+Everything else (server function, schema, group form) stays untouched.
 
-### Files to touch
-- `src/components/group/group-today-tab.tsx` — inside `TodayChat`, add a `SuggestedPrompts` sub-component rendered between the messages scroller and the composer. Lift the composer's textarea value/ref up (or expose an `onPickPrompt` handler) so a chip tap can set the text and focus the input. Compute visibility from `posts` (empty OR `now - last.created_at > 45 min`).
-- New file `src/lib/today-prompts.ts` — exports the 25-item array and a `sampleN(pool, n)` helper.
+## Venue search — free, no key
 
-### Out of scope
-- No new DB tables, no personalization, no per-city templating, no auto-send, no analytics.
-- No changes to the expanded/fullscreen chat dialog beyond it inheriting the same `TodayChat` behavior automatically.
+Use **OpenStreetMap Nominatim** (`https://nominatim.openstreetmap.org/search`) directly from the browser:
+- Free, no signup, no key, CORS-enabled.
+- Query params: `q=<user text>`, `format=json`, `addressdetails=1`, `limit=6`, `namedetails=1`.
+- Send a compliant `User-Agent`/`Referer` (browser adds Referer automatically; we set an `Accept-Language` header).
+- Debounce input at 300 ms, cancel prior requests with `AbortController`.
+- Bias results toward the user's current group city when we have one (append `viewbox` + `bounded=0` using the group city coords if present; otherwise just global search — Nominatim will still surface named venues like "Monsignor Murphy's").
+- Show a dropdown of results as `Name · short address`. Selecting a result fills both `venue_name` (from `namedetails.name` or the first address token) and `venue_address` (formatted from `address`).
+- Manual typing still works — the dropdown is a suggestion layer, not a hard gate.
+
+Attribution: add a tiny "Powered by OpenStreetMap" line under the dropdown (Nominatim usage policy).
+
+## Photo upload
+
+Replace the "Cover image URL" text input with a drag-and-drop / click-to-upload tile:
+- Accepts JPG/PNG/WebP up to 8 MB.
+- On drop, immediately preview locally, then upload via `uploadToBucket("covers", user.id, file)` and store the returned public URL in `form.cover_url`.
+- Show progress + a "Replace" and "Remove" action on the preview.
+- Keep an "Advanced: paste URL" collapsible for the rare case someone already has a hosted image.
+
+## Dialog polish (2027 pass, presentation only)
+
+- Reorganize into 3 grouped sections with subtle dividers: **Basics** (title, tagline, kind/format, cover photo), **When & where** (date range, venue autocomplete or online URL), **Publishing** (group targeting, source, recurrence, capacity, feature/pin, promo months).
+- Larger rounded inputs (`rounded-xl`), consistent 12 px vertical rhythm, sticky footer with "Cancel / Create event" so the primary CTA is always visible in the scrollable dialog.
+- Inline validation hints (red text under the field) instead of only the toast.
+- Auto-fill `ends_at` to `starts_at + 2h` when the user picks a start and leaves end empty.
+
+## Technical notes
+
+- No new dependencies. Nominatim fetch is a plain `fetch()` in the component.
+- No changes to `createEvent` server fn or DB — `cover_url` still stores a URL string; venue fields are still plain text.
+- `covers` bucket already exists and is wired through `uploadToBucket`.
+- Debounce + abort implemented with a small `useEffect` — no new hooks lib.
+
+## Out of scope
+
+- Group-side event creation (there isn't a separate group form today; admin dialog is the single path). If you also want this on a future non-admin form, we'll port the same `VenueAutocomplete` component.
+- Map preview of the selected venue (can add later if you want a mini static map).
