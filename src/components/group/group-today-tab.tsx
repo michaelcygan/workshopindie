@@ -64,6 +64,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
   const { data: posts = [], isLoading, error: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["group", group.id, "today-posts"],
+    enabled: !!user,
     queryFn: async (): Promise<TodayPost[]> => {
       const { data, error } = await supabase
         .from("group_today_posts")
@@ -79,6 +80,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     },
     refetchInterval: 60_000,
   });
+
 
 
   useEffect(() => {
