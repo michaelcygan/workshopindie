@@ -1,16 +1,21 @@
 import { Link } from "@tanstack/react-router";
-import { Fragment, type ReactNode } from "react";
-import { Calendar, Megaphone, Users } from "lucide-react";
+import { Fragment, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, Image as ImageIcon, Megaphone, Users } from "lucide-react";
 import { isBlockedHost, isShortenerHost } from "@/lib/link-blocklist";
 import { UsernameMention } from "@/components/username-mention";
 import { GroupPeek } from "@/components/group-peek";
 import { EventPeek } from "@/components/event-peek";
+import { CollabPeek } from "@/components/collab-peek";
+import { WorkPeek } from "@/components/work-peek";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Parse a chat / Today post body into renderable segments.
  * Supports:
  *  - @username mentions                    → ProfilePeek chip (via UsernameMention)
- *  - [Label](/collab/slug) inline links     → collab pill + link
+ *  - [Label](/collab/slug) inline links     → collab pill + peek dialog
+ *  - [Label](/works/slug) inline links      → work pill + peek dialog
  *  - [Label](/g/slug) inline links          → group pill + hover peek
  *  - [Label](/g/slug/e/eventSlug) links     → event pill + hover peek
  *  - Bare URLs (http/https)                 → autolinked with soft censoring
@@ -20,6 +25,7 @@ type Segment =
   | { type: "text"; value: string }
   | { type: "mention"; username: string }
   | { type: "collab"; label: string; slug: string }
+  | { type: "work"; label: string; slug: string }
   | { type: "group"; label: string; slug: string }
   | { type: "event"; label: string; groupSlug: string; eventSlug: string }
   | { type: "url"; href: string };
@@ -28,6 +34,7 @@ const EVENT_LINK_RE =
   /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
 const GROUP_LINK_RE = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
 const COLLAB_LINK_RE = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
+const WORK_LINK_RE = /\[([^\]\n]{1,120})\]\(\/works\/([a-zA-Z0-9_-]{1,80})\)/g;
 const MENTION_RE = /(^|\s)@([a-zA-Z0-9_]{2,30})/g;
 const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/g;
 
