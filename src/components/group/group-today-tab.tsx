@@ -41,13 +41,81 @@ type GroupRefForToday = {
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="space-y-4">
       <TodayChat group={group} />
-      <aside className="space-y-4">
-        <GroupNextEvent group={group} />
-        <RecentCollabs group={group} />
-        <RecentWorks group={group} />
-      </aside>
+      <TodayModuleRail group={group} />
+    </div>
+  );
+}
+
+/* ---------- Swipeable module rail ---------- */
+
+function TodayModuleRail({ group }: { group: GroupRefForToday }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const updateArrows = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, []);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.9), behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <GroupNextEvent group={group} />
+        </div>
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <RecentCollabs group={group} />
+        </div>
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <RecentWorks group={group} />
+        </div>
+      </div>
+      {canLeft && (
+        <button
+          type="button"
+          aria-label="Scroll left"
+          onClick={() => scrollBy(-1)}
+          className="absolute left-1 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-surface/95 shadow-sm hover:bg-surface md:flex"
+        >
+          <ArrowRight className="h-4 w-4 rotate-180 text-ink-soft" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          aria-label="Scroll right"
+          onClick={() => scrollBy(1)}
+          className="absolute right-1 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-surface/95 shadow-sm hover:bg-surface md:flex"
+        >
+          <ArrowRight className="h-4 w-4 text-ink-soft" />
+        </button>
+      )}
     </div>
   );
 }
@@ -187,7 +255,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   }
 
   return (
-    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <section className="flex h-[clamp(360px,52vh,560px)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
       <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
@@ -202,7 +270,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       </header>
 
       {!user ? (
-        <div className="flex h-[clamp(220px,32vh,340px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-auto xl:flex-1 xl:min-h-0">
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
           <p className="text-sm text-ink-soft">
             Sign in to see what's happening in {group.name} today.
           </p>
@@ -218,7 +286,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       <>
       <div
         ref={scrollerRef}
-        className="h-[clamp(220px,32vh,340px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-auto xl:flex-1 xl:min-h-0"
+        className="flex-1 space-y-3 overflow-y-auto px-4 py-3 min-h-0"
       >
 
 
@@ -304,7 +372,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           if (!t || !canPost) return;
           post.mutate(t);
         }}
-        className="relative flex items-center gap-2 border-t border-border/60 px-3 py-2"
+        className="relative shrink-0 border-t border-border/60 bg-surface px-3 py-2.5"
       >
         {canPost && (
           <TodayMentionPopover
@@ -315,38 +383,40 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
             onClose={() => setMention(null)}
           />
         )}
-        <input
-          ref={inputRef}
-          value={body}
-          onChange={handleChange}
-          onKeyUp={(e) => {
-            const el = e.currentTarget;
-            recalcMention(el.value, el.selectionStart ?? el.value.length);
-          }}
-          onClick={(e) => {
-            const el = e.currentTarget;
-            recalcMention(el.value, el.selectionStart ?? el.value.length);
-          }}
-          placeholder={
-            !user
-              ? "Sign in to chat"
-              : !isMember
-                ? "Join to chat"
-                : "What's happening? Use @ to tag people, collabs, groups, or events."
-          }
-          disabled={!canPost || post.isPending}
-          className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none disabled:opacity-60"
-        />
-        <span className="text-[11px] tabular-nums text-ink-muted/70">{body.length}/500</span>
-        <Button
-          type="submit"
-          size="sm"
-          className={cn("h-8 gap-1 rounded-full", body.trim() ? "" : "opacity-50")}
-          disabled={!canPost || !body.trim() || post.isPending}
-        >
-          <Send className="h-3.5 w-3.5" />
-          Send
-        </Button>
+        <div className="flex items-center gap-2 rounded-full border border-border/60 bg-background px-3.5 py-1.5 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15">
+          <input
+            ref={inputRef}
+            value={body}
+            onChange={handleChange}
+            onKeyUp={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              recalcMention(el.value, el.selectionStart ?? el.value.length);
+            }}
+            placeholder={
+              !user
+                ? "Sign in to chat"
+                : !isMember
+                  ? "Join to chat"
+                  : "What's happening? Use @ to tag people, collabs, groups, or events."
+            }
+            disabled={!canPost || post.isPending}
+            className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none disabled:opacity-60"
+          />
+          <span className="hidden text-[11px] tabular-nums text-ink-muted/70 sm:inline">{body.length}/500</span>
+          <Button
+            type="submit"
+            size="sm"
+            className={cn("h-8 gap-1 rounded-full", body.trim() ? "" : "opacity-50")}
+            disabled={!canPost || !body.trim() || post.isPending}
+          >
+            <Send className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Send</span>
+          </Button>
+        </div>
       </form>
       </>
       )}

@@ -1,16 +1,45 @@
-## Chat container: fill the sidebar height
+# Today tab: better-designed chat + swipeable module rail
 
-The red line sits near the bottom of the Recent Works module — meaning the chat card should stretch to match the full right-sidebar height, not size to its own content. My last pass went the opposite way (`self-start` + fixed clamp), which is why it still ends short.
+## Goal
+Make the Today chat feel like a proper chat card (input pinned at the bottom, cleaner header/composer, comfortable message density), and stop letting the tall right sidebar dictate the chat height. Move the sidebar modules into a horizontal swipeable "rail" that sits underneath the chat as a rectangular strip.
 
-### Changes in `src/components/group/group-today-tab.tsx`
+## Layout change
 
-1. **Chat `<section>`**: remove `self-start` and switch to full-height flex so the grid row stretches it to match the sidebar.
-   - `flex flex-col self-start overflow-hidden …` → `flex h-full flex-col overflow-hidden …`
-2. **Messages scroller**: drop the fixed `xl:h-[46vh]` clamp and let it fill remaining space inside the card.
-   - `h-[clamp(180px,26vh,300px)] … xl:h-[46vh]` → `h-[clamp(220px,32vh,340px)] … xl:h-auto xl:flex-1 xl:min-h-0`
-   - Keeps mobile clamp intact; on `xl` the scroller grows/shrinks to fill whatever height the sidebar dictates.
-3. **Signed-out placeholder**: mirror the same responsive height so the card doesn't collapse when the viewer is logged out (`xl:h-auto xl:flex-1`).
-4. **Grid wrapper**: remove `items-start` (added last pass) so the row stretches both columns to equal height again.
+Current (desktop):
+```text
+[ Chat (stretched tall)     ] [ Next event  ]
+                              [ Recent collabs ]
+                              [ Recent works ]
+```
 
-### Out of scope
-- No sidebar module changes, no composer changes, no DB.
+New (all breakpoints):
+```text
+[ Chat card — self-sized, input pinned bottom          ]
+[ ← Next event | Recent collabs | Recent works →  swipe ]
+```
+
+- Single column at every width. No more `lg:grid-cols-[1fr_300px]`.
+- The chat becomes a proper card with its own comfortable clamped height (roughly `clamp(360px, 52vh, 560px)` — same feel as Lounge), input always visible at the bottom, no dependence on sidebar height.
+- Below the chat, a horizontal, snap-scrolling rail contains three rectangular module cards (Next event, Recent collabs, Recent works). Native touch swipe on mobile; on desktop, horizontal scroll with subtle left/right chevron buttons and scroll-snap. Each card is a fixed width (~300–340px) so 1 shows on mobile, 2–3 peek on wider screens.
+
+## Chat card redesign
+- Header stays compact: title "Today in {group.name}", presence bubbles, date/count chip on the right.
+- Message list: comfortable spacing, avatar + name + timestamp on one row (as today).
+- Composer pinned to the bottom of the card via flex layout, with:
+  - Larger tap target, rounded input, subtle border, focus ring.
+  - Character counter moved to a small muted label under/right of the input so it doesn't crowd the send button.
+  - Send button remains a pill with icon, disabled state unchanged.
+- Signed-out placeholder fills the same card body.
+
+## Swipeable rail
+- New small component (kept inside `group-today-tab.tsx` to stay scoped): `TodayModuleRail`.
+- Wraps `GroupNextEvent`, `RecentCollabs`, `RecentWorks` in fixed-width cards inside an `overflow-x-auto snap-x snap-mandatory` container with `scroll-smooth`.
+- Chevron buttons visible on `md+` when scrollable; hidden on touch.
+- Each rail card keeps its existing content and links (no data changes).
+
+## Files touched
+- `src/components/group/group-today-tab.tsx` — restructure top-level layout, rework `TodayChat` card (flex column, pinned composer, clamped height), add local `TodayModuleRail`.
+
+## Out of scope
+- No changes to data fetching, RLS, presence, or mention logic.
+- No changes to the individual sidebar modules' internals (only their outer wrapping/width).
