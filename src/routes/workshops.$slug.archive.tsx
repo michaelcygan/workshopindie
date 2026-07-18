@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/workshops/$slug/archive")({
 
 function ArchivePage() {
   const { slug } = Route.useParams();
+  const goBack = useSmartBack({ to: "/workshops/$slug", params: { slug } });
   const [workshopId, setWorkshopId] = useState<string | null>(null);
 
   useEffect(() => {

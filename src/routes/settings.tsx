@@ -1,4 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -83,6 +84,7 @@ const HASH_ALIASES: Record<string, SectionId> = {
 };
 
 function SettingsPage() {
+  const goBack = useSmartBack({ to: "/me" });
   const [active, setActive] = useState<SectionId>("account");
   const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({
     account: null,

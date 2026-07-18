@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useSmartBack } from "@/hooks/use-smart-back";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2 } from "lucide-react";
@@ -36,6 +37,7 @@ function EditWork() {
   const { slug } = Route.useParams();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const goBack = useSmartBack({ to: "/works/$slug", params: { slug } });
   const queryClient = useQueryClient();
 
   const { data: work, isLoading } = useQuery({
