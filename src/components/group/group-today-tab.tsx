@@ -202,7 +202,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       </header>
 
       {!user ? (
-        <div className="flex h-[clamp(180px,26vh,300px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-[38vh]">
+        <div className="flex h-[clamp(220px,32vh,340px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-auto xl:flex-1 xl:min-h-0">
           <p className="text-sm text-ink-soft">
             Sign in to see what's happening in {group.name} today.
           </p>
