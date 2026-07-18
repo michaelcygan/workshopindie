@@ -17,6 +17,7 @@ import { CollabPeek } from "@/components/collab-peek";
 import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
 
 type TodayPost = {
   id: string;
@@ -40,7 +41,7 @@ type GroupRefForToday = {
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
       <TodayChat group={group} />
       <aside className="space-y-4">
         <GroupNextEvent group={group} />
@@ -186,14 +187,15 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   }
 
   return (
-    <section className="flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
-      <header className="flex items-center justify-between border-b border-border/60 px-4 py-2.5">
-        <div className="min-w-0">
+    <section className="flex flex-col self-start overflow-hidden rounded-2xl border border-border/60 bg-surface">
+      <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
+        <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
+          <TodayPresenceBubbles groupId={group.id} />
         </div>
         <span
           title="Messages clear 24 hours after posting"
-          className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
+          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
         >
           {today} · {posts.length}
         </span>
@@ -216,7 +218,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
       <>
       <div
         ref={scrollerRef}
-        className="h-[clamp(180px,26vh,300px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[38vh]"
+        className="h-[clamp(180px,26vh,300px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[46vh]"
       >
 
 
