@@ -88,7 +88,7 @@ const TAB_VALUES = ["today", "collab", "work", "events", "members", "subgroups",
 type TabValue = (typeof TAB_VALUES)[number];
 
 
-export const Route = createFileRoute("/g/$slug")({
+export const Route = createFileRoute("/g/$slug/")({
   validateSearch: (s: Record<string, unknown>) => ({
     j: typeof s.j === "string" ? s.j : undefined,
     t:

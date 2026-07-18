@@ -1,34 +1,22 @@
-## Problem
+## What's happening
 
-Posting an event fails with `relation "public.event_short_codes" does not exist`.
+Yes — the event page is already built at `src/routes/g.$slug.e.$eventSlug.tsx` and it renders correctly on a hard refresh (SSR returns 200). But clicking the Upcoming-events tile does nothing visible: the URL updates to `/g/chicago/e/tbd-comedy-open-mic`, then the group's Today page keeps rendering. Reproduced this in a signed-in Playwright session.
 
-An earlier "search_path hardening" migration (`20260714012327_…`) rewrote `public.gen_event_short_code()` and, in doing so, changed the uniqueness check from `public.group_events` to a nonexistent `public.event_short_codes` table. The BEFORE INSERT trigger `trg_group_events_short_code` calls this function on every event insert, so every admin event creation now throws.
+## Root cause
+
+`src/routes/g.$slug.tsx` is registered as `/g/$slug` and renders the whole group page directly (no `<Outlet />`). Because a sibling child route exists (`g.$slug.e.$eventSlug.tsx` → `/g/$slug/e/$eventSlug`), TanStack treats `g.$slug.tsx` as a **parent** layout. Parent routes MUST render `<Outlet />` for children to mount client-side. Since it doesn't, client-side navigation to a child URL updates the address bar but keeps rendering the parent's page body. SSR happens to look right only because a fresh request matches the child leaf directly.
 
 ## Fix
 
-Ship a one-statement migration that restores `gen_event_short_code()` to check `public.group_events.short_code` (matching the original 20260619 definition) while keeping the `SET search_path = public` hardening.
+Split the dual-purpose route file into a leaf:
 
-```sql
-CREATE OR REPLACE FUNCTION public.gen_event_short_code()
-RETURNS text
-LANGUAGE plpgsql
-SET search_path TO 'public'
-AS $function$
-DECLARE
-  chars text := 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  code text;
-  i int;
-BEGIN
-  LOOP
-    code := '';
-    FOR i IN 1..6 LOOP
-      code := code || substr(chars, 1 + floor(random() * length(chars))::int, 1);
-    END LOOP;
-    EXIT WHEN NOT EXISTS (SELECT 1 FROM public.group_events WHERE short_code = code);
-  END LOOP;
-  RETURN code;
-END;
-$function$;
-```
+1. Rename `src/routes/g.$slug.tsx` → `src/routes/g.$slug.index.tsx`.
+2. Update its `createFileRoute("/g/$slug")` call to `createFileRoute("/g/$slug/")` so the string matches the new file id.
 
-No code changes required — this is purely a DB fix.
+No other files change. `g.$slug.e.$eventSlug.tsx` already declares the correct path and will now mount when clicked. The auto-generated `src/routeTree.gen.ts` regenerates on save.
+
+## Verify
+
+- Rebuild → routeTree regenerates without duplicate `/g/$slug` warnings.
+- From `/g/chicago` Today tab, clicking the "TBD Comedy Open Mic" tile navigates to the event page and renders its content (no more stuck-on-parent behavior).
+- Direct-refresh at `/g/chicago/e/tbd-comedy-open-mic` still works.
