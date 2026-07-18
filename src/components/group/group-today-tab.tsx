@@ -64,6 +64,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
 
   const { data: posts = [], isLoading, error: postsError, refetch: refetchPosts } = useQuery({
     queryKey: ["group", group.id, "today-posts"],
+    enabled: !!user,
     queryFn: async (): Promise<TodayPost[]> => {
       const { data, error } = await supabase
         .from("group_today_posts")
@@ -79,6 +80,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
     },
     refetchInterval: 60_000,
   });
+
 
 
   useEffect(() => {
@@ -194,10 +196,27 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
         </span>
       </header>
 
+      {!user ? (
+        <div className="flex h-[clamp(180px,26vh,300px)] flex-col items-center justify-center gap-3 px-6 py-8 text-center xl:h-[38vh]">
+          <p className="text-sm text-ink-soft">
+            Sign in to see what's happening in {group.name} today.
+          </p>
+          <Link
+            to="/login"
+            search={{ redirect: typeof window !== "undefined" ? window.location.pathname + window.location.search : `/g/${group.slug}` }}
+            className="inline-flex h-9 items-center rounded-full bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            Sign in
+          </Link>
+        </div>
+      ) : (
+      <>
       <div
         ref={scrollerRef}
         className="h-[clamp(180px,26vh,300px)] space-y-3 overflow-y-auto px-4 py-3 xl:h-[38vh]"
       >
+
+
         {isLoading ? (
           <div className="space-y-2">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -325,6 +344,9 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           Send
         </Button>
       </form>
+      </>
+      )}
+
     </section>
   );
 }
