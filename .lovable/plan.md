@@ -1,28 +1,50 @@
-# Today tab: adjacent scenes in the rail + expandable chat
+## Suggested prompt bubbles for Today chat
 
-## 1) Adjacent scenes + more events in the module rail
+Add a horizontal row of tappable "suggested message" chips just above the composer in the Group Today chat (the area circled in the screenshot). Tapping a chip pre-fills the composer with that text (focused, editable) so the user can send or tweak it — a low-friction nudge, not an auto-send.
 
-The horizontal module rail below the chat currently shows 3 cards: Next event (1), Recent collabs, Recent works. Two changes:
+### When they show
+- **Empty state:** no messages in today's board yet.
+- **Stale state:** the most recent message is older than ~45 minutes.
+- Otherwise hidden, so an active chat isn't cluttered.
 
-- **Rename "Next event" → "Upcoming events"** in `src/components/group/group-next-event.tsx`. Fetch `limit(3)` instead of `limit(1)` and render up to 3 compact rows (cover thumb + title + day/time/relative). Empty state and "All events" link unchanged.
-- **Add an "Adjacent scenes" card** as a 4th rail card in `src/components/group/group-today-tab.tsx`. Reuses the existing query from `src/components/adjacent-groups-rail.tsx` (extract the query into a small `useAdjacentGroups(groupId)` hook so both callers can share it) and shows the top 3 group names as tappable pills (avatar + name + member count), plus a small "See all" that scrolls to the full rail. Card hides itself when there are no adjacent groups.
-- **Keep** the existing full `AdjacentGroupsRail` at the bottom of `src/routes/g.$slug.tsx` (unchanged) — it's shown across all tabs, and the compact rail card is a summary/entry point, not a replacement.
+### Behavior
+- Show 4–5 chips at a time, randomly sampled from the pool of 25, reshuffled each mount and each time the stale state re-triggers.
+- Horizontally scrollable on mobile, wrap-friendly on desktop.
+- Chips are city-agnostic (work across every group) — no `{city}` templating for v1.
+- Tap → fills `TodayChat` composer textarea, focuses it, moves caret to end. No auto-send.
+- Signed-out viewers don't see them (they already see the sign-in CTA).
 
-## 2) Expand-chat button in the chat header
+### The 25 prompts (credible 2026 creative-scene talk)
+1. Who wants to make a short film this month?
+2. Photo walk today?
+3. Looking for a scene partner to run lines this week
+4. Anyone free to read a 10-page script tonight?
+5. Need a second shooter Saturday — trade favors?
+6. Coffee + co-writing session tomorrow morning?
+7. Who's editing this weekend and wants company?
+8. Open mic tonight — anyone going?
+9. Need a composer for a 3-min short, small budget
+10. Looking for an actor, mid-20s, one-day shoot
+11. Anyone want to swap portfolio feedback?
+12. Free studio time Thursday if someone needs it
+13. Cyanotype / darkroom day — who's in?
+14. Building a table read group, DM me
+15. Want to jam? Bass + drums looking for a guitarist
+16. Anyone shooting on 16mm this month?
+17. Need a location scout partner for a Sunday drive
+18. Looking for a colorist rec that isn't booked out
+19. Who wants to hit a gallery opening tonight?
+20. Free tickets to a screening tomorrow — first two DMs
+21. Anyone up for a writer's room this week?
+22. Need feedback on a 30-sec teaser cut
+23. Looking to co-direct something small this summer
+24. Zine trade — bring one, take one, this weekend
+25. Sound mixer available Saturday if anyone's shooting
 
-The circled area is the right side of the Today chat header, next to the date chip.
+### Files to touch
+- `src/components/group/group-today-tab.tsx` — inside `TodayChat`, add a `SuggestedPrompts` sub-component rendered between the messages scroller and the composer. Lift the composer's textarea value/ref up (or expose an `onPickPrompt` handler) so a chip tap can set the text and focus the input. Compute visibility from `posts` (empty OR `now - last.created_at > 45 min`).
+- New file `src/lib/today-prompts.ts` — exports the 25-item array and a `sampleN(pool, n)` helper.
 
-- Add a small icon button (Maximize2 icon) with `aria-label="Expand chat"` immediately left of the date/count chip.
-- Clicking opens a shadcn `Dialog` that renders the same `TodayChat` content in a large modal (roughly `max-w-3xl`, `h-[85vh]`), with a Minimize2 close button. Same messages, same composer, same presence bubbles, same mention popover — the only difference is the container height.
-- Implementation: extract the current chat body (header + scroller + composer) into a `TodayChatBody` inner component that accepts a `height` prop or a variant flag. The outer `TodayChat` renders it in card mode (`clamp(360px,52vh,560px)`); the dialog renders it in fill mode (`h-full` inside `h-[85vh]` shell). No data refetching duplication — the dialog just mounts a second instance keyed by `group.id`; live realtime updates already keep both in sync since both subscribe to the same channel/query.
-- Only shown to signed-in users (matches the existing signed-in gate for the composer).
-
-## Files touched
-- `src/components/group/group-next-event.tsx` — up to 3 upcoming events, rename to "Upcoming events".
-- `src/components/adjacent-groups-rail.tsx` — export the query as `useAdjacentGroups(groupId)` and keep the existing rail using it.
-- `src/components/group/group-today-tab.tsx` — add Adjacent scenes rail card; add expand-chat button and Dialog wrapper; extract `TodayChatBody`.
-
-## Out of scope
-- No schema changes.
-- No changes to the bottom-of-page `AdjacentGroupsRail` layout.
-- No changes to Recent collabs / Recent works cards.
+### Out of scope
+- No new DB tables, no personalization, no per-city templating, no auto-send, no analytics.
+- No changes to the expanded/fullscreen chat dialog beyond it inheriting the same `TodayChat` behavior automatically.
