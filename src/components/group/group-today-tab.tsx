@@ -287,7 +287,7 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
             title="Messages clear 24 hours after posting"
             className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
           >
-            {today} · {posts.length}
+            {today}
           </span>
         </div>
       </header>
