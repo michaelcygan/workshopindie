@@ -127,7 +127,9 @@ function TodayModuleRail({ group }: { group: GroupRefForToday }) {
 
 /* ---------- Today chat ---------- */
 
-function TodayChat({ group }: { group: GroupRefForToday }) {
+function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expanded?: boolean }) {
+  const [showExpanded, setShowExpanded] = useState(false);
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: isMember } = useIsMemberOfGroup(group.id);
