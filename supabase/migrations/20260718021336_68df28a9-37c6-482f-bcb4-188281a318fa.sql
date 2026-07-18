@@ -1,0 +1,1 @@
+GRANT SELECT ON public.group_members TO anon;
