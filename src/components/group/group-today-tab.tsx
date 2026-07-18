@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { TODAY_PROMPTS, sampleN } from "@/lib/today-prompts";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -399,7 +400,23 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
         )}
       </div>
 
+      <SuggestedPrompts
+        posts={posts}
+        canPost={canPost}
+        onPick={(text) => {
+          setBody(text.slice(0, 500));
+          requestAnimationFrame(() => {
+            const el = inputRef.current;
+            if (!el) return;
+            el.focus();
+            const end = el.value.length;
+            el.setSelectionRange(end, end);
+          });
+        }}
+      />
+
       <form
+
         onSubmit={(e) => {
           e.preventDefault();
           const t = body.trim();
@@ -458,6 +475,53 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
     </section>
   );
 }
+
+/* ---------- Suggested prompt chips ---------- */
+
+const STALE_MS = 45 * 60 * 1000;
+
+function SuggestedPrompts({
+  posts,
+  canPost,
+  onPick,
+}: {
+  posts: TodayPost[];
+  canPost: boolean;
+  onPick: (text: string) => void;
+}) {
+  const lastAt = posts.length ? new Date(posts[posts.length - 1].created_at).getTime() : 0;
+  const isEmpty = posts.length === 0;
+  const isStale = !isEmpty && Date.now() - lastAt > STALE_MS;
+  const show = canPost && (isEmpty || isStale);
+
+  // Reshuffle when the trigger flips (new empty/stale window).
+  const bucket = isEmpty ? "empty" : isStale ? `stale-${Math.floor(lastAt / STALE_MS)}` : "off";
+  const suggestions = useMemo(() => sampleN(TODAY_PROMPTS, 5), [bucket]);
+
+  if (!show) return null;
+
+  return (
+    <div className="shrink-0 border-t border-border/60 bg-surface/60 px-3 pt-2.5 pb-1">
+      <div className="mb-1.5 px-1 text-[10px] font-medium uppercase tracking-wide text-ink-muted/80">
+        Try starting with
+      </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {suggestions.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => onPick(s)}
+            className="shrink-0 rounded-full border border-border bg-background px-3 py-1 text-xs text-ink-soft transition hover:border-primary/40 hover:bg-muted hover:text-ink"
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
 
 /* ---------- Sidebar section shell ---------- */
 
