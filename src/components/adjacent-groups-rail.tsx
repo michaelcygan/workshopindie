@@ -6,9 +6,9 @@ import { RecapChip } from "@/components/recap-chip";
 
 type Props = { groupId: string; className?: string };
 
-/** Other groups that members of this group also joined. */
-export function AdjacentGroupsRail({ groupId, className }: Props) {
-  const { data } = useQuery({
+/** Shared query: other groups that members of this group also joined. */
+export function useAdjacentGroups(groupId: string) {
+  return useQuery({
     queryKey: ["group", groupId, "adjacent"],
     staleTime: 5 * 60_000,
     queryFn: async (): Promise<GroupCardData[]> => {
@@ -51,6 +51,12 @@ export function AdjacentGroupsRail({ groupId, className }: Props) {
         .filter(Boolean) as unknown as GroupCardData[];
     },
   });
+}
+
+/** Other groups that members of this group also joined. */
+export function AdjacentGroupsRail({ groupId, className }: Props) {
+  const { data } = useAdjacentGroups(groupId);
+
   if (!data || data.length === 0) return null;
   return (
     <section className={className}>

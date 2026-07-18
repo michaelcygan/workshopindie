@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Send, Trash2, Sparkles, ArrowRight, Image as ImageIcon } from "lucide-react";
+import { Send, Trash2, Sparkles, ArrowRight, Image as ImageIcon, Maximize2, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { GroupNextEvent } from "@/components/group/group-next-event";
 import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
@@ -18,6 +19,8 @@ import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
+import { useAdjacentGroups } from "@/components/adjacent-groups-rail";
+
 
 type TodayPost = {
   id: string;
@@ -95,6 +98,8 @@ function TodayModuleRail({ group }: { group: GroupRefForToday }) {
         <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
           <RecentWorks group={group} />
         </div>
+        <AdjacentScenesCard groupId={group.id} />
+
       </div>
       {canLeft && (
         <button
@@ -122,7 +127,9 @@ function TodayModuleRail({ group }: { group: GroupRefForToday }) {
 
 /* ---------- Today chat ---------- */
 
-function TodayChat({ group }: { group: GroupRefForToday }) {
+function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expanded?: boolean }) {
+  const [showExpanded, setShowExpanded] = useState(false);
+
   const { user } = useAuth();
   const qc = useQueryClient();
   const { data: isMember } = useIsMemberOfGroup(group.id);
@@ -255,19 +262,46 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   }
 
   return (
-    <section className="flex h-[clamp(360px,52vh,560px)] flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <section className={cn(
+      "flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface",
+      expanded ? "h-full" : "h-[clamp(360px,52vh,560px)]",
+    )}>
       <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
           <TodayPresenceBubbles groupId={group.id} />
         </div>
-        <span
-          title="Messages clear 24 hours after posting"
-          className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
-        >
-          {today} · {posts.length}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!expanded && user && (
+            <button
+              type="button"
+              onClick={() => setShowExpanded(true)}
+              aria-label="Expand chat"
+              title="Expand chat"
+              className="grid h-7 w-7 place-items-center rounded-full text-ink-soft transition hover:bg-muted hover:text-ink"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <span
+            title="Messages clear 24 hours after posting"
+            className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft"
+          >
+            {today} · {posts.length}
+          </span>
+        </div>
       </header>
+
+      {!expanded && (
+        <Dialog open={showExpanded} onOpenChange={setShowExpanded}>
+          <DialogContent className="h-[85vh] max-w-3xl gap-0 overflow-hidden p-0">
+            <DialogTitle className="sr-only">Today in {group.name}</DialogTitle>
+            <TodayChat group={group} expanded />
+          </DialogContent>
+        </Dialog>
+      )}
+
+
 
       {!user ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-8 text-center">
@@ -653,5 +687,58 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
     </SidebarCard>
     <WorkPeek workId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
     </>
+  );
+}
+
+/* ---------- Adjacent scenes rail card ---------- */
+
+function AdjacentScenesCard({ groupId }: { groupId: string }) {
+  const { data = [], isLoading } = useAdjacentGroups(groupId);
+  if (!isLoading && data.length === 0) return null;
+  const top = data.slice(0, 5);
+  return (
+    <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+      <section className="rounded-2xl border border-border/60 bg-surface p-3.5">
+        <header className="mb-2.5 flex items-center gap-1.5">
+          <Users className="h-3.5 w-3.5 text-ink-muted" />
+          <h3 className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+            Adjacent scenes
+          </h3>
+        </header>
+        {isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-9 animate-pulse rounded-lg bg-muted/40" />
+            ))}
+          </div>
+        ) : (
+          <ul className="space-y-1">
+            {top.map((g) => (
+              <li key={g.id}>
+                <Link
+                  to="/g/$slug"
+                  params={{ slug: g.slug }}
+                  className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition hover:bg-muted/50"
+                >
+                  <div
+                    className="h-8 w-8 shrink-0 rounded-full bg-muted bg-cover bg-center"
+                    style={g.avatar_url ? { backgroundImage: `url(${g.avatar_url})` } : undefined}
+                    aria-hidden
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="line-clamp-1 text-sm font-medium text-ink">{g.name}</div>
+                    {typeof g.member_count === "number" && (
+                      <div className="text-[11px] text-ink-muted">
+                        {g.member_count.toLocaleString()} member{g.member_count === 1 ? "" : "s"}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

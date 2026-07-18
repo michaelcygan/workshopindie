@@ -1,45 +1,28 @@
-# Today tab: better-designed chat + swipeable module rail
+# Today tab: adjacent scenes in the rail + expandable chat
 
-## Goal
-Make the Today chat feel like a proper chat card (input pinned at the bottom, cleaner header/composer, comfortable message density), and stop letting the tall right sidebar dictate the chat height. Move the sidebar modules into a horizontal swipeable "rail" that sits underneath the chat as a rectangular strip.
+## 1) Adjacent scenes + more events in the module rail
 
-## Layout change
+The horizontal module rail below the chat currently shows 3 cards: Next event (1), Recent collabs, Recent works. Two changes:
 
-Current (desktop):
-```text
-[ Chat (stretched tall)     ] [ Next event  ]
-                              [ Recent collabs ]
-                              [ Recent works ]
-```
+- **Rename "Next event" → "Upcoming events"** in `src/components/group/group-next-event.tsx`. Fetch `limit(3)` instead of `limit(1)` and render up to 3 compact rows (cover thumb + title + day/time/relative). Empty state and "All events" link unchanged.
+- **Add an "Adjacent scenes" card** as a 4th rail card in `src/components/group/group-today-tab.tsx`. Reuses the existing query from `src/components/adjacent-groups-rail.tsx` (extract the query into a small `useAdjacentGroups(groupId)` hook so both callers can share it) and shows the top 3 group names as tappable pills (avatar + name + member count), plus a small "See all" that scrolls to the full rail. Card hides itself when there are no adjacent groups.
+- **Keep** the existing full `AdjacentGroupsRail` at the bottom of `src/routes/g.$slug.tsx` (unchanged) — it's shown across all tabs, and the compact rail card is a summary/entry point, not a replacement.
 
-New (all breakpoints):
-```text
-[ Chat card — self-sized, input pinned bottom          ]
-[ ← Next event | Recent collabs | Recent works →  swipe ]
-```
+## 2) Expand-chat button in the chat header
 
-- Single column at every width. No more `lg:grid-cols-[1fr_300px]`.
-- The chat becomes a proper card with its own comfortable clamped height (roughly `clamp(360px, 52vh, 560px)` — same feel as Lounge), input always visible at the bottom, no dependence on sidebar height.
-- Below the chat, a horizontal, snap-scrolling rail contains three rectangular module cards (Next event, Recent collabs, Recent works). Native touch swipe on mobile; on desktop, horizontal scroll with subtle left/right chevron buttons and scroll-snap. Each card is a fixed width (~300–340px) so 1 shows on mobile, 2–3 peek on wider screens.
+The circled area is the right side of the Today chat header, next to the date chip.
 
-## Chat card redesign
-- Header stays compact: title "Today in {group.name}", presence bubbles, date/count chip on the right.
-- Message list: comfortable spacing, avatar + name + timestamp on one row (as today).
-- Composer pinned to the bottom of the card via flex layout, with:
-  - Larger tap target, rounded input, subtle border, focus ring.
-  - Character counter moved to a small muted label under/right of the input so it doesn't crowd the send button.
-  - Send button remains a pill with icon, disabled state unchanged.
-- Signed-out placeholder fills the same card body.
-
-## Swipeable rail
-- New small component (kept inside `group-today-tab.tsx` to stay scoped): `TodayModuleRail`.
-- Wraps `GroupNextEvent`, `RecentCollabs`, `RecentWorks` in fixed-width cards inside an `overflow-x-auto snap-x snap-mandatory` container with `scroll-smooth`.
-- Chevron buttons visible on `md+` when scrollable; hidden on touch.
-- Each rail card keeps its existing content and links (no data changes).
+- Add a small icon button (Maximize2 icon) with `aria-label="Expand chat"` immediately left of the date/count chip.
+- Clicking opens a shadcn `Dialog` that renders the same `TodayChat` content in a large modal (roughly `max-w-3xl`, `h-[85vh]`), with a Minimize2 close button. Same messages, same composer, same presence bubbles, same mention popover — the only difference is the container height.
+- Implementation: extract the current chat body (header + scroller + composer) into a `TodayChatBody` inner component that accepts a `height` prop or a variant flag. The outer `TodayChat` renders it in card mode (`clamp(360px,52vh,560px)`); the dialog renders it in fill mode (`h-full` inside `h-[85vh]` shell). No data refetching duplication — the dialog just mounts a second instance keyed by `group.id`; live realtime updates already keep both in sync since both subscribe to the same channel/query.
+- Only shown to signed-in users (matches the existing signed-in gate for the composer).
 
 ## Files touched
-- `src/components/group/group-today-tab.tsx` — restructure top-level layout, rework `TodayChat` card (flex column, pinned composer, clamped height), add local `TodayModuleRail`.
+- `src/components/group/group-next-event.tsx` — up to 3 upcoming events, rename to "Upcoming events".
+- `src/components/adjacent-groups-rail.tsx` — export the query as `useAdjacentGroups(groupId)` and keep the existing rail using it.
+- `src/components/group/group-today-tab.tsx` — add Adjacent scenes rail card; add expand-chat button and Dialog wrapper; extract `TodayChatBody`.
 
 ## Out of scope
-- No changes to data fetching, RLS, presence, or mention logic.
-- No changes to the individual sidebar modules' internals (only their outer wrapping/width).
+- No schema changes.
+- No changes to the bottom-of-page `AdjacentGroupsRail` layout.
+- No changes to Recent collabs / Recent works cards.
