@@ -41,13 +41,81 @@ type GroupRefForToday = {
  */
 export function GroupTodayTab({ group }: { group: GroupRefForToday }) {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+    <div className="space-y-4">
       <TodayChat group={group} />
-      <aside className="space-y-4">
-        <GroupNextEvent group={group} />
-        <RecentCollabs group={group} />
-        <RecentWorks group={group} />
-      </aside>
+      <TodayModuleRail group={group} />
+    </div>
+  );
+}
+
+/* ---------- Swipeable module rail ---------- */
+
+function TodayModuleRail({ group }: { group: GroupRefForToday }) {
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const updateArrows = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+
+  useEffect(() => {
+    updateArrows();
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, []);
+
+  const scrollBy = (dir: 1 | -1) => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.9), behavior: "smooth" });
+  };
+
+  return (
+    <div className="relative">
+      <div
+        ref={scrollerRef}
+        className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <GroupNextEvent group={group} />
+        </div>
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <RecentCollabs group={group} />
+        </div>
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <RecentWorks group={group} />
+        </div>
+      </div>
+      {canLeft && (
+        <button
+          type="button"
+          aria-label="Scroll left"
+          onClick={() => scrollBy(-1)}
+          className="absolute left-1 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-surface/95 shadow-sm hover:bg-surface md:flex"
+        >
+          <ArrowRight className="h-4 w-4 rotate-180 text-ink-soft" />
+        </button>
+      )}
+      {canRight && (
+        <button
+          type="button"
+          aria-label="Scroll right"
+          onClick={() => scrollBy(1)}
+          className="absolute right-1 top-1/2 hidden h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-surface/95 shadow-sm hover:bg-surface md:flex"
+        >
+          <ArrowRight className="h-4 w-4 text-ink-soft" />
+        </button>
+      )}
     </div>
   );
 }
