@@ -17,6 +17,7 @@ import { CollabPeek } from "@/components/collab-peek";
 import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { TodayPresenceBubbles } from "@/components/group/today-presence-bubbles";
 
 type TodayPost = {
   id: string;
