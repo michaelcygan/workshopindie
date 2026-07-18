@@ -342,6 +342,9 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
           Send
         </Button>
       </form>
+      </>
+      )}
+
     </section>
   );
 }
