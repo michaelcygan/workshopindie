@@ -98,6 +98,8 @@ function TodayModuleRail({ group }: { group: GroupRefForToday }) {
         <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
           <RecentWorks group={group} />
         </div>
+        <AdjacentScenesCard groupId={group.id} />
+
       </div>
       {canLeft && (
         <button
