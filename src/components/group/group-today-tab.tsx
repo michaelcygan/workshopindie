@@ -187,7 +187,7 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
   }
 
   return (
-    <section className="flex flex-col self-start overflow-hidden rounded-2xl border border-border/60 bg-surface">
+    <section className="flex h-full flex-col overflow-hidden rounded-2xl border border-border/60 bg-surface">
       <header className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex min-w-0 items-center gap-3">
           <h2 className="truncate font-display text-base text-ink">Today in {group.name}</h2>
