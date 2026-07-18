@@ -12,6 +12,9 @@ import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
 import { postTodayMessage } from "@/lib/today-chat.functions";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import { ProfilePeek } from "@/components/profile-peek";
+import { CollabPeek } from "@/components/collab-peek";
+import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
