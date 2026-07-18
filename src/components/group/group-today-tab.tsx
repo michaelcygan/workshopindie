@@ -12,6 +12,9 @@ import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
 import { postTodayMessage } from "@/lib/today-chat.functions";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import { ProfilePeek } from "@/components/profile-peek";
+import { CollabPeek } from "@/components/collab-peek";
+import { WorkPeek } from "@/components/work-peek";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -244,28 +247,27 @@ function TodayChat({ group }: { group: GroupRefForToday }) {
             const mine = user?.id === p.author_id;
             return (
               <div key={p.id} className="flex gap-2.5">
-                {p.author?.avatar_url ? (
-                  <img
-                    src={p.author.avatar_url}
-                    alt=""
-                    className="h-8 w-8 shrink-0 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="h-8 w-8 shrink-0 rounded-full bg-muted" />
-                )}
+                <ProfilePeek userId={p.author_id}>
+                  {p.author?.avatar_url ? (
+                    <img
+                      src={p.author.avatar_url}
+                      alt=""
+                      className="h-8 w-8 shrink-0 cursor-pointer rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-8 w-8 shrink-0 cursor-pointer rounded-full bg-muted" />
+                  )}
+                </ProfilePeek>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
-                    {p.author?.username ? (
-                      <Link
-                        to="/u/$username"
-                        params={{ username: p.author.username }}
+                    <ProfilePeek userId={p.author_id}>
+                      <button
+                        type="button"
                         className="truncate text-sm font-medium text-ink hover:underline"
                       >
                         {name}
-                      </Link>
-                    ) : (
-                      <span className="truncate text-sm font-medium text-ink">{name}</span>
-                    )}
+                      </button>
+                    </ProfilePeek>
                     <span className="text-[11px] text-ink-muted">
                       {new Date(p.created_at).toLocaleTimeString(undefined, {
                         hour: "numeric",
@@ -401,6 +403,8 @@ type RecentCollabRow = {
 };
 
 function RecentCollabs({ group }: { group: GroupRefForToday }) {
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
   const { data: collabs = [], isLoading, error, refetch } = useQuery({
     queryKey: ["group", group.id, "today-recent-collabs"],
     queryFn: async (): Promise<RecentCollabRow[]> => {
@@ -424,6 +428,7 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
   });
 
   return (
+    <>
     <SidebarCard
       icon={Sparkles}
       label="Recent collabs"
@@ -452,10 +457,13 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
             const showStatus = c.status && c.status !== "open";
             return (
               <li key={c.id}>
-                <Link
-                  to="/collab/$slug"
-                  params={{ slug: c.slug }}
-                  className="block rounded-lg px-2 py-1.5 transition hover:bg-muted/50"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeekId(c.id);
+                    setPeekOpen(true);
+                  }}
+                  className="block w-full rounded-lg px-2 py-1.5 text-left transition hover:bg-muted/50"
                 >
                   <div className="line-clamp-1 text-sm font-medium text-ink">{c.title}</div>
                   <div className="mt-0.5 flex items-center gap-1.5 text-[11px] text-ink-muted">
@@ -471,13 +479,15 @@ function RecentCollabs({ group }: { group: GroupRefForToday }) {
                       </span>
                     )}
                   </div>
-                </Link>
+                </button>
               </li>
             );
           })}
         </ul>
       )}
     </SidebarCard>
+    <CollabPeek collabId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
+    </>
   );
 }
 
@@ -494,6 +504,8 @@ type RecentWorkRow = {
 };
 
 function RecentWorks({ group }: { group: GroupRefForToday }) {
+  const [peekId, setPeekId] = useState<string | null>(null);
+  const [peekOpen, setPeekOpen] = useState(false);
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "today-recent-works"],
     queryFn: async (): Promise<RecentWorkRow[]> => {
@@ -516,6 +528,7 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
   });
 
   return (
+    <>
     <SidebarCard
       icon={ImageIcon}
       label="Recent works"
@@ -535,10 +548,13 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
             const name = w.author?.display_name ?? w.author?.username ?? "Member";
             return (
               <li key={w.id}>
-                <Link
-                  to="/works/$slug"
-                  params={{ slug: w.slug }}
-                  className="flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 transition hover:bg-muted/50"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPeekId(w.id);
+                    setPeekOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-left transition hover:bg-muted/50"
                 >
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-md bg-muted">
                     {w.cover_url ? (
@@ -556,12 +572,14 @@ function RecentWorks({ group }: { group: GroupRefForToday }) {
                       )}
                     </div>
                   </div>
-                </Link>
+                </button>
               </li>
             );
           })}
         </ul>
       )}
     </SidebarCard>
+    <WorkPeek workId={peekId} open={peekOpen} onOpenChange={setPeekOpen} />
+    </>
   );
 }

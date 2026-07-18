@@ -1,16 +1,21 @@
 import { Link } from "@tanstack/react-router";
-import { Fragment, type ReactNode } from "react";
-import { Calendar, Megaphone, Users } from "lucide-react";
+import { Fragment, useState, type ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Calendar, Image as ImageIcon, Megaphone, Users } from "lucide-react";
 import { isBlockedHost, isShortenerHost } from "@/lib/link-blocklist";
 import { UsernameMention } from "@/components/username-mention";
 import { GroupPeek } from "@/components/group-peek";
 import { EventPeek } from "@/components/event-peek";
+import { CollabPeek } from "@/components/collab-peek";
+import { WorkPeek } from "@/components/work-peek";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Parse a chat / Today post body into renderable segments.
  * Supports:
  *  - @username mentions                    → ProfilePeek chip (via UsernameMention)
- *  - [Label](/collab/slug) inline links     → collab pill + link
+ *  - [Label](/collab/slug) inline links     → collab pill + peek dialog
+ *  - [Label](/works/slug) inline links      → work pill + peek dialog
  *  - [Label](/g/slug) inline links          → group pill + hover peek
  *  - [Label](/g/slug/e/eventSlug) links     → event pill + hover peek
  *  - Bare URLs (http/https)                 → autolinked with soft censoring
@@ -20,6 +25,7 @@ type Segment =
   | { type: "text"; value: string }
   | { type: "mention"; username: string }
   | { type: "collab"; label: string; slug: string }
+  | { type: "work"; label: string; slug: string }
   | { type: "group"; label: string; slug: string }
   | { type: "event"; label: string; groupSlug: string; eventSlug: string }
   | { type: "url"; href: string };
@@ -28,6 +34,7 @@ const EVENT_LINK_RE =
   /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
 const GROUP_LINK_RE = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
 const COLLAB_LINK_RE = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
+const WORK_LINK_RE = /\[([^\]\n]{1,120})\]\(\/works\/([a-zA-Z0-9_-]{1,80})\)/g;
 const MENTION_RE = /(^|\s)@([a-zA-Z0-9_]{2,30})/g;
 const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/g;
 
@@ -61,6 +68,15 @@ function tokenize(body: string): Segment[] {
       start: m.index,
       end: m.index + m[0].length,
       seg: { type: "collab", label: m[1], slug: m[2] },
+    });
+  }
+  WORK_LINK_RE.lastIndex = 0;
+  while ((m = WORK_LINK_RE.exec(body)) !== null) {
+    if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+    hits.push({
+      start: m.index,
+      end: m.index + m[0].length,
+      seg: { type: "work", label: m[1], slug: m[2] },
     });
   }
   URL_RE.lastIndex = 0;
@@ -122,17 +138,10 @@ export function renderTodayBody(body: string): ReactNode {
       );
     }
     if (s.type === "collab") {
-      return (
-        <Link
-          key={i}
-          to="/collab/$slug"
-          params={{ slug: s.slug }}
-          className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
-        >
-          <Megaphone className="h-3 w-3" />
-          {s.label}
-        </Link>
-      );
+      return <CollabPill key={i} label={s.label} slug={s.slug} />;
+    }
+    if (s.type === "work") {
+      return <WorkPill key={i} label={s.label} slug={s.slug} />;
     }
     if (s.type === "group") {
       return (
@@ -162,39 +171,103 @@ export function renderTodayBody(body: string): ReactNode {
         </EventPeek>
       );
     }
-    // URL
-    let host = "";
-    try {
-      host = new URL(s.href).host;
-    } catch {
-      return <Fragment key={i}>{s.href}</Fragment>;
+    if (s.type === "url") {
+      return <UrlSegment key={i} href={s.href} />;
     }
-    if (isBlockedHost(host)) {
-      return (
-        <span
-          key={i}
-          className="mx-0.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 align-baseline text-[12px] text-ink-muted"
-          title="Hidden by Workshop · adult / unsafe domain"
-        >
-          link hidden · adult content
-        </span>
-      );
-    }
-    const flagged = isShortenerHost(host);
-    return (
-      <a
-        key={i}
-        href={s.href}
-        target="_blank"
-        rel="noopener noreferrer nofollow ugc"
-        className="break-words text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
-        title={flagged ? `Shortener · resolves through ${host}` : s.href}
-      >
-        {flagged ? "⚠︎ " : ""}
-        {truncateMiddle(s.href.replace(/^https?:\/\//, ""))}
-      </a>
-    );
+    return null;
   });
+}
+
+function UrlSegment({ href }: { href: string }) {
+  let host = "";
+  try {
+    host = new URL(href).host;
+  } catch {
+    return <>{href}</>;
+  }
+  if (isBlockedHost(host)) {
+    return (
+      <span
+        className="mx-0.5 inline-flex items-center rounded-full bg-muted px-2 py-0.5 align-baseline text-[12px] text-ink-muted"
+        title="Hidden by Workshop · adult / unsafe domain"
+      >
+        link hidden · adult content
+      </span>
+    );
+  }
+  const flagged = isShortenerHost(host);
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer nofollow ugc"
+      className="break-words text-primary underline decoration-primary/40 underline-offset-2 hover:decoration-primary"
+      title={flagged ? `Shortener · resolves through ${host}` : href}
+    >
+      {flagged ? "⚠︎ " : ""}
+      {truncateMiddle(href.replace(/^https?:\/\//, ""))}
+    </a>
+  );
+}
+
+function CollabPill({ label, slug }: { label: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useQuery({
+    queryKey: ["collab-id-by-slug", slug],
+    enabled: open,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("collab_posts")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      return (data?.id as string | undefined) ?? null;
+    },
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-primary hover:bg-primary/10"
+      >
+        <Megaphone className="h-3 w-3" />
+        {label}
+      </button>
+      <CollabPeek collabId={id ?? null} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
+function WorkPill({ label, slug }: { label: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: id } = useQuery({
+    queryKey: ["work-id-by-slug", slug],
+    enabled: open,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("works")
+        .select("id")
+        .eq("slug", slug)
+        .maybeSingle();
+      return (data?.id as string | undefined) ?? null;
+    },
+  });
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+      >
+        <ImageIcon className="h-3 w-3" />
+        {label}
+      </button>
+      <WorkPeek workId={id ?? null} open={open} onOpenChange={setOpen} />
+    </>
+  );
 }
 
 /** Strip markdown links (collab/group/event) to plain labels for snippets. */
@@ -202,7 +275,8 @@ export function flattenTodayBodyToText(body: string): string {
   return body
     .replace(EVENT_LINK_RE, (_f, label: string) => label)
     .replace(GROUP_LINK_RE, (_f, label: string) => label)
-    .replace(COLLAB_LINK_RE, (_f, label: string) => label);
+    .replace(COLLAB_LINK_RE, (_f, label: string) => label)
+    .replace(WORK_LINK_RE, (_f, label: string) => label);
 }
 
 /** Extract @username tokens (deduped, lowercase). */
