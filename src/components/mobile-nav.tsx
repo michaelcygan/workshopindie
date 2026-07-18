@@ -17,9 +17,8 @@ export function MobileNav() {
   // Logged-out visitors on a public profile or work page see it as a standalone surface — no bottom nav.
   if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) return null;
 
-
-
   const initial =
+
     ((user?.user_metadata?.display_name as string | undefined) ??
       user?.email?.split("@")[0] ??
       "·")[0]?.toUpperCase() ?? "·";
