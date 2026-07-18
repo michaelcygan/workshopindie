@@ -400,7 +400,23 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
         )}
       </div>
 
+      <SuggestedPrompts
+        posts={posts}
+        canPost={canPost}
+        onPick={(text) => {
+          setBody(text.slice(0, 500));
+          requestAnimationFrame(() => {
+            const el = inputRef.current;
+            if (!el) return;
+            el.focus();
+            const end = el.value.length;
+            el.setSelectionRange(end, end);
+          });
+        }}
+      />
+
       <form
+
         onSubmit={(e) => {
           e.preventDefault();
           const t = body.trim();
