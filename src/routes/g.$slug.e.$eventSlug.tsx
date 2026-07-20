@@ -488,9 +488,6 @@ function EventPage() {
               </TabsContent>
             )}
 
-            <TabsContent value="activity" className="mt-5 space-y-6">
-              <EventShowcaseStrip eventId={ev.id} eventTitle={ev.title} canBring={canBring} />
-            </TabsContent>
 
             <TabsContent value="wall" className="mt-5">
               <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
