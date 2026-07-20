@@ -182,6 +182,20 @@ function EventPage() {
     : `/g/${ev.group.slug}/e/${ev.slug}`;
   const isAttending = myRsvp?.status === "going" || myRsvp?.status === "maybe";
   const canBring = isAttending;
+  const wallSealed = ends.getTime() + 3 * 24 * 60 * 60 * 1000 < Date.now();
+  const wallParticipants = (attendees ?? [])
+    .map((a) => {
+      type R = { user_id: string; profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null };
+      const r = a as unknown as R;
+      if (!r.profile) return null;
+      return {
+        user_id: r.user_id,
+        display_name: r.profile.display_name,
+        username: r.profile.username,
+        avatar_url: r.profile.avatar_url,
+      };
+    })
+    .filter((p): p is { user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } => p !== null);
 
   return (
     <main className="pb-20">
@@ -415,11 +429,10 @@ function EventPage() {
           />
         )}
 
-        {/* Post-event recap: who checked in + photos */}
+        {/* Post-event recap: who checked in */}
         {user && phase === "post" && (
           <div className="mt-6 space-y-6">
             <EventWhoStrip eventId={ev.id} phase="post" />
-            <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
           </div>
         )}
 
@@ -441,14 +454,28 @@ function EventPage() {
 
         {/* Tabs */}
         <div className="mt-6">
-          <Tabs defaultValue="about">
+          <Tabs defaultValue="wall">
             <TabsList className={`sticky top-2 z-10 grid w-full ${ev.lineup_capacity != null ? "grid-cols-3" : "grid-cols-2"} rounded-full bg-muted p-1 backdrop-blur`}>
+              <TabsTrigger value="wall" className="rounded-full"><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Wall</TabsTrigger>
               <TabsTrigger value="about" className="rounded-full"><Info className="mr-1.5 h-3.5 w-3.5" /> About</TabsTrigger>
               {ev.lineup_capacity != null && (
                 <TabsTrigger value="lineup" className="rounded-full"><ListMusic className="mr-1.5 h-3.5 w-3.5" /> Lineup</TabsTrigger>
               )}
-              <TabsTrigger value="wall" className="rounded-full"><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Wall</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="wall" className="mt-5 space-y-5">
+              <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                <EventWall
+                  eventId={ev.id}
+                  canPost={myRsvp?.status === "going"}
+                  sealed={wallSealed}
+                  participants={wallParticipants}
+                />
+              </div>
+              {(phase === "live" || phase === "post") && !wallSealed && (
+                <EventPhotosSection eventId={ev.id} canUpload={isAttending && !wallSealed} />
+              )}
+            </TabsContent>
 
             <TabsContent value="about" className="mt-5 space-y-6">
               {ev.description ? (
@@ -488,15 +515,9 @@ function EventPage() {
                 />
               </TabsContent>
             )}
-
-
-            <TabsContent value="wall" className="mt-5">
-              <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
-                <EventWall eventId={ev.id} canPost={myRsvp?.status === "going"} />
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
+
       </div>
     </main>
   );

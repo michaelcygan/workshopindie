@@ -240,24 +240,74 @@ export const postEventComment = createServerFn({ method: "POST" })
   });
 
 export const listEventComments = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
-  .handler(async ({ data }) => {
-    const supabase = publicClient();
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
     const { data: rows, error } = await supabase
       .from("group_event_comments")
-      .select("id,body,parent_id,created_at,user_id")
+      .select("id,body,parent_id,created_at,user_id,system_kind")
       .eq("event_id", data.event_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
-    if (ids.length === 0) return [];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id,username,display_name,avatar_url")
-      .in("id", ids);
-    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
-    return (rows ?? []).map((r) => ({ ...r, author: pmap.get(r.user_id) ?? null }));
+    if (!rows || rows.length === 0) return [];
+
+    const commentIds = rows.map((r) => r.id);
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+
+    const [profilesRes, reactionsRes] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .in("id", userIds),
+      supabase
+        .from("group_event_comment_reactions")
+        .select("comment_id,user_id,kind")
+        .in("comment_id", commentIds)
+        .eq("kind", "like"),
+    ]);
+    const pmap = new Map((profilesRes.data ?? []).map((p) => [p.id, p]));
+    const likeCount = new Map<string, number>();
+    const likedByMe = new Set<string>();
+    for (const r of reactionsRes.data ?? []) {
+      likeCount.set(r.comment_id, (likeCount.get(r.comment_id) ?? 0) + 1);
+      if (r.user_id === userId) likedByMe.add(r.comment_id);
+    }
+    return rows.map((r) => ({
+      ...r,
+      author: pmap.get(r.user_id) ?? null,
+      like_count: likeCount.get(r.id) ?? 0,
+      liked_by_me: likedByMe.has(r.id),
+    }));
   });
+
+export const toggleEventCommentLike = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ comment_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: existing } = await supabase
+      .from("group_event_comment_reactions")
+      .select("id")
+      .eq("comment_id", data.comment_id)
+      .eq("user_id", userId)
+      .eq("kind", "like")
+      .maybeSingle();
+    if (existing) {
+      const { error } = await supabase
+        .from("group_event_comment_reactions")
+        .delete()
+        .eq("id", existing.id);
+      if (error) throw new Error(error.message);
+      return { liked: false };
+    }
+    const { error } = await supabase
+      .from("group_event_comment_reactions")
+      .insert({ comment_id: data.comment_id, user_id: userId, kind: "like" });
+    if (error) throw new Error(error.message);
+    return { liked: true };
+  });
+
 
 export const listEventUpdates = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
