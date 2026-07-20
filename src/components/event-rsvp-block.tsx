@@ -26,6 +26,7 @@ export function EventRsvpBlock({
   startsAt,
   timezone,
   isRecurring,
+  footerSlot,
 }: {
   eventId: string;
   groupSlug: string;
@@ -37,6 +38,7 @@ export function EventRsvpBlock({
   startsAt?: string | null;
   timezone?: string | null;
   isRecurring?: boolean;
+  footerSlot?: ReactNode;
 }) {
   const { user } = useAuth();
   const rsvpFn = useServerFn(rsvp);
