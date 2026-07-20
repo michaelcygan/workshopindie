@@ -231,11 +231,18 @@ export const listEventComments = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_comments")
-      .select("id,body,parent_id,created_at,user_id,author:profiles(id,username,display_name,avatar_url)")
+      .select("id,body,parent_id,created_at,user_id")
       .eq("event_id", data.event_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, author: pmap.get(r.user_id) ?? null }));
   });
 
 export const listEventUpdates = createServerFn({ method: "POST" })
@@ -244,11 +251,18 @@ export const listEventUpdates = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_updates")
-      .select("id,body,created_at,created_by,author:profiles(id,username,display_name,avatar_url)")
+      .select("id,body,created_at,created_by")
       .eq("event_id", data.event_id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.created_by)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, author: pmap.get(r.created_by) ?? null }));
   });
 
 // --- Attendee activity surface (collabs & works of RSVPs, public) ---
