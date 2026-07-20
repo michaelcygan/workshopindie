@@ -1,52 +1,28 @@
-## Goal
-Fix the "Hosted by" line on the event page and support listing an event across multiple groups.
+## Make venue name & address tappable on event pages
 
-## 1. "Hosted by" shows the real organizer
+Right now the "In person" block in `EventLocationCard` just renders text. Since venues are standardized (we store `venue_name`, `venue_address`, and often `lat/lng` via `resolveVenueAndCity`), we can make them actionable.
 
-The schema already stores `external_organizer` (text) and `external_url` (text) on `group_events` — captured in the admin event creation flow. The event page currently hardcodes `Hosted by {group.name}`.
+### Recommendation
 
-Update `src/routes/g.$slug.e.$eventSlug.tsx` to:
-- If `ev.external_organizer` is set, render `Hosted by {external_organizer}` as a link to `ev.external_url` (opens in new tab, `rel="noopener noreferrer"`, external-link icon). Falls back to plain text if no URL.
-- Otherwise keep current behavior (`Hosted by {group.name}` linking to the group).
-- Include `external_organizer` and `external_url` in the `EventRow` type + loader select (verify `getEventBySlug` returns them; add if missing).
+Do **both**, contextually — one primary tap action + a secondary copy affordance, so mobile users get the map they expect and desktop users get something equally useful:
 
-The group avatar next to "Hosted by" is replaced by a small globe/link icon when the host is external, so users don't confuse the group for the organizer.
+1. **Primary tap (the venue block itself):** open the location in the OS's default map app.
+   - Use a universal `https://www.google.com/maps/search/?api=1&query=…` URL. iOS/Android both handle this: iOS routes google.com/maps links to Apple Maps if Google Maps isn't installed (via the system handler) — and even when it opens in-browser, Google Maps' mobile page offers "Open in app." This avoids the `maps:` / `geo:` scheme fragmentation and works on desktop too (opens Google Maps in a new tab).
+   - Prefer `query=lat,lng(Venue Name)` when we have coordinates (more accurate); fall back to the URL-encoded address string.
+2. **Secondary "Copy" button** next to it (small ghost icon button, same pattern already used for the online Join link in this component) — one tap copies the full address, toasts "Copied". Useful on desktop and for users who want to paste into Uber/Lyft/Waze.
 
-## 2. "Listed in" — multi-group cross-posting
+### Interaction details
 
-New join table so one event can appear in multiple groups without duplicating rows:
+- Wrap the venue name + address in a single `<a target="_blank" rel="noreferrer">` so the whole block is a tap target (better mobile ergonomics than a tiny link).
+- Add a subtle hover underline on the name, `ExternalLink` icon after the name (matching the existing "Join link" styling for consistency).
+- Copy button: reuse the existing `Copy` icon + `toast.success("Address copied")` pattern already in the file.
+- Logged-out state is unchanged (still shows the "RSVP to see the full address" lock chip — no link, no copy).
 
-```
-public.group_event_groups
-  event_id uuid  -> group_events(id) on delete cascade
-  group_id uuid  -> groups(id) on delete cascade
-  added_by uuid, added_at timestamptz default now()
-  PRIMARY KEY (event_id, group_id)
-```
+### Files touched
 
-- Backfill: insert `(id, group_id)` for every existing `group_events` row so the primary `group_id` is always represented.
-- Keep the existing `group_events.group_id` as the canonical/primary host group (owns the slug, RLS, notifications). The new table only powers discovery + display.
-- RLS: `SELECT` open to `anon`/`authenticated` (event visibility already gates the event itself); `INSERT`/`DELETE` restricted to the event creator and group admins of the target group. GRANTs added in the same migration.
-- Update group listings (`listFeaturedEvents`, group Today/Events tabs) to `UNION` events reachable via `group_event_groups` so cross-posted events surface in each group.
+- `src/components/event-location-card.tsx` — only file that needs to change. Wrap the in-person name/address in an anchor to the map URL, add a `Copy` ghost button beside it. No schema, no server changes.
 
-## 3. Admin — pick additional groups when creating/editing
+### Out of scope
 
-In `src/routes/admin.events.tsx`:
-- Add a "Also list in" multi-select below the primary group picker (searchable list of groups the admin can post to).
-- On save, upsert rows into `group_event_groups` for the chosen groups; on unselect, delete the row.
-- Same control on the edit path.
-
-## 4. Event page — "Listed in" strip
-
-On `src/routes/g.$slug.e.$eventSlug.tsx`, under the "Hosted by" row (or just under the tagline), render a small chip row:
-
-`Listed in: [Chicago] [Comedy Chicago] [Improv Nerds]`
-
-- Fetched via a new lightweight fn `listEventGroups({ event_id })` returning `{ id, slug, name, avatar_url }[]`.
-- Each chip links to `/g/$slug`.
-- Hidden when the event is only in one group.
-
-## Technical notes
-- Migration steps (single file): create table, GRANTs, enable RLS, policies, backfill from `group_events`.
-- No changes to notifications, RSVP, or series logic — those stay keyed off the canonical `group_id`.
-- Type regen happens after the migration approves; code edits in step 1/3/4 come after.
+- No changes to the map embed (`VenueMap`) — it already links out to OpenStreetMap.
+- No native app deep-linking (`maps:` / `geo:`) — universal Google Maps URL covers both platforms without UA sniffing.
