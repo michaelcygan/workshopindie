@@ -289,6 +289,27 @@ function EventPage() {
             </div>
           </div>
 
+          {listedGroups && listedGroups.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+              <span>Listed in</span>
+              {listedGroups.map((g) => (
+                <Link
+                  key={g.id}
+                  to="/g/$slug"
+                  params={{ slug: g.slug }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-ink-soft hover:border-ink/40 hover:text-ink"
+                >
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src={g.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[8px]">{g.name.slice(0, 1)}</AvatarFallback>
+                  </Avatar>
+                  <span>{g.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
+
           <div className="mt-5 border-t border-border pt-4">
             <EventLocationCard
               format={ev.format}
