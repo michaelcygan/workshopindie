@@ -1023,6 +1023,74 @@ export type Database = {
           },
         ]
       }
+      event_series: {
+        Row: {
+          canceled_at: string | null
+          created_at: string
+          created_by: string | null
+          day_of_month: number | null
+          duration_minutes: number
+          ends_on: string | null
+          group_id: string
+          horizon_weeks: number
+          id: string
+          next_occurrence_at: string
+          recurrence_rule: string
+          series_key: string
+          start_time_local: string
+          template: Json
+          timezone: string
+          updated_at: string
+          weekday: number | null
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          duration_minutes: number
+          ends_on?: string | null
+          group_id: string
+          horizon_weeks?: number
+          id?: string
+          next_occurrence_at: string
+          recurrence_rule: string
+          series_key: string
+          start_time_local: string
+          template: Json
+          timezone?: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number | null
+          duration_minutes?: number
+          ends_on?: string | null
+          group_id?: string
+          horizon_weeks?: number
+          id?: string
+          next_occurrence_at?: string
+          recurrence_rule?: string
+          series_key?: string
+          start_time_local?: string
+          template?: Json
+          timezone?: string
+          updated_at?: string
+          weekday?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_series_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_showcase_items: {
         Row: {
           collab_id: string | null
