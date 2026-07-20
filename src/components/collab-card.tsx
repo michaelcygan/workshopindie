@@ -117,7 +117,7 @@ export function CollabCard({
         aria-label={post.title}
       />
 
-      <div className="flex items-center gap-2 px-5 pt-5">
+      <div className="flex flex-wrap items-center gap-2 px-5 pt-5">
         <CategoryChipsCompact primary={post.category} categories={post.categories} />
         {post.status === "open" ? (
           <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
@@ -138,12 +138,12 @@ export function CollabCard({
             Boosted
           </span>
         )}
-        <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
+        <span className="ml-auto shrink-0 text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
       </div>
 
 
       <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-3">
-        <h3 className="font-display text-[22px] leading-[1.15] text-ink line-clamp-2 transition-colors group-hover:text-gradient-motion">
+        <h3 className="font-display text-[20px] leading-[1.15] text-ink line-clamp-2 break-words transition-colors group-hover:text-gradient-motion sm:text-[22px]">
           {post.title}
         </h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
