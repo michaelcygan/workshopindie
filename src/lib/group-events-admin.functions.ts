@@ -519,6 +519,26 @@ export const updateEventSeriesFuture = createServerFn({ method: "POST" })
       .eq("series_key", data.series_key)
       .gte("starts_at", anchor.starts_at as string);
     if (error) throw new Error(error.message);
+
+    // Merge the same patch into the series template so future materialized
+    // occurrences pick it up too.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: seriesRow } = await supabaseAdmin
+        .from("event_series")
+        .select("id,template")
+        .eq("series_key", data.series_key)
+        .maybeSingle();
+      if (seriesRow) {
+        const s = seriesRow as unknown as { id: string; template: Record<string, unknown> };
+        const nextTemplate = { ...(s.template ?? {}), ...patch };
+        await supabaseAdmin
+          .from("event_series")
+          .update({ template: nextTemplate } as never)
+          .eq("id", s.id);
+      }
+    } catch { /* best-effort — occurrence rows are already updated */ }
+
     return { ok: true, updated: count ?? 0 };
   });
 
