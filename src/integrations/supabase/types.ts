@@ -1282,6 +1282,38 @@ export type Database = {
           },
         ]
       }
+      group_event_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          id: string
+          kind: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_event_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "group_event_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_event_comments: {
         Row: {
           body: string
@@ -1289,6 +1321,7 @@ export type Database = {
           event_id: string
           id: string
           parent_id: string | null
+          system_kind: string | null
           user_id: string
         }
         Insert: {
@@ -1297,6 +1330,7 @@ export type Database = {
           event_id: string
           id?: string
           parent_id?: string | null
+          system_kind?: string | null
           user_id: string
         }
         Update: {
@@ -1305,6 +1339,7 @@ export type Database = {
           event_id?: string
           id?: string
           parent_id?: string | null
+          system_kind?: string | null
           user_id?: string
         }
         Relationships: [
@@ -6393,6 +6428,7 @@ export type Database = {
         Args: { _event_id: string; _user_id: string }
         Returns: boolean
       }
+      is_event_wall_sealed: { Args: { _event_id: string }; Returns: boolean }
       is_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_mutual_follow: { Args: { _a: string; _b: string }; Returns: boolean }
       is_persona_member: {
