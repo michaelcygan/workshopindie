@@ -9,21 +9,27 @@ export function EventLocationCard({
   venueAddress,
   onlineUrl,
   city,
+  variant = "card",
 }: {
   format: "in_person" | "online" | "hybrid";
   venueName: string | null;
   venueAddress: string | null;
   onlineUrl: string | null;
   city: string | null;
+  variant?: "card" | "embedded";
 }) {
   const { user } = useAuth();
   const showInPerson = format === "in_person" || format === "hybrid";
   const showOnline = format === "online" || format === "hybrid";
+  const rowCls =
+    variant === "embedded"
+      ? "flex items-start gap-3"
+      : "flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft";
 
   return (
     <div className="space-y-3">
       {showInPerson && (
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft">
+        <div className={rowCls}>
           <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" />
           <div className="min-w-0 flex-1">
             <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">In person</div>
@@ -45,7 +51,7 @@ export function EventLocationCard({
         </div>
       )}
       {showOnline && (
-        <div className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft">
+        <div className={rowCls}>
           <Radio className="mt-0.5 h-5 w-5 shrink-0 text-ink-muted" />
           <div className="min-w-0 flex-1">
             <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">Online</div>
