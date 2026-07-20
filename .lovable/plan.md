@@ -1,29 +1,16 @@
-# Consolidate RSVP + Who's going
+Make the circled parts of the consolidated RSVP card interactive.
 
-Combine the two adjacent cards on the event page into a single "RSVP" card so the action, status, and social proof share one surface.
+1. Create a new `EventAttendeesSheet` component
+   - File: `src/components/event-attendees-sheet.tsx`
+   - Uses the existing `listAttendees` server function to fetch attendees for the event.
+   - Opens as a bottom sheet (via `src/components/ui/sheet.tsx`) with a header showing the event’s RSVP counts.
+   - Lists all attendees grouped by status: Going, Maybe, Waitlist.
+   - Each list item shows an avatar + display name and is wrapped with the existing `ProfilePeek` component for hover/tap preview.
+   - Clicking a name/avatar also navigates to the full profile.
 
-## New single card layout
+2. Update `src/routes/g.$slug.e.$eventSlug.tsx` in the consolidated RSVP footer
+   - Wrap each overlapping avatar in the “Who’s going” strip with `ProfilePeek` so users can hover (desktop) or tap (mobile) to preview the person.
+   - Make the static `{going_count} going` text a trigger for the new `EventAttendeesSheet`.
+   - Also make the `+N more` overflow indicator trigger the same attendee list.
 
-```text
-┌─ RSVP ──────────────────────────────── 12 going · 2 waitlist ─┐
-│ For Tue, Jul 21 · 8:00 PM               [You're going pill]   │
-│ [✓ I'm in for Tue, Jul 21, 8:00 PM] [✕ Can't make it]         │
-│ ─────────────────────────────────────────────────────────────  │
-│ (M) (J) (A) (K) (+8)   ← overlapping avatar row, click → peek │
-└────────────────────────────────────────────────────────────────┘
-```
-
-- Header: title "RSVP" on the left, going count (and waitlist if any) on the right — replaces the separate "Who's going" header and its duplicate counter.
-- Body: keep the existing `EventRsvpBlock` action row and the "You're going" status pill exactly as-is.
-- Footer strip: compact overlapping avatar row (h-8, -ml-2 overlap) showing up to ~10 attendees + "+N" chip, clicking an avatar opens the existing `ProfilePeek`. Empty state: "No one's RSVP'd yet — be first." (inline, small).
-- Post-event: replace the footer strip with `EventWhoStrip phase="post"` inline in the same card (keeps the "who was here" recap consolidated too).
-- Signed-out: show the action card + "Sign in to see who's going" inline instead of a second card.
-- Keep `EventRsvpNudge` directly under the card (unchanged).
-- Photos section (post-event) stays as its own separate card below.
-
-## Files
-
-- `src/routes/g.$slug.e.$eventSlug.tsx` — merge the two blocks (lines ~330–425) into one card wrapper; remove the standalone "Who's going" card; move the avatar rendering into the new footer strip.
-- Optional small extract: `src/components/event-going-strip.tsx` for the compact overlapping-avatar row (keeps route file lean). Reuses the same `attendees` data already loaded.
-
-No schema or query changes.
+3. Verify the result with TypeScript and a quick preview check on the event page.

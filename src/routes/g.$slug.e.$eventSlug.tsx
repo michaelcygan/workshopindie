@@ -18,6 +18,8 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventWall } from "@/components/event-wall";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
 import { EventShareSheet } from "@/components/event-share-sheet";
+import { EventAttendeesSheet } from "@/components/event-attendees-sheet";
+import { ProfilePeek } from "@/components/profile-peek";
 
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
@@ -349,10 +351,21 @@ function EventPage() {
                 <div>
                   <div className="mb-2 flex items-center justify-between">
                     <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Who's going</span>
-                    <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                      <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-                      {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
-                    </span>
+                    <EventAttendeesSheet
+                      eventId={ev.id}
+                      goingCount={ev.going_count}
+                      maybeCount={ev.maybe_count}
+                      waitlistCount={ev.waitlist_count}
+                      capacity={ev.capacity}
+                    >
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-xs text-ink-muted hover:text-ink underline-offset-2 hover:underline"
+                      >
+                        <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
+                        {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
+                      </button>
+                    </EventAttendeesSheet>
                   </div>
                   {going.length === 0 ? (
                     <p className="text-sm text-ink-muted">No one's RSVP'd yet — be first.</p>
@@ -364,14 +377,18 @@ function EventPage() {
                           const p = (a as unknown as R).profile;
                           if (!p) return null;
                           return (
-                            <Avatar
-                              key={a.user_id}
-                              className="h-8 w-8 border-2 border-surface"
-                              title={p.display_name ?? p.username ?? ""}
-                            >
-                              <AvatarImage src={p.avatar_url ?? undefined} />
-                              <AvatarFallback>{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback>
-                            </Avatar>
+                            <ProfilePeek key={a.user_id} userId={a.user_id}>
+                              <button
+                                type="button"
+                                className="h-8 w-8 rounded-full border-2 border-surface p-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+                                title={p.display_name ?? p.username ?? ""}
+                              >
+                                <Avatar className="h-full w-full">
+                                  <AvatarImage src={p.avatar_url ?? undefined} />
+                                  <AvatarFallback>{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback>
+                                </Avatar>
+                              </button>
+                            </ProfilePeek>
                           );
                         })}
                       </div>
