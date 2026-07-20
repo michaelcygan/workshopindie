@@ -8,10 +8,8 @@ import type { Database } from "@/integrations/supabase/types";
 
 export type SeriesRule = "WEEKLY" | "BIWEEKLY" | "MONTHLY";
 
-/** Milliseconds in one horizon window (weeks). */
-function horizonEndAt(weeks: number): Date {
-  return new Date(Date.now() + weeks * 7 * 24 * 60 * 60 * 1000);
-}
+/** Target number of future occurrences kept materialized per series. */
+export const TARGET_FUTURE_OCCURRENCES = 8;
 
 /** Advance a UTC instant by one step of the given rule. */
 export function advanceInstant(iso: string, rule: SeriesRule): string {
@@ -35,7 +33,8 @@ type SeriesRow = {
 };
 
 /**
- * Materialize any missing occurrences for a single series up to the horizon.
+ * Materialize occurrences for a single series until at least
+ * TARGET_FUTURE_OCCURRENCES future, non-canceled rows exist.
  * Returns the number of new rows inserted.
  */
 export async function materializeSeries(
@@ -43,14 +42,24 @@ export async function materializeSeries(
   series: SeriesRow,
   createdBy: string | null,
 ): Promise<number> {
-  const horizon = horizonEndAt(series.horizon_weeks);
+  const nowIso = new Date().toISOString();
+  const { count: existingCount, error: countErr } = await admin
+    .from("group_events")
+    .select("id", { count: "exact", head: true })
+    .eq("series_key", series.series_key)
+    .gte("starts_at", nowIso)
+    .neq("status", "canceled");
+  if (countErr) throw new Error(countErr.message);
+
+  let needed = Math.max(0, TARGET_FUTURE_OCCURRENCES - (existingCount ?? 0));
+  if (needed === 0) return 0;
+
   let cursor = series.next_occurrence_at;
   let inserted = 0;
-  // Safety cap: never produce more than one horizon's worth in a single sweep.
-  const maxSteps = series.horizon_weeks * 7 + 4;
-  for (let step = 0; step < maxSteps; step += 1) {
+  // Safety cap: never loop more than 2x the target in a single sweep.
+  const maxSteps = TARGET_FUTURE_OCCURRENCES * 2 + 4;
+  for (let step = 0; step < maxSteps && needed > 0; step += 1) {
     const startsAt = new Date(cursor);
-    if (startsAt > horizon) break;
     if (series.ends_on && startsAt > new Date(`${series.ends_on}T23:59:59Z`)) break;
     const endsAt = new Date(startsAt.getTime() + series.duration_minutes * 60 * 1000);
 
@@ -71,11 +80,11 @@ export async function materializeSeries(
       .select("id")
       .single();
     if (error) {
-      // 23505 = unique_violation — already materialized; skip.
       const code = (error as unknown as { code?: string }).code;
       if (code !== "23505") throw new Error(error.message);
     } else {
       inserted += 1;
+      needed -= 1;
     }
     cursor = advanceInstant(cursor, series.recurrence_rule);
   }
@@ -89,6 +98,7 @@ export async function materializeSeries(
   }
   return inserted;
 }
+
 
 /** Sweep every active series that's due for a top-up. */
 export async function materializeAllDueSeries(
