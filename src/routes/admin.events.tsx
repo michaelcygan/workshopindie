@@ -21,6 +21,7 @@ import {
   adminListEventReports,
   adminDismissReports,
   createEvent,
+  createEventSeries,
   cancelEvent,
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
