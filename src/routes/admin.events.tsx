@@ -169,6 +169,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     external_url: "",
     external_organizer: "",
     is_recurring: false,
+    recurrence_rule: "WEEKLY",
     recurrence_label: "",
     pinned: false,
   });
