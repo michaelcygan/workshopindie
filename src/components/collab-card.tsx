@@ -117,7 +117,7 @@ export function CollabCard({
         aria-label={post.title}
       />
 
-      <div className="flex items-center gap-2 px-5 pt-5">
+      <div className="flex flex-wrap items-center gap-2 px-5 pt-5">
         <CategoryChipsCompact primary={post.category} categories={post.categories} />
         {post.status === "open" ? (
           <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
@@ -138,12 +138,12 @@ export function CollabCard({
             Boosted
           </span>
         )}
-        <span className="ml-auto text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
+        <span className="ml-auto shrink-0 text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
       </div>
 
 
       <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-3">
-        <h3 className="font-display text-[22px] leading-[1.15] text-ink line-clamp-2 transition-colors group-hover:text-gradient-motion">
+        <h3 className="font-display text-[20px] leading-[1.15] text-ink line-clamp-2 break-words transition-colors group-hover:text-gradient-motion sm:text-[22px]">
           {post.title}
         </h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
@@ -177,22 +177,22 @@ export function CollabCard({
         )}
 
 
-        <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
+        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
             <img
               src={post.user.avatar_url}
               alt=""
-              className="h-6 w-6 rounded-full object-cover"
+              className="h-6 w-6 shrink-0 rounded-full object-cover"
               loading="lazy"
             />
           ) : (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-ink-soft">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-ink-soft">
               {initial}
             </span>
           )}
-          <span className="truncate font-medium text-ink">{author}</span>
+          <span className="min-w-0 truncate font-medium text-ink">{author}</span>
           <span className="text-ink-muted/60">·</span>
-          <span className="truncate">{locationLabel(post)}</span>
+          <span className="min-w-0 truncate">{locationLabel(post)}</span>
           <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
             {COMP_LABEL[post.compensation_type]}
           </span>
