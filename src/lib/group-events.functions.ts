@@ -271,14 +271,18 @@ async function attendeeUserIds(eventId: string): Promise<string[]> {
   const supabase = publicClient();
   const { data: rsvps } = await supabase
     .from("group_event_rsvps")
-    .select("user_id,profile:profiles!inner(event_visibility)")
+    .select("user_id")
     .eq("event_id", eventId)
     .in("status", ["going", "maybe", "waitlist"])
     .limit(500);
-  type R = { user_id: string; profile: { event_visibility: string } | null };
-  return ((rsvps ?? []) as unknown as R[])
-    .filter((r) => r.profile && r.profile.event_visibility === "public")
-    .map((r) => r.user_id);
+  const ids = Array.from(new Set((rsvps ?? []).map((r) => r.user_id)));
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id,event_visibility")
+    .in("id", ids)
+    .eq("event_visibility", "public");
+  return (profiles ?? []).map((p) => p.id);
 }
 
 const POOL_SIZE = 300;
