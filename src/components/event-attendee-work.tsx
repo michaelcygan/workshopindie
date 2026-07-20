@@ -17,7 +17,7 @@ type Attendee = { display_name: string | null; username: string | null; avatar_u
 type Group<T> = { uid: string; user: Attendee | null; items: T[]; remaining: number };
 type Payload<T> = { fair: T[]; byPerson: Group<T>[]; totalAttendees: number; totalItems: number };
 
-type CollabRow = CollabCardData & { user?: Attendee | null };
+type CollabRow = CollabCardData & { cover_url?: string | null; user?: Attendee | null };
 type WorkRow = WorkCardData & { author?: Attendee | null; created_by?: string };
 
 export function EventAttendeeWork({ eventId }: { eventId: string }) {
