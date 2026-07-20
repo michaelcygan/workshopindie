@@ -246,20 +246,21 @@ function EventPage() {
               />
             </div>
           </div>
+
+          <div className="mt-5 border-t border-border pt-4">
+            <EventLocationCard
+              format={ev.format}
+              venueName={ev.venue_name}
+              venueAddress={ev.venue_address}
+              onlineUrl={ev.online_url}
+              city={ev.venue_name ?? null}
+              variant="embedded"
+            />
+          </div>
         </div>
         {/* Series admin strip */}
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
 
-        {/* Location */}
-        <div className="mt-5">
-          <EventLocationCard
-            format={ev.format}
-            venueName={ev.venue_name}
-            venueAddress={ev.venue_address}
-            onlineUrl={ev.online_url}
-            city={ev.venue_name ?? null}
-          />
-        </div>
 
         {/* RSVP */}
         <div className="mt-5">
