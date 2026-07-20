@@ -66,14 +66,13 @@ function AdminEventsPage() {
               <th className="px-3 py-2">Group</th>
               <th className="px-3 py-2">Starts</th>
               <th className="px-3 py-2">Going</th>
-              <th className="px-3 py-2">Promo</th>
               <th className="px-3 py-2">Status</th>
               <th className="px-3 py-2 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {(events ?? []).map((e) => {
-              type R = { id: string; slug: string; title: string; starts_at: string; status: string; featured_at: string | null; going_count: number; capacity: number | null; promo_pass_months: number; group: { slug: string; name: string } };
+              type R = { id: string; slug: string; title: string; starts_at: string; status: string; featured_at: string | null; going_count: number; capacity: number | null; group: { slug: string; name: string } };
               const ev = e as unknown as R;
               return (
                 <tr key={ev.id} className="border-t border-border">
@@ -85,7 +84,6 @@ function AdminEventsPage() {
                   <td className="px-3 py-2 text-ink-soft">{ev.group.name}</td>
                   <td className="px-3 py-2 text-ink-soft">{new Date(ev.starts_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</td>
                   <td className="px-3 py-2">{ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""}</td>
-                  <td className="px-3 py-2">{ev.promo_pass_months}mo</td>
                   <td className="px-3 py-2"><span className="rounded-full bg-muted px-2 py-0.5 text-[10px]">{ev.status}</span></td>
                   <td className="px-3 py-2 text-right">
                     <Button
@@ -116,7 +114,7 @@ function AdminEventsPage() {
               );
             })}
             {(events ?? []).length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-10 text-center text-ink-muted">No events yet.</td></tr>
+              <tr><td colSpan={6} className="px-3 py-10 text-center text-ink-muted">No events yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -137,7 +135,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
-    capacity: string; promo_pass_months: number; featured: boolean;
+    capacity: string; featured: boolean;
     lineup_capacity: string;
     // v2
     source: "workshop" | "external";
@@ -161,7 +159,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     venue_address: "",
     online_url: "",
     capacity: "",
-    promo_pass_months: 1,
+    
     featured: false,
     lineup_capacity: "",
     source: "workshop",
@@ -200,7 +198,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
           venue_address: form.venue_address || null,
           online_url: form.online_url || null,
           capacity: form.capacity ? Number(form.capacity) : null,
-          promo_pass_months: form.promo_pass_months,
+          
           featured: form.featured,
           is_official: form.source === "workshop",
           lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
@@ -387,15 +385,9 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               <Input className="rounded-xl" value={form.online_url} onChange={(e) => setForm({ ...form, online_url: e.target.value })} />
             </div>
           )}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label>Capacity (optional)</Label>
-              <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
-            </div>
-            <div>
-              <Label>Promo months</Label>
-              <Input type="number" min={0} max={36} value={form.promo_pass_months} onChange={(e) => setForm({ ...form, promo_pass_months: Number(e.target.value) })} />
-            </div>
+          <div>
+            <Label>Capacity (optional)</Label>
+            <Input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} />
           </div>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />

@@ -81,7 +81,6 @@ const baseSchema = z.object({
   waitlist_enabled: z.boolean().optional(),
   visibility: z.enum(["public", "group_only", "unlisted"]).optional(),
   rsvp_mode: z.enum(["open", "approval", "invite_only"]).optional(),
-  promo_pass_months: z.number().int().min(0).max(36).optional(),
   is_official: z.boolean().optional(),
   featured: z.boolean().optional(),
   status: z.enum(["draft", "scheduled"]).optional(),
@@ -291,7 +290,7 @@ export const adminListAllEvents = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
     const { data, error } = await supabase
       .from("group_events")
-      .select("id,slug,title,kind,format,starts_at,status,featured_at,going_count,capacity,promo_pass_months,group:groups!inner(id,slug,name)")
+      .select("id,slug,title,kind,format,starts_at,status,featured_at,going_count,capacity,group:groups!inner(id,slug,name)")
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })
       .limit(200);
@@ -437,7 +436,7 @@ const seriesPatchSchema = z.object({
     online_url: z.string().url().nullable().optional(),
     cover_url: z.string().url().nullable().optional(),
     capacity: z.number().int().min(1).max(10000).nullable().optional(),
-    promo_pass_months: z.number().int().min(0).max(36).optional(),
+    
   }),
 });
 

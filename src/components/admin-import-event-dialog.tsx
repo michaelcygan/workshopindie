@@ -167,7 +167,6 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
       venue_address: form.venue_address || null,
       online_url: form.online_url || null,
       capacity: form.capacity ? Number(form.capacity) : null,
-      promo_pass_months: 0,
       featured: false,
       is_official: true,
     };
@@ -262,7 +261,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
             venue_address: r.draft.venue_address ?? null,
             online_url: r.draft.online_url ?? null,
             capacity: r.draft.capacity ?? null,
-            promo_pass_months: 0,
+            
             featured: false,
             is_official: true,
             status: "draft",
