@@ -18,7 +18,7 @@ import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 import { EventWall } from "@/components/event-wall";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
 import { EventShareSheet } from "@/components/event-share-sheet";
-import { EventShowcaseStrip } from "@/components/event-showcase-strip";
+
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
 import { EventCompanionPanel } from "@/components/event-companion-panel";
