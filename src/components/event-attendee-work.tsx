@@ -296,33 +296,37 @@ function CompactCollabTile({ post, onOpen }: { post: CollabRow; onOpen: (id: str
 
 function CompactWorkTile({ work, onOpen }: { work: WorkRow; onOpen: (id: string) => void }) {
   const catLabel = CATEGORY_LABELS[work.category] ?? work.category;
+  const isMobile = useIsMobile();
   return (
     <div className="group flex min-w-0 flex-col">
-      <button
-        type="button"
-        onClick={() => onOpen(work.id)}
-        className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-      >
-        <div className="relative aspect-square w-full overflow-hidden bg-ink/5">
-          {work.cover_url ? (
-            <img src={work.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-ink-muted">
-              <Sparkles className="h-6 w-6" />
-            </div>
-          )}
-          <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
-            {catLabel}
-          </span>
-        </div>
-        <div className="p-2.5">
-          <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{work.title}</p>
-        </div>
-      </button>
+      <HoverWrap enabled={!isMobile} preview={<WorkHoverPreview workId={work.id} />}>
+        <button
+          type="button"
+          onClick={() => onOpen(work.id)}
+          className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
+          <div className="relative aspect-square w-full overflow-hidden bg-ink/5">
+            {work.cover_url ? (
+              <img src={work.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-ink-muted">
+                <Sparkles className="h-6 w-6" />
+              </div>
+            )}
+            <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
+              {catLabel}
+            </span>
+          </div>
+          <div className="p-2.5">
+            <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{work.title}</p>
+          </div>
+        </button>
+      </HoverWrap>
       <AuthorFooter user={work.author ?? null} />
     </div>
   );
 }
+
 
 function FairCollabs({ items, loading, onOpen }: { items: CollabRow[]; loading: boolean; onOpen: (id: string) => void }) {
   if (loading) return <SkeletonGrid />;
