@@ -186,36 +186,44 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
       return;
     }
     try {
-      await createFn({
-        data: {
-          group_id: form.group_id,
-          title: form.title,
-          tagline: form.tagline || null,
-          description: form.description || null,
-          kind: form.kind,
-          format: form.format,
-          cover_url: form.cover_url || null,
-          starts_at: new Date(form.starts_at).toISOString(),
-          ends_at: new Date(form.ends_at).toISOString(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-          venue_name: form.venue_name || null,
-          venue_address: form.venue_address || null,
-          online_url: form.online_url || null,
-          capacity: form.capacity ? Number(form.capacity) : null,
-          
-          featured: form.featured,
-          is_official: form.source === "workshop",
-          lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
-          source: form.source,
-          external_url: form.source === "external" ? (form.external_url || null) : null,
-          external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
-          is_recurring: form.is_recurring,
-          recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
-          pinned: form.pinned,
-          extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
-        },
-      });
-      toast.success("Event created");
+      const payload = {
+        group_id: form.group_id,
+        title: form.title,
+        tagline: form.tagline || null,
+        description: form.description || null,
+        kind: form.kind,
+        format: form.format,
+        cover_url: form.cover_url || null,
+        starts_at: new Date(form.starts_at).toISOString(),
+        ends_at: new Date(form.ends_at).toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        venue_name: form.venue_name || null,
+        venue_address: form.venue_address || null,
+        online_url: form.online_url || null,
+        capacity: form.capacity ? Number(form.capacity) : null,
+
+        featured: form.featured,
+        is_official: form.source === "workshop",
+        lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
+        source: form.source,
+        external_url: form.source === "external" ? (form.external_url || null) : null,
+        external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
+        is_recurring: form.is_recurring,
+        recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+        pinned: form.pinned,
+        extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
+      };
+      if (form.is_recurring) {
+        const res = await seriesFn({
+          data: { ...payload, recurrence_rule: form.recurrence_rule },
+        });
+        toast.success(
+          `Recurring series created — ${res.count} occurrence${res.count === 1 ? "" : "s"} scheduled. More will roll in automatically.`,
+        );
+      } else {
+        await createFn({ data: payload });
+        toast.success("Event created");
+      }
       setOpen(false);
       onCreated();
     } catch (err) {
