@@ -7,6 +7,8 @@ export function EventLocationCard({
   format,
   venueName,
   venueAddress,
+  venueLat,
+  venueLng,
   onlineUrl,
   city,
   variant = "card",
@@ -14,6 +16,8 @@ export function EventLocationCard({
   format: "in_person" | "online" | "hybrid";
   venueName: string | null;
   venueAddress: string | null;
+  venueLat?: number | null;
+  venueLng?: number | null;
   onlineUrl: string | null;
   city: string | null;
   variant?: "card" | "embedded";
@@ -26,6 +30,23 @@ export function EventLocationCard({
       ? "flex items-start gap-3"
       : "flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 shadow-soft";
 
+  const mapUrl = (() => {
+    if (venueLat != null && venueLng != null) {
+      const label = venueName ? `(${venueName})` : "";
+      return `https://www.google.com/maps/search/?api=1&query=${venueLat},${venueLng}${encodeURIComponent(label)}`;
+    }
+    const q = [venueName, venueAddress].filter(Boolean).join(", ");
+    if (!q) return null;
+    return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`;
+  })();
+
+  const copyAddress = () => {
+    const text = [venueName, venueAddress].filter(Boolean).join(", ");
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success("Address copied");
+  };
+
   return (
     <div className="space-y-3">
       {showInPerson && (
@@ -35,9 +56,42 @@ export function EventLocationCard({
             <div className="text-xs font-medium uppercase tracking-wide text-ink-muted">In person</div>
             {user ? (
               <>
-                {venueName && <div className="font-medium text-ink">{venueName}</div>}
-                {venueAddress && <div className="text-sm text-ink-soft">{venueAddress}</div>}
-                {!venueName && !venueAddress && city && <div className="text-sm text-ink-soft">{city}</div>}
+                {(venueName || venueAddress) && mapUrl ? (
+                  <div className="flex items-start gap-2">
+                    <a
+                      href={mapUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="group min-w-0 flex-1 -mx-1 rounded-md px-1 py-0.5 hover:bg-muted/60 active:bg-muted"
+                      aria-label={`Open ${venueName ?? venueAddress ?? "location"} in maps`}
+                    >
+                      {venueName && (
+                        <div className="font-medium text-ink group-hover:underline inline-flex items-center gap-1">
+                          {venueName}
+                          <ExternalLink className="h-3 w-3 text-ink-muted" />
+                        </div>
+                      )}
+                      {venueAddress && <div className="text-sm text-ink-soft">{venueAddress}</div>}
+                      {!venueName && !venueAddress && city && (
+                        <div className="text-sm text-ink-soft">{city}</div>
+                      )}
+                    </a>
+                    {(venueAddress || venueName) && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 shrink-0 rounded-full px-2"
+                        onClick={copyAddress}
+                        aria-label="Copy address"
+                        title="Copy address"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  !venueName && !venueAddress && city && <div className="text-sm text-ink-soft">{city}</div>
+                )}
               </>
             ) : (
               <>
