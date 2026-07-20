@@ -127,6 +127,7 @@ function AdminEventsPage() {
 function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   const groupsFn = useServerFn(adminListGroups);
   const createFn = useServerFn(createEvent);
+  const seriesFn = useServerFn(createEventSeries);
   const [open, setOpen] = useState(false);
   const { data: groups } = useQuery({ queryKey: ["admin-events-groups"], queryFn: () => groupsFn(), enabled: open });
 
