@@ -2,16 +2,22 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { Sparkles, ArrowRight, Users } from "lucide-react";
+import { Sparkles, ArrowRight, Users, Heart, Eye } from "lucide-react";
 import type { CollabCardData } from "@/components/collab-card";
 import type { WorkCardData } from "@/components/work-card";
-import { CollabPeek } from "@/components/collab-peek";
-import { WorkPeek } from "@/components/work-peek";
+import { CollabPeek, collabPeekQueryOptions } from "@/components/collab-peek";
+import { WorkPeek, workPeekQueryOptions } from "@/components/work-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import { formatCount } from "@/lib/utils";
+import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 import { listEventAttendeeCollabs, listEventAttendeeWorks } from "@/lib/group-events.functions";
+
 
 type Attendee = { display_name: string | null; username: string | null; avatar_url: string | null; id?: string };
 type Group<T> = { uid: string; user: Attendee | null; items: T[]; remaining: number };
