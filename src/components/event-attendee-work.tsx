@@ -2,16 +2,22 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { Sparkles, ArrowRight, Users } from "lucide-react";
+import { Sparkles, ArrowRight, Users, Heart, Eye } from "lucide-react";
 import type { CollabCardData } from "@/components/collab-card";
 import type { WorkCardData } from "@/components/work-card";
-import { CollabPeek } from "@/components/collab-peek";
-import { WorkPeek } from "@/components/work-peek";
+import { CollabPeek, collabPeekQueryOptions } from "@/components/collab-peek";
+import { WorkPeek, workPeekQueryOptions } from "@/components/work-peek";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { CATEGORY_LABELS } from "@/lib/categories";
+import { formatCount } from "@/lib/utils";
+import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 import { listEventAttendeeCollabs, listEventAttendeeWorks } from "@/lib/group-events.functions";
+
 
 type Attendee = { display_name: string | null; username: string | null; avatar_url: string | null; id?: string };
 type Group<T> = { uid: string; user: Attendee | null; items: T[]; remaining: number };
@@ -153,74 +159,174 @@ function AuthorFooter({ user }: { user: Attendee | null }) {
   return <div className="mt-2 flex min-w-0 items-center gap-1.5 px-1">{inner}</div>;
 }
 
+function CollabHoverPreview({ collabId }: { collabId: string }) {
+  const { data, isLoading } = useQuery(collabPeekQueryOptions(collabId));
+  if (isLoading || !data?.collab) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-full" />
+        <Skeleton className="h-3 w-5/6" />
+      </div>
+    );
+  }
+  const c = data.collab;
+  const catLabel = CATEGORY_LABELS[c.category] ?? c.category;
+  const roles = c.roles ?? [];
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5">
+        <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink">{catLabel}</span>
+        {c.status === "open" && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-medium text-white">
+            <span className="h-1.5 w-1.5 rounded-full bg-white" /> Open
+          </span>
+        )}
+      </div>
+      <p className="font-display text-sm text-ink leading-snug">{c.title}</p>
+      {c.description && (
+        <p className="line-clamp-3 text-xs text-ink-soft">{c.description}</p>
+      )}
+      {roles.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-1">
+          {roles.slice(0, 4).map((r) => (
+            <span key={r.id} className="rounded-full border border-border px-2 py-0.5 text-[10px] text-ink-soft">
+              {r.role_name}{r.quantity > 1 ? ` ×${r.quantity}` : ""}
+            </span>
+          ))}
+          {roles.length > 4 && <span className="text-[10px] text-ink-muted">+{roles.length - 4}</span>}
+        </div>
+      )}
+      <p className="pt-1 text-[10px] text-ink-muted">Click to open</p>
+    </div>
+  );
+}
+
+function WorkHoverPreview({ workId }: { workId: string }) {
+  const fetchPeek = useServerFn(getWorkPeekDetail);
+  const { data, isLoading } = useQuery(workPeekQueryOptions(workId, fetchPeek));
+  if (isLoading || !data?.work) {
+    return (
+      <div className="space-y-2">
+        <Skeleton className="aspect-video w-full rounded-md" />
+        <Skeleton className="h-4 w-2/3" />
+        <Skeleton className="h-3 w-full" />
+      </div>
+    );
+  }
+  const w = data.work;
+  const catLabel = CATEGORY_LABELS[w.category as keyof typeof CATEGORY_LABELS] ?? w.category;
+  return (
+    <div className="space-y-2">
+      {w.cover_url && (
+        <div className="aspect-video w-full overflow-hidden rounded-md bg-surface-2">
+          <img src={w.cover_url} alt="" className="h-full w-full object-cover" />
+        </div>
+      )}
+      <div className="flex items-center gap-1.5">
+        <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink">{catLabel}</span>
+      </div>
+      <p className="font-display text-sm text-ink leading-snug">{w.title}</p>
+      {w.excerpt && (
+        <p className="line-clamp-3 text-xs text-ink-soft">{w.excerpt}</p>
+      )}
+      <div className="flex items-center gap-3 pt-1 text-[10px] text-ink-muted">
+        <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {formatCount(w.like_count)}</span>
+        <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {formatCount(w.view_count)}</span>
+      </div>
+      <p className="pt-1 text-[10px] text-ink-muted">Click to open</p>
+    </div>
+  );
+}
+
+function HoverWrap({ enabled, preview, children }: { enabled: boolean; preview: React.ReactNode; children: React.ReactNode }) {
+  if (!enabled) return <>{children}</>;
+  return (
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>{children}</HoverCardTrigger>
+      <HoverCardContent className="w-72 p-3" align="start" sideOffset={8}>
+        {preview}
+      </HoverCardContent>
+    </HoverCard>
+  );
+}
+
 function CompactCollabTile({ post, onOpen }: { post: CollabRow; onOpen: (id: string) => void }) {
   const catLabel = CATEGORY_LABELS[post.category] ?? post.category;
   const openRoles = (post.roles ?? []).length;
+  const isMobile = useIsMobile();
   return (
     <div className="group flex min-w-0 flex-col">
-      <button
-        type="button"
-        onClick={() => onOpen(post.id)}
-        className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-      >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-ink/5">
-          {post.cover_url ? (
-            <img src={post.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-ink-muted">
-              <Users className="h-6 w-6" />
-            </div>
-          )}
-          <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
-            {catLabel}
-          </span>
-          {post.status === "open" && (
-            <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-medium text-white shadow-soft">
-              <span className="h-1.5 w-1.5 rounded-full bg-white" /> Open
+      <HoverWrap enabled={!isMobile} preview={<CollabHoverPreview collabId={post.id} />}>
+        <button
+          type="button"
+          onClick={() => onOpen(post.id)}
+          className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
+          <div className="relative aspect-[4/3] w-full overflow-hidden bg-ink/5">
+            {post.cover_url ? (
+              <img src={post.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-ink-muted">
+                <Users className="h-6 w-6" />
+              </div>
+            )}
+            <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
+              {catLabel}
             </span>
-          )}
-        </div>
-        <div className="flex flex-col gap-1 p-2.5">
-          <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{post.title}</p>
-          {openRoles > 0 && (
-            <p className="text-[11px] text-ink-muted">{openRoles} role{openRoles === 1 ? "" : "s"} open</p>
-          )}
-        </div>
-      </button>
+            {post.status === "open" && (
+              <span className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-emerald-500/90 px-2 py-0.5 text-[10px] font-medium text-white shadow-soft">
+                <span className="h-1.5 w-1.5 rounded-full bg-white" /> Open
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col gap-1 p-2.5">
+            <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{post.title}</p>
+            {openRoles > 0 && (
+              <p className="text-[11px] text-ink-muted">{openRoles} role{openRoles === 1 ? "" : "s"} open</p>
+            )}
+          </div>
+        </button>
+      </HoverWrap>
       <AuthorFooter user={post.user ?? null} />
     </div>
   );
 }
 
+
 function CompactWorkTile({ work, onOpen }: { work: WorkRow; onOpen: (id: string) => void }) {
   const catLabel = CATEGORY_LABELS[work.category] ?? work.category;
+  const isMobile = useIsMobile();
   return (
     <div className="group flex min-w-0 flex-col">
-      <button
-        type="button"
-        onClick={() => onOpen(work.id)}
-        className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
-      >
-        <div className="relative aspect-square w-full overflow-hidden bg-ink/5">
-          {work.cover_url ? (
-            <img src={work.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center text-ink-muted">
-              <Sparkles className="h-6 w-6" />
-            </div>
-          )}
-          <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
-            {catLabel}
-          </span>
-        </div>
-        <div className="p-2.5">
-          <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{work.title}</p>
-        </div>
-      </button>
+      <HoverWrap enabled={!isMobile} preview={<WorkHoverPreview workId={work.id} />}>
+        <button
+          type="button"
+          onClick={() => onOpen(work.id)}
+          className="relative flex w-full flex-col overflow-hidden rounded-2xl border border-border bg-surface text-left shadow-soft transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/40"
+        >
+          <div className="relative aspect-square w-full overflow-hidden bg-ink/5">
+            {work.cover_url ? (
+              <img src={work.cover_url} alt="" loading="lazy" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-ink-muted">
+                <Sparkles className="h-6 w-6" />
+              </div>
+            )}
+            <span className="absolute left-2 top-2 rounded-full bg-surface/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft backdrop-blur">
+              {catLabel}
+            </span>
+          </div>
+          <div className="p-2.5">
+            <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{work.title}</p>
+          </div>
+        </button>
+      </HoverWrap>
       <AuthorFooter user={work.author ?? null} />
     </div>
   );
 }
+
 
 function FairCollabs({ items, loading, onOpen }: { items: CollabRow[]; loading: boolean; onOpen: (id: string) => void }) {
   if (loading) return <SkeletonGrid />;

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Heart, Bookmark, Eye, ExternalLink, MessageCircle } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, queryOptions } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CategoryChips } from "@/components/category-chips";
@@ -12,6 +12,17 @@ import { cn, formatCount } from "@/lib/utils";
 import { getWorkPeekDetail } from "@/lib/works-peek.functions";
 import { useWorkLike } from "@/hooks/use-work-like";
 import { SignupGateModal } from "@/components/signup-gate-modal";
+
+export function workPeekQueryOptions(workId: string | null, fetchPeek: (args: { data: { workId: string } }) => Promise<any>) {
+  return queryOptions({
+    queryKey: ["work-peek", workId] as const,
+    queryFn: () => fetchPeek({ data: { workId: workId! } }),
+    enabled: !!workId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+}
+
 
 export type WorkPeekData = {
   id: string;
