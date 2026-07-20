@@ -104,8 +104,11 @@ type EventRow = {
   short_code: string | null;
   created_by: string | null;
   lineup_capacity: number | null;
+  external_organizer: string | null;
+  external_url: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
+
 
 function EventPage() {
   const ev = Route.useLoaderData() as unknown as EventRow;
