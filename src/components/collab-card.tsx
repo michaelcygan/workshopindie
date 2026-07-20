@@ -177,22 +177,22 @@ export function CollabCard({
         )}
 
 
-        <div className="mt-auto flex items-center gap-2 border-t border-border/60 pt-3 text-xs text-ink-soft">
+        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-border/60 pt-3 text-xs text-ink-soft">
           {post.user?.avatar_url ? (
             <img
               src={post.user.avatar_url}
               alt=""
-              className="h-6 w-6 rounded-full object-cover"
+              className="h-6 w-6 shrink-0 rounded-full object-cover"
               loading="lazy"
             />
           ) : (
-            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-ink-soft">
+            <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-muted text-[10px] font-medium text-ink-soft">
               {initial}
             </span>
           )}
-          <span className="truncate font-medium text-ink">{author}</span>
+          <span className="min-w-0 truncate font-medium text-ink">{author}</span>
           <span className="text-ink-muted/60">·</span>
-          <span className="truncate">{locationLabel(post)}</span>
+          <span className="min-w-0 truncate">{locationLabel(post)}</span>
           <span className="ml-auto shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
             {COMP_LABEL[post.compensation_type]}
           </span>
