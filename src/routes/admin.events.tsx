@@ -144,6 +144,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     external_url: string;
     external_organizer: string;
     is_recurring: boolean;
+    recurrence_rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
     recurrence_label: string;
     pinned: boolean;
   };
