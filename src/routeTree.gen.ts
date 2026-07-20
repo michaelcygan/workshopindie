@@ -92,6 +92,7 @@ import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/publi
 import { Route as ApiPublicGroupNewsSlugRouteImport } from './routes/api/public/group-news.$slug'
 import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
 import { Route as ApiPublicEventsReportSweepRouteImport } from './routes/api/public/events.report-sweep'
+import { Route as ApiPublicEventsMaterializeRouteImport } from './routes/api/public/events.materialize'
 import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/events.$id.ics'
 
 const WorkshopsRoute = WorkshopsRouteImport.update({
@@ -514,6 +515,12 @@ const ApiPublicEventsReportSweepRoute =
     path: '/api/public/events/report-sweep',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicEventsMaterializeRoute =
+  ApiPublicEventsMaterializeRouteImport.update({
+    id: '/api/public/events/materialize',
+    path: '/api/public/events/materialize',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
   id: '/api/public/events/$id/ics',
   path: '/api/public/events/$id/ics',
@@ -597,6 +604,7 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/g/$slug/': typeof GSlugIndexRoute
+  '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
@@ -677,6 +685,7 @@ export interface FileRoutesByTo {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/g/$slug': typeof GSlugIndexRoute
+  '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
@@ -764,6 +773,7 @@ export interface FileRoutesById {
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/g/$slug/': typeof GSlugIndexRoute
+  '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
   '/api/public/group-news/$slug': typeof ApiPublicGroupNewsSlugRoute
@@ -852,6 +862,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/g/$slug/'
+    | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
@@ -932,6 +943,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/g/$slug'
+    | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
@@ -1018,6 +1030,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
     | '/g/$slug/'
+    | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
     | '/api/public/group-news/$slug'
@@ -1072,6 +1085,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
+  ApiPublicEventsMaterializeRoute: typeof ApiPublicEventsMaterializeRoute
   ApiPublicEventsReportSweepRoute: typeof ApiPublicEventsReportSweepRoute
   ApiPublicEventsSweepRoute: typeof ApiPublicEventsSweepRoute
   ApiPublicGroupNewsSlugRoute: typeof ApiPublicGroupNewsSlugRoute
@@ -1663,6 +1677,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEventsReportSweepRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/events/materialize': {
+      id: '/api/public/events/materialize'
+      path: '/api/public/events/materialize'
+      fullPath: '/api/public/events/materialize'
+      preLoaderRoute: typeof ApiPublicEventsMaterializeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/events/$id/ics': {
       id: '/api/public/events/$id/ics'
       path: '/api/public/events/$id/ics'
@@ -1899,6 +1920,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
+  ApiPublicEventsMaterializeRoute: ApiPublicEventsMaterializeRoute,
   ApiPublicEventsReportSweepRoute: ApiPublicEventsReportSweepRoute,
   ApiPublicEventsSweepRoute: ApiPublicEventsSweepRoute,
   ApiPublicGroupNewsSlugRoute: ApiPublicGroupNewsSlugRoute,
