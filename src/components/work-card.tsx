@@ -168,7 +168,7 @@ export function WorkCard({
         )}
       </div>
       <div className={cn("flex flex-1 flex-col gap-2", padClass)}>
-        <h3 className={cn(titleClass, "text-ink line-clamp-2")}>{work.title}</h3>
+        <h3 className={cn(titleClass, "text-ink line-clamp-2 break-words")}>{work.title}</h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />
         {shown.length > 0 && (
           <p className="relative z-20 text-xs text-ink-muted line-clamp-1">
