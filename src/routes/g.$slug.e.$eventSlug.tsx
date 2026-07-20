@@ -118,6 +118,8 @@ function EventPage() {
   const getMyRsvpFn = useServerFn(getMyRsvp);
   const listAttendeesFn = useServerFn(listAttendees);
   const listUpdatesFn = useServerFn(listEventUpdates);
+  const listEventGroupsFn = useServerFn(listEventGroups);
+
 
   const { data: myRsvp } = useQuery({
     queryKey: ["event-rsvp", ev.id, user?.id ?? null],
