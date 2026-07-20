@@ -153,12 +153,19 @@ export const listAttendees = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_rsvps")
-      .select("user_id,status,plus_ones,created_at,profile:profiles(id,username,display_name,avatar_url,event_visibility)")
+      .select("user_id,status,plus_ones,created_at")
       .eq("event_id", data.event_id)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url,event_visibility")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, profile: pmap.get(r.user_id) ?? null }));
   });
 
 export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
@@ -224,11 +231,18 @@ export const listEventComments = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_comments")
-      .select("id,body,parent_id,created_at,user_id,author:profiles(id,username,display_name,avatar_url)")
+      .select("id,body,parent_id,created_at,user_id")
       .eq("event_id", data.event_id)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, author: pmap.get(r.user_id) ?? null }));
   });
 
 export const listEventUpdates = createServerFn({ method: "POST" })
@@ -237,11 +251,18 @@ export const listEventUpdates = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_updates")
-      .select("id,body,created_at,created_by,author:profiles(id,username,display_name,avatar_url)")
+      .select("id,body,created_at,created_by")
       .eq("event_id", data.event_id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.created_by)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, author: pmap.get(r.created_by) ?? null }));
   });
 
 // --- Attendee activity surface (collabs & works of RSVPs, public) ---
@@ -250,14 +271,18 @@ async function attendeeUserIds(eventId: string): Promise<string[]> {
   const supabase = publicClient();
   const { data: rsvps } = await supabase
     .from("group_event_rsvps")
-    .select("user_id,profile:profiles!inner(event_visibility)")
+    .select("user_id")
     .eq("event_id", eventId)
     .in("status", ["going", "maybe", "waitlist"])
     .limit(500);
-  type R = { user_id: string; profile: { event_visibility: string } | null };
-  return ((rsvps ?? []) as unknown as R[])
-    .filter((r) => r.profile && r.profile.event_visibility === "public")
-    .map((r) => r.user_id);
+  const ids = Array.from(new Set((rsvps ?? []).map((r) => r.user_id)));
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id,event_visibility")
+    .in("id", ids)
+    .eq("event_visibility", "public");
+  return (profiles ?? []).map((p) => p.id);
 }
 
 const POOL_SIZE = 300;
