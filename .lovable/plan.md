@@ -1,28 +1,29 @@
-## Problem
+## Goal
 
-The "What people are working on" module reuses the full `CollabCard` and `WorkCard` primitives, but the module lives in a narrow event-page column. At that width the cards break:
+Redesign the "What people are working on" section on the event page to use the existing `CollabPeek` / `WorkPeek` / `ProfilePeek` flow (already used in Lounge and Groups Today). Cards become smaller, quieter tiles that pop open the peek modal on tap — no need to cram title, chips, description, roles, avatar and RSVP into the card itself.
 
-- **Collab card**: top row (category chip + "Open · Casting" state badge + relative time) is a single non-wrapping flex row → "Open" and "Casting" get clipped, title `text-[22px]` line-clamp-2 still truncates aggressively, footer row (avatar · name · location · Comp TBD) overflows so name gets clipped and "Comp TBD" wraps to a new visual line.
-- **Work card**: category chip + a second "Portfolio" chip sit on the cover in an absolute row that overlaps at narrow widths; title clamps hard; the shared `AttendeeChip` below the card wraps to two lines ("Mike / Cygan · going") because the module renders it in a wider chip container than collabs use.
+## Changes (scoped to `src/components/event-attendee-work.tsx`)
 
-## Fix (presentation only, scoped to the attendee module)
+1. **Replace `CollabCard` / `WorkCard` with new local compact tiles**:
+   - `CompactCollabTile` — square-ish cover (aspect-[4/3]), category chip top-left, "Open" dot top-right, title clamped to 2 lines in `text-sm`. Author avatar + name as a tiny footer row. Whole tile is a button that opens `CollabPeek`.
+   - `CompactWorkTile` — square cover (aspect-square), single category chip, title clamped to 2 lines in `text-sm`, tiny author avatar chip in the corner overlay. Whole tile is a button that opens `WorkPeek`.
+   - Both tiles: `rounded-2xl`, `border-border`, hover lift, `min-w-0`, no chip overlap since we surface only one chip (rest live in the peek).
 
-Keep the underlying `CollabCard` / `WorkCard` untouched everywhere else. In `src/components/event-attendee-work.tsx`:
+2. **Denser grid** (cards are smaller now):
+   - Fair mode: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` (was 1→2).
+   - By-person expanded: `grid-cols-2 sm:grid-cols-3 lg:grid-cols-4` for works, `sm:grid-cols-2 lg:grid-cols-3` for collabs.
+   - Increase perUserCap slightly since tiles are compact (collabs 3, works 6 in fair; 4/8 in expanded).
 
-1. **Force single-column on the fair grids in this module** (they render 3–4 up on desktop today, which is what makes each card too narrow inside the event sidebar). Use `grid-cols-1 sm:grid-cols-2` for both collabs and works so each card gets ≥ ~280px, and let the module rely on "See everyone" to expand.
-2. **Wrap the AttendeeChip in `whitespace-nowrap`** and truncate the name so it always renders on one line matching the collab tab. Add a small `max-w-full` + `truncate` on the name span.
+3. **Peek wiring**:
+   - Track `peekCollabId` / `peekWorkId` / `peekProfileId` state at the section level.
+   - Render single `<CollabPeek>`, `<WorkPeek>`, `<ProfilePeek>` at the bottom (mirrors group-today-tab pattern).
+   - `onCreatorClick` from Collab/Work peek → set `peekProfileId` (chained peek, same as Lounge).
 
-In `src/components/collab-card.tsx` (tiny resilience pass, no visual change at normal widths):
+4. **Remove the separate `AttendeeChip` row under each card** — author appears inside the tile footer and full attribution is in the peek. Keeps grid tight.
 
-3. Change the header chip row from a single flex line into `flex flex-wrap items-center gap-2` and move the timestamp into its own trailing element with `ml-auto shrink-0` — chips wrap instead of clipping when width < ~320px.
-4. Give the title `break-words` and drop to `text-[20px]` at narrow widths (`text-[20px] sm:text-[22px]`) so the two-line clamp fits.
-5. In the footer meta row, add `min-w-0` to the author name span and `flex-wrap` fallback so "Comp TBD" doesn't push name off-screen.
+5. Keep the tab switcher, expand/collapse footer, and empty state unchanged.
 
-In `src/components/work-card.tsx`:
+## Files touched
+- `src/components/event-attendee-work.tsx` — rewrite tile subcomponents, add peek state + modals.
 
-6. Ensure the category + kind chip overlay uses `flex flex-wrap gap-1` (not absolute overlap) and add a subtle backdrop so chips never sit on top of each other.
-7. Add `line-clamp-2 break-words` to the title.
-
-## Out of scope
-
-No data/server changes, no changes to the CollabCard/WorkCard usage on other pages beyond the wrapping/typography resilience noted above.
+No server function, schema, or other route changes.
