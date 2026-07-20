@@ -389,7 +389,7 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("group_events")
-        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,promo_pass_months,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url")
+        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url")
         .eq("group_id", group.id)
         .is("deleted_at", null)
         .order("starts_at", { ascending: true });
@@ -592,7 +592,7 @@ type EventLite = {
   id: string; slug: string; title: string; tagline: string | null; kind: string;
   format: "in_person" | "online" | "hybrid"; cover_url: string | null;
   starts_at: string; venue_name: string | null; venue_address: string | null;
-  going_count: number; capacity: number | null; featured_at: string | null; promo_pass_months: number;
+  going_count: number; capacity: number | null; featured_at: string | null;
   source: "workshop" | "external" | null;
   external_url: string | null;
   external_organizer: string | null;
@@ -646,8 +646,6 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
           </span>
           {isExternal ? (
             <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">View event ↗</span>
-          ) : ev.promo_pass_months > 0 ? (
-            <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">+{ev.promo_pass_months}mo Plus</span>
           ) : null}
         </div>
       </div>

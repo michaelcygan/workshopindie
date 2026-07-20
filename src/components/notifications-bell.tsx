@@ -44,7 +44,7 @@ const ICONS: Record<string, typeof Bell> = {
   event_updated: Calendar,
   event_canceled: Calendar,
   event_promoted_from_waitlist: Ticket,
-  event_promo_pass_granted: Sparkles,
+  
   event_recap: Calendar,
   event_new_in_my_group: Calendar,
 };
@@ -172,10 +172,6 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       const gSlug = (n.payload?.group_slug as string) || "";
       const evSlug = (n.payload?.event_slug as string) || "";
       return { title: `You're off the waitlist for ${evTitle}`, subtitle: "Your spot is locked in.", href: gSlug && evSlug ? `/g/${gSlug}/e/${evSlug}` : "/me/tickets" };
-    }
-    case "event_promo_pass_granted": {
-      const months = (n.payload?.months as number) || 1;
-      return { title: `${months} month${months === 1 ? "" : "s"} of Plus unlocked ✨`, subtitle: "Thanks for RSVPing. Welcome aboard.", href: "/me" };
     }
     case "event_recap": {
       const evTitle = (n.payload?.event_title as string) || "the event";

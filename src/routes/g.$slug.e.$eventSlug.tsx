@@ -14,7 +14,7 @@ import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates } from "@/li
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
-import { EventPromoPassBanner } from "@/components/event-promo-pass-banner";
+
 import { EventWall } from "@/components/event-wall";
 import { EventAttendeeWork } from "@/components/event-attendee-work";
 import { EventShareSheet } from "@/components/event-share-sheet";
@@ -95,7 +95,7 @@ type EventRow = {
   rsvp_mode: string;
   status: "draft" | "scheduled" | "live" | "completed" | "canceled";
   is_official: boolean;
-  promo_pass_months: number;
+  
   featured_at: string | null;
   going_count: number;
   maybe_count: number;
@@ -280,12 +280,6 @@ function EventPage() {
           />
         </div>
 
-        {/* Promo banner */}
-        {ev.promo_pass_months > 0 && (
-          <div className="mt-5">
-            <EventPromoPassBanner months={ev.promo_pass_months} alreadyPlus={!!isPlus} />
-          </div>
-        )}
 
         {/* Live companion panel — only for RSVP'd viewers, only during live window */}
         {phase === "live" && isAttending && (

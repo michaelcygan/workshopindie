@@ -40,7 +40,7 @@ async function fetchPublicEvents(when: When, format: Format, cityId?: string) {
   let q = supabase
     .from("group_events")
     .select(
-      "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,venue_city_id,going_count,capacity,featured_at,promo_pass_months,group:groups!inner(slug,name,avatar_url,visibility,deleted_at)",
+      "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,venue_city_id,going_count,capacity,featured_at,group:groups!inner(slug,name,avatar_url,visibility,deleted_at)",
     )
     .is("deleted_at", null)
     .eq("visibility", "public")
@@ -243,7 +243,7 @@ function EventsIndexPage() {
             {happeningCount > 0 ? `${happeningCount} happening now` : "On the calendar"}
           </KickerChip>
           <p className="text-sm text-ink-muted">
-            Networking, listening parties, work-in-progress nights — RSVP unlocks a free trial.
+            Networking, listening parties, work-in-progress nights.
           </p>
           {list.length > 0 && (
             <span className="ml-auto rounded-full border border-border bg-surface px-2.5 py-0.5 text-[11px] font-medium text-ink-soft">

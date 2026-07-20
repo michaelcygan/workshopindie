@@ -32,7 +32,6 @@ export function FeaturedEventsCarousel({
           <h2 className="font-display text-3xl text-ink md:text-4xl">Events</h2>
           <p className="mt-1 text-sm text-ink-muted">What's happening across the network.</p>
         </div>
-        <span className="hidden sm:inline text-xs text-ink-muted">RSVP unlocks a free trial</span>
       </div>
 
       {events.length === 0 ? (
@@ -42,7 +41,7 @@ export function FeaturedEventsCarousel({
           </div>
           <h3 className="font-display text-2xl text-ink">Live events are coming.</h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-            Workshops, open mics, listening parties — RSVP unlocks a free trial.
+            Workshops, open mics, listening parties.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             {isAdmin ? (

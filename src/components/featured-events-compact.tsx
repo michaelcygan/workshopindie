@@ -18,8 +18,8 @@ type EventLite = {
 
 /**
  * Compact, sidebar-friendly events card. Always renders something —
- * empty state shows the RSVP / free trial promise as a slim panel,
- * populated state shows a stacked list of up to 4 upcoming events.
+ * empty state shows a slim CTA panel, populated state shows a stacked
+ * list of up to 4 upcoming events.
  */
 export function FeaturedEventsCompact({ className }: { className?: string }) {
   const fetchFn = useServerFn(listFeaturedEvents);
@@ -52,7 +52,7 @@ export function FeaturedEventsCompact({ className }: { className?: string }) {
               Live events are coming.
             </h3>
             <p className="mt-1 text-xs text-ink-muted">
-              Workshops, open mics, listening parties — RSVP unlocks a free trial.
+              Workshops, open mics, listening parties.
             </p>
             {isAdmin ? (
               <Link

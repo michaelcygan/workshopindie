@@ -17,7 +17,7 @@ export type EventCardData = {
   going_count: number;
   capacity: number | null;
   featured_at: string | null;
-  promo_pass_months: number;
+  
   group: { slug: string; name: string; avatar_url: string | null };
   source?: "workshop" | "external" | null;
   external_url?: string | null;
@@ -106,11 +106,6 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
           <span className="font-medium text-ink-soft">
             {isExternal ? (event.external_organizer || event.group.name) : event.group.name}
           </span>
-          {!isExternal && event.promo_pass_months > 0 && (
-            <span className="ml-auto rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-              +{event.promo_pass_months}mo Plus
-            </span>
-          )}
         </div>
       </div>
     </>

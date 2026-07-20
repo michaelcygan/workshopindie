@@ -13,7 +13,6 @@ export type MyRsvp = {
   status: "going" | "maybe" | "waitlist" | "declined" | "canceled";
   plus_ones: number;
   note: string | null;
-  promo_pass_granted_at: string | null;
 } | null;
 
 export function EventRsvpBlock({
