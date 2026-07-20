@@ -92,6 +92,16 @@ export const recordEventPhoto = createServerFn({ method: "POST" })
   )
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+    // Enforce the 3-day post-event upload window.
+    const { data: ev } = await supabase
+      .from("group_events")
+      .select("ends_at")
+      .eq("id", data.event_id)
+      .maybeSingle();
+    if (ev?.ends_at) {
+      const sealsAt = new Date(new Date(ev.ends_at).getTime() + 3 * 24 * 60 * 60 * 1000);
+      if (new Date() > sealsAt) throw new Error("Photo uploads are closed for this event.");
+    }
     const { data: row, error } = await supabase
       .from("event_photos")
       .insert({
