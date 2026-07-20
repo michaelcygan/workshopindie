@@ -572,5 +572,16 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
         }
       } catch { /* notifications are best-effort */ }
     }
+
+    // Stop the rolling materializer from creating more occurrences.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("event_series")
+        .update({ canceled_at: new Date().toISOString() } as never)
+        .eq("series_key", data.series_key)
+        .is("canceled_at", null);
+    } catch { /* best-effort */ }
+
     return { ok: true, canceled: canceled.length };
   });
