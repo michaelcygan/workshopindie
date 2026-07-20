@@ -2,7 +2,7 @@ import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-rout
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Calendar, Users, ArrowLeft, Tag, Repeat, Info, ListMusic, Sparkles, MessageSquare } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Tag, Repeat, Info, ListMusic, Sparkles, MessageSquare, ExternalLink, Globe } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
-import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates } from "@/lib/group-events.functions";
+import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates, listEventGroups } from "@/lib/group-events.functions";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
@@ -104,8 +104,11 @@ type EventRow = {
   short_code: string | null;
   created_by: string | null;
   lineup_capacity: number | null;
+  external_organizer: string | null;
+  external_url: string | null;
   group: { id: string; slug: string; name: string; avatar_url: string | null };
 };
+
 
 function EventPage() {
   const ev = Route.useLoaderData() as unknown as EventRow;
@@ -115,6 +118,8 @@ function EventPage() {
   const getMyRsvpFn = useServerFn(getMyRsvp);
   const listAttendeesFn = useServerFn(listAttendees);
   const listUpdatesFn = useServerFn(listEventUpdates);
+  const listEventGroupsFn = useServerFn(listEventGroups);
+
 
   const { data: myRsvp } = useQuery({
     queryKey: ["event-rsvp", ev.id, user?.id ?? null],
@@ -134,6 +139,13 @@ function EventPage() {
     queryFn: () => listUpdatesFn({ data: { event_id: ev.id } }),
     staleTime: 30_000,
   });
+
+  const { data: listedGroups } = useQuery({
+    queryKey: ["event-groups", ev.id],
+    queryFn: () => listEventGroupsFn({ data: { event_id: ev.id } }),
+    staleTime: 60_000,
+  });
+
 
   // realtime: refresh on rsvp changes
   useEffect(() => {
@@ -230,13 +242,42 @@ function EventPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <Link to="/g/$slug" params={{ slug: ev.group.slug }} className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={ev.group.avatar_url ?? undefined} />
-                <AvatarFallback>{ev.group.name.slice(0, 1)}</AvatarFallback>
-              </Avatar>
-              <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
-            </Link>
+            {ev.external_organizer ? (
+              ev.external_url ? (
+                <a
+                  href={ev.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                  </span>
+                  <span>
+                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
+                  </span>
+                  <ExternalLink className="h-3 w-3 text-ink-muted" />
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-2 text-sm text-ink-soft">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                  </span>
+                  <span>
+                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
+                  </span>
+                </span>
+              )
+            ) : (
+              <Link to="/g/$slug" params={{ slug: ev.group.slug }} className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={ev.group.avatar_url ?? undefined} />
+                  <AvatarFallback>{ev.group.name.slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
+              </Link>
+            )}
+
             <div className="flex items-center gap-1">
               <ReportDialog entityType="group_event" entityId={ev.id} />
               <EventShareSheet
@@ -247,6 +288,27 @@ function EventPage() {
               />
             </div>
           </div>
+
+          {listedGroups && listedGroups.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+              <span>Listed in</span>
+              {listedGroups.map((g) => (
+                <Link
+                  key={g.id}
+                  to="/g/$slug"
+                  params={{ slug: g.slug }}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-2 py-0.5 text-ink-soft hover:border-ink/40 hover:text-ink"
+                >
+                  <Avatar className="h-4 w-4">
+                    <AvatarImage src={g.avatar_url ?? undefined} />
+                    <AvatarFallback className="text-[8px]">{g.name.slice(0, 1)}</AvatarFallback>
+                  </Avatar>
+                  <span>{g.name}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+
 
           <div className="mt-5 border-t border-border pt-4">
             <EventLocationCard

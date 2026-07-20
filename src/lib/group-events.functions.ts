@@ -70,6 +70,20 @@ export const listGroupEvents = createServerFn({ method: "GET" })
     return rows ?? [];
   });
 
+export const listEventGroups = createServerFn({ method: "POST" })
+  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data }) => {
+    const supabase = publicClient();
+    const { data: links, error } = await supabase
+      .from("event_groups")
+      .select("group_id, groups!inner(id,slug,name,avatar_url)")
+      .eq("event_id", data.event_id);
+    if (error) throw new Error(error.message);
+    type Row = { groups: { id: string; slug: string; name: string; avatar_url: string | null } };
+    return ((links ?? []) as unknown as Row[]).map((l) => l.groups);
+  });
+
+
 export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

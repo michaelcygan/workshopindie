@@ -1,37 +1,52 @@
-## Problem
+## Goal
+Fix the "Hosted by" line on the event page and support listing an event across multiple groups.
 
-1. **CollabPeek dialog renders empty (skeleton forever)** on the event page. Its Supabase query in `src/components/collab-peek.tsx` selects `cover_url` from `collab_posts`, but that column doesn't exist on the table. The query throws, `data` stays undefined, and the skeleton state never resolves — matching the screenshot.
-2. **Hover-to-preview doesn't work on collab or work tiles.** In `src/components/event-attendee-work.tsx`, the compact tiles only have `onClick` → open a Dialog. There is no `HoverCard` (the pattern ProfilePeek uses on desktop), so hovering does nothing.
+## 1. "Hosted by" shows the real organizer
 
-## Fix
+The schema already stores `external_organizer` (text) and `external_url` (text) on `group_events` — captured in the admin event creation flow. The event page currently hardcodes `Hosted by {group.name}`.
 
-### 1. CollabPeek: drop the missing column
-In `src/components/collab-peek.tsx`:
-- Remove `cover_url` from the `collab_posts` select list.
-- Remove the `cover_url` field from the local `CollabRow` type.
-- Always render the `gradient-soft` fallback header (no cover branch). Collabs have no covers anywhere else in the app either.
+Update `src/routes/g.$slug.e.$eventSlug.tsx` to:
+- If `ev.external_organizer` is set, render `Hosted by {external_organizer}` as a link to `ev.external_url` (opens in new tab, `rel="noopener noreferrer"`, external-link icon). Falls back to plain text if no URL.
+- Otherwise keep current behavior (`Hosted by {group.name}` linking to the group).
+- Include `external_organizer` and `external_url` in the `EventRow` type + loader select (verify `getEventBySlug` returns them; add if missing).
 
-### 2. Add hover-to-preview to collab/work tiles
-In `src/components/event-attendee-work.tsx`, wrap each tile's trigger button with a shadcn `HoverCard` on desktop only (mirroring the `ProfilePeek` desktop/mobile split via `useIsMobile`). On mobile, keep the current click-to-open-Dialog behavior — hover isn't a mobile gesture.
+The group avatar next to "Hosted by" is replaced by a small globe/link icon when the host is external, so users don't confuse the group for the organizer.
 
-- Import `HoverCard`, `HoverCardTrigger`, `HoverCardContent`, and `useIsMobile`.
-- Introduce two small hover preview bodies:
-  - `CollabHoverPreview({ collabId })` — fetches the same data as `CollabPeek` (via a shared `collabPeekQueryOptions(collabId)` helper exported from `collab-peek.tsx`) and renders a compact 320px-wide card: cover fallback, title, category chip, first 3 open roles, "Click to open" hint.
-  - `WorkHoverPreview({ workId })` — uses `getWorkPeekDetail` server fn, renders cover (16:9), title, category, excerpt (line-clamp-3), like/view counts.
-- Wrap each `CompactCollabTile`/`CompactWorkTile` button:
-  - Desktop: `HoverCard openDelay={200} closeDelay={100}` → `HoverCardTrigger asChild` around the existing button; content is the hover preview. Click still fires `onOpen` → full Dialog.
-  - Mobile: render the button unchanged.
-- Prefetch on hover-enter is unnecessary because `HoverCardContent` only mounts after the delay; the query fires then and is cached for the subsequent click into the Dialog (same key).
+## 2. "Listed in" — multi-group cross-posting
 
-### 3. Share query options
-Export `collabPeekQueryOptions` and `workPeekQueryOptions` from the peek files so both the hover preview and the full Dialog hit the same TanStack Query cache key — hovering warms the Dialog.
+New join table so one event can appear in multiple groups without duplicating rows:
 
-## Scope guardrails
-- No schema changes, no server function changes.
-- No changes to work-peek/collab-peek Dialog UI other than the removed `cover_url` column.
-- Behavior on mobile is unchanged.
+```
+public.group_event_groups
+  event_id uuid  -> group_events(id) on delete cascade
+  group_id uuid  -> groups(id) on delete cascade
+  added_by uuid, added_at timestamptz default now()
+  PRIMARY KEY (event_id, group_id)
+```
 
-## Files touched
-- `src/components/collab-peek.tsx` — drop `cover_url`; export `collabPeekQueryOptions`.
-- `src/components/work-peek.tsx` — export `workPeekQueryOptions`.
-- `src/components/event-attendee-work.tsx` — add desktop HoverCard wrappers around collab/work tiles with lightweight preview bodies.
+- Backfill: insert `(id, group_id)` for every existing `group_events` row so the primary `group_id` is always represented.
+- Keep the existing `group_events.group_id` as the canonical/primary host group (owns the slug, RLS, notifications). The new table only powers discovery + display.
+- RLS: `SELECT` open to `anon`/`authenticated` (event visibility already gates the event itself); `INSERT`/`DELETE` restricted to the event creator and group admins of the target group. GRANTs added in the same migration.
+- Update group listings (`listFeaturedEvents`, group Today/Events tabs) to `UNION` events reachable via `group_event_groups` so cross-posted events surface in each group.
+
+## 3. Admin — pick additional groups when creating/editing
+
+In `src/routes/admin.events.tsx`:
+- Add a "Also list in" multi-select below the primary group picker (searchable list of groups the admin can post to).
+- On save, upsert rows into `group_event_groups` for the chosen groups; on unselect, delete the row.
+- Same control on the edit path.
+
+## 4. Event page — "Listed in" strip
+
+On `src/routes/g.$slug.e.$eventSlug.tsx`, under the "Hosted by" row (or just under the tagline), render a small chip row:
+
+`Listed in: [Chicago] [Comedy Chicago] [Improv Nerds]`
+
+- Fetched via a new lightweight fn `listEventGroups({ event_id })` returning `{ id, slug, name, avatar_url }[]`.
+- Each chip links to `/g/$slug`.
+- Hidden when the event is only in one group.
+
+## Technical notes
+- Migration steps (single file): create table, GRANTs, enable RLS, policies, backfill from `group_events`.
+- No changes to notifications, RSVP, or series logic — those stay keyed off the canonical `group_id`.
+- Type regen happens after the migration approves; code edits in step 1/3/4 come after.
