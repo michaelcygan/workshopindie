@@ -1,27 +1,37 @@
-## Change: run the materializer daily, and always keep 8 occurrences ahead
+## What's actually going on
 
-You're right — 30 minutes is overkill for something that changes at most weekly. Two related tweaks:
+The event page has a special filter no other surface uses: it only shows attendees whose profile has `event_visibility = 'public'`. Every profile in the database defaults to `'group_only'` and there is no UI to change it, so:
 
-### 1. Slow the cron down to daily
-Reschedule the `event-series-materialize` pg_cron job from every 30 minutes to once a day (03:15 UTC — a quiet hour, off the top of the hour to avoid the cron rush). Unschedule the old entry and re-add it under the same job name.
+- Your own RSVP gets filtered out of "What people are working on" (that's why you don't see your own collabs/works).
+- Other attendees never appear either.
 
-### 2. Switch the horizon from "8 weeks" to "always 8 upcoming occurrences"
-Right now the materializer tops up any occurrence whose start is within `horizon_weeks * 7` days from now. That means:
-- Weekly series ≈ 8 future pages ready
-- Biweekly ≈ 4 pages
-- Monthly ≈ 2 pages
+You're right — event pages shouldn't have their own visibility class. They should inherit from the profile's normal discoverability (`profiles.discoverable`, which defaults to `true`), and privacy should be driven by **who is viewing**, not by a per-user event flag.
 
-You want a consistent "always 8 instances ready" regardless of cadence. I'll change `materializeSeries` to be **count-based**: at each sweep, count how many future, non-canceled occurrences already exist for that `series_key` (starts_at >= now), and insert new ones from `next_occurrence_at` forward until the total reaches 8. `ends_on` and the unique `(series_key, starts_at)` index still bound and dedupe the loop.
+## Fix (three tight changes)
 
-The `event_series.horizon_weeks` column stays in the schema (harmless), but the materializer stops reading it. No data migration needed; the next daily sweep just refills each series to 8.
+### 1. Stop using `event_visibility` — use `profiles.discoverable`
 
-### Why this is safe
-- Daily is plenty: a weekly series only "loses" one occurrence per week, so a once-a-day top-up always leaves at least 7 future pages visible at the worst moment (just before the sweep).
-- The unique index on `(series_key, starts_at)` keeps the sweep idempotent — running it more often (e.g. right after an admin creates a series, which we already do) never duplicates rows.
-- Cancel and edit flows are unchanged.
+- `src/lib/group-events.functions.ts`
+  - `attendeeUserIds()` (feeds `listEventAttendeeCollabs` / `listEventAttendeeWorks`): replace `.eq("event_visibility", "public")` with `.eq("discoverable", true)`. This makes your own RSVP + everyone else's flow through, matching how the profile appears everywhere else in the app.
+  - `listAttendees()` (feeds "Who's going"): drop the `event_visibility` column from the select — nothing consumes it and its presence implies a special rule that shouldn't exist.
+- `src/lib/event-companion.functions.ts` → `listCheckedInAttendees()`: same swap — filter on `discoverable`, not `event_visibility`.
 
-### Files touched
-- `supabase/insert` (or SQL run) — `cron.unschedule('event-series-materialize')` then re-schedule at `15 3 * * *`.
-- `src/lib/event-series.server.ts` — replace the week-based horizon in `materializeSeries` with a count-based "fill to 8 future occurrences" loop; keep the `advanceInstant`, cursor persistence, and `ends_on` guard.
+Net effect for logged-in viewers: after RSVP, your collabs and works appear in "What people are working on", and so do everyone else's, exactly matching what those profiles show publicly elsewhere.
 
-No UI changes, no schema migration.
+### 2. Hide people-surfaces from logged-out viewers on the event page
+
+Logged-out visitors should see the event itself (SEO/share still works) but not the roster of who is going or what they're building. In `src/routes/g.$slug.e.$eventSlug.tsx`:
+
+- Gate the **"Who's going"** card on `user` being signed in. When signed out, replace it with a lightweight summary (`{going_count} people going · Sign in to see who`) plus a "Sign in" link.
+- Gate **`<EventAttendeeWork />`** on `user`. When signed out, replace with a small CTA card ("Sign in to see what people are bringing").
+- The live-only `<EventCompanionPanel>` is already gated on `phase === "live" && isAttending`, so it's already private — no change needed.
+
+### 3. Leave the moderation floor in place
+
+Blocked-user filtering already runs inside `listAttendees` / attendee-work fetchers via the existing viewer-scoped logic — no change. RLS on `group_event_rsvps` / `profiles` is unchanged. The `event_visibility` column stays in the schema (inert) so we don't need a migration; it can be removed later if we want to.
+
+## Not changed
+
+- `profiles.event_visibility` column — left in place, just no longer read.
+- Grants, RLS, and the RSVP flow itself.
+- The event's public metadata (title, cover, time, location) — still visible to logged-out visitors for shareable links.

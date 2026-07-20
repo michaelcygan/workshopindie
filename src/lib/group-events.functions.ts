@@ -279,9 +279,9 @@ async function attendeeUserIds(eventId: string): Promise<string[]> {
   if (ids.length === 0) return [];
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id,event_visibility")
+    .select("id,discoverable")
     .in("id", ids)
-    .eq("event_visibility", "public");
+    .eq("discoverable", true);
   return (profiles ?? []).map((p) => p.id);
 }
 
