@@ -140,6 +140,13 @@ function EventPage() {
     staleTime: 30_000,
   });
 
+  const { data: listedGroups } = useQuery({
+    queryKey: ["event-groups", ev.id],
+    queryFn: () => listEventGroupsFn({ data: { event_id: ev.id } }),
+    staleTime: 60_000,
+  });
+
+
   // realtime: refresh on rsvp changes
   useEffect(() => {
     const ch = supabase
