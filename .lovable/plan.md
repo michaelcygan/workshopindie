@@ -1,20 +1,29 @@
-The Activity tab duplicates the "What people are working on" section that already appears above the tabs. We will remove the tab entirely and keep the existing section as the single source of truth.
+# Consolidate RSVP + Who's going
 
-### What we'll change
+Combine the two adjacent cards on the event page into a single "RSVP" card so the action, status, and social proof share one surface.
 
-1. **Remove the Activity tab from `src/routes/g.$slug.e.$eventSlug.tsx`**
-   - Delete the `<TabsTrigger value="activity">…</TabsTrigger>`.
-   - Delete the `<TabsContent value="activity">…</TabsContent>` block and its `EventShowcaseStrip` usage.
-   - Remove the `EventShowcaseStrip` import (the component file is still used by the live companion panel, so we won't delete it).
-   - Adjust the grid columns on `TabsList` from `grid-cols-3`/`grid-cols-4` to `grid-cols-2`/`grid-cols-3`.
+## New single card layout
 
-2. **Keep the existing "What people are working on" section**
-   - This section already covers both open collabs and recent work from attendees, so no content is lost.
+```text
+┌─ RSVP ──────────────────────────────── 12 going · 2 waitlist ─┐
+│ For Tue, Jul 21 · 8:00 PM               [You're going pill]   │
+│ [✓ I'm in for Tue, Jul 21, 8:00 PM] [✕ Can't make it]         │
+│ ─────────────────────────────────────────────────────────────  │
+│ (M) (J) (A) (K) (+8)   ← overlapping avatar row, click → peek │
+└────────────────────────────────────────────────────────────────┘
+```
 
-3. **No backend changes**
-   - The `event_showcase_items` table and related server functions can stay; they support the live companion panel. We are only changing the public event page UI.
+- Header: title "RSVP" on the left, going count (and waitlist if any) on the right — replaces the separate "Who's going" header and its duplicate counter.
+- Body: keep the existing `EventRsvpBlock` action row and the "You're going" status pill exactly as-is.
+- Footer strip: compact overlapping avatar row (h-8, -ml-2 overlap) showing up to ~10 attendees + "+N" chip, clicking an avatar opens the existing `ProfilePeek`. Empty state: "No one's RSVP'd yet — be first." (inline, small).
+- Post-event: replace the footer strip with `EventWhoStrip phase="post"` inline in the same card (keeps the "who was here" recap consolidated too).
+- Signed-out: show the action card + "Sign in to see who's going" inline instead of a second card.
+- Keep `EventRsvpNudge` directly under the card (unchanged).
+- Photos section (post-event) stays as its own separate card below.
 
-### Result
+## Files
 
-- Event pages will have About, Lineup (when applicable), and Wall tabs.
-- The "Bring something" action disappears from the public page, matching the user's choice to remove the whole concept from this view.
+- `src/routes/g.$slug.e.$eventSlug.tsx` — merge the two blocks (lines ~330–425) into one card wrapper; remove the standalone "Who's going" card; move the avatar rendering into the new footer strip.
+- Optional small extract: `src/components/event-going-strip.tsx` for the compact overlapping-avatar row (keeps route file lean). Reuses the same `attendees` data already loaded.
+
+No schema or query changes.

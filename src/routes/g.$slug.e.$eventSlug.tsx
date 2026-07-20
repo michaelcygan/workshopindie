@@ -327,7 +327,7 @@ function EventPage() {
         {ev.series_key && <SeriesAdminStrip eventId={ev.id} seriesKey={ev.series_key} />}
 
 
-        {/* RSVP */}
+        {/* RSVP + Who's going (consolidated) */}
         <div className="mt-5">
           <EventRsvpBlock
             eventId={ev.id}
@@ -340,6 +340,49 @@ function EventPage() {
             startsAt={ev.starts_at}
             timezone={ev.timezone}
             isRecurring={Boolean(ev.series_key)}
+            footerSlot={
+              !user ? (
+                <p className="text-sm text-ink-muted">
+                  <Link to="/login" className="text-primary underline">Sign in</Link> to see who's going.
+                </p>
+              ) : (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">Who's going</span>
+                    <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                      <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
+                      {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
+                    </span>
+                  </div>
+                  {going.length === 0 ? (
+                    <p className="text-sm text-ink-muted">No one's RSVP'd yet — be first.</p>
+                  ) : (
+                    <div className="flex items-center">
+                      <div className="flex -space-x-2">
+                        {going.slice(0, 10).map((a) => {
+                          type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
+                          const p = (a as unknown as R).profile;
+                          if (!p) return null;
+                          return (
+                            <Avatar
+                              key={a.user_id}
+                              className="h-8 w-8 border-2 border-surface"
+                              title={p.display_name ?? p.username ?? ""}
+                            >
+                              <AvatarImage src={p.avatar_url ?? undefined} />
+                              <AvatarFallback>{(p.display_name ?? p.username ?? "?").slice(0, 1)}</AvatarFallback>
+                            </Avatar>
+                          );
+                        })}
+                      </div>
+                      {going.length > 10 && (
+                        <span className="ml-3 text-xs text-ink-muted">+{going.length - 10} more</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            }
           />
 
           {/* Persistent post-RSVP nudge — pre-event only */}
@@ -361,68 +404,15 @@ function EventPage() {
           />
         )}
 
-        {/* Who's going / Who was here — signed-in only */}
-        {user ? (
-          phase === "post" ? (
-            <div className="mt-6 space-y-6">
-              <EventWhoStrip eventId={ev.id} phase="post" />
-              <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
-            </div>
-          ) : (
-            <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-              <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-display text-lg text-ink">Who's going</h3>
-                <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                  <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-                  {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
-                </span>
-              </div>
-              {going.length === 0 ? (
-                <p className="text-sm text-ink-muted">No one's RSVP'd yet. Be first.</p>
-              ) : (
-                <div className="flex flex-wrap gap-3">
-                  {going.slice(0, 24).map((a) => {
-                    type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
-                    const p = (a as unknown as R).profile;
-                    if (!p) return null;
-                    return p.username ? (
-                      <Link key={a.user_id} to="/u/$username" params={{ username: p.username }} className="flex flex-col items-center gap-1">
-                        <Avatar className="h-10 w-10">
-                          <AvatarImage src={p.avatar_url ?? undefined} />
-                          <AvatarFallback>{(p.display_name ?? "?").slice(0, 1)}</AvatarFallback>
-                        </Avatar>
-                        <span className="max-w-[60px] truncate text-[10px] text-ink-muted">{p.display_name ?? p.username}</span>
-                      </Link>
-                    ) : (
-                      <div key={a.user_id} className="flex flex-col items-center gap-1">
-                        <Avatar className="h-10 w-10">
-                          <AvatarFallback>?</AvatarFallback>
-                        </Avatar>
-                      </div>
-                    );
-                  })}
-                  {going.length > 24 && (
-                    <div className="flex h-10 items-center justify-center rounded-full bg-muted px-3 text-xs text-ink-muted">
-                      +{going.length - 24}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )
-        ) : (
-          <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-            <div className="mb-2 flex items-center justify-between">
-              <h3 className="font-display text-lg text-ink">Who's going</h3>
-              <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                <Users className="h-3.5 w-3.5" /> {ev.going_count} going
-              </span>
-            </div>
-            <p className="text-sm text-ink-muted">
-              <Link to="/login" className="text-primary underline">Sign in</Link> to see who's going.
-            </p>
+        {/* Post-event recap: who checked in + photos */}
+        {user && phase === "post" && (
+          <div className="mt-6 space-y-6">
+            <EventWhoStrip eventId={ev.id} phase="post" />
+            <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
           </div>
         )}
+
+
 
         {/* What attendees bring to the table — signed-in only for privacy */}
         {user ? (

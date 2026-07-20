@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { Check, X } from "lucide-react";
@@ -26,6 +26,7 @@ export function EventRsvpBlock({
   startsAt,
   timezone,
   isRecurring,
+  footerSlot,
 }: {
   eventId: string;
   groupSlug: string;
@@ -37,6 +38,7 @@ export function EventRsvpBlock({
   startsAt?: string | null;
   timezone?: string | null;
   isRecurring?: boolean;
+  footerSlot?: ReactNode;
 }) {
   const { user } = useAuth();
   const rsvpFn = useServerFn(rsvp);
@@ -137,6 +139,10 @@ export function EventRsvpBlock({
       <p className="mt-3 text-[11px] text-ink-muted">
         RSVPs are visible to other group members.
       </p>
+
+      {footerSlot ? (
+        <div className="mt-4 border-t border-border pt-4">{footerSlot}</div>
+      ) : null}
 
       <EventRsvpAuthSheet
         open={authSheetOpen}
