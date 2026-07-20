@@ -242,13 +242,42 @@ function EventPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <Link to="/g/$slug" params={{ slug: ev.group.slug }} className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={ev.group.avatar_url ?? undefined} />
-                <AvatarFallback>{ev.group.name.slice(0, 1)}</AvatarFallback>
-              </Avatar>
-              <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
-            </Link>
+            {ev.external_organizer ? (
+              ev.external_url ? (
+                <a
+                  href={ev.external_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink"
+                >
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                  </span>
+                  <span>
+                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
+                  </span>
+                  <ExternalLink className="h-3 w-3 text-ink-muted" />
+                </a>
+              ) : (
+                <span className="inline-flex items-center gap-2 text-sm text-ink-soft">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                  </span>
+                  <span>
+                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
+                  </span>
+                </span>
+              )
+            ) : (
+              <Link to="/g/$slug" params={{ slug: ev.group.slug }} className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={ev.group.avatar_url ?? undefined} />
+                  <AvatarFallback>{ev.group.name.slice(0, 1)}</AvatarFallback>
+                </Avatar>
+                <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
+              </Link>
+            )}
+
             <div className="flex items-center gap-1">
               <ReportDialog entityType="group_event" entityId={ev.id} />
               <EventShareSheet
