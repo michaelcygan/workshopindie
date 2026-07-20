@@ -68,7 +68,7 @@ export const listCheckedInAttendees = createServerFn({ method: "POST" })
     const { data: rows, error } = await supabase
       .from("group_event_rsvps")
       .select(
-        "user_id,checked_in_at,profile:profiles!inner(display_name,username,avatar_url,event_visibility)",
+        "user_id,checked_in_at,profile:profiles!inner(display_name,username,avatar_url,discoverable)",
       )
       .eq("event_id", data.event_id)
       .not("checked_in_at", "is", null)
@@ -82,11 +82,11 @@ export const listCheckedInAttendees = createServerFn({ method: "POST" })
         display_name: string | null;
         username: string | null;
         avatar_url: string | null;
-        event_visibility: string;
+        discoverable: boolean;
       } | null;
     };
     const list = ((rows ?? []) as unknown as R[])
-      .filter((r) => r.profile && r.profile.event_visibility === "public")
+      .filter((r) => r.profile && r.profile.discoverable)
       .map((r) => ({
         user_id: r.user_id,
         checked_in_at: r.checked_in_at,

@@ -162,7 +162,7 @@ export const listAttendees = createServerFn({ method: "POST" })
     if (ids.length === 0) return [];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,username,display_name,avatar_url,event_visibility")
+      .select("id,username,display_name,avatar_url")
       .in("id", ids);
     const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
     return (rows ?? []).map((r) => ({ ...r, profile: pmap.get(r.user_id) ?? null }));
@@ -279,9 +279,9 @@ async function attendeeUserIds(eventId: string): Promise<string[]> {
   if (ids.length === 0) return [];
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id,event_visibility")
+    .select("id,discoverable")
     .in("id", ids)
-    .eq("event_visibility", "public");
+    .eq("discoverable", true);
   return (profiles ?? []).map((p) => p.id);
 }
 
