@@ -140,6 +140,10 @@ export function EventRsvpBlock({
         RSVPs are visible to other group members.
       </p>
 
+      {footerSlot ? (
+        <div className="mt-4 border-t border-border pt-4">{footerSlot}</div>
+      ) : null}
+
       <EventRsvpAuthSheet
         open={authSheetOpen}
         onOpenChange={setAuthSheetOpen}
