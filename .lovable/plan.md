@@ -1,37 +1,28 @@
-## What's actually going on
+## Problem
 
-The event page has a special filter no other surface uses: it only shows attendees whose profile has `event_visibility = 'public'`. Every profile in the database defaults to `'group_only'` and there is no UI to change it, so:
+The "What people are working on" module reuses the full `CollabCard` and `WorkCard` primitives, but the module lives in a narrow event-page column. At that width the cards break:
 
-- Your own RSVP gets filtered out of "What people are working on" (that's why you don't see your own collabs/works).
-- Other attendees never appear either.
+- **Collab card**: top row (category chip + "Open · Casting" state badge + relative time) is a single non-wrapping flex row → "Open" and "Casting" get clipped, title `text-[22px]` line-clamp-2 still truncates aggressively, footer row (avatar · name · location · Comp TBD) overflows so name gets clipped and "Comp TBD" wraps to a new visual line.
+- **Work card**: category chip + a second "Portfolio" chip sit on the cover in an absolute row that overlaps at narrow widths; title clamps hard; the shared `AttendeeChip` below the card wraps to two lines ("Mike / Cygan · going") because the module renders it in a wider chip container than collabs use.
 
-You're right — event pages shouldn't have their own visibility class. They should inherit from the profile's normal discoverability (`profiles.discoverable`, which defaults to `true`), and privacy should be driven by **who is viewing**, not by a per-user event flag.
+## Fix (presentation only, scoped to the attendee module)
 
-## Fix (three tight changes)
+Keep the underlying `CollabCard` / `WorkCard` untouched everywhere else. In `src/components/event-attendee-work.tsx`:
 
-### 1. Stop using `event_visibility` — use `profiles.discoverable`
+1. **Force single-column on the fair grids in this module** (they render 3–4 up on desktop today, which is what makes each card too narrow inside the event sidebar). Use `grid-cols-1 sm:grid-cols-2` for both collabs and works so each card gets ≥ ~280px, and let the module rely on "See everyone" to expand.
+2. **Wrap the AttendeeChip in `whitespace-nowrap`** and truncate the name so it always renders on one line matching the collab tab. Add a small `max-w-full` + `truncate` on the name span.
 
-- `src/lib/group-events.functions.ts`
-  - `attendeeUserIds()` (feeds `listEventAttendeeCollabs` / `listEventAttendeeWorks`): replace `.eq("event_visibility", "public")` with `.eq("discoverable", true)`. This makes your own RSVP + everyone else's flow through, matching how the profile appears everywhere else in the app.
-  - `listAttendees()` (feeds "Who's going"): drop the `event_visibility` column from the select — nothing consumes it and its presence implies a special rule that shouldn't exist.
-- `src/lib/event-companion.functions.ts` → `listCheckedInAttendees()`: same swap — filter on `discoverable`, not `event_visibility`.
+In `src/components/collab-card.tsx` (tiny resilience pass, no visual change at normal widths):
 
-Net effect for logged-in viewers: after RSVP, your collabs and works appear in "What people are working on", and so do everyone else's, exactly matching what those profiles show publicly elsewhere.
+3. Change the header chip row from a single flex line into `flex flex-wrap items-center gap-2` and move the timestamp into its own trailing element with `ml-auto shrink-0` — chips wrap instead of clipping when width < ~320px.
+4. Give the title `break-words` and drop to `text-[20px]` at narrow widths (`text-[20px] sm:text-[22px]`) so the two-line clamp fits.
+5. In the footer meta row, add `min-w-0` to the author name span and `flex-wrap` fallback so "Comp TBD" doesn't push name off-screen.
 
-### 2. Hide people-surfaces from logged-out viewers on the event page
+In `src/components/work-card.tsx`:
 
-Logged-out visitors should see the event itself (SEO/share still works) but not the roster of who is going or what they're building. In `src/routes/g.$slug.e.$eventSlug.tsx`:
+6. Ensure the category + kind chip overlay uses `flex flex-wrap gap-1` (not absolute overlap) and add a subtle backdrop so chips never sit on top of each other.
+7. Add `line-clamp-2 break-words` to the title.
 
-- Gate the **"Who's going"** card on `user` being signed in. When signed out, replace it with a lightweight summary (`{going_count} people going · Sign in to see who`) plus a "Sign in" link.
-- Gate **`<EventAttendeeWork />`** on `user`. When signed out, replace with a small CTA card ("Sign in to see what people are bringing").
-- The live-only `<EventCompanionPanel>` is already gated on `phase === "live" && isAttending`, so it's already private — no change needed.
+## Out of scope
 
-### 3. Leave the moderation floor in place
-
-Blocked-user filtering already runs inside `listAttendees` / attendee-work fetchers via the existing viewer-scoped logic — no change. RLS on `group_event_rsvps` / `profiles` is unchanged. The `event_visibility` column stays in the schema (inert) so we don't need a migration; it can be removed later if we want to.
-
-## Not changed
-
-- `profiles.event_visibility` column — left in place, just no longer read.
-- Grants, RLS, and the RSVP flow itself.
-- The event's public metadata (title, cover, time, location) — still visible to logged-out visitors for shareable links.
+No data/server changes, no changes to the CollabCard/WorkCard usage on other pages beyond the wrapping/typography resilience noted above.
