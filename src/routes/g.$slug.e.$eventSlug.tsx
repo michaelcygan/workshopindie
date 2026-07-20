@@ -123,7 +123,8 @@ function EventPage() {
   });
 
   const { data: attendees } = useQuery({
-    queryKey: ["event-attendees", ev.id],
+    queryKey: ["event-attendees", ev.id, user?.id ?? null],
+    enabled: !!user,
     queryFn: () => listAttendeesFn({ data: { event_id: ev.id } }),
     staleTime: 30_000,
   });
