@@ -315,6 +315,8 @@ function EventPage() {
               format={ev.format}
               venueName={ev.venue_name}
               venueAddress={ev.venue_address}
+              venueLat={ev.venue_lat}
+              venueLng={ev.venue_lng}
               onlineUrl={ev.online_url}
               city={ev.venue_name ?? null}
               variant="embedded"
