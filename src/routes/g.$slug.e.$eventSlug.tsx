@@ -200,7 +200,7 @@ function EventPage() {
         </div>
       </div>
 
-      <div className="mx-auto -mt-10 max-w-2xl px-4 md:px-6">
+      <div className="mx-auto mt-6 max-w-2xl px-4 md:px-6">
         <div className="rounded-3xl border border-border bg-surface p-6 shadow-lift">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
