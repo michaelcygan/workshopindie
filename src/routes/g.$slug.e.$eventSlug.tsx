@@ -441,12 +441,11 @@ function EventPage() {
         {/* Tabs */}
         <div className="mt-6">
           <Tabs defaultValue="about">
-            <TabsList className={`sticky top-2 z-10 grid w-full ${ev.lineup_capacity != null ? "grid-cols-4" : "grid-cols-3"} rounded-full bg-muted p-1 backdrop-blur`}>
+            <TabsList className={`sticky top-2 z-10 grid w-full ${ev.lineup_capacity != null ? "grid-cols-3" : "grid-cols-2"} rounded-full bg-muted p-1 backdrop-blur`}>
               <TabsTrigger value="about" className="rounded-full"><Info className="mr-1.5 h-3.5 w-3.5" /> About</TabsTrigger>
               {ev.lineup_capacity != null && (
                 <TabsTrigger value="lineup" className="rounded-full"><ListMusic className="mr-1.5 h-3.5 w-3.5" /> Lineup</TabsTrigger>
               )}
-              <TabsTrigger value="activity" className="rounded-full"><Sparkles className="mr-1.5 h-3.5 w-3.5" /> Activity</TabsTrigger>
               <TabsTrigger value="wall" className="rounded-full"><MessageSquare className="mr-1.5 h-3.5 w-3.5" /> Wall</TabsTrigger>
             </TabsList>
 
