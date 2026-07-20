@@ -297,62 +297,82 @@ function EventPage() {
           />
         )}
 
-        {/* Who's going / Who was here */}
-        {phase === "post" ? (
-          <div className="mt-6 space-y-6">
-            <EventWhoStrip eventId={ev.id} phase="post" />
-            <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
-          </div>
+        {/* Who's going / Who was here — signed-in only */}
+        {user ? (
+          phase === "post" ? (
+            <div className="mt-6 space-y-6">
+              <EventWhoStrip eventId={ev.id} phase="post" />
+              <EventPhotosSection eventId={ev.id} canUpload={isAttending} />
+            </div>
+          ) : (
+            <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-display text-lg text-ink">Who's going</h3>
+                <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
+                  <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
+                  {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
+                </span>
+              </div>
+              {going.length === 0 ? (
+                <p className="text-sm text-ink-muted">No one's RSVP'd yet. Be first.</p>
+              ) : (
+                <div className="flex flex-wrap gap-3">
+                  {going.slice(0, 24).map((a) => {
+                    type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
+                    const p = (a as unknown as R).profile;
+                    if (!p) return null;
+                    return p.username ? (
+                      <Link key={a.user_id} to="/u/$username" params={{ username: p.username }} className="flex flex-col items-center gap-1">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={p.avatar_url ?? undefined} />
+                          <AvatarFallback>{(p.display_name ?? "?").slice(0, 1)}</AvatarFallback>
+                        </Avatar>
+                        <span className="max-w-[60px] truncate text-[10px] text-ink-muted">{p.display_name ?? p.username}</span>
+                      </Link>
+                    ) : (
+                      <div key={a.user_id} className="flex flex-col items-center gap-1">
+                        <Avatar className="h-10 w-10">
+                          <AvatarFallback>?</AvatarFallback>
+                        </Avatar>
+                      </div>
+                    );
+                  })}
+                  {going.length > 24 && (
+                    <div className="flex h-10 items-center justify-center rounded-full bg-muted px-3 text-xs text-ink-muted">
+                      +{going.length - 24}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
         ) : (
           <div className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
-            <div className="mb-3 flex items-center justify-between">
+            <div className="mb-2 flex items-center justify-between">
               <h3 className="font-display text-lg text-ink">Who's going</h3>
               <span className="inline-flex items-center gap-1 text-xs text-ink-muted">
-                <Users className="h-3.5 w-3.5" /> {ev.going_count}{ev.capacity ? ` / ${ev.capacity}` : ""} going
-                {ev.waitlist_count > 0 && ` · ${ev.waitlist_count} waitlist`}
+                <Users className="h-3.5 w-3.5" /> {ev.going_count} going
               </span>
             </div>
-            {going.length === 0 ? (
-              <p className="text-sm text-ink-muted">No one's RSVP'd yet. Be first.</p>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {going.slice(0, 24).map((a) => {
-                  type R = { user_id: string; profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null };
-                  const p = (a as unknown as R).profile;
-                  if (!p) return null;
-                  return p.username ? (
-                    <Link key={a.user_id} to="/u/$username" params={{ username: p.username }} className="flex flex-col items-center gap-1">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={p.avatar_url ?? undefined} />
-                        <AvatarFallback>{(p.display_name ?? "?").slice(0, 1)}</AvatarFallback>
-                      </Avatar>
-                      <span className="max-w-[60px] truncate text-[10px] text-ink-muted">{p.display_name ?? p.username}</span>
-                    </Link>
-                  ) : (
-                    <div key={a.user_id} className="flex flex-col items-center gap-1">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback>?</AvatarFallback>
-                      </Avatar>
-                    </div>
-                  );
-                })}
-                {going.length > 24 && (
-                  <div className="flex h-10 items-center justify-center rounded-full bg-muted px-3 text-xs text-ink-muted">
-                    +{going.length - 24}
-                  </div>
-                )}
-              </div>
-            )}
+            <p className="text-sm text-ink-muted">
+              <Link to="/login" className="text-primary underline">Sign in</Link> to see who's going.
+            </p>
           </div>
         )}
 
-        {/* What attendees bring to the table — weighted ABOVE tabs so visitors
-            (especially logged-out drop-ins from a share link) see real work and
-            open collabs from the people who will be in the room. This is the
-            single highest-converting surface on the event page. */}
-        <div className="mt-6">
-          <EventAttendeeWork eventId={ev.id} />
-        </div>
+        {/* What attendees bring to the table — signed-in only for privacy */}
+        {user ? (
+          <div className="mt-6">
+            <EventAttendeeWork eventId={ev.id} />
+          </div>
+        ) : (
+          <div className="mt-6 rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
+            <Sparkles className="mx-auto mb-2 h-5 w-5 text-ink-muted" />
+            <p className="text-sm text-ink-soft">
+              <Link to="/login" className="font-medium text-primary underline">Sign in</Link> to see what people are bringing.
+            </p>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="mt-6">
