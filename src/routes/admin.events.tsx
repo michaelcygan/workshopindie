@@ -415,15 +415,33 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               Recurring event
             </label>
             {form.is_recurring && (
-              <div>
-                <Label>Schedule caption</Label>
-                <Input
-                  value={form.recurrence_label}
-                  onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
-                  placeholder="Every Tuesday · First Friday of the month · Weekly"
-                  maxLength={80}
-                />
-                <p className="mt-1 text-[11px] text-ink-muted">Free-text label shown on the card. Update the date/time yourself for each new occurrence.</p>
+              <div className="space-y-2">
+                <div>
+                  <Label>Repeats</Label>
+                  <Select
+                    value={form.recurrence_rule}
+                    onValueChange={(v) => setForm({ ...form, recurrence_rule: v as "WEEKLY" | "BIWEEKLY" | "MONTHLY" })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="BIWEEKLY">Every 2 weeks</SelectItem>
+                      <SelectItem value="MONTHLY">Monthly (same date)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    New occurrences roll in automatically (about 8 weeks ahead). Each date is its own page and its own RSVP. Cancel the series from any occurrence's admin bar to stop future dates.
+                  </p>
+                </div>
+                <div>
+                  <Label>Schedule caption (optional)</Label>
+                  <Input
+                    value={form.recurrence_label}
+                    onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
+                    placeholder="Every Tuesday · First Friday of the month"
+                    maxLength={80}
+                  />
+                </div>
               </div>
             )}
           </div>
