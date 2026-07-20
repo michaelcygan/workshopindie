@@ -272,7 +272,11 @@ function EventPage() {
             capacity={ev.capacity}
             goingCount={ev.going_count}
             waitlistEnabled={ev.waitlist_enabled}
+            startsAt={ev.starts_at}
+            timezone={ev.timezone}
+            isRecurring={Boolean(ev.series_key)}
           />
+
           {/* Persistent post-RSVP nudge — pre-event only */}
           <EventRsvpNudge
             eventId={ev.id}

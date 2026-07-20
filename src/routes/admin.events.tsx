@@ -21,6 +21,7 @@ import {
   adminListEventReports,
   adminDismissReports,
   createEvent,
+  createEventSeries,
   cancelEvent,
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
@@ -126,6 +127,7 @@ function AdminEventsPage() {
 function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   const groupsFn = useServerFn(adminListGroups);
   const createFn = useServerFn(createEvent);
+  const seriesFn = useServerFn(createEventSeries);
   const [open, setOpen] = useState(false);
   const { data: groups } = useQuery({ queryKey: ["admin-events-groups"], queryFn: () => groupsFn(), enabled: open });
 
@@ -142,6 +144,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     external_url: string;
     external_organizer: string;
     is_recurring: boolean;
+    recurrence_rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY";
     recurrence_label: string;
     pinned: boolean;
   };
@@ -166,6 +169,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     external_url: "",
     external_organizer: "",
     is_recurring: false,
+    recurrence_rule: "WEEKLY",
     recurrence_label: "",
     pinned: false,
   });
@@ -182,36 +186,44 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
       return;
     }
     try {
-      await createFn({
-        data: {
-          group_id: form.group_id,
-          title: form.title,
-          tagline: form.tagline || null,
-          description: form.description || null,
-          kind: form.kind,
-          format: form.format,
-          cover_url: form.cover_url || null,
-          starts_at: new Date(form.starts_at).toISOString(),
-          ends_at: new Date(form.ends_at).toISOString(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
-          venue_name: form.venue_name || null,
-          venue_address: form.venue_address || null,
-          online_url: form.online_url || null,
-          capacity: form.capacity ? Number(form.capacity) : null,
-          
-          featured: form.featured,
-          is_official: form.source === "workshop",
-          lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
-          source: form.source,
-          external_url: form.source === "external" ? (form.external_url || null) : null,
-          external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
-          is_recurring: form.is_recurring,
-          recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
-          pinned: form.pinned,
-          extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
-        },
-      });
-      toast.success("Event created");
+      const payload = {
+        group_id: form.group_id,
+        title: form.title,
+        tagline: form.tagline || null,
+        description: form.description || null,
+        kind: form.kind,
+        format: form.format,
+        cover_url: form.cover_url || null,
+        starts_at: new Date(form.starts_at).toISOString(),
+        ends_at: new Date(form.ends_at).toISOString(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+        venue_name: form.venue_name || null,
+        venue_address: form.venue_address || null,
+        online_url: form.online_url || null,
+        capacity: form.capacity ? Number(form.capacity) : null,
+
+        featured: form.featured,
+        is_official: form.source === "workshop",
+        lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
+        source: form.source,
+        external_url: form.source === "external" ? (form.external_url || null) : null,
+        external_organizer: form.source === "external" ? (form.external_organizer || null) : null,
+        is_recurring: form.is_recurring,
+        recurrence_label: form.is_recurring ? (form.recurrence_label || null) : null,
+        pinned: form.pinned,
+        extra_group_ids: extraGroupIds.filter((id) => id !== form.group_id),
+      };
+      if (form.is_recurring) {
+        const res = await seriesFn({
+          data: { ...payload, recurrence_rule: form.recurrence_rule },
+        });
+        toast.success(
+          `Recurring series created — ${res.count} occurrence${res.count === 1 ? "" : "s"} scheduled. More will roll in automatically.`,
+        );
+      } else {
+        await createFn({ data: payload });
+        toast.success("Event created");
+      }
       setOpen(false);
       onCreated();
     } catch (err) {
@@ -403,15 +415,33 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               Recurring event
             </label>
             {form.is_recurring && (
-              <div>
-                <Label>Schedule caption</Label>
-                <Input
-                  value={form.recurrence_label}
-                  onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
-                  placeholder="Every Tuesday · First Friday of the month · Weekly"
-                  maxLength={80}
-                />
-                <p className="mt-1 text-[11px] text-ink-muted">Free-text label shown on the card. Update the date/time yourself for each new occurrence.</p>
+              <div className="space-y-2">
+                <div>
+                  <Label>Repeats</Label>
+                  <Select
+                    value={form.recurrence_rule}
+                    onValueChange={(v) => setForm({ ...form, recurrence_rule: v as "WEEKLY" | "BIWEEKLY" | "MONTHLY" })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="WEEKLY">Weekly</SelectItem>
+                      <SelectItem value="BIWEEKLY">Every 2 weeks</SelectItem>
+                      <SelectItem value="MONTHLY">Monthly (same date)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    New occurrences roll in automatically (about 8 weeks ahead). Each date is its own page and its own RSVP. Cancel the series from any occurrence's admin bar to stop future dates.
+                  </p>
+                </div>
+                <div>
+                  <Label>Schedule caption (optional)</Label>
+                  <Input
+                    value={form.recurrence_label}
+                    onChange={(e) => setForm({ ...form, recurrence_label: e.target.value })}
+                    placeholder="Every Tuesday · First Friday of the month"
+                    maxLength={80}
+                  />
+                </div>
               </div>
             )}
           </div>

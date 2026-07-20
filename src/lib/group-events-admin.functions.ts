@@ -311,22 +311,16 @@ export const adminListGroups = createServerFn({ method: "POST" })
     return data ?? [];
   });
 
-// ---------- Recurring series ----------
+// ---------- Recurring series (rolling materialization) ----------
 
 const seriesSchema = baseSchema.omit({ starts_at: true, ends_at: true }).extend({
   starts_at: z.string(),
   ends_at: z.string(),
   recurrence_rule: z.enum(["WEEKLY", "BIWEEKLY", "MONTHLY"]),
-  occurrence_count: z.number().int().min(1).max(26),
+  // Kept optional for backwards-compat with older callers; ignored by the rolling model.
+  occurrence_count: z.number().int().min(1).max(52).optional(),
+  ends_on: z.string().nullable().optional(),
 });
-
-function addOccurrence(date: Date, rule: "WEEKLY" | "BIWEEKLY" | "MONTHLY", step: number): Date {
-  const d = new Date(date);
-  if (rule === "WEEKLY") d.setDate(d.getDate() + 7 * step);
-  else if (rule === "BIWEEKLY") d.setDate(d.getDate() + 14 * step);
-  else d.setMonth(d.getMonth() + step);
-  return d;
-}
 
 export const createEventSeries = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -334,38 +328,99 @@ export const createEventSeries = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
     await assertAdmin(supabase, userId);
-    const { recurrence_rule, occurrence_count, featured, status, cover_url, pinned: _pinned, extra_group_ids: _extra, ...rest } = data;
-    void _pinned; void _extra;
-    const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
-    const baseStart = new Date(rest.starts_at);
-    const baseEnd = new Date(rest.ends_at);
+    const {
+      recurrence_rule,
+      occurrence_count: _occ,
+      ends_on,
+      featured,
+      status,
+      cover_url,
+      pinned: _pinned,
+      extra_group_ids: _extra,
+      starts_at,
+      ends_at,
+      group_id,
+      ...rest
+    } = data;
+    void _occ; void _pinned; void _extra;
+    const baseStart = new Date(starts_at);
+    const baseEnd = new Date(ends_at);
     if (Number.isNaN(baseStart.getTime()) || Number.isNaN(baseEnd.getTime())) {
       throw new Error("Invalid start or end time");
     }
-    // Rehost once and share across the series.
+    const durationMs = baseEnd.getTime() - baseStart.getTime();
+    if (durationMs <= 0 || durationMs > 24 * 60 * 60 * 1000) {
+      throw new Error("End time must be after start and within 24 hours");
+    }
+    const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const sharedCover = await rehostCoverIfExternal(cover_url, `series_${seriesKey}`);
-    const rows = Array.from({ length: occurrence_count }, (_, i) => {
-      const s = addOccurrence(baseStart, recurrence_rule, i);
-      const e = addOccurrence(baseEnd, recurrence_rule, i);
-      return {
-        ...rest,
-        cover_url: sharedCover,
-        slug: "",
-        created_by: userId,
-        featured_at: i === 0 && featured ? new Date().toISOString() : null,
-        status: (status ?? "scheduled") as "draft" | "scheduled",
-        is_official: rest.is_official ?? true,
-        starts_at: s.toISOString(),
-        ends_at: e.toISOString(),
+
+    // Template is copied into every future occurrence by the materializer.
+    // We omit fields the materializer sets itself: group_id, starts_at, ends_at, slug, created_by, series_key.
+    const template: Record<string, unknown> = {
+      ...rest,
+      cover_url: sharedCover,
+      featured_at: null,
+      pinned_at: null,
+      status: (status ?? "scheduled") as "draft" | "scheduled",
+      is_official: rest.is_official ?? true,
+      is_recurring: true,
+    };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: seriesRow, error: seriesErr } = await supabaseAdmin
+      .from("event_series")
+      .insert({
+        group_id,
         series_key: seriesKey,
-      };
-    });
-    const { data: inserted, error } = await supabase
-      .from("group_events")
-      .insert(rows as never)
-      .select("id,slug");
-    if (error) throw new Error(error.message);
-    return { series_key: seriesKey, count: inserted?.length ?? 0 };
+        recurrence_rule,
+        weekday: baseStart.getUTCDay(),
+        day_of_month:
+          recurrence_rule === "MONTHLY" ? baseStart.getUTCDate() : null,
+        start_time_local: baseStart.toISOString().slice(11, 19),
+        duration_minutes: Math.round(durationMs / 60000),
+        timezone: rest.timezone ?? "UTC",
+        template,
+        horizon_weeks: 8,
+        next_occurrence_at: baseStart.toISOString(),
+        ends_on: ends_on ?? null,
+        created_by: userId,
+      } as never)
+      .select("id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on")
+      .single();
+    if (seriesErr || !seriesRow) throw new Error(seriesErr?.message ?? "Failed to create series");
+
+    const { materializeSeries } = await import("@/lib/event-series.server");
+    const insertedCount = await materializeSeries(supabaseAdmin, seriesRow as never, userId);
+
+    if (featured) {
+      const { data: firstRow } = await supabaseAdmin
+        .from("group_events")
+        .select("id")
+        .eq("series_key", seriesKey)
+        .order("starts_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+      if (firstRow) {
+        await supabaseAdmin
+          .from("group_events")
+          .update({ featured_at: new Date().toISOString() } as never)
+          .eq("id", firstRow.id);
+      }
+    }
+    return { series_key: seriesKey, count: insertedCount };
+  });
+
+/** Manual trigger: materialize every active series that's due for a top-up. */
+export const runEventSeriesMaterializer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { materializeAllDueSeries } = await import("@/lib/event-series.server");
+    return await materializeAllDueSeries(supabaseAdmin);
   });
 
 // ---------- "Not an event" reports ----------
@@ -464,6 +519,26 @@ export const updateEventSeriesFuture = createServerFn({ method: "POST" })
       .eq("series_key", data.series_key)
       .gte("starts_at", anchor.starts_at as string);
     if (error) throw new Error(error.message);
+
+    // Merge the same patch into the series template so future materialized
+    // occurrences pick it up too.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: seriesRow } = await supabaseAdmin
+        .from("event_series")
+        .select("id,template")
+        .eq("series_key", data.series_key)
+        .maybeSingle();
+      if (seriesRow) {
+        const s = seriesRow as unknown as { id: string; template: Record<string, unknown> };
+        const nextTemplate = { ...(s.template ?? {}), ...patch };
+        await supabaseAdmin
+          .from("event_series")
+          .update({ template: nextTemplate } as never)
+          .eq("id", s.id);
+      }
+    } catch { /* best-effort — occurrence rows are already updated */ }
+
     return { ok: true, updated: count ?? 0 };
   });
 
@@ -517,5 +592,16 @@ export const cancelEventSeriesFuture = createServerFn({ method: "POST" })
         }
       } catch { /* notifications are best-effort */ }
     }
+
+    // Stop the rolling materializer from creating more occurrences.
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      await supabaseAdmin
+        .from("event_series")
+        .update({ canceled_at: new Date().toISOString() } as never)
+        .eq("series_key", data.series_key)
+        .is("canceled_at", null);
+    } catch { /* best-effort */ }
+
     return { ok: true, canceled: canceled.length };
   });
