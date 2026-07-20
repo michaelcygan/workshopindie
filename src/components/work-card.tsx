@@ -110,7 +110,7 @@ export function WorkCard({
         )}
 
         {showCategory && (
-          <div className="absolute left-3 top-3 flex flex-wrap items-center gap-1.5">
+          <div className="absolute left-3 right-14 top-3 flex flex-wrap items-center gap-1.5">
             <CategoryChipsCompact primary={work.category} categories={work.categories} />
             {isFresh && (
               <span className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-foreground shadow-soft">
