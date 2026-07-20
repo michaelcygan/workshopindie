@@ -182,6 +182,20 @@ function EventPage() {
     : `/g/${ev.group.slug}/e/${ev.slug}`;
   const isAttending = myRsvp?.status === "going" || myRsvp?.status === "maybe";
   const canBring = isAttending;
+  const wallSealed = ends.getTime() + 3 * 24 * 60 * 60 * 1000 < Date.now();
+  const wallParticipants = (attendees ?? [])
+    .map((a) => {
+      type R = { user_id: string; profile: { display_name: string | null; username: string | null; avatar_url: string | null } | null };
+      const r = a as unknown as R;
+      if (!r.profile) return null;
+      return {
+        user_id: r.user_id,
+        display_name: r.profile.display_name,
+        username: r.profile.username,
+        avatar_url: r.profile.avatar_url,
+      };
+    })
+    .filter((p): p is { user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } => p !== null);
 
   return (
     <main className="pb-20">
