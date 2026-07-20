@@ -1,6 +1,6 @@
 import { ExternalLink, Users } from "lucide-react";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, queryOptions } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { CategoryChipsCompact } from "@/components/category-chips";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,6 @@ type CollabRow = {
   categories?: Category[] | null;
   description: string | null;
   user_id: string;
-  cover_url: string | null;
   status: string;
   roles: { id: string; role_name: string; quantity: number }[];
 };
@@ -27,6 +26,37 @@ type Creator = {
   username: string | null;
   avatar_url: string | null;
 };
+
+async function fetchCollabPeek(collabId: string): Promise<{ collab: CollabRow | null; creator: Creator | null }> {
+  const { data: c, error } = await supabase
+    .from("collab_posts")
+    .select(
+      "id,title,slug,category,categories,description,user_id,status,roles:collab_roles(id,role_name,quantity,sort_order)",
+    )
+    .eq("id", collabId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!c) return { collab: null, creator: null };
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id,display_name,username,avatar_url")
+    .eq("id", (c as any).user_id)
+    .maybeSingle();
+  return {
+    collab: c as unknown as CollabRow,
+    creator: (profile as Creator | null) ?? null,
+  };
+}
+
+export function collabPeekQueryOptions(collabId: string | null) {
+  return queryOptions({
+    queryKey: ["collab-peek", collabId] as const,
+    queryFn: () => fetchCollabPeek(collabId!),
+    enabled: !!collabId,
+    staleTime: 30_000,
+    gcTime: 5 * 60_000,
+  });
+}
 
 export function CollabPeek({
   collabId,
@@ -40,34 +70,13 @@ export function CollabPeek({
   onCreatorClick?: (userId: string) => void;
 }) {
   const { data, isLoading } = useQuery({
-    queryKey: ["collab-peek", collabId],
+    ...collabPeekQueryOptions(collabId),
     enabled: open && !!collabId,
-    staleTime: 30_000,
-    gcTime: 5 * 60_000,
-    queryFn: async () => {
-      const { data: c, error } = await supabase
-        .from("collab_posts")
-        .select(
-          "id,title,slug,category,categories,description,user_id,cover_url,status,roles:collab_roles(id,role_name,quantity,sort_order)",
-        )
-        .eq("id", collabId!)
-        .maybeSingle();
-      if (error) throw error;
-      if (!c) return { collab: null, creator: null };
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id,display_name,username,avatar_url")
-        .eq("id", (c as any).user_id)
-        .maybeSingle();
-      return {
-        collab: c as unknown as CollabRow,
-        creator: (profile as Creator | null) ?? null,
-      };
-    },
   });
 
   const collab = data?.collab ?? null;
   const creator = data?.creator ?? null;
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
