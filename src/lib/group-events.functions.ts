@@ -153,12 +153,19 @@ export const listAttendees = createServerFn({ method: "POST" })
     const supabase = publicClient();
     const { data: rows, error } = await supabase
       .from("group_event_rsvps")
-      .select("user_id,status,plus_ones,created_at,profile:profiles(id,username,display_name,avatar_url,event_visibility)")
+      .select("user_id,status,plus_ones,created_at")
       .eq("event_id", data.event_id)
       .in("status", ["going", "maybe", "waitlist"])
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    const ids = Array.from(new Set((rows ?? []).map((r) => r.user_id)));
+    if (ids.length === 0) return [];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,username,display_name,avatar_url,event_visibility")
+      .in("id", ids);
+    const pmap = new Map((profiles ?? []).map((p) => [p.id, p]));
+    return (rows ?? []).map((r) => ({ ...r, profile: pmap.get(r.user_id) ?? null }));
   });
 
 export const listMyUpcomingRsvps = createServerFn({ method: "GET" })
