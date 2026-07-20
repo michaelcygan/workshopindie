@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
-import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates } from "@/lib/group-events.functions";
+import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates, listEventGroups } from "@/lib/group-events.functions";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
