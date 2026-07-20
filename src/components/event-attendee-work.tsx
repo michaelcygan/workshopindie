@@ -107,17 +107,17 @@ function AttendeeChip({ a }: { a: (Attendee & { rsvp?: string }) | null }) {
   if (!a) return null;
   const name = a.display_name ?? a.username ?? "Attendee";
   const inner = (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-ink/5 px-2 py-1 text-[11px] text-ink-soft">
-      <Avatar className="h-4 w-4">
+    <span className="inline-flex max-w-full items-center gap-1.5 whitespace-nowrap rounded-full bg-ink/5 px-2 py-1 text-[11px] text-ink-soft">
+      <Avatar className="h-4 w-4 shrink-0">
         <AvatarImage src={a.avatar_url ?? undefined} />
         <AvatarFallback>{name.slice(0, 1)}</AvatarFallback>
       </Avatar>
-      <span className="font-medium text-ink">{name}</span>
-      <span className="text-ink-muted">· going</span>
+      <span className="truncate font-medium text-ink">{name}</span>
+      <span className="shrink-0 text-ink-muted">· going</span>
     </span>
   );
   return a.username ? (
-    <Link to="/u/$username" params={{ username: a.username }} className="relative z-20">{inner}</Link>
+    <Link to="/u/$username" params={{ username: a.username }} className="relative z-20 inline-flex min-w-0 max-w-full">{inner}</Link>
   ) : inner;
 }
 
