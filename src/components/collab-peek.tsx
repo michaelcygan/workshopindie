@@ -97,20 +97,12 @@ export function CollabPeek({
           </div>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
-            {collab.cover_url ? (
-              <div className="relative aspect-video w-full overflow-hidden bg-surface-2">
-                <img src={collab.cover_url} alt={collab.title} className="h-full w-full object-cover" />
-                <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
-                </div>
+            <div className="relative aspect-video w-full gradient-soft">
+              <div className="absolute left-3 top-3 flex gap-1.5">
+                <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
               </div>
-            ) : (
-              <div className="relative aspect-video w-full gradient-soft">
-                <div className="absolute left-3 top-3 flex gap-1.5">
-                  <CategoryChipsCompact primary={collab.category} categories={collab.categories} />
-                </div>
-              </div>
-            )}
+            </div>
+
             <div className="p-5 space-y-4">
               <div>
                 <h2 className="font-display text-2xl text-ink leading-tight">{collab.title}</h2>
