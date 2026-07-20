@@ -98,15 +98,16 @@ export function EventRsvpBlock({
   }
 
   return (
-    <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
-      <div className="mb-1 flex items-center justify-between">
+    <div className="rounded-3xl border border-border bg-surface p-4 shadow-soft sm:p-5">
+      <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="font-display text-lg text-ink">RSVP</h3>
         {status === "waitlist" && (
           <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700">On waitlist</span>
         )}
         {status === "going" && (
           <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-            {dateLabel ? `You're going · ${dateLabel}` : "You're going"}
+            <span className="sm:hidden">You're going</span>
+            <span className="hidden sm:inline">{dateLabel ? `You're going · ${dateLabel}` : "You're going"}</span>
           </span>
         )}
       </div>
@@ -122,20 +123,22 @@ export function EventRsvpBlock({
           type="button"
           onClick={() => commit("going")}
           variant={going ? "default" : "outline"}
-          className={cn("rounded-2xl py-5", going && "shadow-lift")}
+          className={cn("min-w-0 rounded-2xl px-3 py-5 text-sm", going && "shadow-lift")}
         >
-          <Check className="mr-1.5 h-4 w-4" />
-          {dateLabel ? <>I'm in for <span className="ml-1 hidden sm:inline">{dateLabel}</span><span className="ml-1 sm:hidden">this date</span></> : "I'm in"}
+          <Check className="mr-1.5 h-4 w-4 shrink-0" />
+          <span className="truncate">I'm in</span>
         </Button>
         <Button
           type="button"
           onClick={() => commit("declined")}
           variant={declined ? "default" : "outline"}
-          className={cn("rounded-2xl py-5", declined && "shadow-lift")}
+          className={cn("min-w-0 rounded-2xl px-3 py-5 text-sm", declined && "shadow-lift")}
         >
-          <X className="mr-1.5 h-4 w-4" /> Can't make it
+          <X className="mr-1.5 h-4 w-4 shrink-0" />
+          <span className="truncate">Can't make it</span>
         </Button>
       </div>
+
       <p className="mt-3 text-[11px] text-ink-muted">
         RSVPs are visible to other group members.
       </p>
