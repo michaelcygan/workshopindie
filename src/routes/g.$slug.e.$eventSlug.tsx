@@ -274,7 +274,7 @@ function EventPage() {
             waitlistEnabled={ev.waitlist_enabled}
             startsAt={ev.starts_at}
             timezone={ev.timezone}
-            isRecurring={Boolean(ev.series_key) || Boolean(ev.is_recurring)}
+            isRecurring={Boolean(ev.series_key)}
           />
 
           {/* Persistent post-RSVP nudge — pre-event only */}
