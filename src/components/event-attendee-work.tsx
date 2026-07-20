@@ -149,11 +149,11 @@ function FairCollabs({ items, loading }: { items: CollabCardData[]; loading: boo
   if (loading) return <SkeletonGrid />;
   type Row = CollabCardData & { user: Attendee | null };
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {(items as Row[]).map((r) => (
-        <div key={r.id} className="relative flex flex-col gap-2">
+        <div key={r.id} className="relative flex min-w-0 flex-col gap-2">
           <CollabCard post={r} />
-          <div className="px-1"><AttendeeChip a={r.user ?? null} /></div>
+          <div className="min-w-0 px-1"><AttendeeChip a={r.user ?? null} /></div>
         </div>
       ))}
     </div>
@@ -163,11 +163,11 @@ function FairCollabs({ items, loading }: { items: CollabCardData[]; loading: boo
 function FairWorks({ items, loading }: { items: (WorkCardData & { author?: Attendee | null })[]; loading: boolean }) {
   if (loading) return <SkeletonGrid />;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {items.map((r) => (
-        <div key={r.id} className="relative flex flex-col gap-2">
+        <div key={r.id} className="relative flex min-w-0 flex-col gap-2">
           <WorkCard work={r} showAvatars />
-          <div className="px-1"><AttendeeChip a={r.author ?? null} /></div>
+          <div className="min-w-0 px-1"><AttendeeChip a={r.author ?? null} /></div>
         </div>
       ))}
     </div>
