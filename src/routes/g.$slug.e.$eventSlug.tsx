@@ -198,7 +198,7 @@ function EventPage() {
     .filter((p): p is { user_id: string; display_name: string | null; username: string | null; avatar_url: string | null } => p !== null);
 
   return (
-    <main className="pb-20">
+    <main className="pb-28 md:pb-20">
       {/* Cover */}
       <div
         className={cn("relative h-56 w-full md:h-80", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
