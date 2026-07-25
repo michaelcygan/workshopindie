@@ -286,8 +286,12 @@ function Index() {
         <FeaturedEventsCarousel />
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
         <UpcomingInMyGroupsRail />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+        <HomeBlogRail />
       </section>
     </main>
   );
