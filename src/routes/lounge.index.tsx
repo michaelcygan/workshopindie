@@ -31,7 +31,11 @@ export const Route = createFileRoute("/lounge/")({
   head: () => ({
     meta: [
       { title: "Lounge — Drop in or host" },
-      { name: "description", content: "Drop into the Lounge or open a new room. Voice or video, up to 5 per room." },
+      {
+        name: "description",
+        content:
+          "Drop into a live creative Lounge. Join through chat, connect to audio, and share what you're making. 10 seats per room.",
+      },
     ],
   }),
 });
@@ -156,7 +160,9 @@ function WorkshopPreflight() {
 
   const effMic = !!devices?.mic && prefs.mic;
   const effCam = !!devices?.cam && prefs.cam;
-  const canDrop = effMic || effCam;
+  // Chat-only entry: any signed-in user can drop in, even with no mic/cam.
+  // Audio is opt-in inside the room. See src/lib/lounge-constants.ts.
+  const canDrop = true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -172,34 +178,28 @@ function WorkshopPreflight() {
     setPrefs((p) => ({ ...p, cam: !p.cam }));
   };
 
-  const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
-    if (!devices) return null;
-    if (!effMic && !effCam) return null;
+  // Best-effort mic pre-grant. Returning null no longer blocks entry — the
+  // caller falls through to chat-only mode. Cameras are never requested here;
+  // they no longer exist inside the Lounge.
+  const preGrantMedia = useCallback(async (): Promise<"audio" | "chat"> => {
+    if (!devices || !effMic) return "chat";
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: effMic,
-        video: effCam,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       for (const t of stream.getTracks()) t.stop();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Permission denied";
-      toast.error(`Couldn't access ${effCam && !effMic ? "camera" : "mic"}: ${msg}`);
-      return null;
+      return "audio";
+    } catch {
+      // Permission denied → still enter, just in chat-only mode. No toast; the
+      // room UI surfaces its own audio state.
+      return "chat";
     }
-    return effCam ? "video" : "voice";
-  }, [devices, effMic, effCam]);
+  }, [devices, effMic]);
 
   async function handlePick(medium: Category | null) {
     if (busy) return;
-    if (!canDrop) {
-      toast.error("Connect a mic or camera to continue.");
-      return;
-    }
     setBusy("drop");
     setBusyMedium(medium ?? "any");
     try {
       const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); setBusyMedium(null); return; }
       if (medium == null && liveCount === 0) {
         toast("Opening a fresh Lounge — others can drop in any second.");
       }
@@ -215,14 +215,10 @@ function WorkshopPreflight() {
   }
 
   async function openLounge(medium: Category | null, title: string | null) {
-    if (busy || !canDrop) {
-      if (!canDrop) toast.error("Connect a mic or camera to continue.");
-      return;
-    }
+    if (busy) return;
     setBusy("host");
     try {
       const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); return; }
       const { roomId } = await host({
         data: {
           medium: medium ?? null,
@@ -378,7 +374,7 @@ function WorkshopPreflight() {
       {/* One-line subtitle — adapts to live state */}
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="text-sm text-ink-muted">
-          {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
+          {subtitle} <span className="text-ink-muted/70">· Audio and chat · 10 seats per room.</span>
         </p>
         {recap24h > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
@@ -408,7 +404,7 @@ function WorkshopPreflight() {
                 <Link
                   to="/lounge/$id"
                   params={{ id: rejoin.id }}
-                  search={{ mode: "video" }}
+                  search={{ mode: "audio" }}
                   className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"
                 >
                   <span
@@ -464,7 +460,7 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
           }}
         />
         <div className="mt-3">
@@ -514,9 +510,9 @@ function WorkshopPreflight() {
             <Mic className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-ink">No mic or camera detected.</div>
+            <div className="text-sm font-medium text-ink">No microphone detected.</div>
             <p className="text-xs text-ink-muted">
-              Lounge rooms are voice or video — connect a device, or open this page on your phone.
+              Audio is optional in the Lounge — you can join through chat, or connect a mic to talk.
             </p>
           </div>
           <Button
@@ -578,7 +574,7 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
           }}
         />
       </div>

@@ -129,7 +129,7 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
         kind: "lounge",
         title,
         status: "active",
-        participant_cap: 5,
+        participant_cap: 10,
         creator_id: userId,
         host_user_id: namedByUserId,
         medium: data.medium ?? null,
@@ -353,7 +353,7 @@ export const joinSpecificInstantRoom = createServerFn({ method: "POST" })
     if (rm && new Date((rm as any).until).getTime() > Date.now()) {
       throw new Error("You were removed from this Workshop. Try again later.");
     }
-    const cap = (room as any).participant_cap ?? 5;
+    const cap = (room as any).participant_cap ?? 10;
     const cutoff = new Date(Date.now() - 5 * 60_000).toISOString();
     const { count } = await supabaseAdmin
       .from("instant_presence")
