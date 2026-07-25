@@ -374,7 +374,7 @@ function WorkshopPreflight() {
       {/* One-line subtitle — adapts to live state */}
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="text-sm text-ink-muted">
-          {subtitle} <span className="text-ink-muted/70">· Voice or video · 5 seats per room.</span>
+          {subtitle} <span className="text-ink-muted/70">· Audio and chat · 10 seats per room.</span>
         </p>
         {recap24h > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
@@ -404,7 +404,7 @@ function WorkshopPreflight() {
                 <Link
                   to="/lounge/$id"
                   params={{ id: rejoin.id }}
-                  search={{ mode: "video" }}
+                  search={{ mode: "audio" }}
                   className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"
                 >
                   <span
@@ -460,7 +460,7 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
           }}
         />
         <div className="mt-3">
@@ -510,9 +510,9 @@ function WorkshopPreflight() {
             <Mic className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-ink">No mic or camera detected.</div>
+            <div className="text-sm font-medium text-ink">No microphone detected.</div>
             <p className="text-xs text-ink-muted">
-              Lounge rooms are voice or video — connect a device, or open this page on your phone.
+              Audio is optional in the Lounge — you can join through chat, or connect a mic to talk.
             </p>
           </div>
           <Button
@@ -574,7 +574,7 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "video" } });
+            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
           }}
         />
       </div>
