@@ -274,8 +274,10 @@ export function VideoStage({
   /** Deprecated: parent now owns the persistent expand button. */
   onEnterFullscreen?: () => void;
 }) {
-  // Wave 4: the Lounge is audio-only. Every participant is an avatar tile; the
-  // only video surface is a screen share spotlight.
+  // Wave 4 (audio-first): the Stage is a circular cluster of audio speakers.
+  // Chat-only listeners never appear here — they live in the sidebar's
+  // "Here now" list. Screen shares get a spotlight with the speaker cluster
+  // beneath.
   const sharerName = m.screenSharerId
     ? (profileLookup.get(m.screenSharerId)?.display_name
        ?? profileLookup.get(m.screenSharerId)?.username
@@ -286,35 +288,54 @@ export function VideoStage({
     ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream && p.stream.getVideoTracks().length > 0)
     : null;
   const showLocalAudio = m.joined;
-  const hasAny = showLocalAudio || m.peers.length > 0 || localScreen || remoteScreenPeer;
-  if (!hasAny) return null;
+  const sharing = !!(localScreen || remoteScreenPeer);
 
-  const renderAudioPeerTile = (p: (typeof m.peers)[number]) => {
+  const speakerCount = (showLocalAudio ? 1 : 0) + m.peers.length;
+  // Tighten bubble size as the room fills so all 10 fit a single desktop row.
+  const bubbleSize: "lg" | "md" | "sm" = speakerCount >= 7 ? "sm" : speakerCount >= 4 ? "md" : "lg";
+
+  const renderPeerBubble = (p: (typeof m.peers)[number]) => {
     const prof = profileLookup.get(p.userId);
     const name = prof?.display_name || prof?.username || "Anon";
     return (
-      <AudioTile
-        key={`audio-${p.userId}`}
+      <SpeakerBubble
+        key={`speaker-${p.userId}`}
         displayName={name}
         avatarUrl={prof?.avatar_url ?? null}
         speaking={!!p.speaking}
         muted={false}
+        size={bubbleSize}
       />
     );
   };
 
-  const localAudioTile = showLocalAudio ? (
-    <AudioTile
-      key="me-audio"
-      displayName={`${meDisplay} (you)`}
+  const localBubble = showLocalAudio ? (
+    <SpeakerBubble
+      key="me-speaker"
+      displayName={meDisplay}
       avatarUrl={meAvatar}
       speaking={m.speaking && !m.muted}
       muted={m.muted}
+      isMe
+      size={bubbleSize}
     />
   ) : null;
 
-  // SPOTLIGHT MODE — screen share dominates the stage; audio avatars sit below.
-  const sharing = !!(localScreen || remoteScreenPeer);
+  const eyebrow = (
+    <div className="mb-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+      <span>Speakers · {speakerCount}/{LOUNGE_CAP}</span>
+      {sharing && (
+        <span className="inline-flex items-center gap-1 text-primary normal-case tracking-normal">
+          <MonitorPlay className="h-3 w-3" />
+          <span className="text-[11px]">
+            {localScreen ? "You're sharing" : `${sharerName} is sharing`}
+          </span>
+        </span>
+      )}
+    </div>
+  );
+
+  // SPOTLIGHT MODE — screen share dominates the stage; speaker bubbles sit below.
   if (sharing) {
     const spotlightStream = (localScreen ? m.screenStream : remoteScreenPeer!.stream) as MediaStream;
     const sourceLabel = screenSourceLabel(spotlightStream);
@@ -323,32 +344,101 @@ export function VideoStage({
       : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
     const audioPeers = m.peers.filter((p) => p.userId !== m.screenSharerId);
     return (
-      <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6 space-y-3">
-        <div>
-          <div className="mb-2 flex items-center gap-1.5 text-[11px] text-background/70">
-            <MonitorPlay className="h-3 w-3 text-primary" />
-            <span>{localScreen ? `You're sharing${sourceLabel ? ` — ${sourceLabel}` : " your screen"}` : `${sharerName} is sharing${sourceLabel ? ` — ${sourceLabel}` : " their screen"}`}</span>
-          </div>
-          <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
-            <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
-          </div>
+      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6 space-y-3">
+        {eyebrow}
+        <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
+          <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
         </div>
         {(showLocalAudio || audioPeers.length > 0) && (
-          <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-            {localAudioTile}
-            {audioPeers.map(renderAudioPeerTile)}
+          <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 pt-1">
+            {localBubble}
+            {audioPeers.map(renderPeerBubble)}
           </div>
         )}
       </div>
     );
   }
 
-  return (
-    <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
-      <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-        {localAudioTile}
-        {m.peers.map(renderAudioPeerTile)}
+  // EMPTY STAGE — nobody has joined audio yet. Keep it quiet and low-height.
+  if (speakerCount === 0) {
+    return (
+      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+        {eyebrow}
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 bg-background/40 px-4 py-4 text-[12px] text-ink-muted">
+          <Mic className="h-3.5 w-3.5" />
+          <span>Stage is quiet — join audio to speak.</span>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+      {eyebrow}
+      <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 py-1">
+        {localBubble}
+        {m.peers.map(renderPeerBubble)}
+      </div>
+    </div>
+  );
+}
+
+/** Circular speaker avatar with speaking ring + muted badge + name label.
+ *  Used exclusively on the Lounge Stage — chat-only listeners are not
+ *  rendered as bubbles (they appear in the sidebar's Here now list). */
+function SpeakerBubble({
+  displayName,
+  avatarUrl,
+  speaking,
+  muted,
+  isMe = false,
+  size = "lg",
+}: {
+  displayName: string;
+  avatarUrl: string | null;
+  speaking: boolean;
+  muted: boolean;
+  isMe?: boolean;
+  size?: "lg" | "md" | "sm";
+}) {
+  const dims =
+    size === "sm" ? "h-12 w-12 text-base" :
+    size === "md" ? "h-14 w-14 text-lg" :
+    "h-16 w-16 text-xl";
+  return (
+    <div className="flex flex-col items-center gap-1.5 w-16 sm:w-20">
+      <div className="relative">
+        <div
+          className={cn(
+            "relative shrink-0 rounded-full overflow-hidden bg-muted font-medium flex items-center justify-center text-ink-muted ring-2 transition-shadow duration-150",
+            dims,
+            speaking
+              ? "ring-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25)]"
+              : "ring-border/60",
+          )}
+        >
+          {avatarUrl
+            ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+            : <span>{displayName[0]?.toUpperCase()}</span>}
+          {speaking && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-primary/30 animate-pulse"
+            />
+          )}
+        </div>
+        {muted && (
+          <span
+            aria-label="Muted"
+            className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
+          >
+            <MicOff className="h-2.5 w-2.5" />
+          </span>
+        )}
+      </div>
+      <span className="max-w-full truncate text-[11px] leading-tight text-ink-soft">
+        {displayName}{isMe ? " (you)" : ""}
+      </span>
     </div>
   );
 }
