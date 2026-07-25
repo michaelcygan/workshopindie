@@ -39,6 +39,7 @@ export function BlogPostBody({ markdown, className }: Props) {
   const [open, setOpen] = useState(false);
   const [index, setIndex] = useState(0);
   return (
+    <>
     <div className={cn("blog-prose", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -118,5 +119,13 @@ export function BlogPostBody({ markdown, className }: Props) {
         {markdown || ""}
       </ReactMarkdown>
     </div>
+    <BlogLightbox
+      images={images}
+      index={index}
+      open={open}
+      onClose={() => setOpen(false)}
+      onIndexChange={setIndex}
+    />
+    </>
   );
 }
