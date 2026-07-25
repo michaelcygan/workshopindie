@@ -15,10 +15,12 @@ export function BlogPostPeek({
   slug,
   open,
   onOpenChange,
+  onSelectPost,
 }: {
   slug: string | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSelectPost?: (slug: string) => void;
 }) {
   const fetchPost = useServerFn(getPublishedPost);
   const { data, isLoading, isError } = useQuery({
