@@ -154,6 +154,8 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
         collab_title: postFull?.title ?? "your collab",
         collab_slug: postFull?.slug ?? null,
         preview: data.message.slice(0, 140),
+        application_kind: data.collabRoleId ? "role" : "suggestion",
+        role_name: resolvedRoleName,
       },
     });
 
