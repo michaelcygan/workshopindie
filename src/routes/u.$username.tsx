@@ -23,6 +23,8 @@ import { ProfileCompletionChip } from "@/components/profile-completion-chip";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { ProfilePeek } from "@/components/profile-peek";
+import { ProfileBlogTab } from "@/components/profile-blog-tab";
+import { BlogPostPeek } from "@/components/blog-post-peek";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
