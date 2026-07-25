@@ -543,8 +543,13 @@ export function FullscreenRoom({
   }, []);
 
   // Mobile bottom sheet: single surface open at a time.
+  // Default the mobile view to Chat — the stage is often empty on entry and a
+  // bare-black screen with just avatars felt like a dead end (see mobile audit).
   type MobileSheet = null | "chat" | "work" | "collabs" | "links";
-  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(null);
+  const [mobileSheet, setMobileSheet] = useState<MobileSheet>(() => {
+    if (typeof window === "undefined") return null;
+    return window.matchMedia("(max-width: 1023px)").matches ? "chat" : null;
+  });
 
   const chatOpen = mobileSheet === "chat";
   // Unread indicator on the Chat tab: bumps whenever new messages arrive while
