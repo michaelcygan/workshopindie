@@ -254,11 +254,20 @@ function SuggestionIcon({ suggestion: s }: { suggestion: MentionSuggestion }) {
       </span>
     );
   }
-  // work
+  if (s.kind === "work") {
+    return s.avatar ? (
+      <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+    ) : (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+        <FileText className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // post
   return s.avatar ? (
     <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
   ) : (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-ink/10 text-ink">
       <FileText className="h-3.5 w-3.5" />
     </span>
   );
