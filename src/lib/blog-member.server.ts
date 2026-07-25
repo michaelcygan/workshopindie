@@ -324,6 +324,8 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     throw new Error("Add alt text for the cover image before publishing.");
   }
   validateMemberContent(p.body_markdown);
+  const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
+  await assertTaggedEntitiesPubliclyVisibleServer(id);
 
   const name = await authorNameFor(context.userId);
   await moderateFields(context.userId, "blog_post", {
