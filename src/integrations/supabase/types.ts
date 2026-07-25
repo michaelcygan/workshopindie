@@ -2833,6 +2833,8 @@ export type Database = {
           pinned_message_id: string | null
           promoted_at: string | null
           prompt: string | null
+          screen_share_claimed_at: string | null
+          screen_sharer_user_id: string | null
           screening_work_id: string | null
           slug: string | null
           source_workshop_id: string | null
@@ -2872,6 +2874,8 @@ export type Database = {
           pinned_message_id?: string | null
           promoted_at?: string | null
           prompt?: string | null
+          screen_share_claimed_at?: string | null
+          screen_sharer_user_id?: string | null
           screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
@@ -2911,6 +2915,8 @@ export type Database = {
           pinned_message_id?: string | null
           promoted_at?: string | null
           prompt?: string | null
+          screen_share_claimed_at?: string | null
+          screen_sharer_user_id?: string | null
           screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
@@ -6630,6 +6636,10 @@ export type Database = {
         Args: { _action: string; _key: string; _max: number; _window_s: number }
         Returns: boolean
       }
+      claim_lounge_screen_share: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: Json
+      }
       claim_lounge_slot: {
         Args: { _cap?: number; _room_id: string; _user_id: string }
         Returns: Json
@@ -6819,6 +6829,14 @@ export type Database = {
           group_id: string
           joined: boolean
         }[]
+      }
+      refresh_lounge_screen_share: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: Json
+      }
+      release_lounge_screen_share: {
+        Args: { _room_id: string; _user_id: string }
+        Returns: Json
       }
       resolve_group_seed_link: {
         Args: { _token: string }
