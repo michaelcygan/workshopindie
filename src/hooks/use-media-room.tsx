@@ -1807,6 +1807,41 @@ export function useMediaRoom(roomId: string | undefined) {
     return () => window.removeEventListener("beforeunload", onUnload);
   }, [leave]);
 
+  // ---------------------------------------------------------------------------
+  // Screen-share lease: subscribe to instant_rooms row changes so every client
+  // reconciles the sharer id against the DB (source of truth). One row per
+  // room; teardown when roomId changes.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!roomId) return;
+    const channel = supabase
+      .channel(`lounge-lease:${roomId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "instant_rooms", filter: `id=eq.${roomId}` },
+        (payload) => {
+          const next = (payload.new as { screen_sharer_user_id: string | null } | null)
+            ?.screen_sharer_user_id ?? null;
+          setScreenSharerId(next);
+          // Defensive: if the DB says someone else holds it while we still
+          // think we do, stop our local share.
+          if (next && myId && next !== myId && holdsLeaseRef.current) {
+            holdsLeaseRef.current = false;
+            stopScreenShare();
+          }
+          if (!next && holdsLeaseRef.current && myId) {
+            // Someone force-released our lease (or it went stale). Stop.
+            holdsLeaseRef.current = false;
+            if (screenStreamRef.current) stopScreenShare();
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, myId]);
+
+
   // -------------------------------------------------------------------------
   // Audio-first façade (Wave 2).
   // We keep the mature internal WebRTC machinery intact — session/generation
