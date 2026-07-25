@@ -14,7 +14,7 @@ import {
   RadioGroup, RadioGroupItem,
 } from "@/components/ui/radio-group";
 
-export type ReportEntityType = "work" | "profile" | "workshop" | "collab_post" | "comment" | "group_event";
+export type ReportEntityType = "work" | "profile" | "workshop" | "collab_post" | "comment" | "group_event" | "blog_post";
 
 const COMMON_REASONS: { value: string; label: string }[] = [
   { value: "spam", label: "Spam or scam" },

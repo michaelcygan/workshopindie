@@ -132,13 +132,14 @@ export async function listPublishedPostsServer() {
 export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
+    .select("id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
     .eq("slug", slug)
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) return null;
+
   const { data: authorRows } = await publicClient()
     .from("blog_post_authors")
     .select("sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)")
@@ -214,12 +215,13 @@ export async function adminListPostsServer(context: AuthContext) {
   await requireAdmin(context);
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url")
+    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,author_profile_id")
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
 
 export async function adminListAuthorProfilesServer(context: AuthContext) {
   await requireAdmin(context);

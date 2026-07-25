@@ -2,7 +2,11 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
-import { ArrowLeft } from "lucide-react";
+import { ReportDialog } from "@/components/report-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { ArrowLeft, Link2, Flag } from "lucide-react";
+
 
 const SITE = "https://workshopindie.com";
 
@@ -21,6 +25,7 @@ export const Route = createFileRoute("/blog/$slug")({
     const description = (p.seo_description?.trim() || p.excerpt || "").slice(0, 200);
     const url = `${SITE}/blog/${params.slug}`;
     const img = p.cover_image_url ?? null;
+    const hidden = p.show_in_blog_index === false;
     const meta: Array<Record<string, string>> = [
       { title: `${title} — Workshop` },
       { name: "description", content: description },
@@ -35,11 +40,13 @@ export const Route = createFileRoute("/blog/$slug")({
       { property: "article:published_time", content: p.published_at ?? "" },
       { property: "article:modified_time", content: p.updated_at ?? "" },
     ];
+    if (hidden) meta.push({ name: "robots", content: "noindex, follow" });
     if (img) {
       meta.push({ property: "og:image", content: img });
       meta.push({ property: "og:image:alt", content: p.cover_image_alt ?? title });
       meta.push({ name: "twitter:image", content: img });
     }
+
     const authors = (p.authors ?? []) as Array<{ username: string | null; display_name: string | null; role_label: string | null }>;
     const primaryAuthorNode =
       authors.length > 0
@@ -169,7 +176,51 @@ function BlogPostPage() {
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
+      <ShareRow slug={post.slug} title={post.title} postId={post.id} />
+
       <BlogArticleFooter postId={post.id} mode="article" />
     </article>
   );
 }
+
+function ShareRow({ slug, title, postId }: { slug: string; title: string; postId: string }) {
+  const url = `${SITE}/blog/${slug}`;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  }
+  async function share() {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title, url });
+        return;
+      } catch {
+        // fall through to copy
+      }
+    }
+    await copy();
+  }
+  return (
+    <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={share}>
+          <Link2 className="h-4 w-4" /> Share
+        </Button>
+      </div>
+      <ReportDialog
+        entityType="blog_post"
+        entityId={postId}
+        trigger={
+          <Button variant="ghost" size="sm" className="rounded-full gap-1.5 text-ink-muted hover:text-ink">
+            <Flag className="h-4 w-4" /> Report
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+

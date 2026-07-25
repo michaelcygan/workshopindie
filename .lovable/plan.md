@@ -1,56 +1,27 @@
-# Plus Member Blogging — Remaining Waves (4–7)
+Continue the Plus Member Blogging build with the remaining scope from Waves 5–7. Wave 4 shipped (nav, settings, pricing/plus-gate copy, checkout return). Wave 5 partially shipped (tab reorder, global `show_in_blog_index` filter across public index/RSS/sitemap/pulse) and the two room-pin RLS findings are resolved.
 
-Waves 1–3 are live: entitlement resolver, member server fns, `/me/blog` dashboard + editor. What's left is wiring it into the rest of the app, cleaning up profile/SEO/share behavior, giving admins management tools, and hardening.
+## Wave 5 — Profile & distribution (finish)
 
-## Wave 4 — Navigation, Settings, Plus, checkout
+- Add canonical share actions on `/blog/$slug` (Copy link + native share) reusing existing share utilities; ensure canonical URL always points to `workshopindie.com/blog/<slug>` regardless of author profile context.
+- Add a "Report post" affordance on published posts (visible to signed-in non-authors) that files into the existing `reports` table with `entity_type='blog_post'`; wire moderation trigger already covers content on write, this adds user-flagging.
+- Profile blog tab: confirm pagination (12/page infinite scroll) and that only `show_in_blog_index = true` posts appear on the public tab; author's own view continues to include hidden posts.
+- Ensure member-authored posts with `show_in_blog_index=false` still resolve at `/blog/$slug` (direct URL) but are excluded from index/RSS/sitemap/pulse (already done) — add `noindex` meta on those direct pages.
 
-- Desktop "Create" menu: add **Write a blog post** → `/me/blog` (no extra entitlement query — dashboard handles the gate).
-- Account menu → "My stuff": add **Blog posts** (mobile + desktop). Do NOT add a 6th persistent MobileNav item.
-- Profile owner viewing their populated Blog tab: small **Manage posts** link → `/me/blog`.
-- `settings.tsx` Plus section: mention blogging, add **Manage Blog** button, reflect state from `getMyBlogAccess` (Trial / Active / Lapsed / Suspended / None). Reuse existing billing portal link.
-- `pricing.tsx` + `plus-gate.tsx`: add benefit line "Publish to the Workshop blog" + honest trial framing (1 draft, publish requires Plus).
-- Checkout return: enumerated `destination=blog` → invalidate `subscription` + `blog-access` queries, show "Continue writing" CTA that routes to `/me/blog`.
+## Wave 6 — Admin
 
-## Wave 5 — Profile, distribution, sharing, SEO
+- `/admin/blog`: add filter chips for Publication type (Editorial / Member), Status (Draft / Published), Visibility (In index / Hidden), and a search-by-author input. Extend `listAdminBlogPosts` server fn with the new filter params.
+- `/admin/users/$id`: add a "Blog access" panel showing current mode from `blog_writer_access_state`, active/published counts, and admin actions: Grant writer access, Revoke, Suspend publishing, Restore. Persist via `blog_writer_access` table with audit log entries.
+- Add "Unpublish" and "Hide from index" quick actions on admin blog list rows.
 
-- Profile tab order becomes `["works","blog","collabs","activity","about"]`. Hide Blog tab when the member has 0 published attributed posts.
-- Replace the current `.in(ids)` profile listing with one indexed join (or RPC) returning card fields only; keyset paginate 12/page. Body loads only on peek/canonical.
-- Keep the cached SEO count loader; revalidate on own-profile view and when `tab=blog`. Invalidate `profile-blog*` after publish/unpublish.
-- Filter `show_in_blog_index=true` in: `listPublishedPostsServer`, `/blog` index, `/blog/rss.xml`, global related. Do NOT filter: `/blog/$slug`, profile tab, profile count, sitemap, `/me/blog` dashboard.
-- Related-writing: prefer the same primary author's other published posts, backfill with indexed posts.
-- `src/components/blog-share-actions.tsx`: canonical URL only; `navigator.share` with clipboard fallback; ignore `AbortError`. Used on article page, peek, publish-success dialog.
-- Extend share analytics enum with `blog_post` (`native` | `copy`). Extend `ReportEntityType` with `blog_post`; small Report action on member articles + peek.
-- SEO integrity preserved. `/me/blog*` routes stay `noindex, nofollow`. No `/u/$username/blog/$slug` duplicate URL.
+## Wave 7 — Hardening
 
-## Wave 6 — Admin + lifecycle
-
-- `admin.users.$id`: show blog access + Plus status + counts. Actions: grant / revoke / suspend / resume writer access with optional expiration + note. Audit log entry, invalidate caches. Optional confirmed "also unpublish current articles" checkbox on suspend.
-- `/admin/blog`: add filters All / Editorial / Member / Draft / Published / Featured / Profile-only. Paginate.
-- Admin can toggle `show_in_blog_index` on published member posts (does not change URL or profile visibility; audit).
-- Admin edits must not mutate `created_by`, `publication_type`, or silently re-index.
-- Account soft-delete flow: unpublish that user's member posts, set `show_in_blog_index=false`, remove from public surfaces; keep records for audit.
-
-## Wave 7 — Perf, verification, release
-
-- No global entitlement queries on every page load. Dashboard is paginated. Profile initial payload = count only; cards load on tab open; body loads on peek/canonical open. No N+1. No bodies in list responses. Fixed image aspect ratios, `loading="lazy"` + `decoding="async"`.
-- Public article cache header: `public, max-age=0, s-maxage=60, stale-while-revalidate=120`.
-- Query invalidation set kept consistent: `my-blog-posts`, `my-blog-post`, `blog-access`, `profile-blog`, `profile-blog-count`, `blog-peek`, `blog-related`, `home-blog-rail`.
-- Security matrix — manually verify: spoofed `created_by`, cross-user reads, slug bypass attempts, RLS on `anon`, unsafe markdown protocols (`javascript:`, `data:`), remote inline images blocked, cross-user storage writes blocked, member cannot set server-owned fields.
-- Lifecycle matrix: free → trial → plus → lapsed → grant → suspended → delete, including cache + profile freshness after first publish.
-- Accessibility matrix per original prompt.
-- Run lint + build. Regenerate Supabase types. No test runner — do the manual + SQL/RLS matrix; don't claim tests passed.
+- Performance: batch author lookups in `listPublishedPostsServer` and profile feed to remove N+1; add `loading="lazy"` + `decoding="async"` to all blog images (cover + inline via `BlogPostBody`); set long cache headers on `/blog/rss.xml` and `/sitemap.xml` route responses.
+- Security audit: verify RLS on `blog_posts`, `blog_post_authors`, `blog_writer_access`, `newsletter_subscribers`; confirm markdown renderer disables raw HTML and sanitizes links (target=_blank + rel=noopener); rate-limit `createMyBlogDraft` and `publishMyBlogPost` per user.
+- Lifecycle QA: trial → plus (unlocks publish), plus → lapsed (edit/unpublish only, no new drafts), suspended (no writes), granted (bypasses Plus). Add server-side assertions in `publishMyBlogPostServer` so a lapsed user cannot flip a draft to published even by racing the client.
+- Verify: run typecheck, load `/blog`, `/me/blog`, `/admin/blog`, a member-published post, and a hidden post URL; check console + network for errors.
 
 ## Technical notes
 
-- All new access checks go through `getMyBlogAccess` — never re-derive from `has_plus()` on the client.
-- Suspension always wins over Plus / grants.
-- Share + report analytics changes require enum extension migrations before UI wiring.
-- New Home Blog Rail is already live and will pick up `show_in_blog_index=true` filter automatically in Wave 5.
-
-## Out of scope (unchanged from original plan)
-
-Free monthly allowance, comments/claps/blog-follow, algorithmic feed, paywalls, per-author newsletters, custom domains, scheduling, collab editing, revisions, importers, AI writing tools, IG direct publish, new editor dependency, extra persistent mobile nav item.
-
-## Suggested execution order
-
-Wave 4 (nav/settings/checkout — small, unblocks discovery) → Wave 5 (profile/share/SEO — user-visible polish) → Wave 6 (admin controls) → Wave 7 (hardening + manual matrix).
+- Reuse existing `share.functions.ts` and `reports` schema — no new tables except (if needed) a lightweight `blog_writer_access` audit expansion; prefer using existing `admin_audit_log`.
+- All new server fns use `createServerFn` with `requireSupabaseAuth`; admin fns gate on `has_role(auth.uid(),'admin')`.
+- Keep `resolveBlogAccess` as the single source of truth for capabilities; UI reads from `getMyBlogAccess` only.

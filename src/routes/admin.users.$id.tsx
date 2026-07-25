@@ -4,14 +4,19 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   getAdminUserDetail, setAdminUserRole, setAdminUserBadge,
   softDeleteAdminUser, forceSignOutAdminUser,
 } from "@/lib/admin-users.functions";
+import {
+  getUserBlogAccess, grantUserBlogAccess, revokeUserBlogAccess, suspendUserBlogAccess,
+} from "@/lib/admin-blog-access.functions";
 
 export const Route = createFileRoute("/admin/users/$id")({ component: UserDetail });
+
 
 const STATUSES = ["standard", "founding_creator", "city_host", "verified_creator", "admin"];
 
@@ -125,6 +130,8 @@ function UserDetail() {
         </div>
       ) : null}
 
+      <BlogAccessPanel userId={id} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <ReportTable title="Reports against this user" rows={data!.reportsAgainst} />
         <ReportTable title="Reports filed by this user" rows={data!.reportsBy} />
@@ -132,6 +139,74 @@ function UserDetail() {
     </div>
   );
 }
+
+function BlogAccessPanel({ userId }: { userId: string }) {
+  const qc = useQueryClient();
+  const getFn = useServerFn(getUserBlogAccess);
+  const grantFn = useServerFn(grantUserBlogAccess);
+  const revokeFn = useServerFn(revokeUserBlogAccess);
+  const suspendFn = useServerFn(suspendUserBlogAccess);
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "blog-access", userId],
+    queryFn: () => getFn({ data: { userId } }),
+  });
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin", "blog-access", userId] });
+  const [note, setNote] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const grant = useMutation({
+    mutationFn: () => grantFn({ data: { userId, note: note.trim() || null, expiresAt: expiresAt ? new Date(expiresAt).toISOString() : null } }),
+    onSuccess: () => { toast.success("Blog access granted"); setNote(""); setExpiresAt(""); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const revoke = useMutation({
+    mutationFn: () => revokeFn({ data: { userId } }),
+    onSuccess: () => { toast.success("Blog access removed"); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const suspend = useMutation({
+    mutationFn: () => suspendFn({ data: { userId, note: note.trim() || null } }),
+    onSuccess: () => { toast.success("Blog access suspended"); setNote(""); invalidate(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const mode = data?.mode ?? "free";
+  const record = data?.grant ?? null;
+
+  return (
+    <div className="rounded-2xl border border-border bg-surface p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="font-display text-lg text-ink">Blog access</h3>
+        <Badge variant="outline" className="uppercase">{isLoading ? "…" : mode}</Badge>
+      </div>
+      {record ? (
+        <div className="mb-3 text-xs text-ink-muted">
+          Status <span className="text-ink">{record.status}</span>
+          {record.expires_at ? <> · expires {new Date(record.expires_at).toLocaleDateString()}</> : null}
+          {record.granted_at ? <> · set {new Date(record.granted_at).toLocaleDateString()}</> : null}
+          {record.note ? <div className="mt-1 italic">“{record.note}”</div> : null}
+        </div>
+      ) : (
+        <div className="mb-3 text-xs text-ink-muted">Follows Plus subscription state.</div>
+      )}
+      <div className="flex flex-wrap items-end gap-2">
+        <div className="flex-1 min-w-[200px]">
+          <label className="text-[11px] uppercase tracking-wide text-ink-muted">Note (optional)</label>
+          <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Contributor invite, etc." />
+        </div>
+        <div>
+          <label className="text-[11px] uppercase tracking-wide text-ink-muted">Expires (optional)</label>
+          <Input type="date" value={expiresAt} onChange={(e) => setExpiresAt(e.target.value)} className="w-40" />
+        </div>
+        <Button size="sm" onClick={() => grant.mutate()} disabled={grant.isPending}>Grant writer access</Button>
+        <Button size="sm" variant="outline" onClick={() => suspend.mutate()} disabled={suspend.isPending}>Suspend</Button>
+        {record ? (
+          <Button size="sm" variant="destructive" onClick={() => revoke.mutate()} disabled={revoke.isPending}>Remove override</Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 
 function ReportTable({ title, rows }: { title: string; rows: any[] }) {
   return (
