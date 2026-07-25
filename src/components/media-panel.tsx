@@ -344,13 +344,13 @@ export function VideoStage({
       : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
     const audioPeers = m.peers.filter((p) => p.userId !== m.screenSharerId);
     return (
-      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6 space-y-3">
+      <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4 space-y-2">
         {eyebrow}
         <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
           <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
         </div>
         {(showLocalAudio || audioPeers.length > 0) && (
-          <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 pt-1">
+          <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-2 pt-1">
             {localBubble}
             {audioPeers.map(renderPeerBubble)}
           </div>
