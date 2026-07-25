@@ -26,6 +26,7 @@ export const getRelatedPosts = createServerFn({ method: "GET" })
     const { blogPublicCacheHeader, getRelatedPostsServer } = await import("./blog.server");
     setResponseHeader("cache-control", blogPublicCacheHeader());
     return getRelatedPostsServer(data.excludeId, data.limit ?? 3);
+  });
 
 export const listProfileBlogPosts = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
