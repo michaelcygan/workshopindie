@@ -11,9 +11,13 @@ import {
   adminCreateDraft, adminUpdatePost, adminPublishPost, adminUnpublishPost, adminDeleteDraft,
   adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
+import { setBlogPostEntityTagsForAdmin } from "@/lib/blog-entity-tags.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
+import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
+import { entityMarkdown, tagKey, type BlogEntityTag } from "@/lib/blog-entity-tags";
 
 const SITE = "https://workshopindie.com";
 
