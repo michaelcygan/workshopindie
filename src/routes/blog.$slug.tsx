@@ -41,6 +41,21 @@ export const Route = createFileRoute("/blog/$slug")({
       meta.push({ property: "og:image:alt", content: p.cover_image_alt ?? title });
       meta.push({ name: "twitter:image", content: img });
     }
+    const authors = (p.authors ?? []) as Array<{ username: string | null; display_name: string | null; role_label: string | null }>;
+    const primaryAuthorNode =
+      authors.length > 0
+        ? authors.map((a) =>
+            a.username
+              ? { "@type": "Person", name: a.display_name || a.username, url: `${SITE}/u/${a.username}` }
+              : { "@type": "Person", name: a.display_name || p.author_name || "Workshop" },
+          )
+        : p.author_profile?.username
+          ? {
+              "@type": "Person",
+              name: p.author_name || p.author_profile.display_name || p.author_profile.username,
+              url: `${SITE}/u/${p.author_profile.username}`,
+            }
+          : { "@type": "Organization", name: p.author_name || "Workshop" };
     return {
       meta,
       links: [{ rel: "canonical", href: url }],
@@ -55,13 +70,7 @@ export const Route = createFileRoute("/blog/$slug")({
             image: img ? [img] : undefined,
             datePublished: p.published_at,
             dateModified: p.updated_at,
-            author: p.author_profile?.username
-              ? {
-                  "@type": "Person",
-                  name: p.author_name || p.author_profile.display_name || p.author_profile.username,
-                  url: `${SITE}/u/${p.author_profile.username}`,
-                }
-              : { "@type": "Organization", name: p.author_name || "Workshop" },
+            author: primaryAuthorNode,
             publisher: {
               "@type": "Organization",
               name: "Workshop",
@@ -122,7 +131,26 @@ function BlogPostPage() {
         )}
         <div className="mt-4 text-sm text-ink-muted">
           By{" "}
-          {post.author_profile?.username ? (
+          {post.authors && post.authors.length > 0 ? (
+            post.authors.map((a: { id: string; username: string | null; display_name: string | null; role_label: string | null }, i: number) => (
+              <span key={a.id}>
+                {a.username ? (
+                  <Link
+                    to="/u/$username"
+                    params={{ username: a.username }}
+                    search={{ tab: "blog" as const }}
+                    className="font-medium text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
+                  >
+                    {a.display_name || a.username}
+                  </Link>
+                ) : (
+                  <span className="text-ink">{a.display_name}</span>
+                )}
+                {a.role_label ? <span className="text-ink-muted"> · {a.role_label}</span> : null}
+                {i < post.authors!.length - 1 ? <span>, </span> : null}
+              </span>
+            ))
+          ) : post.author_profile?.username ? (
             <Link
               to="/u/$username"
               params={{ username: post.author_profile.username }}

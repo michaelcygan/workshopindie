@@ -9,9 +9,10 @@ import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import {
   adminCreateDraft, adminUpdatePost, adminPublishPost, adminUnpublishPost, adminDeleteDraft,
-  adminListAuthorProfiles,
+  adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
-import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon, ChevronUp, ChevronDown, X } from "lucide-react";
 
 const SITE = "https://workshopindie.com";
 
@@ -29,7 +30,10 @@ export type BlogEditorInitial = {
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
+  authors?: Array<{ id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string | null }>;
 };
+
+type AttribAuthor = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string };
 
 export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const navigate = useNavigate();
@@ -49,6 +53,16 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [attribAuthors, setAttribAuthors] = useState<AttribAuthor[]>(
+    (initial?.authors ?? []).map((a) => ({
+      id: a.id,
+      username: a.username,
+      display_name: a.display_name,
+      avatar_url: a.avatar_url,
+      role_label: a.role_label ?? "",
+    })),
+  );
+  const [authorSearch, setAuthorSearch] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const create = useServerFn(adminCreateDraft);
@@ -63,7 +77,16 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName, authorProfileUsername]);
+  const searchAuthors = useServerFn(adminSearchAuthorProfiles);
+  const setPostAuthors = useServerFn(adminSetPostAuthors);
+  const { data: searchResults } = useQuery({
+    queryKey: ["admin-blog-author-search", authorSearch.trim()],
+    queryFn: () => searchAuthors({ data: { q: authorSearch.trim() } }),
+    enabled: authorSearch.trim().length > 0,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName, authorProfileUsername, attribAuthors]);
   useEffect(() => { setDirty(false); }, [initial?.id]);
 
   useEffect(() => {
@@ -96,17 +119,35 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     });
   }
 
+  async function flushAuthors(postId: string) {
+    try {
+      await setPostAuthors({
+        data: {
+          post_id: postId,
+          authors: attribAuthors.map((a) => ({
+            profile_id: a.id,
+            role_label: a.role_label.trim() ? a.role_label.trim() : null,
+          })),
+        },
+      });
+    } catch (e) {
+      toast.error(`Attributed authors: ${(e as Error).message}`);
+    }
+  }
+
   async function onSave() {
     if (!title.trim()) return toast.error("Title is required.");
     setSaving(true);
     try {
       if (isNew) {
         const res = await create({ data: buildPayload() });
+        await flushAuthors(res.id);
         toast.success("Draft saved.");
         setDirty(false);
         navigate({ to: "/admin/blog/$id", params: { id: res.id } });
       } else {
         await update({ data: { id: initial!.id!, ...buildPayload(), slug: everPublished ? undefined : slug } });
+        await flushAuthors(initial!.id!);
         toast.success("Saved.");
         setDirty(false);
       }
@@ -237,6 +278,130 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             />
           </div>
         </div>
+
+        <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Attributed profiles
+            </label>
+            <span className="text-[11px] text-ink-muted">Shows this post on each profile's Blog tab</span>
+          </div>
+
+          {attribAuthors.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {attribAuthors.map((a, i) => (
+                <li key={a.id} className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-background px-2 py-1.5">
+                  <Avatar className="h-6 w-6">
+                    {a.avatar_url ? <AvatarImage src={a.avatar_url} alt="" /> : null}
+                    <AvatarFallback className="text-[10px]">{(a.display_name ?? a.username ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm text-ink">{a.display_name ?? a.username}</div>
+                    {a.username && <div className="truncate text-[11px] text-ink-muted">@{a.username}</div>}
+                  </div>
+                  <input
+                    value={a.role_label}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAttribAuthors((prev) => prev.map((row, idx) => (idx === i ? { ...row, role_label: val } : row)));
+                    }}
+                    placeholder="Role (optional)"
+                    maxLength={60}
+                    className="w-40 rounded-lg border border-border bg-surface px-2 py-1 text-xs text-ink focus:border-primary focus:outline-none"
+                  />
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      title="Move up"
+                      disabled={i === 0}
+                      onClick={() =>
+                        setAttribAuthors((prev) => {
+                          if (i === 0) return prev;
+                          const next = [...prev];
+                          [next[i - 1], next[i]] = [next[i], next[i - 1]];
+                          return next;
+                        })
+                      }
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Move down"
+                      disabled={i === attribAuthors.length - 1}
+                      onClick={() =>
+                        setAttribAuthors((prev) => {
+                          if (i === prev.length - 1) return prev;
+                          const next = [...prev];
+                          [next[i + 1], next[i]] = [next[i], next[i + 1]];
+                          return next;
+                        })
+                      }
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-muted disabled:opacity-30"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      title="Remove"
+                      onClick={() => setAttribAuthors((prev) => prev.filter((_, idx) => idx !== i))}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-muted"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="relative mt-3">
+            <input
+              value={authorSearch}
+              onChange={(e) => setAuthorSearch(e.target.value)}
+              placeholder="Search by name or @username…"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+            />
+            {authorSearch.trim().length > 0 && (searchResults?.length ?? 0) > 0 && (
+              <div className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-xl border border-border bg-background shadow-lg">
+                {(searchResults ?? [])
+                  .filter((r) => !attribAuthors.some((a) => a.id === r.id))
+                  .slice(0, 12)
+                  .map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => {
+                        setAttribAuthors((prev) => [
+                          ...prev,
+                          {
+                            id: r.id,
+                            username: r.username,
+                            display_name: r.display_name,
+                            avatar_url: r.avatar_url,
+                            role_label: "",
+                          },
+                        ]);
+                        setAuthorSearch("");
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted"
+                    >
+                      <Avatar className="h-6 w-6">
+                        {r.avatar_url ? <AvatarImage src={r.avatar_url} alt="" /> : null}
+                        <AvatarFallback className="text-[10px]">{(r.display_name ?? r.username ?? "?").slice(0, 1).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-sm text-ink">{r.display_name ?? r.username}</div>
+                        {r.username && <div className="truncate text-[11px] text-ink-muted">@{r.username}</div>}
+                      </div>
+                    </button>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+
 
         <div className="mt-4">
           <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted">Excerpt</label>

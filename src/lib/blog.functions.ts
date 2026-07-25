@@ -28,6 +28,53 @@ export const getRelatedPosts = createServerFn({ method: "GET" })
     return getRelatedPostsServer(data.excludeId, data.limit ?? 3);
   });
 
+export const listProfileBlogPosts = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      profileId: z.string().uuid(),
+      cursor: z
+        .object({
+          published_at: z.string().min(1),
+          id: z.string().uuid(),
+        })
+        .nullable()
+        .optional(),
+      limit: z.number().int().min(1).max(24).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { blogPublicCacheHeader, listProfileBlogPostsServer } = await import("./blog.server");
+    setResponseHeader("cache-control", blogPublicCacheHeader());
+    return listProfileBlogPostsServer(data.profileId, data.cursor ?? null, data.limit ?? 12);
+  });
+
+export const adminSearchAuthorProfiles = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ q: z.string().max(80).default("") }).parse(d))
+  .handler(async ({ data, context }) => {
+    const { adminSearchAuthorProfilesServer } = await import("./blog.server");
+    return adminSearchAuthorProfilesServer(context, data.q);
+  });
+
+export const adminSetPostAuthors = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      post_id: z.string().uuid(),
+      authors: z.array(
+        z.object({
+          profile_id: z.string().uuid(),
+          role_label: z.string().trim().max(60).nullable().optional(),
+        }),
+      ).max(20),
+    }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { adminSetPostAuthorsServer } = await import("./blog.server");
+    return adminSetPostAuthorsServer(context, data.post_id, data.authors);
+  });
+
+
 export const adminListPosts = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

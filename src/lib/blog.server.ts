@@ -137,7 +137,62 @@ export async function getPublishedPostServer(slug: string) {
     .lte("published_at", new Date().toISOString())
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ?? null;
+  if (!data) return null;
+  const { data: authorRows } = await publicClient()
+    .from("blog_post_authors")
+    .select("sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)")
+    .eq("blog_post_id", data.id)
+    .order("sort_order", { ascending: true });
+  const authors = (authorRows ?? [])
+    .map((r) => {
+      const p = (r as { profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null }).profile;
+      if (!p) return null;
+      return {
+        id: p.id,
+        username: p.username,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        role_label: (r as { role_label: string | null }).role_label,
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+  return { ...data, authors };
+}
+
+export async function listProfileBlogPostsServer(profileId: string, cursor: { published_at: string; id: string } | null, limit: number) {
+  const safeLimit = Math.min(Math.max(limit, 1), 24);
+  const { data: attrRows, error: attrError } = await publicClient()
+    .from("blog_post_authors")
+    .select("blog_post_id")
+    .eq("profile_id", profileId);
+  if (attrError) throw new Error(attrError.message);
+  const ids = Array.from(new Set((attrRows ?? []).map((r) => (r as { blog_post_id: string }).blog_post_id)));
+  if (ids.length === 0) return { posts: [], nextCursor: null as { published_at: string; id: string } | null };
+
+  let qb = publicClient()
+    .from("blog_posts")
+    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,published_at")
+    .in("id", ids)
+    .eq("status", "published")
+    .lte("published_at", new Date().toISOString())
+    .order("published_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(safeLimit + 1);
+
+  if (cursor) {
+    // Keyset: (published_at, id) < (cursor.published_at, cursor.id)
+    qb = qb.or(
+      `published_at.lt.${cursor.published_at},and(published_at.eq.${cursor.published_at},id.lt.${cursor.id})`,
+    );
+  }
+  const { data, error } = await qb;
+  if (error) throw new Error(error.message);
+  const rows = (data ?? []) as Array<{ id: string; slug: string; title: string; excerpt: string; cover_image_url: string | null; cover_image_alt: string | null; published_at: string | null }>;
+  const hasMore = rows.length > safeLimit;
+  const posts = hasMore ? rows.slice(0, safeLimit) : rows;
+  const last = posts[posts.length - 1];
+  const nextCursor = hasMore && last?.published_at ? { published_at: last.published_at, id: last.id } : null;
+  return { posts, nextCursor };
 }
 
 export async function getRelatedPostsServer(excludeId: string, limit: number) {
@@ -185,7 +240,73 @@ export async function adminGetPostServer(context: AuthContext, id: string) {
     .maybeSingle();
   if (error) throw new Error(error.message);
   if (!data) throw new Error("Not found");
-  return data;
+  const { data: authorRows } = await supabaseAdmin
+    .from("blog_post_authors")
+    .select("sort_order,role_label,profile:profiles!blog_post_authors_profile_id_fkey(id,username,display_name,avatar_url)")
+    .eq("blog_post_id", id)
+    .order("sort_order", { ascending: true });
+  const authors = (authorRows ?? [])
+    .map((r) => {
+      const p = (r as { profile: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null }).profile;
+      if (!p) return null;
+      return {
+        id: p.id,
+        username: p.username,
+        display_name: p.display_name,
+        avatar_url: p.avatar_url,
+        role_label: (r as { role_label: string | null }).role_label,
+      };
+    })
+    .filter((v): v is NonNullable<typeof v> => v !== null);
+  return { ...data, authors };
+}
+
+export async function adminSearchAuthorProfilesServer(context: AuthContext, q: string) {
+  await requireAdmin(context);
+  const term = q.trim().replace(/^@/, "");
+  let qb = supabaseAdmin
+    .from("profiles")
+    .select("id,username,display_name,avatar_url")
+    .not("username", "is", null);
+  if (term.length > 0) {
+    const safe = term.replace(/[%,]/g, " ");
+    qb = qb.or(`username.ilike.%${safe}%,display_name.ilike.%${safe}%`);
+  }
+  const { data, error } = await qb.order("display_name", { ascending: true }).limit(20);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export async function adminSetPostAuthorsServer(
+  context: AuthContext,
+  postId: string,
+  authors: Array<{ profile_id: string; role_label?: string | null }>,
+) {
+  await requireAdmin(context);
+  const { error: delError } = await supabaseAdmin
+    .from("blog_post_authors")
+    .delete()
+    .eq("blog_post_id", postId);
+  if (delError) throw new Error(delError.message);
+  if (authors.length === 0) return { ok: true, count: 0 };
+  const seen = new Set<string>();
+  const rows = authors
+    .filter((a) => {
+      if (!a.profile_id || seen.has(a.profile_id)) return false;
+      seen.add(a.profile_id);
+      return true;
+    })
+    .map((a, index) => ({
+      blog_post_id: postId,
+      profile_id: a.profile_id,
+      sort_order: index,
+      role_label: a.role_label?.trim() ? a.role_label.trim().slice(0, 60) : null,
+    }));
+  if (rows.length === 0) return { ok: true, count: 0 };
+  const { error } = await supabaseAdmin.from("blog_post_authors").insert(rows);
+  if (error) throw new Error(error.message);
+  await audit("blog_post.authors.set", postId, context.userId, { count: rows.length });
+  return { ok: true, count: rows.length };
 }
 
 export async function adminCreateDraftServer(context: AuthContext, data: BlogWrite) {

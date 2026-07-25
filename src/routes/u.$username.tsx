@@ -23,6 +23,8 @@ import { ProfileCompletionChip } from "@/components/profile-completion-chip";
 import { BlockButton } from "@/components/block-button";
 import { CreatorBadge } from "@/components/creator-badge";
 import { ProfilePeek } from "@/components/profile-peek";
+import { ProfileBlogTab } from "@/components/profile-blog-tab";
+import { BlogPostPeek } from "@/components/blog-post-peek";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
@@ -31,12 +33,13 @@ import { cn } from "@/lib/utils";
 import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
-const TAB_VALUES = ["works", "collabs", "activity", "about"] as const;
+const TAB_VALUES = ["works", "collabs", "blog", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
+  post: z.string().optional(),
 });
 
 export const Route = createFileRoute("/u/$username")({
@@ -515,9 +518,11 @@ function ProfilePage() {
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
+  const blogCount = ((Route.useLoaderData()?.seo as { published_blog_count?: number } | null)?.published_blog_count) ?? 0;
   const counts: Record<ProfileTab, number> = {
     works: worksTotal,
     collabs: openCollabs?.length ?? 0,
+    blog: blogCount,
     activity: activityCount,
     about: 1,
   };
@@ -536,6 +541,7 @@ function ProfilePage() {
   const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
     if (t === "activity") return isOwn; // owner-only
     if (t === "collabs") return isOwn || counts.collabs > 0;
+    if (t === "blog") return blogCount > 0;
     return true; // works, about always
   });
 
@@ -902,6 +908,23 @@ function ProfilePage() {
           {defaultTab === "collabs" && (
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
+          {defaultTab === "blog" && (
+            <ProfileBlogTab
+              profileId={profile.id}
+              username={profile.username ?? username}
+              enabled={blogCount > 0}
+              ownerName={name}
+              isOwn={isOwn}
+              onOpenPost={(slug: string) =>
+                navigate({
+                  to: "/u/$username",
+                  params: { username },
+                  search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
+                  replace: true,
+                })
+              }
+            />
+          )}
           {defaultTab === "activity" && isOwn && (
             <ActivityTab
               drafts={(drafts ?? []) as DraftRow[]}
@@ -914,6 +937,23 @@ function ProfilePage() {
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
           )}
+          <BlogPostPeek
+            slug={search.post ?? null}
+            open={!!search.post}
+            onOpenChange={(v: boolean) => {
+              if (v) return;
+              navigate({
+                to: "/u/$username",
+                params: { username },
+                search: (prev: Record<string, unknown>) => {
+                  const next = { ...prev };
+                  delete (next as { post?: string }).post;
+                  return next;
+                },
+                replace: true,
+              });
+            }}
+          />
 
           {/* Mobile-only stats strip (below the portfolio) */}
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:hidden">

@@ -74,6 +74,52 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_post_authors: {
+        Row: {
+          blog_post_id: string
+          created_at: string
+          profile_id: string
+          role_label: string | null
+          sort_order: number
+        }
+        Insert: {
+          blog_post_id: string
+          created_at?: string
+          profile_id: string
+          role_label?: string | null
+          sort_order?: number
+        }
+        Update: {
+          blog_post_id?: string
+          created_at?: string
+          profile_id?: string
+          role_label?: string | null
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_authors_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_authors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_authors_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_name: string
@@ -6664,6 +6710,10 @@ export type Database = {
       moderation_text_is_blocked: { Args: { _text: string }; Returns: boolean }
       next_local_midnight_utc: { Args: { _tz: string }; Returns: string }
       object_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      profile_published_blog_count: {
+        Args: { _profile_id: string }
+        Returns: number
+      }
       realtime_can_access_dm: {
         Args: { _conversation_id: string }
         Returns: boolean
