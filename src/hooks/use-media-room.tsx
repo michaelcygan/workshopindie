@@ -1642,9 +1642,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
 
   const stopScreenShare = useCallback(async () => {
     const screen = screenStreamRef.current;
-    const camTrack = originalCamTrackRef.current;
     screenStreamRef.current = null;
-    originalCamTrackRef.current = null;
     setScreenStream(null);
     // Clear heartbeat & release lease (the DB row is the source of truth).
     if (leaseHeartbeatRef.current != null) {
@@ -1673,14 +1671,10 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
       const sender = pc.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.transport));
       if (sender) {
         try {
-          if (camTrack) {
-            await sender.replaceTrack(camTrack);
-          } else {
-            await sender.replaceTrack(null);
-            // Remove the extra sender so the stray m-section is dropped on
-            // the next negotiation cycle.
-            try { pc.removeTrack(sender); } catch { /* noop */ }
-          }
+          // In audio-first rooms there is no camera track to restore; remove
+          // the video sender so the m-section is dropped on the next cycle.
+          await sender.replaceTrack(null);
+          try { pc.removeTrack(sender); } catch { /* noop */ }
         } catch { /* noop */ }
       }
     }
@@ -1689,6 +1683,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
     rebudget(count, false);
     screenBusyRef.current = false;
   }, [myId, count]);
+
 
   const startScreenShare = useCallback(async () => {
     if (!myId || !channelRef.current) {
