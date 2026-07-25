@@ -32,6 +32,7 @@ import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
+import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 const TAB_VALUES = ["works", "blog", "collabs", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
@@ -973,6 +974,8 @@ function ProfilePage() {
             <Stat label="Following" value={profile.following_count} />
             {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
+
+          <EntityBlogPosts kind="profile" entityId={profile.id} className="mt-10" />
         </div>
       </div>
     </main>

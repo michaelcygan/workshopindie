@@ -34,6 +34,7 @@ import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
+import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 
 
@@ -366,6 +367,8 @@ function GroupPage() {
         <div className="mt-16">
           <AdjacentGroupsRail groupId={group.id} />
         </div>
+
+        <EntityBlogPosts kind="group" entityId={group.id} className="mt-10" />
       </div>
       </div>
     </main>
