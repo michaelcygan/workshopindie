@@ -363,13 +363,28 @@ export const applyToCollab = createServerFn({ method: "POST" })
 
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id")
+      .select("id,status,user_id,title,slug,accepts_suggestions")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
     if (post.status !== "open") throw new Error("This collab is no longer accepting applications.");
     if (post.user_id === userId) throw new Error("You can't apply to your own collab.");
+
+    // Validate the selected application path (role vs suggestion).
+    let resolvedRoleName: string | null = null;
+    if (data.collabRoleId) {
+      const { data: role } = await supabaseAdmin
+        .from("collab_roles")
+        .select("id,role_name,collab_post_id")
+        .eq("id", data.collabRoleId)
+        .eq("collab_post_id", data.collabPostId)
+        .maybeSingle();
+      if (!role) throw new Error("That role is no longer available on this Collab.");
+      resolvedRoleName = role.role_name;
+    } else if (!post.accepts_suggestions) {
+      throw new Error("This Collab is only accepting applications for its listed roles.");
+    }
 
     // Log contact event (also feeds the applicants panel).
     await supabaseAdmin.from("collab_contact_events").insert({
@@ -378,6 +393,33 @@ export const applyToCollab = createServerFn({ method: "POST" })
       sender_user_id: userId,
       message_preview: data.message.slice(0, 280),
     });
+
+    // Sender name for the owner notification.
+    const { data: senderProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name,username")
+      .eq("id", userId)
+      .maybeSingle();
+
+    await supabaseAdmin
+      .from("notifications")
+      .insert({
+        user_id: post.user_id,
+        kind: "collab_application",
+        actor_user_id: userId,
+        entity_type: "collab_post",
+        entity_id: data.collabPostId,
+        payload: {
+          actor_name: senderProfile?.display_name ?? senderProfile?.username ?? "Someone",
+          is_guest: false,
+          collab_title: post.title ?? "your collab",
+          collab_slug: post.slug ?? null,
+          preview: data.message.slice(0, 140),
+          application_kind: data.collabRoleId ? "role" : "suggestion",
+          role_name: resolvedRoleName,
+        },
+      })
+      .then(() => null, () => null);
 
     const { conversationId } = await openCollabDmThread({
       collabPostId: data.collabPostId,
