@@ -36,6 +36,7 @@ export type BlogEditorInitial = {
   status?: "draft" | "published";
   published_at?: string | null;
   authors?: Array<{ id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string | null }>;
+  entity_tags?: BlogEntityTag[];
 };
 
 type AttribAuthor = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string };
