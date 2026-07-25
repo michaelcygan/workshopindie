@@ -215,12 +215,13 @@ export async function adminListPostsServer(context: AuthContext) {
   await requireAdmin(context);
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url")
+    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,author_profile_id")
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
   return data ?? [];
 }
+
 
 export async function adminListAuthorProfilesServer(context: AuthContext) {
   await requireAdmin(context);
