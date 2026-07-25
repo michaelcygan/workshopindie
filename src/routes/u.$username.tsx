@@ -720,6 +720,7 @@ function ProfilePage() {
               workedWith={profile.worked_with_count}
               followers={profile.follower_count}
               following={profile.following_count}
+              posts={blogCount}
             />
             <LinkPills
               variant="inline"
