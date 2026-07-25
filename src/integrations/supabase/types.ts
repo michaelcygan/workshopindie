@@ -120,6 +120,95 @@ export type Database = {
           },
         ]
       }
+      blog_post_entity_tags: {
+        Row: {
+          blog_post_id: string
+          collab_id: string | null
+          created_at: string
+          created_by: string | null
+          group_event_id: string | null
+          group_id: string | null
+          id: string
+          profile_id: string | null
+          sort_order: number
+          work_id: string | null
+        }
+        Insert: {
+          blog_post_id: string
+          collab_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          group_event_id?: string | null
+          group_id?: string | null
+          id?: string
+          profile_id?: string | null
+          sort_order?: number
+          work_id?: string | null
+        }
+        Update: {
+          blog_post_id?: string
+          collab_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          group_event_id?: string | null
+          group_id?: string | null
+          id?: string
+          profile_id?: string | null
+          sort_order?: number
+          work_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_post_entity_tags_blog_post_id_fkey"
+            columns: ["blog_post_id"]
+            isOneToOne: false
+            referencedRelation: "blog_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_collab_id_fkey"
+            columns: ["collab_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_group_event_id_fkey"
+            columns: ["group_event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_post_entity_tags_work_id_fkey"
+            columns: ["work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       blog_posts: {
         Row: {
           author_name: string
@@ -6837,6 +6926,10 @@ export type Database = {
       release_lounge_screen_share: {
         Args: { _room_id: string; _user_id: string }
         Returns: Json
+      }
+      replace_blog_post_entity_tags: {
+        Args: { _actor: string; _post_id: string; _tags: Json }
+        Returns: undefined
       }
       resolve_group_seed_link: {
         Args: { _token: string }

@@ -11,9 +11,13 @@ import {
   adminCreateDraft, adminUpdatePost, adminPublishPost, adminUnpublishPost, adminDeleteDraft,
   adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
+import { setBlogPostEntityTagsForAdmin } from "@/lib/blog-entity-tags.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
+import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
+import { entityMarkdown, tagKey, type BlogEntityTag } from "@/lib/blog-entity-tags";
 
 const SITE = "https://workshopindie.com";
 
@@ -32,6 +36,7 @@ export type BlogEditorInitial = {
   status?: "draft" | "published";
   published_at?: string | null;
   authors?: Array<{ id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string | null }>;
+  entity_tags?: BlogEntityTag[];
 };
 
 type AttribAuthor = { id: string; username: string | null; display_name: string | null; avatar_url: string | null; role_label: string };
@@ -64,6 +69,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     })),
   );
   const [authorSearch, setAuthorSearch] = useState("");
+  const [entityTags, setEntityTags] = useState<BlogEntityTag[]>(initial?.entity_tags ?? []);
+  const [entityPickerOpen, setEntityPickerOpen] = useState(false);
+  const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   
 
   const create = useServerFn(adminCreateDraft);
@@ -71,6 +79,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const publish = useServerFn(adminPublishPost);
   const unpublish = useServerFn(adminUnpublishPost);
   const del = useServerFn(adminDeleteDraft);
+  const setEntityTagsFn = useServerFn(setBlogPostEntityTagsForAdmin);
   const listAuthorProfiles = useServerFn(adminListAuthorProfiles);
   const { data: authorProfiles } = useQuery({
     queryKey: ["admin-blog-author-profiles"],
@@ -122,6 +131,19 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     }
   }
 
+  async function flushEntityTags(postId: string) {
+    try {
+      await setEntityTagsFn({
+        data: {
+          postId,
+          tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
+        },
+      });
+    } catch (e) {
+      toast.error(`Tags: ${(e as Error).message}`);
+    }
+  }
+
   async function onSave() {
     if (!title.trim()) return toast.error("Title is required.");
     setSaving(true);
@@ -129,12 +151,14 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       if (isNew) {
         const res = await create({ data: buildPayload() });
         await flushAuthors(res.id);
+        await flushEntityTags(res.id);
         toast.success("Draft saved.");
         setDirty(false);
         navigate({ to: "/admin/blog/$id", params: { id: res.id } });
       } else {
         await update({ data: { id: initial!.id!, ...buildPayload(), slug: everPublished ? undefined : slug } });
         await flushAuthors(initial!.id!);
+        await flushEntityTags(initial!.id!);
         toast.success("Saved.");
         setDirty(false);
       }
@@ -428,8 +452,23 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             <TabsContent value="edit">
-              <div className="mt-2">
-                <BlogBodyEditor value={body} onChange={setBody} />
+              <div className="mt-2 space-y-4">
+                <BlogBodyEditor
+                  value={body}
+                  onChange={setBody}
+                  onDirty={() => setDirty(true)}
+                  onRequestEntityInsert={(insert) => {
+                    setPendingInsertRef(() => insert);
+                    setEntityPickerOpen(true);
+                  }}
+                />
+                <BlogEntityTagsEditor
+                  value={entityTags}
+                  onChange={(next) => {
+                    setEntityTags(next);
+                    setDirty(true);
+                  }}
+                />
               </div>
             </TabsContent>
             <TabsContent value="preview">
@@ -495,6 +534,21 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           />
         </div>
       </aside>
+      <BlogEntityTagPicker
+        open={entityPickerOpen}
+        onOpenChange={setEntityPickerOpen}
+        disabledKeys={entityTags.map(tagKey)}
+        onPick={(tag) => {
+          if (pendingInsertRef) {
+            pendingInsertRef(entityMarkdown(tag));
+            setPendingInsertRef(null);
+          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            setEntityTags([...entityTags, tag]);
+            setDirty(true);
+          }
+          setEntityPickerOpen(false);
+        }}
+      />
     </div>
   );
 }

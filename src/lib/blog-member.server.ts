@@ -192,7 +192,9 @@ export async function getMyBlogPostServer(context: AuthContext, id: string) {
   if (!data) throw new Error("Post not found.");
   if ((data as { created_by: string }).created_by !== context.userId) throw new Error("Forbidden.");
   const access = await resolveBlogAccess(context.userId);
-  return { post: data, access };
+  const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
+  const entity_tags = await getBlogPostEntityTagsServer(id, { publicOnly: false });
+  return { post: data, access, entity_tags };
 }
 
 type MemberUpdateInput = {
@@ -322,6 +324,8 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     throw new Error("Add alt text for the cover image before publishing.");
   }
   validateMemberContent(p.body_markdown);
+  const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
+  await assertTaggedEntitiesPubliclyVisibleServer(id);
 
   const name = await authorNameFor(context.userId);
   await moderateFields(context.userId, "blog_post", {

@@ -10,6 +10,7 @@ import {
   Quote,
   List,
   ListOrdered,
+  AtSign,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,14 @@ export type BlogBodyEditorProps = {
   onChange: (value: string) => void;
   readOnly?: boolean;
   onDirty?: () => void;
+  /**
+   * Optional hook: when the user clicks the "@" tag button, the editor invokes
+   * this callback with an `insertMarkdown` function pinned to the current
+   * cursor position. The consumer opens its own entity picker and, once the
+   * user selects an entity, calls `insertMarkdown("[label](/url)")` to place
+   * the link in the body at the original cursor.
+   */
+  onRequestEntityInsert?: (insertMarkdown: (md: string) => void) => void;
 };
 
 function normalizeUrl(input: string): string | null {
@@ -51,7 +60,7 @@ function normalizeUrl(input: string): string | null {
   }
 }
 
-export function BlogBodyEditor({ value, onChange, readOnly, onDirty }: BlogBodyEditorProps) {
+export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert }: BlogBodyEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkText, setLinkText] = useState("");
@@ -221,6 +230,30 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty }: BlogBodyE
           <ToolBtn onClick={openEmbed} title="Embed video or link card" disabled={readOnly}>
             <Film className="h-4 w-4" />
           </ToolBtn>
+          {onRequestEntityInsert && (
+            <ToolBtn
+              onClick={() => {
+                const el = ref.current;
+                const start = el?.selectionStart ?? value.length;
+                const end = el?.selectionEnd ?? value.length;
+                const insert = (md: string) => {
+                  const next = value.slice(0, start) + md + value.slice(end);
+                  commit(next);
+                  requestAnimationFrame(() => {
+                    if (!el) return;
+                    el.focus();
+                    const pos = start + md.length;
+                    el.setSelectionRange(pos, pos);
+                  });
+                };
+                onRequestEntityInsert(insert);
+              }}
+              title="Tag a Workshop item"
+              disabled={readOnly}
+            >
+              <AtSign className="h-4 w-4" />
+            </ToolBtn>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button

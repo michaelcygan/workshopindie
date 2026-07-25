@@ -158,7 +158,10 @@ export async function getPublishedPostServer(slug: string) {
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== null);
-  return { ...data, authors };
+
+  const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
+  const entity_tags = await getBlogPostEntityTagsServer(data.id, { publicOnly: true });
+  return { ...data, authors, entity_tags };
 }
 
 export async function listProfileBlogPostsServer(profileId: string, cursor: { published_at: string; id: string } | null, limit: number) {
@@ -198,17 +201,8 @@ export async function listProfileBlogPostsServer(profileId: string, cursor: { pu
 }
 
 export async function getRelatedPostsServer(excludeId: string, limit: number) {
-  const { data, error } = await publicClient()
-    .from("blog_posts")
-    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at")
-    .eq("status", "published")
-    .eq("show_in_blog_index", true)
-    .lte("published_at", new Date().toISOString())
-    .neq("id", excludeId)
-    .order("published_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  const { getRelatedPostsRankedServer } = await import("./blog-entity-tags.server");
+  return getRelatedPostsRankedServer(excludeId, limit);
 }
 
 export async function adminListPostsServer(context: AuthContext) {
@@ -262,7 +256,9 @@ export async function adminGetPostServer(context: AuthContext, id: string) {
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== null);
-  return { ...data, authors };
+  const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
+  const entity_tags = await getBlogPostEntityTagsServer(id, { publicOnly: false });
+  return { ...data, authors, entity_tags };
 }
 
 export async function adminSearchAuthorProfilesServer(context: AuthContext, q: string) {
@@ -393,6 +389,8 @@ export async function adminPublishPostServer(context: AuthContext, id: string) {
     throw new Error("Add alt text for the cover image before publishing.");
   }
   if (!existing.title?.trim()) throw new Error("Title is required.");
+  const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
+  await assertTaggedEntitiesPubliclyVisibleServer(id);
   const { error } = await supabaseAdmin
     .from("blog_posts")
     .update({ status: "published", updated_by: context.userId })
