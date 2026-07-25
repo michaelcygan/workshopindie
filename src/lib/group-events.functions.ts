@@ -35,32 +35,63 @@ export const getEventBySlug = createServerFn({ method: "GET" })
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
   const nowIso = new Date().toISOString();
+  const recentCutoffIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
   const baseSelect = `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`;
-  const { data, error } = await supabase
-    .from("group_events")
-    .select(baseSelect)
-    .not("featured_at", "is", null)
-    .gt("starts_at", nowIso)
-    .is("deleted_at", null)
-    .eq("visibility", "public")
-    .order("starts_at", { ascending: true })
-    .limit(6);
+  const publicUndeleted = <T,>(q: T) =>
+    (q as any).is("deleted_at", null).eq("visibility", "public") as T;
+
+  // 1) Featured, upcoming.
+  const { data: featured, error } = await publicUndeleted(
+    supabase
+      .from("group_events")
+      .select(baseSelect)
+      .not("featured_at", "is", null)
+      .gt("starts_at", nowIso)
+      .order("starts_at", { ascending: true })
+      .limit(6),
+  );
   if (error) throw new Error(error.message);
-  if (data && data.length > 0) return data;
-  // Fallback: no explicitly featured events — surface the soonest upcoming
-  // public events so the homepage never sits on an empty state when there
-  // is real activity to show.
-  const { data: fallback, error: fallbackErr } = await supabase
-    .from("group_events")
-    .select(baseSelect)
-    .gt("starts_at", nowIso)
-    .is("deleted_at", null)
-    .eq("visibility", "public")
-    .order("starts_at", { ascending: true })
-    .limit(6);
-  if (fallbackErr) throw new Error(fallbackErr.message);
-  return fallback ?? [];
+  if (featured && featured.length > 0) return featured;
+
+  // 2) Any upcoming public event.
+  const { data: upcoming, error: upcomingErr } = await publicUndeleted(
+    supabase
+      .from("group_events")
+      .select(baseSelect)
+      .gt("starts_at", nowIso)
+      .order("starts_at", { ascending: true })
+      .limit(6),
+  );
+  if (upcomingErr) throw new Error(upcomingErr.message);
+  if (upcoming && upcoming.length > 0) return upcoming;
+
+  // 3) Ongoing — started already but hasn't ended.
+  const { data: ongoing, error: ongoingErr } = await publicUndeleted(
+    supabase
+      .from("group_events")
+      .select(baseSelect)
+      .lte("starts_at", nowIso)
+      .gt("ends_at", nowIso)
+      .order("starts_at", { ascending: false })
+      .limit(6),
+  );
+  if (ongoingErr) throw new Error(ongoingErr.message);
+  if (ongoing && ongoing.length > 0) return ongoing;
+
+  // 4) Recent past (last 7 days) — covers TBD placeholders and just-ended events.
+  const { data: recent, error: recentErr } = await publicUndeleted(
+    supabase
+      .from("group_events")
+      .select(baseSelect)
+      .lte("starts_at", nowIso)
+      .gt("starts_at", recentCutoffIso)
+      .order("starts_at", { ascending: false })
+      .limit(6),
+  );
+  if (recentErr) throw new Error(recentErr.message);
+  return recent ?? [];
 });
+
 
 
 export const listGroupEvents = createServerFn({ method: "GET" })
