@@ -81,7 +81,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
     queryFn: async (): Promise<BlogEntityTag[]> => {
       let req = supabase
         .from("collab_posts")
-        .select("id,slug,title,tagline,cover_url")
+        .select("id,slug,title,description,cover_url")
         .eq("status", "open")
         .order("created_at", { ascending: false })
         .limit(8);
@@ -92,7 +92,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         id: r.id,
         slug: r.slug,
         label: r.title,
-        sublabel: r.tagline ?? null,
+        sublabel: r.description ?? null,
         image: r.cover_url,
       }));
     },
@@ -163,7 +163,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
     queryFn: async (): Promise<BlogEntityTag[]> => {
       const { data } = await supabase
         .from("profiles")
-        .select("id,username,display_name,avatar_url,tagline")
+        .select("id,username,display_name,avatar_url,headline")
         .or(`username.ilike.${query}%,display_name.ilike.%${query}%`)
         .not("username", "is", null)
         .limit(8);

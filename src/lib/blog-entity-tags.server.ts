@@ -30,9 +30,9 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     collabIds.length
       ? supabaseAdmin
           .from("collab_posts")
-          .select("id,slug,title,tagline,cover_url,status")
+          .select("id,slug,title,description,cover_url,status")
           .in("id", collabIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; tagline: string | null; cover_url: string | null; status: string }> }),
+      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; cover_url: string | null; status: string }> }),
     groupIds.length
       ? supabaseAdmin
           .from("groups")
@@ -48,7 +48,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     profileIds.length
       ? supabaseAdmin
           .from("profiles")
-          .select("id,username,display_name,avatar_url,tagline,discoverable")
+          .select("id,username,display_name,avatar_url,headline,discoverable")
           .in("id", profileIds)
       : Promise.resolve({ data: [] as Array<{ id: string; username: string | null; display_name: string | null; avatar_url: string | null; tagline: string | null; discoverable: boolean }> }),
   ]);
