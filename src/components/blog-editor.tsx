@@ -135,8 +135,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     try {
       await setEntityTagsFn({
         data: {
-          post_id: postId,
-          tags: entityTags.map((t) => ({ kind: t.kind, entity_id: t.id })),
+          postId,
+          tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
         },
       });
     } catch (e) {
