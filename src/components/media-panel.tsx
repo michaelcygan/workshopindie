@@ -543,18 +543,12 @@ export function FullscreenRoom({
     reactionChanRef.current?.send({ type: "broadcast", event: "react", payload: { emoji, from: meDisplay } }).catch(() => {});
   }
 
+  // Wave 4: Lounge is audio-only — no camera tiles, no "me-video" kind.
   type Tile =
-    | { kind: "me-video"; key: string }
     | { kind: "me-audio"; key: string }
-    | { kind: "peer-video"; key: string; peer: MediaPeer; profile?: ProfileLite }
     | { kind: "peer-audio"; key: string; userId: string; profile?: ProfileLite; speaking: boolean };
 
-  const tiles: Tile[] = [];
-  tiles.push(
-    showLocalVideo
-      ? { kind: "me-video", key: "me" }
-      : { kind: "me-audio", key: "me" },
-  );
+  const tiles: Tile[] = [{ kind: "me-audio", key: "me" }];
   for (const o of others) {
     const peer = peerById.get(o.user_id);
     const prof = profileLookup.get(o.user_id) ?? (o.profile ? {
@@ -563,19 +557,14 @@ export function FullscreenRoom({
       username: o.profile.username,
       avatar_url: o.profile.avatar_url,
     } : undefined);
-    // In stage layout, hide the remote sharer's camera tile — their tile *is* the stage.
-    if (layoutMode !== "grid" && remoteSharer && peer?.userId === remoteSharer.userId) continue;
-    if (peer && peer.mode === "video" && peer.stream) {
-      tiles.push({ kind: "peer-video", key: o.user_id, peer, profile: prof });
-    } else {
-      tiles.push({
-        kind: "peer-audio",
-        key: o.user_id,
-        userId: o.user_id,
-        profile: prof,
-        speaking: !!peer?.speaking,
-      });
-    }
+    // The remote sharer's screen is the stage; their avatar is still useful.
+    tiles.push({
+      kind: "peer-audio",
+      key: o.user_id,
+      userId: o.user_id,
+      profile: prof,
+      speaking: !!peer?.speaking,
+    });
   }
 
   // Grid columns scale with participant count, capped tastefully.
@@ -586,18 +575,6 @@ export function FullscreenRoom({
     "grid-cols-2 lg:grid-cols-3";
 
   function renderTile(t: Tile) {
-    if (t.kind === "me-video") {
-      return (
-        <VideoTile
-          key={t.key}
-          stream={m.localStream!}
-          label={`${meDisplay} (you)`}
-          muted
-          speaking={m.speaking && !m.muted}
-          mirrored
-        />
-      );
-    }
     if (t.kind === "me-audio") {
       return (
         <AudioTile
@@ -606,16 +583,6 @@ export function FullscreenRoom({
           avatarUrl={meAvatar}
           speaking={m.speaking && !m.muted}
           muted={m.muted}
-        />
-      );
-    }
-    if (t.kind === "peer-video") {
-      return (
-        <VideoTile
-          key={t.key}
-          stream={t.peer.stream!}
-          label={t.profile?.display_name || t.profile?.username || "Anon"}
-          speaking={t.peer.speaking}
         />
       );
     }
