@@ -151,12 +151,14 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       if (isNew) {
         const res = await create({ data: buildPayload() });
         await flushAuthors(res.id);
+        await flushEntityTags(res.id);
         toast.success("Draft saved.");
         setDirty(false);
         navigate({ to: "/admin/blog/$id", params: { id: res.id } });
       } else {
         await update({ data: { id: initial!.id!, ...buildPayload(), slug: everPublished ? undefined : slug } });
         await flushAuthors(initial!.id!);
+        await flushEntityTags(initial!.id!);
         toast.success("Saved.");
         setDirty(false);
       }
