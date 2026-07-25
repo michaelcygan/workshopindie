@@ -15,7 +15,6 @@ function AdminBlogIndex() {
     queryKey: ["admin-blog-posts"],
     queryFn: () => list(),
   });
-  const _qc = useQueryClient();
 
   return (
     <div>
