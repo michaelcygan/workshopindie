@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Radio, Users, ArrowRight, MapPin, Target, Clock } from "lucide-react";
+import { Radio, Users, ArrowRight, MapPin, Target, Clock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
+import { ROOM_PROMPTS, shuffle, type RoomPrompt } from "@/lib/topic-prompts";
+import { CATEGORIES } from "@/lib/categories";
 
 type WorkshopRow = {
   id: string;
@@ -17,6 +19,8 @@ type WorkshopRow = {
   city: { name: string } | null;
 };
 
+const TARGET_TILES = 6;
+
 function whenLabel(iso: string | null, status: string | null) {
   if (status === "active") return "Live now";
   if (status === "check_in") return "Doors open";
@@ -27,6 +31,43 @@ function whenLabel(iso: string | null, status: string | null) {
   if (mins < 60) return `Starts in ${mins}m`;
   if (mins < 60 * 24) return `Starts in ${Math.round(mins / 60)}h`;
   return new Date(iso).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" });
+}
+
+function mediumLabel(id: string | null): string | null {
+  if (!id) return null;
+  return CATEGORIES.find((c) => c.id === id)?.label ?? null;
+}
+
+/** Session-stable curated suggestions: bias to obvious, sprinkle wild. */
+function useSuggestedPrompts(count: number): RoomPrompt[] {
+  return useMemo(() => {
+    let seed = "home-lounge";
+    if (typeof window !== "undefined") {
+      try {
+        seed = window.sessionStorage.getItem("home-lounge:seed") ?? "";
+        if (!seed) {
+          seed = Math.random().toString(36).slice(2);
+          window.sessionStorage.setItem("home-lounge:seed", seed);
+        }
+      } catch { /* noop */ }
+    }
+    // Deterministic shuffle by seeding Math.random via a simple LCG isn't
+    // necessary — session persistence is enough. Reshuffle once per session.
+    void seed;
+    const obvious = shuffle(ROOM_PROMPTS.filter((p) => p.weight === "obvious"));
+    const wild = shuffle(ROOM_PROMPTS.filter((p) => p.weight === "wild"));
+    const wildTake = Math.max(1, Math.floor(count / 3));
+    const obviousTake = count - wildTake;
+    const seen = new Set<string>();
+    const out: RoomPrompt[] = [];
+    for (const p of [...obvious.slice(0, obviousTake), ...wild.slice(0, wildTake)]) {
+      const key = `${p.medium}::${p.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(p);
+    }
+    return out;
+  }, [count]);
 }
 
 export function HomeLiveWorkshopsRail() {
@@ -50,14 +91,15 @@ export function HomeLiveWorkshopsRail() {
         .limit(24);
       if (error) throw error;
       const rows = (data ?? []) as unknown as WorkshopRow[];
-      // Only those that still need seats.
       return rows
         .filter((w) => (w.participant_cap ?? 0) === 0 || (w.confirmed_count ?? 0) < (w.participant_cap ?? 0))
         .slice(0, 8);
     },
   });
 
-  const isEmpty = !isLoading && (!data || data.length === 0);
+  const liveRooms = data ?? [];
+  const suggestionsNeeded = Math.max(0, TARGET_TILES - liveRooms.length);
+  const suggestions = useSuggestedPrompts(suggestionsNeeded);
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
@@ -70,7 +112,11 @@ export function HomeLiveWorkshopsRail() {
               <span className="relative inline-block h-2.5 w-2.5 rounded-full bg-coral" />
             </span>
           </h2>
-          <p className="mt-1 text-sm text-ink-muted">Live rooms with seats open. Walk right in.</p>
+          <p className="mt-1 text-sm text-ink-muted">
+            {liveRooms.length > 0
+              ? "Live rooms with seats open. Walk right in."
+              : "Nobody's live yet — start one of these and others will drop in."}
+          </p>
         </div>
         <Link
           to="/workshops"
@@ -86,27 +132,9 @@ export function HomeLiveWorkshopsRail() {
             <div key={i} className="h-32 w-72 shrink-0 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
-      ) : isEmpty ? (
-        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-          <h3 className="font-display text-2xl text-ink">No one is in the Lounge right now.</h3>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-            Start one — five seats, shared tools, anyone can drop in.
-          </p>
-          <div className="mt-5 flex items-center justify-center gap-3">
-            <Link to="/lounge">
-              <Button className="rounded-full">Open the Lounge</Button>
-            </Link>
-            <Link
-              to="/workshops"
-              className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink transition"
-            >
-              Browse scheduled <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
       ) : (
         <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {data!.map((w) => {
+          {liveRooms.map((w) => {
             const cap = w.participant_cap ?? 0;
             const filled = w.confirmed_count ?? 0;
             const seatsLeft = cap > 0 ? Math.max(0, cap - filled) : null;
@@ -164,6 +192,34 @@ export function HomeLiveWorkshopsRail() {
                     />
                   </div>
                 )}
+              </Link>
+            );
+          })}
+
+          {suggestions.map((p, i) => {
+            const label = mediumLabel(p.medium) ?? "Any medium";
+            return (
+              <Link
+                key={`sugg-${i}-${p.title}`}
+                to="/lounge"
+                search={{ prompt: p.title, medium: p.medium ?? "" }}
+                className="group relative flex w-72 shrink-0 snap-start flex-col gap-2 rounded-2xl border border-dashed border-border bg-surface/60 p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:bg-surface hover:shadow-soft"
+              >
+                <div className="flex items-center justify-between gap-2 text-[11px]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wider text-primary">
+                    <Sparkles className="h-3 w-3" /> Start this Lounge
+                  </span>
+                  <span className="inline-flex items-center gap-1 text-ink-muted">
+                    <Users className="h-3 w-3" />5 seats
+                  </span>
+                </div>
+                <p className="line-clamp-2 font-display text-base text-ink">{p.title}</p>
+                <div className="mt-auto flex items-center justify-between gap-2 text-[11px] text-ink-muted">
+                  <span className="truncate">{label} · voice or video</span>
+                  <span className="inline-flex items-center gap-0.5 font-medium text-ink transition group-hover:gap-1.5">
+                    Open <ArrowRight className="h-3 w-3" />
+                  </span>
+                </div>
               </Link>
             );
           })}
