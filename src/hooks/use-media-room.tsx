@@ -259,7 +259,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
+  
   const screenBusyRef = useRef<boolean>(false);
   // True while WE hold the DB lease for this room's screen surface.
   const holdsLeaseRef = useRef<boolean>(false);
@@ -1286,7 +1286,6 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
       for (const t of screenStreamRef.current.getTracks()) t.stop();
       screenStreamRef.current = null;
     }
-    originalCamTrackRef.current = null;
     screenBusyRef.current = false;
     setScreenStream(null);
     setScreenSharerId(null);
@@ -1421,10 +1420,14 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
         return;
       }
       let effectiveMode = nextMode;
+      if (effectiveMode === "video" && !cameraAllowedRef.current) {
+        effectiveMode = "voice";
+      }
       if (effectiveMode === "video" && videoCount >= VIDEO_CAP && !joined) {
         effectiveMode = "voice";
         setError(`Video full (${VIDEO_CAP} cams). Joined as voice.`);
       }
+
 
       if (joined) teardownMedia();
 
