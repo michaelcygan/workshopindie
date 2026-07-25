@@ -132,7 +132,7 @@ function BlogPostPage() {
         <div className="mt-4 text-sm text-ink-muted">
           By{" "}
           {post.authors && post.authors.length > 0 ? (
-            post.authors.map((a, i) => (
+            post.authors.map((a: { id: string; username: string | null; display_name: string | null; role_label: string | null }, i: number) => (
               <span key={a.id}>
                 {a.username ? (
                   <Link
