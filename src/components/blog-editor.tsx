@@ -119,17 +119,35 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     });
   }
 
+  async function flushAuthors(postId: string) {
+    try {
+      await setPostAuthors({
+        data: {
+          post_id: postId,
+          authors: attribAuthors.map((a) => ({
+            profile_id: a.id,
+            role_label: a.role_label.trim() ? a.role_label.trim() : null,
+          })),
+        },
+      });
+    } catch (e) {
+      toast.error(`Attributed authors: ${(e as Error).message}`);
+    }
+  }
+
   async function onSave() {
     if (!title.trim()) return toast.error("Title is required.");
     setSaving(true);
     try {
       if (isNew) {
         const res = await create({ data: buildPayload() });
+        await flushAuthors(res.id);
         toast.success("Draft saved.");
         setDirty(false);
         navigate({ to: "/admin/blog/$id", params: { id: res.id } });
       } else {
         await update({ data: { id: initial!.id!, ...buildPayload(), slug: everPublished ? undefined : slug } });
+        await flushAuthors(initial!.id!);
         toast.success("Saved.");
         setDirty(false);
       }
