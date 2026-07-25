@@ -9,6 +9,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
+import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
+import { entityMarkdown, tagKey, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import {
   getMyBlogPost,
   updateMyBlogPost,
@@ -16,6 +19,7 @@ import {
   unpublishMyBlogPost,
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
+import { setBlogPostEntityTagsForMember } from "@/lib/blog-entity-tags.functions";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/$id")({
@@ -57,6 +61,7 @@ function MemberBlogEditorPage() {
   const publishFn = useServerFn(publishMyBlogPost);
   const unpublishFn = useServerFn(unpublishMyBlogPost);
   const deleteFn = useServerFn(deleteMyBlogDraft);
+  const setEntityTagsFn = useServerFn(setBlogPostEntityTagsForMember);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
@@ -79,8 +84,11 @@ function MemberBlogEditorPage() {
   const [seoDesc, setSeoDesc] = useState("");
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
+  const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
+  const [entityPickerOpen, setEntityPickerOpen] = useState(false);
+  const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
 
-  const post = (q.data as { post: EditorPost; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string } } | undefined);
+  const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string } } | undefined);
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
@@ -93,9 +101,20 @@ function MemberBlogEditorPage() {
     setCoverAlt(p.cover_image_alt ?? "");
     setSeoTitle(p.seo_title ?? "");
     setSeoDesc(p.seo_description ?? "");
+    setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     setLoadedForId(p.id);
   }, [post, loadedForId]);
+
+  async function flushEntityTags() {
+    try {
+      await setEntityTagsFn({
+        data: { postId: id, tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })) },
+      });
+    } catch (e) {
+      toast.error(`Tags: ${(e as Error).message}`);
+    }
+  }
 
   const saveMut = useMutation({
     mutationFn: () =>
