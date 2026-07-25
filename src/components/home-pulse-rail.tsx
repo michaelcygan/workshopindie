@@ -285,9 +285,9 @@ async function fetchPulse(): Promise<Pulse[]> {
   }
 
   // Light interleave so kinds aren't clumped: round-robin by kind.
-  const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [] };
+  const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [], blog: [] };
   for (const it of items) byKind[it.kind].push(it);
-  const order: Pulse["kind"][] = ["event", "work", "collab", "group"];
+  const order: Pulse["kind"][] = ["event", "work", "blog", "collab", "group"];
   const interleaved: Pulse[] = [];
   let added = true;
   while (added) {
