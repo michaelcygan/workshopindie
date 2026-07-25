@@ -216,6 +216,12 @@ async function fetchPulse(): Promise<Pulse[]> {
       .eq("visibility", "public")
       .order("created_at", { ascending: false })
       .limit(3),
+    supabase
+      .from("blog_posts")
+      .select("id, title, slug, cover_image_url, author_name, published_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(4),
   ]);
 
   const items: Pulse[] = [];
