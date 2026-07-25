@@ -200,6 +200,46 @@ export async function listProfileBlogPostsServer(profileId: string, cursor: { pu
   return { posts, nextCursor };
 }
 
+export async function listPostsByAuthorsServer(profileIds: string[], limit: number) {
+  const safeLimit = Math.min(Math.max(limit, 1), 60);
+  const uniqueIds = Array.from(new Set(profileIds.filter((id) => typeof id === "string" && id.length > 0)));
+  if (uniqueIds.length === 0) return [];
+  const client = publicClient();
+  const { data: attrRows, error: attrErr } = await client
+    .from("blog_post_authors")
+    .select("blog_post_id,profile_id")
+    .in("profile_id", uniqueIds);
+  if (attrErr) throw new Error(attrErr.message);
+  const idToAuthors = new Map<string, string[]>();
+  for (const r of (attrRows ?? []) as Array<{ blog_post_id: string; profile_id: string }>) {
+    const arr = idToAuthors.get(r.blog_post_id) ?? [];
+    arr.push(r.profile_id);
+    idToAuthors.set(r.blog_post_id, arr);
+  }
+  const postIds = Array.from(idToAuthors.keys());
+  if (postIds.length === 0) return [];
+  const { data, error } = await client
+    .from("blog_posts")
+    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at")
+    .in("id", postIds)
+    .eq("status", "published")
+    .eq("show_in_blog_index", true)
+    .lte("published_at", new Date().toISOString())
+    .order("published_at", { ascending: false })
+    .limit(safeLimit);
+  if (error) throw new Error(error.message);
+  return ((data ?? []) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string;
+    cover_image_url: string | null;
+    cover_image_alt: string | null;
+    author_name: string;
+    published_at: string | null;
+  }>).map((p) => ({ ...p, author_profile_ids: idToAuthors.get(p.id) ?? [] }));
+}
+
 export async function getRelatedPostsServer(excludeId: string, limit: number) {
   const { getRelatedPostsRankedServer } = await import("./blog-entity-tags.server");
   return getRelatedPostsRankedServer(excludeId, limit);

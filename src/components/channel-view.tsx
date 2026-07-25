@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff, Link2 } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff, Link2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
@@ -35,6 +35,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { FullscreenShell } from "@/components/fullscreen-shell";
 import { ProfilePeek } from "@/components/profile-peek";
 import { LoungeLinks } from "@/components/lounge-links";
+import { LoungePosts } from "@/components/lounge-posts";
 
 import { UsernameMention } from "@/components/username-mention";
 
@@ -1000,6 +1001,21 @@ export function ChannelView({
                 />
               )}
             </div>
+          ) : viewMode === "posts" && user ? (
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-hidden">
+              <LoungePosts
+                participants={[
+                  { user_id: user.id, display_name: meDisplay, username: me?.username ?? null, avatar_url: meAvatar },
+                  ...others.map((o) => ({
+                    user_id: o.user_id,
+                    display_name: o.profile?.display_name ?? null,
+                    username: o.profile?.username ?? null,
+                    avatar_url: o.profile?.avatar_url ?? null,
+                  })),
+                ]}
+                className="h-full"
+              />
+            </div>
           ) : viewMode === "links" ? (
             <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-y-auto">
               <LoungeLinks messages={messages} profileLookup={profileLookup} />
@@ -1543,6 +1559,7 @@ function StageTabs({
     { id: "chat", label: "Chat", icon: <MessageCircle className="h-3.5 w-3.5" /> },
     { id: "gallery", label: "Gallery", icon: <LayoutGrid className="h-3.5 w-3.5" /> },
     { id: "collabs", label: "Collabs", icon: <Users className="h-3.5 w-3.5" /> },
+    { id: "posts", label: "Posts", icon: <FileText className="h-3.5 w-3.5" /> },
     { id: "links", label: "Links", icon: <Link2 className="h-3.5 w-3.5" /> },
   ];
 

@@ -29,7 +29,7 @@ function screenSourceLabel(stream: MediaStream | null | undefined): string | nul
   return (m ? m[1] : raw).trim() || null;
 }
 
-export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs" | "links";
+export type RoomViewMode = "chat" | "tools" | "gallery" | "collabs" | "posts" | "links";
 
 export type MediaState = ReturnType<typeof useMediaRoom>;
 

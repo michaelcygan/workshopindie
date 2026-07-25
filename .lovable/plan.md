@@ -1,27 +1,38 @@
-Tighten the Lounge Stage so the chat area gains more vertical space.
+# Lounge → Posts tab
 
-Changes:
+Add a fifth tab, **Posts**, to the Lounge tab bar (Chat · Gallery · Collabs · Links · **Posts**). It surfaces published blog posts authored by anyone currently in the room, filterable by author, opened inline so users never leave the Lounge.
 
-1. Reduce SpeakerBubble sizes
-   - In `src/components/media-panel.tsx`, shrink the `SpeakerBubble` dimensions:
-     - `lg` → `h-14 w-14` (down from 16)
-     - `md` → `h-12 w-12` (down from 14)
-     - `sm` → `h-10 w-10` (down from 12)
-   - Shrink the outer bubble container width from `w-16 sm:w-20` to `w-14 sm:w-16` so labels stay close but still truncate.
-   - Reduce the speaking ring glow from `shadow-[0_0_0_4px_...]` to `2px` so active speakers don't feel visually larger.
+## What ships
 
-2. Tighten stage spacing
-   - In `VideoStage`, reduce the wrapper padding from `px-4 py-3 md:px-6` to `px-3 py-2 md:px-4`.
-   - Reduce the bubble cluster gap from `gap-x-4 gap-y-3` to `gap-x-3 gap-y-2`.
-   - Reduce the eyebrow bottom margin from `mb-2` to `mb-1.5`.
-   - Lower the empty-stage quiet message padding from `py-4` to `py-2.5` so an empty stage is a thin ribbon rather than a tall block.
+1. **New tab in the Lounge view toggle**
+   - Add `"posts"` to `RoomViewMode` and render a `<TabButton>` with a `FileText` icon in the tab bar (both desktop and mobile-lite tab strips in `channel-view.tsx`).
+   - Persist selection with the existing `viewMode` local-storage flow.
 
-3. Reclaim height for chat
-   - In `src/components/channel-view.tsx`, raise the chat viewport height clamp:
-     - Desktop: `h-[clamp(320px,44vh,520px)] xl:h-[58vh]` (up from `280px/38vh/440px` and `52vh`).
-     - Keep the same `min-h-0` flex behavior so the chat still shrinks correctly on very short viewports.
+2. **`LoungePosts` panel** (new `src/components/lounge-posts.tsx`)
+   - Props: `participantIds: string[]`, `profileLookup` (already used by Links/Gallery).
+   - Query: `blog_posts` where `status = 'published'` AND (`author_id in participantIds` OR the post appears in `blog_post_authors` for a participant) — reuse the multi-author helper already in the blog functions layer.
+   - Author filter chip row at the top: "All" + one avatar chip per participant who has ≥1 post. Chips reflect live room presence (recompute when `participantIds` change).
+   - Editorial list using the existing `EditorialCard` treatment (cover, eyebrow "Posts", title, author, published date). Empty state: "No posts from people here yet."
+   - Sorted newest first; capped at ~30.
 
-4. Verify responsive behavior
-   - Build and check that the desktop Lounge still shows all 10 speaker bubbles in one row without wrapping.
-   - Check the mobile/preview layout so the stage doesn't crowd the chat composer.
-   - Confirm no regression in the screen-share spotlight layout (bubbles below the spotlight still fit).
+3. **Peek-open reading** (new `src/components/blog-post-peek.tsx`, mirrors `WorkPeek`/`CollabPeek`)
+   - `Dialog` on desktop, `Sheet` (bottom, drag-to-dismiss) on mobile — same pattern as existing peeks.
+   - Renders the post via the existing markdown renderer + `BlogArticleFooter` (subscribe / related). "Open full page" link to `/blog/$slug` for those who want to leave.
+   - Clicking a card in `LoungePosts` triggers the peek; Lounge audio/chat stays mounted underneath.
+
+4. **Wiring in `channel-view.tsx`**
+   - Add a `postsSlot` alongside the existing `linksSlot` for fullscreen/board rendering, and render `<LoungePosts …/>` in the standard tab-content switch.
+   - Pass `participantIds` derived from the same source that feeds "Here now" so the author filter matches the room roster in real time.
+
+## Out of scope
+
+- No new DB tables/migrations — reuses `blog_posts` + existing author join.
+- No changes to blog authoring, permissions, or homepage rails.
+- No moderation changes (published posts are already moderated).
+
+## Technical notes
+
+- Query uses the existing server function pattern in `src/lib/blog.functions.ts` (add a `listPostsByAuthorIds(ids: string[])` if one doesn't already exist).
+- `BlogPostPeek` reuses `react-markdown` config and `BlogArticleFooter` so styling matches `/blog/$slug`.
+- Tab bar icon: `FileText` from `lucide-react`.
+- No layout changes to the stage, chat, or sidebar — chat height clamp is preserved.

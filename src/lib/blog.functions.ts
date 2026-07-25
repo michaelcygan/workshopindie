@@ -48,6 +48,19 @@ export const listProfileBlogPosts = createServerFn({ method: "GET" })
     return listProfileBlogPostsServer(data.profileId, data.cursor ?? null, data.limit ?? 12);
   });
 
+export const listPostsByAuthors = createServerFn({ method: "GET" })
+  .inputValidator((d: unknown) =>
+    z.object({
+      profileIds: z.array(z.string().uuid()).max(30),
+      limit: z.number().int().min(1).max(60).optional(),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    const { blogPublicCacheHeader, listPostsByAuthorsServer } = await import("./blog.server");
+    setResponseHeader("cache-control", blogPublicCacheHeader());
+    return listPostsByAuthorsServer(data.profileIds, data.limit ?? 30);
+  });
+
 export const adminSearchAuthorProfiles = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => z.object({ q: z.string().max(80).default("") }).parse(d))
