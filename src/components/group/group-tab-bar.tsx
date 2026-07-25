@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, Info, LayoutGrid, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
+import { Calendar, FileText, Info, LayoutGrid, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ export type GroupTab =
   | "events"
   | "collab"
   | "work"
+  | "posts"
   | "members"
   | "subgroups"
   | "about";
@@ -35,6 +36,7 @@ export function GroupTabBar({
     { id: "today", label: "Today", icon: Sun, count: null },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
     { id: "work", label: "Gallery", icon: LayoutGrid, count: counts.work },
+    { id: "posts", label: "Posts", icon: FileText, count: null },
     { id: "events", label: "Events", icon: Calendar, count: null },
     ...(childCount > 0
       ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childCount }]
