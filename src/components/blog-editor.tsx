@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -8,6 +9,7 @@ import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import {
   adminCreateDraft, adminUpdatePost, adminPublishPost, adminUnpublishPost, adminDeleteDraft,
+  adminListAuthorProfiles,
 } from "@/lib/blog.functions";
 import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon } from "lucide-react";
 
@@ -24,6 +26,7 @@ export type BlogEditorInitial = {
   seo_title?: string | null;
   seo_description?: string | null;
   author_name?: string;
+  author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
 };
@@ -43,6 +46,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
   const [authorName, setAuthorName] = useState(initial?.author_name ?? "Workshop");
+  const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -52,8 +56,14 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const publish = useServerFn(adminPublishPost);
   const unpublish = useServerFn(adminUnpublishPost);
   const del = useServerFn(adminDeleteDraft);
+  const listAuthorProfiles = useServerFn(adminListAuthorProfiles);
+  const { data: authorProfiles } = useQuery({
+    queryKey: ["admin-blog-author-profiles"],
+    queryFn: () => listAuthorProfiles(),
+    staleTime: 5 * 60_000,
+  });
 
-  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName]);
+  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName, authorProfileUsername]);
   useEffect(() => { setDirty(false); }, [initial?.id]);
 
   useEffect(() => {
@@ -118,6 +128,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       seo_title: seoTitle.trim() || null,
       seo_description: seoDesc.trim() || null,
       author_name: authorName.trim() || "Workshop",
+      author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
     };
   }
 
@@ -185,7 +196,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         />
         <div className="mt-1 text-[11px] text-ink-muted">{title.length}/160</div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted">Slug</label>
             <input
@@ -199,6 +210,23 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             <div className="mt-1 truncate text-[11px] text-ink-muted">
               {effUrl} {everPublished && "· locked after publish"}
             </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted">Profile link</label>
+            <input
+              value={authorProfileUsername}
+              onChange={(event) => setAuthorProfileUsername(event.target.value)}
+              list="blog-author-profiles"
+              placeholder="@username (optional)"
+              className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+            />
+            <datalist id="blog-author-profiles">
+              {(authorProfiles ?? []).map((profile) => (
+                <option key={profile.id} value={profile.username ?? ""}>
+                  {profile.display_name ?? profile.username}
+                </option>
+              ))}
+            </datalist>
           </div>
           <div>
             <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted">Author</label>

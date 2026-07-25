@@ -55,7 +55,13 @@ export const Route = createFileRoute("/blog/$slug")({
             image: img ? [img] : undefined,
             datePublished: p.published_at,
             dateModified: p.updated_at,
-            author: { "@type": "Organization", name: p.author_name || "Workshop" },
+            author: p.author_profile?.username
+              ? {
+                  "@type": "Person",
+                  name: p.author_name || p.author_profile.display_name || p.author_profile.username,
+                  url: `${SITE}/u/${p.author_profile.username}`,
+                }
+              : { "@type": "Organization", name: p.author_name || "Workshop" },
             publisher: {
               "@type": "Organization",
               name: "Workshop",
@@ -114,7 +120,20 @@ function BlogPostPage() {
         {post.excerpt && (
           <p className="mt-4 text-lg text-ink-soft">{post.excerpt}</p>
         )}
-        <div className="mt-4 text-sm text-ink-muted">By {post.author_name || "Workshop"}</div>
+        <div className="mt-4 text-sm text-ink-muted">
+          By{" "}
+          {post.author_profile?.username ? (
+            <Link
+              to="/u/$username"
+              params={{ username: post.author_profile.username }}
+              className="font-medium text-ink underline decoration-border underline-offset-4 hover:decoration-primary"
+            >
+              {post.author_name || post.author_profile.display_name || post.author_profile.username}
+            </Link>
+          ) : (
+            post.author_name || "Workshop"
+          )}
+        </div>
       </header>
 
       {post.cover_image_url && (

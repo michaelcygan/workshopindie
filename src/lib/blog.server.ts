@@ -107,7 +107,7 @@ async function audit(action: string, targetId: string, actor: string, payload: R
     action,
     target_type: "blog_post",
     target_id: targetId,
-    payload,
+    payload: JSON.parse(JSON.stringify(payload)),
     actor_user_id: actor,
   });
 }
