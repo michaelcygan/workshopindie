@@ -994,18 +994,21 @@ function ProfileStats({
   workedWith,
   followers,
   following,
+  posts,
 }: {
   username: string;
   works: number;
   workedWith: number;
   followers: number;
   following: number;
+  posts: number;
 }) {
   const items: { label: string; value: number; tab: ProfileTab }[] = [
     { label: "Gallery", value: works, tab: "works" },
     { label: "Worked with", value: workedWith, tab: "about" },
     { label: "Followers", value: followers, tab: "about" },
     { label: "Following", value: following, tab: "about" },
+    ...(posts > 0 ? [{ label: "Posts", value: posts, tab: "blog" as ProfileTab }] : []),
   ];
   return (
     <div className="flex flex-wrap items-center gap-2">
