@@ -322,7 +322,7 @@ export function VideoStage({
   ) : null;
 
   const eyebrow = (
-    <div className="mb-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+    <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
       <span>Speakers · {speakerCount}/{LOUNGE_CAP}</span>
       {sharing && (
         <span className="inline-flex items-center gap-1 text-primary normal-case tracking-normal">
