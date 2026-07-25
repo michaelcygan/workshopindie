@@ -105,20 +105,6 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const effDesc = (seoDesc?.trim() || excerpt).slice(0, 160);
   const effUrl = `${SITE}/blog/${slug || "your-slug"}`;
 
-  function insertAtCursor(before: string, after = "", placeholder = "") {
-    const el = textareaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const sel = body.slice(start, end) || placeholder;
-    const next = body.slice(0, start) + before + sel + after + body.slice(end);
-    setBody(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      const pos = start + before.length + sel.length + after.length;
-      el.setSelectionRange(pos, pos);
-    });
-  }
 
   async function flushAuthors(postId: string) {
     try {
