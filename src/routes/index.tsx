@@ -21,6 +21,7 @@ import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { HomePulseRail } from "@/components/home-pulse-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
+import { HomeBlogRail } from "@/components/home-blog-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
@@ -286,8 +287,12 @@ function Index() {
         <FeaturedEventsCarousel />
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
         <UpcomingInMyGroupsRail />
+      </section>
+
+      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
+        <HomeBlogRail />
       </section>
     </main>
   );
