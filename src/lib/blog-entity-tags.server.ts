@@ -71,7 +71,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     if (r.collab_id) {
       const c = collabMap.get(r.collab_id);
       if (!c) continue;
-      out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.tagline ?? null, image: c.cover_url });
+      out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.description ?? null, image: c.cover_url });
       continue;
     }
     if (r.group_id) {
@@ -92,7 +92,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       const p = profileMap.get(r.profile_id);
       if (!p || !p.username) continue;
       if (opts.publicOnly && p.discoverable === false) continue;
-      out.push({ kind: "profile", id: p.id, username: p.username, label: p.display_name || p.username, sublabel: p.tagline ?? `@${p.username}`, image: p.avatar_url });
+      out.push({ kind: "profile", id: p.id, username: p.username, label: p.display_name || p.username, sublabel: p.headline ?? `@${p.username}`, image: p.avatar_url });
       continue;
     }
   }

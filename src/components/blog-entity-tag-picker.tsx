@@ -174,7 +174,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
           id: r.id,
           username: r.username as string,
           label: r.display_name || (r.username as string),
-          sublabel: r.tagline ?? `@${r.username}`,
+          sublabel: r.headline ?? `@${r.username}`,
           image: r.avatar_url,
         }));
     },
