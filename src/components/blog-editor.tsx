@@ -131,6 +131,19 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     }
   }
 
+  async function flushEntityTags(postId: string) {
+    try {
+      await setEntityTagsFn({
+        data: {
+          post_id: postId,
+          tags: entityTags.map((t) => ({ kind: t.kind, entity_id: t.entity_id })),
+        },
+      });
+    } catch (e) {
+      toast.error(`Tags: ${(e as Error).message}`);
+    }
+  }
+
   async function onSave() {
     if (!title.trim()) return toast.error("Title is required.");
     setSaving(true);
