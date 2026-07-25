@@ -282,7 +282,7 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
 
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .update(patch)
+    .update(patch as never)
     .eq("id", id)
     .select(EDITOR_FIELDS)
     .maybeSingle();
