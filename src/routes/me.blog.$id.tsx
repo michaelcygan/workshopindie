@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
+import { BlogBodyEditor } from "@/components/blog-body-editor";
 import {
   getMyBlogPost,
   updateMyBlogPost,
