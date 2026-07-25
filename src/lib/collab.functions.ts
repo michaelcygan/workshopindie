@@ -251,6 +251,19 @@ export const listApplicants = createServerFn({ method: "POST" })
       for (const i of invites ?? []) acceptedSet.add(i.invitee_user_id);
     }
 
+    // Load roles once so we can attach role_name/application_kind to each row.
+    const { data: rolesData } = await supabase
+      .from("collab_roles")
+      .select("id,role_name")
+      .eq("collab_post_id", data.collabPostId);
+    const roleMap: Record<string, string> = Object.fromEntries(
+      (rolesData ?? []).map((r) => [r.id, r.role_name]),
+    );
+    const roleInfo = (rid: string | null | undefined) => ({
+      application_kind: (rid ? "role" : "suggestion") as "role" | "suggestion",
+      role_name: rid ? (roleMap[rid] ?? null) : null,
+    });
+
     const members = events.map((e) => ({
       id: e.id,
       sent_at: e.sent_at,
@@ -260,9 +273,12 @@ export const listApplicants = createServerFn({ method: "POST" })
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
       accepted: acceptedSet.has(e.sender_user_id),
+      ...roleInfo(e.collab_role_id),
     }));
 
-    return { members, guests: guestRows };
+    const guests = guestRows.map((g) => ({ ...g, ...roleInfo(g.collab_role_id) }));
+
+    return { members, guests };
   });
 
 
