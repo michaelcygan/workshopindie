@@ -941,6 +941,14 @@ function ProfilePage() {
           <BlogPostPeek
             slug={search.post ?? null}
             open={!!search.post}
+            onSelectPost={(slug: string) =>
+              navigate({
+                to: "/u/$username",
+                params: { username },
+                search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
+                replace: true,
+              })
+            }
             onOpenChange={(v: boolean) => {
               if (v) return;
               navigate({
