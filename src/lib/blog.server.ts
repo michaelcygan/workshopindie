@@ -121,6 +121,7 @@ export async function listPublishedPostsServer() {
     .from("blog_posts")
     .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at")
     .eq("status", "published")
+    .eq("show_in_blog_index", true)
     .lte("published_at", new Date().toISOString())
     .order("published_at", { ascending: false })
     .limit(200);
