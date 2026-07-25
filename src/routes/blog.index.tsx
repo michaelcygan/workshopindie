@@ -48,7 +48,7 @@ export const Route = createFileRoute("/blog/")({
 });
 
 function BlogIndexPage() {
-  const { posts } = Route.useLoaderData();
+  const { posts } = Route.useLoaderData() as { posts: Array<{ id: string; title: string; slug: string; excerpt: string | null; cover_image_url: string | null; cover_image_alt: string | null; author_name: string; published_at: string | null; updated_at: string }> };
   const [featured, ...rest] = posts;
 
   return (
