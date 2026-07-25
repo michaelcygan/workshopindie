@@ -380,6 +380,8 @@ export async function deleteMyBlogDraftServer(context: AuthContext, id: string) 
   const current = await assertOwner(id, context.userId);
   if (current.published_at) throw new Error("Published posts can only be unpublished, not deleted.");
   if (current.status !== "draft") throw new Error("Only drafts can be deleted.");
+  const access = await resolveBlogAccess(context.userId);
+  if (!access.canEditExisting) throw new Error(access.reason ?? "Your blogging access is inactive.");
   const { error } = await supabaseAdmin.from("blog_posts").delete().eq("id", id);
   if (error) throw new Error(error.message);
   await audit("blog.member.delete_draft", id, context.userId);

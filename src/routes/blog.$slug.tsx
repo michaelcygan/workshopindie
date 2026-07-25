@@ -64,7 +64,10 @@ export const Route = createFileRoute("/blog/$slug")({
           : { "@type": "Organization", name: p.author_name || "Workshop" };
     return {
       meta,
-      links: [{ rel: "canonical", href: url }],
+      links: [
+        { rel: "canonical", href: url },
+        ...(img ? [{ rel: "preload", as: "image", href: img, fetchpriority: "high" }] : []),
+      ],
       scripts: [
         {
           type: "application/ld+json",
@@ -168,6 +171,8 @@ function BlogPostPage() {
         <img
           src={post.cover_image_url}
           alt={post.cover_image_alt ?? post.title}
+          fetchPriority="high"
+          decoding="async"
           className="mt-8 w-full rounded-3xl border border-border object-cover"
         />
       )}
