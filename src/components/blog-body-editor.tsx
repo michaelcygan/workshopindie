@@ -60,7 +60,7 @@ function normalizeUrl(input: string): string | null {
   }
 }
 
-export function BlogBodyEditor({ value, onChange, readOnly, onDirty }: BlogBodyEditorProps) {
+export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEntityInsert }: BlogBodyEditorProps) {
   const ref = useRef<HTMLTextAreaElement>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkText, setLinkText] = useState("");
