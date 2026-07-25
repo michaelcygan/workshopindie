@@ -244,7 +244,29 @@
     background-image: radial-gradient(60% 80% at 20% 0%, oklch(0.62 0.22 350 / 0.10), transparent 60%),
                       radial-gradient(50% 60% at 90% 10%, oklch(0.62 0.24 295 / 0.10), transparent 60%);
   }
+  .speaking-halo {
+    background: conic-gradient(from 0deg,
+      oklch(0.76 0.15 55),
+      oklch(0.68 0.17 32),
+      oklch(0.60 0.16 24),
+      oklch(0.68 0.17 32),
+      oklch(0.76 0.15 55));
+    box-shadow: 0 0 0 2px oklch(0.68 0.17 32 / 0.25), 0 0 18px oklch(0.68 0.17 32 / 0.45);
+  }
 }
+
+@keyframes speaking-halo-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes speaking-halo-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px oklch(0.68 0.17 32 / 0.25), 0 0 14px oklch(0.68 0.17 32 / 0.40); }
+  50%      { box-shadow: 0 0 0 3px oklch(0.68 0.17 32 / 0.40), 0 0 22px oklch(0.68 0.17 32 / 0.65); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .speaking-halo__spin { animation: speaking-halo-spin 3.6s linear infinite; }
+  .speaking-halo { animation: speaking-halo-pulse 1.8s ease-in-out infinite; }
+}
+
 
 @keyframes marquee-x {
   from { transform: translateX(0); }
