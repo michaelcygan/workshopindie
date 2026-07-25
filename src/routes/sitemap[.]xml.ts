@@ -32,12 +32,13 @@ export const Route = createFileRoute("/sitemap.xml")({
           urls.push({ loc: `${SITE}/${p}`, priority: p === "" ? 1.0 : 0.7 });
         }
 
-        const [works, profiles, workshops, collabs, cities] = await Promise.all([
+        const [works, profiles, workshops, collabs, cities, posts] = await Promise.all([
           sb.from("works").select("slug,published_at").eq("status", "published").in("visibility", ["public", "unlisted"]).order("published_at", { ascending: false }).limit(45000),
           sb.from("profiles").select("username,updated_at").not("username", "is", null).limit(45000),
           sb.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active", "finalizing", "shipped"]).limit(10000),
           sb.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(10000),
           sb.from("cities").select("slug").limit(2000),
+          sb.from("blog_posts").select("slug,updated_at,published_at").eq("status", "published").order("published_at", { ascending: false }).limit(5000),
         ]);
 
 
@@ -46,6 +47,7 @@ export const Route = createFileRoute("/sitemap.xml")({
         for (const w of workshops.data ?? []) urls.push({ loc: `${SITE}/workshops/${w.slug}`, lastmod: w.updated_at ?? undefined, priority: 0.7 });
         for (const c of collabs.data ?? []) urls.push({ loc: `${SITE}/collab/${c.slug}`, lastmod: c.updated_at ?? undefined, priority: 0.7 });
         for (const c of cities.data ?? []) urls.push({ loc: `${SITE}/g/${c.slug}`, priority: 0.5 });
+        for (const p of posts.data ?? []) urls.push({ loc: `${SITE}/blog/${p.slug}`, lastmod: p.updated_at ?? p.published_at ?? undefined, priority: 0.7 });
 
         const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
