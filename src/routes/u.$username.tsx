@@ -441,6 +441,7 @@ function ProfilePage() {
     setSeenCollabKey(window.localStorage.getItem(dismissKey));
   }, [dismissKey]);
   const currentTab: ProfileTab = search.tab ?? "works";
+  const loaderData = Route.useLoaderData();
   useEffect(() => {
     if (currentTab !== "collabs") return;
     if (!dismissKey || !latestCollabKey || typeof window === "undefined") return;
