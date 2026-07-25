@@ -69,7 +69,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         slug: r.slug,
         label: r.title,
         sublabel: r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null,
-        image: r.cover_url,
+        image: null,
       }));
     },
   });
@@ -81,7 +81,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
     queryFn: async (): Promise<BlogEntityTag[]> => {
       let req = supabase
         .from("collab_posts")
-        .select("id,slug,title,description,cover_url")
+        .select("id,slug,title,description")
         .eq("status", "open")
         .order("created_at", { ascending: false })
         .limit(8);
@@ -93,7 +93,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         slug: r.slug,
         label: r.title,
         sublabel: r.description ?? null,
-        image: r.cover_url,
+        image: null,
       }));
     },
   });
@@ -151,7 +151,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
           groupSlug: r.group!.slug,
           label: r.title,
           sublabel: r.group!.name,
-          image: r.cover_url,
+          image: null,
         }));
     },
   });

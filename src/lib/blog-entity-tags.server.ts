@@ -30,9 +30,9 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     collabIds.length
       ? supabaseAdmin
           .from("collab_posts")
-          .select("id,slug,title,description,cover_url,status")
+          .select("id,slug,title,description,status")
           .in("id", collabIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; cover_url: string | null; status: string }> }),
+      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; description: string | null; status: string }> }),
     groupIds.length
       ? supabaseAdmin
           .from("groups")
@@ -71,7 +71,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
     if (r.collab_id) {
       const c = collabMap.get(r.collab_id);
       if (!c) continue;
-      out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.description ?? null, image: c.cover_url });
+      out.push({ kind: "collab", id: c.id, slug: c.slug, label: c.title, sublabel: c.description ?? null, image: null });
       continue;
     }
     if (r.group_id) {
