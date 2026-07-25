@@ -69,6 +69,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     })),
   );
   const [authorSearch, setAuthorSearch] = useState("");
+  const [entityTags, setEntityTags] = useState<BlogEntityTag[]>(initial?.entity_tags ?? []);
+  const [entityPickerOpen, setEntityPickerOpen] = useState(false);
+  const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   
 
   const create = useServerFn(adminCreateDraft);
