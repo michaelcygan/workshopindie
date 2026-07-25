@@ -50,6 +50,7 @@ function PricingPage() {
             "Apply to unlimited Collabs",
             "Your home city — join, post, browse",
             "30 minutes / day in the Lounge",
+            "Draft 1 blog post (publishing requires Plus)",
             "DMs, comments, credits — never gated",
           ]}
         />
@@ -74,6 +75,7 @@ function PricingPage() {
             "Unlimited active open Collabs + boosted placement",
             "All cities — join, post, filter gallery",
             "Unlimited Lounge time + priority seat",
+            "Publish to the Workshop blog with your byline",
             "Plus badge on your profile + Credits strip",
             "Work analytics (views, saves, origin cities)",
             "Early access to new features as they ship",

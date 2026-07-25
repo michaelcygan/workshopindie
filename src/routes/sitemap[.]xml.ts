@@ -38,7 +38,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           sb.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active", "finalizing", "shipped"]).limit(10000),
           sb.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(10000),
           sb.from("cities").select("slug").limit(2000),
-          sb.from("blog_posts").select("slug,updated_at,published_at").eq("status", "published").order("published_at", { ascending: false }).limit(5000),
+          sb.from("blog_posts").select("slug,updated_at,published_at").eq("status", "published").eq("show_in_blog_index", true).order("published_at", { ascending: false }).limit(5000),
         ]);
 
 

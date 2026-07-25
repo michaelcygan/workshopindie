@@ -1,84 +1,56 @@
+# Plus Member Blogging — Remaining Waves (4–7)
 
-# Plus Member Blogging — Implementation Plan
-
-Extend the existing admin blog into a self-service publishing layer for Plus members and invited writers. Reuse every current system (editor, renderer, peek, lightbox, footer, profile tab, Plus, moderation, share, reports, storage). No new deps. Track waves in `.lovable/plan.md`.
-
-## Access matrix (source of truth = server)
-
-| State | Draft | Publish | Edit existing | Unpublish | Delete never-published |
-|---|---|---|---|---|---|
-| Free | — | — | — | — | — |
-| Trial | 1 active | — | — | — | ✓ |
-| Active Plus | many | ✓ | ✓ | ✓ | ✓ |
-| Admin grant (active) | many | ✓ | ✓ | ✓ | ✓ |
-| Lapsed | — | — | ✓ | ✓ | ✓ |
-| Suspended | — | — | — | ✓ | ✓ |
-
-Suspension always wins. `has_plus()` is NOT authoritative for publishing.
-
-## Wave 0 — Baseline
-Read current blog/plus/moderation/share/reports code and latest migrations. Run lint+build, record baseline. Rewrite `.lovable/plan.md` with this plan and an acceptance checklist.
-
-## Wave 1 — Data + entitlement + storage
-- Migration: `public.blog_writer_access` (user_id PK, status active|suspended|revoked, granted_by, granted_at, expires_at, note, timestamps). RLS: self-read only; admins manage; service_role full. Updated-at trigger.
-- Extend `blog_posts`: `publication_type text not null` (editorial|member), `show_in_blog_index boolean not null`. Backfill existing = editorial/true. Indexes on `(created_by,status,updated_at desc)` and `(show_in_blog_index,status,published_at desc)`. Keep `author_profile_id`. Add index `blog_post_authors(profile_id, blog_post_id)`.
-- Storage bucket `blog-images` (public read, no listing). Path `$userId/$postId/$assetId.jpg`. RLS: write only where first segment = auth.uid(). Reuse existing image helper (12MB cap, 2048px downscale, ~3MB target).
-- `src/lib/blog-access.server.ts` returns `{mode, canCreateDraft, canPublish, canEditExisting, canUnpublish, canDeleteNeverPublishedDraft, activeDraftLimit, reason}`. Expose via authenticated `getMyBlogAccess` server fn.
-
-## Wave 2 — Member server functions
-New `src/lib/blog-member.functions.ts` + `blog-member.server.ts`. All use `requireSupabaseAuth`, zod, server-resolved access + ownership, moderation, audit, rate limits.
-
-Functions: `getMyBlogAccess`, `listMyBlogPosts` (keyset, 25, dashboard fields only, no body), `createMyBlogDraft` (atomic RPC creates post + self-attribution; trial returns existing draft), `getMyBlogPost` (owner-only, includes updated_at + access), `updateMyBlogPost` (whitelist fields only; slug editable until first publish then locked; optimistic concurrency; moderation only when currently published), `publishMyBlogPost` (re-resolve access, validate, moderate all text fields incl. alts, finalize slug, ensure self-attribution, set published), `unpublishMyBlogPost` (allowed even when lapsed/suspended; keep slug + published_at), `deleteMyBlogDraft` (hard-delete only if never published; cascade attributions; best-effort storage cleanup).
-
-Server owns: `created_by`, `updated_by`, `author_profile_id`, `author_name`, `publication_type=member`, `show_in_blog_index=false`, `status`, `published_at`, attributions. Members cannot set them.
-
-Member link/image rules: no raw HTML, ≤20 outbound links, ≤12 inline images, inline images must be workshop `blog-images` URLs, reject `javascript:`/`data:`.
-
-## Wave 3 — Shared editor + member CMS UI
-- Extract `src/components/blog-editor-core.tsx` (pure presentation: title, slug preview, excerpt, cover, alt, MD toolbar/textarea, inline image, edit/preview tabs, word count, reading time, SEO fields, search + social preview, save state).
-- Wrappers: `AdminBlogEditor` (unchanged behavior, multi-author, distribution) and `MemberBlogEditor` (member fns only, self-attributed, no distribution controls, no admin queries).
-- Routes: `src/routes/me.blog.index.tsx` (dashboard, Drafts/Published, per-state empty/gate/trial/lapsed/suspended cards, "New post" creates draft then redirects) and `src/routes/me.blog.$id.tsx` (editor). Both `noindex, nofollow`, mobile-friendly.
-- Draft autosave (~1.5–2s debounce, skip unchanged, beforeunload only when dirty). Published edits require explicit "Save Changes" + moderation. Inline image = upload (not URL) with alt required. Publish success dialog with canonical URL + share/copy/view/profile actions.
+Waves 1–3 are live: entitlement resolver, member server fns, `/me/blog` dashboard + editor. What's left is wiring it into the rest of the app, cleaning up profile/SEO/share behavior, giving admins management tools, and hardening.
 
 ## Wave 4 — Navigation, Settings, Plus, checkout
-- Desktop Create menu: add "Write a blog post" → `/me/blog` (no extra entitlement query).
-- Account menu "My stuff" → "Blog posts" (mobile + desktop). Do NOT add a 6th persistent MobileNav item.
-- Profile owner viewing populated Blog tab sees small "Manage posts" → `/me/blog`.
-- `settings.tsx` Plus section: mention blogging, add "Manage Blog", reflect state from `getMyBlogAccess`. Reuse existing billing portal.
-- `pricing.tsx` + `plus-gate.tsx`: add benefit line + honest trial framing.
-- Checkout return: enumerated `destination=blog` → invalidate subscription + blog-access queries, "Continue writing" CTA.
+
+- Desktop "Create" menu: add **Write a blog post** → `/me/blog` (no extra entitlement query — dashboard handles the gate).
+- Account menu → "My stuff": add **Blog posts** (mobile + desktop). Do NOT add a 6th persistent MobileNav item.
+- Profile owner viewing their populated Blog tab: small **Manage posts** link → `/me/blog`.
+- `settings.tsx` Plus section: mention blogging, add **Manage Blog** button, reflect state from `getMyBlogAccess` (Trial / Active / Lapsed / Suspended / None). Reuse existing billing portal link.
+- `pricing.tsx` + `plus-gate.tsx`: add benefit line "Publish to the Workshop blog" + honest trial framing (1 draft, publish requires Plus).
+- Checkout return: enumerated `destination=blog` → invalidate `subscription` + `blog-access` queries, show "Continue writing" CTA that routes to `/me/blog`.
 
 ## Wave 5 — Profile, distribution, sharing, SEO
-- Profile tab order: `["works","blog","collabs","activity","about"]`. Hide Blog when 0 published attributed.
-- Replace `.in(ids)` profile listing with one indexed join or RPC; keyset paginate 12/page; card fields only.
-- Keep cached SEO count loader but revalidate on own-profile and when `tab=blog`. Invalidate `profile-blog*` keys after publish/unpublish.
-- Filter `show_in_blog_index=true` in: `listPublishedPostsServer`, `/blog`, `/blog/rss.xml`, global related. Do NOT filter: `/blog/$slug`, profile tab, profile count, sitemap, dashboard.
-- Related-writing: prefer same primary author's other published posts, backfill with indexed posts.
-- `src/components/blog-share-actions.tsx` (canonical URL only; `navigator.share` w/ clipboard fallback; ignore AbortError). Used in article page, peek, publish success.
-- Extend share analytics enum with `blog_post` (native|copy). Extend reports `ReportEntityType` with `blog_post`; small Report action on member articles + peek.
-- SEO integrity preserved. Member CMS routes noindex. No `/u/$username/blog/$slug` duplicate.
+
+- Profile tab order becomes `["works","blog","collabs","activity","about"]`. Hide Blog tab when the member has 0 published attributed posts.
+- Replace the current `.in(ids)` profile listing with one indexed join (or RPC) returning card fields only; keyset paginate 12/page. Body loads only on peek/canonical.
+- Keep the cached SEO count loader; revalidate on own-profile view and when `tab=blog`. Invalidate `profile-blog*` after publish/unpublish.
+- Filter `show_in_blog_index=true` in: `listPublishedPostsServer`, `/blog` index, `/blog/rss.xml`, global related. Do NOT filter: `/blog/$slug`, profile tab, profile count, sitemap, `/me/blog` dashboard.
+- Related-writing: prefer the same primary author's other published posts, backfill with indexed posts.
+- `src/components/blog-share-actions.tsx`: canonical URL only; `navigator.share` with clipboard fallback; ignore `AbortError`. Used on article page, peek, publish-success dialog.
+- Extend share analytics enum with `blog_post` (`native` | `copy`). Extend `ReportEntityType` with `blog_post`; small Report action on member articles + peek.
+- SEO integrity preserved. `/me/blog*` routes stay `noindex, nofollow`. No `/u/$username/blog/$slug` duplicate URL.
 
 ## Wave 6 — Admin + lifecycle
-- `admin.users.$id`: show blog access + Plus + grant + counts; actions grant/revoke/suspend/resume writer access with optional expiration/note; audit + invalidate. Optional confirmed "also unpublish current articles" on suspend.
-- `/admin/blog`: filters All/Editorial/Member/Draft/Published/Featured/Profile-only; paginate.
-- Admin can toggle `show_in_blog_index` on published member posts (no URL/profile change; audit).
+
+- `admin.users.$id`: show blog access + Plus status + counts. Actions: grant / revoke / suspend / resume writer access with optional expiration + note. Audit log entry, invalidate caches. Optional confirmed "also unpublish current articles" checkbox on suspend.
+- `/admin/blog`: add filters All / Editorial / Member / Draft / Published / Featured / Profile-only. Paginate.
+- Admin can toggle `show_in_blog_index` on published member posts (does not change URL or profile visibility; audit).
 - Admin edits must not mutate `created_by`, `publication_type`, or silently re-index.
-- Account soft-delete: unpublish member posts, `show_in_blog_index=false`, remove from public surfaces; keep records for audit.
+- Account soft-delete flow: unpublish that user's member posts, set `show_in_blog_index=false`, remove from public surfaces; keep records for audit.
 
 ## Wave 7 — Perf, verification, release
-- No global entitlement queries on every page. Dashboard paginated. Profile initial = count only, cards on tab open, body on peek/canonical open. No N+1. No bodies in list responses. Fixed image ratios, lazy+async.
-- Public article cache: `public, max-age=0, s-maxage=60, stale-while-revalidate=120`.
-- Query invalidation set: `my-blog-posts`, `my-blog-post`, `blog-access`, `profile-blog`, `profile-blog-count`, `blog-peek`, `blog-related`.
-- Security matrix: manual verification of every row in "Security verification" list (spoof `created_by`, cross-user reads, slug bypass, RLS anon, unsafe MD protocols, remote inline images, cross-user storage writes, etc.).
-- Lifecycle matrix: free→trial→plus→lapsed→grant→suspended→delete, incl. cache/profile freshness after first publish.
-- Accessibility matrix per prompt.
-- Run `npm run lint` + `npm run build`. Regenerate Supabase types. No test runner exists — do NOT claim tests passed; execute the manual + SQL/RLS matrix.
 
-## Out of scope (do not build)
-Free monthly allowance, comments, claps, blog-follow, algorithmic feed, global uncurated feed, paywalls, per-author newsletters, custom domains, scheduling, collab editing, revisions, importers, AI tools, Story generator, IG direct publish, moderation vendor, new editor/CMS dep, extra persistent mobile nav item.
+- No global entitlement queries on every page load. Dashboard is paginated. Profile initial payload = count only; cards load on tab open; body loads on peek/canonical open. No N+1. No bodies in list responses. Fixed image aspect ratios, `loading="lazy"` + `decoding="async"`.
+- Public article cache header: `public, max-age=0, s-maxage=60, stale-while-revalidate=120`.
+- Query invalidation set kept consistent: `my-blog-posts`, `my-blog-post`, `blog-access`, `profile-blog`, `profile-blog-count`, `blog-peek`, `blog-related`, `home-blog-rail`.
+- Security matrix — manually verify: spoofed `created_by`, cross-user reads, slug bypass attempts, RLS on `anon`, unsafe markdown protocols (`javascript:`, `data:`), remote inline images blocked, cross-user storage writes blocked, member cannot set server-owned fields.
+- Lifecycle matrix: free → trial → plus → lapsed → grant → suspended → delete, including cache + profile freshness after first publish.
+- Accessibility matrix per original prompt.
+- Run lint + build. Regenerate Supabase types. No test runner — do the manual + SQL/RLS matrix; don't claim tests passed.
 
-## Acceptance checklist (tracked in .lovable/plan.md)
-Each wave lands with: migration applied, RLS verified, server access resolver used, member fns audited for field whitelist, UI states covered for all 6 access modes, invalidation wired, lint+build clean, manual matrix checked.
+## Technical notes
 
-## Suggested execution order after approval
-Wave 0 → 1 (migration first, then types, then access resolver) → 2 (member fns) → 3 (editor extraction + routes) → 4 (nav/settings/checkout) → 5 (profile/share/SEO) → 6 (admin) → 7 (hardening).
+- All new access checks go through `getMyBlogAccess` — never re-derive from `has_plus()` on the client.
+- Suspension always wins over Plus / grants.
+- Share + report analytics changes require enum extension migrations before UI wiring.
+- New Home Blog Rail is already live and will pick up `show_in_blog_index=true` filter automatically in Wave 5.
+
+## Out of scope (unchanged from original plan)
+
+Free monthly allowance, comments/claps/blog-follow, algorithmic feed, paywalls, per-author newsletters, custom domains, scheduling, collab editing, revisions, importers, AI writing tools, IG direct publish, new editor dependency, extra persistent mobile nav item.
+
+## Suggested execution order
+
+Wave 4 (nav/settings/checkout — small, unblocks discovery) → Wave 5 (profile/share/SEO — user-visible polish) → Wave 6 (admin controls) → Wave 7 (hardening + manual matrix).

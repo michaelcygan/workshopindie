@@ -29,9 +29,7 @@ import {
   Briefcase,
   LayoutGrid,
   Calendar,
-
-  
-
+  BookOpen,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
@@ -108,6 +106,9 @@ export function TopNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
+                <BookOpen className="mr-2 h-4 w-4" /> Write a blog post
+              </DropdownMenuItem>
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
@@ -164,6 +165,9 @@ export function TopNav() {
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
                       <Users className="mr-2 h-4 w-4" /> Network
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
+                      <BookOpen className="mr-2 h-4 w-4" /> Blog posts
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/events", search: { mine: true } })}>
                       <Ticket className="mr-2 h-4 w-4" /> My RSVPs

@@ -492,13 +492,20 @@ function PlusSection() {
         </div>
         <p className="mt-1 text-sm text-ink-muted">
           Plus removes the 10-work portfolio cap, lets you keep multiple Open Collabs live,
-          and unlocks unlimited Lounge time. $4.99/mo, cancel anytime.
+          unlocks unlimited Lounge time, and lets you publish to the Workshop blog. $4.99/mo, cancel anytime.
         </p>
-        <Link to="/pricing">
-          <Button size="sm" className="mt-3 rounded-full">
-            <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
-          </Button>
-        </Link>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link to="/pricing">
+            <Button size="sm" className="rounded-full">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
+            </Button>
+          </Link>
+          <Link to="/me/blog">
+            <Button size="sm" variant="outline" className="rounded-full">
+              Manage Blog
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -539,6 +546,11 @@ function PlusSection() {
           {opening ? "Opening…" : "Manage billing"}
           <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
         </Button>
+        <Link to="/me/blog">
+          <Button size="sm" variant="outline" className="rounded-full">
+            Manage Blog
+          </Button>
+        </Link>
         {willCancel && (
           <Link to="/pricing">
             <Button size="sm" className="rounded-full">

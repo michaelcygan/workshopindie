@@ -33,7 +33,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
-const TAB_VALUES = ["works", "collabs", "blog", "activity", "about"] as const;
+const TAB_VALUES = ["works", "blog", "collabs", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 

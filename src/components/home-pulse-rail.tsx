@@ -220,6 +220,7 @@ async function fetchPulse(): Promise<Pulse[]> {
       .from("blog_posts")
       .select("id, title, slug, cover_image_url, author_name, published_at")
       .eq("status", "published")
+      .eq("show_in_blog_index", true)
       .order("published_at", { ascending: false, nullsFirst: false })
       .limit(4),
   ]);
