@@ -12,7 +12,8 @@ import {
   adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon, ChevronUp, ChevronDown, X } from "lucide-react";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { BlogBodyEditor } from "@/components/blog-body-editor";
 
 const SITE = "https://workshopindie.com";
 
