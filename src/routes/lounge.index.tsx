@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
+import { Mic, MicOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
