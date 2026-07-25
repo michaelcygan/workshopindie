@@ -106,6 +106,9 @@ export function TopNav() {
               <DropdownMenuItem onClick={() => navigate({ to: "/collab/new" })}>
                 <Megaphone className="mr-2 h-4 w-4" /> Post a Collab
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
+                <BookOpen className="mr-2 h-4 w-4" /> Write a blog post
+              </DropdownMenuItem>
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
