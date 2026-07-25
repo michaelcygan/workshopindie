@@ -144,6 +144,7 @@ function RootComponent() {
           <MobileBrandHeader />
           <TopNav />
           <Outlet />
+          <SiteFooter />
           <MobileNav />
           <WelcomeTour />
           <FirstRunHint />
