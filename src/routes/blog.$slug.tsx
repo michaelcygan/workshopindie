@@ -176,7 +176,51 @@ function BlogPostPage() {
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
+      <ShareRow slug={post.slug} title={post.title} postId={post.id} />
+
       <BlogArticleFooter postId={post.id} mode="article" />
     </article>
   );
 }
+
+function ShareRow({ slug, title, postId }: { slug: string; title: string; postId: string }) {
+  const url = `${SITE}/blog/${slug}`;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
+    } catch {
+      toast.error("Couldn't copy link");
+    }
+  }
+  async function share() {
+    if (typeof navigator !== "undefined" && "share" in navigator) {
+      try {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share({ title, url });
+        return;
+      } catch {
+        // fall through to copy
+      }
+    }
+    await copy();
+  }
+  return (
+    <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
+      <div className="flex items-center gap-2">
+        <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={share}>
+          <Link2 className="h-4 w-4" /> Share
+        </Button>
+      </div>
+      <ReportDialog
+        entityType="blog_post"
+        entityId={postId}
+        trigger={
+          <Button variant="ghost" size="sm" className="rounded-full gap-1.5 text-ink-muted hover:text-ink">
+            <Flag className="h-4 w-4" /> Report
+          </Button>
+        }
+      />
+    </div>
+  );
+}
+
