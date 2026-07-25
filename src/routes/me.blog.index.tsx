@@ -1,13 +1,36 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getMyBlogAccess, listMyBlogPosts, createMyBlogDraft } from "@/lib/blog-member.functions";
-import { PenLine, Plus, ExternalLink, ChevronRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  getMyBlogAccess,
+  listMyBlogPosts,
+  createMyBlogDraft,
+  unpublishMyBlogPost,
+  deleteMyBlogDraft,
+} from "@/lib/blog-member.functions";
+import { PenLine, Plus, ExternalLink, ChevronRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
+
 
 export const Route = createFileRoute("/me/blog/")({
   head: () => ({
