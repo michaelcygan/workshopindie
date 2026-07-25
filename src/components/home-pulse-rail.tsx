@@ -290,6 +290,22 @@ async function fetchPulse(): Promise<Pulse[]> {
     }
   }
 
+  if (blogRes.status === "fulfilled" && blogRes.value.data) {
+    for (const r of blogRes.value.data as Array<{
+      id: string; title: string; slug: string; cover_image_url: string | null; author_name: string | null;
+    }>) {
+      items.push({
+        kind: "blog",
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        cover_url: r.cover_image_url,
+        author_name: r.author_name,
+      });
+    }
+  }
+
+
   // Light interleave so kinds aren't clumped: round-robin by kind.
   const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [], blog: [] };
   for (const it of items) byKind[it.kind].push(it);
