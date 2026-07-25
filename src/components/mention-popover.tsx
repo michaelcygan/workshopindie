@@ -97,6 +97,7 @@ export function MentionPopover({
     if (includeGroups) push(groups.data);
     if (includeEvents) push(events.data);
     if (includeWorks) push(works.data);
+    if (includePosts) push(posts.data);
     return list;
   }, [
     filteredExtras,
@@ -105,11 +106,13 @@ export function MentionPopover({
     groups.data,
     events.data,
     works.data,
+    posts.data,
     includeUsers,
     includeCollabs,
     includeGroups,
     includeEvents,
     includeWorks,
+    includePosts,
   ]);
 
   const [active, setActive] = useState(0);
