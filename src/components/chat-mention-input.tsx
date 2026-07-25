@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Calendar, Megaphone, Send, Users } from "lucide-react";
+import { Calendar, FileText, Megaphone, Send, Users } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { MentionPopover } from "@/components/mention-popover";
 import { GroupPeek } from "@/components/group-peek";
 import { EventPeek } from "@/components/event-peek";
+import { BlogPostPeek } from "@/components/blog-post-peek";
 import type { MentionSuggestion } from "@/lib/mention-suggestions";
 
 export type MentionCandidate = {
@@ -133,7 +134,7 @@ export function ChatMentionInput({
       <MentionPopover
         open={open}
         query={query}
-        sections={["user", "collab", "group", "event", "work"]}
+        sections={["user", "collab", "group", "event", "work", "post"]}
         extraUsers={extraUsers}
         onPick={insertSuggestion}
         onClose={() => setOpen(false)}
@@ -206,7 +207,8 @@ export function MessageBody({
       | { type: "link"; text: string; href: string }
       | { type: "collab"; label: string; slug: string }
       | { type: "group"; label: string; slug: string }
-      | { type: "event"; label: string; groupSlug: string; eventSlug: string };
+      | { type: "event"; label: string; groupSlug: string; eventSlug: string }
+      | { type: "post"; label: string; slug: string };
 
     type Hit = { start: number; end: number; seg: Seg };
     const hits: Hit[] = [];
@@ -215,6 +217,7 @@ export function MessageBody({
       /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
     const groupRe = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
     const collabRe = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
+    const postRe = /\[([^\]\n]{1,120})\]\(\/blog\/([a-zA-Z0-9_-]{1,120})\)/g;
     const mentionRe = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
     const urlRe = /\bhttps?:\/\/[^\s<]+/g;
     const bareUrlRe =
@@ -234,6 +237,14 @@ export function MessageBody({
         start: m.index,
         end: m.index + m[0].length,
         seg: { type: "group", label: m[1], slug: m[2] },
+      });
+    }
+    while ((m = postRe.exec(body))) {
+      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "post", label: m[1], slug: m[2] },
       });
     }
     while ((m = collabRe.exec(body))) {
@@ -358,6 +369,9 @@ export function MessageBody({
             </EventPeek>
           );
         }
+        if (p.type === "post") {
+          return <PostChip key={i} slug={p.slug} label={p.label} />;
+        }
         // mention
         const isMe = !!meUsername && p.user?.username?.toLowerCase() === meUsername.toLowerCase();
         const chip = (
@@ -381,5 +395,25 @@ export function MessageBody({
         return <span key={i}>{chip}</span>;
       })}
     </span>
+  );
+}
+
+function PostChip({ slug, label }: { slug: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-ink/20 bg-ink/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-ink hover:bg-ink/10"
+      >
+        <FileText className="h-3 w-3" />
+        {label}
+      </button>
+      <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
+    </>
   );
 }

@@ -3,6 +3,7 @@ import { Calendar, FileText, Megaphone, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  useBlogPostSuggestions,
   useEventSuggestions,
   useGroupSuggestions,
   useMyCollabSuggestions,
@@ -50,12 +51,14 @@ export function MentionPopover({
   const includeGroups = sections.includes("group");
   const includeEvents = sections.includes("event");
   const includeWorks = sections.includes("work");
+  const includePosts = sections.includes("post");
 
   const users = useUserSuggestions(query, open && includeUsers);
   const collabs = useMyCollabSuggestions(uid, query, open && includeCollabs);
   const groups = useGroupSuggestions(uid, query, open && includeGroups);
   const events = useEventSuggestions(uid, query, open && includeEvents);
   const works = useWorkSuggestions(uid, query, open && includeWorks);
+  const posts = useBlogPostSuggestions(query, open && includePosts);
 
   const q = query.trim().toLowerCase();
 
@@ -94,6 +97,7 @@ export function MentionPopover({
     if (includeGroups) push(groups.data);
     if (includeEvents) push(events.data);
     if (includeWorks) push(works.data);
+    if (includePosts) push(posts.data);
     return list;
   }, [
     filteredExtras,
@@ -102,11 +106,13 @@ export function MentionPopover({
     groups.data,
     events.data,
     works.data,
+    posts.data,
     includeUsers,
     includeCollabs,
     includeGroups,
     includeEvents,
     includeWorks,
+    includePosts,
   ]);
 
   const [active, setActive] = useState(0);
@@ -151,6 +157,7 @@ export function MentionPopover({
     group: "Groups",
     event: "Upcoming events",
     work: "Works",
+    post: "Posts",
   };
 
   return (
@@ -247,11 +254,20 @@ function SuggestionIcon({ suggestion: s }: { suggestion: MentionSuggestion }) {
       </span>
     );
   }
-  // work
+  if (s.kind === "work") {
+    return s.avatar ? (
+      <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
+    ) : (
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+        <FileText className="h-3.5 w-3.5" />
+      </span>
+    );
+  }
+  // post
   return s.avatar ? (
     <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded object-cover" />
   ) : (
-    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-amber-500/15 text-amber-600">
+    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-ink/10 text-ink">
       <FileText className="h-3.5 w-3.5" />
     </span>
   );
