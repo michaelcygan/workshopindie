@@ -250,6 +250,27 @@ function WorkshopPreflight() {
     openLounge(p.medium, p.title);
   }
 
+  // Auto-open a suggested Lounge when arrived via ?prompt=…&medium=…
+  const search = Route.useSearch();
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    const promptTitle = (search.prompt ?? "").trim();
+    if (!promptTitle) return;
+    if (loading || !user) return;
+    if (devices === null) return; // wait for AV detection
+    if (busy !== null) return;
+    if (!canDrop) return;
+    autoOpenedRef.current = true;
+    const mediumParam = (search.medium ?? "").trim();
+    const medium = (CATEGORIES.find((c) => c.id === mediumParam)?.id ?? null) as Category | null;
+    // Clear params so a refresh doesn't re-open another room.
+    router.navigate({ to: "/lounge", search: {}, replace: true });
+    openLounge(medium, promptTitle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.prompt, search.medium, loading, user, devices, busy, canDrop]);
+
+
 
   const subtitle =
     liveCount === 0
