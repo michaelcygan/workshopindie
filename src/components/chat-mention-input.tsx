@@ -368,6 +368,8 @@ export function MessageBody({
               </Link>
             </EventPeek>
           );
+        if (p.type === "post") {
+          return <PostChip key={i} slug={p.slug} label={p.label} />;
         }
         // mention
         const isMe = !!meUsername && p.user?.username?.toLowerCase() === meUsername.toLowerCase();
