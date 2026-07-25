@@ -184,6 +184,9 @@ export function renderTodayBody(body: string): ReactNode {
         </EventPeek>
       );
     }
+    if (s.type === "post") {
+      return <PostPill key={i} label={s.label} slug={s.slug} />;
+    }
     if (s.type === "url") {
       return <UrlSegment key={i} href={s.href} />;
     }
