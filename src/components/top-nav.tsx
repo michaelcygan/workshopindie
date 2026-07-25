@@ -166,6 +166,9 @@ export function TopNav() {
                     <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
                       <Users className="mr-2 h-4 w-4" /> Network
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
+                      <BookOpen className="mr-2 h-4 w-4" /> Blog posts
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => navigate({ to: "/events", search: { mine: true } })}>
                       <Ticket className="mr-2 h-4 w-4" /> My RSVPs
 
