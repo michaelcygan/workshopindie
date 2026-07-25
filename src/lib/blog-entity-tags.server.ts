@@ -137,21 +137,21 @@ async function validateEntitiesExist(inputs: EntityInput[]) {
   const byKind: Record<BlogEntityKind, string[]> = { work: [], collab: [], group: [], event: [], profile: [] };
   for (const t of inputs) byKind[t.kind].push(t.id);
 
-  const checks: Array<Promise<{ kind: BlogEntityKind; found: Set<string> }>> = [];
+  const checks: Array<PromiseLike<{ kind: BlogEntityKind; found: Set<string> }>> = [];
   if (byKind.work.length) {
-    checks.push(supabaseAdmin.from("works").select("id").in("id", byKind.work).then(({ data }) => ({ kind: "work", found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(supabaseAdmin.from("works").select("id").in("id", byKind.work).then(({ data }) => ({ kind: "work" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
   }
   if (byKind.collab.length) {
-    checks.push(supabaseAdmin.from("collab_posts").select("id").in("id", byKind.collab).then(({ data }) => ({ kind: "collab", found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(supabaseAdmin.from("collab_posts").select("id").in("id", byKind.collab).then(({ data }) => ({ kind: "collab" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
   }
   if (byKind.group.length) {
-    checks.push(supabaseAdmin.from("groups").select("id").in("id", byKind.group).then(({ data }) => ({ kind: "group", found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(supabaseAdmin.from("groups").select("id").in("id", byKind.group).then(({ data }) => ({ kind: "group" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
   }
   if (byKind.event.length) {
-    checks.push(supabaseAdmin.from("group_events").select("id").in("id", byKind.event).then(({ data }) => ({ kind: "event", found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(supabaseAdmin.from("group_events").select("id").in("id", byKind.event).then(({ data }) => ({ kind: "event" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
   }
   if (byKind.profile.length) {
-    checks.push(supabaseAdmin.from("profiles").select("id").in("id", byKind.profile).then(({ data }) => ({ kind: "profile", found: new Set((data ?? []).map((r) => r.id)) })));
+    checks.push(supabaseAdmin.from("profiles").select("id").in("id", byKind.profile).then(({ data }) => ({ kind: "profile" as BlogEntityKind, found: new Set((data ?? []).map((r) => r.id)) })));
   }
   const results = await Promise.all(checks);
   const foundByKind = new Map(results.map((r) => [r.kind, r.found]));
