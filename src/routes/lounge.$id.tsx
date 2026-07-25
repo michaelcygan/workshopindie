@@ -30,7 +30,15 @@ import { CollabComposer } from "@/routes/collab.new";
 
 
 
-const searchSchema = z.object({ mode: z.enum(["voice", "video"]).optional() });
+// Accepts the new chat|audio vocabulary and coerces legacy voice|video values
+// (voice → audio, video → audio). Cameras no longer exist in Lounge; legacy
+// video links never reactivate camera behavior — they simply enter as audio.
+const searchSchema = z.object({
+  mode: z
+    .enum(["chat", "audio", "voice", "video"])
+    .optional()
+    .transform((v) => (v === "video" || v === "voice" ? "audio" : v)),
+});
 const FALLBACK_TITLE = "Lounge";
 
 export const Route = createFileRoute("/lounge/$id")({
