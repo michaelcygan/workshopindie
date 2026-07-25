@@ -8,6 +8,12 @@ import {
   recordWebrtcSnapshot,
 } from "@/lib/turn.functions";
 import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
+import {
+  claimLoungeScreenShare,
+  refreshLoungeScreenShare,
+  releaseLoungeScreenShare,
+  LEASE_HEARTBEAT_MS,
+} from "@/lib/lounge-screen-lease";
 
 const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
@@ -252,6 +258,10 @@ export function useMediaRoom(roomId: string | undefined) {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
   const screenBusyRef = useRef<boolean>(false);
+  // True while WE hold the DB lease for this room's screen surface.
+  const holdsLeaseRef = useRef<boolean>(false);
+  const leaseHeartbeatRef = useRef<number | null>(null);
+
 
   // Session identity — nulled by leave() so late signals are dropped.
   const sessionIdRef = useRef<string | null>(null);
@@ -1300,6 +1310,15 @@ export function useMediaRoom(roomId: string | undefined) {
     // Null the session id BEFORE tearing down so any inbound signal already
     // queued in the broadcast handler is dropped by handleSignal.
     sessionIdRef.current = null;
+    // Release lease + heartbeat if we happen to still hold the surface.
+    if (leaseHeartbeatRef.current != null) {
+      window.clearInterval(leaseHeartbeatRef.current);
+      leaseHeartbeatRef.current = null;
+    }
+    if (holdsLeaseRef.current && myId && roomIdRef.current) {
+      void releaseLoungeScreenShare(roomIdRef.current, myId);
+    }
+    holdsLeaseRef.current = false;
     teardownMedia();
     const ch = channelRef.current;
     channelRef.current = null;
@@ -1312,7 +1331,8 @@ export function useMediaRoom(roomId: string | undefined) {
     setError(null);
     setModeState("voice");
     modeRef.current = "voice";
-  }, []);
+  }, [myId]);
+
 
   // -------------------------------------------------------------------------
   // Revalidate: called after visibility restore, bfcache pageshow, online, or
@@ -1623,6 +1643,13 @@ export function useMediaRoom(roomId: string | undefined) {
     screenStreamRef.current = null;
     originalCamTrackRef.current = null;
     setScreenStream(null);
+    // Clear heartbeat & release lease (the DB row is the source of truth).
+    if (leaseHeartbeatRef.current != null) {
+      window.clearInterval(leaseHeartbeatRef.current);
+      leaseHeartbeatRef.current = null;
+    }
+    const wasHolder = holdsLeaseRef.current;
+    holdsLeaseRef.current = false;
     if (myId) {
       setScreenSharerId((cur) => (cur === myId ? null : cur));
       if (channelRef.current) {
@@ -1634,6 +1661,9 @@ export function useMediaRoom(roomId: string | undefined) {
             room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
           } satisfies SignalEvent,
         });
+      }
+      if (wasHolder && roomIdRef.current) {
+        void releaseLoungeScreenShare(roomIdRef.current, myId);
       }
     }
     for (const pc of pcsRef.current.values()) {
@@ -1663,7 +1693,25 @@ export function useMediaRoom(roomId: string | undefined) {
       return;
     }
     if (screenStreamRef.current || screenBusyRef.current) return;
+    if (!roomIdRef.current) return;
     screenBusyRef.current = true;
+
+    // 1. Claim the DB lease BEFORE opening the OS picker so a rejected
+    //    attempt never prompts the user.
+    const claim = await claimLoungeScreenShare(roomIdRef.current, myId);
+    if (!claim.ok) {
+      screenBusyRef.current = false;
+      if (claim.reason === "busy") {
+        setError("Someone else is already sharing their screen.");
+      } else if (claim.reason === "not_in_room") {
+        setError("Rejoin the room to share your screen.");
+      } else {
+        setError(claim.message || "Couldn't claim the screen surface.");
+      }
+      return;
+    }
+    holdsLeaseRef.current = true;
+
     let captured: MediaStream;
     try {
       captured = await navigator.mediaDevices.getDisplayMedia({
@@ -1675,13 +1723,21 @@ export function useMediaRoom(roomId: string | undefined) {
         audio: false,
       });
     } catch (e) {
+      // Release the lease we just took — user cancelled or permission denied.
+      holdsLeaseRef.current = false;
+      if (roomIdRef.current) void releaseLoungeScreenShare(roomIdRef.current, myId);
       screenBusyRef.current = false;
       const msg = e instanceof Error ? e.message : "Couldn't start screen share";
       if (!/denied|cancel/i.test(msg)) setError(msg);
       return;
     }
     const screenTrack = captured.getVideoTracks()[0];
-    if (!screenTrack) { screenBusyRef.current = false; return; }
+    if (!screenTrack) {
+      holdsLeaseRef.current = false;
+      if (roomIdRef.current) void releaseLoungeScreenShare(roomIdRef.current, myId);
+      screenBusyRef.current = false;
+      return;
+    }
     screenTrack.addEventListener("ended", () => { stopScreenShare(); });
 
     const cam = localStreamRef.current?.getVideoTracks()[0] ?? null;
@@ -1709,10 +1765,25 @@ export function useMediaRoom(roomId: string | undefined) {
         room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
       } satisfies SignalEvent,
     });
+
+    // Start heartbeat. If we lose the lease (e.g. another tab took over
+    // after a stale window) auto-stop locally.
+    if (leaseHeartbeatRef.current != null) window.clearInterval(leaseHeartbeatRef.current);
+    const heldRoom = roomIdRef.current;
+    leaseHeartbeatRef.current = window.setInterval(async () => {
+      if (!holdsLeaseRef.current || !heldRoom) return;
+      const res = await refreshLoungeScreenShare(heldRoom, myId);
+      if (res === "lost") {
+        holdsLeaseRef.current = false;
+        stopScreenShare();
+      }
+    }, LEASE_HEARTBEAT_MS);
+
     adaptiveFloorRef.current = null;
     rebudget(count, true);
     screenBusyRef.current = false;
   }, [myId, count, stopScreenShare]);
+
 
   const setOutboundScreenTrack = useCallback(async (track: MediaStreamTrack | null) => {
     const restore = !track ? screenStreamRef.current?.getVideoTracks()[0] ?? null : track;
@@ -1735,6 +1806,41 @@ export function useMediaRoom(roomId: string | undefined) {
     window.addEventListener("beforeunload", onUnload);
     return () => window.removeEventListener("beforeunload", onUnload);
   }, [leave]);
+
+  // ---------------------------------------------------------------------------
+  // Screen-share lease: subscribe to instant_rooms row changes so every client
+  // reconciles the sharer id against the DB (source of truth). One row per
+  // room; teardown when roomId changes.
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!roomId) return;
+    const channel = supabase
+      .channel(`lounge-lease:${roomId}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "instant_rooms", filter: `id=eq.${roomId}` },
+        (payload) => {
+          const next = (payload.new as { screen_sharer_user_id: string | null } | null)
+            ?.screen_sharer_user_id ?? null;
+          setScreenSharerId(next);
+          // Defensive: if the DB says someone else holds it while we still
+          // think we do, stop our local share.
+          if (next && myId && next !== myId && holdsLeaseRef.current) {
+            holdsLeaseRef.current = false;
+            stopScreenShare();
+          }
+          if (!next && holdsLeaseRef.current && myId) {
+            // Someone force-released our lease (or it went stale). Stop.
+            holdsLeaseRef.current = false;
+            if (screenStreamRef.current) stopScreenShare();
+          }
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomId, myId]);
+
 
   // -------------------------------------------------------------------------
   // Audio-first façade (Wave 2).

@@ -1,97 +1,49 @@
-## Wave 2 — Audio-first media hook + identity-grid UI
+# Wave 3 — Single-sharer Screen Lease (client wiring)
 
-Refactor the WebRTC hook and room UI so Lounge is genuinely audio-first: chat-only participants create no peer connections, cameras are gone, and remote audio vs. screen-share tracks are cleanly separated. Screen-share lease (Phase 5) stays out of this wave — added next.
+Wave 1 already added the server side (`instant_rooms.screen_sharer_user_id`, `screen_share_claimed_at`, and the RPCs `claim_lounge_screen_share`, `refresh_lounge_screen_share`, `release_lounge_screen_share`). Wave 3 connects those to the runtime so the Lounge enforces "only one screen share at a time" durably, not just via broadcast.
 
-### Scope
+No new packages, no SFU, no DB schema changes.
 
-**1. `src/hooks/use-media-room.tsx` — rewrite public interface, keep proven WebRTC internals**
+## Behavior contract
 
-Preserve: direct-first negotiation, STUN/TURN fallback, perfect negotiation, session/generation guards, ICE buffering + bounded restarts, visibility/online recovery, telemetry, speaking detection, cleanup.
+- Anyone in a Lounge can attempt to share their screen.
+- The DB row is the source of truth for who holds the visual surface. `getDisplayMedia()` only runs after `claim_lounge_screen_share` returns success.
+- Only one holder at a time. A second person trying to share sees "Someone is already sharing" and the attempt is aborted before the browser picker opens.
+- Holder heartbeats every ~20s via `refresh_lounge_screen_share`. If a holder crashes / closes tab, the lease is considered stale after ~60s and another participant can claim it (the claim RPC already checks staleness).
+- Holder releases explicitly on: stop button, track `ended` event, leave audio, leave room, tab close (`pagehide`).
+- Other clients react to lease changes via Postgres realtime on `instant_rooms` and reconcile local `screenSharerId` state.
+- Chat-only participants can also hold the lease (screen share does not require mic).
 
-Remove: `MediaMode`, `VIDEO_CAP`, `videoCount`, camera constraints/state/toggles, camera senders, camera bitrate profiles, per-participant video modes.
+## Technical section
 
-New public shape (semantics — names finalized in-code):
+### 1. New helper: `src/lib/lounge-screen-lease.ts`
+Thin wrappers around the 3 RPCs (`claim`, `refresh`, `release`) returning `{ ok, holder }`. Centralises error mapping (`already_held`, `not_holder`).
 
-```ts
-type AudioPeer = { userId; speaking; muted; audioStream; screenStream };
-type MediaRoomState = {
-  audioJoined; muted; speaking; audioCount; peers;
-  localAudioStream; busy; error;
-  joinAudio(); leaveAudio(); toggleMute();
-  screenStream; screenSharerId; isScreenSharing;
-  startScreenShare(); stopScreenShare();
-  bandwidthReduced;
-};
-```
+### 2. `src/hooks/use-media-room.tsx`
+- Add `leaseHeartbeatRef` (interval id) and `leaseHolderRef`.
+- `startScreenShare`: before `getDisplayMedia`, call `claimLounge…`. On failure, set an error like "Someone else is sharing" and bail (no picker). On success, proceed as today, then start a 20s heartbeat.
+- `stopScreenShare`: clear heartbeat, then call `releaseLounge…` (fire-and-forget, ignore not_holder).
+- On `leave()` / unmount / `pagehide` listener: if we hold the lease, release it synchronously with `navigator.sendBeacon`-style best effort (RPC via fetch keepalive fallback; acceptable if it sometimes misses — 60s staleness covers it).
+- Subscribe once per room to `postgres_changes` on `instant_rooms` filtered by `id=eq.<roomId>`. On update, set `screenSharerId` from `screen_sharer_user_id`. This becomes the canonical value; the existing broadcast "screen active/inactive" signal stays as an optimistic hint but the DB wins on conflict.
+- If the DB says someone else now holds the lease while we still have `screenStreamRef`, auto-stop our local share (defensive — shouldn't happen since claim is exclusive, but handles clock drift / stale-takeover).
 
-Behavior rules:
-- `joinAudio()` requests mic only after explicit user action; publishes one audio track (`{ echoCancellation, noiseSuppression, autoGainControl, channelCount: 1 }`); starts **muted**; opens peer connections only with other audio-joined participants.
-- Mic failure → return `false`, keep user in room (chat-only). Never navigate away.
-- `leaveAudio()` stops mic, closes media PCs, leaves media-presence channel, stops speaking detection, releases screen share, keeps `instant_presence` intact.
-- Add explicit `muted` field to media-presence broadcast so remotes distinguish chat-only / listening-muted / speaking-capable / speaking. Do not infer muted from silence.
-- Separate `audioStream` and `screenStream` per peer. Classify in `pc.ontrack` by `track.kind` — audio → audioStream, video → screenStream (participant cameras no longer exist in Lounge). Screen track ending clears only `screenStream`; audio is never disturbed by screen start/stop.
-- Play each remote audio through exactly one dedicated audio element; screen `<video>` is muted.
+### 3. `src/components/media-panel.tsx` / `channel-view.tsx`
+- Disable the "Share screen" button (with tooltip "Someone is already sharing") when `screenSharerId && screenSharerId !== myId`.
+- Keep existing "Stop sharing" affordance for the holder; no visual redesign.
+- Toast on claim failure surfaces the returned holder's display name when available.
 
-**2. `src/components/channel-view.tsx` — split room presence from audio**
+### 4. Realtime enablement
+`instant_rooms` already emits `postgres_changes` in the app (used elsewhere). Confirm the publication includes it; if not, this is the only DB-touching step and would be a tiny migration to `ALTER PUBLICATION supabase_realtime ADD TABLE public.instant_rooms` (skip if already present — will verify during build).
 
-- Always initialize slot claim, `instant_presence`, chat, reactions, Work, Collabs, Links, room metadata.
-- Only call `media.joinAudio()` when normalized entry mode is `"audio"` (read from `useSearch().mode`, honoring the new `workshop:lounge-audio-on-entry` preference for subsequent entries).
-- Remove auto-mode-setter and the "media failure → navigate to /lounge" bailout. Media errors surface as a toast; user stays put in chat-only.
-- Single `useMediaRoom(roomId)` instance — no second mount for mobile / fullscreen / panels.
-- Preserve unconditional hooks order (no early returns before hooks).
-- Update inactivity rule: muted + not speaking is normal; only kick on real stale presence (no chat, no explicit activity, no audio heartbeat for the existing timeout).
-
-**3. `src/components/media-panel.tsx` — identity grid replaces video tiles**
-
-- Replace Lounge participant video tiles with a responsive identity grid (mobile 2 cols · sm 3 · desktop 5) sized for 10 tiles.
-- Each tile: avatar, display name, username where useful, speaking ring, "You" marker, chat-only badge, listening/muted state, active-speaker highlight. Existing ProfilePeek / WorkPeek hooks intact.
-- Screen share present → screen becomes the central stage (`object-contain`, `100dvh` + safe-area on mobile fullscreen); identity tiles collapse into a compact strip that still shows the active speaker.
-- Preserve embedded Work screening (that's a creative artifact, not participant camera).
-
-**4. Controls dock — participation, not camera**
-
-Three states with clear primary actions:
-
-| State                      | Label            | Primary action | Secondary            |
-|----------------------------|------------------|----------------|----------------------|
-| Chat only                  | You're here through chat | Join audio     | —                    |
-| Audio connected, muted     | Listening        | Unmute         | Leave audio (overflow) |
-| Audio connected, unmuted   | (speaking feedback) | Mute        | Leave audio (overflow) |
-
-- Dock keeps: Join/Mute/Unmute, Next Lounge / Hop, room panels, Exit.
-- Screen Share stays in the "More" menu.
-- Remove: camera on/off, camera icons/labels, video-focus, participant-video PiP, camera capacity readouts, camera permission surfaces.
-
-**5. `lounge.$id.tsx` bridge cleanup**
-
-- Restore reading `mode` from search and pass it (as `"chat" | "audio"`) into the new `ChannelView` prop `initialParticipation`.
-- Delete the temporary hardcoded `"voice"` bridge introduced in Wave 1.
-- `HopButton` prop updated to `mode: "chat" | "audio"`; internal navigation preserves preference.
-
-**6. Copy sweep (Lounge surfaces only)**
-
-Replace: "Voice or video", "Mic or camera", "Camera unavailable", "Camera on/off", "Focus video" → "Audio and chat", "Join audio", "Chat only", "Listening", "Mute/Unmute", "Leave audio", "Share screen".
-
-### Out of scope this wave
-
-- DB-backed screen-share lease + RPCs — Wave 3 (Phase 5).
+### 5. Non-goals (still deferred)
 - Push-to-talk.
-- SFU / new media dependencies.
-- Non-Lounge video surfaces (Work screenings, YouTube/Vimeo embeds, published-work video) — untouched.
+- Speaker/audience roles.
+- SFU / external media service.
+- Camera video.
 
-### Files touched
+## Acceptance checks
 
-- `src/hooks/use-media-room.tsx` (rewrite)
-- `src/components/channel-view.tsx` (participation split, remove auto-join and bailout)
-- `src/components/media-panel.tsx` (identity grid + screen-share stage)
-- `src/components/hop-button.tsx` (mode type)
-- `src/routes/lounge.$id.tsx` (restore mode passthrough, drop bridge)
-- Copy touch-ups in `channel-view.tsx` / `media-panel.tsx` / `hop-button.tsx` as needed
-
-### Acceptance (Wave 2 subset)
-
-- Chat-only user with denied/absent mic can enter, chat, see peers, and creates no `RTCPeerConnection`.
-- `Join audio` from inside the room adds mic mid-session without duplicating tracks; leaving audio keeps user + chat.
-- Peer with `audioStream` + `screenStream` renders both without cross-clobber; ending screen share doesn't cut audio.
-- Single `useMediaRoom` instance per room; no hook-order regressions; Hop preserves chat/audio choice.
-- Lounge UI shows no camera controls anywhere; header still reads `Live · N/10`.
+- Two tabs in same Lounge: tab A shares → tab B's Share button becomes disabled with "Someone is already sharing"; tab B click no longer opens the OS picker.
+- Tab A closes browser tab → within ~60s tab B can claim successfully.
+- Tab A clicks Stop → tab B's button re-enables within one realtime tick.
+- Chat-only participant can still claim the lease without joining audio.
