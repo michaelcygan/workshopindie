@@ -1161,10 +1161,11 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  userId, speaking, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
+  userId, onStage, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
 }: {
   userId: string;
-  speaking: boolean;
+  /** Is this participant currently on the audio stage (i.e. joined audio). */
+  onStage: boolean;
   muted: boolean;
   displayName: string;
   avatarUrl: string | null;
@@ -1173,25 +1174,35 @@ function SpeakerRow({
   onOpenWork?: (workId: string) => void;
   roomId?: string;
 }) {
+  // Status dot: filled primary = on stage & unmuted, hollow = on stage & muted,
+  // no dot = chat-only listener. Activity/speaking rings live on the Stage,
+  // not here — this row is about identity + presence status.
+  const dot = onStage ? (
+    <span
+      aria-label={muted ? "On stage, muted" : "On stage"}
+      title={muted ? "On stage, muted" : "On stage"}
+      className={cn(
+        "shrink-0 inline-block h-2 w-2 rounded-full border",
+        muted ? "border-primary bg-transparent" : "border-primary bg-primary",
+      )}
+    />
+  ) : null;
   const inner = (
     <button type="button" className="flex w-full items-center gap-2 rounded-lg px-1 py-0.5 -mx-1 text-left hover:bg-muted/60 transition">
-      <div className={cn(
-        "relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted ring-2 transition",
-        speaking ? "ring-[3px] ring-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.25)]" : "ring-transparent",
-      )}>
-
+      <div className="relative h-8 w-8 shrink-0 rounded-full overflow-hidden bg-muted text-[10px] flex items-center justify-center text-ink-muted">
         {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : displayName[0]?.toUpperCase()}
       </div>
       <div className="min-w-0 flex-1">
         <span className="block text-sm text-ink truncate">{displayName}{isMe ? " (you)" : ""}</span>
         {username && <span className="block text-[10px] text-ink-muted truncate">@{username}</span>}
       </div>
-      {muted && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
+      {dot}
+      {muted && onStage && <MicOff className="h-3.5 w-3.5 text-ink-muted" />}
     </button>
   );
   return (
     <li>
-      <ProfilePeek userId={userId} speaking={speaking} onWorkClick={onOpenWork} roomId={roomId}>
+      <ProfilePeek userId={userId} speaking={onStage && !muted} onWorkClick={onOpenWork} roomId={roomId}>
         {inner}
       </ProfilePeek>
     </li>
