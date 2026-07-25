@@ -1,6 +1,8 @@
+import { useMemo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import { BlogLightbox, type LightboxImage } from "./blog-lightbox";
 
 type Props = { markdown: string; className?: string };
 
@@ -11,10 +13,33 @@ type Props = { markdown: string; className?: string };
  * - No raw HTML (no rehype-raw).
  * - Demotes any H1 in the body to H2 so pages keep a single semantic H1.
  * - External links get rel="noopener noreferrer" + target="_blank".
- * - Images lazy-load.
+ * - Images lazy-load and open in a lightbox / slideshow on click.
  */
 export function BlogPostBody({ markdown, className }: Props) {
+  const images = useMemo<LightboxImage[]>(() => {
+    const out: LightboxImage[] = [];
+    const seen = new Set<string>();
+    const re = /!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(markdown || "")) !== null) {
+      const src = m[2];
+      if (seen.has(src)) continue;
+      seen.add(src);
+      out.push({ src, alt: m[1] ?? "" });
+    }
+    return out;
+  }, [markdown]);
+
+  const indexBySrc = useMemo(() => {
+    const map = new Map<string, number>();
+    images.forEach((img, i) => map.set(img.src, i));
+    return map;
+  }, [images]);
+
+  const [open, setOpen] = useState(false);
+  const [index, setIndex] = useState(0);
   return (
+    <>
     <div className={cn("blog-prose", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
@@ -65,14 +90,23 @@ export function BlogPostBody({ markdown, className }: Props) {
             <pre className="my-6 overflow-x-auto rounded-2xl bg-muted p-4 text-sm text-ink" {...props} />
           ),
           hr: () => <hr className="my-10 border-border" />,
-          img: ({ src, alt }) => (
-            <img
-              src={src ?? ""}
-              alt={alt ?? ""}
-              loading="lazy"
-              className="my-6 w-full rounded-2xl border border-border"
-            />
-          ),
+          img: ({ src, alt }) => {
+            const url = src ?? "";
+            const i = indexBySrc.get(url) ?? 0;
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  setIndex(i);
+                  setOpen(true);
+                }}
+                className="my-6 block w-full cursor-zoom-in overflow-hidden rounded-2xl border border-border transition hover:ring-2 hover:ring-primary/40"
+                aria-label={alt ? `Open image: ${alt}` : "Open image"}
+              >
+                <img src={url} alt={alt ?? ""} loading="lazy" className="block w-full" />
+              </button>
+            );
+          },
           table: (props) => (
             <div className="my-6 overflow-x-auto rounded-2xl border border-border">
               <table className="w-full border-collapse text-sm" {...props} />
@@ -85,5 +119,13 @@ export function BlogPostBody({ markdown, className }: Props) {
         {markdown || ""}
       </ReactMarkdown>
     </div>
+    <BlogLightbox
+      images={images}
+      index={index}
+      open={open}
+      onClose={() => setOpen(false)}
+      onIndexChange={setIndex}
+    />
+    </>
   );
 }

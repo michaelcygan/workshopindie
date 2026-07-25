@@ -1,28 +1,42 @@
 ## Goal
-Bring the full-article conversion experience into the profile Blog peek modal so readers who open a post from a profile see the same subscribe form, "Join Workshop" CTA, and related-posts grid that appear at the bottom of `/blog/$slug`.
+Make images inside blog post bodies clickable to open a full-screen lightbox. When a post has multiple images, the lightbox becomes a swipeable/clickable slideshow with prev/next controls.
 
-## Changes
+Applies everywhere `BlogPostBody` renders: the full `/blog/$slug` page and the `BlogPostPeek` modal on profiles, on both mobile and desktop.
 
-### 1. Extract a reusable "Article footer" block
-Create `src/components/blog-article-footer.tsx` containing:
-- **Newsletter subscribe card** — email input + honeypot + Subscribe button, wired to `subscribeToNewsletter` from `@/lib/newsletter.functions` with `source: "blog_peek"` (peek) / `source: "blog_article"` (full page). Uses the same styling language as `site-footer.tsx` but sized for an in-article card.
-- **"Make something with people." Join Workshop CTA** — same copy/gradient button as the current aside in `blog.$slug.tsx`.
-- **"More from the blog" related grid** — takes an `excludeId` prop, calls `getRelatedPosts` via `useServerFn` + `useQuery`, renders the 3-up grid. In peek mode, clicking a related card swaps the peek to the new slug (calls an `onSelectPost(slug)` prop) instead of navigating; in article mode it renders `<Link>` to `/blog/$slug`.
+## Implementation
 
-Props: `{ postId, mode: "peek" | "article", onSelectPost?: (slug: string) => void }`.
+### 1. New component: `src/components/blog-lightbox.tsx`
+- Fullscreen overlay (fixed inset-0, `z-[100]`, black/90 backdrop, `bg-black/95`).
+- Props: `images: { src: string; alt: string }[]`, `index: number`, `onClose`, `onIndexChange`.
+- Renders current image centered, `object-contain`, `max-h-[92vh] max-w-[95vw]`.
+- Controls:
+  - Close button (top-right, X icon, always visible).
+  - Prev/Next buttons (chevrons, hidden if only 1 image). Desktop: side-anchored buttons. Mobile: bottom-corner buttons + swipe.
+  - Counter "n / total" (bottom-center) when >1.
+  - Caption (alt text) below image if present.
+- Interaction:
+  - Click backdrop → close. Click image → does not close.
+  - Keyboard: `Esc` closes, `←`/`→` navigate.
+  - Touch: horizontal swipe navigates (simple `touchstart`/`touchend` deltaX threshold ~50px).
+  - Lock body scroll while open.
+- Uses shadcn `Dialog` primitive or a plain portal; plain portal is simpler here to fully control layout, so use `createPortal` into `document.body`.
 
-### 2. Wire it into the peek modal
-Update `src/components/blog-post-peek.tsx`:
-- Render `<BlogArticleFooter postId={post.id} mode="peek" onSelectPost={…} />` inside the scrollable article container, above the sticky bottom action bar.
-- When a related card is clicked, update the peek to the new slug: bubble up via a new optional `onNavigate(slug)` prop on `BlogPostPeek`, defaulting to swapping the internal slug through the parent.
+### 2. Update `src/components/blog-post-body.tsx`
+- Before rendering, walk the markdown AST-rendered output isn't available, so instead: pre-scan the markdown string with a regex for `![alt](url)` and standalone `<img>` refs to build an ordered `images[]` list. Simpler and reliable: collect via the `img` renderer at render time using a ref-based collector (ordered by mount). Use a small `useRef<{src,alt}[]>` populated during render, plus each `img` receives its index.
+  - Cleaner approach: parse markdown once with a regex `/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g` in a `useMemo` to build `images` and a `Map<src, index>`. The `img` renderer looks up its index by `src`.
+- Wrap the `<img>` in a `<button type="button">` that calls `setOpen(true); setIndex(map.get(src))`.
+- Add cursor-zoom-in class and subtle hover ring.
+- Render `<BlogLightbox images={images} index={index} open={open} onClose onIndexChange />` at the end of the component.
 
-### 3. Hook profile tab to peek navigation
-Update `src/components/profile-blog-tab.tsx` (and the `u.$username.tsx` peek open state) so that selecting a related post from inside the peek updates both the URL `?post=` search param and the open peek slug — reuses the existing `onOpenPost` path.
+### 3. No other call-site changes
+`blog-post-peek.tsx` and `blog.$slug.tsx` already use `BlogPostBody`, so they get the behavior automatically. The lightbox portal sits above the peek modal via `z-[100]`.
 
-### 4. Refactor `blog.$slug.tsx` to use the shared block
-Replace the inline aside + related section with `<BlogArticleFooter postId={post.id} mode="article" />` so both surfaces stay in sync going forward. No visual change on the full article page.
+### 4. Accessibility
+- Lightbox root: `role="dialog" aria-modal="true" aria-label="Image viewer"`.
+- Focus the close button on open; restore focus to the triggering thumbnail on close.
+- Buttons have `aria-label` ("Close", "Previous image", "Next image").
 
 ## Out of scope
-- No schema changes.
-- No changes to the newsletter server function or related-posts server function.
-- No changes to the Blog index page.
+- Pinch-to-zoom inside the lightbox.
+- Thumbnail strip.
+- Preloading neighbors (can add later if needed).
