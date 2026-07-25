@@ -77,7 +77,16 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     staleTime: 5 * 60_000,
   });
 
-  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName, authorProfileUsername]);
+  const searchAuthors = useServerFn(adminSearchAuthorProfiles);
+  const setPostAuthors = useServerFn(adminSetPostAuthors);
+  const { data: searchResults } = useQuery({
+    queryKey: ["admin-blog-author-search", authorSearch.trim()],
+    queryFn: () => searchAuthors({ data: { q: authorSearch.trim() } }),
+    enabled: authorSearch.trim().length > 0,
+    staleTime: 30_000,
+  });
+
+  useEffect(() => { setDirty(true); }, [title, slug, excerpt, body, cover, coverAlt, seoTitle, seoDesc, authorName, authorProfileUsername, attribAuthors]);
   useEffect(() => { setDirty(false); }, [initial?.id]);
 
   useEffect(() => {
