@@ -139,58 +139,61 @@ function MyBlogPage() {
         ) : (
           <ul className="space-y-3">
             {list.map((p) => (
-              <li
-                key={p.id}
-                className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-4 hover:bg-muted"
-              >
-                {p.cover_image_url ? (
-                  <img
-                    src={p.cover_image_url}
-                    alt=""
-                    className="hidden h-16 w-24 shrink-0 rounded-lg object-cover sm:block"
-                    loading="lazy"
-                  />
-                ) : (
-                  <div className="hidden h-16 w-24 shrink-0 rounded-lg gradient-motion sm:block" />
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      to="/me/blog/$id"
-                      params={{ id: p.id }}
-                      className="font-display text-base text-ink hover:underline md:text-lg"
-                    >
-                      {p.title || "Untitled draft"}
-                    </Link>
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                        p.status === "published"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-muted text-ink-muted"
-                      }`}
-                    >
-                      {p.status}
-                    </span>
-                  </div>
-                  {p.excerpt && (
-                    <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{p.excerpt}</p>
+              <li key={p.id}>
+                <Link
+                  to="/me/blog/$id"
+                  params={{ id: p.id }}
+                  className="flex items-start gap-4 rounded-2xl border border-border bg-surface p-4 hover:bg-muted transition-colors"
+                >
+                  {p.cover_image_url ? (
+                    <img
+                      src={p.cover_image_url}
+                      alt=""
+                      className="hidden h-16 w-24 shrink-0 rounded-lg object-cover sm:block"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="hidden h-16 w-24 shrink-0 rounded-lg gradient-motion sm:block" />
                   )}
-                  <div className="mt-1 text-[11px] text-ink-muted">
-                    Updated {new Date(p.updated_at).toLocaleDateString()}
-                    {p.published_at && (
-                      <> · Published {new Date(p.published_at).toLocaleDateString()}</>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-display text-base text-ink group-hover:underline md:text-lg">
+                        {p.title || "Untitled draft"}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+                          p.status === "published"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-muted text-ink-muted"
+                        }`}
+                      >
+                        {p.status}
+                      </span>
+                    </div>
+                    {p.excerpt && (
+                      <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{p.excerpt}</p>
                     )}
+                    <div className="mt-1 text-[11px] text-ink-muted">
+                      Updated {new Date(p.updated_at).toLocaleDateString()}
+                      {p.published_at && (
+                        <> · Published {new Date(p.published_at).toLocaleDateString()}</>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {p.status === "published" && (
-                  <Link
-                    to="/blog/$slug"
-                    params={{ slug: p.slug }}
-                    className="hidden shrink-0 items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-ink-soft hover:bg-muted md:inline-flex"
-                  >
-                    View <ExternalLink className="h-3 w-3" />
-                  </Link>
-                )}
+                  <div className="flex shrink-0 items-center gap-2 self-center">
+                    {p.status === "published" && (
+                      <Link
+                        to="/blog/$slug"
+                        params={{ slug: p.slug }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hidden items-center gap-1 rounded-full border border-border px-3 py-1 text-xs text-ink-soft hover:bg-background md:inline-flex"
+                      >
+                        View <ExternalLink className="h-3 w-3" />
+                      </Link>
+                    )}
+                    <ChevronRight className="h-5 w-5 text-ink-muted" aria-hidden />
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
