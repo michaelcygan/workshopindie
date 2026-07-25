@@ -64,7 +64,10 @@ export const Route = createFileRoute("/blog/$slug")({
           : { "@type": "Organization", name: p.author_name || "Workshop" };
     return {
       meta,
-      links: [{ rel: "canonical", href: url }],
+      links: [
+        { rel: "canonical", href: url },
+        ...(img ? [{ rel: "preload", as: "image", href: img, fetchpriority: "high" }] : []),
+      ],
       scripts: [
         {
           type: "application/ld+json",
