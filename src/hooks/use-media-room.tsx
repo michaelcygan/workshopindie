@@ -1738,8 +1738,6 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
     }
     screenTrack.addEventListener("ended", () => { stopScreenShare(); });
 
-    const cam = localStreamRef.current?.getVideoTracks()[0] ?? null;
-    originalCamTrackRef.current = cam;
     screenStreamRef.current = captured;
     setScreenStream(captured);
     setScreenSharerId(myId);
