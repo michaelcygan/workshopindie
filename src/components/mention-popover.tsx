@@ -51,12 +51,14 @@ export function MentionPopover({
   const includeGroups = sections.includes("group");
   const includeEvents = sections.includes("event");
   const includeWorks = sections.includes("work");
+  const includePosts = sections.includes("post");
 
   const users = useUserSuggestions(query, open && includeUsers);
   const collabs = useMyCollabSuggestions(uid, query, open && includeCollabs);
   const groups = useGroupSuggestions(uid, query, open && includeGroups);
   const events = useEventSuggestions(uid, query, open && includeEvents);
   const works = useWorkSuggestions(uid, query, open && includeWorks);
+  const posts = useBlogPostSuggestions(query, open && includePosts);
 
   const q = query.trim().toLowerCase();
 
