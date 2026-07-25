@@ -158,7 +158,10 @@ export async function getPublishedPostServer(slug: string) {
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== null);
-  return { ...data, authors };
+
+  const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
+  const entity_tags = await getBlogPostEntityTagsServer(data.id, { publicOnly: true });
+  return { ...data, authors, entity_tags };
 }
 
 export async function listProfileBlogPostsServer(profileId: string, cursor: { published_at: string; id: string } | null, limit: number) {
