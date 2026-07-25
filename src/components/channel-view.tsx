@@ -1246,7 +1246,7 @@ export function ChannelView({
             <AlertDialogHeader>
               <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
-                You've been muted with camera off for a while. Keep going or unmute — otherwise
+                You've been muted for a while. Keep going or unmute — otherwise
                 we'll leave this Lounge automatically.
               </AlertDialogDescription>
               <div
