@@ -17,7 +17,7 @@ type Pulse =
  * back to [] on failure, so a broken table never blanks the rail.
  * Uses only existing data — no new tables, no new server fns.
  */
-export function HomePulseRail() {
+export function HomePulseRail({ compact = false }: { compact?: boolean } = {}) {
   const { data } = useQuery({
     queryKey: ["home-pulse"],
     staleTime: 60_000,
@@ -26,6 +26,32 @@ export function HomePulseRail() {
   });
 
   const items = data ?? [];
+
+  // Compact ticker: single tidy row with a small "LIVE PULSE" eyebrow. Used at
+  // the top of the homepage so recent activity feels ambient, not loud.
+  if (compact) {
+    if (items.length === 0) return null;
+    return (
+      <section className="border-y border-border/60 bg-surface-2/30">
+        <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3 md:px-6">
+          <div className="hidden shrink-0 items-center gap-2 sm:flex">
+            <span className="relative inline-flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+              Live pulse
+            </span>
+          </div>
+          <div className="-mx-4 flex flex-1 gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:mx-0 md:px-0">
+            {items.slice(0, 12).map((p) => (
+              <TickerItem key={`${p.kind}-${"id" in p ? p.id : ""}`} pulse={p} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="border-y border-border bg-surface-2/30">
@@ -75,6 +101,64 @@ export function HomePulseRail() {
         )}
       </div>
     </section>
+  );
+}
+
+function TickerItem({ pulse }: { pulse: Pulse }) {
+  const base =
+    "group inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-surface px-3 py-1.5 text-xs text-ink-soft transition hover:border-primary/40 hover:text-ink";
+  const iconFor = (k: Pulse["kind"]) =>
+    k === "event" ? <Calendar className="h-3 w-3" /> :
+    k === "work" ? <Hammer className="h-3 w-3" /> :
+    k === "collab" ? <Megaphone className="h-3 w-3" /> :
+    k === "blog" ? <BookOpen className="h-3 w-3" /> :
+    <Users className="h-3 w-3" />;
+  const labelFor = (k: Pulse["kind"]) =>
+    k === "event" ? "Event" : k === "work" ? "New work" : k === "collab" ? "Open collab" : k === "blog" ? "Read" : "Group";
+  const eyebrow = (
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-muted">
+      {iconFor(pulse.kind)} {labelFor(pulse.kind)}
+    </span>
+  );
+  const text = pulse.kind === "group" ? pulse.name : pulse.title;
+  const body = (
+    <>
+      {eyebrow}
+      <span className="max-w-[220px] truncate font-medium text-ink">{text}</span>
+    </>
+  );
+  if (pulse.kind === "event") {
+    return (
+      <Link to="/g/$slug/e/$eventSlug" params={{ slug: pulse.group_slug, eventSlug: pulse.event_slug }} className={base}>
+        {body}
+      </Link>
+    );
+  }
+  if (pulse.kind === "work") {
+    return (
+      <Link to="/works/$slug" params={{ slug: pulse.slug }} className={base}>
+        {body}
+      </Link>
+    );
+  }
+  if (pulse.kind === "collab") {
+    return (
+      <Link to="/collab/$slug" params={{ slug: pulse.slug }} className={base}>
+        {body}
+      </Link>
+    );
+  }
+  if (pulse.kind === "blog") {
+    return (
+      <Link to="/blog/$slug" params={{ slug: pulse.slug }} className={base}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <Link to="/g/$slug" params={{ slug: pulse.slug }} className={base}>
+      {body}
+    </Link>
   );
 }
 

@@ -6,6 +6,7 @@ import { listFeaturedEvents } from "@/lib/group-events.functions";
 import { EventCard, type EventCardData } from "@/components/event-card";
 import { Button } from "@/components/ui/button";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { HomeSectionHeader } from "@/components/home-section";
 
 export function FeaturedEventsCarousel({
   className,
@@ -27,13 +28,15 @@ export function FeaturedEventsCarousel({
 
   return (
     <section className={className}>
-      <div className="mb-6 flex items-end justify-between gap-3 px-1">
-        <div>
-          <h2 className="font-display text-3xl text-ink md:text-4xl">Events</h2>
-          <p className="mt-1 text-sm text-ink-muted">What's happening across the network.</p>
-        </div>
-      </div>
+      <HomeSectionHeader
+        eyebrow={<><CalendarHeart className="h-3.5 w-3.5" /> Featured</>}
+        title="Events"
+        kicker="Workshops, open mics, listening parties — worth clearing your calendar."
+        href="/events"
+        cta="All events"
+      />
 
+      <div className="mt-8">
       {events.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
           <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted text-ink-soft">
@@ -58,14 +61,15 @@ export function FeaturedEventsCarousel({
           </div>
         </div>
       ) : (
-        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:thin]">
+        <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:thin]">
           {events.map((ev) => (
-            <div key={ev.id} className="w-72 shrink-0">
+            <div key={ev.id} className="w-80 shrink-0">
               <EventCard event={ev} />
             </div>
           ))}
         </div>
       )}
+      </div>
     </section>
   );
 }
