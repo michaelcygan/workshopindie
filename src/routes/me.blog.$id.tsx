@@ -117,8 +117,8 @@ function MemberBlogEditorPage() {
   }
 
   const saveMut = useMutation({
-    mutationFn: () =>
-      updateFn({
+    mutationFn: async () => {
+      await updateFn({
         data: {
           id,
           title,
@@ -131,7 +131,9 @@ function MemberBlogEditorPage() {
           seo_description: seoDesc || null,
           expected_updated_at: post?.post.updated_at,
         },
-      }),
+      });
+      await flushEntityTags();
+    },
     onSuccess: () => {
       toast.success("Saved");
       setDirty(false);
