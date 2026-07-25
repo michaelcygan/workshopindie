@@ -1,6 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { adminListPosts } from "@/lib/blog.functions";
 import { Button } from "@/components/ui/button";
 import { Plus, ExternalLink, Pencil } from "lucide-react";
