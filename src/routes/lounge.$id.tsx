@@ -499,19 +499,18 @@ function LiveRoomPage() {
         title={title}
         hostUserId={room?.host_user_id ?? null}
         medium={(room?.medium as any) ?? (room?.category as any) ?? null}
-        // NOTE: `mode` is normalized to "chat" | "audio" upstream. Until the
-        // channel-view + useMediaRoom hook are rewritten to a chat-only path
-        // (next wave), we bridge to the legacy voice|video contract here:
-        // "audio" → "voice" (audio mesh, no camera), "chat"/undefined → "voice".
-        // No path ever passes "video" — cameras are gone from Lounge.
-        initialMode={"voice"}
+        // Wave 2: forward the entry preference. `entryMode` is "chat" | "audio"
+        // (legacy voice/video already coerced to "audio" by the search schema).
+        // Undefined → chat-only entry (Drop in button default).
+        initialMode={entryMode ?? "chat"}
         screeningWorkId={room?.screening_work_id ?? null}
         nextLoungeSlot={
           !isPromoted && room?.status === "active" ? (
             <HopButton
               roomId={id}
               medium={(room?.medium as any) ?? null}
-              mode={"voice"}
+              // Preserve current participation intent when hopping.
+              mode={entryMode ?? "chat"}
               tone="primary"
             />
           ) : null
