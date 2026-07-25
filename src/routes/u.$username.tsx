@@ -940,7 +940,7 @@ function ProfilePage() {
           <BlogPostPeek
             slug={search.post ?? null}
             open={!!search.post}
-            onOpenChange={(v) => {
+            onOpenChange={(v: boolean) => {
               if (v) return;
               navigate({
                 to: "/u/$username",
