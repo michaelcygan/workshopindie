@@ -34,18 +34,34 @@ export const getEventBySlug = createServerFn({ method: "GET" })
 
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
+  const nowIso = new Date().toISOString();
+  const baseSelect = `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`;
   const { data, error } = await supabase
     .from("group_events")
-    .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`)
+    .select(baseSelect)
     .not("featured_at", "is", null)
-    .gt("starts_at", new Date().toISOString())
+    .gt("starts_at", nowIso)
     .is("deleted_at", null)
     .eq("visibility", "public")
     .order("starts_at", { ascending: true })
     .limit(6);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  if (data && data.length > 0) return data;
+  // Fallback: no explicitly featured events — surface the soonest upcoming
+  // public events so the homepage never sits on an empty state when there
+  // is real activity to show.
+  const { data: fallback, error: fallbackErr } = await supabase
+    .from("group_events")
+    .select(baseSelect)
+    .gt("starts_at", nowIso)
+    .is("deleted_at", null)
+    .eq("visibility", "public")
+    .order("starts_at", { ascending: true })
+    .limit(6);
+  if (fallbackErr) throw new Error(fallbackErr.message);
+  return fallback ?? [];
 });
+
 
 export const listGroupEvents = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupId: z.string().uuid() }).parse(i))
