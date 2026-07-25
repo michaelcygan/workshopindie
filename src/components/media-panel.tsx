@@ -402,18 +402,18 @@ function SpeakerBubble({
   size?: "lg" | "md" | "sm";
 }) {
   const dims =
-    size === "sm" ? "h-12 w-12 text-base" :
-    size === "md" ? "h-14 w-14 text-lg" :
-    "h-16 w-16 text-xl";
+    size === "sm" ? "h-10 w-10 text-sm" :
+    size === "md" ? "h-12 w-12 text-base" :
+    "h-14 w-14 text-lg";
   return (
-    <div className="flex flex-col items-center gap-1.5 w-16 sm:w-20">
+    <div className="flex flex-col items-center gap-1 w-14 sm:w-16">
       <div className="relative">
         <div
           className={cn(
             "relative shrink-0 rounded-full overflow-hidden bg-muted font-medium flex items-center justify-center text-ink-muted ring-2 transition-shadow duration-150",
             dims,
             speaking
-              ? "ring-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25)]"
+              ? "ring-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.25)]"
               : "ring-border/60",
           )}
         >
@@ -423,20 +423,20 @@ function SpeakerBubble({
           {speaking && (
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-primary/30 animate-pulse"
+              className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-primary/30 animate-pulse"
             />
           )}
         </div>
         {muted && (
           <span
             aria-label="Muted"
-            className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
+            className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
           >
-            <MicOff className="h-2.5 w-2.5" />
+            <MicOff className="h-2 w-2" />
           </span>
         )}
       </div>
-      <span className="max-w-full truncate text-[11px] leading-tight text-ink-soft">
+      <span className="max-w-full truncate text-[10px] leading-tight text-ink-soft">
         {displayName}{isMe ? " (you)" : ""}
       </span>
     </div>
