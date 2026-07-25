@@ -389,6 +389,8 @@ export async function adminPublishPostServer(context: AuthContext, id: string) {
     throw new Error("Add alt text for the cover image before publishing.");
   }
   if (!existing.title?.trim()) throw new Error("Title is required.");
+  const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
+  await assertTaggedEntitiesPubliclyVisibleServer(id);
   const { error } = await supabaseAdmin
     .from("blog_posts")
     .update({ status: "published", updated_by: context.userId })
