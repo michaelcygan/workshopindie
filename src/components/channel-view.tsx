@@ -725,36 +725,17 @@ export function ChannelView({
   // user can still see who is in the room while focused on the surface.
   const presenceStrip = user ? (
     <>
-      {media.cameraOn && media.localStream ? (
-        <div className="w-40 shrink-0">
-          <VideoTile
-            stream={media.localStream}
-            label={`${meDisplay} (you)`}
-            muted
-            speaking={media.speaking && !media.muted}
-            mirrored
-          />
-        </div>
-      ) : (
-        <div className="w-40 shrink-0">
-          <AudioTile
-            displayName={`${meDisplay} (you)`}
-            avatarUrl={meAvatar}
-            speaking={media.speaking && !media.muted}
-            muted={media.muted}
-          />
-        </div>
-      )}
+      <div className="w-40 shrink-0">
+        <AudioTile
+          displayName={`${meDisplay} (you)`}
+          avatarUrl={meAvatar}
+          speaking={media.speaking && !media.muted}
+          muted={media.muted}
+        />
+      </div>
       {others.map((o) => {
         const peer = media.peers.find((p) => p.userId === o.user_id);
         const name = o.profile?.display_name || o.profile?.username || "Anon";
-        if (peer && peer.mode === "video" && peer.stream) {
-          return (
-            <div key={o.user_id} className="w-40 shrink-0">
-              <VideoTile stream={peer.stream} label={name} speaking={peer.speaking} />
-            </div>
-          );
-        }
         return (
           <div key={o.user_id} className="w-40 shrink-0">
             <AudioTile
@@ -768,6 +749,7 @@ export function ChannelView({
       })}
     </>
   ) : null;
+
 
   // The persistent top-right expand button maps to whichever surface is active.
   const fsTarget: "chat" | "gallery" =
