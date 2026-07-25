@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
@@ -18,7 +20,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 
+const loungeSearchSchema = z.object({
+  prompt: fallback(z.string(), "").default(""),
+  medium: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/lounge/")({
+  validateSearch: zodValidator(loungeSearchSchema),
   component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [
@@ -27,6 +35,7 @@ export const Route = createFileRoute("/lounge/")({
     ],
   }),
 });
+
 
 function WorkshopPreflight() {
   const { user, loading } = useAuth();
@@ -240,6 +249,27 @@ function WorkshopPreflight() {
   function handleUsePrompt(p: RoomPrompt) {
     openLounge(p.medium, p.title);
   }
+
+  // Auto-open a suggested Lounge when arrived via ?prompt=…&medium=…
+  const search = Route.useSearch();
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    const promptTitle = (search.prompt ?? "").trim();
+    if (!promptTitle) return;
+    if (loading || !user) return;
+    if (devices === null) return; // wait for AV detection
+    if (busy !== null) return;
+    if (!canDrop) return;
+    autoOpenedRef.current = true;
+    const mediumParam = (search.medium ?? "").trim();
+    const medium = (CATEGORIES.find((c) => c.id === mediumParam)?.id ?? null) as Category | null;
+    // Clear params so a refresh doesn't re-open another room.
+    router.navigate({ to: "/lounge", search: {}, replace: true });
+    openLounge(medium, promptTitle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search.prompt, search.medium, loading, user, devices, busy, canDrop]);
+
 
 
   const subtitle =
