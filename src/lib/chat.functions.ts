@@ -35,6 +35,17 @@ export const sendChatMessage = createServerFn({ method: "POST" })
     const mentions = Array.from(new Set(data.mentions ?? [])).filter((id) => id !== userId);
 
 
+    // Ensure caller has a presence row so the RLS WITH CHECK on
+    // instant_messages passes (chat-only users who never hit "Join"
+    // for audio, or users whose presence row expired, would otherwise
+    // hit "new row violates row-level security policy").
+    await supabase
+      .from("instant_presence")
+      .upsert(
+        { room_id: data.roomId, user_id: userId, last_seen_at: new Date().toISOString() } as any,
+        { onConflict: "room_id,user_id" },
+      );
+
     const { data: inserted, error } = await supabase
       .from("instant_messages")
       .insert({
