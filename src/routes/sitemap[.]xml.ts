@@ -6,7 +6,7 @@ const SITE = "https://workshopindie.com";
 
 const STATIC_PATHS = [
   "", "gallery", "workshops", "collab", "cities", "groups", "g", "events",
-  "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password",
+  "pricing", "refer", "onboarding", "login", "signup", "forgot-password", "reset-password", "blog",
 ];
 
 
