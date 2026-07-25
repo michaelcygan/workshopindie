@@ -971,6 +971,7 @@ function ProfilePage() {
             <Stat label="Worked with" value={profile.worked_with_count} />
             <Stat label="Followers" value={profile.follower_count} />
             <Stat label="Following" value={profile.following_count} />
+            {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
         </div>
       </div>
