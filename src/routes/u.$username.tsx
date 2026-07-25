@@ -1485,16 +1485,26 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
     );
   }
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-7 lg:grid-cols-3">
       {items.map((c) => (
-        <Link key={c.id} to="/collab/$slug" params={{ slug: c.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
-          <CategoryChip category={c.category} />
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-medium text-ink">{c.title}</h3>
-            {c.description && <p className="line-clamp-1 text-xs text-ink-muted">{c.description}</p>}
-          </div>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Open</span>
-        </Link>
+        <EditorialCard
+          key={c.id}
+          href="/collab/$slug"
+          hrefParams={{ slug: c.slug }}
+          ariaLabel={c.title}
+          aspect="16/10"
+          coverFallbackClass={categoryClass(c.category)}
+          eyebrow={
+            <span className="flex items-center gap-2">
+              <span>{CATEGORY_LABELS[c.category] ?? "Collab"}</span>
+              <span className="text-ink-muted/60">·</span>
+              <span className="text-ink-soft">Open collab</span>
+            </span>
+          }
+          title={c.title}
+          dek={c.description || null}
+          chips={<EditorialChip tone="primary">Open</EditorialChip>}
+        />
       ))}
     </div>
   );
