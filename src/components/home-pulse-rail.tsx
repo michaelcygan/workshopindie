@@ -188,7 +188,7 @@ function PulseChip({ icon, label }: { icon: React.ReactNode; label: string }) {
 async function fetchPulse(): Promise<Pulse[]> {
   const today = new Date().toISOString();
 
-  const [eventsRes, worksRes, collabsRes, groupsRes] = await Promise.allSettled([
+  const [eventsRes, worksRes, collabsRes, groupsRes, blogRes] = await Promise.allSettled([
     supabase
       .from("group_events")
       .select("id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)")
