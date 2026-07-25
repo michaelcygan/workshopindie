@@ -229,9 +229,12 @@ const RECOVER_GOOD_RTT_MS = 200;
 const SAMPLES_PER_SNAPSHOT = 5;   // ~20s at 4s poll interval
 
 
-export function useMediaRoom(roomId: string | undefined) {
+export function useMediaRoom(roomId: string | undefined, { camera = true }: { camera?: boolean } = {}) {
   const { user } = useAuth();
   const myId = user?.id;
+  const cameraAllowedRef = useRef(camera);
+  useEffect(() => { cameraAllowedRef.current = camera; }, [camera]);
+
 
   const [joined, setJoined] = useState(false);
   const [mode, setModeState] = useState<MediaMode>("voice");
