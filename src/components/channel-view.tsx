@@ -212,7 +212,7 @@ export function ChannelView({
   const scrollRef = useRef<HTMLDivElement>(null);
 
 
-  const media = useMediaRoom(roomId);
+  const media = useMediaRoom(roomId, { camera: false });
   const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
   const { pinnedId: pinnedMessageId } = useRoomPin(roomId);
   const stopScreeningFn = useServerFn(stopScreening);
