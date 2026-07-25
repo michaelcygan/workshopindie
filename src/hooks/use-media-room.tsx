@@ -637,12 +637,13 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
     const floor = adaptiveFloorRef.current;
     const next = floor && (floor.screenKbps > 0) === screenActive
       ? { ...base,
-          camKbps: Math.min(base.camKbps, floor.camKbps),
+          audioKbps: Math.min(base.audioKbps, floor.audioKbps),
           screenKbps: Math.min(base.screenKbps || floor.screenKbps, floor.screenKbps || base.screenKbps) }
       : base;
     profileRef.current = next;
     applyBudget().catch(() => {});
   }
+
 
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
