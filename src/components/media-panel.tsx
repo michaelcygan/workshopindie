@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
+import { LOUNGE_CAP } from "@/lib/lounge-constants";
 import { RenderLinks } from "@/lib/render-links";
 
 /** Best-effort: derive a human label from a screen capture track.
@@ -97,7 +98,7 @@ export function MediaPanel({
           Lounge
         </h3>
         <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] text-ink-soft">
-          {totalHere}/{m.cap}
+          {totalHere}/{LOUNGE_CAP}
         </span>
       </header>
 
@@ -110,11 +111,38 @@ export function MediaPanel({
         </div>
       )}
 
-      {!m.joined ? (
-        <p className="mt-3 text-xs text-ink-muted">
-          {m.busy ? "Connecting…" : "Joining the Lounge…"}
-          {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
-        </p>
+      {/* Participation controls (Wave 2).
+          The Lounge is audio-first with three states:
+            - Chat only        → primary: Join audio
+            - Muted + audio    → label "Listening", primary: Unmute
+            - Unmuted + audio  → primary: Mute, secondary: Leave audio
+          Cameras no longer exist in the Lounge, so there's no camera toggle. */}
+      {!m.audioJoined ? (
+        <div className="mt-3 space-y-2">
+          <p className="text-xs text-ink-muted">
+            {m.busy
+              ? "Connecting to audio…"
+              : "You're here through chat. Add audio when you're ready."}
+            {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
+          </p>
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => { m.joinAudio().catch(() => {}); }}
+              disabled={m.busy}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+            >
+              <Mic className="h-3.5 w-3.5" /> Join audio
+            </button>
+            <button
+              type="button"
+              onClick={onExit}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
+            >
+              <LogOut className="h-3.5 w-3.5" /> Exit
+            </button>
+          </div>
+        </div>
       ) : (
         <div className="mt-3 space-y-2">
           <div className="grid grid-cols-2 gap-1.5">
@@ -124,26 +152,22 @@ export function MediaPanel({
               className={cn(
                 "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
                 m.muted
-                  ? "bg-destructive/10 text-destructive ring-1 ring-destructive/30 hover:bg-destructive/15"
+                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
                   : "bg-muted/60 text-ink hover:bg-muted",
               )}
+              title={m.muted ? "Unmute microphone" : "Mute microphone"}
             >
               {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
               {m.muted ? "Unmute" : "Mute"}
             </button>
             <button
               type="button"
-              onClick={() => m.setCameraEnabled(!m.cameraOn)}
+              onClick={m.leaveAudio}
               disabled={m.busy}
-              className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50",
-                m.cameraOn
-                  ? "bg-muted/60 text-ink hover:bg-muted"
-                  : "bg-muted/40 text-ink-soft hover:bg-muted/70",
-              )}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition disabled:opacity-50"
+              title="Leave audio and continue in chat"
             >
-              {m.cameraOn ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
-              {m.cameraOn ? "Camera off" : "Camera on"}
+              <MicOff className="h-3.5 w-3.5" /> Leave audio
             </button>
           </div>
           <div className="grid grid-cols-2 gap-1.5">
@@ -708,7 +732,7 @@ export function FullscreenRoom({
             {channelTitle}
           </h2>
           <span className="rounded-full bg-background/10 px-2 py-0.5 text-[11px] text-background/70 shrink-0">
-            {totalHere}/{m.cap}
+            {totalHere}/{LOUNGE_CAP}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -1018,14 +1042,30 @@ export function FullscreenRoom({
         className="fixed left-1/2 -translate-x-1/2 z-[55] flex items-center gap-2 rounded-full border border-background/15 bg-background/10 backdrop-blur-md px-2 py-2 shadow-2xl min-h-[52px]"
         style={{ bottom: "max(1rem, env(safe-area-inset-bottom))" }}
       >
-        <DockButton onClick={m.toggleMute} active={!m.muted} ariaLabel={m.muted ? "Unmute" : "Mute"}>
-          {m.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-          <span className="hidden sm:inline">{m.muted ? "Unmute" : "Mute"}</span>
-        </DockButton>
-        <DockButton onClick={() => m.setCameraEnabled(!m.cameraOn)} active={m.cameraOn} disabled={m.busy} ariaLabel={m.cameraOn ? "Camera off" : "Camera on"}>
-          {m.cameraOn ? <Video className="h-4 w-4" /> : <VideoOff className="h-4 w-4" />}
-          <span className="hidden sm:inline">{m.cameraOn ? "Camera off" : "Camera on"}</span>
-        </DockButton>
+        {/* Wave 2: audio is opt-in. In the fullscreen dock we show a single
+            primary participation control that mirrors the sidebar. */}
+        {m.audioJoined ? (
+          <>
+            <DockButton onClick={m.toggleMute} active={!m.muted} ariaLabel={m.muted ? "Unmute" : "Mute"}>
+              {m.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+              <span className="hidden sm:inline">{m.muted ? "Unmute" : "Mute"}</span>
+            </DockButton>
+            <DockButton onClick={m.leaveAudio} active={false} disabled={m.busy} ariaLabel="Leave audio">
+              <MicOff className="h-4 w-4" />
+              <span className="hidden sm:inline">Leave audio</span>
+            </DockButton>
+          </>
+        ) : (
+          <DockButton
+            onClick={() => { m.joinAudio().catch(() => {}); }}
+            active={true}
+            disabled={m.busy}
+            ariaLabel="Join audio"
+          >
+            <Mic className="h-4 w-4" />
+            <span className="hidden sm:inline">{m.busy ? "Connecting…" : "Join audio"}</span>
+          </DockButton>
+        )}
         {dockExtra && (
           <div className="inline-flex [&_button]:rounded-full">{dockExtra}</div>
         )}

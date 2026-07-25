@@ -105,7 +105,14 @@ export function ChannelView({
   roomId: string;
   title: string;
   pinned?: React.ReactNode;
-  initialMode?: MediaMode;
+  /**
+   * Wave 2 audio-first vocabulary: "chat" | "audio".
+   * Legacy "voice" (audio) / "video" (also audio now, no camera) are accepted
+   * for backward compatibility with old share links and Rejoin state.
+   * Only "audio" triggers an automatic mic pre-grant on entry; every other
+   * value enters as chat-only.
+   */
+  initialMode?: MediaMode | "chat" | "audio";
   workshopId?: string;
   hostUserId?: string | null;
   medium?: string | null;
@@ -211,23 +218,32 @@ export function ChannelView({
   const { pinnedId: pinnedMessageId } = useRoomPin(roomId);
   const stopScreeningFn = useServerFn(stopScreening);
 
-  // The lobby "Drop in" button is the consent point — auto-join with mic + camera
-  // (or whatever mode was requested via ?mode=) as soon as the user is loaded.
+  // Wave 2: entry no longer forces the user onto the WebRTC mesh. The Lounge
+  // "Drop in" (chat-only) button lands people here through chat; audio is
+  // opt-in via joinAudio() from inside the room. We only auto-request the mic
+  // when the entry mode explicitly says "audio" (or a legacy voice/video URL).
   const autoJoinedRef = useRef(false);
   useEffect(() => {
     if (!user || autoJoinedRef.current) return;
     autoJoinedRef.current = true;
-    media.setMode(initialMode);
+    const wantsAudio =
+      initialMode === "audio" || initialMode === "voice" || initialMode === "video";
+    if (wantsAudio) {
+      // Best-effort — failure is handled silently below so the user stays in
+      // the room in chat-only mode.
+      media.joinAudio().catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // If join fails, route back to /instant.
+  // Audio errors are informational only. A denied/absent mic must never
+  // bounce someone out of the Lounge — they can keep chatting, watching
+  // Work screenings, and using Collabs/Links without ever joining audio.
   useEffect(() => {
-    if (autoJoinedRef.current && media.error && !media.joined && !media.busy) {
+    if (media.error && !media.audioJoined && !media.busy) {
       toast.error(media.error);
-      router.navigate({ to: "/lounge" });
     }
-  }, [media.error, media.joined, media.busy, router]);
+  }, [media.error, media.audioJoined, media.busy]);
 
   function handleExit() {
     // If I'm the last one here, purge the ephemeral whiteboard for this room.
@@ -248,9 +264,12 @@ export function ChannelView({
     return () => window.removeEventListener("keydown", onKey);
   }, [fsView]);
 
-  // Inactivity guard: muted AND camera off → warn after a generous quiet window, drop later only if ignored.
-  // Suppressed while the "workshop wrapped" prompt is open.
-  const inactive = media.joined && media.muted && !media.cameraOn && !endedOpen;
+  // Wave 2 inactivity semantics.
+  // Muted listening is a normal, valid state — audience members shouldn't be
+  // kicked for staying quiet. Chat-only participants have no mic to unmute in
+  // the first place. We now only warn/kick when audio is joined AND explicitly
+  // muted for the full quiet window; chat-only sessions are never idle-kicked.
+  const inactive = media.audioJoined && media.muted && !endedOpen;
   const [quietSince, setQuietSince] = useState<number | null>(null);
   const [warnSince, setWarnSince] = useState<number | null>(null);
   const [nowTick, setNowTick] = useState(() => Date.now());
@@ -392,7 +411,7 @@ export function ChannelView({
   async function handleJoinNew() {
     if (joiningNew) return;
     setJoiningNew(true);
-    const nextMode: MediaMode = media.cameraOn || media.mode === "video" ? "video" : "voice";
+    const nextMode: MediaMode = "voice";
     try {
       media.leave();
       const { roomId: newId } = await dropNew();
