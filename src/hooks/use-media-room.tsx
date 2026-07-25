@@ -8,6 +8,12 @@ import {
   recordWebrtcSnapshot,
 } from "@/lib/turn.functions";
 import { pickProfile, stepDown, type BitrateProfile } from "@/lib/mesh-bitrate";
+import {
+  claimLoungeScreenShare,
+  refreshLoungeScreenShare,
+  releaseLoungeScreenShare,
+  LEASE_HEARTBEAT_MS,
+} from "@/lib/lounge-screen-lease";
 
 const STUN_ONLY: RTCIceServer[] = [
   { urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] },
