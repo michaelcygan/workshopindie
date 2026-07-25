@@ -533,15 +533,21 @@ export const getCollabActivity = createServerFn({ method: "POST" })
     ]);
     const perRole: Record<string, number> = {};
     let total = 0;
+    let suggestions = 0;
     for (const row of [...(memberRes.data ?? []), ...(guestRes.data ?? [])]) {
       total++;
       const rid = (row as { collab_role_id: string | null }).collab_role_id;
-      if (rid) perRole[rid] = (perRole[rid] ?? 0) + 1;
+      if (rid) {
+        perRole[rid] = (perRole[rid] ?? 0) + 1;
+      } else {
+        suggestions++;
+      }
     }
     return {
       applicants: total,
       shares: shareRes.count ?? 0,
       perRole,
+      suggestions,
     };
   });
 
