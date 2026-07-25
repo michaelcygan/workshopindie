@@ -34,6 +34,7 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
               <PlusBullet>Unlimited Lounge time (Free is 30 min/day)</PlusBullet>
               <PlusBullet>Unlimited published works on your portfolio</PlusBullet>
               <PlusBullet>Unlimited active open Collabs + boosted placement</PlusBullet>
+              <PlusBullet>Publish to the Workshop blog with your byline</PlusBullet>
               <PlusBullet>Early access to new features as they ship</PlusBullet>
             </div>
 
