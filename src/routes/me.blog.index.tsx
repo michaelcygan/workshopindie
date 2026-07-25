@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getMyBlogAccess, listMyBlogPosts, createMyBlogDraft } from "@/lib/blog-member.functions";
-import { PenLine, Plus, ExternalLink } from "lucide-react";
+import { PenLine, Plus, ExternalLink, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/")({
   head: () => ({
