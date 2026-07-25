@@ -142,6 +142,23 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
     );
   }
 
+  if (pulse.kind === "blog") {
+    return (
+      <Link to="/blog/$slug" params={{ slug: pulse.slug }} className={cn(base)}>
+        <PulseChip icon={<BookOpen className="h-3 w-3" />} label="Blog" />
+        <div
+          className={cn(
+            "aspect-video w-full overflow-hidden rounded-xl bg-muted",
+            !pulse.cover_url && "gradient-soft",
+          )}
+          style={pulse.cover_url ? { backgroundImage: `url(${pulse.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+        />
+        <div className="line-clamp-2 font-display text-sm text-ink">{pulse.title}</div>
+        {pulse.author_name && <div className="text-[11px] text-ink-muted">by {pulse.author_name}</div>}
+      </Link>
+    );
+  }
+
   // group
   return (
     <Link to="/g/$slug" params={{ slug: pulse.slug }} className={cn(base)}>
