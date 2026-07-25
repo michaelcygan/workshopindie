@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
+import { Mic, MicOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
 import { fallback, zodValidator } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
@@ -159,23 +159,18 @@ function WorkshopPreflight() {
   }, [liveByMedium]);
 
   const effMic = !!devices?.mic && prefs.mic;
-  const effCam = !!devices?.cam && prefs.cam;
-  // Chat-only entry: any signed-in user can drop in, even with no mic/cam.
+  // Chat-only entry: any signed-in user can drop in, even with no mic.
   // Audio is opt-in inside the room. See src/lib/lounge-constants.ts.
   const canDrop = true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify(prefs)); } catch { /* noop */ }
-  }, [prefs]);
+    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify({ mic: prefs.mic })); } catch { /* noop */ }
+  }, [prefs.mic]);
 
   const toggleMic = () => {
     if (!devices?.mic) { toast.error("No microphone detected."); return; }
     setPrefs((p) => ({ ...p, mic: !p.mic }));
-  };
-  const toggleCam = () => {
-    if (!devices?.cam) { toast.error("No camera detected."); return; }
-    setPrefs((p) => ({ ...p, cam: !p.cam }));
   };
 
   // Best-effort mic pre-grant. Returning null no longer blocks entry — the
@@ -345,24 +340,6 @@ function WorkshopPreflight() {
                   )}
                 >
                   {effMic ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleCam}
-                  disabled={!devices.cam}
-                  title={!devices.cam ? "No camera detected" : effCam ? "Camera on — click to turn off on join" : "Camera off — click to turn on"}
-                  aria-label={!devices.cam ? "No camera detected" : effCam ? "Turn camera off" : "Turn camera on"}
-                  aria-pressed={effCam}
-                  className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
-                    !devices.cam
-                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
-                      : effCam
-                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
-                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
-                  )}
-                >
-                  {effCam ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
                 </button>
 
               </>

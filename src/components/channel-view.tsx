@@ -17,7 +17,6 @@ import {
   MediaPanel,
   VideoStage,
   FullscreenRoom,
-  VideoTile,
   AudioTile,
   type RoomViewMode,
 } from "@/components/media-panel";
@@ -213,7 +212,7 @@ export function ChannelView({
   const scrollRef = useRef<HTMLDivElement>(null);
 
 
-  const media = useMediaRoom(roomId);
+  const media = useMediaRoom(roomId, { camera: false });
   const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
   const { pinnedId: pinnedMessageId } = useRoomPin(roomId);
   const stopScreeningFn = useServerFn(stopScreening);
@@ -726,36 +725,17 @@ export function ChannelView({
   // user can still see who is in the room while focused on the surface.
   const presenceStrip = user ? (
     <>
-      {media.cameraOn && media.localStream ? (
-        <div className="w-40 shrink-0">
-          <VideoTile
-            stream={media.localStream}
-            label={`${meDisplay} (you)`}
-            muted
-            speaking={media.speaking && !media.muted}
-            mirrored
-          />
-        </div>
-      ) : (
-        <div className="w-40 shrink-0">
-          <AudioTile
-            displayName={`${meDisplay} (you)`}
-            avatarUrl={meAvatar}
-            speaking={media.speaking && !media.muted}
-            muted={media.muted}
-          />
-        </div>
-      )}
+      <div className="w-40 shrink-0">
+        <AudioTile
+          displayName={`${meDisplay} (you)`}
+          avatarUrl={meAvatar}
+          speaking={media.speaking && !media.muted}
+          muted={media.muted}
+        />
+      </div>
       {others.map((o) => {
         const peer = media.peers.find((p) => p.userId === o.user_id);
         const name = o.profile?.display_name || o.profile?.username || "Anon";
-        if (peer && peer.mode === "video" && peer.stream) {
-          return (
-            <div key={o.user_id} className="w-40 shrink-0">
-              <VideoTile stream={peer.stream} label={name} speaking={peer.speaking} />
-            </div>
-          );
-        }
         return (
           <div key={o.user_id} className="w-40 shrink-0">
             <AudioTile
@@ -769,6 +749,7 @@ export function ChannelView({
       })}
     </>
   ) : null;
+
 
   // The persistent top-right expand button maps to whichever surface is active.
   const fsTarget: "chat" | "gallery" =
@@ -797,13 +778,13 @@ export function ChannelView({
           onMinimize={() => setFsView(null)}
           roomId={roomId}
           stageSlot={typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot}
-          dockExtra={
-            <HopButton
-              roomId={roomId}
-              medium={null}
-              mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
-            />
-          }
+            dockExtra={
+              <HopButton
+                roomId={roomId}
+                medium={null}
+                mode="voice"
+              />
+            }
           pinnedSlot={
             <PinnedScreeningStrip
               roomId={roomId}
@@ -889,7 +870,7 @@ export function ChannelView({
                 setWarnSince(null);
               }}
               aria-live="polite"
-              title="Stay in this Lounge — unmute or turn your camera on to clear this timer."
+              title="Stay in this Lounge — unmute to clear this timer."
               className={cn(
                 "absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm transition hover:bg-background",
                 idleTone,
@@ -1265,7 +1246,7 @@ export function ChannelView({
             <AlertDialogHeader>
               <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
-                You've been muted with camera off for a while. Keep going or unmute — otherwise
+                You've been muted for a while. Keep going or unmute — otherwise
                 we'll leave this Lounge automatically.
               </AlertDialogDescription>
               <div

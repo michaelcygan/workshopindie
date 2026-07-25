@@ -229,9 +229,12 @@ const RECOVER_GOOD_RTT_MS = 200;
 const SAMPLES_PER_SNAPSHOT = 5;   // ~20s at 4s poll interval
 
 
-export function useMediaRoom(roomId: string | undefined) {
+export function useMediaRoom(roomId: string | undefined, { camera = true }: { camera?: boolean } = {}) {
   const { user } = useAuth();
   const myId = user?.id;
+  const cameraAllowedRef = useRef(camera);
+  useEffect(() => { cameraAllowedRef.current = camera; }, [camera]);
+
 
   const [joined, setJoined] = useState(false);
   const [mode, setModeState] = useState<MediaMode>("voice");
@@ -256,7 +259,7 @@ export function useMediaRoom(roomId: string | undefined) {
   const lastSpeakingSentRef = useRef<boolean>(false);
   const modeRef = useRef<MediaMode>("voice");
   const screenStreamRef = useRef<MediaStream | null>(null);
-  const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
+  
   const screenBusyRef = useRef<boolean>(false);
   // True while WE hold the DB lease for this room's screen surface.
   const holdsLeaseRef = useRef<boolean>(false);
@@ -320,20 +323,8 @@ export function useMediaRoom(roomId: string | undefined) {
 
   async function applyBudget() {
     const profile = profileRef.current;
-    const screenActive = profile.screenKbps > 0;
-    const localCamTrack = (modeRef.current === "video"
-      ? localStreamRef.current?.getVideoTracks()[0] ?? null
-      : null);
     const localScreenTrack = screenStreamRef.current?.getVideoTracks()[0] ?? null;
 
-    if (localCamTrack && !screenActive) {
-      try {
-        await localCamTrack.applyConstraints({
-          frameRate: { max: profile.camFps },
-          height: { max: profile.camMaxHeight },
-        });
-      } catch { /* noop */ }
-    }
     if (localScreenTrack) {
       try {
         // "text" preserves edge sharpness for slides/code over motion smoothness.
@@ -341,16 +332,14 @@ export function useMediaRoom(roomId: string | undefined) {
         await localScreenTrack.applyConstraints({ frameRate: { max: profile.screenFps } });
       } catch { /* noop */ }
     }
-    if (localCamTrack) {
-      try { localCamTrack.contentHint = "motion"; } catch { /* noop */ }
-    }
 
     for (const pc of pcsRef.current.values()) {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video");
       if (!sender || !sender.track) continue;
       const isScreen = sender.track === localScreenTrack;
-      const kbps = isScreen ? profile.screenKbps : profile.camKbps;
-      const fps = isScreen ? profile.screenFps : profile.camFps;
+      if (!isScreen) continue;
+      const kbps = profile.screenKbps;
+      const fps = profile.screenFps;
       if (kbps <= 0) continue;
       try {
         const params = sender.getParameters();
@@ -362,11 +351,12 @@ export function useMediaRoom(roomId: string | undefined) {
           maxBitrate: kbps * 1000,
           maxFramerate: fps,
         };
-        params.degradationPreference = isScreen ? "maintain-framerate" : "balanced";
+        params.degradationPreference = "maintain-framerate";
         await sender.setParameters(params);
       } catch { /* noop */ }
     }
   }
+
 
   // -------------------------------------------------------------------------
   // Per-pair health ladder helpers (audio-first).
@@ -415,11 +405,13 @@ export function useMediaRoom(roomId: string | undefined) {
       // Restore video track to this peer if we suspended it.
       if (meta.videoOffSuspended) {
         const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-        const camTrack = screenStreamRef.current?.getVideoTracks()[0]
-          ?? localStreamRef.current?.getVideoTracks()[0]
+        // Audio-first rooms: only the screen-share track is restored. Camera
+        // tracks are never sent in this room mode.
+        const restoreTrack = screenStreamRef.current?.getVideoTracks()[0]
+          ?? (cameraAllowedRef.current ? localStreamRef.current?.getVideoTracks()[0] : null)
           ?? null;
-        if (sender && camTrack) {
-          try { await sender.replaceTrack(camTrack); } catch { /* noop */ }
+        if (sender && restoreTrack) {
+          try { await sender.replaceTrack(restoreTrack); } catch { /* noop */ }
         }
         meta.videoOffSuspended = false;
       }
@@ -427,6 +419,7 @@ export function useMediaRoom(roomId: string | undefined) {
       adaptiveFloorRef.current = null;
       applyBudget().catch(() => {});
     }
+
   }
 
   async function flushSnapshot(peerId: string, meta: PeerMeta) {
@@ -647,12 +640,13 @@ export function useMediaRoom(roomId: string | undefined) {
     const floor = adaptiveFloorRef.current;
     const next = floor && (floor.screenKbps > 0) === screenActive
       ? { ...base,
-          camKbps: Math.min(base.camKbps, floor.camKbps),
+          audioKbps: Math.min(base.audioKbps, floor.audioKbps),
           screenKbps: Math.min(base.screenKbps || floor.screenKbps, floor.screenKbps || base.screenKbps) }
       : base;
     profileRef.current = next;
     applyBudget().catch(() => {});
   }
+
 
   function attachStream(peerId: string, stream: MediaStream) {
     setPeers((prev) => ({
@@ -1295,7 +1289,6 @@ export function useMediaRoom(roomId: string | undefined) {
       for (const t of screenStreamRef.current.getTracks()) t.stop();
       screenStreamRef.current = null;
     }
-    originalCamTrackRef.current = null;
     screenBusyRef.current = false;
     setScreenStream(null);
     setScreenSharerId(null);
@@ -1430,10 +1423,14 @@ export function useMediaRoom(roomId: string | undefined) {
         return;
       }
       let effectiveMode = nextMode;
+      if (effectiveMode === "video" && !cameraAllowedRef.current) {
+        effectiveMode = "voice";
+      }
       if (effectiveMode === "video" && videoCount >= VIDEO_CAP && !joined) {
         effectiveMode = "voice";
         setError(`Video full (${VIDEO_CAP} cams). Joined as voice.`);
       }
+
 
       if (joined) teardownMedia();
 
@@ -1596,7 +1593,11 @@ export function useMediaRoom(roomId: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId, roomId, busy, joined, count, videoCount, leave]);
 
-  const setMode = useCallback((m: MediaMode) => { joinWithMode(m); }, [joinWithMode]);
+  const setMode = useCallback((m: MediaMode) => {
+    if (!cameraAllowedRef.current && m === "video") return;
+    joinWithMode(m);
+  }, [joinWithMode]);
+
 
   const toggleMute = useCallback(() => {
     const stream = localStreamRef.current;
@@ -1621,6 +1622,7 @@ export function useMediaRoom(roomId: string | undefined) {
   }, [muted, myId]);
 
   const setCameraEnabled = useCallback((on: boolean) => {
+    if (!cameraAllowedRef.current) return;
     const stream = localStreamRef.current;
     if (modeRef.current === "video" && stream) {
       const tracks = stream.getVideoTracks();
@@ -1637,11 +1639,10 @@ export function useMediaRoom(roomId: string | undefined) {
     }
   }, [joinWithMode]);
 
+
   const stopScreenShare = useCallback(async () => {
     const screen = screenStreamRef.current;
-    const camTrack = originalCamTrackRef.current;
     screenStreamRef.current = null;
-    originalCamTrackRef.current = null;
     setScreenStream(null);
     // Clear heartbeat & release lease (the DB row is the source of truth).
     if (leaseHeartbeatRef.current != null) {
@@ -1670,14 +1671,10 @@ export function useMediaRoom(roomId: string | undefined) {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video" || (!s.track && s.transport));
       if (sender) {
         try {
-          if (camTrack) {
-            await sender.replaceTrack(camTrack);
-          } else {
-            await sender.replaceTrack(null);
-            // Remove the extra sender so the stray m-section is dropped on
-            // the next negotiation cycle.
-            try { pc.removeTrack(sender); } catch { /* noop */ }
-          }
+          // In audio-first rooms there is no camera track to restore; remove
+          // the video sender so the m-section is dropped on the next cycle.
+          await sender.replaceTrack(null);
+          try { pc.removeTrack(sender); } catch { /* noop */ }
         } catch { /* noop */ }
       }
     }
@@ -1686,6 +1683,7 @@ export function useMediaRoom(roomId: string | undefined) {
     rebudget(count, false);
     screenBusyRef.current = false;
   }, [myId, count]);
+
 
   const startScreenShare = useCallback(async () => {
     if (!myId || !channelRef.current) {
@@ -1740,8 +1738,6 @@ export function useMediaRoom(roomId: string | undefined) {
     }
     screenTrack.addEventListener("ended", () => { stopScreenShare(); });
 
-    const cam = localStreamRef.current?.getVideoTracks()[0] ?? null;
-    originalCamTrackRef.current = cam;
     screenStreamRef.current = captured;
     setScreenStream(captured);
     setScreenSharerId(myId);

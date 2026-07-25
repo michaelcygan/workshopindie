@@ -2,10 +2,8 @@
  * Mesh bandwidth governor.
  *
  * Audio-first Lounge (V1): full WebRTC mesh capped at 10 audio-connected
- * participants + one screen-share track. Camera video no longer exists;
- * `cam*` fields remain in the shape only for compatibility with the current
- * useMediaRoom hook and will be removed in the next wave once the hook is
- * rewritten to a pure audio+screen interface.
+ * participants + one screen-share track. Camera video no longer exists; the
+ * profile only tracks the audio ceiling, screen bitrate and screen framerate.
  *
  * Each screen sender uploads to (audioPeers - 1) receivers, so the total
  * upload budget for the sharer is:
@@ -17,13 +15,11 @@
  */
 
 export type BitrateProfile = {
-  /** Legacy — kept as the audio ceiling (~28 kbps voice). Not a camera. */
-  camKbps: number;
-  /** Legacy — unused in the audio-first hook; kept as a shape stub. */
-  camFps: number;
-  /** Legacy — unused in the audio-first hook; kept as a shape stub. */
-  camMaxHeight: number;
+  /** Audio bitrate ceiling (~28 kbps voice). */
+  audioKbps: number;
+  /** Screen-share bitrate ceiling. */
   screenKbps: number;
+  /** Screen-share framerate ceiling. */
   screenFps: number;
 };
 
@@ -33,9 +29,7 @@ export type BitrateProfile = {
  */
 const AUDIO_ONLY_KBPS = 28;
 const AUDIO_ONLY_FALLBACK: BitrateProfile = {
-  camKbps: AUDIO_ONLY_KBPS,
-  camFps: 0,
-  camMaxHeight: 0,
+  audioKbps: AUDIO_ONLY_KBPS,
   screenKbps: 0,
   screenFps: 0,
 };
@@ -63,15 +57,15 @@ const PROFILES_IDLE: Record<number, BitrateProfile> = {
  *   9–10 peers:  220 kbps @  5 fps
  */
 const PROFILES_SHARING: Record<number, BitrateProfile> = {
-  2:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps: 1600, screenFps: 12 },
-  3:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  800, screenFps: 10 },
-  4:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  800, screenFps: 10 },
-  5:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  450, screenFps:  8 },
-  6:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  450, screenFps:  8 },
-  7:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  300, screenFps:  6 },
-  8:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  300, screenFps:  6 },
-  9:  { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  220, screenFps:  5 },
-  10: { camKbps: AUDIO_ONLY_KBPS, camFps: 0, camMaxHeight: 0, screenKbps:  220, screenFps:  5 },
+  2:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps: 1600, screenFps: 12 },
+  3:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  800, screenFps: 10 },
+  4:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  800, screenFps: 10 },
+  5:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  450, screenFps:  8 },
+  6:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  450, screenFps:  8 },
+  7:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  300, screenFps:  6 },
+  8:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  300, screenFps:  6 },
+  9:  { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  220, screenFps:  5 },
+  10: { audioKbps: AUDIO_ONLY_KBPS, screenKbps:  220, screenFps:  5 },
 };
 
 export function pickProfile(peers: number, screenActive: boolean): BitrateProfile {
@@ -88,7 +82,7 @@ export function stepDown(p: BitrateProfile, screenActive: boolean): BitrateProfi
   const table = screenActive ? PROFILES_SHARING : PROFILES_IDLE;
   const rows = [2, 3, 4, 5, 6, 7, 8, 9, 10].map((k) => table[k]);
   const idx = rows.findIndex(
-    (r) => r.camKbps === p.camKbps && r.screenKbps === p.screenKbps,
+    (r) => r.audioKbps === p.audioKbps && r.screenKbps === p.screenKbps,
   );
   if (idx < 0 || idx >= rows.length - 1) return null;
   return rows[idx + 1];

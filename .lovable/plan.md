@@ -1,49 +1,42 @@
-# Wave 3 — Single-sharer Screen Lease (client wiring)
+Yes — Wave 4 is the final V1 contract-completion pass for the audio-first Lounge. After Waves 1-3 (10-person cap, chat-only entry, audio facade, and the DB-backed screen lease), the remaining gap is the camera remnants that still appear in the Lounge UI and media hook. The `mesh-bitrate.ts` file already flags this: the camera stubs are kept only for hook compatibility and should be removed in the next wave.
 
-Wave 1 already added the server side (`instant_rooms.screen_sharer_user_id`, `screen_share_claimed_at`, and the RPCs `claim_lounge_screen_share`, `refresh_lounge_screen_share`, `release_lounge_screen_share`). Wave 3 connects those to the runtime so the Lounge enforces "only one screen share at a time" durably, not just via broadcast.
+Scope
 
-No new packages, no SFU, no DB schema changes.
+1. Lobby cleanup (`src/routes/lounge.index.tsx`)
+   - Remove the camera toggle from the header.
+   - Drop the camera preference from localStorage (`workshop:av-prefs`).
+   - Update subtitle/help copy to "audio and chat" only.
 
-## Behavior contract
+2. Room UI cleanup — no camera tiles in the Lounge
+   - `src/components/media-panel.tsx`: remove local/remote camera rendering from `VideoStage` and `FullscreenRoom`. Keep only the audio avatar grid and the screen-share spotlight.
+   - `src/components/channel-view.tsx`: remove the camera branch from the presence strip, update the idle-warning copy from "turn your camera on" to "unmute", and pass the new audio/chat mode to `HopButton` instead of the legacy `video` mode.
 
-- Anyone in a Lounge can attempt to share their screen.
-- The DB row is the source of truth for who holds the visual surface. `getDisplayMedia()` only runs after `claim_lounge_screen_share` returns success.
-- Only one holder at a time. A second person trying to share sees "Someone is already sharing" and the attempt is aborted before the browser picker opens.
-- Holder heartbeats every ~20s via `refresh_lounge_screen_share`. If a holder crashes / closes tab, the lease is considered stale after ~60s and another participant can claim it (the claim RPC already checks staleness).
-- Holder releases explicitly on: stop button, track `ended` event, leave audio, leave room, tab close (`pagehide`).
-- Other clients react to lease changes via Postgres realtime on `instant_rooms` and reconcile local `screenSharerId` state.
-- Chat-only participants can also hold the lease (screen share does not require mic).
+3. Audio-first hook constraint
+   - Add an optional `camera: false` constraint to `useMediaRoom` for Lounge contexts. In that mode, `setCameraEnabled` and legacy `video` mode become no-ops. This lets the same hook keep serving Workshop Recorder/PiP outside the Lounge while making the Lounge camera-free.
+   - Update `MediaForTools` to not require camera fields.
 
-## Technical section
+4. Tools in the Lounge
+   - In instant/Lounge rooms, hide the "room camera" source and camera toggle in `WorkshopRecorder` and `WorkshopPip`. Keep microphone and screen-share sources available.
 
-### 1. New helper: `src/lib/lounge-screen-lease.ts`
-Thin wrappers around the 3 RPCs (`claim`, `refresh`, `release`) returning `{ ok, holder }`. Centralises error mapping (`already_held`, `not_holder`).
+5. Bitrate model cleanup (`src/lib/mesh-bitrate.ts`)
+   - Rename `camKbps` to `audioKbps` (it is the audio ceiling, not a camera) and remove the `camFps`/`camMaxHeight` stubs.
+   - Update `applyBudget` in `useMediaRoom` to use the new audio-only profile fields.
 
-### 2. `src/hooks/use-media-room.tsx`
-- Add `leaseHeartbeatRef` (interval id) and `leaseHolderRef`.
-- `startScreenShare`: before `getDisplayMedia`, call `claimLounge…`. On failure, set an error like "Someone else is sharing" and bail (no picker). On success, proceed as today, then start a 20s heartbeat.
-- `stopScreenShare`: clear heartbeat, then call `releaseLounge…` (fire-and-forget, ignore not_holder).
-- On `leave()` / unmount / `pagehide` listener: if we hold the lease, release it synchronously with `navigator.sendBeacon`-style best effort (RPC via fetch keepalive fallback; acceptable if it sometimes misses — 60s staleness covers it).
-- Subscribe once per room to `postgres_changes` on `instant_rooms` filtered by `id=eq.<roomId>`. On update, set `screenSharerId` from `screen_sharer_user_id`. This becomes the canonical value; the existing broadcast "screen active/inactive" signal stays as an optimistic hint but the DB wins on conflict.
-- If the DB says someone else now holds the lease while we still have `screenStreamRef`, auto-stop our local share (defensive — shouldn't happen since claim is exclusive, but handles clock drift / stale-takeover).
+6. Screen-share edge-case hardening
+   - Remove the camera-track restoration path in `stopScreenShare`.
+   - Ensure the lease heartbeat is cleared and the video sender is removed cleanly when sharing stops or the lease is lost.
 
-### 3. `src/components/media-panel.tsx` / `channel-view.tsx`
-- Disable the "Share screen" button (with tooltip "Someone is already sharing") when `screenSharerId && screenSharerId !== myId`.
-- Keep existing "Stop sharing" affordance for the holder; no visual redesign.
-- Toast on claim failure surfaces the returned holder's display name when available.
+Out of scope
 
-### 4. Realtime enablement
-`instant_rooms` already emits `postgres_changes` in the app (used elsewhere). Confirm the publication includes it; if not, this is the only DB-touching step and would be a tiny migration to `ALTER PUBLICATION supabase_realtime ADD TABLE public.instant_rooms` (skip if already present — will verify during build).
+- Push-to-talk (architected for later, not implemented now).
+- Any SFU or external media service.
+- New npm packages.
 
-### 5. Non-goals (still deferred)
-- Push-to-talk.
-- Speaker/audience roles.
-- SFU / external media service.
-- Camera video.
+Acceptance
 
-## Acceptance checks
+- No camera controls or camera tiles visible anywhere in the Lounge flow.
+- Screen share is the only video surface and remains governed by the DB lease.
+- Chat-only participants still never enter the WebRTC mesh.
+- The 10-person audio mesh and the screen-share heartbeat keep working.
 
-- Two tabs in same Lounge: tab A shares → tab B's Share button becomes disabled with "Someone is already sharing"; tab B click no longer opens the OS picker.
-- Tab A closes browser tab → within ~60s tab B can claim successfully.
-- Tab A clicks Stop → tab B's button re-enables within one realtime tick.
-- Chat-only participant can still claim the lease without joining audio.
+If you approve this plan, I'll implement Wave 4 in one pass and verify the Lounge still works in both desktop and mobile view.
