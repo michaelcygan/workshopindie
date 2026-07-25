@@ -75,6 +75,7 @@ function PricingPage() {
             "Unlimited active open Collabs + boosted placement",
             "All cities — join, post, filter gallery",
             "Unlimited Lounge time + priority seat",
+            "Publish to the Workshop blog with your byline",
             "Plus badge on your profile + Credits strip",
             "Work analytics (views, saves, origin cities)",
             "Early access to new features as they ship",
