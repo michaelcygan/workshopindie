@@ -41,6 +41,21 @@ export const Route = createFileRoute("/blog/$slug")({
       meta.push({ property: "og:image:alt", content: p.cover_image_alt ?? title });
       meta.push({ name: "twitter:image", content: img });
     }
+    const authors = (p.authors ?? []) as Array<{ username: string | null; display_name: string | null; role_label: string | null }>;
+    const primaryAuthorNode =
+      authors.length > 0
+        ? authors.map((a) =>
+            a.username
+              ? { "@type": "Person", name: a.display_name || a.username, url: `${SITE}/u/${a.username}` }
+              : { "@type": "Person", name: a.display_name || p.author_name || "Workshop" },
+          )
+        : p.author_profile?.username
+          ? {
+              "@type": "Person",
+              name: p.author_name || p.author_profile.display_name || p.author_profile.username,
+              url: `${SITE}/u/${p.author_profile.username}`,
+            }
+          : { "@type": "Organization", name: p.author_name || "Workshop" };
     return {
       meta,
       links: [{ rel: "canonical", href: url }],
@@ -55,13 +70,7 @@ export const Route = createFileRoute("/blog/$slug")({
             image: img ? [img] : undefined,
             datePublished: p.published_at,
             dateModified: p.updated_at,
-            author: p.author_profile?.username
-              ? {
-                  "@type": "Person",
-                  name: p.author_name || p.author_profile.display_name || p.author_profile.username,
-                  url: `${SITE}/u/${p.author_profile.username}`,
-                }
-              : { "@type": "Organization", name: p.author_name || "Workshop" },
+            author: primaryAuthorNode,
             publisher: {
               "@type": "Organization",
               name: "Workshop",
