@@ -207,7 +207,8 @@ export function MessageBody({
       | { type: "link"; text: string; href: string }
       | { type: "collab"; label: string; slug: string }
       | { type: "group"; label: string; slug: string }
-      | { type: "event"; label: string; groupSlug: string; eventSlug: string };
+      | { type: "event"; label: string; groupSlug: string; eventSlug: string }
+      | { type: "post"; label: string; slug: string };
 
     type Hit = { start: number; end: number; seg: Seg };
     const hits: Hit[] = [];
@@ -216,6 +217,7 @@ export function MessageBody({
       /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\/e\/([a-zA-Z0-9_-]{1,80})\)/g;
     const groupRe = /\[([^\]\n]{1,120})\]\(\/g\/([a-zA-Z0-9_-]{1,80})\)/g;
     const collabRe = /\[([^\]\n]{1,120})\]\(\/collab\/([a-zA-Z0-9_-]{1,80})\)/g;
+    const postRe = /\[([^\]\n]{1,120})\]\(\/blog\/([a-zA-Z0-9_-]{1,120})\)/g;
     const mentionRe = /(^|\s)@([A-Za-z0-9_]{1,30})/g;
     const urlRe = /\bhttps?:\/\/[^\s<]+/g;
     const bareUrlRe =
@@ -235,6 +237,14 @@ export function MessageBody({
         start: m.index,
         end: m.index + m[0].length,
         seg: { type: "group", label: m[1], slug: m[2] },
+      });
+    }
+    while ((m = postRe.exec(body))) {
+      if (hits.some((h) => m!.index >= h.start && m!.index < h.end)) continue;
+      hits.push({
+        start: m.index,
+        end: m.index + m[0].length,
+        seg: { type: "post", label: m[1], slug: m[2] },
       });
     }
     while ((m = collabRe.exec(body))) {
