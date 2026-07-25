@@ -30,6 +30,7 @@ import { EventPhotosSection } from "@/components/event-photos-section";
 import { getEventPhase } from "@/lib/event-phase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
   loader: async ({ params }) => {
