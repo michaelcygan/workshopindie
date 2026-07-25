@@ -81,6 +81,9 @@ export function SettingsMenuButton() {
         <DropdownMenuItem onClick={() => navigate({ to: "/events" })}>
           <Calendar className="mr-2 h-4 w-4" /> Events
         </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => navigate({ to: "/blog" })}>
+          <BookOpen className="mr-2 h-4 w-4" /> Blog
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
           <Gift className="mr-2 h-4 w-4" /> Refer & Earn
