@@ -47,10 +47,16 @@ export const getProfileSeo = createServerFn({ method: "GET" })
     setResponseHeader("cache-control", PUBLIC_CACHE);
     const { data: row } = await supabaseAdmin
       .from("profiles")
-      .select("display_name,username,headline,bio,avatar_url")
+      .select("id,display_name,username,headline,bio,avatar_url")
       .eq("username", data.username)
       .maybeSingle();
-    return row ?? null;
+    if (!row) return null;
+    const { data: countRow } = await supabaseAdmin.rpc("profile_published_blog_count", {
+      _profile_id: row.id,
+    });
+    const published_blog_count =
+      typeof countRow === "number" ? countRow : Number(countRow ?? 0);
+    return { ...row, published_blog_count };
   });
 
 export const getWorkshopSeo = createServerFn({ method: "GET" })
