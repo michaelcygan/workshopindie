@@ -64,7 +64,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     })),
   );
   const [authorSearch, setAuthorSearch] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
 
   const create = useServerFn(adminCreateDraft);
   const update = useServerFn(adminUpdatePost);
