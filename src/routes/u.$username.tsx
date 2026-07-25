@@ -906,6 +906,23 @@ function ProfilePage() {
           {defaultTab === "collabs" && (
             <CollabsTab items={openCollabs ?? []} isOwn={isOwn} ownerName={name} isLoading={!openCollabs} />
           )}
+          {defaultTab === "blog" && (
+            <ProfileBlogTab
+              profileId={profile.id}
+              username={profile.username ?? username}
+              enabled={blogCount > 0}
+              ownerName={name}
+              isOwn={isOwn}
+              onOpenPost={(slug) =>
+                navigate({
+                  to: "/u/$username",
+                  params: { username },
+                  search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
+                  replace: true,
+                })
+              }
+            />
+          )}
           {defaultTab === "activity" && isOwn && (
             <ActivityTab
               drafts={(drafts ?? []) as DraftRow[]}
@@ -918,6 +935,23 @@ function ProfilePage() {
           {defaultTab === "about" && (
             <AboutTab profile={profile} />
           )}
+          <BlogPostPeek
+            slug={search.post ?? null}
+            open={!!search.post}
+            onOpenChange={(v) => {
+              if (v) return;
+              navigate({
+                to: "/u/$username",
+                params: { username },
+                search: (prev: Record<string, unknown>) => {
+                  const next = { ...prev };
+                  delete (next as { post?: string }).post;
+                  return next;
+                },
+                replace: true,
+              });
+            }}
+          />
 
           {/* Mobile-only stats strip (below the portfolio) */}
           <div className="mt-8 flex flex-wrap gap-x-6 gap-y-2 rounded-2xl border border-border bg-surface px-5 py-4 text-sm md:hidden">
