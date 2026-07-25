@@ -9,9 +9,10 @@ import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import {
   adminCreateDraft, adminUpdatePost, adminPublishPost, adminUnpublishPost, adminDeleteDraft,
-  adminListAuthorProfiles,
+  adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
-import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon, ChevronUp, ChevronDown, X } from "lucide-react";
 
 const SITE = "https://workshopindie.com";
 
