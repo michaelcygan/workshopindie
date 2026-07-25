@@ -346,24 +346,6 @@ function WorkshopPreflight() {
                 >
                   {effMic ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
                 </button>
-                <button
-                  type="button"
-                  onClick={toggleCam}
-                  disabled={!devices.cam}
-                  title={!devices.cam ? "No camera detected" : effCam ? "Camera on — click to turn off on join" : "Camera off — click to turn on"}
-                  aria-label={!devices.cam ? "No camera detected" : effCam ? "Turn camera off" : "Turn camera on"}
-                  aria-pressed={effCam}
-                  className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
-                    !devices.cam
-                      ? "border-transparent text-ink-muted/40 cursor-not-allowed"
-                      : effCam
-                        ? "border-ink/15 bg-ink/5 text-ink hover:bg-ink/10"
-                        : "border-border text-ink-muted hover:text-ink hover:bg-muted/50",
-                  )}
-                >
-                  {effCam ? <Video className="h-3.5 w-3.5" /> : <VideoOff className="h-3.5 w-3.5" />}
-                </button>
 
               </>
             )}
