@@ -323,20 +323,8 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
 
   async function applyBudget() {
     const profile = profileRef.current;
-    const screenActive = profile.screenKbps > 0;
-    const localCamTrack = (modeRef.current === "video"
-      ? localStreamRef.current?.getVideoTracks()[0] ?? null
-      : null);
     const localScreenTrack = screenStreamRef.current?.getVideoTracks()[0] ?? null;
 
-    if (localCamTrack && !screenActive) {
-      try {
-        await localCamTrack.applyConstraints({
-          frameRate: { max: profile.camFps },
-          height: { max: profile.camMaxHeight },
-        });
-      } catch { /* noop */ }
-    }
     if (localScreenTrack) {
       try {
         // "text" preserves edge sharpness for slides/code over motion smoothness.
@@ -344,16 +332,14 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
         await localScreenTrack.applyConstraints({ frameRate: { max: profile.screenFps } });
       } catch { /* noop */ }
     }
-    if (localCamTrack) {
-      try { localCamTrack.contentHint = "motion"; } catch { /* noop */ }
-    }
 
     for (const pc of pcsRef.current.values()) {
       const sender = pc.getSenders().find((s) => s.track?.kind === "video");
       if (!sender || !sender.track) continue;
       const isScreen = sender.track === localScreenTrack;
-      const kbps = isScreen ? profile.screenKbps : profile.camKbps;
-      const fps = isScreen ? profile.screenFps : profile.camFps;
+      if (!isScreen) continue;
+      const kbps = profile.screenKbps;
+      const fps = profile.screenFps;
       if (kbps <= 0) continue;
       try {
         const params = sender.getParameters();
@@ -365,11 +351,12 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
           maxBitrate: kbps * 1000,
           maxFramerate: fps,
         };
-        params.degradationPreference = isScreen ? "maintain-framerate" : "balanced";
+        params.degradationPreference = "maintain-framerate";
         await sender.setParameters(params);
       } catch { /* noop */ }
     }
   }
+
 
   // -------------------------------------------------------------------------
   // Per-pair health ladder helpers (audio-first).
