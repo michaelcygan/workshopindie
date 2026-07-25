@@ -201,17 +201,8 @@ export async function listProfileBlogPostsServer(profileId: string, cursor: { pu
 }
 
 export async function getRelatedPostsServer(excludeId: string, limit: number) {
-  const { data, error } = await publicClient()
-    .from("blog_posts")
-    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at")
-    .eq("status", "published")
-    .eq("show_in_blog_index", true)
-    .lte("published_at", new Date().toISOString())
-    .neq("id", excludeId)
-    .order("published_at", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(error.message);
-  return data ?? [];
+  const { getRelatedPostsRankedServer } = await import("./blog-entity-tags.server");
+  return getRelatedPostsRankedServer(excludeId, limit);
 }
 
 export async function adminListPostsServer(context: AuthContext) {
