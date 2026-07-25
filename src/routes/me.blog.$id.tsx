@@ -330,8 +330,19 @@ function MemberBlogEditorPage() {
               value={body}
               readOnly={readOnly}
               onChange={(v) => { setBody(v); setDirty(true); }}
+              onRequestEntityInsert={(insert) => {
+                setPendingInsertRef(() => insert);
+                setEntityPickerOpen(true);
+              }}
             />
           </div>
+
+          <BlogEntityTagsEditor
+            value={entityTags}
+            readOnly={readOnly}
+            onChange={(next) => { setEntityTags(next); setDirty(true); }}
+          />
+
 
 
           {!post.post.published_at && access.canDeleteNeverPublishedDraft && (
@@ -395,6 +406,23 @@ function MemberBlogEditorPage() {
           </div>
         </TabsContent>
       </Tabs>
+
+      <BlogEntityTagPicker
+        open={entityPickerOpen}
+        onOpenChange={setEntityPickerOpen}
+        disabledKeys={entityTags.map(tagKey)}
+        onPick={(tag) => {
+          if (pendingInsertRef) {
+            pendingInsertRef(entityMarkdown(tag));
+            setPendingInsertRef(null);
+          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            setEntityTags([...entityTags, tag]);
+            setDirty(true);
+          }
+          setEntityPickerOpen(false);
+        }}
+      />
     </main>
   );
 }
+
