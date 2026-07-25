@@ -134,7 +134,7 @@ export function ChatMentionInput({
       <MentionPopover
         open={open}
         query={query}
-        sections={["user", "collab", "group", "event", "work"]}
+        sections={["user", "collab", "group", "event", "work", "post"]}
         extraUsers={extraUsers}
         onPick={insertSuggestion}
         onClose={() => setOpen(false)}
