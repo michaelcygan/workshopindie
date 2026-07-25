@@ -1203,8 +1203,14 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
     src.connect(analyser);
     const data = new Uint8Array(analyser.frequencyBinCount);
     let raf = 0;
-    let lastChange = 0;
     let active = false;
+    let smoothed = 0;
+    let lastVoiceAt = 0;
+    let onSince = 0;
+    const ON_THRESHOLD = 0.05;
+    const OFF_THRESHOLD = 0.03;
+    const ON_HOLD_MS = 120;   // sustained voice before turning on
+    const OFF_HOLD_MS = 800;  // sustained silence before turning off
 
     const loop = () => {
       analyser.getByteTimeDomainData(data);
@@ -1214,27 +1220,53 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
         sum += v * v;
       }
       const rms = Math.sqrt(sum / data.length);
-      const isSpeaking = rms > 0.045;
+      // Exponential moving average to ride over inter-syllable dips.
+      smoothed = smoothed * 0.6 + rms * 0.4;
       const now = performance.now();
-      if (isSpeaking !== active && now - lastChange > 200) {
-        active = isSpeaking;
-        lastChange = now;
-        setSpeaking(active);
-        if (channelRef.current && myId && lastSpeakingSentRef.current !== active) {
-          lastSpeakingSentRef.current = active;
-          channelRef.current.send({
-            type: "broadcast",
-            event: "signal",
-            payload: {
-              type: "speaking", from: myId, speaking: active,
-              room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
-            } satisfies SignalEvent,
-          });
+
+      if (smoothed > ON_THRESHOLD) {
+        lastVoiceAt = now;
+        if (!active) {
+          if (onSince === 0) onSince = now;
+          if (now - onSince >= ON_HOLD_MS) {
+            active = true;
+            onSince = 0;
+            setSpeaking(true);
+            if (channelRef.current && myId && lastSpeakingSentRef.current !== true) {
+              lastSpeakingSentRef.current = true;
+              channelRef.current.send({
+                type: "broadcast",
+                event: "signal",
+                payload: {
+                  type: "speaking", from: myId, speaking: true,
+                  room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+                } satisfies SignalEvent,
+              });
+            }
+          }
+        }
+      } else {
+        onSince = 0;
+        if (active && smoothed < OFF_THRESHOLD && now - lastVoiceAt >= OFF_HOLD_MS) {
+          active = false;
+          setSpeaking(false);
+          if (channelRef.current && myId && lastSpeakingSentRef.current !== false) {
+            lastSpeakingSentRef.current = false;
+            channelRef.current.send({
+              type: "broadcast",
+              event: "signal",
+              payload: {
+                type: "speaking", from: myId, speaking: false,
+                room: roomIdRef.current, sess: sessionIdRef.current ?? undefined,
+              } satisfies SignalEvent,
+            });
+          }
         }
       }
       raf = requestAnimationFrame(loop);
     };
     loop();
+
 
     speakingStopRef.current = () => {
       cancelAnimationFrame(raf);
