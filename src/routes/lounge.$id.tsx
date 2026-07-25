@@ -147,11 +147,10 @@ type Room = {
 
 function LiveRoomPage() {
   const { id } = Route.useParams();
-  // `mode` from search (chat|audio) is currently ignored — channel-view still
-  // takes the legacy voice|video contract and we always pass "voice" until the
-  // audio hook refactor lands. Keeping the search param means share links and
-  // Rejoin/Hop preserve intent for the next wave.
-  Route.useSearch();
+  // `mode` from search is normalized upstream to "chat" | "audio" (legacy
+  // voice/video are coerced to "audio"). We forward it to ChannelView so it
+  // only auto-requests the mic when the URL explicitly asks for audio.
+  const { mode: entryMode } = Route.useSearch();
   const { user, loading } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
