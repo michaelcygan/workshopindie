@@ -129,7 +129,7 @@ export const hostInstantWorkshop = createServerFn({ method: "POST" })
         kind: "lounge",
         title,
         status: "active",
-        participant_cap: 5,
+        participant_cap: 10,
         creator_id: userId,
         host_user_id: namedByUserId,
         medium: data.medium ?? null,
