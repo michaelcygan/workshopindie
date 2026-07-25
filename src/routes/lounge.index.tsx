@@ -31,7 +31,11 @@ export const Route = createFileRoute("/lounge/")({
   head: () => ({
     meta: [
       { title: "Lounge — Drop in or host" },
-      { name: "description", content: "Drop into the Lounge or open a new room. Voice or video, up to 5 per room." },
+      {
+        name: "description",
+        content:
+          "Drop into a live creative Lounge. Join through chat, connect to audio, and share what you're making. 10 seats per room.",
+      },
     ],
   }),
 });
