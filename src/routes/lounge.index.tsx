@@ -160,7 +160,9 @@ function WorkshopPreflight() {
 
   const effMic = !!devices?.mic && prefs.mic;
   const effCam = !!devices?.cam && prefs.cam;
-  const canDrop = effMic || effCam;
+  // Chat-only entry: any signed-in user can drop in, even with no mic/cam.
+  // Audio is opt-in inside the room. See src/lib/lounge-constants.ts.
+  const canDrop = true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
