@@ -215,14 +215,10 @@ function WorkshopPreflight() {
   }
 
   async function openLounge(medium: Category | null, title: string | null) {
-    if (busy || !canDrop) {
-      if (!canDrop) toast.error("Connect a mic or camera to continue.");
-      return;
-    }
+    if (busy) return;
     setBusy("host");
     try {
       const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); return; }
       const { roomId } = await host({
         data: {
           medium: medium ?? null,
