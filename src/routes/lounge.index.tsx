@@ -178,34 +178,28 @@ function WorkshopPreflight() {
     setPrefs((p) => ({ ...p, cam: !p.cam }));
   };
 
-  const preGrantMedia = useCallback(async (): Promise<"video" | "voice" | null> => {
-    if (!devices) return null;
-    if (!effMic && !effCam) return null;
+  // Best-effort mic pre-grant. Returning null no longer blocks entry — the
+  // caller falls through to chat-only mode. Cameras are never requested here;
+  // they no longer exist inside the Lounge.
+  const preGrantMedia = useCallback(async (): Promise<"audio" | "chat"> => {
+    if (!devices || !effMic) return "chat";
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: effMic,
-        video: effCam,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       for (const t of stream.getTracks()) t.stop();
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : "Permission denied";
-      toast.error(`Couldn't access ${effCam && !effMic ? "camera" : "mic"}: ${msg}`);
-      return null;
+      return "audio";
+    } catch {
+      // Permission denied → still enter, just in chat-only mode. No toast; the
+      // room UI surfaces its own audio state.
+      return "chat";
     }
-    return effCam ? "video" : "voice";
-  }, [devices, effMic, effCam]);
+  }, [devices, effMic]);
 
   async function handlePick(medium: Category | null) {
     if (busy) return;
-    if (!canDrop) {
-      toast.error("Connect a mic or camera to continue.");
-      return;
-    }
     setBusy("drop");
     setBusyMedium(medium ?? "any");
     try {
       const mode = await preGrantMedia();
-      if (!mode) { setBusy(null); setBusyMedium(null); return; }
       if (medium == null && liveCount === 0) {
         toast("Opening a fresh Lounge — others can drop in any second.");
       }
