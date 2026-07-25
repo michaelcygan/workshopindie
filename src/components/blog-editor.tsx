@@ -537,7 +537,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       <BlogEntityTagPicker
         open={entityPickerOpen}
         onOpenChange={setEntityPickerOpen}
-        disabledKeys={new Set(entityTags.map(tagKey))}
+        disabledKeys={entityTags.map(tagKey)}
         onPick={(tag) => {
           if (pendingInsertRef) {
             pendingInsertRef(entityMarkdown(tag));
