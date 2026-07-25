@@ -1326,13 +1326,13 @@ function PinBar({
               <Link
                 to="/collab/$slug"
                 params={{ slug: c.slug }}
-                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+                className="group flex w-[160px] flex-col gap-2 md:w-[200px]"
               >
                 <div className={cn("relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-3", categoryClass(c.category))}>
                   <span className="line-clamp-3 text-center text-xs font-medium text-white/90">{c.title}</span>
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Collab</span>
                 </div>
-                <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{c.title}</p>
+                <p className="line-clamp-2 font-display text-sm leading-snug text-ink md:text-base">{c.title}</p>
               </Link>
             </li>
           ))}
