@@ -53,6 +53,16 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [attribAuthors, setAttribAuthors] = useState<AttribAuthor[]>(
+    (initial?.authors ?? []).map((a) => ({
+      id: a.id,
+      username: a.username,
+      display_name: a.display_name,
+      avatar_url: a.avatar_url,
+      role_label: a.role_label ?? "",
+    })),
+  );
+  const [authorSearch, setAuthorSearch] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const create = useServerFn(adminCreateDraft);
