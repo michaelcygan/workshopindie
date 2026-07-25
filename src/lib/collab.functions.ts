@@ -59,12 +59,28 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
     // 2. Confirm post is real and open.
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id")
+      .select("id,status,user_id,accepts_suggestions")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
     if (post.status !== "open") throw new Error("This collab post is no longer accepting applications.");
+
+    // 2a. Validate the application path (role vs suggestion).
+    let resolvedRoleName: string | null = null;
+    if (data.collabRoleId) {
+      const { data: role } = await supabaseAdmin
+        .from("collab_roles")
+        .select("id,role_name,collab_post_id")
+        .eq("id", data.collabRoleId)
+        .eq("collab_post_id", data.collabPostId)
+        .maybeSingle();
+      if (!role) throw new Error("That role is no longer available on this Collab.");
+      resolvedRoleName = role.role_name;
+    } else if (!post.accepts_suggestions) {
+      throw new Error("This Collab is only accepting applications for its listed roles.");
+    }
+
 
     // 3. Rate-limit by hashed IP — max 5 / hour, 20 / day across the platform.
     const ipHash = clientIpHash();
