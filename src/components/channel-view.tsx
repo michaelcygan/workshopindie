@@ -1001,6 +1001,21 @@ export function ChannelView({
                 />
               )}
             </div>
+          ) : viewMode === "posts" && user ? (
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-hidden">
+              <LoungePosts
+                participants={[
+                  { user_id: user.id, display_name: meDisplay, username: me?.username ?? null, avatar_url: meAvatar },
+                  ...others.map((o) => ({
+                    user_id: o.user_id,
+                    display_name: o.profile?.display_name ?? null,
+                    username: o.profile?.username ?? null,
+                    avatar_url: o.profile?.avatar_url ?? null,
+                  })),
+                ]}
+                className="h-full"
+              />
+            </div>
           ) : viewMode === "links" ? (
             <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-y-auto">
               <LoungeLinks messages={messages} profileLookup={profileLookup} />
