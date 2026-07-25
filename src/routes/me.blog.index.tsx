@@ -64,6 +64,8 @@ function MyBlogPage() {
   const accessFn = useServerFn(getMyBlogAccess);
   const listFn = useServerFn(listMyBlogPosts);
   const createFn = useServerFn(createMyBlogDraft);
+  const unpublishFn = useServerFn(unpublishMyBlogPost);
+  const deleteFn = useServerFn(deleteMyBlogDraft);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
@@ -91,6 +93,29 @@ function MyBlogPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const [confirmTarget, setConfirmTarget] = useState<Post | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteMut = useMutation({
+    mutationFn: async (post: Post) => {
+      setDeletingId(post.id);
+      if (post.status === "published" || post.published_at) {
+        await unpublishFn({ data: { id: post.id } });
+      }
+      await deleteFn({ data: { id: post.id } });
+    },
+    onSuccess: () => {
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => {
+      setDeletingId(null);
+      setConfirmTarget(null);
+    },
+  });
+
 
   if (authLoading || !user) return null;
 
