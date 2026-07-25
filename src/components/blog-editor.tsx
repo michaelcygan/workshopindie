@@ -534,6 +534,21 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           />
         </div>
       </aside>
+      <BlogEntityTagPicker
+        open={entityPickerOpen}
+        onOpenChange={setEntityPickerOpen}
+        excludeKeys={new Set(entityTags.map(tagKey))}
+        onPick={(tag) => {
+          if (pendingInsertRef) {
+            pendingInsertRef(entityMarkdown(tag));
+            setPendingInsertRef(null);
+          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            setEntityTags([...entityTags, tag]);
+            setDirty(true);
+          }
+          setEntityPickerOpen(false);
+        }}
+      />
     </div>
   );
 }
