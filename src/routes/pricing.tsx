@@ -50,6 +50,7 @@ function PricingPage() {
             "Apply to unlimited Collabs",
             "Your home city — join, post, browse",
             "30 minutes / day in the Lounge",
+            "Draft 1 blog post (publishing requires Plus)",
             "DMs, comments, credits — never gated",
           ]}
         />
