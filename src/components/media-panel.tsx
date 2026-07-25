@@ -408,29 +408,28 @@ function SpeakerBubble({
   return (
     <div className="flex flex-col items-center gap-1 w-14 sm:w-16">
       <div className="relative">
+        {speaking && (
+          <span
+            aria-hidden
+            className="speaking-halo pointer-events-none absolute -inset-[3px] rounded-full"
+          >
+            <span className="speaking-halo__spin block h-full w-full rounded-full" />
+          </span>
+        )}
         <div
           className={cn(
-            "relative shrink-0 rounded-full overflow-hidden bg-muted font-medium flex items-center justify-center text-ink-muted ring-2 transition-shadow duration-150",
+            "relative shrink-0 rounded-full overflow-hidden bg-muted font-medium flex items-center justify-center text-ink-muted ring-2 ring-surface",
             dims,
-            speaking
-              ? "ring-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.25)]"
-              : "ring-border/60",
           )}
         >
           {avatarUrl
             ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
             : <span>{displayName[0]?.toUpperCase()}</span>}
-          {speaking && (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-primary/30 animate-pulse"
-            />
-          )}
         </div>
         {muted && (
           <span
             aria-label="Muted"
-            className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
+            className="absolute -bottom-0.5 -right-0.5 z-10 grid h-4 w-4 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
           >
             <MicOff className="h-2 w-2" />
           </span>
@@ -442,6 +441,7 @@ function SpeakerBubble({
     </div>
   );
 }
+
 
 
 /** Large-format video used for the screen-share spotlight. Uses object-contain
