@@ -34,7 +34,7 @@ export const Route = createFileRoute("/blog/")({
           name: "Workshop Blog",
           url,
           publisher: { "@type": "Organization", name: "Workshop", url: SITE },
-          blogPost: (loaderData?.posts ?? []).slice(0, 20).map((p) => ({
+          blogPost: (loaderData?.posts ?? []).slice(0, 20).map((p: { title: string; slug: string; published_at: string | null }) => ({
             "@type": "BlogPosting",
             headline: p.title,
             url: `${SITE}/blog/${p.slug}`,
