@@ -1,28 +1,16 @@
-## Audit
+## What's happening
 
-Queried `blog_posts` for published rows with `cover_image_url IS NULL`. **5 posts** are missing covers:
+On `/me/blog`, only the post **title text** is a link to the editor. The rest of the row (thumbnail, excerpt area, and the empty right side you circled) isn't clickable, so tapping anywhere but the small "Untitled" text does nothing. For drafts, the "View" pill on the right is intentionally hidden (it only appears for published posts), which is why that area looks empty.
 
-1. `in-music-the-gatekeepers-are-almost-gone`
-2. `arca-ushers-humanity-into-electronic-music-performance`
-3. `images-generated-from-text-what-is-dalle-3`
-4. `the-simplicity-of-pop-music-as-a-carrier-for-ideas`
-5. `what-is-boiler-room`
-
-The uploaded WordPress-format XML doesn't attach featured images to these posts (no inline `<img>`, no parent-linked `<wp:attachment_url>`), which is why the earlier import pass left them blank. However, the live Squarespace pages at `https://www.homesteadcreative.org/blog/<slug>` do carry the correct featured image in their `<meta property="og:image">` tag — confirmed on `what-is-boiler-room`, which resolves to a valid `static1.squarespace.com` URL.
+No three-dot menu is needed to open a draft — the row itself should just open the editor.
 
 ## Fix
 
-Run a one-off backfill script (via `code--exec`, not app code) that:
+Edit `src/routes/me.blog.index.tsx` only:
 
-1. Selects all `published` posts where `cover_image_url IS NULL`.
-2. For each, `curl`s `https://www.homesteadcreative.org/blog/<slug>` and extracts the `og:image` `content` attribute.
-3. Also captures `og:image:alt` when present; otherwise leaves `cover_image_alt` null.
-4. Writes back to `blog_posts` via a single `supabase--migration` UPDATE containing one row per resolved slug.
+1. Make each `<li>` a full-row link to `/me/blog/$id` (wrap the row contents in a `Link`, or use `useNavigate` on row click) so tapping the thumbnail, title, excerpt, or empty right area all open the editor.
+2. Replace the inner title `<Link>` with a plain heading (avoids nested anchors) but keep the same visual style and hover underline on the title.
+3. For published posts, keep a distinct "View" affordance that stops event propagation so it opens the public post instead of the editor.
+4. Add a subtle right-side chevron (`ChevronRight`) as a visual affordance in the spot you circled, so it's clear the row is tappable — for both drafts and published posts.
 
-Skip any slug that returns non-200 or lacks `og:image`, and report them so we can decide whether to hand-pick images.
-
-## Notes
-
-- No code or schema changes — data-only backfill.
-- Uses the same `cover_image_url` field the profile grid, blog index, RSS, and homepage rail already read.
-- If any of the 5 resolves without an og:image, I'll surface the list rather than invent a placeholder.
+No backend, schema, or access-logic changes.
