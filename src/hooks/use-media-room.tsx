@@ -1736,23 +1736,61 @@ export function useMediaRoom(roomId: string | undefined) {
     return () => window.removeEventListener("beforeunload", onUnload);
   }, [leave]);
 
+  // -------------------------------------------------------------------------
+  // Audio-first façade (Wave 2).
+  // We keep the mature internal WebRTC machinery intact — session/generation
+  // guards, TURN fallback, perfect negotiation, ICE restart, visibility
+  // revalidate, telemetry — and expose an *audio-only* public interface on top
+  // of it. Camera behavior is effectively unreachable from the UI:
+  //   • `joinAudio()` maps to `joinWithMode("voice")` (audio-only stream).
+  //   • `setCameraEnabled()` is a no-op left in for backward compat; nothing
+  //     in the Lounge UI calls it anymore.
+  //   • The internal `mode` is always "voice"; camera capacity checks fall
+  //     away because no code path requests `nextMode === "video"`.
+  // A user who never calls `joinAudio()` is a chat-only participant: no mic
+  // permission is requested, no `RTCPeerConnection` is created, and no media
+  // presence is broadcast. Room presence (chat, participant grid, work, etc.)
+  // is owned by `instant_presence` elsewhere — not by this hook.
+  // -------------------------------------------------------------------------
+  const joinAudio = useCallback(async () => {
+    await joinWithMode("voice");
+    // joinWithMode surfaces recoverable errors via `error` state.
+    return !error;
+  }, [joinWithMode, error]);
+  const leaveAudio = leave;
+
   return {
+    // Legacy fields (kept for backward compatibility; being phased out)
     joined,
     mode,
-    muted,
     cameraOn,
-    speaking,
-    count,
     voiceCount,
     videoCount,
-    peers: Object.values(peers),
     localStream: localStreamRef.current,
+    setMode,
+    setCameraEnabled,
+    cap: ROOM_CAP,
+    videoCap: VIDEO_CAP,
+
+    // Audio-first surface
+    audioJoined: joined,
+    isChatOnly: !joined,
+    audioCount: count,
+    localAudioStream: localStreamRef.current,
+    joinAudio,
+    leaveAudio,
+
+    // Shared
+    muted,
+    speaking,
+    count,
+    peers: Object.values(peers),
     error,
     busy,
-    setMode,
     leave,
     toggleMute,
-    setCameraEnabled,
+
+    // Screen share
     screenStream,
     screenSharerId,
     isScreenSharing: !!screenStream,
@@ -1760,7 +1798,5 @@ export function useMediaRoom(roomId: string | undefined) {
     stopScreenShare,
     setOutboundScreenTrack,
     bandwidthReduced,
-    cap: ROOM_CAP,
-    videoCap: VIDEO_CAP,
   };
 }

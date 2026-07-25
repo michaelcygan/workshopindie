@@ -13,7 +13,10 @@ import type { Category } from "@/lib/categories";
 type Props = {
   roomId: string;
   medium: Category | null;
-  mode: "video" | "voice";
+  /** Entry preference on landing in the next room. "chat" = chat-only,
+   *  "audio" = auto-request mic. Legacy "voice"/"video" accepted; both map
+   *  to audio because Lounge no longer exposes video. */
+  mode: "chat" | "audio" | "voice" | "video";
   tone?: "outline" | "primary";
   fullWidth?: boolean;
 };
