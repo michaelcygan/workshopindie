@@ -230,6 +230,30 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
           <ToolBtn onClick={openEmbed} title="Embed video or link card" disabled={readOnly}>
             <Film className="h-4 w-4" />
           </ToolBtn>
+          {onRequestEntityInsert && (
+            <ToolBtn
+              onClick={() => {
+                const el = ref.current;
+                const start = el?.selectionStart ?? value.length;
+                const end = el?.selectionEnd ?? value.length;
+                const insert = (md: string) => {
+                  const next = value.slice(0, start) + md + value.slice(end);
+                  commit(next);
+                  requestAnimationFrame(() => {
+                    if (!el) return;
+                    el.focus();
+                    const pos = start + md.length;
+                    el.setSelectionRange(pos, pos);
+                  });
+                };
+                onRequestEntityInsert(insert);
+              }}
+              title="Tag a Workshop item"
+              disabled={readOnly}
+            >
+              <AtSign className="h-4 w-4" />
+            </ToolBtn>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
