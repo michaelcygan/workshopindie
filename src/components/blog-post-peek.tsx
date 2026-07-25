@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BlogPostBody } from "@/components/blog-post-body";
+import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { getPublishedPost } from "@/lib/blog.functions";
 
 const SITE = "https://workshopindie.com";
