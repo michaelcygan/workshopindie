@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
 import { Mic, MicOff, Video, VideoOff, Loader2, ArrowLeft, RadioTower, X, Sparkles, Activity } from "lucide-react";
+import { fallback, zodValidator } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { joinLounge, joinMediumLounge, hostInstantWorkshop } from "@/lib/instant.functions";
@@ -18,7 +20,13 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
 
+const loungeSearchSchema = z.object({
+  prompt: fallback(z.string(), "").default(""),
+  medium: fallback(z.string(), "").default(""),
+});
+
 export const Route = createFileRoute("/lounge/")({
+  validateSearch: zodValidator(loungeSearchSchema),
   component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [
@@ -27,6 +35,7 @@ export const Route = createFileRoute("/lounge/")({
     ],
   }),
 });
+
 
 function WorkshopPreflight() {
   const { user, loading } = useAuth();
