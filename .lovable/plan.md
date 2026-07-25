@@ -1,9 +1,9 @@
-Make the Lounge stage speaking indicator less blinky by adding asymmetric hold in the voice-activity detector at `src/hooks/use-media-room.tsx` (`startSpeakingDetector`).
+Fix the Lounge "Here now" sidebar so it renders in both chat-only and audio-joined states.
 
-Changes, all local to that function:
-- Use dual thresholds (hysteresis): turn ON at rms > ~0.05, only allow OFF when rms < ~0.03. This prevents flapping around a single threshold during normal speech dips.
-- Track `lastVoiceAt` any time rms exceeds the ON threshold. Only flip `active` to false when the signal has been continuously below the OFF threshold for a sustained hold window (~700ms). Keep the fast turn-on (~120ms) so the halo appears responsively.
-- Smooth rms with a short exponential moving average (~alpha 0.4) so single-frame dips between syllables don't drop below the OFF threshold.
-- Broadcast the debounced `active` value on the same channel exactly as today; no signaling protocol change, no UI change.
+Change in `src/components/media-panel.tsx` (the `AudioSidebar` section that switches on `m.audioJoined`):
 
-Net effect: the halo fades on quickly when someone starts talking and stays on smoothly through natural pauses in speech, only turning off after a real gap.
+- Move the "Here now" block (the `<div className="border-t …">` containing the heading and `<ul>` of `SpeakerRow`s for me + others) OUT of the `m.audioJoined` branch so it renders unconditionally, right after the participation controls.
+- Also move the screen-share info pill and the `m.error` line out of the branch, so chat-only users get the same status context.
+- Keep the branch limited to what's actually state-specific: the "You're here through chat / Connecting…" copy + Join audio/Exit buttons vs the Mute/Leave audio + dockExtra/Exit rows.
+
+Result: as soon as a user drops in (chat-only, muted, or on stage) they and every other present user appear in the Here now list, matching the `totalHere` counter in the header.
