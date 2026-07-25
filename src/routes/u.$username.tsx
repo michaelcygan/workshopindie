@@ -915,7 +915,7 @@ function ProfilePage() {
               enabled={blogCount > 0}
               ownerName={name}
               isOwn={isOwn}
-              onOpenPost={(slug) =>
+              onOpenPost={(slug: string) =>
                 navigate({
                   to: "/u/$username",
                   params: { username },
