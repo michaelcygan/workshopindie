@@ -29,9 +29,7 @@ import {
   Briefcase,
   LayoutGrid,
   Calendar,
-
-  
-
+  BookOpen,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
