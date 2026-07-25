@@ -362,9 +362,9 @@ export function VideoStage({
   // EMPTY STAGE — nobody has joined audio yet. Keep it quiet and low-height.
   if (speakerCount === 0) {
     return (
-      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+      <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4">
         {eyebrow}
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 bg-background/40 px-4 py-4 text-[12px] text-ink-muted">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 bg-background/40 px-3 py-2.5 text-[12px] text-ink-muted">
           <Mic className="h-3.5 w-3.5" />
           <span>Stage is quiet — join audio to speak.</span>
         </div>
@@ -373,9 +373,9 @@ export function VideoStage({
   }
 
   return (
-    <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+    <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4">
       {eyebrow}
-      <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 py-1">
+      <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-2 py-0.5">
         {localBubble}
         {m.peers.map(renderPeerBubble)}
       </div>
