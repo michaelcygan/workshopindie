@@ -146,6 +146,7 @@ function MemberBlogEditorPage() {
   const publishMut = useMutation({
     mutationFn: async () => {
       if (dirty) await saveMut.mutateAsync();
+      else await flushEntityTags();
       return publishFn({ data: { id } });
     },
     onSuccess: () => {
