@@ -208,7 +208,7 @@ export function MediaPanel({
               <SpeakerRow
                 key="me"
                 userId={meUserId}
-                speaking={m.speaking && !m.muted}
+                onStage={m.joined}
                 muted={m.muted}
                 displayName={meDisplay}
                 avatarUrl={meAvatar}
@@ -219,12 +219,12 @@ export function MediaPanel({
               />
               <AnimatePresence initial={false}>
                 {others.map((o) => {
-                  const peer = peerById.get(o.user_id);
+                  const isOnStage = peerById.has(o.user_id);
                   return (
                     <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
                       <SpeakerRow
                         userId={o.user_id}
-                        speaking={!!peer?.speaking}
+                        onStage={isOnStage}
                         muted={false}
                         displayName={o.profile?.display_name || o.profile?.username || "Anon"}
                         avatarUrl={o.profile?.avatar_url ?? null}
