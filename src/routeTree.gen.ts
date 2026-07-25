@@ -59,6 +59,7 @@ import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as BlogRssDotxmlRouteImport } from './routes/blog.rss[.]xml'
 import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
@@ -351,6 +352,11 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRssDotxmlRoute = BlogRssDotxmlRouteImport.update({
+  id: '/blog/rss.xml',
+  path: '/blog/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog/$slug',
   path: '/blog/$slug',
@@ -601,6 +607,7 @@ export interface FileRoutesByFullPath {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -688,6 +695,7 @@ export interface FileRoutesByTo {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -782,6 +790,7 @@ export interface FileRoutesById {
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -877,6 +886,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -964,6 +974,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -1057,6 +1068,7 @@ export interface FileRouteTypes {
     | '/admin/revenue'
     | '/admin/users'
     | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -1137,6 +1149,7 @@ export interface RootRouteChildren {
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  BlogRssDotxmlRoute: typeof BlogRssDotxmlRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   ECodeRoute: typeof ECodeRoute
@@ -1518,6 +1531,13 @@ declare module '@tanstack/react-router' {
       path: '/checkout/return'
       fullPath: '/checkout/return'
       preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/rss.xml': {
+      id: '/blog/rss.xml'
+      path: '/blog/rss.xml'
+      fullPath: '/blog/rss.xml'
+      preLoaderRoute: typeof BlogRssDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/$slug': {
@@ -2024,6 +2044,7 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
   BlogSlugRoute: BlogSlugRoute,
+  BlogRssDotxmlRoute: BlogRssDotxmlRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   ECodeRoute: ECodeRoute,
