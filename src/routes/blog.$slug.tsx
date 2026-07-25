@@ -171,6 +171,8 @@ function BlogPostPage() {
         <img
           src={post.cover_image_url}
           alt={post.cover_image_alt ?? post.title}
+          fetchPriority="high"
+          decoding="async"
           className="mt-8 w-full rounded-3xl border border-border object-cover"
         />
       )}
