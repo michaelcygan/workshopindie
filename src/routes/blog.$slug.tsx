@@ -1,8 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { getPublishedPost, getRelatedPosts } from "@/lib/blog.functions";
+import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
+import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { ArrowLeft } from "lucide-react";
 
 const SITE = "https://workshopindie.com";
