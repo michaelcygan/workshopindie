@@ -2,14 +2,13 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Radio, Sparkles, MapPin, ArrowRight, Calendar } from "lucide-react";
+import { Megaphone, Radio, Sparkles, MapPin, ArrowRight, Calendar, Users, Compass, Hammer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { WorkCard, type WorkCardData } from "@/components/work-card";
-import { CollabCard, type CollabCardData } from "@/components/collab-card";
-import { WORK_CATEGORIES, type Category } from "@/lib/categories";
-import { CategoryScroller } from "@/components/category-scroller";
+import { type WorkCardData } from "@/components/work-card";
+import { type CollabCardData } from "@/components/collab-card";
+import { WORK_CATEGORIES, CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { getNetworkFeed } from "@/lib/network.functions";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
 import { cn } from "@/lib/utils";
@@ -25,6 +24,8 @@ import { HomeBlogRail } from "@/components/home-blog-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
 import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
+import { HomeSection, HomeSectionHeader } from "@/components/home-section";
+import { EditorialCard, EditorialChip } from "@/components/editorial-card";
 
 
 export const Route = createFileRoute("/")({ component: Index });
@@ -173,11 +174,25 @@ function GalleryControls({
     { id: "all", label: "All" },
     ...WORK_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
   ];
-
   return (
-    <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:justify-between">
-      <CategoryScroller tabs={tabs} value={category} onChange={setCategory} />
-      <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+    <div className="flex flex-col-reverse items-start justify-between gap-3 md:flex-row md:items-center">
+      <div className="-mx-4 flex w-full gap-1.5 overflow-x-auto px-4 pb-1 md:mx-0 md:w-auto md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setCategory(t.id)}
+            className={cn(
+              "shrink-0 rounded-full px-3.5 py-1.5 text-sm transition",
+              category === t.id
+                ? "bg-ink text-background"
+                : "border border-border bg-surface text-ink-soft hover:bg-muted",
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
         {(["newest", "trending"] as SortKey[]).map((s) => (
           <button
             key={s}
@@ -197,6 +212,56 @@ function GalleryControls({
 
 function Index() {
   const { user } = useAuth();
+
+  return (
+    <main>
+      <Hero />
+
+      {/* ─── Live pulse: ambient one-line ticker ─── */}
+      <HomePulseRail compact />
+
+      {/* ─── ACT 1: Happening now ─── */}
+      <HomeLiveWorkshopsRail />
+
+      {!user && (
+        <section className="mx-auto max-w-7xl px-4 pt-4 md:px-6">
+          <GalleryLoggedOutHero />
+        </section>
+      )}
+
+      {user && (
+        <section className="mx-auto max-w-7xl px-4 pt-4 md:px-6">
+          <YourGroupsStrip />
+        </section>
+      )}
+
+      {user && <NetworkRail />}
+
+      {/* ─── ACT 2: What people are making ─── */}
+      <CollabsRail />
+
+      <GalleryRail />
+
+      {/* ─── ACT 3: Where to show up ─── */}
+      <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-12 md:px-6 md:py-16">
+        <FeaturedEventsCarousel />
+      </section>
+
+      <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-12 md:px-6 md:py-16">
+        <UpcomingInMyGroupsRail />
+      </section>
+
+      <CityMeetupsStrip />
+
+      {/* ─── Blog closer ─── */}
+      <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-12 md:px-6 md:py-16">
+        <HomeBlogRail />
+      </section>
+    </main>
+  );
+}
+
+function GalleryRail() {
   const [category, setCategory] = useState<Category | "all">("all");
   const [sort, setSort] = useState<SortKey>("newest");
   const { ids: blockedIds } = useBlockedIds();
@@ -208,93 +273,88 @@ function Index() {
   const workIds = useMemo(() => (rawWorks ?? []).map((w) => w.id), [rawWorks]);
   const { data: groupTagMap } = useGroupTagsFor("work", workIds);
   const myGroupIds = useMyGroupIdSet();
-  const works = useMemo(
+  const worksAll = useMemo(
     () => rerankByMyGroups(rawWorks ?? [], groupTagMap, myGroupIds),
     [rawWorks, groupTagMap, myGroupIds],
   );
+  const works = worksAll.slice(0, 3);
 
   return (
-    <main>
-      <Hero />
-
-
-      {/* Ambient pulse — first thing below the fold */}
-      <HomePulseRail />
-
-      {!user && <GalleryLoggedOutHero />}
-
-      {user && <YourGroupsStrip />}
-
-      <NetworkRail />
-
-      <CollabsRail />
-
-      {/* Live Workshops rail — moved down from above-fold to ambient layer */}
-      <HomeLiveWorkshopsRail />
-
-
-
-      <section className="mx-auto max-w-7xl px-4 pt-10 pb-6 md:px-6 md:pt-14 md:pb-8">
-        <div className="mb-6 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="font-display text-3xl text-ink md:text-4xl">Gallery</h2>
-            <p className="mt-1 text-sm text-ink-muted">Finished things people made together.</p>
-          </div>
-        </div>
-
+    <HomeSection
+      eyebrow={<><Hammer className="h-3.5 w-3.5" /> Gallery</>}
+      title="Finished things people made together."
+      kicker="A curated look at what the network has been shipping lately."
+      href="/gallery"
+      cta="Browse all"
+    >
+      <div className="mb-6">
         <GalleryControls category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
-
-        <div className="mt-6">
-          {isLoading ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />
-              ))}
-            </div>
-          ) : !works || works.length === 0 ? (
-            <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-              <h3 className="font-display text-2xl text-ink">Nothing here yet — post your work.</h3>
-              <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-                Be the first to post your work and start your portfolio.
-              </p>
-              <Link to="/works/new" className="mt-5 inline-block">
-                <Button className="rounded-full">Post to Gallery</Button>
-              </Link>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
-              </div>
-              <div className="mt-8 text-center">
-                <Link
-                  to="/gallery"
-                  search={{ q: "", tab: "for-you", cat: category, src: "all", sort: sort === "newest" ? "recent" : "trending" }}
-                  className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft hover:bg-muted transition"
-                >
-                  Browse the full Gallery <ArrowRight className="h-4 w-4" />
-                </Link>
-              </div>
-            </>
-          )}
+      </div>
+      {isLoading ? (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-surface-2" />
+          ))}
         </div>
-      </section>
-
-      <CityMeetupsStrip />
-
-
-      <section className="mx-auto max-w-7xl px-4 pt-6 pb-10 md:px-6 md:pt-8 md:pb-14">
-        <FeaturedEventsCarousel />
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-10 md:px-6">
-        <UpcomingInMyGroupsRail />
-      </section>
-
-      <section className="mx-auto max-w-7xl px-4 pb-20 md:px-6">
-        <HomeBlogRail />
-      </section>
-    </main>
+      ) : !works || works.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+          <h3 className="font-display text-2xl text-ink">Nothing here yet — post your work.</h3>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
+            Be the first to post your work and start your portfolio.
+          </p>
+          <Link to="/works/new" className="mt-5 inline-block">
+            <Button className="rounded-full">Post to Gallery</Button>
+          </Link>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {works.map((w) => {
+              const credit = w.credits?.[0];
+              const author = credit?.display_name || credit?.username || null;
+              const extra = (w.credits?.length ?? 0) - 1;
+              return (
+                <EditorialCard
+                  key={w.id}
+                  cover={w.cover_url}
+                  aspect="16/10"
+                  eyebrow={
+                    <>
+                      {CATEGORY_LABELS[w.category] ?? w.category}
+                      {author ? <> · by {author}{extra > 0 ? ` +${extra}` : ""}</> : null}
+                    </>
+                  }
+                  title={w.title}
+                  chips={
+                    <>
+                      {w.like_count > 0 && (
+                        <EditorialChip>{w.like_count} likes</EditorialChip>
+                      )}
+                      {w.view_count > 0 && (
+                        <EditorialChip>{w.view_count} views</EditorialChip>
+                      )}
+                    </>
+                  }
+                  href="/works/$slug"
+                  hrefParams={{ slug: w.slug }}
+                  ariaLabel={w.title}
+                />
+              );
+            })}
+          </div>
+          <div className="mt-10 flex justify-center">
+            <Link
+              to="/gallery"
+              search={{ q: "", tab: "for-you", cat: category, src: "all", sort: sort === "newest" ? "recent" : "trending" }}
+              className="group inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft transition hover:bg-muted hover:text-ink"
+            >
+              Browse the full Gallery
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+          </div>
+        </>
+      )}
+    </HomeSection>
   );
 }
 
@@ -316,10 +376,10 @@ function CollabsRail() {
           `and(status.eq.open,or(ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)})),and(status.eq.closed,resulting_work_id.not.is.null)`,
         )
         .order("created_at", { ascending: false })
-        .limit(12);
+        .limit(9);
       if (error) throw error;
       const rows = (data ?? []) as unknown as (CollabCardData & { user_id: string })[];
-      return rows.filter((r) => !blockedIds.has(r.user_id)).slice(0, 6) as CollabCardData[];
+      return rows.filter((r) => !blockedIds.has(r.user_id)).slice(0, 3) as CollabCardData[];
     },
   });
   const postIds = useMemo(() => (rawPosts ?? []).map((p) => p.id), [rawPosts]);
@@ -331,24 +391,17 @@ function CollabsRail() {
   );
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
-
-      <div className="mb-6 flex items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-3xl text-ink md:text-4xl">Collabs</h2>
-          <p className="mt-1 text-sm text-ink-muted">People building stuff now. Help out — or post your own.</p>
-        </div>
-        <Link to="/collab/new" className="hidden sm:block">
-          <Button variant="outline" className="rounded-full gap-2">
-            <Megaphone className="h-4 w-4" /> Post a Collab
-          </Button>
-        </Link>
-      </div>
-
+    <HomeSection
+      eyebrow={<><Megaphone className="h-3.5 w-3.5" /> Collabs</>}
+      title="People building things now."
+      kicker="Open roles across music, film, writing, and code. Help out — or post your own."
+      href="/collab"
+      cta="All collabs"
+    >
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
+            <div key={i} className="h-64 animate-pulse rounded-2xl bg-surface-2" />
           ))}
         </div>
       ) : !posts || posts.length === 0 ? (
@@ -363,20 +416,67 @@ function CollabsRail() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((p) => <CollabCard key={p.id} post={p} groups={groupTagMap?.get(p.id)} myGroupIds={myGroupIds} />)}
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {posts.map((p) => {
+              const author = p.user?.display_name || p.user?.username || "Anon";
+              const location = p.location_mode === "online"
+                ? "Online"
+                : p.city?.name || (p.location_mode === "hybrid" ? "Hybrid" : "In person");
+              const roles = (p.roles ?? []).slice(0, 3);
+              const extraRoles = Math.max(0, (p.roles?.length ?? 0) - roles.length);
+              return (
+                <EditorialCard
+                  key={p.id}
+                  cover={null}
+                  coverFallbackClass="gradient-motion"
+                  aspect="16/10"
+                  coverOverlay={
+                    <div className="flex h-full items-center justify-center">
+                      <div className="text-center text-primary-foreground">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
+                          {CATEGORY_LABELS[p.category] ?? p.category}
+                        </div>
+                        <div className="mt-1 font-display text-2xl leading-tight">
+                          Open Collab
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  eyebrow={<>by {author} · {location}</>}
+                  title={p.title}
+                  dek={p.description ?? undefined}
+                  chips={
+                    <>
+                      {roles.map((r) => (
+                        <EditorialChip key={r.id}>{r.role_name}</EditorialChip>
+                      ))}
+                      {extraRoles > 0 && <EditorialChip>+{extraRoles} more</EditorialChip>}
+                    </>
+                  }
+                  href="/collab/$slug"
+                  hrefParams={{ slug: p.slug }}
+                  ariaLabel={p.title}
+                />
+              );
+            })}
           </div>
-          <div className="mt-8 text-center">
+          <div className="mt-10 flex justify-center gap-3">
             <Link
               to="/collab"
-              className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft hover:bg-muted transition"
+              className="group inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft transition hover:bg-muted hover:text-ink"
             >
-              Browse the Collab Board <ArrowRight className="h-4 w-4" />
+              Browse the Collab Board
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </Link>
+            <Link to="/collab/new">
+              <Button variant="outline" className="rounded-full gap-2">
+                <Megaphone className="h-4 w-4" /> Post a Collab
+              </Button>
             </Link>
           </div>
         </>
       )}
-    </section>
+    </HomeSection>
   );
 }
 
@@ -389,33 +489,32 @@ function CityMeetupsStrip() {
         .select("id,title,description,default_category,city:cities(name,slug)")
         .eq("status", "active")
         .order("created_at", { ascending: false })
-        .limit(6);
+        .limit(8);
       return data ?? [];
     },
   });
   if (!data || data.length === 0) return null;
   return (
-    <section className="mx-auto max-w-7xl px-4 pb-4 md:px-6">
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl text-ink md:text-3xl">City Meetups</h2>
-          <p className="mt-1 text-sm text-ink-muted">Standing creative meetups, IRL.</p>
-        </div>
-        <Link to="/cities" className="text-sm text-gradient-motion hover:underline">All cities →</Link>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-10 md:px-6 md:py-12">
+      <HomeSectionHeader
+        eyebrow={<><Compass className="h-3.5 w-3.5" /> IRL</>}
+        title="City meetups"
+        kicker="Standing creative gatherings, in real life."
+        href="/cities"
+        cta="All cities"
+      />
+      <div className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
         {data.map((m) => (
           <Link
             key={m.id}
             to="/g/$slug"
             params={{ slug: m.city?.slug ?? "" }}
-            className="rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft"
+            className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm text-ink-soft transition hover:border-primary/40 hover:bg-muted hover:text-ink"
           >
-            <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-              <MapPin className="h-3.5 w-3.5" /> {m.city?.name ?? "—"}
-            </div>
-            <h3 className="mt-1 font-display text-lg text-ink line-clamp-1">{m.title}</h3>
-            {m.description && <p className="mt-1 line-clamp-2 text-sm text-ink-muted">{m.description}</p>}
+            <MapPin className="h-3.5 w-3.5 text-ink-muted" />
+            <span className="font-medium text-ink">{m.city?.name ?? "—"}</span>
+            <span className="text-ink-muted/70">·</span>
+            <span className="max-w-[220px] truncate">{m.title}</span>
           </Link>
         ))}
       </div>
@@ -434,17 +533,24 @@ function NetworkRail() {
   // Auto-hide until it has real density.
   if (!user || !data || data.length < 3) return null;
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-10 md:px-6 md:pt-14">
-      <div className="mb-4 flex items-end justify-between gap-3">
-        <div>
-          <h2 className="font-display text-2xl text-ink md:text-3xl">From your network</h2>
-          <p className="mt-1 text-sm text-ink-muted">People you've made things with — and people you follow.</p>
-        </div>
-      </div>
-      <div className="-mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0">
+    <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-12 md:px-6 md:py-16">
+      <HomeSectionHeader
+        eyebrow={<><Users className="h-3.5 w-3.5" /> Your network</>}
+        title="From people you follow"
+        kicker="Fresh work from your collaborators and follows."
+      />
+      <div className="mt-8 -mx-4 flex gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:px-0 [scrollbar-width:thin]">
         {data.map((w) => (
-          <div key={w.id} className="w-64 shrink-0">
-            <WorkCard work={w} />
+          <div key={w.id} className="w-72 shrink-0">
+            <EditorialCard
+              cover={w.cover_url}
+              aspect="16/10"
+              eyebrow={CATEGORY_LABELS[w.category] ?? w.category}
+              title={w.title}
+              href="/works/$slug"
+              hrefParams={{ slug: w.slug }}
+              ariaLabel={w.title}
+            />
           </div>
         ))}
       </div>
