@@ -1,8 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
-import { getPublishedPost, getRelatedPosts } from "@/lib/blog.functions";
+import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
+import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { ArrowLeft } from "lucide-react";
 
 const SITE = "https://workshopindie.com";
@@ -100,12 +99,6 @@ export const Route = createFileRoute("/blog/$slug")({
 
 function BlogPostPage() {
   const { post } = Route.useLoaderData();
-  const related = useServerFn(getRelatedPosts);
-  const { data: relatedPosts } = useQuery({
-    queryKey: ["blog-related", post.id],
-    queryFn: () => related({ data: { excludeId: post.id, limit: 3 } }),
-    staleTime: 60_000,
-  });
 
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
@@ -176,49 +169,7 @@ function BlogPostPage() {
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
-      {/* Conversion */}
-      <aside className="mt-14 rounded-3xl border border-border bg-surface p-6 md:p-8">
-        <h3 className="font-display text-2xl text-ink">Make something with people.</h3>
-        <p className="mt-2 text-ink-soft">
-          Create a free portfolio, find collaborators, and join creative communities.
-        </p>
-        <div className="mt-4">
-          <Link
-            to="/signup"
-            className="gradient-motion inline-flex items-center rounded-full px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Join Workshop
-          </Link>
-        </div>
-      </aside>
-
-      {/* Related */}
-      {relatedPosts && relatedPosts.length > 0 && (
-        <section className="mt-14">
-          <h3 className="mb-4 font-display text-xl text-ink">More from the blog</h3>
-          <div className="grid gap-4 md:grid-cols-3">
-            {relatedPosts.map((r) => (
-              <Link
-                key={r.id}
-                to="/blog/$slug"
-                params={{ slug: r.slug }}
-                className="group block rounded-2xl border border-border bg-surface p-4 hover:bg-muted"
-              >
-                {r.cover_image_url && (
-                  <img
-                    src={r.cover_image_url}
-                    alt={r.cover_image_alt ?? r.title}
-                    className="mb-3 aspect-video w-full rounded-xl object-cover"
-                    loading="lazy"
-                  />
-                )}
-                <div className="font-display text-base text-ink group-hover:underline">{r.title}</div>
-                {r.excerpt && <div className="mt-1 line-clamp-2 text-sm text-ink-muted">{r.excerpt}</div>}
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
+      <BlogArticleFooter postId={post.id} mode="article" />
     </article>
   );
 }

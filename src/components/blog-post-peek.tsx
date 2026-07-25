@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BlogPostBody } from "@/components/blog-post-body";
+import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { getPublishedPost } from "@/lib/blog.functions";
 
 const SITE = "https://workshopindie.com";
@@ -14,10 +15,12 @@ export function BlogPostPeek({
   slug,
   open,
   onOpenChange,
+  onSelectPost,
 }: {
   slug: string | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
+  onSelectPost?: (slug: string) => void;
 }) {
   const fetchPost = useServerFn(getPublishedPost);
   const { data, isLoading, isError } = useQuery({
@@ -109,6 +112,7 @@ export function BlogPostPeek({
               <div className="mt-6">
                 <BlogPostBody markdown={post.body_markdown} />
               </div>
+              <BlogArticleFooter postId={post.id} mode="peek" onSelectPost={onSelectPost} />
             </article>
             <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-background/95 p-3 backdrop-blur">
               <Button variant="ghost" size="sm" className="rounded-full gap-1.5" onClick={copyLink}>
