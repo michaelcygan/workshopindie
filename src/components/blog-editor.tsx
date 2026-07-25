@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
@@ -12,7 +12,8 @@ import {
   adminListAuthorProfiles, adminSearchAuthorProfiles, adminSetPostAuthors,
 } from "@/lib/blog.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bold, Italic, Link as LinkIcon, Quote, List, ListOrdered, Heading2, Heading3, Image as ImageIcon, ChevronUp, ChevronDown, X } from "lucide-react";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { BlogBodyEditor } from "@/components/blog-body-editor";
 
 const SITE = "https://workshopindie.com";
 
@@ -63,7 +64,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
     })),
   );
   const [authorSearch, setAuthorSearch] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
 
   const create = useServerFn(adminCreateDraft);
   const update = useServerFn(adminUpdatePost);
@@ -104,20 +105,6 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const effDesc = (seoDesc?.trim() || excerpt).slice(0, 160);
   const effUrl = `${SITE}/blog/${slug || "your-slug"}`;
 
-  function insertAtCursor(before: string, after = "", placeholder = "") {
-    const el = textareaRef.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const sel = body.slice(start, end) || placeholder;
-    const next = body.slice(0, start) + before + sel + after + body.slice(end);
-    setBody(next);
-    requestAnimationFrame(() => {
-      el.focus();
-      const pos = start + before.length + sel.length + after.length;
-      el.setSelectionRange(pos, pos);
-    });
-  }
 
   async function flushAuthors(postId: string) {
     try {
@@ -441,26 +428,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             <TabsContent value="edit">
-              <div className="mt-2 flex flex-wrap items-center gap-1 rounded-full bg-muted p-1 text-xs">
-                <ToolBtn onClick={() => insertAtCursor("## ", "", "Heading")} title="Heading 2"><Heading2 className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("### ", "", "Heading")} title="Heading 3"><Heading3 className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("**", "**", "bold")} title="Bold"><Bold className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("_", "_", "italic")} title="Italic"><Italic className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("[", "](https://)", "link text")} title="Link"><LinkIcon className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("> ", "", "quote")} title="Quote"><Quote className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("- ", "", "item")} title="Bulleted list"><List className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("1. ", "", "item")} title="Numbered list"><ListOrdered className="h-3.5 w-3.5" /></ToolBtn>
-                <ToolBtn onClick={() => insertAtCursor("![", "](https://)", "alt")} title="Image by URL"><ImageIcon className="h-3.5 w-3.5" /></ToolBtn>
+              <div className="mt-2">
+                <BlogBodyEditor value={body} onChange={setBody} />
               </div>
-              <textarea
-                ref={textareaRef}
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                rows={22}
-                className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-mono text-sm text-ink focus:border-primary focus:outline-none"
-                placeholder="Write in Markdown…"
-              />
-              <div className="mt-1 text-[11px] text-ink-muted">{wordCount} words · ~{readingMin} min read</div>
             </TabsContent>
             <TabsContent value="preview">
               <div className="mt-2 rounded-2xl border border-border bg-surface p-6">
@@ -478,6 +448,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           </Tabs>
         </div>
       </div>
+
 
       <aside className="space-y-6">
         <div className="rounded-2xl border border-border bg-surface p-4">
@@ -528,15 +499,3 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   );
 }
 
-function ToolBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-background"
-    >
-      {children}
-    </button>
-  );
-}
