@@ -157,6 +157,7 @@ export function MentionPopover({
     group: "Groups",
     event: "Upcoming events",
     work: "Works",
+    post: "Posts",
   };
 
   return (
