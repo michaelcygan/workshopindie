@@ -5,9 +5,12 @@ import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { RequireAuth } from "@/components/require-auth";
 
+type Destination = "blog";
+
 export const Route = createFileRoute("/checkout/return")({
-  validateSearch: (search: Record<string, unknown>): { session_id?: string } => ({
+  validateSearch: (search: Record<string, unknown>): { session_id?: string; destination?: Destination } => ({
     session_id: typeof search.session_id === "string" ? search.session_id : undefined,
+    destination: search.destination === "blog" ? "blog" : undefined,
   }),
   component: () => <RequireAuth><CheckoutReturn /></RequireAuth>,
   head: () => ({
@@ -19,15 +22,15 @@ export const Route = createFileRoute("/checkout/return")({
 });
 
 function CheckoutReturn() {
-  const { session_id } = Route.useSearch();
+  const { session_id, destination } = Route.useSearch();
   const queryClient = useQueryClient();
   const [tick, setTick] = useState(0);
 
-  // Webhook may take a beat — re-fetch subscription a few times.
   useEffect(() => {
     if (!session_id) return;
     const i = setInterval(() => {
       queryClient.invalidateQueries({ queryKey: ["subscription"] });
+      queryClient.invalidateQueries({ queryKey: ["blog-access"] });
       setTick((t) => t + 1);
     }, 1500);
     const stop = setTimeout(() => clearInterval(i), 12_000);
@@ -42,12 +45,23 @@ function CheckoutReturn() {
       <h1 className="mt-4 font-display text-3xl text-ink">You're Plus ✨</h1>
       <p className="mt-2 text-sm text-ink-muted">
         {session_id
-          ? "Thanks for supporting Workshop. Every city, the full Workshop, and your unlimited portfolio are unlocked."
+          ? destination === "blog"
+            ? "Publishing is unlocked. Pick up your draft and share it with Workshop."
+            : "Thanks for supporting Workshop. Every city, the full Workshop, and your unlimited portfolio are unlocked."
           : "No checkout session found. If you just paid, give it a few seconds and refresh."}
       </p>
       <div className="mt-6 flex gap-2">
-        <Link to="/me"><Button className="rounded-full">Go to your profile</Button></Link>
-        <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop in</Button></Link>
+        {destination === "blog" ? (
+          <>
+            <Link to="/me/blog"><Button className="rounded-full">Continue writing</Button></Link>
+            <Link to="/me"><Button variant="outline" className="rounded-full">Your profile</Button></Link>
+          </>
+        ) : (
+          <>
+            <Link to="/me"><Button className="rounded-full">Go to your profile</Button></Link>
+            <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop in</Button></Link>
+          </>
+        )}
       </div>
       {tick > 0 && <p className="mt-4 text-xs text-ink-muted">Activating subscription…</p>}
     </main>
