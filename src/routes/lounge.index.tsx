@@ -159,23 +159,18 @@ function WorkshopPreflight() {
   }, [liveByMedium]);
 
   const effMic = !!devices?.mic && prefs.mic;
-  const effCam = !!devices?.cam && prefs.cam;
-  // Chat-only entry: any signed-in user can drop in, even with no mic/cam.
+  // Chat-only entry: any signed-in user can drop in, even with no mic.
   // Audio is opt-in inside the room. See src/lib/lounge-constants.ts.
   const canDrop = true;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify(prefs)); } catch { /* noop */ }
-  }, [prefs]);
+    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify({ mic: prefs.mic })); } catch { /* noop */ }
+  }, [prefs.mic]);
 
   const toggleMic = () => {
     if (!devices?.mic) { toast.error("No microphone detected."); return; }
     setPrefs((p) => ({ ...p, mic: !p.mic }));
-  };
-  const toggleCam = () => {
-    if (!devices?.cam) { toast.error("No camera detected."); return; }
-    setPrefs((p) => ({ ...p, cam: !p.cam }));
   };
 
   // Best-effort mic pre-grant. Returning null no longer blocks entry — the
