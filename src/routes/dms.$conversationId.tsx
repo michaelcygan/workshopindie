@@ -651,7 +651,7 @@ function DmsThread() {
           <MentionPopover
             open={mentionOpen}
             query={mention?.query ?? ""}
-            sections={["user", "collab", "group", "event"]}
+            sections={["user", "collab", "group", "event", "post"]}
             extraUsers={
               other?.username
                 ? [

@@ -25,7 +25,7 @@ export function TodayMentionPopover({ open, query, onPick, onClose, anchorClassN
     <MentionPopover
       open={open}
       query={query}
-      sections={["user", "collab", "group", "event", "work"]}
+      sections={["user", "collab", "group", "event", "work", "post"]}
       onPick={(s: MentionSuggestion) => onPick(s.insert.trimEnd())}
       onClose={onClose}
       className={anchorClassName}
