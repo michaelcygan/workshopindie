@@ -32,6 +32,7 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
+import { GroupPostsTab } from "@/components/group/group-posts-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
@@ -85,7 +86,7 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
-const TAB_VALUES = ["today", "collab", "work", "events", "members", "subgroups", "about"] as const;
+const TAB_VALUES = ["today", "collab", "work", "posts", "events", "members", "subgroups", "about"] as const;
 type TabValue = (typeof TAB_VALUES)[number];
 
 
@@ -352,6 +353,7 @@ function GroupPage() {
           {tab === "collab" && <GroupCollabTab group={group} />}
 
           {tab === "work" && <GroupWorkTab group={group} />}
+          {tab === "posts" && <GroupPostsTab group={group} />}
           {tab === "events" && <GroupEventsTab group={group} />}
           {tab === "subgroups" && (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
