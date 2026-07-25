@@ -452,8 +452,23 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               <TabsTrigger value="preview">Preview</TabsTrigger>
             </TabsList>
             <TabsContent value="edit">
-              <div className="mt-2">
-                <BlogBodyEditor value={body} onChange={setBody} />
+              <div className="mt-2 space-y-4">
+                <BlogBodyEditor
+                  value={body}
+                  onChange={setBody}
+                  onDirty={() => setDirty(true)}
+                  onRequestEntityInsert={(insert) => {
+                    setPendingInsertRef(() => insert);
+                    setEntityPickerOpen(true);
+                  }}
+                />
+                <BlogEntityTagsEditor
+                  value={entityTags}
+                  onChange={(next) => {
+                    setEntityTags(next);
+                    setDirty(true);
+                  }}
+                />
               </div>
             </TabsContent>
             <TabsContent value="preview">
