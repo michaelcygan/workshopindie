@@ -18,6 +18,7 @@ import { AgeGate } from "@/components/age-gate";
 import { usePendingRsvpFlush } from "@/hooks/use-pending-rsvp";
 import { useTitleBadge } from "@/hooks/use-title-badge";
 import { supabase } from "@/integrations/supabase/client";
+import { SiteFooter } from "@/components/site-footer";
 
 
 import { Toaster } from "@/components/ui/sonner";
