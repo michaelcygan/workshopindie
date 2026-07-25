@@ -22,6 +22,7 @@ export const Route = createFileRoute("/blog/rss.xml")({
           .from("blog_posts")
           .select("title,slug,excerpt,author_name,published_at,cover_image_url")
           .eq("status", "published")
+          .eq("show_in_blog_index", true)
           .order("published_at", { ascending: false })
           .limit(50);
 
