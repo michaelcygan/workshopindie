@@ -31,12 +31,13 @@ import { cn } from "@/lib/utils";
 import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 
-const TAB_VALUES = ["works", "collabs", "activity", "about"] as const;
+const TAB_VALUES = ["works", "collabs", "blog", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
 
 
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
+  post: z.string().optional(),
 });
 
 export const Route = createFileRoute("/u/$username")({
