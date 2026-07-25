@@ -3,6 +3,7 @@ import { Calendar, FileText, Megaphone, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import {
+  useBlogPostSuggestions,
   useEventSuggestions,
   useGroupSuggestions,
   useMyCollabSuggestions,
