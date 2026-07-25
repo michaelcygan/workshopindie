@@ -1,74 +1,63 @@
+# Lounge Stage Redesign — Speakers on Stage, Everyone in Here Now
 
-# Homepage 2027 pass
+## Intent
 
-Goal: make the homepage read like a well-edited magazine instead of a stack of rails. Preserve every current section and CTA. Adopt the editorial card style you liked from the Blog rail (screenshot 2) as the visual anchor, then let each section vary intentionally around it.
+Pivot the Lounge stage away from the leftover video-tile rectangle into a purpose-built audio room. The stage becomes a compact "who's actually talking" surface; the sidebar's Here now becomes the full room roster. No two areas should show the same thing anymore.
 
-## Design direction (the "language")
+## Roles (the mental model)
 
-- **Card style** — adopt the Blog card as the base: 16:10 cover, tiny uppercase eyebrow (date / author / category), display-serif title, one-line dek. Apply to Gallery, Collabs, Events, Upcoming, Blog. Chips move inside the eyebrow, not floating on the cover — that's what's making screenshot 1 feel busy.
-- **Section header pattern** — small uppercase kaviar (e.g. `GALLERY · finished work`), one big display title, one line of intent, right-aligned link pill. Same shape every section for rhythm.
-- **Whitespace** — bump vertical section padding from py-10/14 to py-14/20; add a hairline `border-t border-border/60` between sections instead of visual dividers. Cream background carries the whole page.
-- **Density** — homepage always shows the same count per breakpoint: 3 on desktop, 2 on tablet, 1.15 (peek) on mobile via a snap-scroll. No more mixed grids that jump between 2/3/4 columns per section.
-- **Motion** — keep it earned: subtle fade-up on section reveal, cover image scale on hover, no parallax stacks.
+- **Stage = audio speakers only.** A participant appears on stage when they have joined audio (mic on OR muted-but-mic-active). Leaving audio → they drop off stage but stay in the room and chat.
+- **Here now = everyone present in the room**, including chat-only listeners and muted people. Speakers get a small "on stage" dot so the two surfaces stay related but non-redundant.
+- **Chat-only participants never appear on stage.** This is the visual payoff of the audio-first pivot.
 
-## New section order (below hero)
+## Stage redesign (`VideoStage` in `src/components/media-panel.tsx`)
 
-The current order works but competes for attention. Regroup into three acts:
+Replace the rectangular `AudioTile` grid with a circular speaker cluster:
 
-```text
-HERO  (unchanged)
-─────────────────────────────────────────────
-ACT 1 — HAPPENING NOW  (live + your world)
-  1. Pulse ticker            (compact, one row)
-  2. Lounge                  (sample tiles that swap on join — keep + polish)
-  3. Your Groups strip       (auth only, unchanged)
-─────────────────────────────────────────────
-ACT 2 — WHAT PEOPLE ARE MAKING
-  4. Collabs                 (open roles — 3 editorial cards)
-  5. Gallery                 (finished work — 3 editorial cards, "Browse all")
-  6. From your network       (auth only, horizontal peek scroll)
-─────────────────────────────────────────────
-ACT 3 — WHERE TO SHOW UP
-  7. Featured Events         (carousel, unchanged)
-  8. Upcoming in your groups (auth only)
-  9. City Meetups            (unchanged, sits as a quiet strip)
-─────────────────────────────────────────────
-BLOG — Recent reads          (already the reference style; stays as the closer)
-```
+- **Circle avatars** sized to fill up to 10 speakers on one row on desktop, wrapping on mobile. Target sizes: `h-16 w-16` desktop, `h-14 w-14` mobile; tighten to `h-12 w-12` once 7+ speakers are present so the row never overflows.
+- **Avatar source**: the profile `avatar_url` we already resolve via `profileLookup`; fallback to a gradient initial ring (same treatment used elsewhere).
+- **Speaking activity ring**: keep today's speaking signal — animated primary-tinted ring + soft glow around the circle when `speaking && !muted`. Muted state shows a small mic-off badge bottom-right of the circle; no ring.
+- **Name label** under each circle, single line, `truncate`, `text-[11px]`. "(you)" suffix only on the local tile.
+- **Empty stage state**: when nobody has joined audio, render a quiet one-liner "Stage is quiet — join audio to speak" with a subtle mic icon, at reduced height. This kills the current large empty black rectangle when a solo chat-only user is in the room (the exact case in the screenshot).
+- **Screen-share spotlight branch** (existing `sharing` code path) is preserved unchanged; the avatar row below it just swaps rectangles → circles using the same component.
+- Delete/retire the `AudioTile` rectangle component (or reduce it to the new `SpeakerBubble`), keeping the exported `VideoStage` name so `channel-view.tsx` doesn't need to change its import.
 
-Nothing is removed. `HomeLiveWorkshopsRail`, `HomePulseRail`, `YourGroupsStrip`, `CollabsRail`, gallery, `NetworkRail`, `FeaturedEventsCarousel`, `UpcomingInMyGroupsRail`, `CityMeetupsStrip`, `HomeBlogRail` all remain.
+## Here now (sidebar list in `MediaPanel`, ~line 203)
 
-## Section-by-section moves
+- Rename the label from `Here now · N` to keep it, but change what it shows: **all room participants** (chat-only + audio), not just audio peers. This is already close to what `others` provides; we just need to make sure chat-only presences are included and the local user is always first.
+- Each row gets a tiny status dot next to the name:
+  - filled primary dot = on stage (audio joined, unmuted)
+  - hollow dot = on stage but muted
+  - no dot = chat-only listener
+- Remove the speaking ring from these rows — activity lives on the stage, identity lives here. This is the clean split the user is asking for.
+- Keep click-to-open-profile behavior.
 
-- **Pulse rail** — shrink to a single horizontal ticker row with an eyebrow "LIVE PULSE". Removes the current double-header feel.
-- **Lounge (sample tiles)** — keep the mechanic you like (tiles swap out once someone joins). Restyle tiles to match the new card language: cover + eyebrow ("LOUNGE · Music") + big title + "N in room" chip.
-- **Collabs** — 3 cards on desktop instead of up to 6. Card mirrors blog card shape; roles become chips inside the body, not on the cover.
-- **Gallery** — 3 cards (down from up to 8) using the new editorial card. Category tabs + Newest/Trending pill stay above the grid, but sit on a single line and align with section header. "Browse the full Gallery →" underneath as today.
-- **Network rail** — mobile-style peek scroll on all breakpoints; caps at 8. Same card shape, narrower width.
-- **Featured Events** — carousel stays, but frame it with the same section header pattern so it stops looking like a different site.
-- **Upcoming in your groups** — same peek-scroll pattern as network rail. Uses `EventCard` restyled to the editorial card.
-- **City Meetups** — demote to a two-line quiet strip: eyebrow + inline pills for each city. Frees a lot of vertical space and stops competing with Events.
-- **Blog** — unchanged; it's the reference.
+## Purpose split, stated for the UI
 
-## Encouraging behavior
+Add a one-line eyebrow on each surface so the difference is obvious at a glance:
+- Stage: `SPEAKERS · N/10` (was ambient)
+- Sidebar: `HERE NOW · N` (unchanged label, new meaning)
 
-- Lounge tiles keep the "join and it swaps" mechanic; add a subtle "join to appear here" microcopy under the section.
-- Every card has a single primary affordance (whole card is the link) — no dual buttons.
-- Section footer links become pill-shaped `→` links, consistent placement bottom-center.
-- Empty states stay opinionated with a CTA (already good), restyled to the new card shape.
+## Mute behavior
 
-## Technical notes
-
-- New shared component `src/components/editorial-card.tsx` — the base card shape (cover + eyebrow + title + dek + optional chips). Wrap or re-skin `WorkCard`, `CollabCard`, `EventCard` variants used on the homepage via a `variant="editorial"` prop so other surfaces (Gallery route, Collab board) are unaffected.
-- New `src/components/home-section.tsx` — standard `<section>` wrapper: eyebrow, title, dek, right-side link pill, consistent padding + hairline top border. Refactor `src/routes/index.tsx` to use it for every act.
-- Reorder JSX in `src/routes/index.tsx` per the act structure above.
-- `HomePulseRail` — reduce to single-line ticker mode (add a `compact` prop).
-- `HomeLiveWorkshopsRail` — restyle sample tiles to editorial card; behavior unchanged.
-- `CityMeetupsStrip` — collapse to a one-row pill list.
-- No DB, no server-function changes. No new dependencies. All work in frontend/presentation.
+Already supported by `use-media-room` (`toggleMute`, `leaveAudio`). No logic changes — only the visual consequence changes:
+- Mute → stays on stage, ring off, mic-off badge, sidebar dot goes hollow.
+- Leave audio → removed from stage entirely, sidebar dot disappears, row stays.
+- Join audio → appears on stage.
 
 ## Out of scope
 
-- Hero section (untouched per your ask).
-- Route-level Gallery / Collab board / Events pages (only the homepage previews change).
-- Card styles on non-homepage surfaces.
+- No changes to WebRTC, presence, chat, screen-share lease, or capacity gating.
+- No changes to the header, Next Lounge / Exit buttons, tabs, or the audio controls block.
+- No route/loader changes.
+
+## Files touched
+
+- `src/components/media-panel.tsx` — new `SpeakerBubble`, rewrite `VideoStage` grid + empty state, retitle stage eyebrow, adjust Here now rows with status dots and include chat-only presences.
+- (Read-only reference) `src/components/channel-view.tsx`, `src/hooks/use-media-room.tsx` — no edits expected; verify `others` already contains chat-only presences and pass through as-is.
+
+## Technical notes
+
+- Speaking signal for the local user: `m.speaking && !m.muted` (existing).
+- Speaking signal for peers: `peerById.get(userId)?.speaking` (existing). Peers only exist for audio participants, which is exactly what we want for the stage.
+- "On stage" test for the sidebar dot: local user → `m.joined`; peer → presence in `m.peers`. Muted state for peers isn't currently transmitted, so hollow-dot state applies only to the local user for now; peer mute-vs-unmuted stays represented purely via the speaking ring on stage. (Cross-peer mute broadcasting is a separate feature and explicitly out of scope.)
