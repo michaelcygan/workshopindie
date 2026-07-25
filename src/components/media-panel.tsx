@@ -123,7 +123,6 @@ export function MediaPanel({
             {m.busy
               ? "Connecting to audio…"
               : "You're here through chat. Add audio when you're ready."}
-            {m.error && <span className="block mt-1 text-destructive">{m.error}</span>}
           </p>
           <div className="grid grid-cols-2 gap-1.5">
             <button
@@ -188,63 +187,62 @@ export function MediaPanel({
               <LogOut className="h-3.5 w-3.5" /> Exit
             </button>
           </div>
-
-          {m.screenSharerId && (
-            <p className="rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
-              <MonitorPlay className="h-3 w-3" />
-              {m.isScreenSharing
-                ? `You're sharing${screenSourceLabel(m.screenStream) ? ` — ${screenSourceLabel(m.screenStream)}` : " your screen"}`
-                : "Someone is sharing their screen"}
-            </p>
-          )}
-
-
-
-          <div className="border-t border-border/50 pt-3 mt-1">
-            <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-              Here now · {totalHere}
-            </h4>
-            <ul className="space-y-2">
-              <SpeakerRow
-                key="me"
-                userId={meUserId}
-                onStage={m.joined}
-                muted={m.muted}
-                displayName={meDisplay}
-                avatarUrl={meAvatar}
-                username={null}
-                isMe
-                onOpenWork={onOpenWork}
-                roomId={roomId}
-              />
-              <AnimatePresence initial={false}>
-                {others.map((o) => {
-                  const isOnStage = peerById.has(o.user_id);
-                  return (
-                    <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
-                      <SpeakerRow
-                        userId={o.user_id}
-                        onStage={isOnStage}
-                        muted={false}
-                        displayName={o.profile?.display_name || o.profile?.username || "Anon"}
-                        avatarUrl={o.profile?.avatar_url ?? null}
-                        username={o.profile?.username ?? null}
-                        onOpenWork={onOpenWork}
-                        roomId={roomId}
-                      />
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </ul>
-          </div>
-
-          {m.error && <p className="text-xs text-destructive">{m.error}</p>}
         </div>
       )}
+
+      {m.screenSharerId && (
+        <p className="mt-3 rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
+          <MonitorPlay className="h-3 w-3" />
+          {m.isScreenSharing
+            ? `You're sharing${screenSourceLabel(m.screenStream) ? ` — ${screenSourceLabel(m.screenStream)}` : " your screen"}`
+            : "Someone is sharing their screen"}
+        </p>
+      )}
+
+      <div className="border-t border-border/50 pt-3 mt-3">
+        <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          Here now · {totalHere}
+        </h4>
+        <ul className="space-y-2">
+          <SpeakerRow
+            key="me"
+            userId={meUserId}
+            onStage={m.joined}
+            muted={m.muted}
+            displayName={meDisplay}
+            avatarUrl={meAvatar}
+            username={null}
+            isMe
+            onOpenWork={onOpenWork}
+            roomId={roomId}
+          />
+          <AnimatePresence initial={false}>
+            {others.map((o) => {
+              const isOnStage = peerById.has(o.user_id);
+              return (
+                <motion.div key={o.user_id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }}>
+                  <SpeakerRow
+                    userId={o.user_id}
+                    onStage={isOnStage}
+                    muted={false}
+                    displayName={o.profile?.display_name || o.profile?.username || "Anon"}
+                    avatarUrl={o.profile?.avatar_url ?? null}
+                    username={o.profile?.username ?? null}
+                    onOpenWork={onOpenWork}
+                    roomId={roomId}
+                  />
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </ul>
+      </div>
+
+      {m.error && <p className="mt-2 text-xs text-destructive">{m.error}</p>}
     </section>
   );
 }
+
 
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
