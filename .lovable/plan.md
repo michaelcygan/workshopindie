@@ -1,102 +1,90 @@
+# Audio-First Lounge Refactor (10 seats, chat + optional audio + one screen share)
 
-## Goal
+Refactor the existing Lounge in place. No parallel v2 files, no new npm packages, no SFU. The core mental model shift: **room membership ≠ audio membership**. `instant_presence` remains the 10-seat authority; the WebRTC mesh represents only opted-in audio participants.
 
-Give the admin (`/admin/blog`) and member (`/me/blog/$id`) editors a single, polished "Markdown-light" writing experience for the article body — with Bold, Italic, Link dialog, and a safe Embed (YouTube/Vimeo → responsive iframe; other URLs → link card). Storage stays plain `body_markdown`; no schema changes; no rich-text framework.
+## 1. Shared constant + copy
 
-## New file: `src/components/blog-body-editor.tsx`
+- Add `src/lib/lounge-constants.ts` exporting `LOUNGE_CAP = 10` and `LoungeParticipation = "chat" | "audio"`.
+- Global sweep to replace hardcoded `5`, `/5`, `VIDEO_CAP`, `mode="video"|"voice"`, "Voice or video", "Mic or camera", etc. with the new copy vocabulary ("Audio and chat", "Join audio", "Listening", "10 seats", "Share screen", "Someone else is sharing"). Route search schemas accept `mode: "chat" | "audio"` and coerce legacy `voice|video → audio`.
 
-Controlled component used by both editors.
+## 2. Database migration (`audio_first_lounge_10_cap.sql`)
 
-```ts
-type BlogBodyEditorProps = {
-  value: string;
-  onChange: (v: string) => void;
-  readOnly?: boolean;
-  onDirty?: () => void;
-};
+- Update `instant_rooms.participant_cap` default to 10; bump active rooms currently at 5 to 10.
+- Rewrite `claim_lounge_slot` / `join_lounge` / matchmaker RPCs to read `participant_cap` from the row (no hardcoded 5/10), keep atomic admission, preserve blocks/visibility/status rules, and continue to reject the 11th claimant with `full`.
+- Add columns: `screen_sharer_user_id uuid null`, `screen_share_claimed_at timestamptz null`.
+- New RPCs (SECURITY DEFINER, RLS-safe): `claim_lounge_screen_share`, `refresh_lounge_screen_share`, `release_lounge_screen_share`. Atomic with a stale-lease timeout (~30s since last refresh). Owner can reclaim; others get `busy`.
+- Regenerate Supabase types after approval.
+
+## 3. `useMediaRoom` refactor (audio + screen only)
+
+Preserve all mature connection work (perfect negotiation, session/generation guards, ICE buffering + bounded restarts, visibility/online recovery, telemetry, speaking detection, TURN fallback, cleanup). Remove every camera concept (`MediaMode`, `VIDEO_CAP`, `videoCount`, camera constraints/senders/state/bitrate profiles, video-derived layout).
+
+New public interface (audio-specific, no ambiguous `joined`):
+
+```
+audioJoined, muted, speaking, audioCount, peers[]
+localAudioStream, busy, error
+joinAudio(), leaveAudio(), toggleMute()
+screenStream, screenSharerId, isScreenSharing
+startScreenShare(), stopScreenShare()
+bandwidthReduced
 ```
 
-Contents:
-- Editorial card wrapper: soft border, rounded-2xl, matching Workshop tokens.
-- Header row: `Body` label + small `Markdown-light` chip + toolbar.
-- Toolbar (buttons all `type="button"`, Lucide icons, `title` + `aria-label`):
-  - Primary: **Bold** (`Bold`), **Italic** (`Italic`), **Link** (`LinkIcon`), **Embed** (`Youtube` or `Film`).
-  - "More" dropdown (existing `DropdownMenu`): Heading 2, Heading 3, Quote, Bulleted list, Numbered list.
-  - Mobile: `flex-wrap` + horizontal scroll fallback, min 36px tap targets.
-- Textarea:
-  - Controlled, `min-h-[520px] md:min-h-[560px]`, mobile `min-h-[360px]`, `resize-y`, generous padding, `leading-relaxed`, `focus:border-primary`, placeholder `Write your post…`.
-  - Keyboard shortcuts on the textarea: `Cmd/Ctrl+B` → bold, `Cmd/Ctrl+I` → italic, `Cmd/Ctrl+K` → open link dialog.
-  - Selection-aware wrap helper: if selection exists wrap it; if not, insert placeholder (e.g. `bold text`) and select it. Preserves existing `insertAtCursor` semantics.
-- Footer row: word count + estimated reading time (≈220 wpm), plus muted help: *Use the toolbar to format text or add a link. Markdown is supported.*
-- Every mutation calls `onChange(next)` and `onDirty?.()`.
+- `joinAudio()` requests mic only after explicit user action, uses `{echoCancellation, noiseSuppression, autoGainControl, channelCount:1}`, joins media-presence channel, publishes audio track, starts muted, only peers with other audio-joined users, returns bool. Mic failure never bounces from the room.
+- `leaveAudio()` stops mic track, closes media PCs, leaves media channel, stops speaking detector, stops local screen share, keeps `instant_presence` + chat intact.
+- Add explicit `muted` field to media-presence broadcast so remote UI distinguishes chat-only / listening / unmuted / speaking (no inference from silence).
+- Per-peer split: `{ audioStream, screenStream }`. In `ontrack`, classify by `track.kind` — audio updates `audioStream`, video is treated as screen only and updates `screenStream`. Screen stream never overwrites audio. Screen-track ending clears only `screenStream`.
+- Chat-only users never call `getUserMedia`, never join media-presence, never create `RTCPeerConnection`, never touch TURN.
 
-### Link dialog
-Uses shadcn `Dialog`. Fields: `Text`, `URL`. Prefills `Text` with current textarea selection when present. On submit:
-- Trim URL; if missing protocol, prepend `https://`.
-- Validate against `new URL()`; only allow `http:` / `https:`.
-- Insert `[Text](url)` at selection; place cursor after insertion; refocus editor.
-- Errors surface via `sonner` toast + inline field error.
+## 4. Screen-share lease integration
 
-### Embed dialog
-Same `Dialog` primitive. Single URL field + short helper: *Paste a YouTube or Vimeo video, or add another URL as a link card.*
-- Validate: `http:`/`https:` only. Reject `javascript:`, `data:`, malformed.
-- Insert as its own line, surrounded by blank lines:
-  ```
-  \n\n[[embed:https://…]]\n\n
-  ```
-- No provider detection at insert time — renderer decides player vs. link card.
+`startScreenShare` flow: claim lease → `getDisplayMedia({ video: { width:1280, height:720, contentHint }, audio:false })` → publish track → start refresh interval. Release on: stop, `track.onended`, `leaveAudio`, room exit, unmount, cancelled/failed picker, navigation. Realtime broadcast for instant UI, DB lease authoritative. Non-holder sees "Someone else is sharing the room screen." Chat-only user gets a prompt to join audio first.
 
-## New file: `src/components/blog-embed.tsx`
+## 5. `mesh-bitrate.ts` retune
 
-Pure client component `<BlogEmbed url={string} />`. Detects provider and renders:
-- **YouTube** (`youtube.com/watch?v=`, `youtu.be/<id>`, `youtube.com/shorts/<id>`) → `https://www.youtube-nocookie.com/embed/<id>` in responsive `aspect-video` wrapper.
-- **Vimeo** (`vimeo.com/<id>`) → `https://player.vimeo.com/video/<id>`.
-- Iframe: `loading="lazy"`, `allowFullScreen`, `title` (e.g. `YouTube video`), `referrerPolicy="strict-origin-when-cross-origin"`, minimal `allow` (`accelerometer; encrypted-media; picture-in-picture; fullscreen`), rounded-2xl border.
-- **Direct video** (`.mp4`, `.webm` on http/https) → native `<video controls preload="metadata" className="aspect-video …">`.
-- **Fallback link card** (any other safe http/https URL): rounded card, `ExternalLink` icon, hostname on top, truncated path/URL below, `Open link`. `target="_blank" rel="noopener noreferrer nofollow"`.
-- Invalid / unsafe URL → render a muted plain-text line `Unsupported embed` (no iframe).
+Remove camera bitrate/FPS/resolution. Budgets keyed on **audio-connected count**, not seat count:
+- Opus per sender ~24–32 kbps.
+- Screen sender ladder as spec'd (2p→1600/12, 3–4p→800/10, 5–6p→450/8, 7–8p→300/6, 9–10p→220/5), max 1280×720, keep `contentHint`.
+- Health ladder always prioritizes audio; degrade/suspend screen before ever touching audio.
 
-## Update `src/components/blog-post-body.tsx`
+## 6. `lounge.index.tsx` lobby
 
-Preserve today's shared `ReactMarkdown` config (image lightbox included). Add embed handling:
-- Before feeding markdown to ReactMarkdown, split it into segments by scanning for lines matching `^\s*\[\[embed:(\S+?)\]\]\s*$` (multiline).
-- Render an array: markdown chunks (each rendered via the current ReactMarkdown block, sharing the current `components` map so headings/images/lightbox behavior are identical) interleaved with `<BlogEmbed url={…} />`.
-- Extract the current inline `ReactMarkdown` config into a small local `<MarkdownChunk markdown=…>` helper to avoid duplication.
-- Image collection for the lightbox continues to scan the full raw markdown (embeds ignored), so behavior is unchanged for existing posts.
-- No `rehype-raw`. No changes to image, list, heading, table, or link rendering.
+Remove camera detection/toggle/state/permission, `Video`/`VideoOff` controls, "mic or camera" gating, voice-or-video copy. Mic detection is advisory only. "Drop in" and host always work when authenticated. Single preference: "Join audio when I enter" stored at `workshop:lounge-audio-on-entry` (default off for first-timers, remembered afterward). Update `/lounge` head meta description. Rejoin/Hop/active-room cards/direct links pass `mode: "chat" | "audio"` derived from preference.
 
-## Update `src/components/blog-editor.tsx` (admin)
+## 7. `channel-view.tsx` + `lounge.$id.tsx`
 
-- Replace the current Body block (label + inline toolbar + textarea + helper) with:
-  ```tsx
-  <BlogBodyEditor value={body} onChange={setBody} />
-  ```
-- Delete the now-unused `insertAtCursor` helper and heading/quote/list/image toolbar buttons that live inline (their equivalents now live in the shared component's "More" menu; image-by-URL is dropped as a primary control per spec).
-- Keep title / slug / excerpt / cover / SEO / attribution / save / publish / dirty tracking untouched.
+Always init: seat, `instant_presence`, chat, reactions, Work, Collabs, Links, room metadata. Only call `media.joinAudio()` when normalized initial `mode === "audio"`. Media errors → toast, stay in room, participation stays `"chat"`. Preserve single `useMediaRoom(roomId)` instance and existing hook-order discipline (no early returns before hooks). Header shows `Live · N/10`. Remove auto-media-mode setter and any redirect-on-media-failure paths. Legacy `mode=video` URL never reactivates camera.
 
-## Update `src/routes/me.blog.$id.tsx` (member)
+## 8. `media-panel.tsx` — audio identity room
 
-- Replace the raw `<textarea>` labeled `Body (Markdown)` (and its helper paragraph) with:
-  ```tsx
-  <BlogBodyEditor
-    value={body}
-    onChange={(v) => { setBody(v); setDirty(true); }}
-    readOnly={readOnly}
-  />
-  ```
-- Preserve all existing save/publish/unpublish/delete/permission/dirty logic. Preview tab unchanged (already uses `BlogPostBody`, which now understands embeds).
+Delete participant camera tiles entirely. Default surface: responsive identity grid (mobile 2col / sm 3col / desktop 5col) up to 10 tiles showing avatar, name, username, speaking ring, "You", chat-only badge, listening/muted state, active-speaker state, existing profile/work peek. When a screen share is active: screen is central stage (`object-contain`, 100dvh + safe-area in fullscreen, no crop for slides/code/art), identity tiles collapse to a compact strip. Dock: Join audio / Mute-Unmute, Hop, panels, Exit. Screen share stays in the More menu. Preserve mobile fullscreen shell + Chat/Work/Collabs/Links sheets — simplify their media assumptions rather than rewriting.
 
-## Technical details
+## 9. Preserve everything else
 
-- No new npm packages. Uses existing `Dialog`, `DropdownMenu`, `Button`, `Input`, `Label`, `Tooltip`, Lucide icons, sonner.
-- URL normalization: strip whitespace, prepend `https://` if no `://`, `new URL()` to validate, then `.protocol === 'http:' || 'https:'`.
-- YouTube ID regex handles `?v=`, `youtu.be/<id>`, `/shorts/<id>`, `/embed/<id>`; strips extra params.
-- Vimeo: match `/(?:vimeo\.com\/)(?:video\/)?(\d+)/`.
-- Embed marker parsing regex (renderer): `/^[ \t]*\[\[embed:(\S+?)\]\][ \t]*$/gm`, split preserving order.
-- Toolbar shortcuts registered via `onKeyDown` on the textarea only, so they don't hijack global keys.
-- No DB migration, no server change, no changes to routing/authoring/attribution.
-- `type="button"` on every toolbar/dialog action to avoid accidental submits.
+Chat, mentions, reactions, pinned messages/works, Work screening (creative embed video is **not** removed), gallery, Collabs, Links, New Collab, room naming/ending, Hop, waiting-for-others, peeks, mobile sheets, archiving, TURN, blocks, visibility, matchmaker exclusions. Inactivity cleanup: base on meaningful activity or stale presence only — never on "muted" or "no camera" (cameras no longer exist; muted listening is normal). Chat-only counts as active.
 
-## Acceptance check (manual)
+## 10. Files touched
 
-Bold / Italic wrap selection or insert placeholder; `Cmd/Ctrl+B/I/K` work; link dialog inserts valid Markdown with auto-`https://`; YouTube / Vimeo URLs render as responsive players in Preview and public page; other URLs render as safe link cards; `javascript:` / `data:` never become iframes; existing posts (headings, lists, quotes, images, lightbox) render identically; admin + member share the same editor; mobile toolbar wraps and textarea does not overflow; no schema or dependency changes.
+Refactor in place: `src/routes/lounge.index.tsx`, `src/routes/lounge.$id.tsx`, `src/components/channel-view.tsx`, `src/components/media-panel.tsx`, `src/hooks/use-media-room.tsx`, `src/lib/mesh-bitrate.ts`, `src/lib/instant.functions.ts`, `src/components/hop-button.tsx`, `src/components/live-topics-list.tsx`, `src/components/live-workshops-rail.tsx`, plus any copy-site or matchmaker helpers surfaced by the sweep.
+
+Add: `src/lib/lounge-constants.ts`, one Supabase migration.
+
+Regenerate: `src/integrations/supabase/types.ts` after migration approval.
+
+No `use-audio-room-v2`, no `media-panel-new`, no `lounge-new`.
+
+## 11. Verification
+
+- Global rg sweep for `VIDEO_CAP`, `mode="video"|"voice"`, `/5`, `5 seats`, `camera`, `getUserMedia.*video`, `Voice or video` → 0 hits in Lounge paths after refactor.
+- `npm run lint` and `npm run build` clean.
+- Manual matrix: 320/375/390/430/768/1024/1280 px; rooms of 10 chat-only, 5+5, 10 audio, 10 audio + 1 screen share; mic-denied entry stays in room; 11th claimant sees full; simultaneous screen claim → one wins; cancelled picker releases lease; TURN fallback intact; Hop preserves chat/audio pref; no duplicate subscriptions or leaked tracks after navigation.
+
+## Execution order
+
+1. Constant + migration (single call).
+2. Types regen.
+3. `use-media-room` + `mesh-bitrate` refactor.
+4. `channel-view` + `media-panel` refactor.
+5. `lounge.index` + `lounge.$id` + `hop-button` + rails + `instant.functions`.
+6. Copy sweep + meta.
+7. Lint/build + manual matrix.
