@@ -258,6 +258,10 @@ export function useMediaRoom(roomId: string | undefined) {
   const screenStreamRef = useRef<MediaStream | null>(null);
   const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
   const screenBusyRef = useRef<boolean>(false);
+  // True while WE hold the DB lease for this room's screen surface.
+  const holdsLeaseRef = useRef<boolean>(false);
+  const leaseHeartbeatRef = useRef<number | null>(null);
+
 
   // Session identity — nulled by leave() so late signals are dropped.
   const sessionIdRef = useRef<string | null>(null);
