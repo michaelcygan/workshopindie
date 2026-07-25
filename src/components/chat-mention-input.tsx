@@ -397,3 +397,23 @@ export function MessageBody({
     </span>
   );
 }
+
+function PostChip({ slug, label }: { slug: string; label: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen(true);
+        }}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-ink/20 bg-ink/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-ink hover:bg-ink/10"
+      >
+        <FileText className="h-3 w-3" />
+        {label}
+      </button>
+      <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
