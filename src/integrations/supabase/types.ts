@@ -131,9 +131,11 @@ export type Database = {
           created_by: string | null
           excerpt: string
           id: string
+          publication_type: string
           published_at: string | null
           seo_description: string | null
           seo_title: string | null
+          show_in_blog_index: boolean
           slug: string
           status: string
           title: string
@@ -150,9 +152,11 @@ export type Database = {
           created_by?: string | null
           excerpt?: string
           id?: string
+          publication_type?: string
           published_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          show_in_blog_index?: boolean
           slug: string
           status?: string
           title: string
@@ -169,9 +173,11 @@ export type Database = {
           created_by?: string | null
           excerpt?: string
           id?: string
+          publication_type?: string
           published_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
+          show_in_blog_index?: boolean
           slug?: string
           status?: string
           title?: string
@@ -218,6 +224,68 @@ export type Database = {
             foreignKeyName: "blog_posts_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      blog_writer_access: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          note: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          note?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "blog_writer_access_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_writer_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "public_profiles"
             referencedColumns: ["id"]
           },
@@ -6544,6 +6612,7 @@ export type Database = {
         Returns: string
       }
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
+      blog_writer_access_state: { Args: { _user_id: string }; Returns: string }
       bump_work_view: {
         Args: { _key: string; _work_id: string }
         Returns: undefined
@@ -6566,6 +6635,14 @@ export type Database = {
         Returns: Json
       }
       contains_blocked_term: { Args: { _text: string }; Returns: string }
+      count_member_active_drafts: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      create_member_blog_draft: {
+        Args: { _author_name: string; _user_id: string }
+        Returns: string
+      }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       gen_event_short_code: { Args: never; Returns: string }
       get_referral_stats: {
