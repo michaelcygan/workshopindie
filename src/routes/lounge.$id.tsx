@@ -438,7 +438,7 @@ function LiveRoomPage() {
                 <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
               </span>
-              Live · {liveCount}/5
+              Live · {liveCount}/10
             </span>
           </div>
         </div>
