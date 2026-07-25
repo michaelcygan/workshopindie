@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowRight } from "lucide-react";
+import { MapPin, ExternalLink, Pencil, Plus, Users, Calendar, Layers, ImagePlus, Sparkles, X, Instagram, Link as LinkIcon, Youtube, Twitter, Github, Music2, ArrowRight, Heart, Bookmark, Eye } from "lucide-react";
 import { CategoryScroller } from "@/components/category-scroller";
 
 
@@ -33,6 +33,8 @@ import { cn } from "@/lib/utils";
 import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
+import { EditorialCard, EditorialChip } from "@/components/editorial-card";
+
 
 const TAB_VALUES = ["works", "blog", "collabs", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
@@ -1216,9 +1218,9 @@ function WorksTab({
           <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
         </div>
       ) : (
-        <div className={cn("grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
+        <div className={cn("grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-7 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
           {filtered.map((w) => (
-            <WorkCard
+            <EditorialWorkTile
               key={`${w._role}-${w.id}`}
               work={w}
               creditBadge={w._role === "credited" ? w.my_role ?? null : null}
@@ -1227,6 +1229,53 @@ function WorksTab({
         </div>
       )}
     </>
+  );
+}
+
+function EditorialWorkTile({ work, creditBadge }: { work: MergedWork; creditBadge: string | null }) {
+  const mediumLabel = CATEGORY_LABELS[work.category] ?? "Work";
+  const ownerName =
+    work._role === "credited"
+      ? (work.owner?.display_name || work.owner?.username || null)
+      : null;
+  const byLine =
+    work.credits && work.credits.length > 0
+      ? work.credits
+          .slice(0, 2)
+          .map((c) => c.display_name || c.username || "Anon")
+          .join(", ") + (work.credits.length > 2 ? ` +${work.credits.length - 2}` : "")
+      : null;
+  const dek = ownerName ? `with ${ownerName}` : byLine ? `by ${byLine}` : null;
+
+  return (
+    <EditorialCard
+      href="/works/$slug"
+      hrefParams={{ slug: work.slug }}
+      ariaLabel={work.title}
+      cover={work.cover_url}
+      coverFallbackClass={categoryClass(work.category)}
+      aspect="16/10"
+      eyebrow={
+        <span className="flex items-center gap-2">
+          <span>{mediumLabel}</span>
+          {creditBadge && (
+            <>
+              <span className="text-ink-muted/60">·</span>
+              <span className="text-ink-soft">as {creditBadge}</span>
+            </>
+          )}
+        </span>
+      }
+      title={work.title}
+      dek={dek}
+      meta={
+        <>
+          <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {work.like_count}</span>
+          <span className="inline-flex items-center gap-1"><Bookmark className="h-3 w-3" /> {work.save_count}</span>
+          <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {work.view_count}</span>
+        </>
+      }
+    />
   );
 }
 
@@ -1260,7 +1309,7 @@ function PinBar({
               <Link
                 to="/works/$slug"
                 params={{ slug: w.slug }}
-                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+                className="group flex w-[160px] flex-col gap-2 md:w-[200px]"
               >
                 <div className={cn("relative aspect-square overflow-hidden rounded-2xl bg-surface-2", !w.cover_url && categoryClass(w.category))}>
                   {w.cover_url && (
@@ -1268,7 +1317,7 @@ function PinBar({
                   )}
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">{CATEGORY_LABELS[w.category] ?? "Work"}</span>
                 </div>
-                <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{w.title}</p>
+                <p className="line-clamp-2 font-display text-sm leading-snug text-ink md:text-base">{w.title}</p>
               </Link>
             </li>
           ))}
@@ -1277,13 +1326,13 @@ function PinBar({
               <Link
                 to="/collab/$slug"
                 params={{ slug: c.slug }}
-                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+                className="group flex w-[160px] flex-col gap-2 md:w-[200px]"
               >
                 <div className={cn("relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-3", categoryClass(c.category))}>
                   <span className="line-clamp-3 text-center text-xs font-medium text-white/90">{c.title}</span>
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Collab</span>
                 </div>
-                <p className="line-clamp-2 text-xs font-medium text-ink md:text-sm">{c.title}</p>
+                <p className="line-clamp-2 font-display text-sm leading-snug text-ink md:text-base">{c.title}</p>
               </Link>
             </li>
           ))}
@@ -1436,16 +1485,26 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
     );
   }
   return (
-    <div className="space-y-2">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-7 lg:grid-cols-3">
       {items.map((c) => (
-        <Link key={c.id} to="/collab/$slug" params={{ slug: c.slug }} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4 transition hover:shadow-soft">
-          <CategoryChip category={c.category} />
-          <div className="min-w-0 flex-1">
-            <h3 className="truncate font-medium text-ink">{c.title}</h3>
-            {c.description && <p className="line-clamp-1 text-xs text-ink-muted">{c.description}</p>}
-          </div>
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">Open</span>
-        </Link>
+        <EditorialCard
+          key={c.id}
+          href="/collab/$slug"
+          hrefParams={{ slug: c.slug }}
+          ariaLabel={c.title}
+          aspect="16/10"
+          coverFallbackClass={categoryClass(c.category)}
+          eyebrow={
+            <span className="flex items-center gap-2">
+              <span>{CATEGORY_LABELS[c.category] ?? "Collab"}</span>
+              <span className="text-ink-muted/60">·</span>
+              <span className="text-ink-soft">Open collab</span>
+            </span>
+          }
+          title={c.title}
+          dek={c.description || null}
+          chips={<EditorialChip tone="primary">Open</EditorialChip>}
+        />
       ))}
     </div>
   );
