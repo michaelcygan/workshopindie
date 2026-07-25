@@ -4,14 +4,19 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   getAdminUserDetail, setAdminUserRole, setAdminUserBadge,
   softDeleteAdminUser, forceSignOutAdminUser,
 } from "@/lib/admin-users.functions";
+import {
+  getUserBlogAccess, grantUserBlogAccess, revokeUserBlogAccess, suspendUserBlogAccess,
+} from "@/lib/admin-blog-access.functions";
 
 export const Route = createFileRoute("/admin/users/$id")({ component: UserDetail });
+
 
 const STATUSES = ["standard", "founding_creator", "city_host", "verified_creator", "admin"];
 
