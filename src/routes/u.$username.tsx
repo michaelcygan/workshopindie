@@ -720,6 +720,7 @@ function ProfilePage() {
               workedWith={profile.worked_with_count}
               followers={profile.follower_count}
               following={profile.following_count}
+              posts={blogCount}
             />
             <LinkPills
               variant="inline"
@@ -970,6 +971,7 @@ function ProfilePage() {
             <Stat label="Worked with" value={profile.worked_with_count} />
             <Stat label="Followers" value={profile.follower_count} />
             <Stat label="Following" value={profile.following_count} />
+            {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
         </div>
       </div>
@@ -992,18 +994,21 @@ function ProfileStats({
   workedWith,
   followers,
   following,
+  posts,
 }: {
   username: string;
   works: number;
   workedWith: number;
   followers: number;
   following: number;
+  posts: number;
 }) {
   const items: { label: string; value: number; tab: ProfileTab }[] = [
     { label: "Gallery", value: works, tab: "works" },
     { label: "Worked with", value: workedWith, tab: "about" },
     { label: "Followers", value: followers, tab: "about" },
     { label: "Following", value: following, tab: "about" },
+    ...(posts > 0 ? [{ label: "Posts", value: posts, tab: "blog" as ProfileTab }] : []),
   ];
   return (
     <div className="flex flex-wrap items-center gap-2">
