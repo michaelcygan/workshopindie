@@ -1310,6 +1310,15 @@ export function useMediaRoom(roomId: string | undefined) {
     // Null the session id BEFORE tearing down so any inbound signal already
     // queued in the broadcast handler is dropped by handleSignal.
     sessionIdRef.current = null;
+    // Release lease + heartbeat if we happen to still hold the surface.
+    if (leaseHeartbeatRef.current != null) {
+      window.clearInterval(leaseHeartbeatRef.current);
+      leaseHeartbeatRef.current = null;
+    }
+    if (holdsLeaseRef.current && myId && roomIdRef.current) {
+      void releaseLoungeScreenShare(roomIdRef.current, myId);
+    }
+    holdsLeaseRef.current = false;
     teardownMedia();
     const ch = channelRef.current;
     channelRef.current = null;
@@ -1322,7 +1331,8 @@ export function useMediaRoom(roomId: string | undefined) {
     setError(null);
     setModeState("voice");
     modeRef.current = "voice";
-  }, []);
+  }, [myId]);
+
 
   // -------------------------------------------------------------------------
   // Revalidate: called after visibility restore, bfcache pageshow, online, or
