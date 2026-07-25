@@ -147,7 +147,11 @@ type Room = {
 
 function LiveRoomPage() {
   const { id } = Route.useParams();
-  const { mode } = Route.useSearch();
+  // `mode` from search (chat|audio) is currently ignored — channel-view still
+  // takes the legacy voice|video contract and we always pass "voice" until the
+  // audio hook refactor lands. Keeping the search param means share links and
+  // Rejoin/Hop preserve intent for the next wave.
+  Route.useSearch();
   const { user, loading } = useAuth();
   const router = useRouter();
   const qc = useQueryClient();
