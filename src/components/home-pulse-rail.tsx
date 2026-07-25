@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Hammer, Megaphone, Users, Sparkles } from "lucide-react";
+import { Calendar, Hammer, Megaphone, Users, Sparkles, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,8 @@ type Pulse =
   | { kind: "event"; id: string; title: string; group_slug: string; event_slug: string; starts_at: string; cover_url: string | null }
   | { kind: "work"; id: string; title: string; slug: string; cover_url: string | null; from_collab: boolean; from_workshop: boolean }
   | { kind: "collab"; id: string; title: string; slug: string; user_name: string | null }
-  | { kind: "group"; id: string; name: string; slug: string; avatar_url: string | null };
+  | { kind: "group"; id: string; name: string; slug: string; avatar_url: string | null }
+  | { kind: "blog"; id: string; title: string; slug: string; cover_url: string | null; author_name: string | null };
 
 /**
  * Ambient pulse rail — a single horizontal mixer of the platform's most
@@ -141,6 +142,23 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
     );
   }
 
+  if (pulse.kind === "blog") {
+    return (
+      <Link to="/blog/$slug" params={{ slug: pulse.slug }} className={cn(base)}>
+        <PulseChip icon={<BookOpen className="h-3 w-3" />} label="Blog" />
+        <div
+          className={cn(
+            "aspect-video w-full overflow-hidden rounded-xl bg-muted",
+            !pulse.cover_url && "gradient-soft",
+          )}
+          style={pulse.cover_url ? { backgroundImage: `url(${pulse.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+        />
+        <div className="line-clamp-2 font-display text-sm text-ink">{pulse.title}</div>
+        {pulse.author_name && <div className="text-[11px] text-ink-muted">by {pulse.author_name}</div>}
+      </Link>
+    );
+  }
+
   // group
   return (
     <Link to="/g/$slug" params={{ slug: pulse.slug }} className={cn(base)}>
@@ -170,7 +188,7 @@ function PulseChip({ icon, label }: { icon: React.ReactNode; label: string }) {
 async function fetchPulse(): Promise<Pulse[]> {
   const today = new Date().toISOString();
 
-  const [eventsRes, worksRes, collabsRes, groupsRes] = await Promise.allSettled([
+  const [eventsRes, worksRes, collabsRes, groupsRes, blogRes] = await Promise.allSettled([
     supabase
       .from("group_events")
       .select("id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)")
@@ -198,6 +216,12 @@ async function fetchPulse(): Promise<Pulse[]> {
       .eq("visibility", "public")
       .order("created_at", { ascending: false })
       .limit(3),
+    supabase
+      .from("blog_posts")
+      .select("id, title, slug, cover_image_url, author_name, published_at")
+      .eq("status", "published")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(4),
   ]);
 
   const items: Pulse[] = [];
@@ -266,10 +290,26 @@ async function fetchPulse(): Promise<Pulse[]> {
     }
   }
 
+  if (blogRes.status === "fulfilled" && blogRes.value.data) {
+    for (const r of blogRes.value.data as Array<{
+      id: string; title: string; slug: string; cover_image_url: string | null; author_name: string | null;
+    }>) {
+      items.push({
+        kind: "blog",
+        id: r.id,
+        title: r.title,
+        slug: r.slug,
+        cover_url: r.cover_image_url,
+        author_name: r.author_name,
+      });
+    }
+  }
+
+
   // Light interleave so kinds aren't clumped: round-robin by kind.
-  const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [] };
+  const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [], blog: [] };
   for (const it of items) byKind[it.kind].push(it);
-  const order: Pulse["kind"][] = ["event", "work", "collab", "group"];
+  const order: Pulse["kind"][] = ["event", "work", "blog", "collab", "group"];
   const interleaved: Pulse[] = [];
   let added = true;
   while (added) {
