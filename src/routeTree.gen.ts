@@ -77,6 +77,7 @@ import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
+import { Route as MeBlogIndexRouteImport } from './routes/me.blog.index'
 import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
 import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
@@ -84,6 +85,7 @@ import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$sl
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
 import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
 import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
+import { Route as MeBlogIdRouteImport } from './routes/me.blog.$id'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
@@ -444,6 +446,11 @@ const Char91DotmcpChar93ListToolsRoute =
     path: '/.mcp/list-tools',
     getParentRoute: () => rootRouteImport,
   } as any)
+const MeBlogIndexRoute = MeBlogIndexRouteImport.update({
+  id: '/me/blog/',
+  path: '/me/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GSlugIndexRoute = GSlugIndexRouteImport.update({
   id: '/$slug/',
   path: '/$slug/',
@@ -478,6 +485,11 @@ const WorksSlugEditRoute = WorksSlugEditRouteImport.update({
   id: '/edit',
   path: '/edit',
   getParentRoute: () => WorksSlugRoute,
+} as any)
+const MeBlogIdRoute = MeBlogIdRouteImport.update({
+  id: '/me/blog/$id',
+  path: '/me/blog/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
   id: '/claim/$token',
@@ -646,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -653,6 +666,7 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/admin/blog/': typeof AdminBlogIndexRoute
   '/g/$slug/': typeof GSlugIndexRoute
+  '/me/blog/': typeof MeBlogIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
@@ -734,6 +748,7 @@ export interface FileRoutesByTo {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -741,6 +756,7 @@ export interface FileRoutesByTo {
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/admin/blog': typeof AdminBlogIndexRoute
   '/g/$slug': typeof GSlugIndexRoute
+  '/me/blog': typeof MeBlogIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
@@ -829,6 +845,7 @@ export interface FileRoutesById {
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
+  '/me/blog/$id': typeof MeBlogIdRoute
   '/works/$slug/edit': typeof WorksSlugEditRoute
   '/works/collab/new': typeof WorksCollabNewRoute
   '/works/invite/$token': typeof WorksInviteTokenRoute
@@ -836,6 +853,7 @@ export interface FileRoutesById {
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
   '/admin/blog/': typeof AdminBlogIndexRoute
   '/g/$slug/': typeof GSlugIndexRoute
+  '/me/blog/': typeof MeBlogIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
   '/api/public/events/sweep': typeof ApiPublicEventsSweepRoute
@@ -925,6 +943,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -932,6 +951,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/tools'
     | '/admin/blog/'
     | '/g/$slug/'
+    | '/me/blog/'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
@@ -1013,6 +1033,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -1020,6 +1041,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/tools'
     | '/admin/blog'
     | '/g/$slug'
+    | '/me/blog'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
@@ -1107,6 +1129,7 @@ export interface FileRouteTypes {
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
+    | '/me/blog/$id'
     | '/works/$slug/edit'
     | '/works/collab/new'
     | '/works/invite/$token'
@@ -1114,6 +1137,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug/tools'
     | '/admin/blog/'
     | '/g/$slug/'
+    | '/me/blog/'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
     | '/api/public/events/sweep'
@@ -1170,8 +1194,10 @@ export interface RootRouteChildren {
   MeIndexRoute: typeof MeIndexRoute
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
+  MeBlogIdRoute: typeof MeBlogIdRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
+  MeBlogIndexRoute: typeof MeBlogIndexRoute
   ApiPublicEventsMaterializeRoute: typeof ApiPublicEventsMaterializeRoute
   ApiPublicEventsReportSweepRoute: typeof ApiPublicEventsReportSweepRoute
   ApiPublicEventsSweepRoute: typeof ApiPublicEventsSweepRoute
@@ -1659,6 +1685,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/me/blog/': {
+      id: '/me/blog/'
+      path: '/me/blog'
+      fullPath: '/me/blog/'
+      preLoaderRoute: typeof MeBlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/g/$slug/': {
       id: '/g/$slug/'
       path: '/$slug'
@@ -1707,6 +1740,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/works/$slug/edit'
       preLoaderRoute: typeof WorksSlugEditRouteImport
       parentRoute: typeof WorksSlugRoute
+    }
+    '/me/blog/$id': {
+      id: '/me/blog/$id'
+      path: '/me/blog/$id'
+      fullPath: '/me/blog/$id'
+      preLoaderRoute: typeof MeBlogIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/collab/claim/$token': {
       id: '/collab/claim/$token'
@@ -2065,8 +2105,10 @@ const rootRouteChildren: RootRouteChildren = {
   MeIndexRoute: MeIndexRoute,
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
+  MeBlogIdRoute: MeBlogIdRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,
+  MeBlogIndexRoute: MeBlogIndexRoute,
   ApiPublicEventsMaterializeRoute: ApiPublicEventsMaterializeRoute,
   ApiPublicEventsReportSweepRoute: ApiPublicEventsReportSweepRoute,
   ApiPublicEventsSweepRoute: ApiPublicEventsSweepRoute,
