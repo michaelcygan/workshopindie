@@ -256,7 +256,9 @@ export async function adminGetPostServer(context: AuthContext, id: string) {
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== null);
-  return { ...data, authors };
+  const { getBlogPostEntityTagsServer } = await import("./blog-entity-tags.server");
+  const entity_tags = await getBlogPostEntityTagsServer(id, { publicOnly: false });
+  return { ...data, authors, entity_tags };
 }
 
 export async function adminSearchAuthorProfilesServer(context: AuthContext, q: string) {
