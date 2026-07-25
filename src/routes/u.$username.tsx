@@ -34,7 +34,7 @@ import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
-import { Heart, Bookmark, Eye } from "lucide-react";
+
 
 const TAB_VALUES = ["works", "blog", "collabs", "activity", "about"] as const;
 type ProfileTab = typeof TAB_VALUES[number];
