@@ -499,15 +499,3 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   );
 }
 
-function ToolBtn({ children, onClick, title }: { children: React.ReactNode; onClick: () => void; title: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-full text-ink-soft hover:bg-background"
-    >
-      {children}
-    </button>
-  );
-}
