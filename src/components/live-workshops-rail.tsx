@@ -43,8 +43,8 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant 
 
   const allRooms = data?.rooms ?? [];
   const scoped = medium ? allRooms.filter((r) => r.medium === medium) : allRooms;
-  const rooms = scoped.filter((r) => r.live_count < 5);
-  const fullRooms = scoped.filter((r) => r.live_count >= 5);
+  const rooms = scoped.filter((r) => r.live_count < 10);
+  const fullRooms = scoped.filter((r) => r.live_count >= 10);
   const mediumLabel = medium ? CATEGORIES.find((c) => c.id === medium)?.label ?? medium : null;
 
   async function takeSeat(r: ActiveInstantRoom) {
@@ -99,7 +99,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant 
                   {labelFor(r.medium as Category | null)}
                 </span>
                 <span className="ml-auto text-[10px] tabular-nums text-ink-muted shrink-0">
-                  {r.live_count}/5
+                  {r.live_count}/10
                 </span>
               </div>
               <div className="truncate text-[13px] font-medium text-ink">
@@ -180,7 +180,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant 
                 </span>
                 {labelFor(r.medium as Category | null)}
               </span>
-              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">{r.live_count}/5</span>
+              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">{r.live_count}/10</span>
             </div>
             <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
 
@@ -234,7 +234,7 @@ export function LiveWorkshopsRail({ canJoin, medium = null, onTakeSeat, variant 
               <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted">
                 {labelFor(r.medium as Category | null)}
               </span>
-              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">5/5 · full</span>
+              <span className="ml-auto text-[11px] tabular-nums text-ink-muted">10/10 · full</span>
             </div>
             <h3 className="mt-2 truncate font-display text-lg text-ink">{formatRoomTitle(r.title, r.medium)}</h3>
             <p className="mt-3 text-xs text-ink-muted">Full — try another room or open your own.</p>
