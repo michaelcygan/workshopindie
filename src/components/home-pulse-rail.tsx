@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { Calendar, Hammer, Megaphone, Users, Sparkles } from "lucide-react";
+import { Calendar, Hammer, Megaphone, Users, Sparkles, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,8 @@ type Pulse =
   | { kind: "event"; id: string; title: string; group_slug: string; event_slug: string; starts_at: string; cover_url: string | null }
   | { kind: "work"; id: string; title: string; slug: string; cover_url: string | null; from_collab: boolean; from_workshop: boolean }
   | { kind: "collab"; id: string; title: string; slug: string; user_name: string | null }
-  | { kind: "group"; id: string; name: string; slug: string; avatar_url: string | null };
+  | { kind: "group"; id: string; name: string; slug: string; avatar_url: string | null }
+  | { kind: "blog"; id: string; title: string; slug: string; cover_url: string | null; author_name: string | null };
 
 /**
  * Ambient pulse rail — a single horizontal mixer of the platform's most
