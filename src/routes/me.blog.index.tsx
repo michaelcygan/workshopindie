@@ -1,13 +1,36 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getMyBlogAccess, listMyBlogPosts, createMyBlogDraft } from "@/lib/blog-member.functions";
-import { PenLine, Plus, ExternalLink, ChevronRight } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  getMyBlogAccess,
+  listMyBlogPosts,
+  createMyBlogDraft,
+  unpublishMyBlogPost,
+  deleteMyBlogDraft,
+} from "@/lib/blog-member.functions";
+import { PenLine, Plus, ExternalLink, ChevronRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
+
 
 export const Route = createFileRoute("/me/blog/")({
   head: () => ({
@@ -41,6 +64,8 @@ function MyBlogPage() {
   const accessFn = useServerFn(getMyBlogAccess);
   const listFn = useServerFn(listMyBlogPosts);
   const createFn = useServerFn(createMyBlogDraft);
+  const unpublishFn = useServerFn(unpublishMyBlogPost);
+  const deleteFn = useServerFn(deleteMyBlogDraft);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
@@ -68,6 +93,29 @@ function MyBlogPage() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  const [confirmTarget, setConfirmTarget] = useState<Post | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const deleteMut = useMutation({
+    mutationFn: async (post: Post) => {
+      setDeletingId(post.id);
+      if (post.status === "published" || post.published_at) {
+        await unpublishFn({ data: { id: post.id } });
+      }
+      await deleteFn({ data: { id: post.id } });
+    },
+    onSuccess: () => {
+      toast.success("Deleted");
+      qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => {
+      setDeletingId(null);
+      setConfirmTarget(null);
+    },
+  });
+
 
   if (authLoading || !user) return null;
 
@@ -180,7 +228,7 @@ function MyBlogPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 self-center">
+                  <div className="flex shrink-0 items-center gap-1 self-center">
                     {p.status === "published" && (
                       <Link
                         to="/blog/$slug"
@@ -191,6 +239,36 @@ function MyBlogPage() {
                         View <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
+                    {acc?.canDeleteNeverPublishedDraft && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Post actions"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-background hover:text-ink"
+                          >
+                            {deletingId === p.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreVertical className="h-4 w-4" />
+                            )}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setConfirmTarget(p);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {p.status === "published" || p.published_at ? "Delete post" : "Delete draft"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <ChevronRight className="h-5 w-5 text-ink-muted" aria-hidden />
                   </div>
                 </Link>
@@ -199,6 +277,39 @@ function MyBlogPage() {
           </ul>
         )}
       </section>
+
+      <AlertDialog
+        open={!!confirmTarget}
+        onOpenChange={(open) => { if (!open && !deleteMut.isPending) setConfirmTarget(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmTarget?.status === "published" || confirmTarget?.published_at
+                ? "Delete this post?"
+                : "Delete this draft?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmTarget?.status === "published" || confirmTarget?.published_at
+                ? "Your live post will be unpublished and permanently deleted. This can't be undone."
+                : "This draft will be permanently deleted. This can't be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmTarget) deleteMut.mutate(confirmTarget);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMut.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
