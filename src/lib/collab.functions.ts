@@ -594,6 +594,7 @@ const updateSchema = z.object({
       .enum(["owner_retains", "equal_split", "creative_commons", "decide_later"])
       .optional(),
     status: z.enum(["draft", "open"]).optional(),
+    accepts_suggestions: z.boolean().optional(),
     roles: z.array(roleDraftSchema).max(20).optional(),
   }),
 });
