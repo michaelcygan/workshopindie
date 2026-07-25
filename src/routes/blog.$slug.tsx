@@ -2,7 +2,11 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
-import { ArrowLeft } from "lucide-react";
+import { ReportDialog } from "@/components/report-dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { ArrowLeft, Link2, Flag } from "lucide-react";
+
 
 const SITE = "https://workshopindie.com";
 
