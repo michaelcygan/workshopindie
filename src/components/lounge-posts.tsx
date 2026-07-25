@@ -95,7 +95,7 @@ export function LoungePosts({
 
   return (
     <div className={cn("flex h-full flex-col", className)}>
-      {authorsWithPosts.length > 1 && (
+      {authorsWithPosts.length >= 1 && (
         <div className="flex shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border/60 bg-surface/60 px-3 py-2 md:px-4">
           <button
             type="button"
@@ -105,7 +105,7 @@ export function LoungePosts({
               authorFilter === null ? "bg-ink text-background" : "text-ink-muted hover:bg-muted/60 hover:text-ink",
             )}
           >
-            Everyone
+            All
           </button>
           {authorsWithPosts.map((a) => {
             const name = a.display_name || a.username || "Member";
