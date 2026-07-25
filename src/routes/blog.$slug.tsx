@@ -89,6 +89,11 @@ export const Route = createFileRoute("/blog/$slug")({
             },
             mainEntityOfPage: url,
             url,
+            mentions: ((p.entity_tags ?? []) as BlogEntityTag[]).map((t) => ({
+              "@type": t.kind === "profile" ? "Person" : "Thing",
+              name: t.label,
+              url: `${SITE}${entityUrl(t)}`,
+            })),
           }),
         },
         {
@@ -182,6 +187,8 @@ function BlogPostPage() {
       <div className="mt-8">
         <BlogPostBody markdown={post.body_markdown} />
       </div>
+
+      <BlogEntityTags tags={(post.entity_tags ?? []) as BlogEntityTag[]} className="mt-10" />
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 

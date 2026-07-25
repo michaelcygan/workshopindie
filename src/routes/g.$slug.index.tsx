@@ -366,6 +366,8 @@ function GroupPage() {
         <div className="mt-16">
           <AdjacentGroupsRail groupId={group.id} />
         </div>
+
+        <EntityBlogPosts kind="group" entityId={group.id} className="mt-10" />
       </div>
       </div>
     </main>

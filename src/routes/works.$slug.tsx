@@ -19,6 +19,7 @@ import { type CreditChip } from "@/components/credit-strip";
 import { WorkCreditLayer } from "@/components/work-credit-layer";
 import { ProfilePeek } from "@/components/profile-peek";
 import { WorkCard } from "@/components/work-card";
+import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EmbedPlayer, providerFromUrl } from "@/components/embed-player";
 // WorkSocialProof (vouches + boosts) retired in v1 distillation pass.
 import { WorkPublishedNudge } from "@/components/nudges/work-published-nudge";
@@ -322,6 +323,8 @@ function WorkDetail() {
         <section className="mt-14">
           <CommentThread workId={work.id} ownerId={work.created_by} />
         </section>
+
+        <EntityBlogPosts kind="work" entityId={work.id} className="mt-14" />
       </article>
     </main>
   );

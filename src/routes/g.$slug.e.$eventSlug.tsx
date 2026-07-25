@@ -519,6 +519,7 @@ function EventPage() {
           </Tabs>
         </div>
 
+        <EntityBlogPosts kind="event" entityId={ev.id} className="mt-10" />
       </div>
     </main>
   );

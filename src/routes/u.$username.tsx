@@ -973,6 +973,8 @@ function ProfilePage() {
             <Stat label="Following" value={profile.following_count} />
             {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
+
+          <EntityBlogPosts kind="profile" entityId={profile.id} className="mt-10" />
         </div>
       </div>
     </main>
