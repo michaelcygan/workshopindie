@@ -778,13 +778,13 @@ export function ChannelView({
           onMinimize={() => setFsView(null)}
           roomId={roomId}
           stageSlot={typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot}
-          dockExtra={
-            <HopButton
-              roomId={roomId}
-              medium={null}
-              mode={media.cameraOn || media.mode === "video" ? "video" : "voice"}
-            />
-          }
+            dockExtra={
+              <HopButton
+                roomId={roomId}
+                medium={null}
+                mode="voice"
+              />
+            }
           pinnedSlot={
             <PinnedScreeningStrip
               roomId={roomId}
