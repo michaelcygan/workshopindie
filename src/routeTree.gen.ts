@@ -37,6 +37,7 @@ import { Route as EventsIndexRouteImport } from './routes/events.index'
 import { Route as DmsIndexRouteImport } from './routes/dms.index'
 import { Route as CollabIndexRouteImport } from './routes/collab.index'
 import { Route as CitiesIndexRouteImport } from './routes/cities.index'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
@@ -58,6 +59,8 @@ import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as BlogRssDotxmlRouteImport } from './routes/blog.rss[.]xml'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
@@ -75,6 +78,7 @@ import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
 import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
+import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
 import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
 import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
@@ -83,6 +87,9 @@ import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
+import { Route as AdminBlogSubscribersRouteImport } from './routes/admin.blog.subscribers'
+import { Route as AdminBlogNewRouteImport } from './routes/admin.blog.new'
+import { Route as AdminBlogIdRouteImport } from './routes/admin.blog.$id'
 import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
 import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
@@ -235,6 +242,11 @@ const CitiesIndexRoute = CitiesIndexRouteImport.update({
   path: '/',
   getParentRoute: () => CitiesRoute,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -340,6 +352,16 @@ const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
   path: '/checkout/return',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogRssDotxmlRoute = BlogRssDotxmlRouteImport.update({
+  id: '/blog/rss.xml',
+  path: '/blog/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -427,6 +449,11 @@ const GSlugIndexRoute = GSlugIndexRouteImport.update({
   path: '/$slug/',
   getParentRoute: () => GRoute,
 } as any)
+const AdminBlogIndexRoute = AdminBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
   id: '/tools',
   path: '/tools',
@@ -466,6 +493,21 @@ const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
   id: '/$id',
   path: '/$id',
   getParentRoute: () => AdminUsersRoute,
+} as any)
+const AdminBlogSubscribersRoute = AdminBlogSubscribersRouteImport.update({
+  id: '/blog/subscribers',
+  path: '/blog/subscribers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogNewRoute = AdminBlogNewRouteImport.update({
+  id: '/blog/new',
+  path: '/blog/new',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogIdRoute = AdminBlogIdRouteImport.update({
+  id: '/blog/$id',
+  path: '/blog/$id',
+  getParentRoute: () => AdminRoute,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
@@ -564,6 +606,8 @@ export interface FileRoutesByFullPath {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -585,6 +629,7 @@ export interface FileRoutesByFullPath {
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -595,6 +640,9 @@ export interface FileRoutesByFullPath {
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -603,6 +651,7 @@ export interface FileRoutesByFullPath {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/admin/blog/': typeof AdminBlogIndexRoute
   '/g/$slug/': typeof GSlugIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
@@ -645,6 +694,8 @@ export interface FileRoutesByTo {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -666,6 +717,7 @@ export interface FileRoutesByTo {
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin': typeof AdminIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/cities': typeof CitiesIndexRoute
   '/collab': typeof CollabIndexRoute
   '/dms': typeof DmsIndexRoute
@@ -676,6 +728,9 @@ export interface FileRoutesByTo {
   '/workshops': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -684,6 +739,7 @@ export interface FileRoutesByTo {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/admin/blog': typeof AdminBlogIndexRoute
   '/g/$slug': typeof GSlugIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
@@ -733,6 +789,8 @@ export interface FileRoutesById {
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
+  '/blog/$slug': typeof BlogSlugRoute
+  '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
@@ -754,6 +812,7 @@ export interface FileRoutesById {
   '/workshops/$slug': typeof WorkshopsSlugRouteWithChildren
   '/workshops/new': typeof WorkshopsNewRoute
   '/admin/': typeof AdminIndexRoute
+  '/blog/': typeof BlogIndexRoute
   '/cities/': typeof CitiesIndexRoute
   '/collab/': typeof CollabIndexRoute
   '/dms/': typeof DmsIndexRoute
@@ -764,6 +823,9 @@ export interface FileRoutesById {
   '/workshops/': typeof WorkshopsIndexRoute
   '/.lovable/oauth/consent': typeof DotlovableOauthConsentRoute
   '/.mcp/invoke-tool/$tool': typeof Char91DotmcpChar93InvokeToolToolRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
@@ -772,6 +834,7 @@ export interface FileRoutesById {
   '/works/invite/$token': typeof WorksInviteTokenRoute
   '/workshops/$slug/archive': typeof WorkshopsSlugArchiveRoute
   '/workshops/$slug/tools': typeof WorkshopsSlugToolsRouteWithChildren
+  '/admin/blog/': typeof AdminBlogIndexRoute
   '/g/$slug/': typeof GSlugIndexRoute
   '/api/public/events/materialize': typeof ApiPublicEventsMaterializeRoute
   '/api/public/events/report-sweep': typeof ApiPublicEventsReportSweepRoute
@@ -822,6 +885,8 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
+    | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -843,6 +908,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
+    | '/blog/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -853,6 +919,9 @@ export interface FileRouteTypes {
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/blog/$id'
+    | '/admin/blog/new'
+    | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -861,6 +930,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/admin/blog/'
     | '/g/$slug/'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
@@ -903,6 +973,8 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
+    | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -924,6 +996,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin'
+    | '/blog'
     | '/cities'
     | '/collab'
     | '/dms'
@@ -934,6 +1007,9 @@ export interface FileRouteTypes {
     | '/workshops'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/blog/$id'
+    | '/admin/blog/new'
+    | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -942,6 +1018,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/admin/blog'
     | '/g/$slug'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
@@ -990,6 +1067,8 @@ export interface FileRouteTypes {
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
+    | '/blog/$slug'
+    | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
     | '/collab/$slug'
@@ -1011,6 +1090,7 @@ export interface FileRouteTypes {
     | '/workshops/$slug'
     | '/workshops/new'
     | '/admin/'
+    | '/blog/'
     | '/cities/'
     | '/collab/'
     | '/dms/'
@@ -1021,6 +1101,9 @@ export interface FileRouteTypes {
     | '/workshops/'
     | '/.lovable/oauth/consent'
     | '/.mcp/invoke-tool/$tool'
+    | '/admin/blog/$id'
+    | '/admin/blog/new'
+    | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
@@ -1029,6 +1112,7 @@ export interface FileRouteTypes {
     | '/works/invite/$token'
     | '/workshops/$slug/archive'
     | '/workshops/$slug/tools'
+    | '/admin/blog/'
     | '/g/$slug/'
     | '/api/public/events/materialize'
     | '/api/public/events/report-sweep'
@@ -1064,6 +1148,8 @@ export interface RootRouteChildren {
   WorkshopsRoute: typeof WorkshopsRouteWithChildren
   Char91DotmcpChar93ListToolsRoute: typeof Char91DotmcpChar93ListToolsRoute
   Char91DotwellKnownChar93OauthProtectedResourceRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRoute
+  BlogSlugRoute: typeof BlogSlugRoute
+  BlogRssDotxmlRoute: typeof BlogRssDotxmlRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   ECodeRoute: typeof ECodeRoute
@@ -1078,6 +1164,7 @@ export interface RootRouteChildren {
   WTokenRoute: typeof WTokenRoute
   WorksSlugRoute: typeof WorksSlugRouteWithChildren
   WorksNewRoute: typeof WorksNewRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   DmsIndexRoute: typeof DmsIndexRoute
   EventsIndexRoute: typeof EventsIndexRoute
   MeIndexRoute: typeof MeIndexRoute
@@ -1292,6 +1379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CitiesIndexRouteImport
       parentRoute: typeof CitiesRoute
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/'
@@ -1439,6 +1533,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutReturnRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/rss.xml': {
+      id: '/blog/rss.xml'
+      path: '/blog/rss.xml'
+      fullPath: '/blog/rss.xml'
+      preLoaderRoute: typeof BlogRssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/users': {
       id: '/admin/users'
       path: '/users'
@@ -1558,6 +1666,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GSlugIndexRouteImport
       parentRoute: typeof GRoute
     }
+    '/admin/blog/': {
+      id: '/admin/blog/'
+      path: '/blog'
+      fullPath: '/admin/blog/'
+      preLoaderRoute: typeof AdminBlogIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/workshops/$slug/tools': {
       id: '/workshops/$slug/tools'
       path: '/tools'
@@ -1613,6 +1728,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/users/$id'
       preLoaderRoute: typeof AdminUsersIdRouteImport
       parentRoute: typeof AdminUsersRoute
+    }
+    '/admin/blog/subscribers': {
+      id: '/admin/blog/subscribers'
+      path: '/blog/subscribers'
+      fullPath: '/admin/blog/subscribers'
+      preLoaderRoute: typeof AdminBlogSubscribersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/blog/new': {
+      id: '/admin/blog/new'
+      path: '/blog/new'
+      fullPath: '/admin/blog/new'
+      preLoaderRoute: typeof AdminBlogNewRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/blog/$id': {
+      id: '/admin/blog/$id'
+      path: '/blog/$id'
+      fullPath: '/admin/blog/$id'
+      preLoaderRoute: typeof AdminBlogIdRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/.mcp/invoke-tool/$tool': {
       id: '/.mcp/invoke-tool/$tool'
@@ -1722,6 +1858,10 @@ interface AdminRouteChildren {
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminBlogIdRoute: typeof AdminBlogIdRoute
+  AdminBlogNewRoute: typeof AdminBlogNewRoute
+  AdminBlogSubscribersRoute: typeof AdminBlogSubscribersRoute
+  AdminBlogIndexRoute: typeof AdminBlogIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1740,6 +1880,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminRevenueRoute: AdminRevenueRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
+  AdminBlogIdRoute: AdminBlogIdRoute,
+  AdminBlogNewRoute: AdminBlogNewRoute,
+  AdminBlogSubscribersRoute: AdminBlogSubscribersRoute,
+  AdminBlogIndexRoute: AdminBlogIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1899,6 +2043,8 @@ const rootRouteChildren: RootRouteChildren = {
   Char91DotmcpChar93ListToolsRoute: Char91DotmcpChar93ListToolsRoute,
   Char91DotwellKnownChar93OauthProtectedResourceRoute:
     Char91DotwellKnownChar93OauthProtectedResourceRoute,
+  BlogSlugRoute: BlogSlugRoute,
+  BlogRssDotxmlRoute: BlogRssDotxmlRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   ECodeRoute: ECodeRoute,
@@ -1913,6 +2059,7 @@ const rootRouteChildren: RootRouteChildren = {
   WTokenRoute: WTokenRoute,
   WorksSlugRoute: WorksSlugRouteWithChildren,
   WorksNewRoute: WorksNewRoute,
+  BlogIndexRoute: BlogIndexRoute,
   DmsIndexRoute: DmsIndexRoute,
   EventsIndexRoute: EventsIndexRoute,
   MeIndexRoute: MeIndexRoute,
