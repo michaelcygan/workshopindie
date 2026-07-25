@@ -286,13 +286,31 @@ function WorkPill({ label, slug }: { label: string; slug: string }) {
   );
 }
 
-/** Strip markdown links (collab/group/event) to plain labels for snippets. */
+function PostPill({ label, slug }: { label: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+      >
+        <BookOpen className="h-3 w-3" />
+        {label}
+      </button>
+      <BlogPostPeek slug={slug} open={open} onOpenChange={setOpen} />
+    </>
+  );
+}
+
+/** Strip markdown links (collab/group/event/post) to plain labels for snippets. */
 export function flattenTodayBodyToText(body: string): string {
   return body
     .replace(EVENT_LINK_RE, (_f, label: string) => label)
     .replace(GROUP_LINK_RE, (_f, label: string) => label)
     .replace(COLLAB_LINK_RE, (_f, label: string) => label)
-    .replace(WORK_LINK_RE, (_f, label: string) => label);
+    .replace(WORK_LINK_RE, (_f, label: string) => label)
+    .replace(POST_LINK_RE, (_f, label: string) => label);
 }
 
 /** Extract @username tokens (deduped, lowercase). */
