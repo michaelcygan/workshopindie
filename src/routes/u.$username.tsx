@@ -1309,7 +1309,7 @@ function PinBar({
               <Link
                 to="/works/$slug"
                 params={{ slug: w.slug }}
-                className="group flex w-[140px] flex-col gap-2 md:w-[180px]"
+                className="group flex w-[160px] flex-col gap-2 md:w-[200px]"
               >
                 <div className={cn("relative aspect-square overflow-hidden rounded-2xl bg-surface-2", !w.cover_url && categoryClass(w.category))}>
                   {w.cover_url && (
