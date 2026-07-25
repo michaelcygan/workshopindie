@@ -288,3 +288,38 @@ export function useWorkSuggestions(userId: string | undefined, query: string, en
     },
   });
 }
+
+/**
+ * Blog post search — global by title across every live post
+ * (published, indexed, past publish time). Used by the Lounge chat
+ * `@` popover so members can tag any post on the site.
+ */
+export function useBlogPostSuggestions(query: string, enabled: boolean) {
+  const q = query.trim().toLowerCase();
+  return useQuery({
+    queryKey: ["mention-posts", q],
+    enabled,
+    staleTime: 30_000,
+    queryFn: async (): Promise<MentionSuggestion[]> => {
+      const nowIso = new Date().toISOString();
+      let req = supabase
+        .from("blog_posts")
+        .select("id,title,slug,author_name,cover_image_url,published_at")
+        .eq("status", "published")
+        .eq("show_in_blog_index", true)
+        .lte("published_at", nowIso)
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(LIMIT);
+      if (q) req = req.ilike("title", `%${q}%`);
+      const { data } = await req;
+      return (data ?? []).map((r) => ({
+        kind: "post" as const,
+        id: r.id,
+        label: r.title,
+        sublabel: r.author_name || "Post",
+        avatar: r.cover_image_url ?? null,
+        insert: `[${r.title}](/blog/${r.slug}) `,
+      }));
+    },
+  });
+}
