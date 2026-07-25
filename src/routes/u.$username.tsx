@@ -516,9 +516,11 @@ function ProfilePage() {
   const activityCount = (drafts?.length ?? 0) + (workshops?.length ?? 0) + (applied?.length ?? 0) + (participating?.length ?? 0);
   // Works tab is unified: owned + credited (visitor-visible).
   const worksTotal = (ownedWorks?.length ?? 0) + (creditedWorks?.length ?? 0);
+  const blogCount = ((Route.useLoaderData()?.seo as { published_blog_count?: number } | null)?.published_blog_count) ?? 0;
   const counts: Record<ProfileTab, number> = {
     works: worksTotal,
     collabs: openCollabs?.length ?? 0,
+    blog: blogCount,
     activity: activityCount,
     about: 1,
   };
@@ -537,6 +539,7 @@ function ProfilePage() {
   const visibleTabs: ProfileTab[] = TAB_VALUES.filter((t) => {
     if (t === "activity") return isOwn; // owner-only
     if (t === "collabs") return isOwn || counts.collabs > 0;
+    if (t === "blog") return blogCount > 0;
     return true; // works, about always
   });
 
