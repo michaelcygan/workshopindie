@@ -1218,9 +1218,9 @@ function WorksTab({
           <button type="button" onClick={() => { setRoleFilter("all"); setActiveCat("all"); }} className="text-ink underline-offset-2 hover:underline">Reset filters</button>
         </div>
       ) : (
-        <div className={cn("grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
+        <div className={cn("grid grid-cols-1 gap-6 sm:grid-cols-2 md:gap-7 lg:grid-cols-3", showMobileTiles && "hidden md:grid")}>
           {filtered.map((w) => (
-            <WorkCard
+            <EditorialWorkTile
               key={`${w._role}-${w.id}`}
               work={w}
               creditBadge={w._role === "credited" ? w.my_role ?? null : null}
@@ -1229,6 +1229,53 @@ function WorksTab({
         </div>
       )}
     </>
+  );
+}
+
+function EditorialWorkTile({ work, creditBadge }: { work: MergedWork; creditBadge: string | null }) {
+  const mediumLabel = CATEGORY_LABELS[work.category] ?? "Work";
+  const ownerName =
+    work._role === "credited"
+      ? (work.owner?.display_name || work.owner?.username || null)
+      : null;
+  const byLine =
+    work.credits && work.credits.length > 0
+      ? work.credits
+          .slice(0, 2)
+          .map((c) => c.display_name || c.username || "Anon")
+          .join(", ") + (work.credits.length > 2 ? ` +${work.credits.length - 2}` : "")
+      : null;
+  const dek = ownerName ? `with ${ownerName}` : byLine ? `by ${byLine}` : null;
+
+  return (
+    <EditorialCard
+      href="/works/$slug"
+      hrefParams={{ slug: work.slug }}
+      ariaLabel={work.title}
+      cover={work.cover_url}
+      coverFallbackClass={categoryClass(work.category)}
+      aspect="16/10"
+      eyebrow={
+        <span className="flex items-center gap-2">
+          <span>{mediumLabel}</span>
+          {creditBadge && (
+            <>
+              <span className="text-ink-muted/60">·</span>
+              <span className="text-ink-soft">as {creditBadge}</span>
+            </>
+          )}
+        </span>
+      }
+      title={work.title}
+      dek={dek}
+      meta={
+        <>
+          <span className="inline-flex items-center gap-1"><Heart className="h-3 w-3" /> {work.like_count}</span>
+          <span className="inline-flex items-center gap-1"><Bookmark className="h-3 w-3" /> {work.save_count}</span>
+          <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> {work.view_count}</span>
+        </>
+      }
+    />
   );
 }
 
