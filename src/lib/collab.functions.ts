@@ -904,6 +904,9 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
       .object({
         collabPostId: z.string().uuid(),
         applicantUserId: z.string().uuid(),
+        // Optional: accept a specific application (role vs suggestion, etc.).
+        // Falls back to the applicant's most recent contact event.
+        contactEventId: z.string().uuid().nullable().optional(),
       })
       .parse(input),
   )
@@ -921,15 +924,35 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
     if (post.user_id !== userId) throw new Error("Only the Collab owner can accept applicants");
     if (data.applicantUserId === userId) throw new Error("You can't accept yourself");
 
-    // 2. Verify the applicant actually applied.
-    const { data: contact } = await supabase
-      .from("collab_contact_events")
-      .select("id,collab_role_id")
-      .eq("collab_post_id", data.collabPostId)
-      .eq("sender_user_id", data.applicantUserId)
-      .order("sent_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 2. Verify the applicant actually applied. If a specific contactEventId
+    //    is supplied, pin the role from that exact event; otherwise fall back
+    //    to their latest application.
+    let contact: { id: string; collab_role_id: string | null } | null = null;
+    if (data.contactEventId) {
+      const { data: row } = await supabase
+        .from("collab_contact_events")
+        .select("id,collab_role_id,sender_user_id,collab_post_id")
+        .eq("id", data.contactEventId)
+        .maybeSingle();
+      if (
+        row &&
+        row.collab_post_id === data.collabPostId &&
+        row.sender_user_id === data.applicantUserId
+      ) {
+        contact = { id: row.id, collab_role_id: row.collab_role_id };
+      }
+    }
+    if (!contact) {
+      const { data: latest } = await supabase
+        .from("collab_contact_events")
+        .select("id,collab_role_id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("sender_user_id", data.applicantUserId)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      contact = latest ?? null;
+    }
     if (!contact) throw new Error("No application found from this user");
 
     // 3. Idempotent upsert into collab_invites as 'accepted'.
