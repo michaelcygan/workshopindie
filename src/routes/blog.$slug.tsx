@@ -2,6 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
+import { BlogEntityTags } from "@/components/blog-entity-tags";
+import { entityUrl, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { ReportDialog } from "@/components/report-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
