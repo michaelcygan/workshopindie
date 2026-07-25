@@ -234,7 +234,7 @@ function Index() {
 
 
 
-      <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
+      <section className="mx-auto max-w-7xl px-4 pt-10 pb-6 md:px-6 md:pt-14 md:pb-8">
         <div className="mb-6 flex items-end justify-between gap-3">
           <div>
             <h2 className="font-display text-3xl text-ink md:text-4xl">Gallery</h2>
@@ -283,7 +283,7 @@ function Index() {
       <CityMeetupsStrip />
 
 
-      <section className="mx-auto max-w-7xl px-4 pt-10 pb-10 md:px-6 md:pt-14 md:pb-14">
+      <section className="mx-auto max-w-7xl px-4 pt-6 pb-10 md:px-6 md:pt-8 md:pb-14">
         <FeaturedEventsCarousel />
       </section>
 
