@@ -274,26 +274,20 @@ export function VideoStage({
   /** Deprecated: parent now owns the persistent expand button. */
   onEnterFullscreen?: () => void;
 }) {
-
-  const videoPeers = m.peers.filter((p) => p.mode === "video" && p.stream);
-  const audioPeers = m.peers.filter((p) => !(p.mode === "video" && p.stream));
-  const showLocalVideo = m.cameraOn && m.localStream;
-  const showLocalAudio = m.joined && !m.cameraOn;
+  // Wave 4: the Lounge is audio-only. Every participant is an avatar tile; the
+  // only video surface is a screen share spotlight.
   const sharerName = m.screenSharerId
     ? (profileLookup.get(m.screenSharerId)?.display_name
        ?? profileLookup.get(m.screenSharerId)?.username
        ?? (m.screenSharerId === (m as any).myId ? "You" : "Someone"))
     : null;
   const localScreen = m.isScreenSharing && m.screenStream;
-  // When a remote peer is sharing, their video tile is already showing the screen
-  // (we replaceTrack'd on their end). We just highlight it with a bigger frame.
-  const remoteSharingPeer = m.screenSharerId && !m.isScreenSharing
-    ? videoPeers.find((p) => p.userId === m.screenSharerId)
+  const remoteScreenPeer = m.screenSharerId && !m.isScreenSharing
+    ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream && p.stream.getVideoTracks().length > 0)
     : null;
-  const hasAny =
-    showLocalVideo || showLocalAudio || videoPeers.length > 0 || audioPeers.length > 0 || localScreen;
+  const showLocalAudio = m.joined;
+  const hasAny = showLocalAudio || m.peers.length > 0 || localScreen || remoteScreenPeer;
   if (!hasAny) return null;
-
 
   const renderAudioPeerTile = (p: (typeof m.peers)[number]) => {
     const prof = profileLookup.get(p.userId);
@@ -319,25 +313,15 @@ export function VideoStage({
     />
   ) : null;
 
-  // SPOTLIGHT MODE — when anyone's sharing a screen, it dominates the stage and
-  // participants shrink to a thumbnail strip below.
-  const sharing = !!(localScreen || (m.screenSharerId && !m.isScreenSharing && m.peers.find((p) => p.userId === m.screenSharerId && p.stream)));
+  // SPOTLIGHT MODE — screen share dominates the stage; audio avatars sit below.
+  const sharing = !!(localScreen || remoteScreenPeer);
   if (sharing) {
-    const remotePeer = !localScreen && m.screenSharerId
-      ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream)
-      : null;
-    const spotlightStream = (localScreen ? m.screenStream : remotePeer!.stream) as MediaStream;
+    const spotlightStream = (localScreen ? m.screenStream : remoteScreenPeer!.stream) as MediaStream;
     const sourceLabel = screenSourceLabel(spotlightStream);
     const spotlightLabel = localScreen
       ? `Your screen${sourceLabel ? ` — ${sourceLabel}` : ""}`
       : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
-    // Keep the full participant grid below the spotlight so the local cam tile
-    // and remote cam tiles stay visible while someone is sharing. For a REMOTE
-    // sharer we hide their cam tile (their video track is already the screen).
-    const gridPeers = localScreen ? videoPeers : videoPeers.filter((p) => p.userId !== m.screenSharerId);
-    const gridAudioPeers = localScreen
-      ? audioPeers
-      : audioPeers.filter((p) => p.userId !== m.screenSharerId);
+    const audioPeers = m.peers.filter((p) => p.userId !== m.screenSharerId);
     return (
       <div className="relative border-b border-border bg-ink/95 px-4 py-3 md:px-6 space-y-3">
         <div>
@@ -349,24 +333,10 @@ export function VideoStage({
             <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
           </div>
         </div>
-        {(showLocalVideo || showLocalAudio || gridPeers.length > 0 || gridAudioPeers.length > 0) && (
+        {(showLocalAudio || audioPeers.length > 0) && (
           <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-            {showLocalVideo && (
-              <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
-            )}
             {localAudioTile}
-            {gridPeers.map((p) => {
-              const prof = profileLookup.get(p.userId);
-              return (
-                <VideoTile
-                  key={p.userId}
-                  stream={p.stream!}
-                  label={prof?.display_name || prof?.username || "Anon"}
-                  speaking={p.speaking}
-                />
-              );
-            })}
-            {gridAudioPeers.map(renderAudioPeerTile)}
+            {audioPeers.map(renderAudioPeerTile)}
           </div>
         )}
       </div>
@@ -376,22 +346,8 @@ export function VideoStage({
   return (
     <div className="relative border-b border-border bg-ink/5 px-4 py-3 md:px-6">
       <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
-        {showLocalVideo && (
-          <VideoTile stream={m.localStream!} label={`${meDisplay} (you)`} muted speaking={m.speaking && !m.muted} mirrored />
-        )}
         {localAudioTile}
-        {videoPeers.map((p) => {
-          const prof = profileLookup.get(p.userId);
-          return (
-            <VideoTile
-              key={p.userId}
-              stream={p.stream!}
-              label={prof?.display_name || prof?.username || "Anon"}
-              speaking={p.speaking}
-            />
-          );
-        })}
-        {audioPeers.map(renderAudioPeerTile)}
+        {m.peers.map(renderAudioPeerTile)}
       </div>
     </div>
   );
