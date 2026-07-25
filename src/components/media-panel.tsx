@@ -322,7 +322,7 @@ export function VideoStage({
   ) : null;
 
   const eyebrow = (
-    <div className="mb-2 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+    <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
       <span>Speakers · {speakerCount}/{LOUNGE_CAP}</span>
       {sharing && (
         <span className="inline-flex items-center gap-1 text-primary normal-case tracking-normal">
@@ -344,13 +344,13 @@ export function VideoStage({
       : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
     const audioPeers = m.peers.filter((p) => p.userId !== m.screenSharerId);
     return (
-      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6 space-y-3">
+      <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4 space-y-2">
         {eyebrow}
         <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
           <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
         </div>
         {(showLocalAudio || audioPeers.length > 0) && (
-          <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 pt-1">
+          <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-2 pt-1">
             {localBubble}
             {audioPeers.map(renderPeerBubble)}
           </div>
@@ -362,9 +362,9 @@ export function VideoStage({
   // EMPTY STAGE — nobody has joined audio yet. Keep it quiet and low-height.
   if (speakerCount === 0) {
     return (
-      <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+      <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4">
         {eyebrow}
-        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 bg-background/40 px-4 py-4 text-[12px] text-ink-muted">
+        <div className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 bg-background/40 px-3 py-2.5 text-[12px] text-ink-muted">
           <Mic className="h-3.5 w-3.5" />
           <span>Stage is quiet — join audio to speak.</span>
         </div>
@@ -373,9 +373,9 @@ export function VideoStage({
   }
 
   return (
-    <div className="relative border-b border-border bg-surface/40 px-4 py-3 md:px-6">
+    <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4">
       {eyebrow}
-      <div className="flex flex-wrap items-start justify-center gap-x-4 gap-y-3 py-1">
+      <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-2 py-0.5">
         {localBubble}
         {m.peers.map(renderPeerBubble)}
       </div>
@@ -402,18 +402,18 @@ function SpeakerBubble({
   size?: "lg" | "md" | "sm";
 }) {
   const dims =
-    size === "sm" ? "h-12 w-12 text-base" :
-    size === "md" ? "h-14 w-14 text-lg" :
-    "h-16 w-16 text-xl";
+    size === "sm" ? "h-10 w-10 text-sm" :
+    size === "md" ? "h-12 w-12 text-base" :
+    "h-14 w-14 text-lg";
   return (
-    <div className="flex flex-col items-center gap-1.5 w-16 sm:w-20">
+    <div className="flex flex-col items-center gap-1 w-14 sm:w-16">
       <div className="relative">
         <div
           className={cn(
             "relative shrink-0 rounded-full overflow-hidden bg-muted font-medium flex items-center justify-center text-ink-muted ring-2 transition-shadow duration-150",
             dims,
             speaking
-              ? "ring-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25)]"
+              ? "ring-primary shadow-[0_0_0_2px_hsl(var(--primary)/0.25)]"
               : "ring-border/60",
           )}
         >
@@ -423,20 +423,20 @@ function SpeakerBubble({
           {speaking && (
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-full ring-4 ring-primary/30 animate-pulse"
+              className="pointer-events-none absolute inset-0 rounded-full ring-2 ring-primary/30 animate-pulse"
             />
           )}
         </div>
         {muted && (
           <span
             aria-label="Muted"
-            className="absolute -bottom-0.5 -right-0.5 grid h-5 w-5 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
+            className="absolute -bottom-0.5 -right-0.5 grid h-4 w-4 place-items-center rounded-full bg-ink text-background ring-2 ring-surface"
           >
-            <MicOff className="h-2.5 w-2.5" />
+            <MicOff className="h-2 w-2" />
           </span>
         )}
       </div>
-      <span className="max-w-full truncate text-[11px] leading-tight text-ink-soft">
+      <span className="max-w-full truncate text-[10px] leading-tight text-ink-soft">
         {displayName}{isMe ? " (you)" : ""}
       </span>
     </div>

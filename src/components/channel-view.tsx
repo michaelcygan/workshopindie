@@ -954,7 +954,7 @@ export function ChannelView({
           <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
-            <div className="h-[clamp(280px,38vh,440px)] xl:h-[52vh] overflow-y-auto p-3 md:p-4">
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-y-auto p-3 md:p-4">
               {(typeof toolsSlot === "function" ? toolsSlot({ media, activeTool }) : toolsSlot) ?? (
                 <div className="flex h-full items-center justify-center text-sm text-ink-muted">
                   No tools available in this room.
@@ -963,7 +963,7 @@ export function ChannelView({
             </div>
 
           ) : viewMode === "collabs" && user ? (
-            <div className="h-[clamp(280px,38vh,440px)] xl:h-[52vh] overflow-y-auto p-3 md:p-4">
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-y-auto p-3 md:p-4">
               <WorkshopCollabsPanel
                 roomId={roomId}
                 hostUserId={hostUserId ?? null}
@@ -984,7 +984,7 @@ export function ChannelView({
               />
             </div>
           ) : viewMode === "gallery" && user ? (
-            <div className="h-[clamp(280px,38vh,440px)] xl:h-[52vh] p-3 md:p-4">
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] p-3 md:p-4">
               {fsView === "gallery" ? (
                 <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-surface text-ink-muted text-sm">
                   Work open in fullscreen…
@@ -1001,14 +1001,14 @@ export function ChannelView({
               )}
             </div>
           ) : viewMode === "links" ? (
-            <div className="h-[clamp(280px,38vh,440px)] xl:h-[52vh] overflow-y-auto">
+            <div className="h-[clamp(320px,44vh,520px)] xl:h-[58vh] overflow-y-auto">
               <LoungeLinks messages={messages} profileLookup={profileLookup} />
             </div>
           ) : (
 
             <>
               {workshopId && <ChatPolls workshopId={workshopId} />}
-              <div className="relative flex h-[clamp(280px,38vh,440px)] xl:h-[52vh] flex-col">
+              <div className="relative flex h-[clamp(320px,44vh,520px)] xl:h-[58vh] flex-col">
               {roomId && (
                 <div className="shrink-0">
                   <PinnedMessage
