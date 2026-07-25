@@ -405,11 +405,13 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
       // Restore video track to this peer if we suspended it.
       if (meta.videoOffSuspended) {
         const sender = pc.getSenders().find((s) => s.track?.kind === "video");
-        const camTrack = screenStreamRef.current?.getVideoTracks()[0]
-          ?? localStreamRef.current?.getVideoTracks()[0]
+        // Audio-first rooms: only the screen-share track is restored. Camera
+        // tracks are never sent in this room mode.
+        const restoreTrack = screenStreamRef.current?.getVideoTracks()[0]
+          ?? (cameraAllowedRef.current ? localStreamRef.current?.getVideoTracks()[0] : null)
           ?? null;
-        if (sender && camTrack) {
-          try { await sender.replaceTrack(camTrack); } catch { /* noop */ }
+        if (sender && restoreTrack) {
+          try { await sender.replaceTrack(restoreTrack); } catch { /* noop */ }
         }
         meta.videoOffSuspended = false;
       }
@@ -417,6 +419,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
       adaptiveFloorRef.current = null;
       applyBudget().catch(() => {});
     }
+
   }
 
   async function flushSnapshot(peerId: string, meta: PeerMeta) {
@@ -1590,7 +1593,11 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [myId, roomId, busy, joined, count, videoCount, leave]);
 
-  const setMode = useCallback((m: MediaMode) => { joinWithMode(m); }, [joinWithMode]);
+  const setMode = useCallback((m: MediaMode) => {
+    if (!cameraAllowedRef.current && m === "video") return;
+    joinWithMode(m);
+  }, [joinWithMode]);
+
 
   const toggleMute = useCallback(() => {
     const stream = localStreamRef.current;
@@ -1615,6 +1622,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
   }, [muted, myId]);
 
   const setCameraEnabled = useCallback((on: boolean) => {
+    if (!cameraAllowedRef.current) return;
     const stream = localStreamRef.current;
     if (modeRef.current === "video" && stream) {
       const tracks = stream.getVideoTracks();
@@ -1630,6 +1638,7 @@ export function useMediaRoom(roomId: string | undefined, { camera = true }: { ca
       joinWithMode("voice");
     }
   }, [joinWithMode]);
+
 
   const stopScreenShare = useCallback(async () => {
     const screen = screenStreamRef.current;
