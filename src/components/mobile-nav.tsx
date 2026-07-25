@@ -17,6 +17,10 @@ export function MobileNav() {
   // Logged-out visitors on a public profile or work page see it as a standalone surface — no bottom nav.
   if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) return null;
 
+  // Inside a specific Lounge, the Lounge dock owns the bottom of the screen on mobile —
+  // hide the global tab bar so the two don't stack/overlap.
+  if (/^\/lounge\/[^/]+/.test(pathname)) return null;
+
   const initial =
 
     ((user?.user_metadata?.display_name as string | undefined) ??
