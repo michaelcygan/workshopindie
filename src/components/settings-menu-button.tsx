@@ -6,6 +6,7 @@ import {
   Ticket,
   LayoutGrid,
   Calendar,
+  BookOpen,
   Gift,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
