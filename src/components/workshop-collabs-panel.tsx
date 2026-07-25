@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
@@ -105,10 +105,15 @@ export function WorkshopCollabsPanel({
     enabled: !!roomId,
   });
 
+  const instanceIdRef = useRef<string>(
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : Math.random().toString(36).slice(2),
+  );
   useEffect(() => {
     if (!roomId) return;
     const channel = supabase
-      .channel(`room-pins:${roomId}`)
+      .channel(`room-pins:${roomId}:${instanceIdRef.current}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "instant_room_pins", filter: `room_id=eq.${roomId}` },
