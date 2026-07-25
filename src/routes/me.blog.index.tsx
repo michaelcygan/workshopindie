@@ -228,7 +228,7 @@ function MyBlogPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 self-center">
+                  <div className="flex shrink-0 items-center gap-1 self-center">
                     {p.status === "published" && (
                       <Link
                         to="/blog/$slug"
@@ -239,6 +239,36 @@ function MyBlogPage() {
                         View <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
+                    {acc?.canDeleteNeverPublishedDraft && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label="Post actions"
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-muted hover:bg-background hover:text-ink"
+                          >
+                            {deletingId === p.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <MoreVertical className="h-4 w-4" />
+                            )}
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setConfirmTarget(p);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            {p.status === "published" || p.published_at ? "Delete post" : "Delete draft"}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                     <ChevronRight className="h-5 w-5 text-ink-muted" aria-hidden />
                   </div>
                 </Link>
@@ -247,6 +277,39 @@ function MyBlogPage() {
           </ul>
         )}
       </section>
+
+      <AlertDialog
+        open={!!confirmTarget}
+        onOpenChange={(open) => { if (!open && !deleteMut.isPending) setConfirmTarget(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmTarget?.status === "published" || confirmTarget?.published_at
+                ? "Delete this post?"
+                : "Delete this draft?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmTarget?.status === "published" || confirmTarget?.published_at
+                ? "Your live post will be unpublished and permanently deleted. This can't be undone."
+                : "This draft will be permanently deleted. This can't be undone."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMut.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMut.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (confirmTarget) deleteMut.mutate(confirmTarget);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteMut.isPending ? "Deleting…" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </main>
   );
 }
