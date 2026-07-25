@@ -77,6 +77,7 @@ export type Database = {
       blog_posts: {
         Row: {
           author_name: string
+          author_profile_id: string | null
           body_markdown: string
           cover_image_alt: string | null
           cover_image_url: string | null
@@ -95,6 +96,7 @@ export type Database = {
         }
         Insert: {
           author_name?: string
+          author_profile_id?: string | null
           body_markdown?: string
           cover_image_alt?: string | null
           cover_image_url?: string | null
@@ -113,6 +115,7 @@ export type Database = {
         }
         Update: {
           author_name?: string
+          author_profile_id?: string | null
           body_markdown?: string
           cover_image_alt?: string | null
           cover_image_url?: string | null
@@ -130,6 +133,20 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "blog_posts_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "blog_posts_author_profile_id_fkey"
+            columns: ["author_profile_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "blog_posts_created_by_fkey"
             columns: ["created_by"]
