@@ -303,19 +303,13 @@ function MemberBlogEditorPage() {
           </div>
 
           <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Body (Markdown)</label>
-            <textarea
+            <BlogBodyEditor
               value={body}
               readOnly={readOnly}
-              onChange={(e) => { setBody(e.target.value); setDirty(true); }}
-              rows={22}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-mono text-sm text-ink focus:border-primary focus:outline-none"
-              placeholder="Write your post in Markdown. Supports **bold**, _italic_, [links](https://…), lists, > quotes, and ![alt](image-url)."
+              onChange={(v) => { setBody(v); setDirty(true); }}
             />
-            <p className="mt-1 text-xs text-ink-muted">
-              Inline images must be uploaded through Workshop. Paste an uploaded image URL, or use the cover uploader above and reference the URL.
-            </p>
           </div>
+
 
           {!post.post.published_at && access.canDeleteNeverPublishedDraft && (
             <div className="border-t border-border pt-4">
