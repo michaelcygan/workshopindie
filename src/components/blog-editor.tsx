@@ -79,6 +79,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const publish = useServerFn(adminPublishPost);
   const unpublish = useServerFn(adminUnpublishPost);
   const del = useServerFn(adminDeleteDraft);
+  const setEntityTagsFn = useServerFn(setBlogPostEntityTagsForAdmin);
   const listAuthorProfiles = useServerFn(adminListAuthorProfiles);
   const { data: authorProfiles } = useQuery({
     queryKey: ["admin-blog-author-profiles"],
