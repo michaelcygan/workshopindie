@@ -784,6 +784,8 @@ export function FullscreenRoom({
   linksSlot?: React.ReactNode;
 }) {
 
+  const { data: audioAccess } = useLoungeAudioAccess();
+  const audioBlocked = !!audioAccess && !audioAccess.canJoinAudio;
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
   const showLocalVideo = m.cameraOn && m.localStream;
