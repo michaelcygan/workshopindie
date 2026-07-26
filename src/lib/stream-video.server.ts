@@ -12,12 +12,12 @@ const DEFAULT_CALL_TYPE = "workshop_lounge";
 const TOKEN_TTL_SECONDS = 60 * 60;
 
 function readEnv() {
-  const apiKey = process.env.VITE_STREAM_API_KEY;
+  const apiKey = process.env.STREAM_API_KEY;
   const apiSecret = process.env.STREAM_API_SECRET;
   const callType = process.env.STREAM_LOUNGE_CALL_TYPE ?? DEFAULT_CALL_TYPE;
   if (!apiKey || !apiSecret) {
     throw new Error(
-      "Stream is not configured. Set STREAM_API_SECRET and VITE_STREAM_API_KEY.",
+      "Stream is not configured. Set STREAM_API_KEY and STREAM_API_SECRET.",
     );
   }
   return { apiKey, apiSecret, callType };
