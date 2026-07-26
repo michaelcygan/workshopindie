@@ -20,6 +20,7 @@ import {
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
 import { setBlogPostEntityTagsForMember } from "@/lib/blog-entity-tags.functions";
+import { PlusGate } from "@/components/plus-gate";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/$id")({
