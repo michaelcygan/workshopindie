@@ -106,6 +106,7 @@ function EditCollab() {
             city_id: locationMode === "online" ? null : (city?.id || null),
             compensation_type: compensationType,
             rights_arrangement: rights,
+            accepts_suggestions: acceptsSuggestions,
           },
         },
       });
