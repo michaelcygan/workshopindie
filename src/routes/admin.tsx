@@ -45,10 +45,12 @@ const NAV_GROUPS: { label: string; items: NavItem[] }[] = [
       { to: "/admin/blog", label: "Blog" },
       { to: "/admin/badges", label: "Badges" },
       { to: "/admin/links", label: "Links" },
+      { to: "/admin/plus", label: "Plus Grants" },
       { to: "/admin/ops", label: "Flags" },
       { to: "/admin/audit", label: "Audit Log" },
     ],
   },
+
 ];
 
 function AdminLayout() {

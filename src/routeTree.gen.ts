@@ -57,6 +57,7 @@ import { Route as ECodeRouteImport } from './routes/e.$code'
 import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
 import { Route as CollabNewRouteImport } from './routes/collab.new'
 import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
+import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
 import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
 import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
 import { Route as BlogRssDotxmlRouteImport } from './routes/blog.rss[.]xml'
@@ -64,6 +65,7 @@ import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminPlusRouteImport } from './routes/admin.plus'
 import { Route as AdminOpsRouteImport } from './routes/admin.ops'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
@@ -346,6 +348,11 @@ const CollabSlugRoute = CollabSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => CollabRoute,
 } as any)
+const ClaimTokenRoute = ClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CitiesSlugRoute = CitiesSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -379,6 +386,11 @@ const AdminRevenueRoute = AdminRevenueRouteImport.update({
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/reports',
   path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlusRoute = AdminPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOpsRoute = AdminOpsRouteImport.update({
@@ -627,6 +639,7 @@ export interface FileRoutesByFullPath {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/ops': typeof AdminOpsRoute
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -634,6 +647,7 @@ export interface FileRoutesByFullPath {
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
@@ -719,6 +733,7 @@ export interface FileRoutesByTo {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/ops': typeof AdminOpsRoute
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -726,6 +741,7 @@ export interface FileRoutesByTo {
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
@@ -818,6 +834,7 @@ export interface FileRoutesById {
   '/admin/marketplace': typeof AdminMarketplaceRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/ops': typeof AdminOpsRoute
+  '/admin/plus': typeof AdminPlusRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/revenue': typeof AdminRevenueRoute
   '/admin/users': typeof AdminUsersRouteWithChildren
@@ -825,6 +842,7 @@ export interface FileRoutesById {
   '/blog/rss.xml': typeof BlogRssDotxmlRoute
   '/checkout/return': typeof CheckoutReturnRoute
   '/cities/$slug': typeof CitiesSlugRoute
+  '/claim/$token': typeof ClaimTokenRoute
   '/collab/$slug': typeof CollabSlugRouteWithChildren
   '/collab/new': typeof CollabNewRoute
   '/dms/$conversationId': typeof DmsConversationIdRoute
@@ -918,6 +936,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace'
     | '/admin/moderation'
     | '/admin/ops'
+    | '/admin/plus'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -925,6 +944,7 @@ export interface FileRouteTypes {
     | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
+    | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
@@ -1010,6 +1030,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace'
     | '/admin/moderation'
     | '/admin/ops'
+    | '/admin/plus'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -1017,6 +1038,7 @@ export interface FileRouteTypes {
     | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
+    | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
@@ -1108,6 +1130,7 @@ export interface FileRouteTypes {
     | '/admin/marketplace'
     | '/admin/moderation'
     | '/admin/ops'
+    | '/admin/plus'
     | '/admin/reports'
     | '/admin/revenue'
     | '/admin/users'
@@ -1115,6 +1138,7 @@ export interface FileRouteTypes {
     | '/blog/rss.xml'
     | '/checkout/return'
     | '/cities/$slug'
+    | '/claim/$token'
     | '/collab/$slug'
     | '/collab/new'
     | '/dms/$conversationId'
@@ -1199,6 +1223,7 @@ export interface RootRouteChildren {
   BlogSlugRoute: typeof BlogSlugRoute
   BlogRssDotxmlRoute: typeof BlogRssDotxmlRoute
   CheckoutReturnRoute: typeof CheckoutReturnRoute
+  ClaimTokenRoute: typeof ClaimTokenRoute
   DmsConversationIdRoute: typeof DmsConversationIdRoute
   ECodeRoute: typeof ECodeRoute
   MeBlockedRoute: typeof MeBlockedRoute
@@ -1571,6 +1596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabSlugRouteImport
       parentRoute: typeof CollabRoute
     }
+    '/claim/$token': {
+      id: '/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/claim/$token'
+      preLoaderRoute: typeof ClaimTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cities/$slug': {
       id: '/cities/$slug'
       path: '/$slug'
@@ -1618,6 +1650,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/admin/reports'
       preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plus': {
+      id: '/admin/plus'
+      path: '/plus'
+      fullPath: '/admin/plus'
+      preLoaderRoute: typeof AdminPlusRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/ops': {
@@ -1934,6 +1973,7 @@ interface AdminRouteChildren {
   AdminMarketplaceRoute: typeof AdminMarketplaceRoute
   AdminModerationRoute: typeof AdminModerationRoute
   AdminOpsRoute: typeof AdminOpsRoute
+  AdminPlusRoute: typeof AdminPlusRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminRevenueRoute: typeof AdminRevenueRoute
   AdminUsersRoute: typeof AdminUsersRouteWithChildren
@@ -1956,6 +1996,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminMarketplaceRoute: AdminMarketplaceRoute,
   AdminModerationRoute: AdminModerationRoute,
   AdminOpsRoute: AdminOpsRoute,
+  AdminPlusRoute: AdminPlusRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminRevenueRoute: AdminRevenueRoute,
   AdminUsersRoute: AdminUsersRouteWithChildren,
@@ -2126,6 +2167,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlogSlugRoute: BlogSlugRoute,
   BlogRssDotxmlRoute: BlogRssDotxmlRoute,
   CheckoutReturnRoute: CheckoutReturnRoute,
+  ClaimTokenRoute: ClaimTokenRoute,
   DmsConversationIdRoute: DmsConversationIdRoute,
   ECodeRoute: ECodeRoute,
   MeBlockedRoute: MeBlockedRoute,
