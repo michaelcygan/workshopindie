@@ -22,8 +22,6 @@ import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
-import { PageHeaderCompact } from "@/components/page-header-compact";
-import { KickerChip } from "@/components/kicker-chip";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
@@ -255,7 +253,9 @@ function GalleryPage() {
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const [qInput, setQInput] = useState(search.q);
+  const [searchOpen, setSearchOpen] = useState(search.q.trim().length > 0);
   const qDebounced = useDebounced(qInput, 250);
+
 
   useEffect(() => {
     if (qDebounced !== search.q) {
@@ -412,47 +412,120 @@ function GalleryPage() {
       {/* Logged-out hero with live counters */}
       {!user && <GalleryLoggedOutHero />}
 
-      {/* Slim header */}
+      {/* Slim editorial masthead */}
       <section className="border-b border-border">
-        <div className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
-          <PageHeaderCompact
-            title="Gallery"
-            right={
-              <Link to="/works/new" className="shrink-0">
-                <Button size="sm" className="rounded-full">
-                  <Plus className="h-4 w-4" />
-                  Post to Gallery
-                </Button>
-              </Link>
-            }
-          />
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <KickerChip live>Recent</KickerChip>
-            <p className="text-sm text-ink-muted">
-              Everything people made — film, music, writing, build, visuals.
+        <div className="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-4 md:px-6 md:py-5">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl leading-none tracking-tight text-ink md:text-4xl">
+              Gallery
+            </h1>
+            <p className="mt-1 truncate text-sm text-ink-muted">
+              Everything people made across Workshop — film, music, writing, build, visuals.
             </p>
           </div>
+          <Link to="/works/new" className="shrink-0">
+            <Button size="sm" className="rounded-full">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Post to Gallery</span>
+              <span className="sm:hidden">Post</span>
+            </Button>
+          </Link>
         </div>
       </section>
 
-
-      {/* Recent works rail */}
-      <FreshWorksStrip />
-
-
-      {/* Your groups */}
+      {/* Personal groups rail (self-hides when empty) */}
       <YourGroupsStrip />
 
-
-      {/* Sticky toolbar */}
+      {/* Sticky one-row toolbar */}
       <div className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur md:top-14">
-        <div className="mx-auto max-w-7xl px-4 py-3 md:px-6">
-          <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-            <div className="relative flex-1">
+        <div className="mx-auto max-w-7xl px-4 py-2.5 md:px-6">
+          <div className="flex items-center gap-2">
+            {/* Category chips take the primary line */}
+            <div className="min-w-0 flex-1">
+              <CategoryScroller
+                tabs={categoryTabs}
+                value={category}
+                onChange={(v) => setSearch({ cat: v })}
+              />
+            </div>
+
+            {/* Sort */}
+            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:flex">
+              {(["recent", "trending"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSearch({ sort: s })}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs capitalize transition",
+                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+
+            {/* Tabs (desktop) */}
+            <div className="hidden shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft lg:flex">
+              {(["for-you", "following", "favorites"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => {
+                    if (t !== "for-you" && !user) {
+                      navigate({ to: "/login" });
+                      return;
+                    }
+                    setSearch({ tab: t });
+                  }}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-xs transition",
+                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
+                </button>
+              ))}
+            </div>
+
+            {/* City filter */}
+            <div className="hidden shrink-0 md:block">
+              <GalleryCityFilter
+                cities={cities}
+                value={citySlug}
+                onChange={(slug) => setSearch({ city: slug })}
+              />
+            </div>
+
+            {/* Search toggle */}
+            <button
+              onClick={() => setSearchOpen((v) => !v)}
+              className={cn(
+                "shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-full border border-border bg-surface text-ink-soft shadow-soft transition hover:bg-muted",
+                searchOpen && "bg-ink text-background",
+              )}
+              aria-label="Search"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            {filtersActive && (
+              <button
+                onClick={clearAll}
+                className="hidden shrink-0 rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink md:inline"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+
+          {/* Expandable search */}
+          {searchOpen && (
+            <div className="relative mt-2">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
               <input
                 value={qInput}
                 onChange={(e) => setQInput(e.target.value)}
+                autoFocus
                 placeholder="Search works by title or description…"
                 className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-9 text-sm text-ink placeholder:text-ink-muted shadow-soft focus:outline-none focus:ring-2 focus:ring-ring"
               />
@@ -466,108 +539,77 @@ function GalleryPage() {
                 </button>
               )}
             </div>
+          )}
 
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+          {/* Mobile-only quick controls: tabs + city */}
+          <div className="mt-2 flex items-center gap-2 lg:hidden">
+            <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
+              {(["for-you", "following", "favorites"] as const).map((t) => (
                 <button
-                  onClick={() => setSearch({ tab: "for-you" })}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-sm transition",
-                    tab === "for-you" ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  For you
-                </button>
-                <button
+                  key={t}
                   onClick={() => {
-                    if (!user) {
+                    if (t !== "for-you" && !user) {
                       navigate({ to: "/login" });
                       return;
                     }
-                    setSearch({ tab: "following" });
+                    setSearch({ tab: t });
                   }}
                   className={cn(
-                    "rounded-full px-3 py-1.5 text-sm transition",
-                    tab === "following" ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                    "rounded-full px-2.5 py-1 text-[11px] transition",
+                    tab === t ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
                   )}
                 >
-                  Following
+                  {t === "for-you" ? "For you" : t === "following" ? "Following" : "Favorites"}
                 </button>
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      navigate({ to: "/login" });
-                      return;
-                    }
-                    setSearch({ tab: "favorites" });
-                  }}
-                  className={cn(
-                    "rounded-full px-3 py-1.5 text-sm transition",
-                    tab === "favorites" ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                  )}
-                >
-                  Favorites
-                </button>
-              </div>
-
-              <div className="flex gap-1 rounded-full border border-border bg-surface p-1 shadow-soft">
-                {(["recent", "trending"] as const).map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => setSearch({ sort: s })}
-                    className={cn(
-                      "rounded-full px-3 py-1.5 text-sm capitalize transition",
-                      sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
-                    )}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
+              ))}
             </div>
-          </div>
-
-          {/* Category chips (left) + city filter (right) on desktop; stacked on mobile */}
-          <div className="mt-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
-            <CategoryScroller
-              tabs={categoryTabs}
-              value={category}
-              onChange={(v) => setSearch({ cat: v })}
-              className="md:w-fit"
-            />
-            <div className="flex items-center gap-2 md:shrink-0">
+            <div className="flex shrink-0 gap-1 rounded-full border border-border bg-surface p-1 shadow-soft sm:hidden">
+              {(["recent", "trending"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSearch({ sort: s })}
+                  className={cn(
+                    "rounded-full px-2.5 py-1 text-[11px] capitalize transition",
+                    sort === s ? "bg-ink text-background" : "text-ink-soft hover:bg-muted",
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+            <div className="ml-auto shrink-0 md:hidden">
               <GalleryCityFilter
                 cities={cities}
                 value={citySlug}
                 onChange={(slug) => setSearch({ city: slug })}
               />
-              {filtersActive && (
-                <button
-                  onClick={clearAll}
-                  className="rounded-full px-2.5 py-1 text-xs text-ink-muted hover:text-ink"
-                >
-                  Clear filters
-                </button>
-              )}
             </div>
+            {filtersActive && (
+              <button
+                onClick={clearAll}
+                className="shrink-0 rounded-full px-2 py-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
+              >
+                Clear
+              </button>
+            )}
           </div>
 
-          <div className="mt-2">
-            <GeoDefaultBanner
-              defaultCity={defaultCity}
-              isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
-              isWorldwide={citySlug === "all"}
-              onApply={(city) => setSearch({ city: city.slug })}
-              onWorldwide={() => setSearch({ city: "all" })}
-            />
-          </div>
+          {/* Geo banner — inline, only when actionable */}
+          <GeoDefaultBanner
+            defaultCity={defaultCity}
+            isOnDefault={!!defaultCity && citySlug === defaultCity.slug}
+            isWorldwide={citySlug === "all"}
+            onApply={(city) => setSearch({ city: city.slug })}
+            onWorldwide={() => setSearch({ city: "all" })}
+          />
         </div>
       </div>
 
 
 
+
       {/* Grid */}
-      <section className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
         {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
             title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
@@ -580,8 +622,8 @@ function GalleryPage() {
           />
         ) : isLoading ? (
           <Grid>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-surface-2" />
             ))}
           </Grid>
         ) : works.length === 0 ? (
@@ -626,13 +668,13 @@ function GalleryPage() {
         ) : (
           <>
             <Grid>
-              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
+              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} aspect="16/10" />)}
             </Grid>
             <div ref={sentinelRef} className="h-12" />
             {isFetchingNext && (
               <Grid>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-surface-2" />
                 ))}
               </Grid>
             )}
@@ -642,6 +684,9 @@ function GalleryPage() {
           </>
         )}
       </section>
+
+      {/* Just posted rail — below the main grid */}
+      <FreshWorksStrip />
 
       {/* Sticky mobile CTA */}
       <Link
@@ -654,12 +699,13 @@ function GalleryPage() {
         </Button>
       </Link>
     </main>
+
   );
 }
 
 function Grid({ children }: { children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {children}
     </div>
   );

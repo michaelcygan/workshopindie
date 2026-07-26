@@ -45,6 +45,7 @@ export function WorkCard({
   showCounters = true,
   showCategory = true,
   density = "default",
+  aspect = "auto",
   onOpen,
   creditBadge,
 }: {
@@ -56,6 +57,7 @@ export function WorkCard({
   showCounters?: boolean;
   showCategory?: boolean;
   density?: Density;
+  aspect?: "auto" | "16/10";
   onOpen?: (work: WorkCardData) => void;
   creditBadge?: string | null;
 }) {
@@ -71,6 +73,8 @@ export function WorkCard({
   const boostCount = work.boost_count ?? 0;
   const titleClass = density === "hero" ? "font-display text-2xl leading-tight" : "font-display text-lg leading-tight";
   const padClass = density === "hero" ? "p-5" : "p-4";
+  const mediaAspectClass =
+    density === "hero" || aspect === "16/10" ? "aspect-[16/10]" : aspectClassFor(work.cover_aspect);
 
   return (
     <motion.article
@@ -93,7 +97,8 @@ export function WorkCard({
       ) : (
         <Link to="/works/$slug" params={{ slug: work.slug }} className="absolute inset-0 z-10" aria-label={work.title} />
       )}
-      <div className={cn("relative overflow-hidden bg-surface-2", density === "hero" ? "aspect-[16/10]" : aspectClassFor(work.cover_aspect))}>
+      <div className={cn("relative overflow-hidden bg-surface-2", mediaAspectClass)}>
+
         {work.cover_url ? (
           <img
             src={work.cover_url}
