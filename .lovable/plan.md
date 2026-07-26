@@ -1,38 +1,38 @@
-## Goal
-Finish the Lounge audio-only cleanup by consolidating on Stream everywhere. Workshops is no longer an active surface, so we treat any shared code as Lounge-only and delete the WebRTC mesh + legacy Workshop room plumbing.
+## What's left in the Lounge cleanup
 
-## Waves
+Wave 5 (retire Workshops) and the top of Wave 6 (Stream-only provider) are done. The mesh transport is still wired underneath because `ChannelView` and `MediaPanel` read from `useMediaRoom` directly. Until that's rewritten, the mesh files can't be deleted.
 
-### Wave 4 — Migrate ChannelView / MediaPanel to `useLoungeAudio`
-- Replace `useMediaRoom` calls in `src/components/channel-view.tsx` and `src/components/media-panel.tsx` with `useLoungeAudio()` from the provider.
-- Map old fields: `audioJoined` → `connected`, `joinAudio/leaveAudio` → `requestMic/leaveMic`, `toggleMute` unchanged, `peers/speaking/muted` → derived from `participants`.
-- Delete any remaining screen-share, spotlight, peer-video, and PiP-adjacent code paths inside these components (dead since Wave 1–3).
-- Ensure both Lounge routes (`src/routes/lounge.$id.tsx`) already wrap in `<LoungeAudioProvider>` (they do) so the hook is always available.
+### Wave 4 — Migrate ChannelView + MediaPanel to `useLoungeAudio()`
+- `src/components/channel-view.tsx`: replace the `useMediaRoom(roomId, ...)` call with `useLoungeAudio()`. Map:
+  - `media.audioJoined` → `connected`
+  - `media.peers` → `participants.filter(p => !p.isSelf)`
+  - `media.speaking` / `media.muted` → participant flags / `muted`
+  - `media.joinAudio` / `media.leaveAudio` → `requestMic` / `leaveMic`
+  - `media.toggleMute` → `toggleMute`
+  - `media.busy` / `media.error` → `busy` / `error`
+- `src/components/media-panel.tsx`: same swap; already down to audio-only speaker bubbles, so the surface is small.
+- `src/components/workshop-recorder.tsx` and `src/components/workshop-tools-panel.tsx`: strip the last mesh imports (recorder is a leftover surface; if it's still linked, migrate; if orphaned, delete).
 
-### Wave 5 — Retire the Workshop room surface
-- Since Workshops is deprecated, redirect `src/routes/workshops.$slug.tsx`, `workshops.index.tsx`, `workshops.new.tsx`, `workshops.$slug.tools.tsx`, `workshops.$slug.tools.$tool.tsx`, `workshops.$slug.archive.tsx` to `/lounge` (or a goodbye notice).
-- Remove Workshop nav entries, composer shortcuts, and any homepage/profile rails pointing to Workshops.
-- Keep the DB tables for now (data preservation); only the frontend routes are removed.
+### Wave 6 — Delete mesh transport code
+Once no file imports them:
+- `src/hooks/use-media-room.tsx`
+- `src/hooks/use-mesh-lounge-audio.ts`
+- `src/lib/mesh-bitrate.ts`
+- `src/lib/lounge-screen-lease.ts`
+- `src/lib/turn.functions.ts`
+- `src/components/workshop-screen-share-panel.tsx` (already deleted — verify)
+- `src/components/workshop-pip.tsx` (already deleted — verify)
 
-### Wave 6 — Delete mesh/WebRTC transport
-- Delete: `src/hooks/use-media-room.tsx`, `src/hooks/use-mesh-lounge-audio.ts`, `src/lib/mesh-bitrate.ts`, `src/lib/turn.functions.ts`, `src/lib/lounge-screen-lease.ts`, `src/components/workshop-pip.tsx` residues, and `src/components/stream-lounge-provider.tsx`'s `MeshProvider` branch + `LOUNGE_AUDIO_PROVIDER` switch.
-- Simplify `LoungeAudioProvider` to always mount `StreamProvider`; on token failure show an inline error state instead of falling back to mesh.
-- Remove `LOUNGE_AUDIO_PROVIDER` and mesh-only constants from `src/lib/lounge-constants.ts`.
-- Drop `claim/refresh/release_lounge_screen_share` RPC callsites and any `instant_rooms.screen_sharer_user_id` references from the client.
+### Wave 7 — Database + server cleanup
+- Drop the `claim_lounge_screen_share`, `refresh_lounge_screen_share`, `release_lounge_screen_share` RPCs.
+- Drop `instant_rooms.screen_sharer_user_id` and any related columns.
+- Drop the `webrtc_connection_events` table (mesh telemetry) if no dashboard still reads it — confirm before dropping.
+- Remove the TURN credential grant path (`turn_credential_grants` table + `turn.functions.ts` server fn).
 
-### Wave 7 — Terminology + DB cleanup
-- Sweep copy: "Workshop room / mesh / screen share / PiP" → Lounge-audio wording. Skip billing tier "Workshop Plus" naming.
-- Migration: drop unused columns/RPCs (`screen_sharer_user_id`, `screen_sharer_last_seen_at`, `claim/refresh/release_lounge_screen_share`), and any mesh-only presence columns if unused. List each drop for approval before running.
-- Delete retired tool types (`screen_share`, `pip`) from `LegacyStoredToolType` once no stored rows reference them (verify via read_query first).
+### Verification
+- `bunx tsgo --noEmit` shows no new errors on touched files.
+- Manual smoke: join a Lounge, verify audio join/leave, mute, speaker halo, chat, and the Links/Posts tabs still work.
+- `rg "useMediaRoom|mesh-bitrate|screen_sharer_user_id"` returns zero hits.
 
-## Verification per wave
-- `tsgo` after each wave.
-- Playwright smoke on `/lounge/$id`: join → speak → mute → leave, confirming no console errors and Stream track state.
-- Grep for `useMediaRoom`, `mesh`, `screen_share`, `pip` remains after Wave 6 — expect zero hits outside deleted files.
-
-## Confirmation before I start
-Two things worth confirming before Wave 5:
-1. Redirect target for `/workshops/*` — `/lounge` or a plain "retired" page?
-2. OK to delete the Workshop routes outright (vs. keeping read-only archive pages)?
-
-If you're fine with `/workshops/* → /lounge` and hard deletes, I'll proceed straight through Waves 4→7.
+### Scope note
+Wave 4 is the load-bearing step (~24 `media.*` references in `channel-view.tsx` alone). I'd do it as its own turn so you can review the ChannelView diff before I delete the mesh files and run the DB migration.

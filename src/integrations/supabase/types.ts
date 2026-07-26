@@ -3052,7 +3052,6 @@ export type Database = {
           promoted_at: string | null
           prompt: string | null
           screen_share_claimed_at: string | null
-          screen_sharer_user_id: string | null
           screening_work_id: string | null
           slug: string | null
           source_workshop_id: string | null
@@ -3093,7 +3092,6 @@ export type Database = {
           promoted_at?: string | null
           prompt?: string | null
           screen_share_claimed_at?: string | null
-          screen_sharer_user_id?: string | null
           screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
@@ -3134,7 +3132,6 @@ export type Database = {
           promoted_at?: string | null
           prompt?: string | null
           screen_share_claimed_at?: string | null
-          screen_sharer_user_id?: string | null
           screening_work_id?: string | null
           slug?: string | null
           source_workshop_id?: string | null
@@ -4377,33 +4374,6 @@ export type Database = {
         }
         Relationships: []
       }
-      turn_credential_grants: {
-        Row: {
-          env_mode: string
-          granted_at: string
-          id: string
-          room_id: string | null
-          ttl_seconds: number
-          user_id: string
-        }
-        Insert: {
-          env_mode?: string
-          granted_at?: string
-          id?: string
-          room_id?: string | null
-          ttl_seconds: number
-          user_id: string
-        }
-        Update: {
-          env_mode?: string
-          granted_at?: string
-          id?: string
-          room_id?: string | null
-          ttl_seconds?: number
-          user_id?: string
-        }
-        Relationships: []
-      }
       user_blocks: {
         Row: {
           blocked_user_id: string
@@ -4442,117 +4412,6 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
-      webrtc_connection_events: {
-        Row: {
-          avg_inbound_kbps_audio: number | null
-          avg_inbound_kbps_video: number | null
-          avg_outbound_kbps_audio: number | null
-          avg_outbound_kbps_video: number | null
-          avg_rtt_ms: number | null
-          browser_family: string | null
-          bytes_received: number | null
-          bytes_sent: number | null
-          connect_ms: number | null
-          created_at: string
-          device_class: string | null
-          env_mode: string
-          frames_dropped: number | null
-          health_state_terminal: string | null
-          ice_restarts: number
-          id: string
-          jitter_ms_in: number | null
-          local_candidate_type: string | null
-          outbound_fps: number | null
-          outbound_height: number | null
-          outbound_width: number | null
-          packet_loss_pct_in: number | null
-          packet_loss_pct_out: number | null
-          participant_count: number | null
-          path: string
-          quality_limitation_reason: string | null
-          reconnect_count: number
-          relay_ended_at: string | null
-          remote_candidate_type: string | null
-          room_id: string | null
-          snapshot_count: number
-          turn_attempted: boolean
-          turn_succeeded: boolean
-          user_id: string
-        }
-        Insert: {
-          avg_inbound_kbps_audio?: number | null
-          avg_inbound_kbps_video?: number | null
-          avg_outbound_kbps_audio?: number | null
-          avg_outbound_kbps_video?: number | null
-          avg_rtt_ms?: number | null
-          browser_family?: string | null
-          bytes_received?: number | null
-          bytes_sent?: number | null
-          connect_ms?: number | null
-          created_at?: string
-          device_class?: string | null
-          env_mode?: string
-          frames_dropped?: number | null
-          health_state_terminal?: string | null
-          ice_restarts?: number
-          id?: string
-          jitter_ms_in?: number | null
-          local_candidate_type?: string | null
-          outbound_fps?: number | null
-          outbound_height?: number | null
-          outbound_width?: number | null
-          packet_loss_pct_in?: number | null
-          packet_loss_pct_out?: number | null
-          participant_count?: number | null
-          path: string
-          quality_limitation_reason?: string | null
-          reconnect_count?: number
-          relay_ended_at?: string | null
-          remote_candidate_type?: string | null
-          room_id?: string | null
-          snapshot_count?: number
-          turn_attempted?: boolean
-          turn_succeeded?: boolean
-          user_id: string
-        }
-        Update: {
-          avg_inbound_kbps_audio?: number | null
-          avg_inbound_kbps_video?: number | null
-          avg_outbound_kbps_audio?: number | null
-          avg_outbound_kbps_video?: number | null
-          avg_rtt_ms?: number | null
-          browser_family?: string | null
-          bytes_received?: number | null
-          bytes_sent?: number | null
-          connect_ms?: number | null
-          created_at?: string
-          device_class?: string | null
-          env_mode?: string
-          frames_dropped?: number | null
-          health_state_terminal?: string | null
-          ice_restarts?: number
-          id?: string
-          jitter_ms_in?: number | null
-          local_candidate_type?: string | null
-          outbound_fps?: number | null
-          outbound_height?: number | null
-          outbound_width?: number | null
-          packet_loss_pct_in?: number | null
-          packet_loss_pct_out?: number | null
-          participant_count?: number | null
-          path?: string
-          quality_limitation_reason?: string | null
-          reconnect_count?: number
-          relay_ended_at?: string | null
-          remote_candidate_type?: string | null
-          room_id?: string | null
-          snapshot_count?: number
-          turn_attempted?: boolean
-          turn_succeeded?: boolean
           user_id?: string
         }
         Relationships: []
