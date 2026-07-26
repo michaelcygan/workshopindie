@@ -11,7 +11,7 @@ import { MobileNav } from "@/components/mobile-nav";
 import { PaymentTestModeBanner } from "@/components/payment-test-mode-banner";
 import { WelcomeTour } from "@/components/welcome-tour";
 import { FirstRunHint } from "@/components/first-run-hint";
-import { WorkshopLiveToast } from "@/components/workshop-live-toast";
+
 import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { AgeGate } from "@/components/age-gate";
@@ -150,7 +150,7 @@ function RootComponent() {
           <MobileNav />
           <WelcomeTour />
           <FirstRunHint />
-          <WorkshopLiveToast />
+          
           <RefCapture />
           <PendingRsvpFlush />
           <PresenceHeartbeat />
