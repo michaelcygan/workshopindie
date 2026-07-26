@@ -441,6 +441,11 @@ function MemberBlogEditorPage() {
           setEntityPickerOpen(false);
         }}
       />
+      <PlusGate
+        open={blogGateOpen}
+        onOpenChange={setBlogGateOpen}
+        reason="blog_limit"
+      />
     </main>
   );
 }
