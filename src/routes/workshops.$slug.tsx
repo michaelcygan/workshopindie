@@ -60,6 +60,7 @@ export const Route = createFileRoute("/workshops/$slug")({
     const url = `https://workshopindie.com/workshops/${params.slug}`;
     const title = w?.title ? `${w.title} — Workshop` : "Workshop";
     const description = w?.prompt?.slice(0, 160) ?? `A ${w?.category ?? "creative"} Workshop on Workshop.`;
+    const ogImage = `https://workshopindie.com/api/public/og?type=workshop&id=${params.slug}`;
     return {
       meta: [
         { title },
@@ -68,9 +69,11 @@ export const Route = createFileRoute("/workshops/$slug")({
         { property: "og:description", content: description },
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
-        { name: "twitter:card", content: "summary" },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:card", content: "summary_large_image" },
         { name: "twitter:title", content: title },
         { name: "twitter:description", content: description },
+        { name: "twitter:image", content: ogImage },
       ],
       links: [{ rel: "canonical", href: url }],
     };

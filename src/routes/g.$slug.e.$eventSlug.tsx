@@ -57,17 +57,26 @@ export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
       <Link to="/groups" className="mt-4 inline-block text-sm text-primary underline">Browse groups</Link>
     </main>
   ),
-  head: ({ loaderData }) => {
+  head: ({ loaderData, params }) => {
     if (!loaderData) return { meta: [] };
-    const ev = loaderData as { title: string; tagline: string | null; cover_url: string | null };
+    const ev = loaderData as { title: string; tagline: string | null; group: { slug: string } };
+    const url = `https://workshopindie.com/g/${params.slug}/e/${params.eventSlug}`;
+    const ogImage = `https://workshopindie.com/api/public/og?type=event&id=${params.eventSlug}`;
     return {
       meta: [
         { title: `${ev.title} — Workshop` },
         { name: "description", content: ev.tagline ?? "An event on Workshop." },
         { property: "og:title", content: ev.title },
         { property: "og:description", content: ev.tagline ?? "RSVP on Workshop." },
-        ...(ev.cover_url ? [{ property: "og:image", content: ev.cover_url }] : []),
+        { property: "og:url", content: url },
+        { property: "og:type", content: "article" },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: ev.title },
+        { name: "twitter:description", content: ev.tagline ?? "RSVP on Workshop." },
+        { name: "twitter:image", content: ogImage },
       ],
+      links: [{ rel: "canonical", href: url }],
     };
   },
 });

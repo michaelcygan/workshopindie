@@ -1311,6 +1311,62 @@ export type Database = {
           },
         ]
       }
+      event_guest_rsvps: {
+        Row: {
+          claim_token: string | null
+          claim_token_expires_at: string | null
+          created_at: string
+          email: string
+          event_id: string
+          id: string
+          ip_hash: string | null
+          matched_at: string | null
+          matched_user_id: string | null
+          name: string
+          note: string | null
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          claim_token?: string | null
+          claim_token_expires_at?: string | null
+          created_at?: string
+          email: string
+          event_id: string
+          id?: string
+          ip_hash?: string | null
+          matched_at?: string | null
+          matched_user_id?: string | null
+          name: string
+          note?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          claim_token?: string | null
+          claim_token_expires_at?: string | null
+          created_at?: string
+          email?: string
+          event_id?: string
+          id?: string
+          ip_hash?: string | null
+          matched_at?: string | null
+          matched_user_id?: string | null
+          name?: string
+          note?: string | null
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_guest_rsvps_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "group_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_lineup_signups: {
         Row: {
           created_at: string

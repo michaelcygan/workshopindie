@@ -69,6 +69,7 @@ export const Route = createFileRoute("/works/$slug")({
     const url = `https://workshopindie.com/works/${params.slug}`;
     const title = w?.title ? `${w.title} — Workshop` : "Work — Workshop";
     const description = w?.excerpt ?? w?.description?.slice(0, 160) ?? "A creative work on Workshop.";
+    const ogImage = `https://workshopindie.com/api/public/og?type=work&id=${params.slug}`;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -76,14 +77,13 @@ export const Route = createFileRoute("/works/$slug")({
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
-      { name: "twitter:card", content: w?.cover_url ? "summary_large_image" : "summary" },
+      { property: "og:image", content: ogImage },
+      { property: "og:image:alt", content: w?.title ?? title },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
+      { name: "twitter:image", content: ogImage },
     ];
-    if (w?.cover_url) {
-      meta.push({ property: "og:image", content: w.cover_url });
-      meta.push({ name: "twitter:image", content: w.cover_url });
-    }
     const jsonLd: Record<string, unknown> = {
       "@context": "https://schema.org",
       "@type": "CreativeWork",

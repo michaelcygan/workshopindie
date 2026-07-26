@@ -74,10 +74,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "Workshop — Find people. Make things. Create a Portfolio." },
       { property: "og:description", content: "Drop into live collaboration workshops or schedule your own. Post collaboration requests, develop a creative community, and make real art." },
       { property: "og:type", content: "website" },
+      { property: "og:image", content: "https://workshopindie.com/api/public/og?type=default&id=home" },
+      { property: "og:site_name", content: "Workshop" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Workshop — Find people. Make things. Create a Portfolio." },
       { name: "twitter:description", content: "Drop into live collaboration workshops or schedule your own. Post collaboration requests, develop a creative community, and make real art." },
-      { property: "og:site_name", content: "Workshop" },
+      { name: "twitter:image", content: "https://workshopindie.com/api/public/og?type=default&id=home" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
