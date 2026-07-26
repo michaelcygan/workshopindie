@@ -200,6 +200,8 @@ function MemberBlogEditorPage() {
   const isPublished = post.post.status === "published";
   const slugLocked = !!post.post.published_at;
   const readOnly = !access.canEditExisting;
+  const publishBlockedByQuota = !access.canPublish && (access.mode === "free" || access.mode === "lapsed");
+  const nearBlogLimit = access.monthlyPublicationLimit != null && access.publicationsThisMonth === access.monthlyPublicationLimit - 1;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
