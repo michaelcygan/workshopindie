@@ -30,8 +30,14 @@ export function ApplicantsPanel({ postId }: Props) {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const accept = useMutation({
-    mutationFn: (vars: { applicantUserId: string }) =>
-      acceptFn({ data: { collabPostId: postId, applicantUserId: vars.applicantUserId } }),
+    mutationFn: (vars: { applicantUserId: string; contactEventId: string | null }) =>
+      acceptFn({
+        data: {
+          collabPostId: postId,
+          applicantUserId: vars.applicantUserId,
+          contactEventId: vars.contactEventId,
+        },
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
       qc.invalidateQueries({ queryKey: ["collab-members", postId] });
