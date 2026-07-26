@@ -220,7 +220,7 @@ export function MediaPanel({
           <span>Here now · {totalHere}</span>
           {waitingCount > 0 && (
             <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-primary">
-              {waitingCount} waiting for mic
+              {waitingCount === 1 ? "1 waiting for mic" : `${waitingCount} waiting for mic`}
             </span>
           )}
         </h4>
