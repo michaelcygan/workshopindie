@@ -49,7 +49,7 @@ function EditCollab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status,slug,city:cities!collab_posts_city_id_fkey(id,name,region,country,slug)")
+        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,accepts_suggestions,status,slug,city:cities!collab_posts_city_id_fkey(id,name,region,country,slug)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -58,7 +58,8 @@ function EditCollab() {
         timeline_text: string | null; timeline_mode: string | null;
         starts_on: string | null; ends_on: string | null;
         location_mode: string; city_id: string | null;
-        compensation_type: string; rights_arrangement: string; status: string; slug: string;
+        compensation_type: string; rights_arrangement: string; accepts_suggestions: boolean;
+        status: string; slug: string;
         city: { id: string; name: string; region: string | null; country: string | null; slug: string } | null;
       } | null;
     },
