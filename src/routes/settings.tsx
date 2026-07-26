@@ -25,6 +25,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { createPortalSession } from "@/lib/payments.functions";
+import { getUsageSummary } from "@/lib/entitlements.functions";
+import { freePlanBullets } from "@/lib/entitlement-copy";
 import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
 import { getMyPrivacy, updateMyPrivacy, deleteMyAccount, exportMyData } from "@/lib/account.functions";
 import { getMyCcConsent, setMyCcConsent } from "@/lib/cc-consent.functions";
