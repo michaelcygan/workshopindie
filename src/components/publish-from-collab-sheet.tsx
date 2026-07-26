@@ -40,6 +40,8 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
   const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
   const [extras, setExtras] = useState<{ name: string }[]>([]);
   const [newExtra, setNewExtra] = useState("");
+  const [plusGate, setPlusGate] = useState(false);
+
 
   const { data: applicants } = useQuery({
     queryKey: ["collab-applicants", postId],
