@@ -9,11 +9,14 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const roomInput = z.object({ roomId: z.string().uuid() });
 
 async function assertPresenceOrThrow(userId: string, roomId: string) {
+  // Load supabaseAdmin inside the handler path — route/functions modules ship
+  // to the client bundle at module scope and would otherwise leak server-only
+  // code into the browser graph.
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data: room } = await supabaseAdmin
     .from("instant_rooms")
     .select("id, status")
@@ -32,6 +35,7 @@ async function assertPresenceOrThrow(userId: string, roomId: string) {
   if (!presence) throw new Error("You are not in this Lounge");
   return presence as { user_id: string; audio_state: string };
 }
+
 
 /**
  * Mint a short-lived Stream user token for the current user + room. Also
