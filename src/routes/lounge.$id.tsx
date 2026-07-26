@@ -27,6 +27,8 @@ import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
 import { CollabComposer } from "@/routes/collab.new";
+import { LoungeAudioProvider } from "@/components/stream-lounge-provider";
+import { normalizeLoungeMode } from "@/lib/lounge-constants";
 
 
 
@@ -321,7 +323,7 @@ function LiveRoomPage() {
   if (roomMissing) return <LoungeNotFound />;
 
   return (
-
+    <LoungeAudioProvider roomId={id} participation={normalizeLoungeMode(entryMode)}>
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
       <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
@@ -557,6 +559,8 @@ function LiveRoomPage() {
         </DialogContent>
       </Dialog>
     </main>
+    </LoungeAudioProvider>
   );
 }
+
 
