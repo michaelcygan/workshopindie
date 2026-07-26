@@ -6763,6 +6763,10 @@ export type Database = {
         Returns: string
       }
       blocked_user_ids: { Args: { _viewer: string }; Returns: string[] }
+      blog_member_publications_this_month: {
+        Args: { _user_id: string }
+        Returns: number
+      }
       blog_writer_access_state: { Args: { _user_id: string }; Returns: string }
       bump_work_view: {
         Args: { _key: string; _work_id: string }
@@ -7033,6 +7037,10 @@ export type Database = {
           save_count: number
           saved: boolean
         }[]
+      }
+      try_consume_blog_publication: {
+        Args: { _limit: number; _post_id: string; _user_id: string }
+        Returns: boolean
       }
       user_age: { Args: { _user_id: string }; Returns: number }
       user_attended_event: {

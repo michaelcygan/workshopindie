@@ -88,7 +88,7 @@ function MemberBlogEditorPage() {
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
 
-  const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string } } | undefined);
+  const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
 
   useEffect(() => {
     if (!post || loadedForId === post.post.id) return;
@@ -250,6 +250,16 @@ function MemberBlogEditorPage() {
         </div>
       </div>
 
+      {access.monthlyPublicationLimit != null && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-ink-soft">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
+            Published <span className="font-medium text-ink">{access.publicationsThisMonth}</span> of {access.monthlyPublicationLimit} this month
+          </span>
+          {!access.canPublish && (access.mode === "free" || access.mode === "lapsed") && (
+            <Link to="/pricing" className="text-primary hover:underline">Go Plus for unlimited</Link>
+          )}
+        </div>
+      )}
       {!access.canPublish && access.reason && (
         <div className="mt-4 rounded-2xl border border-border bg-surface p-3 text-xs text-ink-soft">
           {access.reason}

@@ -130,6 +130,11 @@ function MyBlogPage() {
           <p className="mt-1 text-sm text-ink-muted">
             Notes, essays, and process from your Workshop practice.
           </p>
+          {acc && acc.monthlyPublicationLimit != null && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs text-ink-soft">
+              Published <span className="font-medium text-ink">{acc.publicationsThisMonth}</span> of {acc.monthlyPublicationLimit} this month
+            </p>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-full">
@@ -147,16 +152,16 @@ function MyBlogPage() {
         </div>
       </div>
 
-      {acc && !acc.canCreateDraft && acc.reason && (
+      {acc && !acc.canPublish && acc.reason && (
         <div className="mt-6 rounded-2xl border border-border bg-surface p-4 text-sm text-ink-soft">
           <p>{acc.reason}</p>
-          {acc.mode === "free" || acc.mode === "lapsed" ? (
+          {(acc.mode === "free" || acc.mode === "lapsed") && (
             <div className="mt-3">
               <Button asChild size="sm" className="rounded-full">
-                <Link to="/pricing">See Plus</Link>
+                <Link to="/pricing">Go Plus for unlimited publishing</Link>
               </Button>
             </div>
-          ) : null}
+          )}
         </div>
       )}
 

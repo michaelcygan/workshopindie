@@ -1,103 +1,68 @@
-# Workshop Free/Plus Entitlements Overhaul
+## Wave 2 — Free Blog: 2 publications per UTC month
 
-Consolidate entitlement rules, replace the daily Lounge cap with a monthly one, add a 2/month Free Blog publication quota, and clean up all stale premium copy. Ship in 6 sequential waves; stabilize (typecheck + smoke) before advancing.
+Today, Free users can only draft; publishing is gated to Plus/granted (`src/lib/blog-access.server.ts`, `publishMyBlogPostServer`). Spec says Free should be able to **publish up to 2 posts per UTC calendar month**. Plus, admin-granted, and Stripe-trialing accounts stay unlimited. Lapsed accounts drop back to the Free quota (they can still manage/unpublish existing posts). Suspended stays blocked.
 
-## Wave 1 — Central entitlements + copy cleanup
+### 1. Database (migration)
 
-**New:** `src/lib/entitlements.ts` — client/server-safe constants + `WorkshopEntitlements` type + `resolveEntitlements(subscription)` pure fn.
+- Add a `STABLE SECURITY DEFINER` SQL function `public.blog_member_publications_this_month(_user_id uuid) RETURNS int`, counting rows in `public.blog_posts` where `publication_type='member'`, `status='published'`, `created_by=_user_id`, and `date_trunc('month', published_at AT TIME ZONE 'utc') = date_trunc('month', (now() AT TIME ZONE 'utc'))`.
+- Add `public.try_consume_blog_publication(_user_id uuid, _post_id uuid, _limit int) RETURNS boolean` — takes a per-user `pg_advisory_xact_lock`, re-checks the monthly count, and flips the given post to `status='published'`, `published_at=now()`, `updated_by=_user_id`, and returns true; returns false if the user is at cap. Runs `SECURITY DEFINER`, `search_path=public`. This closes the race between two concurrent publishes at 1/2.
+- No new tables, no new grants (functions inherit `EXECUTE` for authenticated via existing project pattern; add explicit `GRANT EXECUTE … TO authenticated, service_role` in the same migration to be safe).
 
+### 2. `src/lib/blog-access.server.ts`
+
+Extend `BlogAccess`:
+```ts
+publicationsThisMonth: number;
+monthlyPublicationLimit: number | null; // null = unlimited
 ```
-FREE_PUBLISHED_WORK_CAP = 10
-FREE_OPEN_COLLAB_CAP = 2
-FREE_LOUNGE_MINUTES_PER_MONTH = 600
-FREE_BLOG_PUBLICATIONS_PER_MONTH = 2
-```
+Behavior per mode:
+- `plus`, `granted` → unlimited, `canPublish: true`.
+- `trial` → **unchanged** (still no public publish; trial = "Plus-in-progress" but current product keeps trial pre-publish gated — see open question below).
+- `free`, `lapsed` → `canCreateDraft: true`, `canPublish: publicationsThisMonth < 2`, `activeDraftLimit: null`, `monthlyPublicationLimit: 2`. Reason strings say `"You've published 2 of 2 posts for <Month YYYY>. New publishing opens on <first of next month, UTC>."` when at cap.
+- `suspended` → unchanged.
 
-- Unlimited = `null` (never sentinel numbers).
-- Free applies to: no sub, canceled, expired, lapsed, past_due beyond grace.
-- Plus applies to: `active` or `trialing` with future `current_period_end`.
+Source the `2` from `FREE_BLOG_PUBLICATIONS_PER_MONTH` in `src/lib/entitlements.ts`.
 
-**Deprecate:**
-- `FREE_LOUNGE_MINUTES_PER_DAY`, `useLoungeMinutesToday`, `lounge_minutes_today` RPC callers (keep RPC one release, unused).
-- Home-city gating, "all cities" Plus benefit, priority seats, boosted placement, Plus profile badge, Credits strip, work analytics, premium Lounge hosting, saved setups, "Galleryhop Plus", "1 blog draft", "30 min / day".
+### 3. `src/lib/blog-member.server.ts`
 
-**Sweep** (rg): `use-plus.tsx`, `pricing.tsx`, `settings.tsx`, `me.blog.*`, `plus-gate*`, `blog-access.server.ts`, blog editor, Lounge entry, metadata `head()`.
+- `publishMyBlogPostServer`: after ownership + `resolveBlogAccess`, keep all validation (title/body/alt-text/entity visibility/moderation) and slug finalization. Replace the direct `update({ status: 'published' })` with an RPC call to `try_consume_blog_publication`. On `false`, throw the same "at cap for this month" message. Plus/granted skip the RPC and use the existing update path.
+- `unpublishMyBlogPostServer` — unchanged. Unpublishing does not restore quota; the count is based on `published_at` timestamp of currently-published posts, so an unpublished post is not counted.
 
-**Keep untouched:** Founding / Verified / City Host / Admin badges, moderation, Stripe pipeline.
+### 4. Server-fn surface
 
-**Exit:** typecheck green; no visual redesign; no behavior change to quota yet (still enforces old caps).
+`getMyBlogAccessServer` already returns the access object; the new fields flow through automatically to `useMyBlogAccess` on the client. No new endpoint.
 
----
+### 5. UI
 
-## Wave 2 — Free Blog: 2 publications / UTC month
+- `src/routes/me.blog.index.tsx` — add a quota chip in the header when `monthlyPublicationLimit != null`: `"Published X of 2 this month · resets Aug 1"`. If `!canCreateDraft` reason exists, show it as a subtle notice.
+- `src/routes/me.blog.$id.tsx` (editor) — the publish button already uses `access.canPublish` and `access.reason`. Add the quota chip next to it, and adjust the disabled tooltip to the new copy.
+- `src/components/plus-gate.tsx` — no change (Wave 4 handles blog-specific gate copy).
 
-**Migration:**
-- Add `blog_posts.first_published_at timestamptz` (nullable); backfill = `min(published_at)` where currently published. Trigger: set once when a post transitions `is_published false → true` and `first_published_at is null`. Never overwritten.
-- RPC `publish_blog_post(_post_id uuid) returns json` — `SECURITY DEFINER`, `search_path=public`. Takes an advisory lock on `hashtext('blog_publish:' || auth.uid())`, counts `first_published_at` in `[date_trunc('month', now() at tz 'UTC'), +1 month)` for that author, enforces limit unless writer-access mode ∈ {plus, granted}, flips `is_published` and sets `first_published_at` atomically. Returns `{ok, published_this_month, remaining, period_start, period_end}` or `{error:'quota_exhausted', ...}`.
-- GRANT EXECUTE to authenticated.
+### 6. Verification
 
-**Server:** `resolveBlogAccess` extended to include `monthlyPublishLimit`, `publishedThisMonth`, `remainingPublications`, `periodStart`, `periodEnd`. `plus`/`granted` → limit `null`. `free`/`trial` → limit 2. `lapsed`/`suspended` unchanged. `blog.functions.ts` publish path calls the RPC and maps structured errors.
+- `tsgo` clean.
+- `psql` sanity: `SELECT public.blog_member_publications_this_month('<uid>');` returns 0 for a fresh account.
+- Manual: as a Free user, publish 2 drafts → third publish throws the "at cap" message; unpublish one → third still blocked (count is by `published_at`, which remains for the two currently-live posts); wait for next UTC month → publishing opens again.
 
-**Client:** Blog dashboard shows `1 of 2 free Blog publications used this month` / at-limit copy. Publish button routes to `<PlusGate reason="blog_limit">` only when a first-time publish would exceed. Drafts / edits / unpublish / republish never blocked. Delete never restores slot (no state change).
+### Files expected to change
 
-**Tests** (vitest, RPC via seeded fixtures): first pub, second pub, third rejected, edit no-consume, republish no-consume, delete no-restore, plus unlimited, lapsed = free, suspended blocked, concurrent (two parallel calls → one 200 one quota_exhausted).
+- **New migration** (adds `blog_member_publications_this_month`, `try_consume_blog_publication`, grants EXECUTE).
+- `src/lib/blog-access.server.ts` — extend `BlogAccess`, allow Free/lapsed to publish under quota.
+- `src/lib/blog-member.server.ts` — swap publish update for the RPC call.
+- `src/routes/me.blog.index.tsx` — quota chip.
+- `src/routes/me.blog.$id.tsx` — quota chip + updated tooltip copy.
 
----
+### Open question (one)
 
-## Wave 3 — Lounge: 600 min / UTC month, server-authoritative
+Trial (`status='trialing'` Plus subscription): today they can draft but not publish. Spec removes the "publishing needs Plus" wall. Two reasonable readings:
 
-**Migration:**
-- `lounge_audio_sessions(id, user_id, room_id, provider, started_at, ended_at, status, created_at)`.
-- `lounge_audio_usage_minutes(user_id, session_id, room_id, minute_bucket timestamptz, provider, created_at, unique(session_id, minute_bucket))`.
-- RLS: user reads own rows; only service role writes. Grants per project convention.
-- RPC `lounge_audio_start(_room_id, _provider) returns json` — resolves entitlement, counts distinct `minute_bucket` for user in current UTC month, rejects if free ≥ 600, else inserts session + first minute, returns `{session_id, minutes_used, minutes_remaining}` or `{error:'quota_exhausted'}`.
-- RPC `lounge_audio_heartbeat(_session_id) returns json` — validates session belongs to caller and is open, upserts current `date_trunc('minute', now())` bucket (idempotent via unique constraint), re-checks free cap and returns `{minutes_used, minutes_remaining, must_disconnect}`.
-- RPC `lounge_audio_end(_session_id)` — sets `ended_at`, `status='ended'`.
-- `sweep_stale_lounge_audio_sessions()` cron 1/min: close sessions with no heartbeat > 3 min.
+- **A.** Trial = Plus (unlimited publishing during the 14-day trial). Simple, matches Stripe's usual "trial is full access".
+- **B.** Trial = Free quota (2/month) until first payment.
 
-**Server fns:** `src/lib/lounge-audio-usage.functions.ts` wraps the three RPCs with `requireSupabaseAuth` (derives `user_id` from context — never trust client). Stream token issuance (`stream-video.functions.ts`) calls `lounge_audio_start` first; if quota_exhausted, refuses token. Mesh path adapter (`use-mesh-lounge-audio.ts`) uses the same start gate — no unmetered fallback.
+I'll go with **A** unless you say otherwise — it matches every other Plus-during-trial capability in the app.
 
-**Client:** New hook `useLoungeUsageThisMonth()` returning the shape in the spec, backed by `supabase.from('lounge_audio_usage_minutes').select('minute_bucket', {count:'exact', head:true}).eq('user_id',me).gte(...)` + `usePlus`. Provider adapters (`use-stream-lounge-audio.ts`, `use-mesh-lounge-audio.ts`) heartbeat every 30s while `joined`; on `must_disconnect` or 401 quota: disconnect audio only, keep chat, show sheet, do not sign out. On successful `openCheckout` → Plus webhook, `queryClient.invalidateQueries({queryKey:['subscription']})` and `['lounge-usage']`; provider allows immediate rejoin.
+### Not in this wave
 
-**UI copy:** low-profile indicator on Lounge entry + Settings Plus section, warnings at 80% / 10 min / 0 min per spec.
-
-**Tests:** connection below cap, listener + speaker both count, chat-only doesn't count, duplicate heartbeat unique-constraint dedup, reconnect same room preserves total, block at 600, chat still usable, Plus unlimited, upgrade unlocks in-session, month rollover.
-
----
-
-## Wave 4 — Pricing page, PlusGate variants, Settings
-
-- Rewrite `src/routes/pricing.tsx` copy per spec (no visual redesign). Keep `plus_monthly` and embedded checkout.
-- `src/components/plus-gate.tsx`: add `reason: PlusGateReason` prop; render the four titled messages + shared footer. Update every call site (work create, collab create, blog publish, lounge limit sheet) to pass a reason.
-- `src/routes/settings.tsx`: fix any "Galleryhop" wording, render Free vs Plus states per spec, embed Lounge + Blog usage rows for Free members via the new hooks.
-- Remove Plus badge rendering on public profile (`u.$username.tsx`) if present (keep creator-status badges).
-- Update `head()` metadata on `/pricing`, `/`, blog, settings that mentions old benefits.
-
----
-
-## Wave 5 — Payment hardening
-
-- `src/lib/payments.functions.ts`: `const ALLOWED_PRICE_LOOKUP_KEYS = ['plus_monthly'] as const;` — validator rejects anything else.
-- Audit webhook (`api/public/payments/webhook.ts`): confirm idempotency (already `upsert onConflict stripe_subscription_id`), env-scoped writes, `active`/`trialing`/`canceled` → mapped to tier per Wave 1 resolver. No new products.
-- Confirm `usePlus` never returns true from cache before subscription row confirms; add `staleTime: 0` on invalidation after checkout return.
-
----
-
-## Wave 6 — Repo-wide audit + release checks
-
-- `rg` sweep for the exact terms listed in the spec; each match either updated or annotated as intentional.
-- Manual walkthrough checklist across the surfaces listed.
-- Full typecheck; run vitest suites added in W2 + W3; Playwright smoke: publish 3rd free blog blocked, join Lounge at cap blocked, upgrade → rejoin works.
-
-## Technical notes
-
-- All UTC month boundaries: `date_trunc('month', now() at time zone 'UTC')`.
-- Concurrency in W2 uses `pg_advisory_xact_lock(hashtext('blog_publish:'||auth.uid()))` inside the RPC transaction.
-- Heartbeat idempotency uses the `(session_id, minute_bucket)` unique constraint + `on conflict do nothing`.
-- Never delete stripe/webhook code or the mesh adapter — mesh must respect the same quota, not be removed.
-- Every migration ships with GRANTs immediately after CREATE TABLE per project rule.
-- No new subscription product, no annual tier, no changes to trial length.
-
-## Report after each wave
-
-Files changed · migrations added · entitlement/quota logic introduced · tests run · remaining inconsistencies · deferred decisions.
+- Lounge monthly hours enforcement — Wave 3.
+- `plus-gate.tsx` `reason` variants — Wave 4.
+- The `work_applications` RLS security finding — will patch in a separate small change before the final wave.
