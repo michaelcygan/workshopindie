@@ -50,7 +50,7 @@ export const reserveLoungeMinute = createServerFn({ method: "POST" })
       "try_reserve_lounge_minute",
       {
         _user_id: context.userId,
-        _room_id: data.roomId ?? null,
+        _room_id: (data.roomId ?? null) as string,
         _limit: access.monthlyLimit,
       },
     );
