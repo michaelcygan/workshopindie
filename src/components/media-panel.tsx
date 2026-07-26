@@ -249,6 +249,7 @@ export function MediaPanel({
             avatarUrl={meAvatar}
             username={null}
             isMe
+            canModerate={canModerate}
             onOpenWork={onOpenWork}
             roomId={roomId}
           />
@@ -264,6 +265,7 @@ export function MediaPanel({
                     displayName={o.profile?.display_name || o.profile?.username || "Anon"}
                     avatarUrl={o.profile?.avatar_url ?? null}
                     username={o.profile?.username ?? null}
+                    canModerate={canModerate}
                     onOpenWork={onOpenWork}
                     roomId={roomId}
                   />
