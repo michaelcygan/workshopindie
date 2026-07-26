@@ -684,16 +684,6 @@ export function ChannelView({
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
-  const pip = useWorkshopPip({ media, meDisplay, profileLookup });
-  // Allow the Pop-out tool (and anywhere else) to trigger PiP via a global event.
-  useEffect(() => {
-    function onOpen(e: Event) {
-      const detail = (e as CustomEvent<{ source?: "me" | "speaker" | "tool" | "director" }>).detail;
-      pip.open({ initialSource: detail?.source });
-    }
-    window.addEventListener("workshop:pip-open", onOpen);
-    return () => window.removeEventListener("workshop:pip-open", onOpen);
-  }, [pip]);
   const others = useMemo(
     () => presence.filter((p) => p.user_id !== user?.id),
     [presence, user?.id],
