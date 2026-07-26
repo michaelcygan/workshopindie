@@ -7,7 +7,7 @@
  */
 import { StreamClient } from "@stream-io/node-sdk";
 
-const DEFAULT_CALL_TYPE = "workshop_lounge";
+const DEFAULT_CALL_TYPE = "audio_room";
 /** Stream user tokens: 60 minutes. */
 const TOKEN_TTL_SECONDS = 60 * 60;
 
@@ -41,7 +41,7 @@ export type StreamLoungeIssueResult = {
 };
 
 /**
- * Upsert the Stream user record, ensure the workshop_lounge call exists, and
+ * Upsert the Stream user record, ensure the audio_room call exists, and
  * mint a short-lived token. Called by `getLoungeStreamToken`.
  */
 export async function issueLoungeStreamToken(opts: {
