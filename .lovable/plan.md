@@ -1,7 +1,5 @@
-No code changes.
+Fix the sample-Lounge tiles on the home "Drop into the Lounge" rail to show the real cap (20), not the hardcoded "5 seats".
 
-Verified in-repo:
-- Wave 3 (Composer Menu): `src/components/mobile-island/mobile-composer-menu.tsx` implements the three actions, staggered spring animation, backdrop dismissal, and Escape-to-close.
-- Wave 4 (Visibility & Intelligence): `use-mobile-island-visibility.ts`, `use-keyboard-open.ts` (visualViewport-based), `haptics.ts`, and `use-reduced-motion.ts` are all present and wired into the island.
+Change: in `src/components/home-live-workshops-rail.tsx` around line 216, replace the hardcoded `5 seats` with `{LOUNGE_CAP} seats` imported from `@/lib/lounge-constants`. Singular/plural handling isn't needed (cap is 20).
 
-Leaving the mobile island as-is per your confirmation.
+No other files change.
