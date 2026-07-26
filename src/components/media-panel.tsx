@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
-import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
+import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP } from "@/lib/lounge-constants";
 import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
 import { useLoungeAudioAccess } from "@/hooks/use-lounge-audio-access";
 import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
