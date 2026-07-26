@@ -44,11 +44,11 @@ type Preset = {
 // can always resolve a label/icon for an existing row. Only the v1 set appears
 // in the picker (TOOL_ORDER); everything else is legacy-render-only.
 const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
-  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
-  pip:          { label: "Pop-out",      icon: PictureInPicture2, blurb: "Float the room in a Picture-in-Picture window so you can keep working in other tabs.", fields: [] },
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
   // Legacy — no longer offered in the picker.
+  screen_share: { label: "Screen Share (retired)", icon: FolderOpen, blurb: "Screen sharing was retired — the Lounge is chat + audio only.", fields: [] },
+  pip:          { label: "Pop-out (retired)",      icon: FolderOpen, blurb: "Picture-in-Picture was retired — the Lounge is chat + audio only.", fields: [] },
   recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard.", fields: [] },
@@ -61,9 +61,8 @@ const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
 };
 
 // v1 picker: only these tools appear when adding a new tool.
-const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
-const TOOL_OBJECTS: ToolType[] = ["drive", "player"];
-const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
+const TOOL_ORDER: ToolType[] = ["drive", "player"];
+
 
 /** Exported for the Stage tab bar's Tools dropdown. */
 export const STAGE_TOOL_OPTIONS = TOOL_ORDER.map((type) => ({
