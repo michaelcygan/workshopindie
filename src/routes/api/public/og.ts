@@ -152,7 +152,7 @@ export const Route = createFileRoute("/api/public/og")({
             case "blog": {
               const { data: b } = await sb
                 .from("blog_posts")
-                .select("title,excerpt,status,cover_url")
+                .select("title,excerpt,status,cover_image_url")
                 .eq("slug", id)
                 .eq("status", "published")
                 .maybeSingle();
@@ -161,7 +161,7 @@ export const Route = createFileRoute("/api/public/og")({
                   type: "blog",
                   title: b.title,
                   subtitle: b.excerpt,
-                  image: b.cover_url,
+                  image: b.cover_image_url,
                   detail: "Read on Workshop",
                 };
               }
