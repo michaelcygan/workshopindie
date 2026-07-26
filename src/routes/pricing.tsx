@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
 import { Button } from "@/components/ui/button";
 import { StripeEmbeddedCheckout } from "@/components/stripe-embedded-checkout";
+import { freePlanBullets, plusPlanBullets } from "@/lib/entitlement-copy";
 
 export const Route = createFileRoute("/pricing")({
   component: PricingPage,
