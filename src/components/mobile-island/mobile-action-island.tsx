@@ -67,7 +67,7 @@ export function MobileActionIsland() {
 
   const onComposerToggle = () => {
     if (!user) {
-      navigate({ to: "/login" });
+      navigate({ to: "/login" } as never);
       return;
     }
     setComposerOpen((v) => !v);

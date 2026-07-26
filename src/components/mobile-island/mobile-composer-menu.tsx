@@ -63,8 +63,9 @@ export function MobileComposerMenu({ open, onClose, menuId }: Props) {
                   onClick={() => {
                     hapticTap(10);
                     onClose();
-                    navigate({ to: action.to });
+                    navigate({ to: action.to } as never);
                   }}
+
                   initial={
                     reduced
                       ? { opacity: 0 }
