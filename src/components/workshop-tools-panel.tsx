@@ -440,59 +440,6 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   return <ToolItems scope={scope} tool={tool} />;
 }
 
-function PipBody() {
-  const supported = typeof window !== "undefined" && "documentPictureInPicture" in window;
-  function openPip(source: "me" | "speaker" | "tool" | "director") {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent("workshop:pip-open", { detail: { source } }));
-  }
-  const options: Array<{ id: "me" | "speaker" | "tool" | "director"; label: string; desc: string }> = [
-    { id: "me", label: "Me", desc: "Your camera tile, front and center." },
-    { id: "speaker", label: "Active speaker", desc: "Auto-follows whoever is talking." },
-    { id: "tool", label: "Current tool", desc: "Whatever's in the main slot — screen share, board, player." },
-    { id: "director", label: "Director", desc: "Cut between Tool, Split, and Cam (needs a live screen share)." },
-  ];
-  return (
-    <div className="p-4 space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-4">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet/10 text-violet">
-            <PictureInPicture2 className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Picture-in-Picture</div>
-            <h3 className="mt-0.5 font-display text-lg text-ink">Float the room above any tab</h3>
-            <p className="mt-1 text-sm text-ink-soft">
-              Pop the Workshop into a small always-on-top window. Pick what shows in the floating tile — you can still switch sources after.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => openPip(o.id)}
-            disabled={!supported}
-            className="text-left rounded-2xl border border-border bg-surface p-3 hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <div className="flex items-center gap-2 text-ink">
-              <PictureInPicture2 className="h-3.5 w-3.5 text-violet" />
-              <span className="font-medium text-sm">{o.label}</span>
-            </div>
-            <p className="mt-1 text-xs text-ink-soft">{o.desc}</p>
-          </button>
-        ))}
-      </div>
-      {!supported && (
-        <p className="text-xs text-ink-muted">
-          Always-on-top pop-out needs a Chromium-based browser (Chrome, Edge, Arc, Brave).
-        </p>
-      )}
-    </div>
-  );
-}
 
 
 
