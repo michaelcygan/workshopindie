@@ -1052,12 +1052,9 @@ export function FullscreenRoom({
             <div className="flex h-full flex-col gap-3">
               {/* Stage surface */}
               <div className="flex-1 min-h-0 overflow-hidden rounded-2xl ring-1 ring-background/10 bg-black">
-                {stageStream ? (
-                  <SpotlightVideo stream={stageStream} label={stageLabel || "Stage"} muted={m.isScreenSharing} />
-                ) : (
-                  <div className="h-full w-full overflow-auto bg-[#111]">{stageSlot}</div>
-                )}
+                <div className="h-full w-full overflow-auto bg-[#111]">{stageSlot}</div>
               </div>
+
               {/* Filmstrip — hidden in Tool-only */}
               {layoutMode === "stage" && (
                 <div className="shrink-0 overflow-x-auto">
