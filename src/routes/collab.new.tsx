@@ -242,6 +242,7 @@ export function CollabComposer({
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
       rights_arrangement: rights,
+      accepts_suggestions: acceptsSuggestions,
       status: targetStatus,
     }).select("id,slug").single();
 
