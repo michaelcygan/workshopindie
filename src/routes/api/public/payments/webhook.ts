@@ -231,7 +231,8 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env:
 }
 
 async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, env: StripeEnv) {
-  const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+  const invoiceAny = invoice as any;
+  const subId = typeof invoiceAny.subscription === "string" ? invoiceAny.subscription : invoiceAny.subscription?.id;
   if (subId) {
     await supabaseAdmin
       .from("subscriptions")
@@ -240,7 +241,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, env: StripeEn
       .eq("environment", env);
   }
 
-  const userId = (invoice.subscription_details?.metadata as Record<string, string> | null)?.userId
+  const userId = (invoiceAny.subscription_details?.metadata as Record<string, string> | null)?.userId
     || (invoice.metadata as Record<string, string> | null)?.userId;
   if (userId) {
     await supabaseAdmin.from("notifications").insert({
