@@ -1330,13 +1330,15 @@ export function FullscreenRoom({
           </>
         ) : (
           <DockButton
-            onClick={() => { m.joinAudio().catch(() => {}); }}
+            onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); }}
             active={true}
-            disabled={m.busy}
+            disabled={m.busy || audioBlocked}
             ariaLabel="Join audio"
           >
             <Mic className="h-4 w-4" />
-            <span className="hidden sm:inline">{m.busy ? "Connecting…" : "Join audio"}</span>
+            <span className="hidden sm:inline">
+              {audioBlocked ? "Audio limit reached" : m.busy ? "Connecting…" : "Join audio"}
+            </span>
           </DockButton>
         )}
         {dockExtra && (
