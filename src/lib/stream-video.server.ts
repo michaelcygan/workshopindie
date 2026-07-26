@@ -98,9 +98,9 @@ export async function grantLoungeSendAudio(opts: {
 }): Promise<void> {
   const { client, callType } = newClient();
   const call = client.video.call(callType, opts.roomId);
-  await call.grantPermissions({
+  await call.updateUserPermissions({
     user_id: opts.userId,
-    permissions: ["send-audio"],
+    grant_permissions: ["send-audio"],
   });
 }
 
@@ -114,8 +114,8 @@ export async function revokeLoungeSendAudio(opts: {
 }): Promise<void> {
   const { client, callType } = newClient();
   const call = client.video.call(callType, opts.roomId);
-  await call.revokePermissions({
+  await call.updateUserPermissions({
     user_id: opts.userId,
-    permissions: ["send-audio"],
+    revoke_permissions: ["send-audio"],
   });
 }
