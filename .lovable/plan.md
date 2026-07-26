@@ -1,46 +1,50 @@
-## Goal
+## Wave 3: Wire the Lounge UI to the new audio API
 
-Finish the Stream-first Lounge by wiring the provider/hooks and rewiring the Lounge UI to consume the new `LoungeAudioApi`. Part 1 already landed the DB migration (cap 20, speaker queue RPCs), security fixes, adapter types, Stream server + server functions, and installed SDKs.
+The Stream infrastructure is in place but invisible — `media-panel.tsx` still calls the legacy `useMediaRoom` hook directly, so the new speaker queue, 20-seat capacity, and screen-share flag don't affect what the user sees. This wave connects the panel to `useLoungeAudio()` and adds the missing surface for the queue.
 
-## What ships in this pass
+### 1. Rewire `src/components/media-panel.tsx` to `useLoungeAudio`
 
-1. **`src/hooks/use-stream-lounge-audio.ts`** — Stream React SDK implementation of `LoungeAudioApi`.
-   - Reads token from `getLoungeStreamToken`; joins the `workshop_lounge` call as listener.
-   - Subscribes to Supabase `instant_presence` realtime → maps `audio_state` (`chat` / `queued` / `offered` / `speaker`) onto `role` / `queuePosition` / `speakerCount`.
-   - Speaker flow: `request_lounge_audio_slot` RPC → on `offered`, user taps "Take the mic" → `accept_lounge_audio_offer` + `grantLoungeSpeaker` → SDK enables mic + publishes.
-   - Detects `autoplayBlocked` and exposes `resumeAudio()`.
-   - Cleanup: leaves the call on unmount; calls `release_lounge_audio_slot` if speaker.
+- Replace the direct `useMediaRoom(...)` call with `useLoungeAudio()` (falls through to mesh today, Stream when the flag flips).
+- Map the unified `LoungeAudioApi` shape onto the existing UI:
+  - `participants[]` → `SpeakerBubble` grid (drop the ad-hoc `peers` mapping).
+  - `speakingUserIds` set → drives the `.speaking-halo` class we already ship.
+  - `selfState` (`idle | requesting | waiting | offered | speaking | muted`) → drives the primary action button label.
+  - `mute()` / `unmute()` / `leaveAudio()` / `leaveRoom()` → wire to existing controls.
+- Keep the mobile chat-first auto-open behavior and the desktop join strip intact — only the data source changes.
 
-2. **`src/hooks/use-mesh-lounge-audio.ts`** — thin adapter that presents the existing `useMediaRoom` mesh hook as the same `LoungeAudioApi` shape (no behavior change; keeps the fallback provider working).
+### 2. Add the speaker-queue action strip
 
-3. **`src/hooks/use-lounge-audio.ts`** — selector that reads `LOUNGE_AUDIO_PROVIDER` and returns the correct implementation. Called only inside `<LoungeAudioProvider>` so hook order is stable.
+Replace the single "Join audio / Leave audio" button with a state machine:
 
-4. **`src/components/stream-lounge-provider.tsx`** — mounts `<StreamVideo>` + `<StreamCall>` when provider is `stream`; renders children plainly when provider is `mesh`. Exposes a `LoungeAudioContext` so `media-panel.tsx` reads one API regardless of transport.
+| `selfState` | Primary button | Secondary |
+|---|---|---|
+| `idle` (listening) | "Request mic" → `requestSlot()` | — |
+| `requesting` / `waiting` | "Waiting · #N in queue" (disabled) | "Cancel" → `leaveQueue()` |
+| `offered` | "Take the mic" (pulsing) → `acceptOffer()` | "Decline" |
+| `speaking` | Mute toggle | "Step down" → `releaseSlot()` |
+| `muted` | "Unmute" | "Step down" |
 
-5. **Rewire `src/components/media-panel.tsx`**:
-   - Consume `LoungeAudioApi` via context.
-   - Replace "Join audio" strip with role-aware control: **Listening → Request mic → Waiting (#N in queue, Leave queue) → Take the mic → Speaking (Mute/Leave mic)**.
-   - `SpeakerBubble` set now driven by `participants` (up to 20 seats; only `role === "speaker"` get the halo). Chat-only participants remain in the "Here now" list.
-   - Gate screen-share UI behind `LOUNGE_SCREEN_SHARE_ENABLED` (currently off).
-   - Autoplay-blocked banner → `Enable sound`.
+Queue position comes from `participants.filter(p => p.audioState === 'waiting')` ordered by `queuedAt`.
 
-6. **Rewire `src/routes/lounge.$id.tsx`**: wrap the room in `<LoungeAudioProvider roomId=... participation=...>`; keep chat-only participants outside the audio join path.
+### 3. Screen-share gating
 
-7. **Feature-detect fallback**: when `isLoungeAudioSupported()` is false, show a "This browser can't join Lounge audio — chat still works" strip instead of mounting the provider.
+Wrap the existing screen-share button in `LOUNGE_SCREEN_SHARE_ENABLED` from `lounge-constants`. When false (default for Stream mode until we ship SFU screen-share), the button is hidden — mesh mode keeps it on.
 
-## Out of scope for this pass
+### 4. Capacity + roster copy
 
-- Mesh-provider deletion (kept behind flag for rollback).
-- Recorder integration for Stream call audio.
-- The unrelated `work_applications_status_bypass` security finding — will surface separately if you want it fixed.
-- Wiring `LOUNGE_AUDIO_EVENTS` into the real telemetry sink (still console-tagged).
+- Update "Here now" header to show `participants.length / LOUNGE_CAP` (20) instead of the hardcoded 10.
+- Split the sidebar into two sections when a queue exists: **Speakers** (audioState `speaking`/`muted`, capped at `LOUNGE_SPEAKER_CAP`) and **Listeners** (everyone else), with the waiting users badged with their queue position.
 
-## Verification
+### 5. Guardrails
 
-- `tsgo` typecheck passes.
-- Manual smoke against preview: open two tabs → both land as listeners → tab A requests mic → gets speaker seat → tab B sees speaker halo + count. Screen share button absent.
-- Vite dev-server logs checked for hydration / hook-order warnings.
+- No changes to mesh behavior when `VITE_LOUNGE_AUDIO_PROVIDER` is unset — mesh adapter already maps its state onto the same API shape, so the new UI works identically for existing users.
+- No DB changes this wave; the RPCs and columns from Wave 1 are already there.
+- Deferred (call out but do not touch): the `work_applications_status_bypass` security finding and the analytics sink for `emitLoungeAudioEvent`.
 
-## Notes
+### Technical notes
 
-No new migrations, no schema changes, no new secrets — Part 1 covered those.
+- `media-panel.tsx` is the only consumer that needs rewiring; `channel-view.tsx` already receives the panel as a child.
+- The mesh adapter I shipped in Wave 2 maps legacy `peers`/`speaking`/`muted` onto the new API surface, so the UI rewrite doesn't regress mesh users.
+- Halo animation, mobile chat sheet auto-open, and Realtime channel per-mount suffixes stay as-is.
+
+Verification: typecheck the touched files, then load `/lounge/<id>` in mesh mode and confirm join / speak / mute / leave still work (Stream mode stays behind the flag).

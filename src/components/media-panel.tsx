@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
-import { LOUNGE_CAP } from "@/lib/lounge-constants";
+import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
+import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
+import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
 
 /** Best-effort: derive a human label from a screen capture track.
@@ -85,8 +87,12 @@ export function MediaPanel({
   /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
   nextLoungeSlot?: React.ReactNode;
 }) {
-  const totalHere = 1 + others.length;
+  const api = useOptionalLoungeAudio();
+  // Prefer the API's participant roll when the provider is mounted; falls back
+  // to legacy presence counts under bare mesh so nothing regresses.
+  const totalHere = api ? Math.max(api.participants.length, 1 + others.length) : 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
+  const waitingCount = api ? api.participants.filter((p) => p.role === "waiting").length : 0;
   return (
     <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
@@ -111,86 +117,96 @@ export function MediaPanel({
         </div>
       )}
 
-      {/* Participation controls (Wave 2).
-          The Lounge is audio-first with three states:
-            - Chat only        → primary: Join audio
-            - Muted + audio    → label "Listening", primary: Unmute
-            - Unmuted + audio  → primary: Mute, secondary: Leave audio
-          Cameras no longer exist in the Lounge, so there's no camera toggle. */}
-      {!m.audioJoined ? (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs text-ink-muted">
-            {m.busy
-              ? "Connecting to audio…"
-              : "You're here through chat. Add audio when you're ready."}
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => { m.joinAudio().catch(() => {}); }}
-              disabled={m.busy}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
-            >
-              <Mic className="h-3.5 w-3.5" /> Join audio
-            </button>
-            <button
-              type="button"
-              onClick={onExit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
-            >
-              <LogOut className="h-3.5 w-3.5" /> Exit
-            </button>
+      {/* Participation controls (Wave 3).
+          Driven by the transport-neutral LoungeAudioApi when a provider is
+          mounted; falls back to the legacy mesh strip otherwise so nothing
+          regresses in raw mesh mode. Stream/mesh both surface the same
+          state machine here: listener → requesting → waiting → offered →
+          speaker (with mute). Screen sharing is gated separately. */}
+      <div className="mt-3">
+        {api ? (
+          <LoungeAudioStrip
+            api={api}
+            speakerCap={LOUNGE_SPEAKER_CAP}
+            onExit={onExit}
+            dockExtra={dockExtra}
+            nextLoungeSlot={nextLoungeSlot}
+          />
+        ) : !m.audioJoined ? (
+          <div className="space-y-2">
+            <p className="text-xs text-ink-muted">
+              {m.busy
+                ? "Connecting to audio…"
+                : "You're here through chat. Add audio when you're ready."}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => { m.joinAudio().catch(() => {}); }}
+                disabled={m.busy}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+              >
+                <Mic className="h-3.5 w-3.5" /> Join audio
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Exit
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={m.toggleMute}
-              className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                m.muted
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted/60 text-ink hover:bg-muted",
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={m.toggleMute}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                  m.muted
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted/60 text-ink hover:bg-muted",
+                )}
+                title={m.muted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                {m.muted ? "Unmute" : "Mute"}
+              </button>
+              <button
+                type="button"
+                onClick={m.leaveAudio}
+                disabled={m.busy}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition disabled:opacity-50"
+                title="Leave audio and continue in chat"
+              >
+                <MicOff className="h-3.5 w-3.5" /> Leave audio
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {nextLoungeSlot ? (
+                <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+              ) : dockExtra ? (
+                <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
+                  {dockExtra}
+                </div>
+              ) : (
+                <span />
               )}
-              title={m.muted ? "Unmute microphone" : "Mute microphone"}
-            >
-              {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-              {m.muted ? "Unmute" : "Mute"}
-            </button>
-            <button
-              type="button"
-              onClick={m.leaveAudio}
-              disabled={m.busy}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition disabled:opacity-50"
-              title="Leave audio and continue in chat"
-            >
-              <MicOff className="h-3.5 w-3.5" /> Leave audio
-            </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Exit
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            {nextLoungeSlot ? (
-              <div className="[&_button]:w-full">{nextLoungeSlot}</div>
-            ) : dockExtra ? (
-              <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
-                {dockExtra}
-              </div>
-            ) : (
-              <span />
-            )}
-            <button
-              type="button"
-              onClick={onExit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition"
-            >
-              <LogOut className="h-3.5 w-3.5" /> Exit
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {m.screenSharerId && (
+      {m.screenSharerId && LOUNGE_SCREEN_SHARE_ENABLED && (
         <p className="mt-3 rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
           <MonitorPlay className="h-3 w-3" />
           {m.isScreenSharing
@@ -200,8 +216,13 @@ export function MediaPanel({
       )}
 
       <div className="border-t border-border/50 pt-3 mt-3">
-        <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-          Here now · {totalHere}
+        <h4 className="mb-2 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <span>Here now · {totalHere}</span>
+          {waitingCount > 0 && (
+            <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-primary">
+              {waitingCount} waiting for mic
+            </span>
+          )}
         </h4>
         <ul className="space-y-2">
           <SpeakerRow
@@ -243,6 +264,168 @@ export function MediaPanel({
   );
 }
 
+
+/** Transport-neutral audio action strip. Renders the state machine:
+ *  listener → requesting → waiting(#N) → offered → speaker(mute/step-down).
+ *  Screen share stays gated on LOUNGE_SCREEN_SHARE_ENABLED. */
+function LoungeAudioStrip({
+  api,
+  speakerCap,
+  onExit,
+  dockExtra,
+  nextLoungeSlot,
+}: {
+  api: LoungeAudioApi;
+  speakerCap: number;
+  onExit: () => void;
+  dockExtra?: React.ReactNode;
+  nextLoungeSlot?: React.ReactNode;
+}) {
+  const { role, muted, busy, speakerCount, queuePosition, error } = api;
+  const stageFull = speakerCount >= speakerCap;
+
+  const run = (fn: () => Promise<void>) => () => {
+    fn().catch(() => { /* surfaced via api.error */ });
+  };
+
+  let primary: React.ReactNode;
+  if (role === "connecting") {
+    primary = (
+      <button type="button" disabled className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink-soft">
+        <Mic className="h-3.5 w-3.5" /> Connecting…
+      </button>
+    );
+  } else if (role === "listener") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.requestMic)}
+        disabled={busy || stageFull}
+        title={stageFull ? "Stage is full — try again when a seat opens." : "Ask to speak"}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+      >
+        <Mic className="h-3.5 w-3.5" /> {stageFull ? "Stage full" : "Request mic"}
+      </button>
+    );
+  } else if (role === "waiting") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.leaveQueue)}
+        disabled={busy}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition disabled:opacity-50"
+      >
+        Waiting · #{queuePosition || 1}
+      </button>
+    );
+  } else if (role === "offered") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.acceptMicOffer)}
+        disabled={busy}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50 animate-pulse"
+      >
+        <Mic className="h-3.5 w-3.5" /> Take the mic
+      </button>
+    );
+  } else {
+    // speaker
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.toggleMute)}
+        disabled={busy}
+        title={muted ? "Unmute microphone" : "Mute microphone"}
+        className={cn(
+          "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50",
+          muted
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "bg-muted/60 text-ink hover:bg-muted",
+        )}
+      >
+        {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+        {muted ? "Unmute" : "Mute"}
+      </button>
+    );
+  }
+
+  let secondary: React.ReactNode;
+  if (role === "waiting" || role === "offered") {
+    secondary = (
+      <button
+        type="button"
+        onClick={run(api.leaveQueue)}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition"
+      >
+        Cancel
+      </button>
+    );
+  } else if (role === "speaker") {
+    secondary = (
+      <button
+        type="button"
+        onClick={run(api.leaveMic)}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition"
+      >
+        <MicOff className="h-3.5 w-3.5" /> Step down
+      </button>
+    );
+  } else {
+    secondary = (
+      <button
+        type="button"
+        onClick={onExit}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
+      >
+        <LogOut className="h-3.5 w-3.5" /> Exit
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {api.autoplayBlocked && (
+        <button
+          type="button"
+          onClick={run(api.resumeAudio)}
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-amber-500/15 text-amber-900 hover:bg-amber-500/25 transition"
+        >
+          Tap to enable audio
+        </button>
+      )}
+      <div className="grid grid-cols-2 gap-1.5">
+        {primary}
+        {secondary}
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {nextLoungeSlot ? (
+          <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+        ) : dockExtra ? (
+          <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
+            {dockExtra}
+          </div>
+        ) : (
+          <span />
+        )}
+        {role !== "listener" && role !== "connecting" ? (
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive/90 text-destructive-foreground hover:bg-destructive transition"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Exit
+          </button>
+        ) : (
+          <span />
+        )}
+      </div>
+      {error && (
+        <p className="text-[11px] text-destructive">{error.message}</p>
+      )}
+    </div>
+  );
+}
 
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
@@ -831,34 +1014,36 @@ export function FullscreenRoom({
               </button>
             )}
 
-            {/* More: screen share (functionality preserved on mobile). */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="More controls"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/10 text-background/90 hover:bg-background/15"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="end" sideOffset={6} className="w-52 p-1">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (m.isScreenSharing) await m.stopScreenShare();
-                      else await m.startScreenShare();
-                    } catch { /* ignore */ }
-                  }}
-                  disabled={!m.joined || (!!m.screenSharerId && !m.isScreenSharing)}
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ink hover:bg-muted disabled:opacity-40"
-                >
-                  {m.isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorPlay className="h-4 w-4" />}
-                  <span>{m.isScreenSharing ? "Stop sharing" : m.screenSharerId ? "Someone else is sharing" : "Share screen"}</span>
-                </button>
-              </PopoverContent>
-            </Popover>
+            {/* More: screen share (gated on the Lounge flag; hidden in Stream v1). */}
+            {LOUNGE_SCREEN_SHARE_ENABLED && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    aria-label="More controls"
+                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/10 text-background/90 hover:bg-background/15"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent align="end" sideOffset={6} className="w-52 p-1">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        if (m.isScreenSharing) await m.stopScreenShare();
+                        else await m.startScreenShare();
+                      } catch { /* ignore */ }
+                    }}
+                    disabled={!m.joined || (!!m.screenSharerId && !m.isScreenSharing)}
+                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ink hover:bg-muted disabled:opacity-40"
+                  >
+                    {m.isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorPlay className="h-4 w-4" />}
+                    <span>{m.isScreenSharing ? "Stop sharing" : m.screenSharerId ? "Someone else is sharing" : "Share screen"}</span>
+                  </button>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
           <button
             type="button"
