@@ -149,9 +149,18 @@ export function ApplicantsPanel({ postId }: Props) {
                           {sender.display_name || sender.username}
                         </Link>
                       ) : (
-                        <span className="font-medium text-ink">{sender?.display_name ?? "Member"}</span>
+                      <span className="font-medium text-ink">{sender?.display_name ?? "Member"}</span>
                       )}
                       <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-500">Workshop member</span>
+                      {m.application_kind === "role" && m.role_name ? (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                          Role · {m.role_name}
+                        </span>
+                      ) : m.application_kind === "suggestion" ? (
+                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">
+                          Suggestion
+                        </span>
+                      ) : null}
                     </div>
                     {sender?.headline && <div className="text-xs text-ink-muted">{sender.headline}</div>}
                     {m.message_preview && <p className="mt-2 text-sm text-ink-soft">{m.message_preview}</p>}
@@ -167,7 +176,7 @@ export function ApplicantsPanel({ postId }: Props) {
                       size="sm"
                       className="rounded-full gap-1"
                       disabled={accept.isPending}
-                      onClick={() => accept.mutate({ applicantUserId: m.sender_user_id })}
+                      onClick={() => accept.mutate({ applicantUserId: m.sender_user_id, contactEventId: m.id })}
                     >
                       <Check className="h-3.5 w-3.5" /> Accept
                     </Button>
