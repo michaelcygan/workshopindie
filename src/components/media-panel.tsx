@@ -421,11 +421,38 @@ function LoungeAudioStrip({
         )}
       </div>
       {error && (
-        <p className="text-[11px] text-destructive">{error.message}</p>
+        error.code === "mic_denied" ? (
+          <div className="flex items-center justify-between gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5">
+            <p className="text-[11px] text-destructive">
+              Microphone blocked. Allow mic access in your browser, then retry.
+            </p>
+            <button
+              type="button"
+              onClick={run(api.requestMic)}
+              className="rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-medium text-destructive hover:bg-destructive/25 transition"
+            >
+              Retry
+            </button>
+          </div>
+        ) : error.code === "network" ? (
+          <div className="flex items-center justify-between gap-2 rounded-md bg-amber-500/10 px-2.5 py-1.5">
+            <p className="text-[11px] text-amber-900">Connection hiccup. Reconnecting…</p>
+            <button
+              type="button"
+              onClick={run(api.resumeAudio)}
+              className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-medium text-amber-900 hover:bg-amber-500/30 transition"
+            >
+              Retry
+            </button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-destructive">{error.message}</p>
+        )
       )}
     </div>
   );
 }
+
 
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
