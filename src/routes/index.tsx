@@ -434,10 +434,10 @@ function CollabsRail() {
                     <div className="flex h-full items-center justify-center">
                       <div className="text-center text-primary-foreground">
                         <div className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
-                          {CATEGORY_LABELS[p.category] ?? p.category}
+                          Open Collab
                         </div>
                         <div className="mt-1 font-display text-2xl leading-tight">
-                          Open Collab
+                          {CATEGORY_LABELS[p.category] ?? p.category}
                         </div>
                       </div>
                     </div>
