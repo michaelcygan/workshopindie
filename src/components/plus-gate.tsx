@@ -3,16 +3,24 @@ import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { StripeEmbeddedCheckout } from "@/components/stripe-embedded-checkout";
+import { plusGateCopy, genericPlusCopy, type PlusGateReason } from "@/lib/entitlement-copy";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
+  title?: string;
+  description?: string;
+  reason?: PlusGateReason;
 }
 
-export function PlusGate({ open, onOpenChange, title, description }: Props) {
+export function PlusGate({ open, onOpenChange, title, description, reason }: Props) {
   const [checkout, setCheckout] = useState(false);
+
+  const copy = reason
+    ? plusGateCopy(reason)
+    : title && description
+      ? { title, body: description }
+      : genericPlusCopy;
 
   return (
     <Sheet open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) setCheckout(false); }}>
@@ -23,9 +31,9 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
               <div className="gradient-motion mx-auto mb-2 inline-flex h-12 w-12 items-center justify-center rounded-full text-primary-foreground">
                 <Sparkles className="h-6 w-6" />
               </div>
-              <SheetTitle className="text-center font-display text-2xl">{title}</SheetTitle>
+              <SheetTitle className="text-center font-display text-2xl">{copy.title}</SheetTitle>
               <SheetDescription className="text-center text-sm text-ink-muted">
-                {description}
+                {copy.body}
               </SheetDescription>
             </SheetHeader>
 

@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_OPEN_COLLAB_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
-import { openCollabCapCopy } from "@/lib/entitlement-copy";
 // Workshop pairing on Collab creation is retired — every Collab gets a private Lounge.
 import { logShareEvent } from "@/lib/collab.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
@@ -679,8 +678,7 @@ export function CollabComposer({
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title={openCollabCapCopy(FREE_OPEN_COLLAB_CAP, FREE_OPEN_COLLAB_CAP).title}
-        description={openCollabCapCopy(FREE_OPEN_COLLAB_CAP, FREE_OPEN_COLLAB_CAP).body}
+        reason="collab_limit"
       />
       <Dialog open={!!postedDialog} onOpenChange={(o) => { if (!o) setPostedDialog(null); }}>
         <DialogContent className="sm:max-w-md">

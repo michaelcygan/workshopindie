@@ -25,6 +25,8 @@ import { useAuth } from "@/hooks/use-auth";
 import { usePlus } from "@/hooks/use-plus";
 import { getStripeEnvironment } from "@/lib/stripe";
 import { createPortalSession } from "@/lib/payments.functions";
+import { getUsageSummary } from "@/lib/entitlements.functions";
+import { freePlanBullets } from "@/lib/entitlement-copy";
 import { getMyAgeFields, setMyAgeFilter } from "@/lib/profile-age.functions";
 import { getMyPrivacy, updateMyPrivacy, deleteMyAccount, exportMyData } from "@/lib/account.functions";
 import { getMyCcConsent, setMyCcConsent } from "@/lib/cc-consent.functions";
@@ -490,11 +492,16 @@ function PlusSection() {
           <Sparkles className="h-4 w-4 icon-gradient-motion" />
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
-        <p className="mt-1 text-sm text-ink-muted">
-          Free includes 10 published Works, 2 open Collabs, 10 Lounge hours, and 2 Blog publications each month.
-          Plus removes those limits for $4.99/mo, cancel anytime.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-2 space-y-1">
+          {freePlanBullets().map((b) => (
+            <li key={b} className="flex items-start gap-2 text-sm text-ink-muted">
+              <span className="mt-1.5 h-1 w-1 rounded-full bg-primary" />
+              {b}
+            </li>
+          ))}
+        </ul>
+        <UsageSummary />
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link to="/pricing">
             <Button size="sm" className="rounded-full">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
@@ -559,9 +566,63 @@ function PlusSection() {
           </Link>
         )}
       </div>
+      <UsageSummary />
       <p className="mt-3 text-xs text-ink-muted">
         Billing opens in a new tab. You'll come back to Settings when you're done.
       </p>
+    </div>
+  );
+}
+
+function UsageSummary() {
+  const fetchSummary = useServerFn(getUsageSummary);
+  const { data, isLoading } = useQuery({
+    queryKey: ["usage-summary"],
+    queryFn: () => fetchSummary(),
+  });
+
+  if (isLoading || !data) {
+    return <div className="mt-4 h-16 animate-pulse rounded-xl bg-surface-2" />;
+  }
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <UsageMeter label="Works" used={data.publishedWorks.used} cap={data.publishedWorks.cap} />
+      <UsageMeter label="Collabs" used={data.openCollabs.used} cap={data.openCollabs.cap} />
+      <UsageMeter label="Lounge" used={data.loungeAudio.used} cap={data.loungeAudio.cap} unit="min" />
+      <UsageMeter label="Blog" used={data.blog.used} cap={data.blog.cap} unit="posts" />
+    </div>
+  );
+}
+
+function UsageMeter({
+  label,
+  used,
+  cap,
+  unit,
+}: {
+  label: string;
+  used: number;
+  cap: number | null;
+  unit?: string;
+}) {
+  const capText = cap === null ? "Unlimited" : `${cap}${unit ? ` ${unit}` : ""}`;
+  const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+  return (
+    <div className="rounded-xl border border-border/60 bg-surface/60 p-3">
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className="mt-1 flex items-end justify-between">
+        <span className="text-lg font-medium text-ink">
+          {used}
+          {unit ? ` ${unit}` : ""}
+        </span>
+        <span className="text-xs text-ink-soft">/ {capText}</span>
+      </div>
+      {cap != null && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+        </div>
+      )}
     </div>
   );
 }

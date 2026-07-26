@@ -20,6 +20,7 @@ import {
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
 import { setBlogPostEntityTagsForMember } from "@/lib/blog-entity-tags.functions";
+import { PlusGate } from "@/components/plus-gate";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/$id")({
@@ -87,6 +88,7 @@ function MemberBlogEditorPage() {
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
+  const [blogGateOpen, setBlogGateOpen] = useState(false);
 
   const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
 
@@ -198,6 +200,8 @@ function MemberBlogEditorPage() {
   const isPublished = post.post.status === "published";
   const slugLocked = !!post.post.published_at;
   const readOnly = !access.canEditExisting;
+  const publishBlockedByQuota = !access.canPublish && (access.mode === "free" || access.mode === "lapsed");
+  const nearBlogLimit = access.monthlyPublicationLimit != null && access.publicationsThisMonth === access.monthlyPublicationLimit - 1;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
@@ -241,8 +245,8 @@ function MemberBlogEditorPage() {
             <Button
               size="sm"
               className="rounded-full gradient-motion text-primary-foreground"
-              disabled={!access.canPublish || publishMut.isPending}
-              onClick={() => publishMut.mutate()}
+              disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
+              onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
             >
               {publishMut.isPending ? "Publishing…" : "Publish"}
             </Button>
@@ -255,12 +259,17 @@ function MemberBlogEditorPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
             Published <span className="font-medium text-ink">{access.publicationsThisMonth}</span> of {access.monthlyPublicationLimit} this month
           </span>
+          {nearBlogLimit && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+              Last free post this month
+            </span>
+          )}
           {!access.canPublish && (access.mode === "free" || access.mode === "lapsed") && (
             <Link to="/pricing" className="text-primary hover:underline">Go Plus for unlimited</Link>
           )}
         </div>
       )}
-      {!access.canPublish && access.reason && (
+      {!access.canPublish && access.reason && !publishBlockedByQuota && (
         <div className="mt-4 rounded-2xl border border-border bg-surface p-3 text-xs text-ink-soft">
           {access.reason}
         </div>
@@ -431,6 +440,11 @@ function MemberBlogEditorPage() {
           }
           setEntityPickerOpen(false);
         }}
+      />
+      <PlusGate
+        open={blogGateOpen}
+        onOpenChange={setBlogGateOpen}
+        reason="blog_limit"
       />
     </main>
   );

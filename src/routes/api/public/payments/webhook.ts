@@ -230,6 +230,29 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env:
     .eq("environment", env);
 }
 
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, env: StripeEnv) {
+  const invoiceAny = invoice as any;
+  const subId = typeof invoiceAny.subscription === "string" ? invoiceAny.subscription : invoiceAny.subscription?.id;
+  if (subId) {
+    await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "past_due", updated_at: new Date().toISOString() })
+      .eq("stripe_subscription_id", subId)
+      .eq("environment", env);
+  }
+
+  const userId = (invoiceAny.subscription_details?.metadata as Record<string, string> | null)?.userId
+    || (invoice.metadata as Record<string, string> | null)?.userId;
+  if (userId) {
+    await supabaseAdmin.from("notifications").insert({
+      user_id: userId,
+      kind: "payment_failed",
+      entity_type: "invoice",
+      payload: { hosted_invoice_url: invoice.hosted_invoice_url ?? null },
+    });
+  }
+}
+
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
   const eventId = event.id;
@@ -254,20 +277,8 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, env);
       break;
     case "invoice.payment_failed": {
-      const inv = event.data.object as Stripe.Invoice & {
-        subscription_details?: { metadata?: Record<string, string> } | null;
-        hosted_invoice_url?: string | null;
-      };
-      const userId = inv.subscription_details?.metadata?.userId
-        || (inv.metadata as Record<string, string> | null)?.userId;
-      if (userId) {
-        await supabaseAdmin.from("notifications").insert({
-          user_id: userId,
-          kind: "payment_failed",
-          entity_type: "invoice",
-          payload: { hosted_invoice_url: inv.hosted_invoice_url ?? null },
-        });
-      }
+      const inv = event.data.object as Stripe.Invoice;
+      await handleInvoicePaymentFailed(inv, env);
       break;
     }
     default:

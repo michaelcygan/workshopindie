@@ -20,9 +20,8 @@ import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.funct
 import { WORK_SUBTYPES, type Category, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
+import { usePlus, FREE_PUBLISHED_WORK_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
-import { publishedWorkCapCopy } from "@/lib/entitlement-copy";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
@@ -186,7 +185,7 @@ function NewWork() {
         .select("id", { count: "exact", head: true })
         .eq("created_by", user.id)
         .eq("status", "published");
-      if ((count ?? 0) >= FREE_PORTFOLIO_CAP) {
+      if ((count ?? 0) >= FREE_PUBLISHED_WORK_CAP) {
         setPlusGate(true);
         return;
       }
@@ -549,8 +548,7 @@ function NewWork() {
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).title}
-        description={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).body}
+        reason="work_limit"
       />
     </main>
   );
