@@ -87,6 +87,7 @@ function EditCollab() {
     setCity(post.city ? { id: post.city.id, name: post.city.name, country: post.city.country } : null);
     setCompensationType((post.compensation_type as CompType) || "unspecified");
     setRights((post.rights_arrangement as Rights) || "decide_later");
+    setAcceptsSuggestions(post.accepts_suggestions ?? true);
   }, [post]);
 
   const save = useMutation({
