@@ -24,6 +24,7 @@ import { RenderLinks } from "@/lib/render-links";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { Link as RouterLink } from "@tanstack/react-router";
+import { PlusGate } from "@/components/plus-gate";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
