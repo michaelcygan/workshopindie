@@ -202,10 +202,11 @@ export function CollabComposer({
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
 
-    // Roles are optional now — if none, we create a single open-to-collaborators placeholder.
-    let cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
-    if (cleanRoles.length === 0) {
-      cleanRoles = [{ role_name: "Open to collaborators", quantity: 1, description: "" }];
+    // Roles are optional. If none are defined AND suggestions aren't accepted,
+    // there's nothing for people to apply to.
+    const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
+    if (cleanRoles.length === 0 && !acceptsSuggestions) {
+      return toast.error("Add at least one role, or turn on 'Open to suggestions'.");
     }
 
     const targetStatus: "draft" | "open" = saveAsDraft ? "draft" : "open";
