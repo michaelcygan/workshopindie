@@ -457,8 +457,9 @@ function LoungeAudioStrip({
             <LogOut className="h-3.5 w-3.5" /> Exit
           </button>
         ) : (
-          <MicDevicePicker api={api} />
+          <span />
         )}
+
       </div>
 
       {error && (
