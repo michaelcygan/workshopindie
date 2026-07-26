@@ -349,16 +349,41 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     .from("blog_post_authors")
     .upsert({ blog_post_id: id, profile_id: context.userId, sort_order: 0 }, { onConflict: "blog_post_id,profile_id" });
 
+  // Slug is a separate update so the quota RPC only owns the status flip.
+  if (finalSlug !== current.slug) {
+    await supabaseAdmin.from("blog_posts").update({ slug: finalSlug, author_name: name }).eq("id", id);
+  } else {
+    await supabaseAdmin.from("blog_posts").update({ author_name: name }).eq("id", id);
+  }
+
+  // For quota-bound tiers (free, lapsed), the RPC atomically re-checks the
+  // monthly count under an advisory lock and flips status → published.
+  // Unlimited tiers (plus, granted, trial) skip the RPC and take the plain
+  // update path.
+  if (access.monthlyPublicationLimit != null) {
+    const { data: ok, error: rpcErr } = await supabaseAdmin.rpc(
+      "try_consume_blog_publication",
+      { _user_id: context.userId, _post_id: id, _limit: access.monthlyPublicationLimit },
+    );
+    if (rpcErr) throw new Error(rpcErr.message);
+    if (ok === false) {
+      throw new Error(
+        access.reason ??
+          `You've reached your monthly publish limit (${access.monthlyPublicationLimit}).`,
+      );
+    }
+  } else {
+    const { error: upErr } = await supabaseAdmin
+      .from("blog_posts")
+      .update({ status: "published", updated_by: context.userId })
+      .eq("id", id);
+    if (upErr) throw new Error(upErr.message);
+  }
+
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .update({
-      slug: finalSlug,
-      status: "published",
-      updated_by: context.userId,
-      author_name: name,
-    })
-    .eq("id", id)
     .select(EDITOR_FIELDS)
+    .eq("id", id)
     .maybeSingle();
   if (error) throw new Error(error.message);
   await audit("blog.member.publish", id, context.userId, { slug: finalSlug });
