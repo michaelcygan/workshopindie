@@ -1,41 +1,39 @@
-## Wave 4 — Harden & observe the Stream Lounge audio path
+# Wave 5 — Lounge Audio: Reliability, Moderation & Rollout
 
-Two deferred items from Wave 2/3 plus a small polish pass, kept tightly scoped so nothing else in the app shifts.
+Wave 4 shipped telemetry, hardened the token path, and polished the queue strip. Wave 5 turns the Stream Lounge from "working" into "production-default" by closing the last reliability, moderation, and observability gaps, then flipping the provider flag.
 
-### 1. Fix `stream_video_token` unauthenticated-access finding
+## 1. Reliability & reconnection
 
-The Stream token-issuing server function currently mirrors the same shape flagged on `work_applications_status_bypass` — callable without a verified session, and shaped so a caller could request a token for any `user_id`/`room_id`.
+- **Auto-rejoin on transport drop.** In `use-stream-lounge-audio.ts`, subscribe to `call.state.callingState$` transitions (`reconnecting` → `offline` → `joined`) and emit `audio_reconnect` telemetry. If a drop exceeds ~15s, surface a "Reconnecting…" pill in `LoungeAudioStrip` with a manual "Rejoin" button that re-invokes `getLoungeStreamToken`.
+- **Real autoplay detection.** Replace the conservative heuristic with the SDK's `call.state.hasOngoingScreenShare$`/audio-element gating: watch for the first `play()` rejection on remote audio and set `autoplayBlocked=true`; `resumeAudio()` calls `call.microphone.resume?.()` and manually plays pending elements.
+- **Stale-seat sweep.** Add a Postgres function `sweep_stale_lounge_speakers()` that revokes `speaker` audio_state when the matching `instant_presence` row hasn't heartbeat-ed in 60s. Schedule via `pg_cron` every minute (aligns with existing sweep jobs under `api/public/*.sweep.ts`).
 
-- Add `.middleware([requireSupabaseAuth])` to the token function so `context.userId` is the source of truth.
-- Ignore any client-supplied `user_id`; always mint the token for `context.userId`.
-- Validate `room_id` with Zod, then verify the caller is actually a participant of that lounge (row in `instant_presence` for that room, or an active `request_lounge_audio_slot` claim) before issuing.
-- Return a typed error (`{ error: 'forbidden' }`) instead of a raw provider error; never leak Stream API error bodies.
-- Re-run `security--run_security_scan` after the change and mark the finding resolved if clean.
+## 2. Moderation controls
 
-### 2. Wire `emitLoungeAudioEvent` to a real telemetry sink
+- **Mute / remove speaker.** New RPC `moderate_lounge_speaker(_room_id, _target_user_id, _action)` where action ∈ (`mute`, `remove`). Callable by room host or platform admin (`has_role(auth.uid(),'admin')`). On `remove`, flip audio_state to `chat` and call `revokeLoungeSendAudio` server-side.
+- **UI hook.** Add a kebab on each `SpeakerBubble` (host/admin only) with "Mute" and "Remove from stage". Reuses existing dropdown primitives — no new sheet.
+- **Report from stage.** Feed reports through the existing `reports` table with `entity_type='lounge_speaker'` so admin moderation dashboard picks them up automatically.
 
-Today the emitter is a no-op stub. Wave 4 gives it a durable landing spot without adding a new vendor.
+## 3. Observability
 
-- Add a `lounge_audio_events` table (id, room_id, user_id nullable, event text, payload jsonb, created_at) with RLS: insert allowed for `authenticated` on rows where `user_id = auth.uid()`, select restricted to `service_role` + admins via `has_role`.
-- GRANT insert to `authenticated`, all to `service_role`, per public-schema-grants.
-- New `logLoungeAudioEvent` server fn (auth-required) that writes one row; `emitLoungeAudioEvent` calls it fire-and-forget with a short in-memory debounce (dedupe identical `event` within 2s per room+user) so noisy `speaking_start/stop` events don't flood the table.
-- Instrument the existing call sites already present in the Stream and mesh hooks — no new events invented in this wave.
-- Add a lightweight admin read via existing admin dashboard shell (read-only table view, last 200 rows, filter by room) — no new nav entry, reachable from the existing lounge admin section.
+- **Connected-minutes rollup.** Client emits `connected_minutes` every 60s while `connected`. Add a materialized view `lounge_audio_daily` (user_id, day, minutes, mic_grabs, queue_abandons) refreshed nightly for the admin analytics page.
+- **Admin panel tile.** Extend `admin.engagement.tsx` with a "Lounge audio" card: yesterday's DAU on audio, avg queue wait, mic-denied rate, reconnect rate.
 
-### 3. Small polish tied to Wave 3
+## 4. Rollout
 
-- Speaker-queue strip: when `api.error` is a known recoverable case (autoplay blocked, mic permission denied), swap the generic error text for a specific hint + a retry button that calls `api.resumeAudio()` / re-requests permission. Unknown errors keep today's copy.
-- Roster pill: pluralize correctly (`1 waiting for mic` vs `N waiting for mic`) and hide the pill entirely when the queue is empty (currently renders `0 waiting`).
-- Sanity: confirm `LOUNGE_SCREEN_SHARE_ENABLED=false` fully hides the fullscreen share affordance on mobile too (Wave 3 only checked desktop).
+- Flip default in `src/lib/lounge-constants.ts` so `LOUNGE_AUDIO_PROVIDER` falls back to `"stream"` when the env var is missing; keep `"mesh"` as an explicit opt-out for one release.
+- Update `.env.production` to set `VITE_LOUNGE_AUDIO_PROVIDER=stream`.
+- Add a short runbook note in `.lovable/plan.md` covering: how to roll back (set env to `mesh`), where telemetry lives, and which RPCs gate the queue.
 
-### Out of scope for Wave 4
+## Technical notes
 
-- Full `media-panel.tsx` visual redesign (that's its own wave).
-- Any change to mesh transport behavior — mesh stays the default until we flip `VITE_LOUNGE_AUDIO_PROVIDER=stream`.
-- New telemetry vendors (PostHog/Segment) — DB sink only for now.
+- All new RPCs are `security definer`, `search_path = public`, and grant `EXECUTE TO authenticated` only.
+- `lounge_audio_daily` mv gets `GRANT SELECT TO service_role` only; the admin page reads it through a `requireSupabaseAuth` server fn that checks `has_role`.
+- No changes to `client.ts`, `client.server.ts`, `auth-middleware.ts`, or `types.ts`.
+- Reconnection logic stays inside the Stream hook so the mesh provider is untouched (clean rollback).
 
-### Verification
+## Out of scope (defer to Wave 6)
 
-- `tsgo` clean.
-- Security scan re-run: `stream_video_token` finding gone.
-- Manual: request mic in a Stream-provider lounge → row appears in `lounge_audio_events`; deny mic permission → strip shows the specific hint + retry.
+- Recording / transcripts.
+- Multi-room simultaneous audio.
+- Push-to-talk hotkey.
