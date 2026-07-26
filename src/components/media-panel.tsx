@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2 } from "lucide-react";
+import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,11 +8,20 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
 import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
 import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
+import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
