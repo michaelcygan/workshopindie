@@ -88,6 +88,7 @@ function MemberBlogEditorPage() {
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
+  const [blogGateOpen, setBlogGateOpen] = useState(false);
 
   const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
 
