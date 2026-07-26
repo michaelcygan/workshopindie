@@ -446,7 +446,7 @@ function LoungeAudioStrip({
             {dockExtra}
           </div>
         ) : (
-          <span />
+          <MicDevicePicker api={api} />
         )}
         {role !== "listener" && role !== "connecting" ? (
           <button
@@ -457,9 +457,10 @@ function LoungeAudioStrip({
             <LogOut className="h-3.5 w-3.5" /> Exit
           </button>
         ) : (
-          <span />
+          <MicDevicePicker api={api} />
         )}
       </div>
+
       {error && (
         error.code === "mic_denied" ? (
           <div className="flex items-center justify-between gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5">
