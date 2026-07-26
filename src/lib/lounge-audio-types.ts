@@ -89,7 +89,19 @@ export type LoungeAudioApi = {
   moderateSpeaker: (opts: { userId: string; action: "mute" | "remove" }) => Promise<void>;
   /** True when we're currently reconnecting an existing session. */
   reconnecting: boolean;
+
+  /**
+   * Available audio input devices. Empty until mic permission is granted
+   * (browsers withhold labels/ids pre-permission). Optional: mesh provider
+   * may return an empty list.
+   */
+  micDevices?: MediaDeviceInfo[];
+  /** Currently selected input `deviceId`, or null for browser-default. */
+  selectedMicId?: string | null;
+  /** Swap the active input; persists selection per-browser. Optional. */
+  selectMic?: (deviceId: string) => Promise<void>;
 };
+
 
 /** Provider-neutral analytics event names. */
 export const LOUNGE_AUDIO_EVENTS = [

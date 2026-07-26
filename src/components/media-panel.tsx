@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2, UserX } from "lucide-react";
+import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2, UserX, Settings2, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -446,7 +446,7 @@ function LoungeAudioStrip({
             {dockExtra}
           </div>
         ) : (
-          <span />
+          <MicDevicePicker api={api} />
         )}
         {role !== "listener" && role !== "connecting" ? (
           <button
@@ -459,7 +459,9 @@ function LoungeAudioStrip({
         ) : (
           <span />
         )}
+
       </div>
+
       {error && (
         error.code === "mic_denied" ? (
           <div className="flex items-center justify-between gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5">
@@ -492,6 +494,64 @@ function LoungeAudioStrip({
     </div>
   );
 }
+
+/** Compact mic input picker. Renders as a disabled hint until permission is
+ *  granted (browsers withhold device labels/ids pre-permission), then opens a
+ *  dropdown of `audioinput` devices. Selection persists per-browser and swaps
+ *  the live track without dropping the call. */
+function MicDevicePicker({ api }: { api: LoungeAudioApi }) {
+  const devices = api.micDevices ?? [];
+  const selectedId = api.selectedMicId ?? null;
+  const select = api.selectMic;
+  const hasChoice = devices.length > 1 && typeof select === "function";
+
+  const currentLabel =
+    devices.find((d) => d.deviceId === selectedId)?.label ||
+    devices.find((d) => d.deviceId === "default")?.label ||
+    devices[0]?.label ||
+    "Default mic";
+
+  const trigger = (
+    <button
+      type="button"
+      disabled={!hasChoice}
+      title={hasChoice ? "Choose microphone" : "Microphone input"}
+      aria-label="Choose microphone"
+      className={cn(
+        "inline-flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+        "bg-muted/60 text-ink hover:bg-muted disabled:opacity-60 disabled:cursor-default",
+      )}
+    >
+      <Settings2 className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">{currentLabel}</span>
+    </button>
+  );
+
+  if (!hasChoice) return trigger;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[220px]">
+        {devices.map((d) => {
+          const isActive = (selectedId ?? "default") === (d.deviceId || "default");
+          return (
+            <DropdownMenuItem
+              key={d.deviceId || "default"}
+              onSelect={() => { void select?.(d.deviceId); }}
+              className="flex items-center gap-2"
+            >
+              <Check className={cn("h-3.5 w-3.5", isActive ? "opacity-100" : "opacity-0")} />
+              <span className="truncate">{d.label || "Microphone"}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
 
 
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
