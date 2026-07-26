@@ -43,6 +43,7 @@ export type LoungeAudioError = {
     | "mic_denied"
     | "queue_failed"
     | "network"
+    | "quota"
     | "unknown";
   message: string;
 };
