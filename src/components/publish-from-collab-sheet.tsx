@@ -14,6 +14,7 @@ import { listApplicants } from "@/lib/collab.functions";
 import { publishWorkFromCollab } from "@/lib/collab-publish.functions";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { PlusGate } from "@/components/plus-gate";
 
 type Props = {
   open: boolean;
@@ -77,7 +78,13 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
       onOpenChange(false);
       navigate({ to: "/works/$slug", params: { slug: res.workSlug } });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e.message?.includes("Free tier work limit reached")) {
+        setPlusGate(true);
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   function next() {
@@ -86,7 +93,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
   }
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) setStep(1); onOpenChange(o); }}>
+    <><Dialog open={open} onOpenChange={(o) => { if (!o) setStep(1); onOpenChange(o); }}>
       <DialogContent className="max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 font-display text-2xl">
@@ -236,5 +243,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <PlusGate open={plusGate} onOpenChange={setPlusGate} reason="work_limit" />
+    </>
   );
 }

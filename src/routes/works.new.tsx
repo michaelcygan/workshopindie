@@ -223,6 +223,10 @@ function NewWork() {
 
     if (error || !work) {
       setSubmitting(false);
+      if (error?.message?.includes("Free tier work limit reached")) {
+        setPlusGate(true);
+        return;
+      }
       return toast.error(error?.message ?? "Failed to publish");
     }
 

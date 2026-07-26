@@ -30,6 +30,9 @@ import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { WorksBornHere } from "@/components/works-born-here";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { usePlus } from "@/hooks/use-plus";
+import { PlusGate } from "@/components/plus-gate";
+import { FREE_PUBLISHED_WORK_CAP } from "@/lib/entitlements";
 
 export const Route = createFileRoute("/workshops/$slug")({
   component: WorkshopDetail,
@@ -544,6 +547,7 @@ function Room({ ws }: { ws: Workshop }) {
 
 function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void }) {
   const { user } = useAuth();
+  const { isPlus } = usePlus();
   const navigate = useNavigate();
   const [title, setTitle] = useState(ws.title);
   const [excerpt, setExcerpt] = useState(ws.prompt?.slice(0, 180) ?? "");
@@ -551,10 +555,25 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [primaryUrl, setPrimaryUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [plusGate, setPlusGate] = useState(false);
 
   async function ship() {
     if (!user) return;
     if (!title.trim()) return toast.error("Give the Work a title");
+
+    // Free tier cap on published works
+    if (!isPlus) {
+      const { count } = await supabase
+        .from("works")
+        .select("id", { count: "exact", head: true })
+        .eq("created_by", user.id)
+        .eq("status", "published");
+      if ((count ?? 0) >= FREE_PUBLISHED_WORK_CAP) {
+        setPlusGate(true);
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const { data: work, error } = await supabase.from("works").insert({
@@ -572,7 +591,14 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
       created_by: user.id,
     }).select("id,slug").single();
 
-    if (error || !work) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't publish"); }
+    if (error || !work) {
+      setSubmitting(false);
+      if (error?.message?.includes("Free tier work limit reached")) {
+        setPlusGate(true);
+        return;
+      }
+      return toast.error(error?.message ?? "Couldn't publish");
+    }
 
     // Pull confirmed participants and credit them
     const { data: parts } = await supabase
@@ -603,24 +629,27 @@ function FinalizePanel({ ws, onShipped }: { ws: Workshop; onShipped: () => void 
   }
 
   return (
-    <section className="mt-10 rounded-3xl border border-border bg-surface p-6 shadow-soft">
-      <div className="flex items-center gap-2">
-        <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
-        <h2 className="font-display text-2xl text-ink">Finalize the Work</h2>
-      </div>
-      <p className="mt-1 text-sm text-ink-muted">Publish what you made. Every confirmed participant will be credited.</p>
-
-      <div className="mt-5 space-y-4">
-        <ImageUpload value={coverUrl} onChange={setCoverUrl} bucket="work-covers" aspect="portrait" label="Upload a cover (4:5)" />
-        <Input maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
-        <Input maxLength={180} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="One-line excerpt" />
-        <Textarea rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you make? How did it go?" />
-        <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} onBlur={(e) => setPrimaryUrl(normalizeUrlOrKeep(e.target.value))} placeholder="Primary URL (Vimeo, Bandcamp, GitHub, your site) — optional" />
-        <div className="flex justify-end">
-          <Button onClick={ship} disabled={submitting} className="rounded-full">{submitting ? "Publishing…" : "Post to Gallery"}</Button>
+    <>
+      <section className="mt-10 rounded-3xl border border-border bg-surface p-6 shadow-soft">
+        <div className="flex items-center gap-2">
+          <span className="gradient-motion inline-flex h-9 w-9 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-5 w-5" /></span>
+          <h2 className="font-display text-2xl text-ink">Finalize the Work</h2>
         </div>
-      </div>
-    </section>
+        <p className="mt-1 text-sm text-ink-muted">Publish what you made. Every confirmed participant will be credited.</p>
+
+        <div className="mt-5 space-y-4">
+          <ImageUpload value={coverUrl} onChange={setCoverUrl} bucket="work-covers" aspect="portrait" label="Upload a cover (4:5)" />
+          <Input maxLength={140} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
+          <Input maxLength={180} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="One-line excerpt" />
+          <Textarea rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What did you make? How did it go?" />
+          <Input type="url" value={primaryUrl} onChange={(e) => setPrimaryUrl(e.target.value)} onBlur={(e) => setPrimaryUrl(normalizeUrlOrKeep(e.target.value))} placeholder="Primary URL (Vimeo, Bandcamp, GitHub, your site) — optional" />
+          <div className="flex justify-end">
+            <Button onClick={ship} disabled={submitting} className="rounded-full">{submitting ? "Publishing…" : "Post to Gallery"}</Button>
+          </div>
+        </div>
+      </section>
+      <PlusGate open={plusGate} onOpenChange={setPlusGate} reason="work_limit" />
+    </>
   );
 }
 
