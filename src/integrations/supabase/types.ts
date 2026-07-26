@@ -6854,6 +6854,7 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: boolean
       }
+      is_user_plus: { Args: { _user_id: string }; Returns: boolean }
       is_work_member: {
         Args: { _user_id: string; _work_id: string }
         Returns: boolean

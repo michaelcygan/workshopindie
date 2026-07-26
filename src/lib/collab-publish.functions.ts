@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { FREE_PUBLISHED_WORK_CAP } from "@/lib/entitlements";
 
 const httpsUrl = z.string().trim().max(500).url().refine(
   (u) => u.startsWith("https://") || u.startsWith("http://"),
@@ -54,6 +55,16 @@ export const publishWorkFromCollab = createServerFn({ method: "POST" })
     if (!post) throw new Error("Collab not found.");
     if (post.user_id !== userId) throw new Error("Only the host can publish a Work from this collab.");
     if (post.resulting_work_id) throw new Error("A Work has already been published from this collab.");
+
+    // Quota check: Free users are capped at FREE_PUBLISHED_WORK_CAP published Works.
+    const { count: publishedCount } = await supabase
+      .from("works")
+      .select("id", { count: "exact", head: true })
+      .eq("created_by", userId)
+      .eq("status", "published");
+    if ((publishedCount ?? 0) >= FREE_PUBLISHED_WORK_CAP) {
+      throw new Error("Free tier work limit reached");
+    }
 
     // 2) Insert the Work. Trigger generates the slug + published_at stamp.
     const { data: work, error: workErr } = await supabase

@@ -246,7 +246,14 @@ export function CollabComposer({
       status: targetStatus,
     }).select("id,slug").single();
 
-    if (error || !post) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't post"); }
+    if (error || !post) {
+      setSubmitting(false);
+      if (error?.message?.includes("Free tier collab limit reached")) {
+        setPlusGate(true);
+        return;
+      }
+      return toast.error(error?.message ?? "Couldn't post");
+    }
 
     if (cleanRoles.length > 0) {
       const { error: rolesErr } = await supabase.from("collab_roles").insert(

@@ -28,6 +28,7 @@ import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 import type { Category } from "@/lib/categories";
 import { toast } from "sonner";
+import { PlusGate } from "@/components/plus-gate";
 
 
 
@@ -151,6 +152,7 @@ function CollabDetail() {
   const [guestOpen, setGuestOpen] = useState(false);
   const [guestRoleId, setGuestRoleId] = useState<string | null>(null);
   const [publishOpen, setPublishOpen] = useState(false);
+  const [plusGate, setPlusGate] = useState(false);
 
   const { data: post, isLoading } = useQuery({
     queryKey: ["collab", slug],
@@ -291,7 +293,13 @@ function CollabDetail() {
       toast.success("Draft published — it's now live.");
       qc.invalidateQueries({ queryKey: ["collab", slug] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      if (e.message?.includes("Free tier collab limit reached")) {
+        setPlusGate(true);
+        return;
+      }
+      toast.error(e.message);
+    },
   });
 
   if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
@@ -819,6 +827,7 @@ function CollabDetail() {
           </Link>
         </div>
       )}
+      <PlusGate open={plusGate} onOpenChange={setPlusGate} reason="collab_limit" />
     </main>
   );
 }
