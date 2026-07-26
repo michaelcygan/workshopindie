@@ -172,14 +172,24 @@ export function MediaPanel({
                 {audioAccess.minutesUsed} of {audioAccess.monthlyLimit} min used · resets {audioAccess.resetLabel}
               </p>
             )}
+            {lowMinutes && (
+              <p className="text-[11px] text-amber-700">
+                {remainingMinutes} min remaining this month. Chat is always free.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
-                onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); }}
-                disabled={m.busy || audioBlocked}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+                onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); else setLoungeGateOpen(true); }}
+                disabled={m.busy}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                  audioBlocked
+                    ? "bg-muted/60 text-ink hover:bg-muted"
+                    : "bg-primary text-primary-foreground hover:bg-primary/90",
+                )}
               >
-                <Mic className="h-3.5 w-3.5" /> Join audio
+                <Mic className="h-3.5 w-3.5" /> {audioBlocked ? "Join audio" : "Join audio"}
               </button>
               <button
                 type="button"
@@ -190,12 +200,13 @@ export function MediaPanel({
               </button>
             </div>
             {audioBlocked && (
-              <RouterLink
-                to="/pricing"
+              <button
+                type="button"
+                onClick={() => setLoungeGateOpen(true)}
                 className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-primary hover:bg-muted/80"
               >
                 Go Plus for unlimited Lounge time →
-              </RouterLink>
+              </button>
             )}
           </div>
         ) : (
