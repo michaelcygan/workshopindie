@@ -214,7 +214,7 @@ export function HomeLiveWorkshopsRail() {
                     <Sparkles className="h-3 w-3" /> Start this Lounge
                   </span>
                   <span className="inline-flex items-center gap-1 text-ink-muted">
-                    <Users className="h-3 w-3" />5 seats
+                    <Users className="h-3 w-3" />{LOUNGE_CAP} seats
                   </span>
                 </div>
                 <p className="line-clamp-2 font-display text-base text-ink">{p.title}</p>
