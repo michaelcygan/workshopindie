@@ -73,6 +73,7 @@ export const Route = createFileRoute("/u/$username")({
     const name = p?.display_name ?? p?.username ?? params.username;
     const title = `${name} — Workshop`;
     const description = p?.headline ?? p?.bio?.slice(0, 160) ?? `${name}'s profile on Workshop.`;
+    const ogImage = `https://workshopindie.com/api/public/og?type=profile&id=${params.username}`;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -80,14 +81,12 @@ export const Route = createFileRoute("/u/$username")({
       { property: "og:description", content: description },
       { property: "og:type", content: "profile" },
       { property: "og:url", content: url },
-      { name: "twitter:card", content: "summary" as const },
+      { property: "og:image", content: ogImage },
+      { name: "twitter:card", content: "summary_large_image" as const },
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
+      { name: "twitter:image", content: ogImage },
     ];
-    if (p?.avatar_url) {
-      meta.push({ property: "og:image", content: p.avatar_url });
-      meta.push({ name: "twitter:image", content: p.avatar_url });
-    }
     const jsonLd: Record<string, unknown> = {
       "@context": "https://schema.org",
       "@type": "ProfilePage",
