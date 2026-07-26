@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
 import { WorkshopPresenceWorksRail } from "@/components/workshop-presence-works-rail";
-import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
+
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
