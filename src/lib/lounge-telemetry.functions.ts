@@ -41,7 +41,8 @@ export const logLoungeAudioEvent = createServerFn({ method: "POST" })
       room_id: data.roomId ?? null,
       user_id: userId,
       event: data.event,
-      payload: (data.payload ?? {}) as Record<string, unknown>,
+      // Data API types payload jsonb as Json; cast at the boundary.
+      payload: JSON.parse(JSON.stringify(data.payload ?? {})),
     });
     return { ok: true };
   });
