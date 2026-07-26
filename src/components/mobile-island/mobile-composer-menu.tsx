@@ -11,9 +11,11 @@ type Props = {
   open: boolean;
   onClose: () => void;
   menuId: string;
+  isAuthed: boolean;
 };
 
-export function MobileComposerMenu({ open, onClose, menuId }: Props) {
+export function MobileComposerMenu({ open, onClose, menuId, isAuthed }: Props) {
+
   const navigate = useNavigate();
   const reduced = useReducedMotion();
 
