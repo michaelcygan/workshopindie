@@ -221,10 +221,14 @@ export function useStreamLoungeAudio(
         try {
           await grantLoungeSpeaker({ data: { roomId } });
           if (cancelled) return;
+          if (selectedMicId) {
+            try { await call.microphone.select(selectedMicId); } catch { /* device gone; fall back to default */ }
+          }
           await call.microphone.enable();
           publishedRef.current = true;
           setMuted(false);
           emitLoungeAudioEvent("speaker_join", { roomId });
+
         } catch (e) {
           if (cancelled) return;
           const msg = e instanceof Error ? e.message : "Mic unavailable";
