@@ -59,12 +59,28 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
     // 2. Confirm post is real and open.
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id")
+      .select("id,status,user_id,accepts_suggestions")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
     if (post.status !== "open") throw new Error("This collab post is no longer accepting applications.");
+
+    // 2a. Validate the application path (role vs suggestion).
+    let resolvedRoleName: string | null = null;
+    if (data.collabRoleId) {
+      const { data: role } = await supabaseAdmin
+        .from("collab_roles")
+        .select("id,role_name,collab_post_id")
+        .eq("id", data.collabRoleId)
+        .eq("collab_post_id", data.collabPostId)
+        .maybeSingle();
+      if (!role) throw new Error("That role is no longer available on this Collab.");
+      resolvedRoleName = role.role_name;
+    } else if (!post.accepts_suggestions) {
+      throw new Error("This Collab is only accepting applications for its listed roles.");
+    }
+
 
     // 3. Rate-limit by hashed IP — max 5 / hour, 20 / day across the platform.
     const ipHash = clientIpHash();
@@ -138,6 +154,8 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
         collab_title: postFull?.title ?? "your collab",
         collab_slug: postFull?.slug ?? null,
         preview: data.message.slice(0, 140),
+        application_kind: data.collabRoleId ? "role" : "suggestion",
+        role_name: resolvedRoleName,
       },
     });
 
@@ -233,6 +251,19 @@ export const listApplicants = createServerFn({ method: "POST" })
       for (const i of invites ?? []) acceptedSet.add(i.invitee_user_id);
     }
 
+    // Load roles once so we can attach role_name/application_kind to each row.
+    const { data: rolesData } = await supabase
+      .from("collab_roles")
+      .select("id,role_name")
+      .eq("collab_post_id", data.collabPostId);
+    const roleMap: Record<string, string> = Object.fromEntries(
+      (rolesData ?? []).map((r) => [r.id, r.role_name]),
+    );
+    const roleInfo = (rid: string | null | undefined) => ({
+      application_kind: (rid ? "role" : "suggestion") as "role" | "suggestion",
+      role_name: rid ? (roleMap[rid] ?? null) : null,
+    });
+
     const members = events.map((e) => ({
       id: e.id,
       sent_at: e.sent_at,
@@ -242,9 +273,12 @@ export const listApplicants = createServerFn({ method: "POST" })
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
       accepted: acceptedSet.has(e.sender_user_id),
+      ...roleInfo(e.collab_role_id),
     }));
 
-    return { members, guests: guestRows };
+    const guests = guestRows.map((g) => ({ ...g, ...roleInfo(g.collab_role_id) }));
+
+    return { members, guests };
   });
 
 
@@ -345,13 +379,28 @@ export const applyToCollab = createServerFn({ method: "POST" })
 
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id")
+      .select("id,status,user_id,title,slug,accepts_suggestions")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
     if (post.status !== "open") throw new Error("This collab is no longer accepting applications.");
     if (post.user_id === userId) throw new Error("You can't apply to your own collab.");
+
+    // Validate the selected application path (role vs suggestion).
+    let resolvedRoleName: string | null = null;
+    if (data.collabRoleId) {
+      const { data: role } = await supabaseAdmin
+        .from("collab_roles")
+        .select("id,role_name,collab_post_id")
+        .eq("id", data.collabRoleId)
+        .eq("collab_post_id", data.collabPostId)
+        .maybeSingle();
+      if (!role) throw new Error("That role is no longer available on this Collab.");
+      resolvedRoleName = role.role_name;
+    } else if (!post.accepts_suggestions) {
+      throw new Error("This Collab is only accepting applications for its listed roles.");
+    }
 
     // Log contact event (also feeds the applicants panel).
     await supabaseAdmin.from("collab_contact_events").insert({
@@ -360,6 +409,33 @@ export const applyToCollab = createServerFn({ method: "POST" })
       sender_user_id: userId,
       message_preview: data.message.slice(0, 280),
     });
+
+    // Sender name for the owner notification.
+    const { data: senderProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name,username")
+      .eq("id", userId)
+      .maybeSingle();
+
+    await supabaseAdmin
+      .from("notifications")
+      .insert({
+        user_id: post.user_id,
+        kind: "collab_application",
+        actor_user_id: userId,
+        entity_type: "collab_post",
+        entity_id: data.collabPostId,
+        payload: {
+          actor_name: senderProfile?.display_name ?? senderProfile?.username ?? "Someone",
+          is_guest: false,
+          collab_title: post.title ?? "your collab",
+          collab_slug: post.slug ?? null,
+          preview: data.message.slice(0, 140),
+          application_kind: data.collabRoleId ? "role" : "suggestion",
+          role_name: resolvedRoleName,
+        },
+      })
+      .then(() => null, () => null);
 
     const { conversationId } = await openCollabDmThread({
       collabPostId: data.collabPostId,
@@ -457,15 +533,21 @@ export const getCollabActivity = createServerFn({ method: "POST" })
     ]);
     const perRole: Record<string, number> = {};
     let total = 0;
+    let suggestions = 0;
     for (const row of [...(memberRes.data ?? []), ...(guestRes.data ?? [])]) {
       total++;
       const rid = (row as { collab_role_id: string | null }).collab_role_id;
-      if (rid) perRole[rid] = (perRole[rid] ?? 0) + 1;
+      if (rid) {
+        perRole[rid] = (perRole[rid] ?? 0) + 1;
+      } else {
+        suggestions++;
+      }
     }
     return {
       applicants: total,
       shares: shareRes.count ?? 0,
       perRole,
+      suggestions,
     };
   });
 
@@ -512,6 +594,7 @@ const updateSchema = z.object({
       .enum(["owner_retains", "equal_split", "creative_commons", "decide_later"])
       .optional(),
     status: z.enum(["draft", "open"]).optional(),
+    accepts_suggestions: z.boolean().optional(),
     roles: z.array(roleDraftSchema).max(20).optional(),
   }),
 });
@@ -821,6 +904,9 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
       .object({
         collabPostId: z.string().uuid(),
         applicantUserId: z.string().uuid(),
+        // Optional: accept a specific application (role vs suggestion, etc.).
+        // Falls back to the applicant's most recent contact event.
+        contactEventId: z.string().uuid().nullable().optional(),
       })
       .parse(input),
   )
@@ -838,15 +924,35 @@ export const acceptCollabApplicant = createServerFn({ method: "POST" })
     if (post.user_id !== userId) throw new Error("Only the Collab owner can accept applicants");
     if (data.applicantUserId === userId) throw new Error("You can't accept yourself");
 
-    // 2. Verify the applicant actually applied.
-    const { data: contact } = await supabase
-      .from("collab_contact_events")
-      .select("id,collab_role_id")
-      .eq("collab_post_id", data.collabPostId)
-      .eq("sender_user_id", data.applicantUserId)
-      .order("sent_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 2. Verify the applicant actually applied. If a specific contactEventId
+    //    is supplied, pin the role from that exact event; otherwise fall back
+    //    to their latest application.
+    let contact: { id: string; collab_role_id: string | null } | null = null;
+    if (data.contactEventId) {
+      const { data: row } = await supabase
+        .from("collab_contact_events")
+        .select("id,collab_role_id,sender_user_id,collab_post_id")
+        .eq("id", data.contactEventId)
+        .maybeSingle();
+      if (
+        row &&
+        row.collab_post_id === data.collabPostId &&
+        row.sender_user_id === data.applicantUserId
+      ) {
+        contact = { id: row.id, collab_role_id: row.collab_role_id };
+      }
+    }
+    if (!contact) {
+      const { data: latest } = await supabase
+        .from("collab_contact_events")
+        .select("id,collab_role_id")
+        .eq("collab_post_id", data.collabPostId)
+        .eq("sender_user_id", data.applicantUserId)
+        .order("sent_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      contact = latest ?? null;
+    }
     if (!contact) throw new Error("No application found from this user");
 
     // 3. Idempotent upsert into collab_invites as 'accepted'.

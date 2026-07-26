@@ -713,6 +713,7 @@ export type Database = {
       }
       collab_posts: {
         Row: {
+          accepts_suggestions: boolean
           also_cities: string[]
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
@@ -746,6 +747,7 @@ export type Database = {
           vouch_count: number
         }
         Insert: {
+          accepts_suggestions?: boolean
           also_cities?: string[]
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
@@ -779,6 +781,7 @@ export type Database = {
           vouch_count?: number
         }
         Update: {
+          accepts_suggestions?: boolean
           also_cities?: string[]
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]

@@ -9,6 +9,7 @@ import { StateBadge } from "@/components/state-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { CategoryChip } from "@/components/category-chip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -156,7 +157,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -672,50 +673,68 @@ function CollabDetail() {
           <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">{post.description}</div>
         )}
 
-        <section className="mt-10">
-          <h2 className="font-display text-2xl text-ink">Roles</h2>
-          {isShipped ? (
-            <p className="mt-3 text-sm text-ink-muted">
-              Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
-            </p>
-          ) : (
-            <div className="mt-3 space-y-2">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {roles.map((r: any) => {
-                const interested = activity?.perRole?.[r.id] ?? 0;
-                return (
-                  <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <h3 className="font-medium text-ink">{r.role_name}</h3>
-                        <span className="text-xs text-ink-muted">×{r.quantity}</span>
-                        {isOwner && interested > 0 && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                            {interested} interested
-                          </span>
-                        )}
-                      </div>
-                      {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
-                    </div>
-                    {!isOwner && post.status === "open" && (
-                      <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
-                        {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
-                      </Button>
-                    )}
+        {(roles.length > 0 || post.accepts_suggestions) && (
+          <section className="mt-10">
+            {roles.length > 0 && (
+              <>
+                <h2 className="font-display text-2xl text-ink">Roles</h2>
+                {isShipped ? (
+                  <p className="mt-3 text-sm text-ink-muted">
+                    Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {roles.map((r: any) => {
+                      const interested = activity?.perRole?.[r.id] ?? 0;
+                      return (
+                        <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                              <h3 className="font-medium text-ink">{r.role_name}</h3>
+                              <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                              {isOwner && interested > 0 && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                  {interested} interested
+                                </span>
+                              )}
+                            </div>
+                            {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                          </div>
+                          {!isOwner && post.status === "open" && (
+                            <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
+                              {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </>
+            )}
 
-          {!isOwner && post.status === "open" && (
-            <div className="mt-6 flex justify-center">
-              <Button variant="outline" className="rounded-full gap-2" onClick={() => openContact(null)}>
-                <MessageCircle className="h-4 w-4" /> General interest (no specific role)
-              </Button>
-            </div>
-          )}
-        </section>
+            {!isOwner && post.status === "open" && post.accepts_suggestions && !isShipped && (
+              <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
+                <h3 className="font-medium text-ink">Suggest how you can help</h3>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
+                </p>
+                <div className="mt-3">
+                  <Button variant="outline" className="rounded-full gap-2" onClick={() => openContact(null)}>
+                    <MessageCircle className="h-4 w-4" /> Suggest a way to help
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isOwner && (activity?.suggestions ?? 0) > 0 && (
+              <p className="mt-3 text-xs text-ink-muted">
+                {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"}
+              </p>
+            )}
+          </section>
+        )}
 
 
         {isOwner && <ApplicantsPanel postId={post.id} />}
@@ -723,9 +742,30 @@ function CollabDetail() {
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="p-4 sm:p-6">
-          <DialogHeader><DialogTitle>Tell {(hostUser?.display_name || "the host")} you're in</DialogTitle></DialogHeader>
-          <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quick intro: who you are, why this caught your eye, links to your work…" className="text-base sm:text-sm" />
-          <p className="text-xs text-ink-muted">They'll get a notification with your message and a link to your profile.</p>
+          <DialogHeader>
+            <DialogTitle>
+              {contactRoleId
+                ? `Apply as ${
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    roles.find((r: any) => r.id === contactRoleId)?.role_name ?? "collaborator"
+                  }`
+                : `Suggest how you can help`}
+            </DialogTitle>
+          </DialogHeader>
+          <Textarea
+            rows={5}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={
+              contactRoleId
+                ? "Quick intro: who you are, why this role, links to your work…"
+                : "What could you contribute? A skill, a resource, a connection — anything the listed roles don't cover."
+            }
+            className="text-base sm:text-sm"
+          />
+          <p className="text-xs text-ink-muted">
+            {(hostUser?.display_name || "The host")} will see this in their inbox with a link back to your profile.
+          </p>
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button variant="ghost" className="w-full rounded-full sm:w-auto" onClick={() => setContactOpen(false)}>Cancel</Button>
             <Button className="w-full rounded-full sm:w-auto" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
@@ -735,6 +775,7 @@ function CollabDetail() {
         </DialogContent>
       </Dialog>
 
+
       <GuestApplyDialog
         open={guestOpen}
         onOpenChange={setGuestOpen}
@@ -742,7 +783,14 @@ function CollabDetail() {
         collabRoleId={guestRoleId}
         postTitle={post.title}
         hostFirstName={hostUser?.first_name || hostUser?.display_name?.split(" ")[0] || ""}
+        roleName={
+          guestRoleId
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? (roles.find((r: any) => r.id === guestRoleId)?.role_name ?? null)
+            : null
+        }
       />
+
 
       {isOwner && (
         <PublishFromCollabSheet

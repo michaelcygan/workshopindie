@@ -32,6 +32,7 @@ export type CollabCardData = {
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
+  accepts_suggestions?: boolean | null;
 };
 
 const COMP_LABEL: Record<CollabCardData["compensation_type"], string> = {
@@ -151,7 +152,7 @@ export function CollabCard({
           <p className="text-sm leading-relaxed text-ink-muted line-clamp-3">{post.description}</p>
         )}
 
-        {shownRoles.length > 0 && (
+        {(shownRoles.length > 0 || post.accepts_suggestions) && (
           <div className="mt-1 flex flex-wrap gap-1.5">
             {shownRoles.map((r) => (
               <span
@@ -164,6 +165,11 @@ export function CollabCard({
             {overflow > 0 && (
               <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs text-ink-muted">
                 +{overflow} more
+              </span>
+            )}
+            {post.accepts_suggestions && (
+              <span className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs text-amber-600">
+                Ideas welcome
               </span>
             )}
           </div>

@@ -49,7 +49,7 @@ function EditCollab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,status,slug,city:cities!collab_posts_city_id_fkey(id,name,region,country,slug)")
+        .select("id,user_id,title,description,timeline_text,timeline_mode,starts_on,ends_on,location_mode,city_id,compensation_type,rights_arrangement,accepts_suggestions,status,slug,city:cities!collab_posts_city_id_fkey(id,name,region,country,slug)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -58,7 +58,8 @@ function EditCollab() {
         timeline_text: string | null; timeline_mode: string | null;
         starts_on: string | null; ends_on: string | null;
         location_mode: string; city_id: string | null;
-        compensation_type: string; rights_arrangement: string; status: string; slug: string;
+        compensation_type: string; rights_arrangement: string; accepts_suggestions: boolean;
+        status: string; slug: string;
         city: { id: string; name: string; region: string | null; country: string | null; slug: string } | null;
       } | null;
     },
@@ -71,6 +72,7 @@ function EditCollab() {
   const [city, setCity] = useState<CityValue | null>(null);
   const [compensationType, setCompensationType] = useState<CompType>("unspecified");
   const [rights, setRights] = useState<Rights>("decide_later");
+  const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
 
   useEffect(() => {
     if (!post) return;
@@ -85,6 +87,7 @@ function EditCollab() {
     setCity(post.city ? { id: post.city.id, name: post.city.name, country: post.city.country } : null);
     setCompensationType((post.compensation_type as CompType) || "unspecified");
     setRights((post.rights_arrangement as Rights) || "decide_later");
+    setAcceptsSuggestions(post.accepts_suggestions ?? true);
   }, [post]);
 
   const save = useMutation({
@@ -103,6 +106,7 @@ function EditCollab() {
             city_id: locationMode === "online" ? null : (city?.id || null),
             compensation_type: compensationType,
             rights_arrangement: rights,
+            accepts_suggestions: acceptsSuggestions,
           },
         },
       });
@@ -195,6 +199,24 @@ function EditCollab() {
               </button>
             ))}
           </div>
+        </section>
+
+        <section className="space-y-2">
+          <Label>Suggestions</Label>
+          <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/60 p-2.5">
+            <input
+              type="checkbox"
+              className="mt-1 accent-ink"
+              checked={acceptsSuggestions}
+              onChange={(e) => setAcceptsSuggestions(e.target.checked)}
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-medium text-ink">Open to suggestions</span>
+              <span className="block text-[11px] text-ink-muted">
+                Let people pitch how they can help even if none of the listed roles fit.
+              </span>
+            </span>
+          </label>
         </section>
 
         {scopeWillChange && (

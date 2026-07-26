@@ -157,6 +157,7 @@ export function CollabComposer({
     { role_name: "", quantity: 1, description: "" },
   ]);
   const [rights, setRights] = useState<RightsArrangement>("decide_later");
+  const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
@@ -201,10 +202,11 @@ export function CollabComposer({
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
 
-    // Roles are optional now — if none, we create a single open-to-collaborators placeholder.
-    let cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
-    if (cleanRoles.length === 0) {
-      cleanRoles = [{ role_name: "Open to collaborators", quantity: 1, description: "" }];
+    // Roles are optional. If none are defined AND suggestions aren't accepted,
+    // there's nothing for people to apply to.
+    const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
+    if (cleanRoles.length === 0 && !acceptsSuggestions) {
+      return toast.error("Add at least one role, or turn on 'Open to suggestions'.");
     }
 
     const targetStatus: "draft" | "open" = saveAsDraft ? "draft" : "open";
@@ -240,21 +242,24 @@ export function CollabComposer({
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
       rights_arrangement: rights,
+      accepts_suggestions: acceptsSuggestions,
       status: targetStatus,
     }).select("id,slug").single();
 
     if (error || !post) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't post"); }
 
-    const { error: rolesErr } = await supabase.from("collab_roles").insert(
-      cleanRoles.map((r, i) => ({
-        collab_post_id: post.id,
-        role_name: r.role_name.trim(),
-        quantity: r.quantity,
-        description: r.description || null,
-        sort_order: i,
-      })),
-    );
-    if (rolesErr) toast.error(rolesErr.message);
+    if (cleanRoles.length > 0) {
+      const { error: rolesErr } = await supabase.from("collab_roles").insert(
+        cleanRoles.map((r, i) => ({
+          collab_post_id: post.id,
+          role_name: r.role_name.trim(),
+          quantity: r.quantity,
+          description: r.description || null,
+          sort_order: i,
+        })),
+      );
+      if (rolesErr) toast.error(rolesErr.message);
+    }
 
     // Tag into selected Groups (best-effort) — drafts skip tagging.
     if (targetStatus === "open" && selectedGroups.length > 0) {
@@ -543,6 +548,20 @@ export function CollabComposer({
                 </div>
               ))}
             </div>
+            <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/60 p-2.5">
+              <input
+                type="checkbox"
+                className="mt-1 accent-ink"
+                checked={acceptsSuggestions}
+                onChange={(e) => setAcceptsSuggestions(e.target.checked)}
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-medium text-ink">Open to suggestions</span>
+                <span className="block text-[11px] text-ink-muted">
+                  Let people pitch how they can help even if none of the listed roles fit.
+                </span>
+              </span>
+            </label>
           </section>
 
           <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
