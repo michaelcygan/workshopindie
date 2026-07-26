@@ -100,6 +100,11 @@
 :root {
   --radius: 16px;
 
+  /* Mobile island bottom clearance. Overridden per-viewport below and
+     cleared to 0 by MobileActionIsland when the island is hidden. */
+  --mobile-island-clearance: 0px;
+
+
   /* Canvas */
   --background: oklch(0.985 0.008 80);          /* warm near-white */
   --surface: oklch(1 0 0);                       /* pure white card */
@@ -440,5 +445,16 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-kenburns { animation: none; }
+}
+
+/* Mobile island clearance: apply to page containers so the last card/button
+   never sits under the floating bottom island. Zero on desktop and whenever
+   MobileActionIsland removes the CSS var (hidden route or keyboard open). */
+@media (max-width: 767px) {
+  :root { --mobile-island-clearance: calc(env(safe-area-inset-bottom) + 84px); }
+}
+
+@utility pb-mobile-island {
+  padding-bottom: var(--mobile-island-clearance);
 }
 

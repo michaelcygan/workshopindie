@@ -408,7 +408,7 @@ function GalleryPage() {
   };
 
   return (
-    <main className="pb-24 md:pb-0">
+    <main className="pb-mobile-island">
       {/* Logged-out hero with live counters */}
       {!user && <GalleryLoggedOutHero />}
 
