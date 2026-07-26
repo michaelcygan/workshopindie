@@ -1328,7 +1328,7 @@ function PinBar({
                 params={{ slug: c.slug }}
                 className="group flex w-[160px] flex-col gap-2 md:w-[200px]"
               >
-                <div className={cn("relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-3", categoryClass(c.category))}>
+              <div className={cn("relative flex aspect-square items-center justify-center overflow-hidden rounded-2xl p-3 gradient-warm")}>
                   <span className="line-clamp-3 text-center text-xs font-medium text-white/90">{c.title}</span>
                   <span className="absolute left-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">Collab</span>
                 </div>
@@ -1493,7 +1493,7 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
           hrefParams={{ slug: c.slug }}
           ariaLabel={c.title}
           aspect="16/10"
-          coverFallbackClass={categoryClass(c.category)}
+          coverFallbackClass="gradient-warm"
           coverOverlay={
             <div className="flex h-full items-center justify-center">
               <div className="text-center text-primary-foreground">
