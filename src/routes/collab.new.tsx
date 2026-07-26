@@ -248,16 +248,18 @@ export function CollabComposer({
 
     if (error || !post) { setSubmitting(false); return toast.error(error?.message ?? "Couldn't post"); }
 
-    const { error: rolesErr } = await supabase.from("collab_roles").insert(
-      cleanRoles.map((r, i) => ({
-        collab_post_id: post.id,
-        role_name: r.role_name.trim(),
-        quantity: r.quantity,
-        description: r.description || null,
-        sort_order: i,
-      })),
-    );
-    if (rolesErr) toast.error(rolesErr.message);
+    if (cleanRoles.length > 0) {
+      const { error: rolesErr } = await supabase.from("collab_roles").insert(
+        cleanRoles.map((r, i) => ({
+          collab_post_id: post.id,
+          role_name: r.role_name.trim(),
+          quantity: r.quantity,
+          description: r.description || null,
+          sort_order: i,
+        })),
+      );
+      if (rolesErr) toast.error(rolesErr.message);
+    }
 
     // Tag into selected Groups (best-effort) — drafts skip tagging.
     if (targetStatus === "open" && selectedGroups.length > 0) {
