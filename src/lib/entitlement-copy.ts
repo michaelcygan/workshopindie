@@ -29,6 +29,37 @@ export type GateCopy = {
   cta: string;
 };
 
+export type PlusGateReason =
+  | "work_limit"
+  | "collab_limit"
+  | "blog_limit"
+  | "lounge_limit";
+
+export function plusGateCopy(reason: PlusGateReason): { title: string; body: string } {
+  switch (reason) {
+    case "work_limit":
+      return {
+        title: "Your portfolio is growing",
+        body: `Free portfolios include up to ${FREE_PUBLISHED_WORK_CAP} published Works. Go Plus to publish without a limit.`,
+      };
+    case "collab_limit":
+      return {
+        title: "You already have two active Collabs",
+        body: "Close one, save this as a draft, or go Plus to keep unlimited Collabs open.",
+      };
+    case "blog_limit":
+      return {
+        title: "You've used this month's Blog publications",
+        body: "Keep writing in drafts, or go Plus to publish without a monthly limit.",
+      };
+    case "lounge_limit":
+      return {
+        title: "You've used your Free Lounge audio",
+        body: "Chat remains available. Go Plus for unlimited Lounge listening and speaking.",
+      };
+  }
+}
+
 /** Format 600 → "10 h", 90 → "1 h 30 min", 45 → "45 min". */
 export function formatMinutes(mins: number): string {
   if (mins <= 0) return "0 min";
