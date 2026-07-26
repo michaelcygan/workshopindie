@@ -35,6 +35,8 @@ async function resolveOrCreateCustomer(
   return created.id;
 }
 
+const ALLOWED_PRICE_LOOKUP_KEYS = ["plus_monthly"];
+
 export const createCheckoutSession = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: {
@@ -43,6 +45,9 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
     environment: StripeEnv;
   }) => {
     if (!/^[a-zA-Z0-9_-]+$/.test(data.priceId)) throw new Error("Invalid priceId");
+    if (!ALLOWED_PRICE_LOOKUP_KEYS.includes(data.priceId)) {
+      throw new Error("Price is not available for checkout");
+    }
     if (data.environment !== "sandbox" && data.environment !== "live") {
       throw new Error("Invalid environment");
     }
