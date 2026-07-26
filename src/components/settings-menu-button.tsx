@@ -25,7 +25,38 @@ export function SettingsMenuButton() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label="Menu"
+            className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-soft ring-1 ring-border hover:bg-muted"
+          >
+            <SettingsIcon className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+            Explore
+          </DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => navigate({ to: "/gallery" })}>
+            <LayoutGrid className="mr-2 h-4 w-4" /> Gallery
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate({ to: "/events" })}>
+            <Calendar className="mr-2 h-4 w-4" /> Events
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => navigate({ to: "/blog" })}>
+            <BookOpen className="mr-2 h-4 w-4" /> Blog
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate({ to: "/auth" })}>
+            Sign in
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
 
   const displayName =
     (user.user_metadata?.display_name as string | undefined) ??
@@ -43,6 +74,7 @@ export function SettingsMenuButton() {
           <SettingsIcon className="h-4 w-4" />
         </button>
       </DropdownMenuTrigger>
+
       <DropdownMenuContent align="end" className="w-60">
         <button
           type="button"
