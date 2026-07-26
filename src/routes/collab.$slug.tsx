@@ -672,50 +672,68 @@ function CollabDetail() {
           <div className="prose prose-sm mt-8 max-w-none whitespace-pre-wrap text-ink">{post.description}</div>
         )}
 
-        <section className="mt-10">
-          <h2 className="font-display text-2xl text-ink">Roles</h2>
-          {isShipped ? (
-            <p className="mt-3 text-sm text-ink-muted">
-              Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
-            </p>
-          ) : (
-            <div className="mt-3 space-y-2">
-              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-              {roles.map((r: any) => {
-                const interested = activity?.perRole?.[r.id] ?? 0;
-                return (
-                  <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
-                    <div className="flex-1">
-                      <div className="flex flex-wrap items-baseline gap-2">
-                        <h3 className="font-medium text-ink">{r.role_name}</h3>
-                        <span className="text-xs text-ink-muted">×{r.quantity}</span>
-                        {isOwner && interested > 0 && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-                            {interested} interested
-                          </span>
-                        )}
-                      </div>
-                      {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
-                    </div>
-                    {!isOwner && post.status === "open" && (
-                      <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
-                        {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> I'm in</>}
-                      </Button>
-                    )}
+        {(roles.length > 0 || post.accepts_suggestions) && (
+          <section className="mt-10">
+            {roles.length > 0 && (
+              <>
+                <h2 className="font-display text-2xl text-ink">Roles</h2>
+                {isShipped ? (
+                  <p className="mt-3 text-sm text-ink-muted">
+                    Cast · {workCollabCount ?? roles.length} {((workCollabCount ?? roles.length) === 1) ? "collaborator" : "collaborators"}
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                    {roles.map((r: any) => {
+                      const interested = activity?.perRole?.[r.id] ?? 0;
+                      return (
+                        <div key={r.id} className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4">
+                          <div className="flex-1">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                              <h3 className="font-medium text-ink">{r.role_name}</h3>
+                              <span className="text-xs text-ink-muted">×{r.quantity}</span>
+                              {isOwner && interested > 0 && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                                  {interested} interested
+                                </span>
+                              )}
+                            </div>
+                            {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
+                          </div>
+                          {!isOwner && post.status === "open" && (
+                            <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
+                              {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
+                            </Button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                )}
+              </>
+            )}
 
-          {!isOwner && post.status === "open" && (
-            <div className="mt-6 flex justify-center">
-              <Button variant="outline" className="rounded-full gap-2" onClick={() => openContact(null)}>
-                <MessageCircle className="h-4 w-4" /> General interest (no specific role)
-              </Button>
-            </div>
-          )}
-        </section>
+            {!isOwner && post.status === "open" && post.accepts_suggestions && !isShipped && (
+              <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
+                <h3 className="font-medium text-ink">Suggest how you can help</h3>
+                <p className="mt-1 text-sm text-ink-muted">
+                  Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
+                </p>
+                <div className="mt-3">
+                  <Button variant="outline" className="rounded-full gap-2" onClick={() => openContact(null)}>
+                    <MessageCircle className="h-4 w-4" /> Suggest a way to help
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {isOwner && (activity?.suggestions ?? 0) > 0 && (
+              <p className="mt-3 text-xs text-ink-muted">
+                {activity!.suggestions} open suggestion{activity!.suggestions === 1 ? "" : "s"}
+              </p>
+            )}
+          </section>
+        )}
 
 
         {isOwner && <ApplicantsPanel postId={post.id} />}
