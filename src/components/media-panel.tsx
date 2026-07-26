@@ -99,6 +99,10 @@ export function MediaPanel({
   nextLoungeSlot?: React.ReactNode;
 }) {
   const api = useOptionalLoungeAudio();
+  const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
+  const isHost = !!user && hostUserId === user.id;
+  const canModerate = isHost || isAdmin;
   // Prefer the API's participant roll when the provider is mounted; falls back
   // to legacy presence counts under bare mesh so nothing regresses.
   const totalHere = api ? Math.max(api.participants.length, 1 + others.length) : 1 + others.length;
