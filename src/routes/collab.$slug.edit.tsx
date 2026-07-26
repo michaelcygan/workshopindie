@@ -201,6 +201,24 @@ function EditCollab() {
           </div>
         </section>
 
+        <section className="space-y-2">
+          <Label>Suggestions</Label>
+          <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/60 p-2.5">
+            <input
+              type="checkbox"
+              className="mt-1 accent-ink"
+              checked={acceptsSuggestions}
+              onChange={(e) => setAcceptsSuggestions(e.target.checked)}
+            />
+            <span className="flex-1">
+              <span className="block text-sm font-medium text-ink">Open to suggestions</span>
+              <span className="block text-[11px] text-ink-muted">
+                Let people pitch how they can help even if none of the listed roles fit.
+              </span>
+            </span>
+          </label>
+        </section>
+
         {scopeWillChange && (
           <div className="flex items-start gap-2 rounded-2xl border border-amber-500/40 bg-amber-500/10 p-3 text-sm">
             <AlertTriangle className="mt-0.5 h-4 w-4 text-amber-700" />
