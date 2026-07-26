@@ -212,6 +212,15 @@ export function ApplicantsPanel({ postId }: Props) {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-ink">{g.name}</span>
                     <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-500">Guest</span>
+                    {g.application_kind === "role" && g.role_name ? (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                        Role · {g.role_name}
+                      </span>
+                    ) : g.application_kind === "suggestion" ? (
+                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">
+                        Suggestion
+                      </span>
+                    ) : null}
                     {g.status === "contacted" && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-muted">Contacted</span>}
                     {g.status === "spam" && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Spam</span>}
                   </div>
