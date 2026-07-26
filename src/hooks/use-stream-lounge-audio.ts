@@ -152,7 +152,7 @@ export function useStreamLoungeAudio(
             setError({ code: "unknown", message: msg });
           }
           try {
-            await supabase.rpc("release_lounge_audio_slot", { p_room_id: roomId });
+            await supabase.rpc("release_lounge_audio_slot", { _room_id: roomId });
           } catch { /* noop */ }
         }
       } else if (myState !== "speaker" && publishedRef.current) {
@@ -238,7 +238,7 @@ export function useStreamLoungeAudio(
     try {
       emitLoungeAudioEvent("mic_request", { roomId });
       const { error: e } = await supabase.rpc("request_lounge_audio_slot", {
-        p_room_id: roomId,
+        _room_id: roomId,
       });
       if (e) throw e;
     } catch (e) {
@@ -258,7 +258,7 @@ export function useStreamLoungeAudio(
     try {
       emitLoungeAudioEvent("mic_offer", { roomId, action: "accept" });
       const { error: e } = await supabase.rpc("accept_lounge_audio_offer", {
-        p_room_id: roomId,
+        _room_id: roomId,
       });
       if (e) throw e;
       // The audio_state → speaker flip triggers the publish effect above.
@@ -276,7 +276,7 @@ export function useStreamLoungeAudio(
     if (!user) return;
     try {
       emitLoungeAudioEvent("queue_abandon", { roomId });
-      await supabase.rpc("leave_lounge_audio_queue", { p_room_id: roomId });
+      await supabase.rpc("leave_lounge_audio_queue", { _room_id: roomId });
     } catch { /* noop */ }
   }, [user, roomId]);
 
@@ -299,7 +299,7 @@ export function useStreamLoungeAudio(
       await call?.microphone.disable();
       publishedRef.current = false;
       setMuted(true);
-      await supabase.rpc("release_lounge_audio_slot", { p_room_id: roomId });
+      await supabase.rpc("release_lounge_audio_slot", { _room_id: roomId });
       await revokeLoungeSpeaker({ data: { roomId } });
       emitLoungeAudioEvent("speaker_leave", { roomId });
     } catch { /* noop */ }
