@@ -120,7 +120,11 @@ export const updateCollabTask = createServerFn({ method: "POST" })
       });
     }
 
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      title?: string;
+      status?: CollabTaskStatus;
+      completed_at?: string | null;
+    } = {};
     if (data.patch.title !== undefined) patch.title = data.patch.title;
     if (data.patch.status !== undefined) {
       patch.status = data.patch.status;
