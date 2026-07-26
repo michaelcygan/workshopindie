@@ -611,7 +611,7 @@ function GalleryPage() {
 
 
       {/* Grid */}
-      <section className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+      <section className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-6">
         {(tab === "following" || tab === "favorites") && !user ? (
           <EmptyState
             title={tab === "favorites" ? "Sign in to see your Favorites" : "Sign in to see your Following feed"}
@@ -624,8 +624,8 @@ function GalleryPage() {
           />
         ) : isLoading ? (
           <Grid>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-surface-2" />
             ))}
           </Grid>
         ) : works.length === 0 ? (
@@ -670,13 +670,13 @@ function GalleryPage() {
         ) : (
           <>
             <Grid>
-              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} />)}
+              {works.map((w) => <WorkCard key={w.id} work={w} groups={groupTagMap?.get(w.id)} myGroupIds={myGroupIds} aspect="16/10" />)}
             </Grid>
             <div ref={sentinelRef} className="h-12" />
             {isFetchingNext && (
               <Grid>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="aspect-[4/5] animate-pulse rounded-2xl bg-surface-2" />
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="aspect-[16/10] animate-pulse rounded-2xl bg-surface-2" />
                 ))}
               </Grid>
             )}
@@ -686,6 +686,9 @@ function GalleryPage() {
           </>
         )}
       </section>
+
+      {/* Just posted rail — below the main grid */}
+      <FreshWorksStrip />
 
       {/* Sticky mobile CTA */}
       <Link
@@ -698,6 +701,7 @@ function GalleryPage() {
         </Button>
       </Link>
     </main>
+
   );
 }
 
