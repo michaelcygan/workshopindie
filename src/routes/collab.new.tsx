@@ -157,6 +157,7 @@ export function CollabComposer({
     { role_name: "", quantity: 1, description: "" },
   ]);
   const [rights, setRights] = useState<RightsArrangement>("decide_later");
+  const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
