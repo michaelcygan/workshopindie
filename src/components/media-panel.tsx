@@ -76,6 +76,7 @@ export function MediaPanel({
   onViewModeChange,
   onOpenWork,
   roomId,
+  hostUserId,
   dockExtra,
   nextLoungeSlot,
 }: {
@@ -91,6 +92,7 @@ export function MediaPanel({
   onViewModeChange?: (v: RoomViewMode) => void;
   onOpenWork?: (workId: string) => void;
   roomId?: string;
+  hostUserId?: string | null;
   /** Optional extra control rendered in the dock alongside Mute/Camera/Exit. */
   dockExtra?: React.ReactNode;
   /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
