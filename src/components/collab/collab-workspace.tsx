@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, Link2, Video, Send, Users, Pencil, X, ExternalLink, Trash2 } from "lucide-react";
+import { MessageCircle, Link2, Video, Send, Users, Pencil, X, ExternalLink, Trash2, ListTodo } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
