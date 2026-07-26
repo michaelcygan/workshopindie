@@ -66,7 +66,7 @@ export const getUsageSummary = createServerFn({ method: "GET" })
     const { count: openCollabsCount } = await context.supabase
       .from("collab_posts")
       .select("id", { count: "exact", head: true })
-      .eq("owner_id", context.userId)
+      .eq("user_id", context.userId)
       .eq("status", "open");
 
     return {
