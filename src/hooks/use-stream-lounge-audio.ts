@@ -91,14 +91,37 @@ export function useStreamLoungeAudio(
     }
   }, [callingState, roomId]);
 
-  // Connected-minutes rollup — one telemetry ping per minute while joined.
+  // Connected-minutes rollup — reserve one minute against the Free monthly
+  // cap on each tick. The RPC also writes the telemetry row on success;
+  // Plus/trial subscribers are `monthlyLimit: null` and never blocked.
   useEffect(() => {
     if (!connected) return;
-    const iv = window.setInterval(() => {
-      emitLoungeAudioEvent("connected_minutes", { roomId });
-    }, 60_000);
-    return () => window.clearInterval(iv);
-  }, [connected, roomId]);
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const { reserveLoungeMinute } = await import(
+          "@/lib/lounge-access.functions"
+        );
+        const res = await reserveLoungeMinute({ data: { roomId } });
+        if (cancelled) return;
+        if (!res.ok) {
+          setError({ code: "quota", message: res.reason ?? "Monthly Lounge audio limit reached." });
+          try {
+            await call?.leave();
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        // Fail-open: never break the audio path on telemetry errors.
+      }
+    };
+    const iv = window.setInterval(tick, 60_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(iv);
+    };
+  }, [connected, roomId, call]);
 
   // Load + subscribe to presence audio_state.
   useEffect(() => {
