@@ -472,5 +472,9 @@ export function useStreamLoungeAudio(
     disconnect,
     moderateSpeaker,
     reconnecting,
+    micDevices,
+    selectedMicId,
+    selectMic,
   };
+
 }
