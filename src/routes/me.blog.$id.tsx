@@ -259,12 +259,17 @@ function MemberBlogEditorPage() {
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1">
             Published <span className="font-medium text-ink">{access.publicationsThisMonth}</span> of {access.monthlyPublicationLimit} this month
           </span>
+          {nearBlogLimit && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-amber-800">
+              Last free post this month
+            </span>
+          )}
           {!access.canPublish && (access.mode === "free" || access.mode === "lapsed") && (
             <Link to="/pricing" className="text-primary hover:underline">Go Plus for unlimited</Link>
           )}
         </div>
       )}
-      {!access.canPublish && access.reason && (
+      {!access.canPublish && access.reason && !publishBlockedByQuota && (
         <div className="mt-4 rounded-2xl border border-border bg-surface p-3 text-xs text-ink-soft">
           {access.reason}
         </div>
