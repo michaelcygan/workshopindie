@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { getStripeEnvironment } from "@/lib/stripe";
+import { getMyEffectivePlusAccess } from "@/lib/plus-access.functions";
+import { FREE_EFFECTIVE_PLUS_ACCESS, type EffectivePlusAccess } from "@/lib/plus-access";
 import {
   FREE_OPEN_COLLAB_CAP,
   FREE_PUBLISHED_WORK_CAP,
@@ -11,8 +12,6 @@ import {
   type WorkshopEntitlements,
 } from "@/lib/entitlements";
 
-// Re-export the central constants so existing importers of use-plus keep
-// working. The entitlements module is the source of truth.
 export {
   FREE_OPEN_COLLAB_CAP,
   FREE_PUBLISHED_WORK_CAP,
@@ -24,6 +23,12 @@ export type PlusState = {
   isPlus: boolean;
   loading: boolean;
   entitlements: WorkshopEntitlements;
+  /** Full effective-Plus state so UI can differentiate paid / trial /
+   *  complimentary / lifetime without re-querying. */
+  access: EffectivePlusAccess;
+  /** Backward-compatible subset of the paid Stripe subscription for
+   *  existing callers that only reach for renewal fields. Null when the
+   *  user has no paid subscription (e.g. lifetime or complimentary-only). */
   subscription: {
     status: string | null;
     tier: "free" | "plus";
@@ -35,33 +40,33 @@ export type PlusState = {
 
 export function usePlus(): PlusState {
   const { user, loading: authLoading } = useAuth();
-  const env = getStripeEnvironment();
+  const fetchAccess = useServerFn(getMyEffectivePlusAccess);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["subscription", user?.id, env],
+    queryKey: ["plus-access", user?.id],
     enabled: !!user,
     refetchInterval: 60_000,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("subscriptions")
-        .select("status,tier,current_period_end,cancel_at_period_end,stripe_customer_id")
-        .eq("user_id", user!.id)
-        .eq("environment", env)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
+    queryFn: () => fetchAccess(),
   });
 
-  const sub = data ?? null;
-  const entitlements = resolveEntitlements(sub);
-  const isPlus = entitlements.tier === "plus";
+  const access = data ?? FREE_EFFECTIVE_PLUS_ACCESS;
+  const entitlements = resolveEntitlements(access);
+
+  const subscription = access.paidSubscription
+    ? {
+        status: access.paidSubscription.status,
+        tier: access.tier,
+        current_period_end: access.paidSubscription.currentPeriodEnd,
+        cancel_at_period_end: access.paidSubscription.cancelAtPeriodEnd,
+        stripe_customer_id: access.paidSubscription.stripeCustomerId,
+      }
+    : null;
 
   return {
-    isPlus,
+    isPlus: access.isPlus,
     loading: authLoading || (!!user && isLoading),
     entitlements,
-    subscription: sub as PlusState["subscription"],
+    access,
+    subscription,
   };
 }
