@@ -11,9 +11,9 @@ export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — Workshop" },
-      { name: "description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Lounge time, all cities, and more." },
+      { name: "description", content: "Free includes the complete Workshop within generous monthly limits. Plus removes the limits for $4.99/mo." },
       { property: "og:title", content: "Pricing — Workshop" },
-      { property: "og:description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Lounge time, all cities, and more." },
+      { property: "og:description", content: "Free includes the complete Workshop within generous monthly limits. Plus removes the limits for $4.99/mo." },
     ],
   }),
 });
