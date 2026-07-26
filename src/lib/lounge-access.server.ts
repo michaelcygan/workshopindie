@@ -6,7 +6,7 @@
  * (unlimited). Usage is counted authoritatively from the
  * `lounge_audio_events` table via `public.lounge_minutes_this_month`.
  */
-import { resolveEntitlements, type SubscriptionLike } from "@/lib/entitlements";
+import { resolveEntitlements } from "@/lib/entitlements";
 
 function nextMonthResetLabel(): string {
   const now = new Date();
