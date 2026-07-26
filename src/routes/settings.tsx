@@ -566,6 +566,7 @@ function PlusSection() {
           </Link>
         )}
       </div>
+      <UsageSummary />
       <p className="mt-3 text-xs text-ink-muted">
         Billing opens in a new tab. You'll come back to Settings when you're done.
       </p>
