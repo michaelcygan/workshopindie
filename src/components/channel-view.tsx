@@ -889,7 +889,6 @@ export function ChannelView({
                 <Columns2 className="h-3.5 w-3.5" />
               )}
             </button>
-            <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
             <button
               type="button"
               onClick={() => setFsView(fsTarget)}
@@ -902,8 +901,8 @@ export function ChannelView({
           </div>
 
 
-          {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
+
           <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
