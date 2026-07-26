@@ -35,52 +35,60 @@ export type WorkshopEntitlements = {
   canUnpublishBlogPosts: boolean;
 };
 
-/** Shape used by `usePlus` and the webhook-populated `subscriptions` row. */
+/** Legacy shape used before the effective-Plus resolver landed. Kept so
+ * older call sites reading the raw `subscriptions` row continue to compile;
+ * new code should pass an `EffectivePlusAccess` from the resolver. */
 export type SubscriptionLike = {
   tier?: string | null;
   status?: string | null;
   current_period_end?: string | null;
 } | null;
 
+import type { EffectivePlusAccess } from "./plus-access";
+
+const PLUS_BUNDLE: WorkshopEntitlements = {
+  tier: "plus",
+  maxPublishedWorks: null,
+  maxOpenCollabs: null,
+  loungeMinutesPerMonth: null,
+  blogPublicationsPerMonth: null,
+  canCreateBlogDrafts: true,
+  canEditExistingBlogPosts: true,
+  canUnpublishBlogPosts: true,
+};
+
+const FREE_BUNDLE: WorkshopEntitlements = {
+  tier: "free",
+  maxPublishedWorks: FREE_PUBLISHED_WORK_CAP,
+  maxOpenCollabs: FREE_OPEN_COLLAB_CAP,
+  loungeMinutesPerMonth: FREE_LOUNGE_MINUTES_PER_MONTH,
+  blogPublicationsPerMonth: FREE_BLOG_PUBLICATIONS_PER_MONTH,
+  canCreateBlogDrafts: true,
+  canEditExistingBlogPosts: true,
+  canUnpublishBlogPosts: true,
+};
+
 /**
- * Return the entitlement bundle for a subscription record.
- *
- * Plus is granted only when the row explicitly says `tier === "plus"` and
- * the subscription is `active` or `trialing` with a future (or missing)
- * `current_period_end`. Everything else — including `lapsed`, `canceled`,
- * `past_due` beyond grace, and no row — resolves to Free. Callers that need
- * to distinguish "used to be Plus" from "never Plus" (e.g. cancellation
- * banners) should inspect the raw subscription separately.
+ * Return the entitlement bundle for a subscription record OR an
+ * `EffectivePlusAccess` from the resolver. Complimentary and lifetime grants
+ * yield the identical Plus bundle — Plus only removes operating limits, it
+ * never confers ranking, badges, or admin capabilities.
  */
-export function resolveEntitlements(sub: SubscriptionLike): WorkshopEntitlements {
+export function resolveEntitlements(
+  input: SubscriptionLike | EffectivePlusAccess,
+): WorkshopEntitlements {
+  // EffectivePlusAccess has an `isPlus` boolean the SubscriptionLike shape lacks.
+  if (input && typeof (input as EffectivePlusAccess).isPlus === "boolean") {
+    return (input as EffectivePlusAccess).isPlus ? PLUS_BUNDLE : FREE_BUNDLE;
+  }
+
+  const sub = input as SubscriptionLike;
   const isPlus =
     !!sub &&
     sub.tier === "plus" &&
     (sub.status === "active" || sub.status === "trialing") &&
     (!sub.current_period_end || new Date(sub.current_period_end) > new Date());
 
-  if (isPlus) {
-    return {
-      tier: "plus",
-      maxPublishedWorks: null,
-      maxOpenCollabs: null,
-      loungeMinutesPerMonth: null,
-      blogPublicationsPerMonth: null,
-      canCreateBlogDrafts: true,
-      canEditExistingBlogPosts: true,
-      canUnpublishBlogPosts: true,
-    };
-  }
-
-  return {
-    tier: "free",
-    maxPublishedWorks: FREE_PUBLISHED_WORK_CAP,
-    maxOpenCollabs: FREE_OPEN_COLLAB_CAP,
-    loungeMinutesPerMonth: FREE_LOUNGE_MINUTES_PER_MONTH,
-    blogPublicationsPerMonth: FREE_BLOG_PUBLICATIONS_PER_MONTH,
-    canCreateBlogDrafts: true,
-    canEditExistingBlogPosts: true,
-    canUnpublishBlogPosts: true,
-  };
+  return isPlus ? PLUS_BUNDLE : FREE_BUNDLE;
 }
 

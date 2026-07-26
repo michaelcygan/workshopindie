@@ -6,7 +6,7 @@
  * (unlimited). Usage is counted authoritatively from the
  * `lounge_audio_events` table via `public.lounge_minutes_this_month`.
  */
-import { resolveEntitlements, type SubscriptionLike } from "@/lib/entitlements";
+import { resolveEntitlements } from "@/lib/entitlements";
 
 function nextMonthResetLabel(): string {
   const now = new Date();
@@ -27,16 +27,10 @@ export async function resolveLoungeAudioAccess(
   userId: string,
 ): Promise<LoungeAudioAccess> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { resolveEffectivePlusAccess } = await import("./plus-access.server");
 
-  const { data: subRow } = await supabaseAdmin
-    .from("subscriptions")
-    .select("status,tier,current_period_end")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  const entitlements = resolveEntitlements(subRow as SubscriptionLike);
+  const access = await resolveEffectivePlusAccess(userId);
+  const entitlements = resolveEntitlements(access);
   const monthlyLimit = entitlements.loungeMinutesPerMonth;
 
   if (monthlyLimit == null) {

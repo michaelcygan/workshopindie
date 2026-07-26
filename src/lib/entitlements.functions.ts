@@ -29,21 +29,11 @@ export const getUsageSummary = createServerFn({ method: "GET" })
   .handler(async ({ context }): Promise<UsageSummary> => {
     const { resolveLoungeAudioAccess } = await import("./lounge-access.server");
     const { resolveEntitlements } = await import("./entitlements");
-    type SubscriptionLike = import("./entitlements").SubscriptionLike;
+    const { resolveEffectivePlusAccess } = await import("./plus-access.server");
 
-    const { supabaseAdmin } = await import(
-      "@/integrations/supabase/client.server"
-    );
-
-    // Subscription → entitlements
-    const { data: subRow } = await supabaseAdmin
-      .from("subscriptions")
-      .select("status,tier,current_period_end")
-      .eq("user_id", context.userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const entitlements = resolveEntitlements(subRow as SubscriptionLike);
+    // Effective access = paid Stripe subscription OR active grant.
+    const access = await resolveEffectivePlusAccess(context.userId);
+    const entitlements = resolveEntitlements(access);
 
     // Blog publications this month (advisory RPC used by gate is a consumer;
     // the count function is safe to read on its own).

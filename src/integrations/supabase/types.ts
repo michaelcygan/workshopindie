@@ -3779,6 +3779,112 @@ export type Database = {
           },
         ]
       }
+      plus_access_grants: {
+        Row: {
+          access_ends_at: string | null
+          access_starts_at: string | null
+          application_method: string | null
+          applied_at: string | null
+          benefit_type: string
+          created_at: string
+          duration_months: number | null
+          environment: Database["public"]["Enums"]["stripe_environment"]
+          granted_by: string | null
+          id: string
+          note: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          source: string
+          source_id: string | null
+          status: string
+          stripe_subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          access_ends_at?: string | null
+          access_starts_at?: string | null
+          application_method?: string | null
+          applied_at?: string | null
+          benefit_type: string
+          created_at?: string
+          duration_months?: number | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          source: string
+          source_id?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          access_ends_at?: string | null
+          access_starts_at?: string | null
+          application_method?: string | null
+          applied_at?: string | null
+          benefit_type?: string
+          created_at?: string
+          duration_months?: number | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
+          granted_by?: string | null
+          id?: string
+          note?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          source?: string
+          source_id?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plus_access_grants_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_granted_by_fkey"
+            columns: ["granted_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_revoked_by_fkey"
+            columns: ["revoked_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_access_grants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processed_stripe_events: {
         Row: {
           event_id: string
@@ -6790,6 +6896,7 @@ export type Database = {
         Args: { _months: number; _reason: string; _user_id: string }
         Returns: boolean
       }
+      has_effective_plus: { Args: { _user_id: string }; Returns: boolean }
       has_max_age: {
         Args: { _max: number; _user_id: string }
         Returns: boolean
