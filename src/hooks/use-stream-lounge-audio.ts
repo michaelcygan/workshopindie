@@ -75,6 +75,12 @@ export function useStreamLoungeAudio(
   const [error, setError] = useState<LoungeAudioError | null>(null);
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [micDevices, setMicDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicId, setSelectedMicId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    try { return window.localStorage.getItem("lounge.micDeviceId"); } catch { return null; }
+  });
+
 
   const connected = callingState === "joined";
   const reconnecting =
