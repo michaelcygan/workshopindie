@@ -32,6 +32,7 @@ export type CollabCardData = {
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
+  accepts_suggestions?: boolean | null;
 };
 
 const COMP_LABEL: Record<CollabCardData["compensation_type"], string> = {
