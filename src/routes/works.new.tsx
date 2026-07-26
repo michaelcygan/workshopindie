@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
+import { publishedWorkCapCopy } from "@/lib/entitlement-copy";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
@@ -548,8 +549,8 @@ function NewWork() {
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title="You've hit 10 published works"
-        description="Free portfolios cap at 10. Go Plus for unlimited works."
+        title={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).title}
+        description={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).body}
       />
     </main>
   );

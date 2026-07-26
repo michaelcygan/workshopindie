@@ -32,8 +32,8 @@ export function PlusGate({ open, onOpenChange, title, description }: Props) {
             <div className="mx-auto mt-6 max-w-sm space-y-3">
               <PlusBullet>Unlimited published Works</PlusBullet>
               <PlusBullet>Unlimited active open Collabs</PlusBullet>
-              <PlusBullet>Unlimited Lounge audio (Free is 10 h / month)</PlusBullet>
-              <PlusBullet>Unlimited Blog publishing (Free is 2 posts / month)</PlusBullet>
+              <PlusBullet>Unlimited Lounge audio each month</PlusBullet>
+              <PlusBullet>Unlimited Blog publishing each month</PlusBullet>
               <PlusBullet>Everything included in Free</PlusBullet>
             </div>
 
