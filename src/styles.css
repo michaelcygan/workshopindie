@@ -100,6 +100,11 @@
 :root {
   --radius: 16px;
 
+  /* Mobile island bottom clearance. Overridden per-viewport below and
+     cleared to 0 by MobileActionIsland when the island is hidden. */
+  --mobile-island-clearance: 0px;
+
+
   /* Canvas */
   --background: oklch(0.985 0.008 80);          /* warm near-white */
   --surface: oklch(1 0 0);                       /* pure white card */
