@@ -39,7 +39,7 @@ async function assertPresenceOrThrow(userId: string, roomId: string) {
 
 /**
  * Mint a short-lived Stream user token for the current user + room. Also
- * ensures the corresponding Stream `workshop_lounge` call exists.
+ * ensures the corresponding Stream `audio_room` call exists.
  */
 export const getLoungeStreamToken = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
