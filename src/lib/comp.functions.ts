@@ -4,6 +4,12 @@ import { z } from "zod";
 
 const codeSchema = z.string().trim().min(4).max(64).regex(/^[A-Za-z0-9_-]+$/);
 
+/**
+ * Legacy comp-code redemption. New comp benefits flow through the
+ * `plus_access_grants` ledger via `applyComplimentaryPlusBenefit` so they
+ * are visible in the admin Plus panel and unified with all other sources.
+ * The `subscriptions` row is left untouched (Stripe owns it).
+ */
 export const redeemCompMembership = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { code: string }) => ({ code: codeSchema.parse(d.code) }))
@@ -29,36 +35,36 @@ export const redeemCompMembership = createServerFn({ method: "POST" })
     if (!comp) throw new Error("That code isn't valid.");
     if (comp.status !== "unredeemed") throw new Error("This code has already been redeemed.");
 
-    const expiresAt = new Date();
-    expiresAt.setMonth(expiresAt.getMonth() + (comp.duration_months ?? 12));
-
+    // Mark comp code redeemed atomically.
     const { error: upErr } = await supabase
       .from("comp_memberships")
       .update({
         status: "redeemed",
         redeemed_at: new Date().toISOString(),
         granted_to: userId,
-        expires_at: expiresAt.toISOString(),
       })
       .eq("id", comp.id)
       .eq("status", "unredeemed");
     if (upErr) throw new Error(upErr.message);
 
-    // Grant Plus via subscriptions row (no stripe_subscription_id)
-    const { error: subErr } = await supabase
-      .from("subscriptions")
-      .upsert(
-        {
-          user_id: userId,
-          tier: "plus",
-          status: "active",
-          current_period_end: expiresAt.toISOString(),
-          environment: "live",
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
-    if (subErr) throw new Error(subErr.message);
+    // Grant Plus via the ledger (stacked with any existing timed grants).
+    const { applyComplimentaryPlusBenefit } = await import("@/lib/plus-benefits.server");
+    const result = await applyComplimentaryPlusBenefit({
+      userId,
+      source: "legacy_comp",
+      sourceId: comp.id,
+      benefitType: "months",
+      durationMonths: comp.duration_months ?? 12,
+      note: `Legacy comp code ${codeUpper}`,
+    });
 
-    return { ok: true, expiresAt: expiresAt.toISOString() };
+    // Persist the resolved expires_at back onto the comp row for continuity.
+    if (result.accessEndsAt) {
+      await supabase
+        .from("comp_memberships")
+        .update({ expires_at: result.accessEndsAt })
+        .eq("id", comp.id);
+    }
+
+    return { ok: true, expiresAt: result.accessEndsAt };
   });
