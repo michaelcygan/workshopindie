@@ -80,6 +80,14 @@ export type LoungeAudioApi = {
   leaveMic: () => Promise<void>;
   /** Full teardown: leave the SFU / mesh entirely. */
   disconnect: () => Promise<void>;
+  /**
+   * Host/admin action — mute or remove a speaker. Fails silently on the mesh
+   * provider (no server-side moderation surface). UI should gate visibility
+   * on caller-side role/host checks before rendering.
+   */
+  moderateSpeaker: (opts: { userId: string; action: "mute" | "remove" }) => Promise<void>;
+  /** True when we're currently reconnecting an existing session. */
+  reconnecting: boolean;
 };
 
 /** Provider-neutral analytics event names. */
