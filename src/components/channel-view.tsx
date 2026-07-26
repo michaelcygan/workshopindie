@@ -183,7 +183,7 @@ export function ChannelView({
   };
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
-  const [videoFocus, setVideoFocus] = useState<boolean>(() => {
+  const [contentFocus, setContentFocus] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
       return window.sessionStorage.getItem(`ws:focus:${roomId}`) === "1";
@@ -194,11 +194,11 @@ export function ChannelView({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.sessionStorage.setItem(`ws:focus:${roomId}`, videoFocus ? "1" : "0");
+      window.sessionStorage.setItem(`ws:focus:${roomId}`, contentFocus ? "1" : "0");
     } catch {
       /* ignore */
     }
-  }, [videoFocus, roomId]);
+  }, [contentFocus, roomId]);
   const openWork = (id: string) => {
     setPeekWorkId(id);
     setWorkPeekOpen(true);
@@ -856,7 +856,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className={cn("mt-4 grid gap-4", videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
+      <div className={cn("mt-4 grid gap-4", contentFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
@@ -1180,7 +1180,7 @@ export function ChannelView({
           )}
         </div>
 
-        <div className={"space-y-4 " + (videoFocus ? "hidden" : "")}>
+        <div className={"space-y-4 " + (contentFocus ? "hidden" : "")}>
           <MediaPanel
             m={media}
             channelTitle={title}
@@ -1203,7 +1203,7 @@ export function ChannelView({
 
 
 
-          {!videoFocus && user && (
+          {!contentFocus && user && (
             <WorkshopPresenceWorksRail
               meUserId={user.id}
               members={galleryMembers.map((m) => ({
