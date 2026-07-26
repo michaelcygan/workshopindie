@@ -2701,6 +2701,10 @@ export type Database = {
       }
       instant_presence: {
         Row: {
+          audio_joined_at: string | null
+          audio_offer_expires_at: string | null
+          audio_requested_at: string | null
+          audio_state: string
           first_seen_at: string
           last_seen_at: string
           room_id: string
@@ -2708,6 +2712,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          audio_joined_at?: string | null
+          audio_offer_expires_at?: string | null
+          audio_requested_at?: string | null
+          audio_state?: string
           first_seen_at?: string
           last_seen_at?: string
           room_id: string
@@ -2715,6 +2723,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          audio_joined_at?: string | null
+          audio_offer_expires_at?: string | null
+          audio_requested_at?: string | null
+          audio_state?: string
           first_seen_at?: string
           last_seen_at?: string
           room_id?: string
@@ -6700,6 +6712,7 @@ export type Database = {
       }
     }
     Functions: {
+      accept_lounge_audio_offer: { Args: { _room_id: string }; Returns: Json }
       admin_log: {
         Args: {
           _action: string
@@ -6859,6 +6872,10 @@ export type Database = {
             }
             Returns: string
           }
+      leave_lounge_audio_queue: {
+        Args: { _room_id: string }
+        Returns: undefined
+      }
       list_active_instant_rooms:
         | {
             Args: never
@@ -6893,6 +6910,10 @@ export type Database = {
         Args: { _profile_id: string }
         Returns: number
       }
+      promote_next_lounge_listener: {
+        Args: { _room_id: string }
+        Returns: undefined
+      }
       realtime_can_access_dm: {
         Args: { _conversation_id: string }
         Returns: boolean
@@ -6926,6 +6947,10 @@ export type Database = {
         Args: { _room_id: string; _user_id: string }
         Returns: Json
       }
+      release_lounge_audio_slot: {
+        Args: { _room_id: string }
+        Returns: undefined
+      }
       release_lounge_screen_share: {
         Args: { _room_id: string; _user_id: string }
         Returns: Json
@@ -6934,6 +6959,7 @@ export type Database = {
         Args: { _actor: string; _post_id: string; _tags: Json }
         Returns: undefined
       }
+      request_lounge_audio_slot: { Args: { _room_id: string }; Returns: Json }
       resolve_group_seed_link: {
         Args: { _token: string }
         Returns: {
