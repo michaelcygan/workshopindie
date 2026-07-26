@@ -1,4 +1,4 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, getRequest } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -29,9 +29,10 @@ export const submitGuestEventRsvp = createServerFn({ method: "POST" })
       status: z.enum(["going", "maybe", "declined"]).default("going"),
     }).parse(i)
   )
-  .handler(async ({ data, request }) => {
-    await moderateOrThrow({ text: data.name });
-    if (data.note) await moderateOrThrow({ text: data.note });
+  .handler(async ({ data }) => {
+    await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.name });
+    if (data.note) await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.note });
+    const request = getRequest();
     const supabase = publicClient();
     const claimToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -79,9 +80,8 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
       .update({ matched_user_id: context.userId, matched_at: new Date().toISOString() })
       .eq("id", rsvp.id);
     if (updateErr) throw new Error(updateErr.message);
-    // Also create a real RSVP row for the authenticated user so event counters reflect the guest.
     const { error: rsvpErr } = await supabase
-      .from("event_rsvps")
+      .from("group_event_rsvps")
       .upsert({
         event_id: rsvp.event_id,
         user_id: context.userId,
