@@ -121,7 +121,7 @@ export function HomeLiveWorkshopsRail() {
           </p>
         </div>
         <Link
-          to="/workshops"
+          to="/lounge"
           className="group inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
         >
           All Lounges <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
