@@ -49,7 +49,8 @@ function stateToRole(state: AudioState, connected: boolean): LoungeRole {
     case "speaker":
       return "speaker";
     case "offered":
-      return "offered";
+      // Host-less queue: treat any lingering "offered" row as waiting.
+      return "waiting";
     case "queued":
       return "waiting";
     default:
@@ -172,6 +173,35 @@ export function useStreamLoungeAudio(
   const myState: AudioState = user
     ? (presence.get(user.id)?.audio_state ?? "chat")
     : "chat";
+
+  // Host-less auto-claim: when connected with audio participation, request
+  // the mic once. The DB fast-paths to `speaker` if a stage seat is open,
+  // else lands us in `waiting` and auto-promotes when a seat frees up.
+  const autoRequestedRef = useRef(false);
+  useEffect(() => {
+    if (opts.participation !== "audio") return;
+    if (!connected || !user) {
+      autoRequestedRef.current = false;
+      return;
+    }
+    if (autoRequestedRef.current) return;
+    // Only auto-request if we're currently a chat listener; don't clobber
+    // an existing speaker/waiting row (e.g. after reconnect).
+    if (myState !== "chat") {
+      autoRequestedRef.current = true;
+      return;
+    }
+    autoRequestedRef.current = true;
+    (async () => {
+      try {
+        emitLoungeAudioEvent("mic_request", { roomId, auto: true });
+        await supabase.rpc("request_lounge_audio_slot", { _room_id: roomId });
+      } catch {
+        // Allow a retry on next presence tick.
+        autoRequestedRef.current = false;
+      }
+    })();
+  }, [opts.participation, connected, user, roomId, myState]);
 
   // Auto-accept path: when the DB flips me to "speaker" (either directly via
   // request_lounge_audio_slot fast-path, or after accepting an offer), publish

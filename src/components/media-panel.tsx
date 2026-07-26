@@ -312,8 +312,8 @@ export function MediaPanel({
 }
 
 
-/** Transport-neutral audio action strip. Renders the state machine:
- *  listener → requesting → waiting(#N) → offered → speaker(mute/step-down).
+/** Transport-neutral audio action strip. Host-less state machine:
+ *  listener(auto→) → waiting(#N, auto-promoted) → speaker(mute/step-down).
  *  Screen share stays gated on LOUNGE_SCREEN_SHARE_ENABLED. */
 function LoungeAudioStrip({
   api,
@@ -343,37 +343,24 @@ function LoungeAudioStrip({
       </button>
     );
   } else if (role === "listener") {
+    // Host-less: we auto-request on connect. This state is transient —
+    // show a passive "joining" pill so the UI doesn't flash a stale button.
     primary = (
-      <button
-        type="button"
-        onClick={run(api.requestMic)}
-        disabled={busy || stageFull}
-        title={stageFull ? "Stage is full — try again when a seat opens." : "Ask to speak"}
-        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
-      >
-        <Mic className="h-3.5 w-3.5" /> {stageFull ? "Stage full" : "Request mic"}
+      <button type="button" disabled className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink-soft">
+        <Mic className="h-3.5 w-3.5" /> {stageFull ? "Stage full — queuing…" : "Joining stage…"}
       </button>
     );
-  } else if (role === "waiting") {
+  } else if (role === "waiting" || role === "offered") {
+    // Both map to the same host-less waitlist affordance.
     primary = (
       <button
         type="button"
         onClick={run(api.leaveQueue)}
         disabled={busy}
+        title="Leave the waitlist"
         className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition disabled:opacity-50"
       >
         Waiting · #{queuePosition || 1}
-      </button>
-    );
-  } else if (role === "offered") {
-    primary = (
-      <button
-        type="button"
-        onClick={run(api.acceptMicOffer)}
-        disabled={busy}
-        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50 animate-pulse"
-      >
-        <Mic className="h-3.5 w-3.5" /> Take the mic
       </button>
     );
   } else {

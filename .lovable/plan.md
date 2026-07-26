@@ -1,38 +1,53 @@
-## What's left in the Lounge cleanup
+## Goal
 
-Wave 5 (retire Workshops) and the top of Wave 6 (Stream-only provider) are done. The mesh transport is still wired underneath because `ChannelView` and `MediaPanel` read from `useMediaRoom` directly. Until that's rewritten, the mesh files can't be deleted.
+Lounge audio should be host-less and frictionless: if a user is participating with audio and the stage has room, they take a seat automatically. If the stage is full, they enter a sequential waitlist and are auto-promoted to speaker the moment a seat opens — no "Request mic" tap, no "Take the mic" acceptance.
 
-### Wave 4 — Migrate ChannelView + MediaPanel to `useLoungeAudio()`
-- `src/components/channel-view.tsx`: replace the `useMediaRoom(roomId, ...)` call with `useLoungeAudio()`. Map:
-  - `media.audioJoined` → `connected`
-  - `media.peers` → `participants.filter(p => !p.isSelf)`
-  - `media.speaking` / `media.muted` → participant flags / `muted`
-  - `media.joinAudio` / `media.leaveAudio` → `requestMic` / `leaveMic`
-  - `media.toggleMute` → `toggleMute`
-  - `media.busy` / `media.error` → `busy` / `error`
-- `src/components/media-panel.tsx`: same swap; already down to audio-only speaker bubbles, so the surface is small.
-- `src/components/workshop-recorder.tsx` and `src/components/workshop-tools-panel.tsx`: strip the last mesh imports (recorder is a leftover surface; if it's still linked, migrate; if orphaned, delete).
+## Current behavior (verified)
 
-### Wave 6 — Delete mesh transport code
-Once no file imports them:
-- `src/hooks/use-media-room.tsx`
-- `src/hooks/use-mesh-lounge-audio.ts`
-- `src/lib/mesh-bitrate.ts`
-- `src/lib/lounge-screen-lease.ts`
-- `src/lib/turn.functions.ts`
-- `src/components/workshop-screen-share-panel.tsx` (already deleted — verify)
-- `src/components/workshop-pip.tsx` (already deleted — verify)
+- `request_lounge_audio_slot` fast-paths to `offered` (not `speaker`); the user still has to click "Take the mic" within 20s.
+- `promote_next_lounge_listener` also promotes to `offered`, expecting an accept step.
+- `useStreamLoungeAudio` never auto-calls `requestMic` on connect, so an audio-mode participant sits as `listener` with a manual "Request mic" button — matching the screenshot.
 
-### Wave 7 — Database + server cleanup
-- Drop the `claim_lounge_screen_share`, `refresh_lounge_screen_share`, `release_lounge_screen_share` RPCs.
-- Drop `instant_rooms.screen_sharer_user_id` and any related columns.
-- Drop the `webrtc_connection_events` table (mesh telemetry) if no dashboard still reads it — confirm before dropping.
-- Remove the TURN credential grant path (`turn_credential_grants` table + `turn.functions.ts` server fn).
+## Changes
 
-### Verification
-- `bunx tsgo --noEmit` shows no new errors on touched files.
-- Manual smoke: join a Lounge, verify audio join/leave, mute, speaker halo, chat, and the Links/Posts tabs still work.
-- `rg "useMediaRoom|mesh-bitrate|screen_sharer_user_id"` returns zero hits.
+### 1. Database migration (host-less queue)
 
-### Scope note
-Wave 4 is the load-bearing step (~24 `media.*` references in `channel-view.tsx` alone). I'd do it as its own turn so you can review the ChannelView diff before I delete the mesh files and run the DB migration.
+New migration that redefines the two RPCs to skip the `offered` step:
+
+- `request_lounge_audio_slot(_room_id)` — if `speaker` count < 10, set caller directly to `speaker` (stamp `audio_joined_at`, clear expiry). Else set to `waiting`, stamp `audio_requested_at`, return queue position.
+- `promote_next_lounge_listener(_room_id)` — pick the earliest `waiting` row and set it directly to `speaker`. Drop the expired-offer sweep.
+- `accept_lounge_audio_offer(_room_id)` — keep the function signature so old clients don't 404, but make it a thin wrapper that treats any current row as either already-speaker (no-op) or promotes waiting → speaker if under cap.
+- Preserve existing GRANTs.
+
+### 2. Client: auto-claim on join
+
+`src/hooks/use-stream-lounge-audio.ts`:
+
+- When `opts.participation === "audio"` and `connected` becomes true and `myState === "chat"` (or `listener`), auto-invoke `requestMic()` once per connection. Guard with a ref so we don't re-request on every presence tick.
+- Since the DB now flips straight to `speaker`, the existing publish effect (`myState === "speaker"` → `grantLoungeSpeaker` + `call.microphone.enable()`) handles the rest. If `waiting`, we wait; the realtime subscription will observe the promotion and the publish effect fires automatically.
+- `stateToRole` collapses `offered` → `waiting` (defensive — no offers should exist post-migration).
+- `acceptMicOffer` stays exported (contract) but is now a no-op alias for `requestMic`.
+
+### 3. Client: strip manual mic UI
+
+`src/components/media-panel.tsx` `LoungeAudioStrip`:
+
+- Remove the `listener` "Request mic" / "Stage full" button. Replace with a passive status pill:
+  - `connecting` → "Connecting…"
+  - `listener` + audio participation → "Joining stage…" (transient; auto-request in flight)
+  - `waiting` → "Waiting · #N" with a "Leave queue" secondary (unchanged)
+  - `speaker` → Mute/Unmute (unchanged)
+- Remove the `offered` / "Take the mic" branch.
+- Sidebar "Request mic" chip (screenshot) uses the same strip, so it disappears there too. Replace with the same status pill.
+
+### 4. Verify
+
+- Solo join with mic permission → land as `speaker`, unmuted, halo visible.
+- Fill stage to 10, join as 11th → land as `Waiting · #1`; when a speaker leaves, auto-promoted with no click.
+- Deny mic permission → `mic_denied` error surfaces via existing `error` path; DB row released.
+
+### Technical notes
+
+- No changes to `stream-video.functions.ts` (`grantLoungeSpeaker` / `revokeLoungeSpeaker` still gate Stream `send-audio`).
+- The `audio_state` CHECK constraint keeps `offered` as a legal value for backward compatibility, but no new writes will produce it.
+- Quota / autoplay / moderator paths untouched.
