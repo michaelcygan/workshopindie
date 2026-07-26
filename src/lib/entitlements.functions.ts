@@ -28,9 +28,8 @@ export const getUsageSummary = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<UsageSummary> => {
     const { resolveLoungeAudioAccess } = await import("./lounge-access.server");
-    const { resolveEntitlements, type SubscriptionLike } = await import(
-      "./entitlements"
-    );
+    const { resolveEntitlements } = await import("./entitlements");
+    type SubscriptionLike = import("./entitlements").SubscriptionLike;
 
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
