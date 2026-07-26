@@ -76,6 +76,29 @@ export function useStreamLoungeAudio(
   const [muted, setMuted] = useState(true);
 
   const connected = callingState === "joined";
+  const reconnecting =
+    callingState === "reconnecting" ||
+    callingState === "reconnecting-failed" ||
+    callingState === "offline";
+
+  // Emit audio_reconnect telemetry on transport transitions.
+  const lastConnStateRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = lastConnStateRef.current;
+    lastConnStateRef.current = callingState;
+    if (prev && prev !== callingState && callingState === "reconnecting") {
+      emitLoungeAudioEvent("audio_reconnect", { roomId, from: prev });
+    }
+  }, [callingState, roomId]);
+
+  // Connected-minutes rollup — one telemetry ping per minute while joined.
+  useEffect(() => {
+    if (!connected) return;
+    const iv = window.setInterval(() => {
+      emitLoungeAudioEvent("connected_minutes", { roomId });
+    }, 60_000);
+    return () => window.clearInterval(iv);
+  }, [connected, roomId]);
 
   // Load + subscribe to presence audio_state.
   useEffect(() => {
