@@ -145,7 +145,9 @@ export function MobileActionIsland() {
         open={composerOpen && composerVisible && !keyboardOpen}
         onClose={() => setComposerOpen(false)}
         menuId={menuId}
+        isAuthed={!!user}
       />
+
     </>
   );
 }
