@@ -493,7 +493,7 @@ function PlusSection() {
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
         <ul className="mt-2 space-y-1">
-          {freePlanBullets.map((b) => (
+          {freePlanBullets().map((b) => (
             <li key={b} className="flex items-start gap-2 text-sm text-ink-muted">
               <span className="mt-1.5 h-1 w-1 rounded-full bg-primary" />
               {b}
