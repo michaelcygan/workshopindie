@@ -491,8 +491,8 @@ function PlusSection() {
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
         <p className="mt-1 text-sm text-ink-muted">
-          Plus removes the 10-work portfolio cap, lets you keep multiple Open Collabs live,
-          unlocks unlimited Lounge time, and lets you publish to the Workshop blog. $4.99/mo, cancel anytime.
+          Free includes 10 published Works, 2 open Collabs, 10 Lounge hours, and 2 Blog publications each month.
+          Plus removes those limits for $4.99/mo, cancel anytime.
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link to="/pricing">
@@ -976,7 +976,7 @@ function DangerSection() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete your Galleryhop account?</DialogTitle>
+            <DialogTitle>Delete your Workshop account?</DialogTitle>
             <DialogDescription>
               {memo.email
                 ? <>This permanently deletes <span className="font-medium text-ink">{memo.email}</span> and signs you out everywhere.</>
