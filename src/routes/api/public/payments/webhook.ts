@@ -277,20 +277,8 @@ async function handleWebhook(req: Request, env: StripeEnv) {
       await handleSubscriptionDeleted(event.data.object as Stripe.Subscription, env);
       break;
     case "invoice.payment_failed": {
-      const inv = event.data.object as Stripe.Invoice & {
-        subscription_details?: { metadata?: Record<string, string> } | null;
-        hosted_invoice_url?: string | null;
-      };
-      const userId = inv.subscription_details?.metadata?.userId
-        || (inv.metadata as Record<string, string> | null)?.userId;
-      if (userId) {
-        await supabaseAdmin.from("notifications").insert({
-          user_id: userId,
-          kind: "payment_failed",
-          entity_type: "invoice",
-          payload: { hosted_invoice_url: inv.hosted_invoice_url ?? null },
-        });
-      }
+      const inv = event.data.object as Stripe.Invoice;
+      await handleInvoicePaymentFailed(inv, env);
       break;
     }
     default:
