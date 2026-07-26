@@ -31,6 +31,7 @@ import {
 } from "@/lib/lounge-audio-types";
 import {
   grantLoungeSpeaker,
+  moderateLoungeSpeaker,
   revokeLoungeSpeaker,
 } from "@/lib/stream-video.functions";
 
