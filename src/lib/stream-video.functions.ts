@@ -48,6 +48,7 @@ export const getLoungeStreamToken = createServerFn({ method: "POST" })
     const { userId } = context;
     await assertPresenceOrThrow(userId, data.roomId);
 
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("display_name, username, avatar_url")
