@@ -18,10 +18,12 @@ import { toast } from "sonner";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
 import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
+import { useLoungeAudioAccess } from "@/hooks/use-lounge-audio-access";
 import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { Link as RouterLink } from "@tanstack/react-router";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
