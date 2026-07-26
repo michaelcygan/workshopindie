@@ -258,14 +258,6 @@ export function MediaPanel({
         )}
       </div>
 
-      {m.screenSharerId && LOUNGE_SCREEN_SHARE_ENABLED && (
-        <p className="mt-3 rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
-          <MonitorPlay className="h-3 w-3" />
-          {m.isScreenSharing
-            ? `You're sharing${screenSourceLabel(m.screenStream) ? ` — ${screenSourceLabel(m.screenStream)}` : " your screen"}`
-            : "Someone is sharing their screen"}
-        </p>
-      )}
 
       <div className="border-t border-border/50 pt-3 mt-3">
         <h4 className="mb-2 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
