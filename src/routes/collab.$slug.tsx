@@ -761,7 +761,14 @@ function CollabDetail() {
         collabRoleId={guestRoleId}
         postTitle={post.title}
         hostFirstName={hostUser?.first_name || hostUser?.display_name?.split(" ")[0] || ""}
+        roleName={
+          guestRoleId
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            ? (roles.find((r: any) => r.id === guestRoleId)?.role_name ?? null)
+            : null
+        }
       />
+
 
       {isOwner && (
         <PublishFromCollabSheet
