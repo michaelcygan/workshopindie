@@ -185,7 +185,7 @@ function NewWork() {
         .select("id", { count: "exact", head: true })
         .eq("created_by", user.id)
         .eq("status", "published");
-      if ((count ?? 0) >= FREE_PORTFOLIO_CAP) {
+      if ((count ?? 0) >= FREE_PUBLISHED_WORK_CAP) {
         setPlusGate(true);
         return;
       }
