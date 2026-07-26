@@ -66,12 +66,9 @@ export function MobileActionIsland() {
   const rightTabs = mobileTabs.filter((t) => t.side === "right");
 
   const onComposerToggle = () => {
-    if (!user) {
-      navigate({ to: "/login" } as never);
-      return;
-    }
     setComposerOpen((v) => !v);
   };
+
 
   return (
     <>
