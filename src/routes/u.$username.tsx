@@ -1494,10 +1494,20 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
           ariaLabel={c.title}
           aspect="16/10"
           coverFallbackClass={categoryClass(c.category)}
+          coverOverlay={
+            <div className="flex h-full items-center justify-center">
+              <div className="text-center text-primary-foreground">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
+                  Open Collab
+                </div>
+                <div className="mt-1 font-display text-2xl leading-tight">
+                  {CATEGORY_LABELS[c.category] ?? c.category}
+                </div>
+              </div>
+            </div>
+          }
           eyebrow={
             <span className="flex items-center gap-2">
-              <span>{CATEGORY_LABELS[c.category] ?? "Collab"}</span>
-              <span className="text-ink-muted/60">·</span>
               <span className="text-ink-soft">Open collab</span>
             </span>
           }
