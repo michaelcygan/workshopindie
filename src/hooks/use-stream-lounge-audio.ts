@@ -379,6 +379,3 @@ export function useStreamLoungeAudio(
     reconnecting,
   };
 }
-    disconnect,
-  };
-}
