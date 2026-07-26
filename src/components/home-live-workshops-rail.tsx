@@ -5,6 +5,7 @@ import { Radio, Users, ArrowRight, MapPin, Target, Clock, Sparkles } from "lucid
 import { supabase } from "@/integrations/supabase/client";
 import { ROOM_PROMPTS, shuffle, type RoomPrompt } from "@/lib/topic-prompts";
 import { CATEGORIES } from "@/lib/categories";
+import { LOUNGE_CAP } from "@/lib/lounge-constants";
 
 type WorkshopRow = {
   id: string;
