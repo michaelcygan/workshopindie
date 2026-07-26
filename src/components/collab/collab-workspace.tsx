@@ -211,6 +211,22 @@ export function CollabWorkspace({
         </button>
         <button
           role="tab"
+          aria-selected={tab === "tasks"}
+          onClick={() => setTab("tasks")}
+          className={cn(
+            "flex-1 min-h-[44px] px-4 py-2 text-sm font-medium transition",
+            tab === "tasks" ? "bg-surface text-ink border-b-2 border-primary" : "text-ink-muted hover:text-ink",
+          )}
+        >
+          <ListTodo className="mr-1.5 inline h-4 w-4" /> Tasks
+          {taskCount.incomplete > 0 && (
+            <span className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary tabular-nums">
+              {taskCount.incomplete}
+            </span>
+          )}
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === "links"}
           onClick={() => setTab("links")}
           className={cn(
@@ -221,6 +237,7 @@ export function CollabWorkspace({
           <Link2 className="mr-1.5 inline h-4 w-4" /> Links
         </button>
       </div>
+
 
       {tab === "chat" ? (
         <div className="flex flex-col">
