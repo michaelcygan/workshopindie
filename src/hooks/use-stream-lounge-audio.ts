@@ -31,6 +31,7 @@ import {
 } from "@/lib/lounge-audio-types";
 import {
   grantLoungeSpeaker,
+  moderateLoungeSpeaker,
   revokeLoungeSpeaker,
 } from "@/lib/stream-video.functions";
 
@@ -75,6 +76,29 @@ export function useStreamLoungeAudio(
   const [muted, setMuted] = useState(true);
 
   const connected = callingState === "joined";
+  const reconnecting =
+    callingState === "reconnecting" ||
+    callingState === "reconnecting-failed" ||
+    callingState === "offline";
+
+  // Emit audio_reconnect telemetry on transport transitions.
+  const lastConnStateRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = lastConnStateRef.current;
+    lastConnStateRef.current = callingState;
+    if (prev && prev !== callingState && callingState === "reconnecting") {
+      emitLoungeAudioEvent("audio_reconnect", { roomId, from: prev });
+    }
+  }, [callingState, roomId]);
+
+  // Connected-minutes rollup — one telemetry ping per minute while joined.
+  useEffect(() => {
+    if (!connected) return;
+    const iv = window.setInterval(() => {
+      emitLoungeAudioEvent("connected_minutes", { roomId });
+    }, 60_000);
+    return () => window.clearInterval(iv);
+  }, [connected, roomId]);
 
   // Load + subscribe to presence audio_state.
   useEffect(() => {
@@ -318,6 +342,22 @@ export function useStreamLoungeAudio(
     setAutoplayBlocked(false);
   }, []);
 
+  const moderateSpeaker = useCallback(
+    async (opts: { userId: string; action: "mute" | "remove" }) => {
+      try {
+        await moderateLoungeSpeaker({
+          data: { roomId, targetUserId: opts.userId, action: opts.action },
+        });
+      } catch (e) {
+        setError({
+          code: "unknown",
+          message: e instanceof Error ? e.message : "Moderator action failed",
+        });
+      }
+    },
+    [roomId],
+  );
+
   return {
     connected,
     role: stateToRole(myState, connected),
@@ -335,5 +375,7 @@ export function useStreamLoungeAudio(
     toggleMute,
     leaveMic,
     disconnect,
+    moderateSpeaker,
+    reconnecting,
   };
 }

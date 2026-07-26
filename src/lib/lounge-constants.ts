@@ -29,7 +29,9 @@ export const LOUNGE_AUDIO_PROVIDER: LoungeAudioProvider = (() => {
   const raw = (
     import.meta as unknown as { env?: Record<string, string | undefined> }
   ).env?.VITE_LOUNGE_AUDIO_PROVIDER;
-  return raw === "stream" ? "stream" : "mesh";
+  // Wave 5: Stream is now the default. Explicitly opt out with "mesh" during
+  // the one-release rollback window.
+  return raw === "mesh" ? "mesh" : "stream";
 })();
 
 /**

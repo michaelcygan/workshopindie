@@ -6388,6 +6388,19 @@ export type Database = {
       }
     }
     Views: {
+      lounge_audio_daily: {
+        Row: {
+          day: string | null
+          mic_denials: number | null
+          mic_grabs: number | null
+          minutes: number | null
+          queue_abandons: number | null
+          reconnects: number | null
+          speaker_joins: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       public_profiles: {
         Row: {
           aliases: string[] | null
@@ -6925,6 +6938,10 @@ export type Database = {
             }[]
           }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      moderate_lounge_speaker: {
+        Args: { _action: string; _room_id: string; _target_user_id: string }
+        Returns: undefined
+      }
       moderation_normalize_text: { Args: { _text: string }; Returns: string }
       moderation_recent_block_count: {
         Args: { _user: string; _window_s: number }
@@ -7006,6 +7023,7 @@ export type Database = {
       }
       slugify: { Args: { _in: string }; Returns: string }
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
+      sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
