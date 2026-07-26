@@ -1,64 +1,51 @@
-## Wave 3 status
+Wave 4 is roughly 80% complete: the central copy module (`src/lib/entitlement-copy.ts`) and pricing-page bullets are wired, but the Settings page and a few gate touchpoints still need the final UI pass. Wave 5 is the next logical step after that.
 
-Wave 3 (authoritative 10 h/month Lounge audio quota) is functionally complete:
+## Wave 4 — Remaining UI/UX finish
 
-- DB: `lounge_minutes_this_month` + advisory-locked `try_reserve_lounge_minute` RPC.
-- Server: `resolveLoungeAudioAccess`, `getLoungeAudioAccess`, `reserveLoungeMinute`.
-- Client: `useLoungeAudioAccess` hook, per-minute reservation tick in `use-stream-lounge-audio.ts` that force-leaves on quota exhaustion.
-- UI: sidebar shows "X of 600 min used · resets <date>", Join Audio disabled at 0, "Go Plus for unlimited Lounge time" link; fullscreen dock button also disables with "Audio limit reached".
-- Security: `work_applications` privilege-escalation fixed via trigger + policy.
+1. **Settings "This month" usage panel**
+   - Wire `getUsageSummary` from `src/lib/entitlements.functions.ts` into `PlusSection` in `src/routes/settings.tsx`.
+   - For Free members, show a 4-row grid: Works, Open Collabs, Lounge audio, Blog posts with `used / cap` and the reset date.
+   - For Plus members, show a concise confirmation of unlimited access plus subscription status/renewal date.
 
-Optional Wave 3 polish (small, ~1 file each) to fold into Wave 4 if you want:
-- A pre-join "You have N min left this month" hint on the sidebar strip even when quota is not yet exhausted (currently only shown when blocked).
-- A one-time toast on join when < 30 min remain.
+2. **Settings copy cleanup**
+   - Replace the hardcoded "Free includes 10 published Works…" paragraph in `PlusSection` with bullets from `freePlanBullets()`.
+   - Remove any stale "Galleryhop Plus" or old premium wording if still present.
 
-Say if you want those in Wave 4 or skipped.
+3. **Typed `PlusGate` reasons**
+   - Add an optional `reason?: "work_limit" | "collab_limit" | "blog_limit" | "lounge_limit"` prop to `src/components/plus-gate.tsx`.
+   - When `reason` is passed, render the matching title/body from `entitlement-copy.ts`; keep the generic fallback for existing callers.
+   - Update `src/routes/works.new.tsx`, `src/routes/collab.new.tsx`, `src/routes/me.blog.$id.tsx`, and `src/components/media-panel.tsx` to pass the specific reason.
 
-## Wave 4 plan — UI/UX for gates and pricing
+4. **Near-limit nudges**
+   - In the Blog editor, show a subtle "1 of 2 posts left this month" chip when the user is at `cap - 1`.
+   - In the Lounge media panel, show a low-profile "X minutes remaining this month" hint when under 30 minutes.
 
-Goal: every place a Free user hits a limit reads as one voice — same copy, same "Go Plus" pattern, same reset language — and the pricing page reflects the current numbers exactly.
+## Wave 5 — Payment and entitlement hardening
 
-### 1. Central gate copy
+1. **Checkout lookup-key allowlist**
+   - Add `const ALLOWED_PRICE_LOOKUP_KEYS = ["plus_monthly"] as const` in `src/lib/payments.functions.ts`.
+   - Reject any `priceId` not in the allowlist before calling Stripe.
 
-Add `src/lib/entitlement-copy.ts` exporting one function per gate that returns `{ title, body, cta }`:
-- `blogQuotaCopy(used, cap, resetLabel)`
-- `loungeAudioQuotaCopy(used, cap, resetLabel)`
-- `publishedWorkCapCopy(used, cap)`
-- `openCollabCapCopy(used, cap)`
+2. **Webhook entitlement handling**
+   - In `src/routes/api/public/payments/webhook.ts`, ensure `invoice.payment_failed` updates the matching `subscriptions` row to `past_due` (or `unpaid` if Stripe already marked it) so entitlement resolution falls back to Free correctly.
+   - Verify that `customer.subscription.deleted` and `cancel_at_period_end` preserve the existing `current_period_end` and only downgrade after the paid period ends (current logic mostly does this; confirm and add a regression check).
+   - Confirm duplicate webhook events remain idempotent via `processed_stripe_events`.
 
-Every gated surface imports from here — no more per-call ad-hoc strings.
+3. **Entitlement trust boundary**
+   - Ensure no component or server function claims Plus from the raw `subscriptions` row outside of `resolveEntitlements`. Use `usePlus` and `resolveEntitlements` as the single source of truth.
+   - Confirm `active` and `trialing` with a future `current_period_end` grant Plus; everything else resolves to Free.
 
-### 2. Sweep existing gates to use the shared copy
+4. **Sandbox/live separation**
+   - Verify every `subscriptions` read/write filters by `environment`, and that the webhook `env` query parameter matches the checkout `environment` path.
 
-- `src/routes/me.blog.index.tsx`, `src/routes/me.blog.$id.tsx` — Blog quota chip + Publish disabled state.
-- `src/components/media-panel.tsx` (sidebar + fullscreen dock) — Lounge audio quota.
-- `src/components/plus-gate.tsx` — generic Plus upsell now pulls titles/CTA from the same module.
-- Work publish path (find via `FREE_PUBLISHED_WORK_CAP`) — replace inline strings.
-- Open-collab creation path (find via `FREE_OPEN_COLLAB_CAP`) — replace inline strings.
+5. **No new tiers**
+   - Keep `plus_monthly` only; do not create annual or other products.
 
-### 3. Pricing page refresh
+## Wave 6 — Audit (deferred until after Wave 5)
 
-`src/routes/pricing.tsx`:
-- Read caps live from `@/lib/entitlements` constants (already central) — no hard-coded numbers in JSX.
-- Free column bullets: "10 published Works", "2 open Collabs", "10 hours of Lounge audio / month", "2 Blog posts / month".
-- Plus column: "Unlimited" for each of the four.
-- Add a small "What resets monthly?" caption under the Free column.
+- Repository-wide sweep for stale terms: "30 minutes", "30 min", "per day", "Lounge minutes today", "priority seat", "boosted placement", "Plus badge", "Credits strip", "Galleryhop Plus", "host Lounge", "Lounge host", "saved setup", "creator insights".
+- Verify consistency across `/pricing`, Plus gates, Settings, Blog dashboard, Blog editor, Lounge entry, Work creation, Collab creation, and metadata descriptions.
 
-### 4. Settings usage panel
+## After each wave
 
-`src/routes/settings.tsx` (or the account tab that already shows Plus status): add a "This month" block with four rows — Blog posts, Lounge audio minutes, Published Works, Open Collabs — each showing `used / cap` and reset date for Free, "Unlimited" for Plus. Reuses `getLoungeAudioAccess` + a new lightweight `getUsageSummary` server fn that returns all four numbers in one call.
-
-### 5. Empty-state / near-limit nudges
-
-- Blog editor: when `used === cap - 1`, show a subtle "Last free post this month" chip next to Publish.
-- Lounge sidebar: mirror this pattern for audio when `minutesRemaining <= 30`.
-
-No schema changes in Wave 4 — all pulled from Wave 2/3 RPCs.
-
-### Deliverables
-
-- 1 new file: `src/lib/entitlement-copy.ts`
-- 1 new server fn: `getUsageSummary` in `src/lib/entitlements.functions.ts`
-- Edits: pricing, settings, blog editor + list, media-panel, plus-gate, work publish, collab create.
-
-Say "continue" (with or without the optional Wave 3 polish) and I'll implement.
+Report: changed files, migrations added, entitlement/quota logic introduced, tests performed, remaining inconsistencies, and any intentionally deferred decisions.
