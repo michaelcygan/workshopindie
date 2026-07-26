@@ -103,6 +103,7 @@ export const revokeLoungeSpeaker = createServerFn({ method: "POST" })
     const target = data.userId ?? context.userId;
     if (target !== context.userId) {
       // Only site admins may revoke another user's mic.
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: isAdmin } = await supabaseAdmin.rpc("has_role", {
         _user_id: context.userId,
         _role: "admin",
