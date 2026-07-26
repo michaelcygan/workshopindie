@@ -105,6 +105,7 @@ export function MediaPanel({
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
   const { data: audioAccess } = useLoungeAudioAccess();
+  const [loungeGateOpen, setLoungeGateOpen] = useState(false);
   const isHost = !!user && hostUserId === user.id;
   const canModerate = isHost || isAdmin;
   // Prefer the API's participant roll when the provider is mounted; falls back
@@ -114,6 +115,10 @@ export function MediaPanel({
   const waitingCount = api ? api.participants.filter((p) => p.role === "waiting").length : 0;
   const audioBlocked = !!audioAccess && !audioAccess.canJoinAudio;
   const audioBlockReason = audioAccess?.reason ?? null;
+  const remainingMinutes = audioAccess?.monthlyLimit != null
+    ? audioAccess.monthlyLimit - audioAccess.minutesUsed
+    : null;
+  const lowMinutes = remainingMinutes != null && remainingMinutes > 0 && remainingMinutes < 30;
   return (
     <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
