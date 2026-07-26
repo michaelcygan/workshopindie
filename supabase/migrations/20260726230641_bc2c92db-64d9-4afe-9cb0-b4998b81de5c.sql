@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.has_effective_plus(uuid) FROM public, anon;
