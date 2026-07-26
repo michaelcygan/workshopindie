@@ -559,6 +559,8 @@ function LiveRoomPage() {
         </DialogContent>
       </Dialog>
     </main>
+    </LoungeAudioProvider>
   );
 }
+
 
