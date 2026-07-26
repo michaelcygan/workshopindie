@@ -100,5 +100,9 @@ export function useMeshLoungeAudio(
     toggleMute,
     leaveMic,
     disconnect,
+    moderateSpeaker: async () => {
+      /* mesh has no server-side moderation surface */
+    },
+    reconnecting: false,
   };
 }
