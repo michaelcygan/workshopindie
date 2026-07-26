@@ -492,11 +492,16 @@ function PlusSection() {
           <Sparkles className="h-4 w-4 icon-gradient-motion" />
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
-        <p className="mt-1 text-sm text-ink-muted">
-          Free includes 10 published Works, 2 open Collabs, 10 Lounge hours, and 2 Blog publications each month.
-          Plus removes those limits for $4.99/mo, cancel anytime.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <ul className="mt-2 space-y-1">
+          {freePlanBullets.map((b) => (
+            <li key={b} className="flex items-start gap-2 text-sm text-ink-muted">
+              <span className="mt-1.5 h-1 w-1 rounded-full bg-primary" />
+              {b}
+            </li>
+          ))}
+        </ul>
+        <UsageSummary />
+        <div className="mt-4 flex flex-wrap gap-2">
           <Link to="/pricing">
             <Button size="sm" className="rounded-full">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
