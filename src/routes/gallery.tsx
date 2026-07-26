@@ -22,8 +22,6 @@ import { GalleryLoggedOutHero } from "@/components/gallery-logged-out-hero";
 import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
 import { useGroupTagsFor, rerankByMyGroups } from "@/hooks/use-group-tags";
-import { PageHeaderCompact } from "@/components/page-header-compact";
-import { KickerChip } from "@/components/kicker-chip";
 
 const searchSchema = z.object({
   q: fallback(z.string(), "").default(""),
