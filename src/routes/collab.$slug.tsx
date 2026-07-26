@@ -742,9 +742,30 @@ function CollabDetail() {
 
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="p-4 sm:p-6">
-          <DialogHeader><DialogTitle>Tell {(hostUser?.display_name || "the host")} you're in</DialogTitle></DialogHeader>
-          <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Quick intro: who you are, why this caught your eye, links to your work…" className="text-base sm:text-sm" />
-          <p className="text-xs text-ink-muted">They'll get a notification with your message and a link to your profile.</p>
+          <DialogHeader>
+            <DialogTitle>
+              {contactRoleId
+                ? `Apply as ${
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    roles.find((r: any) => r.id === contactRoleId)?.role_name ?? "collaborator"
+                  }`
+                : `Suggest how you can help`}
+            </DialogTitle>
+          </DialogHeader>
+          <Textarea
+            rows={5}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder={
+              contactRoleId
+                ? "Quick intro: who you are, why this role, links to your work…"
+                : "What could you contribute? A skill, a resource, a connection — anything the listed roles don't cover."
+            }
+            className="text-base sm:text-sm"
+          />
+          <p className="text-xs text-ink-muted">
+            {(hostUser?.display_name || "The host")} will see this in their inbox with a link back to your profile.
+          </p>
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
             <Button variant="ghost" className="w-full rounded-full sm:w-auto" onClick={() => setContactOpen(false)}>Cancel</Button>
             <Button className="w-full rounded-full sm:w-auto" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
@@ -753,6 +774,7 @@ function CollabDetail() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       <GuestApplyDialog
         open={guestOpen}
