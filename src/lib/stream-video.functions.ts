@@ -120,3 +120,37 @@ export const revokeLoungeSpeaker = createServerFn({ method: "POST" })
     }
     return { ok: true };
   });
+
+/**
+ * Host/admin action: mute or remove a speaker from the Lounge stage. The
+ * DB `moderate_lounge_speaker` RPC handles auth (host of room OR platform
+ * admin) and flips presence.audio_state → 'listener'. We then best-effort
+ * revoke the Stream `send-audio` capability so their client stops publishing.
+ */
+export const moderateLoungeSpeaker = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { roomId: string; targetUserId: string; action: "mute" | "remove" }) =>
+    z
+      .object({
+        roomId: z.string().uuid(),
+        targetUserId: z.string().uuid(),
+        action: z.enum(["mute", "remove"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { error } = await supabase.rpc("moderate_lounge_speaker", {
+      _room_id: data.roomId,
+      _target_user_id: data.targetUserId,
+      _action: data.action,
+    });
+    if (error) throw new Error(error.message);
+    try {
+      const { revokeLoungeSendAudio } = await import("@/lib/stream-video.server");
+      await revokeLoungeSendAudio({ roomId: data.roomId, userId: data.targetUserId });
+    } catch {
+      // best effort — DB is the source of truth for audio_state.
+    }
+    return { ok: true };
+  });
