@@ -249,7 +249,37 @@ export function useStreamLoungeAudio(
       }
     })();
     return () => { cancelled = true; };
-  }, [myState, call, user, roomId]);
+  }, [myState, call, user, roomId, selectedMicId]);
+
+  // Enumerate audio input devices; refresh on hot-plug. Labels/ids are only
+  // populated after mic permission is granted, so this runs on connect (once
+  // we've requested a track) and on every `devicechange` event.
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.enumerateDevices) return;
+    let cancelled = false;
+    const refresh = async () => {
+      try {
+        const all = await navigator.mediaDevices.enumerateDevices();
+        if (cancelled) return;
+        setMicDevices(all.filter((d) => d.kind === "audioinput"));
+      } catch { /* noop */ }
+    };
+    refresh();
+    const md = navigator.mediaDevices;
+    md.addEventListener?.("devicechange", refresh);
+    return () => {
+      cancelled = true;
+      md.removeEventListener?.("devicechange", refresh);
+    };
+  }, [connected, myState]);
+
+  const selectMic = useCallback(async (deviceId: string) => {
+    setSelectedMicId(deviceId);
+    try { window.localStorage.setItem("lounge.micDeviceId", deviceId); } catch { /* noop */ }
+    if (call && publishedRef.current) {
+      try { await call.microphone.select(deviceId); } catch { /* noop */ }
+    }
+  }, [call]);
 
   // Autoplay detection — the SDK exposes this via participant audio elements,
   // but a simple heuristic: if we're connected and there are speakers but no
@@ -257,6 +287,8 @@ export function useStreamLoungeAudio(
   useEffect(() => {
     if (!connected) setAutoplayBlocked(false);
   }, [connected]);
+
+
 
   const participants = useMemo<LoungeParticipant[]>(() => {
     // Merge SDK participants (source of truth for speaking / mute) with
