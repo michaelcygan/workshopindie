@@ -132,9 +132,15 @@ export function GuestApplyDialog(props: Props) {
         {step === "form" ? (
           <>
             <DialogHeader>
-              <DialogTitle>Apply to “{props.postTitle}”</DialogTitle>
+              <DialogTitle>
+                {props.collabRoleId
+                  ? `Apply as ${props.roleName ?? "collaborator"} on "${props.postTitle}"`
+                  : `Suggest how you can help on "${props.postTitle}"`}
+              </DialogTitle>
               <DialogDescription>
-                No account needed. {props.hostFirstName || "The host"} will see your message and contact details.
+                {props.collabRoleId
+                  ? `No account needed. ${props.hostFirstName || "The host"} will see your message and contact details.`
+                  : `No account needed. Pitch what you'd bring — ${props.hostFirstName || "the host"} will read it.`}
               </DialogDescription>
             </DialogHeader>
 
@@ -151,7 +157,9 @@ export function GuestApplyDialog(props: Props) {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="g-msg">Why you?</Label>
+                <Label htmlFor="g-msg">
+                  {props.collabRoleId ? "Why you?" : "How you can help"}
+                </Label>
                 <Textarea
                   id="g-msg"
                   required
@@ -159,7 +167,11 @@ export function GuestApplyDialog(props: Props) {
                   maxLength={1000}
                   value={form.message}
                   onChange={(e) => update("message", e.target.value)}
-                  placeholder="A line on what you do, why this caught your eye, and what you'd bring."
+                  placeholder={
+                    props.collabRoleId
+                      ? "A line on what you do, why this caught your eye, and what you'd bring."
+                      : "What could you contribute? A skill, a resource, a connection — anything the listed roles don't cover."
+                  }
                 />
                 <div className="text-right text-[11px] text-ink-muted">{form.message.length}/1000</div>
               </div>
