@@ -573,6 +573,59 @@ function PlusSection() {
   );
 }
 
+function UsageSummary() {
+  const fetchSummary = useServerFn(getUsageSummary);
+  const { data, isLoading } = useQuery({
+    queryKey: ["usage-summary"],
+    queryFn: () => fetchSummary(),
+  });
+
+  if (isLoading || !data) {
+    return <div className="mt-4 h-16 animate-pulse rounded-xl bg-surface-2" />;
+  }
+
+  return (
+    <div className="mt-4 grid grid-cols-2 gap-2">
+      <UsageMeter label="Works" used={data.publishedWorks.used} cap={data.publishedWorks.cap} />
+      <UsageMeter label="Collabs" used={data.openCollabs.used} cap={data.openCollabs.cap} />
+      <UsageMeter label="Lounge" used={data.loungeAudio.used} cap={data.loungeAudio.cap} unit="min" />
+      <UsageMeter label="Blog" used={data.blog.used} cap={data.blog.cap} unit="posts" />
+    </div>
+  );
+}
+
+function UsageMeter({
+  label,
+  used,
+  cap,
+  unit,
+}: {
+  label: string;
+  used: number;
+  cap: number | null;
+  unit?: string;
+}) {
+  const capText = cap === null ? "Unlimited" : `${cap}${unit ? ` ${unit}` : ""}`;
+  const pct = cap ? Math.min(100, Math.round((used / cap) * 100)) : 0;
+  return (
+    <div className="rounded-xl border border-border/60 bg-surface/60 p-3">
+      <div className="text-xs text-ink-muted">{label}</div>
+      <div className="mt-1 flex items-end justify-between">
+        <span className="text-lg font-medium text-ink">
+          {used}
+          {unit ? ` ${unit}` : ""}
+        </span>
+        <span className="text-xs text-ink-soft">/ {capText}</span>
+      </div>
+      {cap != null && (
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+          <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ----------------- Privacy ----------------- */
 
 function PrivacySection() {
