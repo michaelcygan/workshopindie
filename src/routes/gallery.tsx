@@ -255,7 +255,9 @@ function GalleryPage() {
   const { ids: blockedIds } = useBlockedIds();
   const blockedKey = useMemo(() => Array.from(blockedIds).sort().join(","), [blockedIds]);
   const [qInput, setQInput] = useState(search.q);
+  const [searchOpen, setSearchOpen] = useState(search.q.trim().length > 0);
   const qDebounced = useDebounced(qInput, 250);
+
 
   useEffect(() => {
     if (qDebounced !== search.q) {
