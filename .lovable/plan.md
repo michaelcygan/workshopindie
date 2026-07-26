@@ -1,68 +1,66 @@
-## Wave 2 — Free Blog: 2 publications per UTC month
+## Wave 3: Lounge audio monthly quota (10 h / UTC month for Free)
 
-Today, Free users can only draft; publishing is gated to Plus/granted (`src/lib/blog-access.server.ts`, `publishMyBlogPostServer`). Spec says Free should be able to **publish up to 2 posts per UTC calendar month**. Plus, admin-granted, and Stripe-trialing accounts stay unlimited. Lapsed accounts drop back to the Free quota (they can still manage/unpublish existing posts). Suspended stays blocked.
+Server-authoritative tracking of connected minutes with a hard cap enforced before join, plus the deferred `work_applications` privilege-escalation fix.
 
-### 1. Database (migration)
+### 1. Data model (migration)
 
-- Add a `STABLE SECURITY DEFINER` SQL function `public.blog_member_publications_this_month(_user_id uuid) RETURNS int`, counting rows in `public.blog_posts` where `publication_type='member'`, `status='published'`, `created_by=_user_id`, and `date_trunc('month', published_at AT TIME ZONE 'utc') = date_trunc('month', (now() AT TIME ZONE 'utc'))`.
-- Add `public.try_consume_blog_publication(_user_id uuid, _post_id uuid, _limit int) RETURNS boolean` — takes a per-user `pg_advisory_xact_lock`, re-checks the monthly count, and flips the given post to `status='published'`, `published_at=now()`, `updated_by=_user_id`, and returns true; returns false if the user is at cap. Runs `SECURITY DEFINER`, `search_path=public`. This closes the race between two concurrent publishes at 1/2.
-- No new tables, no new grants (functions inherit `EXECUTE` for authenticated via existing project pattern; add explicit `GRANT EXECUTE … TO authenticated, service_role` in the same migration to be safe).
+Add lightweight monthly rollup, computed from the existing `lounge_audio_events` `connected_minutes` pings (already fired once per minute by `use-stream-lounge-audio.ts`). No new client instrumentation needed.
 
-### 2. `src/lib/blog-access.server.ts`
+- SQL function `public.lounge_minutes_this_month(_user_id uuid) returns int`
+  - `security definer`, `stable`, `set search_path = public`
+  - `SELECT count(*) FROM lounge_audio_events WHERE user_id=_user_id AND event='connected_minutes' AND created_at >= date_trunc('month', now() at time zone 'utc')`
+  - Grants: `EXECUTE TO authenticated`.
+- SQL function `public.try_reserve_lounge_minute(_user_id uuid, _room_id uuid, _limit int) returns boolean`
+  - Advisory-lock key `hashtext('lounge_minute:'||_user_id::text)`.
+  - Counts current month minutes; if `_limit IS NULL OR count < _limit`, inserts a `connected_minutes` telemetry row and returns true; else returns false.
+  - Grants: `EXECUTE TO authenticated`.
+  - Callers: server-side minute-tick path (see §3) — replaces the direct client insert.
 
-Extend `BlogAccess`:
-```ts
-publicationsThisMonth: number;
-monthlyPublicationLimit: number | null; // null = unlimited
-```
-Behavior per mode:
-- `plus`, `granted` → unlimited, `canPublish: true`.
-- `trial` → **unchanged** (still no public publish; trial = "Plus-in-progress" but current product keeps trial pre-publish gated — see open question below).
-- `free`, `lapsed` → `canCreateDraft: true`, `canPublish: publicationsThisMonth < 2`, `activeDraftLimit: null`, `monthlyPublicationLimit: 2`. Reason strings say `"You've published 2 of 2 posts for <Month YYYY>. New publishing opens on <first of next month, UTC>."` when at cap.
-- `suspended` → unchanged.
+### 2. Access resolver
 
-Source the `2` from `FREE_BLOG_PUBLICATIONS_PER_MONTH` in `src/lib/entitlements.ts`.
+New `src/lib/lounge-access.server.ts`:
 
-### 3. `src/lib/blog-member.server.ts`
+- `resolveLoungeAudioAccess(userId)` returns `{ minutesUsed, monthlyLimit, canJoinAudio, remainingMinutes, resetLabel, reason }`.
+- Reads the user's subscription with `supabaseAdmin` and calls `resolveEntitlements`; Plus/trial → `monthlyLimit = null`, `canJoinAudio = true`.
+- Reads `lounge_minutes_this_month` for Free/lapsed.
 
-- `publishMyBlogPostServer`: after ownership + `resolveBlogAccess`, keep all validation (title/body/alt-text/entity visibility/moderation) and slug finalization. Replace the direct `update({ status: 'published' })` with an RPC call to `try_consume_blog_publication`. On `false`, throw the same "at cap for this month" message. Plus/granted skip the RPC and use the existing update path.
-- `unpublishMyBlogPostServer` — unchanged. Unpublishing does not restore quota; the count is based on `published_at` timestamp of currently-published posts, so an unpublished post is not counted.
+### 3. Server enforcement
 
-### 4. Server-fn surface
+- New `getLoungeAudioAccess` server fn (`.middleware([requireSupabaseAuth])`) returning the resolver output for the caller.
+- New `reserveLoungeMinute({ roomId })` server fn:
+  - Calls `try_reserve_lounge_minute` with the user's `monthlyLimit` (bypass when null).
+  - Returns `{ ok: true }` or `{ ok: false, reason }` — never throws.
+- Replace the client's direct `emitLoungeAudioEvent("connected_minutes", ...)` in `use-stream-lounge-audio.ts` with `reserveLoungeMinute`. When it returns `{ ok:false }`, call the new `onQuotaExhausted` callback (see §4). Other telemetry events keep their current path.
 
-`getMyBlogAccessServer` already returns the access object; the new fields flow through automatically to `useMyBlogAccess` on the client. No new endpoint.
+### 4. Client UX
 
-### 5. UI
+- `use-stream-lounge-audio.ts`:
+  - Add `quotaExhausted: boolean` and `minutesRemaining: number | null` to state.
+  - On mount / roomId change, fetch `getLoungeAudioAccess`; if `!canJoinAudio`, set `error = { kind: "quota", ... }` and skip Stream `call.join()`.
+  - Every minute-tick RPC failure flips `quotaExhausted = true` and calls `call.leave()`.
+- `media-panel.tsx`:
+  - Show a "Lounge audio time" chip near the join controls: `X of 600 min used this month · resets [date]` for Free.
+  - When quota is exhausted or would block join: replace the "Join audio" button with a disabled state + `Link to /pricing` "Go Plus for unlimited Lounge time". Chat remains fully available (no gating on chat-only presence).
 
-- `src/routes/me.blog.index.tsx` — add a quota chip in the header when `monthlyPublicationLimit != null`: `"Published X of 2 this month · resets Aug 1"`. If `!canCreateDraft` reason exists, show it as a subtle notice.
-- `src/routes/me.blog.$id.tsx` (editor) — the publish button already uses `access.canPublish` and `access.reason`. Add the quota chip next to it, and adjust the disabled tooltip to the new copy.
-- `src/components/plus-gate.tsx` — no change (Wave 4 handles blog-specific gate copy).
+### 5. Fix `work_applications` privilege escalation (deferred from Wave 1)
 
-### 6. Verification
+Same migration. Current "self updates own application" policy allows a self-referential `status` subquery that the applicant can subvert — an applicant can set their own status to `approved`.
 
-- `tsgo` clean.
-- `psql` sanity: `SELECT public.blog_member_publications_this_month('<uid>');` returns 0 for a fresh account.
-- Manual: as a Free user, publish 2 drafts → third publish throws the "at cap" message; unpublish one → third still blocked (count is by `published_at`, which remains for the two currently-live posts); wait for next UTC month → publishing opens again.
+- Drop the existing `self updates own application` UPDATE policy.
+- Replace with a policy that keeps `USING (applicant_user_id = auth.uid())` but the `WITH CHECK` also requires `applicant_user_id = auth.uid()` only — status protection moves to a trigger.
+- Add `BEFORE UPDATE` trigger `work_applications_guard_status`:
+  - If `NEW.status IS DISTINCT FROM OLD.status AND NOT is_work_owner(NEW.work_id, auth.uid())` → `RAISE EXCEPTION 'Only the work owner can change application status'`.
+  - Same guard blocks changes to `work_id` and `applicant_user_id`.
+- Call `manage_security_finding(mark_as_fixed)` after the migration runs.
 
-### Files expected to change
+### 6. Out of scope for this wave
 
-- **New migration** (adds `blog_member_publications_this_month`, `try_consume_blog_publication`, grants EXECUTE).
-- `src/lib/blog-access.server.ts` — extend `BlogAccess`, allow Free/lapsed to publish under quota.
-- `src/lib/blog-member.server.ts` — swap publish update for the RPC call.
-- `src/routes/me.blog.index.tsx` — quota chip.
-- `src/routes/me.blog.$id.tsx` — quota chip + updated tooltip copy.
+- Backfill historical usage (rollup starts from the last 30 days of existing `connected_minutes` rows automatically since we key off `created_at`).
+- Admin-side per-user reset (Wave 5 hardening).
+- Copy sweeps on non-lounge pages (Wave 4).
 
-### Open question (one)
+### Verification
 
-Trial (`status='trialing'` Plus subscription): today they can draft but not publish. Spec removes the "publishing needs Plus" wall. Two reasonable readings:
-
-- **A.** Trial = Plus (unlimited publishing during the 14-day trial). Simple, matches Stripe's usual "trial is full access".
-- **B.** Trial = Free quota (2/month) until first payment.
-
-I'll go with **A** unless you say otherwise — it matches every other Plus-during-trial capability in the app.
-
-### Not in this wave
-
-- Lounge monthly hours enforcement — Wave 3.
-- `plus-gate.tsx` `reason` variants — Wave 4.
-- The `work_applications` RLS security finding — will patch in a separate small change before the final wave.
+- Typecheck.
+- Manual: as a Free user, `SELECT public.lounge_minutes_this_month(auth.uid())` before/after a minute tick.
+- Manual: attempt `UPDATE work_applications SET status='approved' WHERE applicant_user_id = auth.uid()` — expect the trigger to raise.
