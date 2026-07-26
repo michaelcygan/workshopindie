@@ -314,6 +314,7 @@ export function MediaPanel({
       </div>
 
       {m.error && <p className="mt-2 text-xs text-destructive">{m.error}</p>}
+      <PlusGate open={loungeGateOpen} onOpenChange={setLoungeGateOpen} reason="lounge_limit" />
     </section>
   );
 }
