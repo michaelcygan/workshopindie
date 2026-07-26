@@ -12,33 +12,22 @@ export const LOUNGE_CAP = 20;
 /** Cap on active microphone (speaker) seats in one Lounge. */
 export const LOUNGE_SPEAKER_CAP = 10;
 
-/**
- * Feature flag. Screen sharing is disabled in the Stream-first Lounge (v1).
- * The mesh code path still supports it for rollback; flip this to true only
- * when reverting the whole Lounge to `VITE_LOUNGE_AUDIO_PROVIDER=mesh`.
- */
+/** Screen sharing is retired. Kept as an export for legacy callsites. */
 export const LOUNGE_SCREEN_SHARE_ENABLED = false;
 
 /**
- * Which live-audio transport to use. Chosen at the provider/component
- * boundary — never at a hook-call site — so we don't conditionally invoke
- * hooks. Falls back to the legacy mesh when the env var is missing.
+ * Live-audio transport. Stream SFU is the only supported provider;
+ * the legacy WebRTC mesh has been removed. This type/const are kept as
+ * exports so downstream imports keep compiling; they always resolve to
+ * "stream".
  */
-export type LoungeAudioProvider = "stream" | "mesh";
-export const LOUNGE_AUDIO_PROVIDER: LoungeAudioProvider = (() => {
-  const raw = (
-    import.meta as unknown as { env?: Record<string, string | undefined> }
-  ).env?.VITE_LOUNGE_AUDIO_PROVIDER;
-  // Wave 5: Stream is now the default. Explicitly opt out with "mesh" during
-  // the one-release rollback window.
-  return raw === "mesh" ? "mesh" : "stream";
-})();
+export type LoungeAudioProvider = "stream";
+export const LOUNGE_AUDIO_PROVIDER: LoungeAudioProvider = "stream";
 
 /**
  * How a person is participating in a Lounge.
  *  - "chat"  → room seat + presence + chat + panels, NO getUserMedia.
- *  - "audio" → everything in "chat" plus the audio transport (Stream SFU
- *              in v1; legacy WebRTC mesh under the mesh provider).
+ *  - "audio" → everything in "chat" plus the Stream audio transport.
  */
 export type LoungeParticipation = "chat" | "audio";
 
