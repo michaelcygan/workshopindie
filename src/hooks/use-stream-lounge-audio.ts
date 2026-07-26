@@ -49,7 +49,8 @@ function stateToRole(state: AudioState, connected: boolean): LoungeRole {
     case "speaker":
       return "speaker";
     case "offered":
-      return "offered";
+      // Host-less queue: treat any lingering "offered" row as waiting.
+      return "waiting";
     case "queued":
       return "waiting";
     default:
