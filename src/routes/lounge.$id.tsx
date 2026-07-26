@@ -323,7 +323,7 @@ function LiveRoomPage() {
   if (roomMissing) return <LoungeNotFound />;
 
   return (
-
+    <LoungeAudioProvider roomId={id} participation={normalizeLoungeMode(entryMode)}>
     <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
       <CcConsentDialog />
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
