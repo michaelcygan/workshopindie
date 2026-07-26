@@ -11,9 +11,9 @@ export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — Workshop" },
-      { name: "description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Lounge time, all cities, and more." },
+      { name: "description", content: "Free includes the complete Workshop within generous monthly limits. Plus removes the limits for $4.99/mo." },
       { property: "og:title", content: "Pricing — Workshop" },
-      { property: "og:description", content: "Free for portfolios, Collabs, and your home city. Plus is $4.99/mo for unlimited Lounge time, all cities, and more." },
+      { property: "og:description", content: "Free includes the complete Workshop within generous monthly limits. Plus removes the limits for $4.99/mo." },
     ],
   }),
 });
@@ -34,7 +34,7 @@ function PricingPage() {
       <div className="text-center">
         <h1 className="font-display text-4xl text-ink md:text-6xl">Pricing</h1>
         <p className="mx-auto mt-3 max-w-xl text-ink-muted">
-          Free is generous and built for real artists. Plus unlocks every city, unlimited Lounge time, and your full portfolio.
+          Start free. Go Plus when Workshop becomes part of your regular practice. Free includes the complete creative network within generous monthly and publishing limits. Plus removes those limits for $4.99 per month.
         </p>
       </div>
 
@@ -42,16 +42,16 @@ function PricingPage() {
         <PlanCard
           name="Free"
           price="$0"
-          tagline="The real artist starter."
+          tagline="The complete Workshop, within generous limits."
           cta={user ? <Button variant="outline" className="w-full rounded-full" disabled>You're on Free</Button> : <Link to="/signup" className="block"><Button variant="outline" className="w-full rounded-full">Start free</Button></Link>}
           features={[
-            "10 published works on your portfolio",
-            "2 active open Collabs at a time",
-            "Apply to unlimited Collabs",
-            "Your home city — join, post, browse",
-            "30 minutes / day in the Lounge",
-            "Draft 1 blog post (publishing requires Plus)",
-            "DMs, comments, credits — never gated",
+            "10 published Works",
+            "2 active open Collabs",
+            "10 hours of Lounge audio each month",
+            "2 Blog publications each month",
+            "Unlimited Collab applications",
+            "All cities, Groups, and Events",
+            "DMs, comments, reactions, saves, and credits",
           ]}
         />
         <PlanCard
@@ -59,7 +59,7 @@ function PricingPage() {
           name="Plus"
           price="$4.99"
           per="/ month"
-          tagline="For artists actually using it."
+          tagline="Same Workshop, without the limits."
           cta={
             isPlus ? (
               <Button variant="outline" className="w-full rounded-full" disabled>You're Plus ✨</Button>
@@ -70,15 +70,13 @@ function PricingPage() {
             )
           }
           features={[
-            "14 days free, then $4.99/mo",
-            "Unlimited published works",
-            "Unlimited active open Collabs + boosted placement",
-            "All cities — join, post, filter gallery",
-            "Unlimited Lounge time + priority seat",
-            "Publish to the Workshop blog with your byline",
-            "Plus badge on your profile + Credits strip",
-            "Work analytics (views, saves, origin cities)",
-            "Early access to new features as they ship",
+            "14 days free, then $4.99 per month",
+            "Unlimited published Works",
+            "Unlimited active open Collabs",
+            "Unlimited Lounge audio",
+            "Unlimited Blog publishing",
+            "Everything included in Free",
+            "Cancel anytime",
           ]}
         />
       </div>
