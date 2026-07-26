@@ -3181,6 +3181,33 @@ export type Database = {
           },
         ]
       }
+      lounge_audio_events: {
+        Row: {
+          created_at: string
+          event: string
+          id: string
+          payload: Json
+          room_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event: string
+          id?: string
+          payload?: Json
+          room_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event?: string
+          id?: string
+          payload?: Json
+          room_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       media_assets: {
         Row: {
           bytes: number | null
