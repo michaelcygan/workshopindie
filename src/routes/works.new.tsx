@@ -548,8 +548,8 @@ function NewWork() {
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title="You've hit 10 published works"
-        description="Free portfolios cap at 10. Go Plus for unlimited works."
+        title={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).title}
+        description={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).body}
       />
     </main>
   );
