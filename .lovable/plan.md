@@ -1,35 +1,43 @@
-Plan: End-to-end preview verification of the Collab Tasks feature
+The active `.lovable/plan.md` is a QA checklist for Collab Tasks (functionally complete). The standing `.lovable/logged-out-strategy.md` has five prioritized wedges; Wedge 1 (Collab as casting brief) is already shipped. The remaining work can be combined into a single Wave.
 
-Goal: Confirm the new private task list inside the Collab workspace works correctly across desktop and mobile before closing the loop.
+Wave: Public Surfaces & Shareable Actions
 
-Verification steps
-1. Navigate to a sample Collab in the preview and open the workspace.
-   - Confirm the three tabs appear: Chat | Tasks | Links.
-   - Confirm the Tasks tab shows an incomplete-count badge when tasks exist.
+Goal: make every public page on Workshop (Events, Profiles, Works, Cities) a shareable, actionable landing page for logged-out visitors, using the same handoff pattern already built for Collab guest applications.
 
-2. Exercise task lifecycle
-   - Create a task with the inline composer.
-   - Edit the task title inline.
-   - Move the task through statuses: To do → In progress → Done.
-   - Verify the Done state shows a completed timestamp.
+Phase 1 — Extend the handoff pattern to Events and Workshops
+- Add a logged-out RSVP form on event/workshop pages.
+- Create a guest-token row for logged-out RSVPs (name + email + claim_token, 14-day expiry).
+- Post-submit CTA pre-fills `/signup` with the captured data and `claim` token.
+- Backfill the RSVP to the user's account on signup (existing trigger pattern for guest applications).
+- Owner sees unified guest + authenticated RSVPs.
 
-3. Test ordering
-   - Create multiple tasks.
-   - Use drag-and-drop reordering (Framer Motion Reorder).
-   - Use the Move up / Move down fallback buttons.
-   - Refresh the page and confirm order persists.
+Phase 2 — Profile as discoverable talent page
+- Make public profile pages SEO-friendly with role, medium, and city facets.
+- Add canonical landing pages like `/talent/<role>/<city>` (e.g., `/talent/cinematographers/los-angeles`).
+- Index profile content by city and role for searchability.
+- Add a "Contact / Work with me" CTA that uses the handoff pattern for logged-out visitors.
 
-4. Test deletion and permissions
-   - Delete a task as the creator and confirm the AlertDialog.
-   - Verify the task is removed after confirmation.
+Phase 3 — Work as portfolio asset with CTA
+- Add "Want to collaborate with [credits]?" CTAs on public Work pages.
+- Link to the creator's DMs or to a new Collab creation flow.
+- Optionally: a lightweight `<script>` embed widget for external sites, generating backlinks.
 
-5. Realtime and responsiveness
-   - Open the same Collab in two contexts (or observe the network/realtime channel).
-   - Confirm changes made in one view reflect in the other without a manual refresh.
-   - Check mobile viewport: touch targets (44px minimum), no clipping, readable task rows.
+Phase 4 — City pages as SEO trunk
+- Build per-city landing pages that aggregate open Collabs, upcoming Events/Workshops, and standing Meetups.
+- Add structured links and discovery from each city to the relevant content.
+- Deepen indexability for existing partial city pages.
 
-6. Report findings
-   - Note any console errors, layout issues, or broken interactions.
-   - If all checks pass, mark the feature as verified and recommend closing the plan.
+Cross-cutting primitives (applied across all phases)
+- `?via=<username>` inviter attribution in share URLs.
+- Generated OG cards per public surface (Collab, Event, Workshop, Work, Profile, City).
+- JSON-LD per content type: JobPosting (Collab), Event (Event/Workshop), CreativeWork (Work), Person (Profile), WebPage/CollectionPage (City).
+- Application-receipt/RSVP-receipt routes for low-info public confirmation.
+- A maintained `sitemap.xml` covering all public surfaces.
 
-No code changes are expected in this plan unless a verification step reveals a bug that needs fixing.
+Why one Wave works
+- All wedges share the same handoff pattern and the same cross-cutting SEO/metadata primitives.
+- Building them in sequence lets later phases reuse the components and routes from earlier phases.
+- The total scope is large but cohesive; it can be split into the four phases above without breaking the narrative.
+
+Recommended execution
+Ship this as one Wave with the four phases above. If you prefer to split it, Phase 1 + the cross-cutting primitives form the minimum viable next wave (extends handoff + OG cards/JSON-LD), while Phases 2–4 are the follow-up wave.
