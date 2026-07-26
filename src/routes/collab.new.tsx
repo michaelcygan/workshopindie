@@ -548,6 +548,20 @@ export function CollabComposer({
                 </div>
               ))}
             </div>
+            <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/60 p-2.5">
+              <input
+                type="checkbox"
+                className="mt-1 accent-ink"
+                checked={acceptsSuggestions}
+                onChange={(e) => setAcceptsSuggestions(e.target.checked)}
+              />
+              <span className="flex-1">
+                <span className="block text-sm font-medium text-ink">Open to suggestions</span>
+                <span className="block text-[11px] text-ink-muted">
+                  Let people pitch how they can help even if none of the listed roles fit.
+                </span>
+              </span>
+            </label>
           </section>
 
           <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
