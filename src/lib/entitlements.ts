@@ -84,7 +84,3 @@ export function resolveEntitlements(sub: SubscriptionLike): WorkshopEntitlements
   };
 }
 
-// Compatibility re-exports so existing imports keep working while callers
-// migrate to the new names. Do not add new call sites for these aliases.
-/** @deprecated Use FREE_PUBLISHED_WORK_CAP. */
-export const FREE_PORTFOLIO_CAP = FREE_PUBLISHED_WORK_CAP;
