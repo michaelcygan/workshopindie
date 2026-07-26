@@ -1,4 +1,5 @@
-import { createServerFn, getRequest } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -32,12 +33,11 @@ export const submitGuestEventRsvp = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.name });
     if (data.note) await moderateOrThrow({ userId: null, surface: "event_guest_rsvp", text: data.note });
-    const request = getRequest();
     const supabase = publicClient();
     const claimToken = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    const ip = request.headers.get("x-forwarded-for") ?? request.headers.get("x-real-ip") ?? null;
-    const userAgent = request.headers.get("user-agent") ?? null;
+    const ip = getRequestHeader("x-forwarded-for") ?? getRequestHeader("x-real-ip") ?? null;
+    const userAgent = getRequestHeader("user-agent") ?? null;
     const { data: row, error } = await supabase
       .from("event_guest_rsvps")
       .insert({
@@ -86,7 +86,6 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
         event_id: rsvp.event_id,
         user_id: context.userId,
         status: rsvp.status,
-        source: "guest_claim",
       }, { onConflict: "event_id, user_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
     return { event_id: rsvp.event_id };
