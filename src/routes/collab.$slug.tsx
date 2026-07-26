@@ -47,7 +47,7 @@ export const Route = createFileRoute("/collab/$slug")({
       ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
     // Archived (closed + no Work) collabs are owner-only — keep them out of search.
     const isArchived = s?.status === "closed" && !s?.resulting_work_id;
-    const ogImage = s?.workCover ?? undefined;
+    const ogImage = `https://workshopindie.com/api/public/og?type=collab&id=${params.slug}`;
     const meta = [
       { title },
       { name: "description", content: description },
@@ -55,14 +55,12 @@ export const Route = createFileRoute("/collab/$slug")({
       { property: "og:description", content: description },
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
+      { property: "og:image", content: ogImage },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
+      { name: "twitter:image", content: ogImage },
     ];
-    if (ogImage) {
-      meta.push({ property: "og:image", content: ogImage });
-      meta.push({ name: "twitter:image", content: ogImage });
-    }
     if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
 
     // JSON-LD JobPosting for open Collabs — surfaces in Google Jobs and rich results.
