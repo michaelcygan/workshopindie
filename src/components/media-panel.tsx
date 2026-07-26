@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
-import { LOUNGE_CAP } from "@/lib/lounge-constants";
+import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
+import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
+import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
 
 /** Best-effort: derive a human label from a screen capture track.
