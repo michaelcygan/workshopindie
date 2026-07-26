@@ -1489,7 +1489,7 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  userId, onStage, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
+  userId, onStage, muted, displayName, avatarUrl, username, isMe, canModerate, onOpenWork, roomId,
 }: {
   userId: string;
   /** Is this participant currently on the audio stage (i.e. joined audio). */
@@ -1499,9 +1499,20 @@ function SpeakerRow({
   avatarUrl: string | null;
   username: string | null;
   isMe?: boolean;
+  canModerate?: boolean;
   onOpenWork?: (workId: string) => void;
   roomId?: string;
 }) {
+  const audio = useOptionalLoungeAudio();
+  const showModeration = canModerate && !isMe && !!roomId;
+  const handleModerate = async (action: "mute" | "remove") => {
+    try {
+      await audio?.moderateSpeaker({ userId, action });
+      toast(action === "mute" ? "Speaker muted" : "Speaker removed from audio", { duration: 2000 });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Moderation action failed");
+    }
+  };
   // Status dot: filled primary = on stage & unmuted, hollow = on stage & muted,
   // no dot = chat-only listener. Activity/speaking rings live on the Stage,
   // not here — this row is about identity + presence status.
@@ -1529,10 +1540,35 @@ function SpeakerRow({
     </button>
   );
   return (
-    <li>
-      <ProfilePeek userId={userId} speaking={onStage && !muted} onWorkClick={onOpenWork} roomId={roomId}>
-        {inner}
-      </ProfilePeek>
+    <li className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <ProfilePeek userId={userId} speaking={onStage && !muted} onWorkClick={onOpenWork} roomId={roomId}>
+          {inner}
+        </ProfilePeek>
+      </div>
+      {showModeration && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Moderate participant"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={() => handleModerate("mute")}>
+              <MicOff className="mr-2 h-4 w-4" />
+              Mute
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleModerate("remove")} className="text-destructive focus:text-destructive">
+              <UserX className="mr-2 h-4 w-4" />
+              Remove from audio
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </li>
   );
 }
