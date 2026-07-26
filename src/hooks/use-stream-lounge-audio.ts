@@ -187,7 +187,7 @@ export function useStreamLoungeAudio(
     if (autoRequestedRef.current) return;
     // Only auto-request if we're currently a chat listener; don't clobber
     // an existing speaker/waiting row (e.g. after reconnect).
-    if (myState !== "chat" && myState !== "listener") {
+    if (myState !== "chat") {
       autoRequestedRef.current = true;
       return;
     }
