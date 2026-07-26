@@ -265,6 +265,168 @@ export function MediaPanel({
 }
 
 
+/** Transport-neutral audio action strip. Renders the state machine:
+ *  listener → requesting → waiting(#N) → offered → speaker(mute/step-down).
+ *  Screen share stays gated on LOUNGE_SCREEN_SHARE_ENABLED. */
+function LoungeAudioStrip({
+  api,
+  speakerCap,
+  onExit,
+  dockExtra,
+  nextLoungeSlot,
+}: {
+  api: LoungeAudioApi;
+  speakerCap: number;
+  onExit: () => void;
+  dockExtra?: React.ReactNode;
+  nextLoungeSlot?: React.ReactNode;
+}) {
+  const { role, muted, busy, speakerCount, queuePosition, error } = api;
+  const stageFull = speakerCount >= speakerCap;
+
+  const run = (fn: () => Promise<void>) => () => {
+    fn().catch(() => { /* surfaced via api.error */ });
+  };
+
+  let primary: React.ReactNode;
+  if (role === "connecting") {
+    primary = (
+      <button type="button" disabled className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink-soft">
+        <Mic className="h-3.5 w-3.5" /> Connecting…
+      </button>
+    );
+  } else if (role === "listener") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.requestMic)}
+        disabled={busy || stageFull}
+        title={stageFull ? "Stage is full — try again when a seat opens." : "Ask to speak"}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+      >
+        <Mic className="h-3.5 w-3.5" /> {stageFull ? "Stage full" : "Request mic"}
+      </button>
+    );
+  } else if (role === "waiting") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.leaveQueue)}
+        disabled={busy}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition disabled:opacity-50"
+      >
+        Waiting · #{queuePosition || 1}
+      </button>
+    );
+  } else if (role === "offered") {
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.acceptMicOffer)}
+        disabled={busy}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50 animate-pulse"
+      >
+        <Mic className="h-3.5 w-3.5" /> Take the mic
+      </button>
+    );
+  } else {
+    // speaker
+    primary = (
+      <button
+        type="button"
+        onClick={run(api.toggleMute)}
+        disabled={busy}
+        title={muted ? "Unmute microphone" : "Mute microphone"}
+        className={cn(
+          "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition disabled:opacity-50",
+          muted
+            ? "bg-primary text-primary-foreground hover:bg-primary/90"
+            : "bg-muted/60 text-ink hover:bg-muted",
+        )}
+      >
+        {muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+        {muted ? "Unmute" : "Mute"}
+      </button>
+    );
+  }
+
+  let secondary: React.ReactNode;
+  if (role === "waiting" || role === "offered") {
+    secondary = (
+      <button
+        type="button"
+        onClick={run(api.leaveQueue)}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition"
+      >
+        Cancel
+      </button>
+    );
+  } else if (role === "speaker") {
+    secondary = (
+      <button
+        type="button"
+        onClick={run(api.leaveMic)}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition"
+      >
+        <MicOff className="h-3.5 w-3.5" /> Step down
+      </button>
+    );
+  } else {
+    secondary = (
+      <button
+        type="button"
+        onClick={onExit}
+        className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
+      >
+        <LogOut className="h-3.5 w-3.5" /> Exit
+      </button>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {api.autoplayBlocked && (
+        <button
+          type="button"
+          onClick={run(api.resumeAudio)}
+          className="w-full inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-amber-500/15 text-amber-900 hover:bg-amber-500/25 transition"
+        >
+          Tap to enable audio
+        </button>
+      )}
+      <div className="grid grid-cols-2 gap-1.5">
+        {primary}
+        {secondary}
+      </div>
+      <div className="grid grid-cols-2 gap-1.5">
+        {nextLoungeSlot ? (
+          <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+        ) : dockExtra ? (
+          <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
+            {dockExtra}
+          </div>
+        ) : (
+          <span />
+        )}
+        {role !== "listener" && role !== "connecting" ? (
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive/90 text-destructive-foreground hover:bg-destructive transition"
+          >
+            <LogOut className="h-3.5 w-3.5" /> Exit
+          </button>
+        ) : (
+          <span />
+        )}
+      </div>
+      {error && (
+        <p className="text-[11px] text-destructive">{error.message}</p>
+      )}
+    </div>
+  );
+}
+
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
     <button
