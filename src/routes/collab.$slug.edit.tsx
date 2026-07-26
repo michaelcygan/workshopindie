@@ -72,6 +72,7 @@ function EditCollab() {
   const [city, setCity] = useState<CityValue | null>(null);
   const [compensationType, setCompensationType] = useState<CompType>("unspecified");
   const [rights, setRights] = useState<Rights>("decide_later");
+  const [acceptsSuggestions, setAcceptsSuggestions] = useState(true);
 
   useEffect(() => {
     if (!post) return;
