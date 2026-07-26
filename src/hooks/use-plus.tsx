@@ -19,8 +19,6 @@ export {
   FREE_BLOG_PUBLICATIONS_PER_MONTH,
   FREE_LOUNGE_MINUTES_PER_MONTH,
 };
-/** @deprecated Use FREE_PUBLISHED_WORK_CAP. */
-export const FREE_PORTFOLIO_CAP = FREE_PUBLISHED_WORK_CAP;
 
 export type PlusState = {
   isPlus: boolean;
