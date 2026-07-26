@@ -98,10 +98,16 @@ export const LOUNGE_AUDIO_EVENTS = [
 export type LoungeAudioEvent = (typeof LOUNGE_AUDIO_EVENTS)[number];
 
 /**
- * Fire-and-forget analytics emitter. In this pass we log to the browser
- * console under a stable tag; a follow-up wires this into the existing
- * Workshop telemetry sink.
+ * Fire-and-forget analytics emitter.
+ *
+ * Writes to `public.lounge_audio_events` via an authenticated server fn.
+ * De-dupes identical (event, roomId) within a short window so noisy signals
+ * (speaking_start/stop-style bursts, retries) don't flood the table. Also
+ * mirrors to console under a stable tag so the client trace stays intact.
  */
+const _emitDedupe = new Map<string, number>();
+const DEDUPE_MS = 2000;
+
 export function emitLoungeAudioEvent(
   name: LoungeAudioEvent,
   payload: Record<string, unknown> = {},
@@ -110,9 +116,26 @@ export function emitLoungeAudioEvent(
     // eslint-disable-next-line no-console
     console.info(`[lounge-audio] ${name}`, payload);
   } catch {
-    // never let analytics break the Lounge
+    // ignore console errors
   }
+  if (typeof window === "undefined") return;
+  const roomId = typeof payload.roomId === "string" ? payload.roomId : null;
+  const key = `${name}::${roomId ?? "-"}`;
+  const now = Date.now();
+  const last = _emitDedupe.get(key) ?? 0;
+  if (now - last < DEDUPE_MS) return;
+  _emitDedupe.set(key, now);
+  // Lazy import: keeps the analytics types file free of server-fn coupling
+  // and avoids a circular import through the server-fn module.
+  void import("./lounge-telemetry.functions")
+    .then(({ logLoungeAudioEvent }) =>
+      logLoungeAudioEvent({ data: { event: name, roomId, payload } }),
+    )
+    .catch(() => {
+      // never let analytics break the Lounge
+    });
 }
+
 
 /** Sort: dominant/current speaker → other speakers → waiting → listeners. */
 export function sortLoungeParticipants(
