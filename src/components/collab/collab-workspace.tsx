@@ -61,7 +61,8 @@ export function CollabWorkspace({
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"chat" | "links">("chat");
+  const [tab, setTab] = useState<"chat" | "tasks" | "links">("chat");
+  const taskCount = useCollabTaskCount(collabPostId);
 
   const membersFn = useServerFn(listCollabMembers);
   const listFn = useServerFn(listCollabMessages);
