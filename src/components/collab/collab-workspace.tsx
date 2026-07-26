@@ -313,6 +313,8 @@ export function CollabWorkspace({
             </Button>
           </form>
         </div>
+      ) : tab === "tasks" ? (
+        <CollabTasks collabPostId={collabPostId} ownerId={ownerId} isOwner={isOwner} />
       ) : (
         <LoungeLinks
           messages={messages.map((m) => ({ id: m.id, user_id: m.author_id, body: m.body, created_at: m.created_at }))}
@@ -322,6 +324,7 @@ export function CollabWorkspace({
     </section>
   );
 }
+
 
 function MeetingControl({
   meetingUrl,
