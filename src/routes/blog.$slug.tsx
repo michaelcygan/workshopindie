@@ -26,7 +26,7 @@ export const Route = createFileRoute("/blog/$slug")({
     const title = (p.seo_title?.trim() || p.title).slice(0, 80);
     const description = (p.seo_description?.trim() || p.excerpt || "").slice(0, 200);
     const url = `${SITE}/blog/${params.slug}`;
-    const img = p.cover_image_url ?? null;
+    const img = `https://workshopindie.com/api/public/og?type=blog&id=${params.slug}`;
     const hidden = p.show_in_blog_index === false;
     const meta: Array<Record<string, string>> = [
       { title: `${title} — Workshop` },
@@ -36,18 +36,16 @@ export const Route = createFileRoute("/blog/$slug")({
       { property: "og:type", content: "article" },
       { property: "og:url", content: url },
       { property: "og:site_name", content: "Workshop" },
-      { name: "twitter:card", content: img ? "summary_large_image" : "summary" },
+      { property: "og:image", content: img },
+      { property: "og:image:alt", content: p.cover_image_alt ?? title },
+      { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: title },
       { name: "twitter:description", content: description },
+      { name: "twitter:image", content: img },
       { property: "article:published_time", content: p.published_at ?? "" },
       { property: "article:modified_time", content: p.updated_at ?? "" },
     ];
     if (hidden) meta.push({ name: "robots", content: "noindex, follow" });
-    if (img) {
-      meta.push({ property: "og:image", content: img });
-      meta.push({ property: "og:image:alt", content: p.cover_image_alt ?? title });
-      meta.push({ name: "twitter:image", content: img });
-    }
 
     const authors = (p.authors ?? []) as Array<{ username: string | null; display_name: string | null; role_label: string | null }>;
     const primaryAuthorNode =
