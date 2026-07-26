@@ -34,7 +34,7 @@ export function SettingsMenuButton() {
             aria-label="Menu"
             className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-ink-soft ring-1 ring-border hover:bg-muted"
           >
-            <SettingsIcon className="h-4 w-4" />
+            <Menu className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
