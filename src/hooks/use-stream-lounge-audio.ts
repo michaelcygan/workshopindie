@@ -342,6 +342,22 @@ export function useStreamLoungeAudio(
     setAutoplayBlocked(false);
   }, []);
 
+  const moderateSpeaker = useCallback(
+    async (opts: { userId: string; action: "mute" | "remove" }) => {
+      try {
+        await moderateLoungeSpeaker({
+          data: { roomId, targetUserId: opts.userId, action: opts.action },
+        });
+      } catch (e) {
+        setError({
+          code: "unknown",
+          message: e instanceof Error ? e.message : "Moderator action failed",
+        });
+      }
+    },
+    [roomId],
+  );
+
   return {
     connected,
     role: stateToRole(myState, connected),
@@ -358,6 +374,11 @@ export function useStreamLoungeAudio(
     leaveQueue,
     toggleMute,
     leaveMic,
+    disconnect,
+    moderateSpeaker,
+    reconnecting,
+  };
+}
     disconnect,
   };
 }
