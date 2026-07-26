@@ -20,9 +20,8 @@ import { extractWorkFromUrl, type ExtractedWork } from "@/lib/works-import.funct
 import { WORK_SUBTYPES, type Category, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { usePlus, FREE_PORTFOLIO_CAP } from "@/hooks/use-plus";
+import { usePlus, FREE_PUBLISHED_WORK_CAP } from "@/hooks/use-plus";
 import { PlusGate } from "@/components/plus-gate";
-import { publishedWorkCapCopy } from "@/lib/entitlement-copy";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagWorkInGroup } from "@/lib/groups.functions";
 import { BookDetailsSection, emptyBookDetails, type BookDetails } from "@/components/book-details-section";
