@@ -157,13 +157,20 @@ export function MediaPanel({
             <p className="text-xs text-ink-muted">
               {m.busy
                 ? "Connecting to audio…"
-                : "You're here through chat. Add audio when you're ready."}
+                : audioBlocked
+                  ? audioBlockReason ?? "You've used your Lounge audio time this month."
+                  : "You're here through chat. Add audio when you're ready."}
             </p>
+            {audioAccess?.monthlyLimit != null && (
+              <p className="text-[11px] text-ink-soft">
+                {audioAccess.minutesUsed} of {audioAccess.monthlyLimit} min used · resets {audioAccess.resetLabel}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
-                onClick={() => { m.joinAudio().catch(() => {}); }}
-                disabled={m.busy}
+                onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); }}
+                disabled={m.busy || audioBlocked}
                 className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
               >
                 <Mic className="h-3.5 w-3.5" /> Join audio
@@ -176,6 +183,14 @@ export function MediaPanel({
                 <LogOut className="h-3.5 w-3.5" /> Exit
               </button>
             </div>
+            {audioBlocked && (
+              <RouterLink
+                to="/pricing"
+                className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-primary hover:bg-muted/80"
+              >
+                Go Plus for unlimited Lounge time →
+              </RouterLink>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
