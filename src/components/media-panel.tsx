@@ -18,10 +18,12 @@ import { toast } from "sonner";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
 import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
+import { useLoungeAudioAccess } from "@/hooks/use-lounge-audio-access";
 import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
 import { useAuth } from "@/hooks/use-auth";
 import { useUserRoles } from "@/hooks/use-user-role";
+import { Link as RouterLink } from "@tanstack/react-router";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
@@ -101,6 +103,7 @@ export function MediaPanel({
   const api = useOptionalLoungeAudio();
   const { user } = useAuth();
   const { isAdmin } = useUserRoles();
+  const { data: audioAccess } = useLoungeAudioAccess();
   const isHost = !!user && hostUserId === user.id;
   const canModerate = isHost || isAdmin;
   // Prefer the API's participant roll when the provider is mounted; falls back
@@ -108,6 +111,8 @@ export function MediaPanel({
   const totalHere = api ? Math.max(api.participants.length, 1 + others.length) : 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
   const waitingCount = api ? api.participants.filter((p) => p.role === "waiting").length : 0;
+  const audioBlocked = !!audioAccess && !audioAccess.canJoinAudio;
+  const audioBlockReason = audioAccess?.reason ?? null;
   return (
     <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
@@ -152,13 +157,20 @@ export function MediaPanel({
             <p className="text-xs text-ink-muted">
               {m.busy
                 ? "Connecting to audio…"
-                : "You're here through chat. Add audio when you're ready."}
+                : audioBlocked
+                  ? audioBlockReason ?? "You've used your Lounge audio time this month."
+                  : "You're here through chat. Add audio when you're ready."}
             </p>
+            {audioAccess?.monthlyLimit != null && (
+              <p className="text-[11px] text-ink-soft">
+                {audioAccess.minutesUsed} of {audioAccess.monthlyLimit} min used · resets {audioAccess.resetLabel}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-1.5">
               <button
                 type="button"
-                onClick={() => { m.joinAudio().catch(() => {}); }}
-                disabled={m.busy}
+                onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); }}
+                disabled={m.busy || audioBlocked}
                 className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
               >
                 <Mic className="h-3.5 w-3.5" /> Join audio
@@ -171,6 +183,14 @@ export function MediaPanel({
                 <LogOut className="h-3.5 w-3.5" /> Exit
               </button>
             </div>
+            {audioBlocked && (
+              <RouterLink
+                to="/pricing"
+                className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-primary hover:bg-muted/80"
+              >
+                Go Plus for unlimited Lounge time →
+              </RouterLink>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -764,6 +784,8 @@ export function FullscreenRoom({
   linksSlot?: React.ReactNode;
 }) {
 
+  const { data: audioAccess } = useLoungeAudioAccess();
+  const audioBlocked = !!audioAccess && !audioAccess.canJoinAudio;
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
   const showLocalVideo = m.cameraOn && m.localStream;
@@ -1308,13 +1330,15 @@ export function FullscreenRoom({
           </>
         ) : (
           <DockButton
-            onClick={() => { m.joinAudio().catch(() => {}); }}
+            onClick={() => { if (!audioBlocked) m.joinAudio().catch(() => {}); }}
             active={true}
-            disabled={m.busy}
+            disabled={m.busy || audioBlocked}
             ariaLabel="Join audio"
           >
             <Mic className="h-4 w-4" />
-            <span className="hidden sm:inline">{m.busy ? "Connecting…" : "Join audio"}</span>
+            <span className="hidden sm:inline">
+              {audioBlocked ? "Audio limit reached" : m.busy ? "Connecting…" : "Join audio"}
+            </span>
           </DockButton>
         )}
         {dockExtra && (

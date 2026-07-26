@@ -6941,6 +6941,7 @@ export type Database = {
               title: string
             }[]
           }
+      lounge_minutes_this_month: { Args: { _user_id: string }; Returns: number }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       moderate_lounge_speaker: {
         Args: { _action: string; _room_id: string; _target_user_id: string }
@@ -7040,6 +7041,10 @@ export type Database = {
       }
       try_consume_blog_publication: {
         Args: { _limit: number; _post_id: string; _user_id: string }
+        Returns: boolean
+      }
+      try_reserve_lounge_minute: {
+        Args: { _limit: number; _room_id: string; _user_id: string }
         Returns: boolean
       }
       user_age: { Args: { _user_id: string }; Returns: number }
