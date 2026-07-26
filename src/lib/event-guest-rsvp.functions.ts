@@ -85,7 +85,7 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
       .upsert({
         event_id: rsvp.event_id,
         user_id: context.userId,
-        status: rsvp.status,
+        status: rsvp.status as Database["public"]["Enums"]["group_event_rsvp_status"],
       }, { onConflict: "event_id, user_id" });
     if (rsvpErr) throw new Error(rsvpErr.message);
     return { event_id: rsvp.event_id };
