@@ -62,15 +62,7 @@ function PricingPage() {
               </Button>
             )
           }
-          features={[
-            "14 days free, then $4.99 per month",
-            "Unlimited published Works",
-            "Unlimited active open Collabs",
-            "Unlimited Lounge audio",
-            "Unlimited Blog publishing",
-            "Everything included in Free",
-            "Cancel anytime",
-          ]}
+          features={plusPlanBullets()}
         />
       </div>
 
