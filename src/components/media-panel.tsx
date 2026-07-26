@@ -495,6 +495,64 @@ function LoungeAudioStrip({
   );
 }
 
+/** Compact mic input picker. Renders as a disabled hint until permission is
+ *  granted (browsers withhold device labels/ids pre-permission), then opens a
+ *  dropdown of `audioinput` devices. Selection persists per-browser and swaps
+ *  the live track without dropping the call. */
+function MicDevicePicker({ api }: { api: LoungeAudioApi }) {
+  const devices = api.micDevices ?? [];
+  const selectedId = api.selectedMicId ?? null;
+  const select = api.selectMic;
+  const hasChoice = devices.length > 1 && typeof select === "function";
+
+  const currentLabel =
+    devices.find((d) => d.deviceId === selectedId)?.label ||
+    devices.find((d) => d.deviceId === "default")?.label ||
+    devices[0]?.label ||
+    "Default mic";
+
+  const trigger = (
+    <button
+      type="button"
+      disabled={!hasChoice}
+      title={hasChoice ? "Choose microphone" : "Microphone input"}
+      aria-label="Choose microphone"
+      className={cn(
+        "inline-flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+        "bg-muted/60 text-ink hover:bg-muted disabled:opacity-60 disabled:cursor-default",
+      )}
+    >
+      <Settings2 className="h-3.5 w-3.5 shrink-0" />
+      <span className="truncate">{currentLabel}</span>
+    </button>
+  );
+
+  if (!hasChoice) return trigger;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>{trigger}</DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="min-w-[220px]">
+        {devices.map((d) => {
+          const isActive = (selectedId ?? "default") === (d.deviceId || "default");
+          return (
+            <DropdownMenuItem
+              key={d.deviceId || "default"}
+              onSelect={() => { void select?.(d.deviceId); }}
+              className="flex items-center gap-2"
+            >
+              <Check className={cn("h-3.5 w-3.5", isActive ? "opacity-100" : "opacity-0")} />
+              <span className="truncate">{d.label || "Microphone"}</span>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+
+
 
 function ViewPill({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
   return (
