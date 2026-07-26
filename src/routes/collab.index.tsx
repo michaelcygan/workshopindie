@@ -92,15 +92,17 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
   const rows = ((data ?? []) as unknown as (CollabCardData & { user_id: string })[])
     .filter((r) => !blocked.has(r.user_id)) as CollabCardData[];
 
-  // Light blended sort: newest first, gentle boost for posts with more roles + vouches.
+  // Light blended sort: newest first, gentle boost for posts with more roles/suggestions + vouches.
   return rows
     .slice()
     .sort((a, b) => {
       const ta = new Date(a.created_at).getTime();
       const tb = new Date(b.created_at).getTime();
-      const ra = (a.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+      const openness = (r: CollabCardData) =>
+        (r.roles?.length ?? 0) + (r.accepts_suggestions ? 1 : 0);
+      const ra = openness(a) * 1000 * 60 * 60 * 6
         + (a.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
-      const rb = (b.roles?.length ?? 0) * 1000 * 60 * 60 * 6
+      const rb = openness(b) * 1000 * 60 * 60 * 6
         + (b.vouch_count ?? 0) * 1000 * 60 * 60 * 4;
       return tb + rb - (ta + ra);
     });
