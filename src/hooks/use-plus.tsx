@@ -2,14 +2,30 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getStripeEnvironment } from "@/lib/stripe";
+import {
+  FREE_OPEN_COLLAB_CAP,
+  FREE_PUBLISHED_WORK_CAP,
+  FREE_BLOG_PUBLICATIONS_PER_MONTH,
+  FREE_LOUNGE_MINUTES_PER_MONTH,
+  resolveEntitlements,
+  type WorkshopEntitlements,
+} from "@/lib/entitlements";
 
-export const FREE_PORTFOLIO_CAP = 10;
-export const FREE_OPEN_COLLAB_CAP = 2;
-export const FREE_LOUNGE_MINUTES_PER_DAY = 30;
+// Re-export the central constants so existing importers of use-plus keep
+// working. The entitlements module is the source of truth.
+export {
+  FREE_OPEN_COLLAB_CAP,
+  FREE_PUBLISHED_WORK_CAP,
+  FREE_BLOG_PUBLICATIONS_PER_MONTH,
+  FREE_LOUNGE_MINUTES_PER_MONTH,
+};
+/** @deprecated Use FREE_PUBLISHED_WORK_CAP. */
+export const FREE_PORTFOLIO_CAP = FREE_PUBLISHED_WORK_CAP;
 
 export type PlusState = {
   isPlus: boolean;
   loading: boolean;
+  entitlements: WorkshopEntitlements;
   subscription: {
     status: string | null;
     tier: "free" | "plus";
@@ -41,32 +57,13 @@ export function usePlus(): PlusState {
   });
 
   const sub = data ?? null;
-  const isPlus =
-    !!sub &&
-    sub.tier === "plus" &&
-    (sub.status === "active" || sub.status === "trialing") &&
-    (!sub.current_period_end || new Date(sub.current_period_end as string) > new Date());
+  const entitlements = resolveEntitlements(sub);
+  const isPlus = entitlements.tier === "plus";
 
   return {
     isPlus,
     loading: authLoading || (!!user && isLoading),
+    entitlements,
     subscription: sub as PlusState["subscription"],
   };
-}
-
-export function useLoungeMinutesToday(): { minutes: number; loading: boolean } {
-  const { user } = useAuth();
-  const { data, isLoading } = useQuery({
-    queryKey: ["lounge-minutes-today", user?.id],
-    enabled: !!user,
-    refetchInterval: 60_000,
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("lounge_minutes_today", {
-        _user_id: user!.id,
-      });
-      if (error) return 0;
-      return data ?? 0;
-    },
-  });
-  return { minutes: data ?? 0, loading: isLoading };
 }
