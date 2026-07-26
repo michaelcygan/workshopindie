@@ -888,56 +888,17 @@ export function ChannelView({
           <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setVideoFocus((v) => !v)}
+              onClick={() => setContentFocus((v) => !v)}
               className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
-              aria-label={videoFocus ? "Show chat" : "Focus video"}
-              title={videoFocus ? "Show chat" : "Focus video"}
+              aria-label={contentFocus ? "Show sidebar" : "Hide sidebar"}
+              title={contentFocus ? "Show sidebar" : "Hide sidebar"}
             >
-              {videoFocus ? (
+              {contentFocus ? (
                 <MessageSquare className="h-3.5 w-3.5" />
               ) : (
                 <Columns2 className="h-3.5 w-3.5" />
               )}
             </button>
-            {(() => {
-              const sharing = !!media.isScreenSharing;
-              const someoneElse = !!media.screenSharerId && !sharing;
-              const disabled = !media.joined || (someoneElse && !sharing);
-              const label = sharing
-                ? "Stop sharing"
-                : someoneElse
-                  ? "Someone else is sharing"
-                  : "Share your screen";
-              return (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (sharing) await media.stopScreenShare();
-                      else await media.startScreenShare();
-                    } catch (e: any) {
-                      toast.error(e?.message ?? "Couldn't start screen share");
-                    }
-                  }}
-                  disabled={disabled}
-                  className={cn(
-                    "rounded-full p-1.5 shadow-sm ring-1 transition",
-                    sharing
-                      ? "bg-primary text-primary-foreground ring-primary/50 hover:bg-primary/90"
-                      : "bg-background/90 text-ink ring-border hover:bg-background",
-                    disabled && "opacity-50 cursor-not-allowed",
-                  )}
-                  aria-label={label}
-                  title={label}
-                >
-                  {sharing ? (
-                    <MonitorOff className="h-3.5 w-3.5" />
-                  ) : (
-                    <MonitorPlay className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              );
-            })()}
             <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
             <button
               type="button"
@@ -949,6 +910,7 @@ export function ChannelView({
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
           </div>
+
 
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
