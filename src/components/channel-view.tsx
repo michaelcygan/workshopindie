@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, MonitorPlay, MonitorOff, Link2, FileText } from "lucide-react";
+import { UserPlus, X, Maximize2, ArrowRight, Sparkles, EyeOff, Columns2, MessageSquare, MessageCircle, Wrench, LayoutGrid, Users, ChevronDown, Check, Link2, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
@@ -183,7 +183,7 @@ export function ChannelView({
   };
   const [peekWorkId, setPeekWorkId] = useState<string | null>(null);
   const [workPeekOpen, setWorkPeekOpen] = useState(false);
-  const [videoFocus, setVideoFocus] = useState<boolean>(() => {
+  const [contentFocus, setContentFocus] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     try {
       return window.sessionStorage.getItem(`ws:focus:${roomId}`) === "1";
@@ -194,11 +194,11 @@ export function ChannelView({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      window.sessionStorage.setItem(`ws:focus:${roomId}`, videoFocus ? "1" : "0");
+      window.sessionStorage.setItem(`ws:focus:${roomId}`, contentFocus ? "1" : "0");
     } catch {
       /* ignore */
     }
-  }, [videoFocus, roomId]);
+  }, [contentFocus, roomId]);
   const openWork = (id: string) => {
     setPeekWorkId(id);
     setWorkPeekOpen(true);
@@ -856,7 +856,7 @@ export function ChannelView({
           />
         </FullscreenShell>
       )}
-      <div className={cn("mt-4 grid gap-4", videoFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
+      <div className={cn("mt-4 grid gap-4", contentFocus ? "md:grid-cols-[1fr]" : "md:grid-cols-[1fr_260px]", isMobile && "hidden")}>
         <div className="relative flex flex-col rounded-3xl border border-border bg-surface shadow-soft overflow-hidden">
           {pinned && (
             <div className="border-b border-border bg-muted/40 px-4 py-3 md:px-6">{pinned}</div>
@@ -888,56 +888,17 @@ export function ChannelView({
           <div className="absolute right-3 top-3 z-20 flex items-center gap-1.5">
             <button
               type="button"
-              onClick={() => setVideoFocus((v) => !v)}
+              onClick={() => setContentFocus((v) => !v)}
               className="rounded-full bg-background/90 p-1.5 text-ink shadow-sm ring-1 ring-border hover:bg-background transition"
-              aria-label={videoFocus ? "Show chat" : "Focus video"}
-              title={videoFocus ? "Show chat" : "Focus video"}
+              aria-label={contentFocus ? "Show sidebar" : "Hide sidebar"}
+              title={contentFocus ? "Show sidebar" : "Hide sidebar"}
             >
-              {videoFocus ? (
+              {contentFocus ? (
                 <MessageSquare className="h-3.5 w-3.5" />
               ) : (
                 <Columns2 className="h-3.5 w-3.5" />
               )}
             </button>
-            {(() => {
-              const sharing = !!media.isScreenSharing;
-              const someoneElse = !!media.screenSharerId && !sharing;
-              const disabled = !media.joined || (someoneElse && !sharing);
-              const label = sharing
-                ? "Stop sharing"
-                : someoneElse
-                  ? "Someone else is sharing"
-                  : "Share your screen";
-              return (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      if (sharing) await media.stopScreenShare();
-                      else await media.startScreenShare();
-                    } catch (e: any) {
-                      toast.error(e?.message ?? "Couldn't start screen share");
-                    }
-                  }}
-                  disabled={disabled}
-                  className={cn(
-                    "rounded-full p-1.5 shadow-sm ring-1 transition",
-                    sharing
-                      ? "bg-primary text-primary-foreground ring-primary/50 hover:bg-primary/90"
-                      : "bg-background/90 text-ink ring-border hover:bg-background",
-                    disabled && "opacity-50 cursor-not-allowed",
-                  )}
-                  aria-label={label}
-                  title={label}
-                >
-                  {sharing ? (
-                    <MonitorOff className="h-3.5 w-3.5" />
-                  ) : (
-                    <MonitorPlay className="h-3.5 w-3.5" />
-                  )}
-                </button>
-              );
-            })()}
             <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
             <button
               type="button"
@@ -949,6 +910,7 @@ export function ChannelView({
               <Maximize2 className="h-3.5 w-3.5" />
             </button>
           </div>
+
 
           {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
@@ -1218,7 +1180,7 @@ export function ChannelView({
           )}
         </div>
 
-        <div className={"space-y-4 " + (videoFocus ? "hidden" : "")}>
+        <div className={"space-y-4 " + (contentFocus ? "hidden" : "")}>
           <MediaPanel
             m={media}
             channelTitle={title}
@@ -1241,7 +1203,7 @@ export function ChannelView({
 
 
 
-          {!videoFocus && user && (
+          {!contentFocus && user && (
             <WorkshopPresenceWorksRail
               meUserId={user.id}
               members={galleryMembers.map((m) => ({
