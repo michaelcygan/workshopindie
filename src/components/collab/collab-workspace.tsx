@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { MessageCircle, Link2, Video, Send, Users, Pencil, X, ExternalLink, Trash2 } from "lucide-react";
+import { MessageCircle, Link2, Video, Send, Users, Pencil, X, ExternalLink, Trash2, ListTodo } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,7 @@ import {
   setCollabMeetingUrl,
 } from "@/lib/collab-workspace.functions";
 import { listCollabMembers } from "@/lib/collab.functions";
+import { CollabTasks, useCollabTaskCount } from "@/components/collab/collab-tasks";
 
 type Msg = {
   id: string;
@@ -60,7 +61,8 @@ export function CollabWorkspace({
 }) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<"chat" | "links">("chat");
+  const [tab, setTab] = useState<"chat" | "tasks" | "links">("chat");
+  const taskCount = useCollabTaskCount(collabPostId);
 
   const membersFn = useServerFn(listCollabMembers);
   const listFn = useServerFn(listCollabMessages);
@@ -209,6 +211,22 @@ export function CollabWorkspace({
         </button>
         <button
           role="tab"
+          aria-selected={tab === "tasks"}
+          onClick={() => setTab("tasks")}
+          className={cn(
+            "flex-1 min-h-[44px] px-4 py-2 text-sm font-medium transition",
+            tab === "tasks" ? "bg-surface text-ink border-b-2 border-primary" : "text-ink-muted hover:text-ink",
+          )}
+        >
+          <ListTodo className="mr-1.5 inline h-4 w-4" /> Tasks
+          {taskCount.incomplete > 0 && (
+            <span className="ml-1.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-primary/10 px-1.5 text-[10px] font-medium text-primary tabular-nums">
+              {taskCount.incomplete}
+            </span>
+          )}
+        </button>
+        <button
+          role="tab"
           aria-selected={tab === "links"}
           onClick={() => setTab("links")}
           className={cn(
@@ -219,6 +237,7 @@ export function CollabWorkspace({
           <Link2 className="mr-1.5 inline h-4 w-4" /> Links
         </button>
       </div>
+
 
       {tab === "chat" ? (
         <div className="flex flex-col">
@@ -294,6 +313,8 @@ export function CollabWorkspace({
             </Button>
           </form>
         </div>
+      ) : tab === "tasks" ? (
+        <CollabTasks collabPostId={collabPostId} ownerId={ownerId} isOwner={isOwner} />
       ) : (
         <LoungeLinks
           messages={messages.map((m) => ({ id: m.id, user_id: m.author_id, body: m.body, created_at: m.created_at }))}
@@ -303,6 +324,7 @@ export function CollabWorkspace({
     </section>
   );
 }
+
 
 function MeetingControl({
   meetingUrl,
