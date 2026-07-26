@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic, PictureInPicture2,
+  FolderOpen, PenLine, Mic, X, ListMusic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,17 +15,18 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
-import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
 
 // v1 Lounge tool set — async / single-player primitives only.
 // Board, List, Recording, Docs, Pinboard, Repo & Demo were retired from the picker;
 // legacy rows for those types still render via presetFor() → PRESETS.
-type ShippedToolType = "screen_share" | "pip" | "drive" | "player";
+type ShippedToolType = "drive" | "player";
 type LegacyStoredToolType =
   | "board" | "list" | "recorder" | "outline" | "pinboard" | "repo_links"
-  | "shot_list" | "track_list" | "moodboard";
+  | "shot_list" | "track_list" | "moodboard"
+  | "screen_share" | "pip";
 type ToolType = ShippedToolType;
+
 
 
 type Preset = {
