@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import {
   Settings as SettingsIcon,
+  Menu,
   Briefcase,
   Users,
   Ticket,
