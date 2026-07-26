@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Pin, ListChecks, FileText, Github, Trash2, Plus, ExternalLink, Check,
-  FolderOpen, MonitorPlay, PenLine, Mic, X, ListMusic, PictureInPicture2,
+  FolderOpen, PenLine, Mic, X, ListMusic,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,17 +15,18 @@ import { toast } from "sonner";
 import type { Category } from "@/lib/categories";
 import { WorkshopDocsEditor, type DocsScope } from "@/components/workshop-docs-editor";
 import { WorkshopDrivePanel, type DrivePanelScope } from "@/components/workshop-drive-panel";
-import { WorkshopScreenSharePanel } from "@/components/workshop-screen-share-panel";
 import { WorkshopPlayerTool } from "@/components/workshop-player-tool";
 
 // v1 Lounge tool set — async / single-player primitives only.
 // Board, List, Recording, Docs, Pinboard, Repo & Demo were retired from the picker;
 // legacy rows for those types still render via presetFor() → PRESETS.
-type ShippedToolType = "screen_share" | "pip" | "drive" | "player";
+type ShippedToolType = "drive" | "player";
 type LegacyStoredToolType =
   | "board" | "list" | "recorder" | "outline" | "pinboard" | "repo_links"
-  | "shot_list" | "track_list" | "moodboard";
+  | "shot_list" | "track_list" | "moodboard"
+  | "screen_share" | "pip";
 type ToolType = ShippedToolType;
+
 
 
 type Preset = {
@@ -43,11 +44,11 @@ type Preset = {
 // can always resolve a label/icon for an existing row. Only the v1 set appears
 // in the picker (TOOL_ORDER); everything else is legacy-render-only.
 const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
-  screen_share: { label: "Screen Share", icon: MonitorPlay, blurb: "Share your screen with everyone in the room.", fields: [] },
-  pip:          { label: "Pop-out",      icon: PictureInPicture2, blurb: "Float the room in a Picture-in-Picture window so you can keep working in other tabs.", fields: [] },
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
   // Legacy — no longer offered in the picker.
+  screen_share: { label: "Screen Share (retired)", icon: FolderOpen, blurb: "Screen sharing was retired — the Lounge is chat + audio only.", fields: [] },
+  pip:          { label: "Pop-out (retired)",      icon: FolderOpen, blurb: "Picture-in-Picture was retired — the Lounge is chat + audio only.", fields: [] },
   recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard.", fields: [] },
@@ -60,9 +61,8 @@ const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
 };
 
 // v1 picker: only these tools appear when adding a new tool.
-const TOOL_REALTIME: ToolType[] = ["screen_share", "pip"];
-const TOOL_OBJECTS: ToolType[] = ["drive", "player"];
-const TOOL_ORDER: ToolType[] = [...TOOL_REALTIME, ...TOOL_OBJECTS];
+const TOOL_ORDER: ToolType[] = ["drive", "player"];
+
 
 /** Exported for the Stage tab bar's Tools dropdown. */
 export const STAGE_TOOL_OPTIONS = TOOL_ORDER.map((type) => ({
@@ -231,13 +231,13 @@ export function WorkshopToolsPanel(props: Props) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm p-4">
         <p className="text-sm text-ink-soft text-center">
-          Spin up a shared surface. Realtime for live moments, Objects for things you keep.
+          Spin up a shared surface — Drive for cloud links and files, Player for a shared media queue.
         </p>
-        <ToolGroup label="Realtime" types={TOOL_REALTIME} suggested={suggested} onEnable={enableTool} />
-        <ToolGroup label="Objects" types={TOOL_OBJECTS} suggested={suggested} onEnable={enableTool} />
+        <ToolGroup label="Objects" types={TOOL_ORDER} suggested={suggested} onEnable={enableTool} />
       </div>
     );
   }
+
 
   return (
     <div className="mt-4 rounded-2xl border border-border">
@@ -404,16 +404,14 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
-  if (tool.tool_type === "screen_share") {
+  if (tool.tool_type === "screen_share" || tool.tool_type === "pip") {
     return (
-      <div className="p-4">
-        <WorkshopScreenSharePanel scope={scope.kind} media={media} />
+      <div className="p-4 text-sm text-ink-muted">
+        This tool was retired. The Lounge is now chat + audio only — use Drive to share files, links, and recordings.
       </div>
     );
   }
-  if (tool.tool_type === "pip") {
-    return <PipBody />;
-  }
+
   if (tool.tool_type === "player") {
     const playerScope = scope.kind === "instant"
       ? { kind: "instant" as const, roomId: scope.roomId, hostUserId: scope.hostUserId }
@@ -442,59 +440,6 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   return <ToolItems scope={scope} tool={tool} />;
 }
 
-function PipBody() {
-  const supported = typeof window !== "undefined" && "documentPictureInPicture" in window;
-  function openPip(source: "me" | "speaker" | "tool" | "director") {
-    if (typeof window === "undefined") return;
-    window.dispatchEvent(new CustomEvent("workshop:pip-open", { detail: { source } }));
-  }
-  const options: Array<{ id: "me" | "speaker" | "tool" | "director"; label: string; desc: string }> = [
-    { id: "me", label: "Me", desc: "Your camera tile, front and center." },
-    { id: "speaker", label: "Active speaker", desc: "Auto-follows whoever is talking." },
-    { id: "tool", label: "Current tool", desc: "Whatever's in the main slot — screen share, board, player." },
-    { id: "director", label: "Director", desc: "Cut between Tool, Split, and Cam (needs a live screen share)." },
-  ];
-  return (
-    <div className="p-4 space-y-4">
-      <div className="rounded-2xl border border-border bg-surface p-4">
-        <div className="flex items-start gap-3">
-          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet/10 text-violet">
-            <PictureInPicture2 className="h-4 w-4" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-[10px] uppercase tracking-[0.18em] text-ink-muted">Picture-in-Picture</div>
-            <h3 className="mt-0.5 font-display text-lg text-ink">Float the room above any tab</h3>
-            <p className="mt-1 text-sm text-ink-soft">
-              Pop the Workshop into a small always-on-top window. Pick what shows in the floating tile — you can still switch sources after.
-            </p>
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {options.map((o) => (
-          <button
-            key={o.id}
-            type="button"
-            onClick={() => openPip(o.id)}
-            disabled={!supported}
-            className="text-left rounded-2xl border border-border bg-surface p-3 hover:bg-surface-hover disabled:opacity-50 disabled:cursor-not-allowed transition"
-          >
-            <div className="flex items-center gap-2 text-ink">
-              <PictureInPicture2 className="h-3.5 w-3.5 text-violet" />
-              <span className="font-medium text-sm">{o.label}</span>
-            </div>
-            <p className="mt-1 text-xs text-ink-soft">{o.desc}</p>
-          </button>
-        ))}
-      </div>
-      {!supported && (
-        <p className="text-xs text-ink-muted">
-          Always-on-top pop-out needs a Chromium-based browser (Chrome, Edge, Arc, Brave).
-        </p>
-      )}
-    </div>
-  );
-}
 
 
 

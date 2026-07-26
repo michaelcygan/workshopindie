@@ -537,20 +537,8 @@ export function VideoStage({
 }) {
   // Wave 4 (audio-first): the Stage is a circular cluster of audio speakers.
   // Chat-only listeners never appear here — they live in the sidebar's
-  // "Here now" list. Screen shares get a spotlight with the speaker cluster
-  // beneath.
-  const sharerName = m.screenSharerId
-    ? (profileLookup.get(m.screenSharerId)?.display_name
-       ?? profileLookup.get(m.screenSharerId)?.username
-       ?? (m.screenSharerId === (m as any).myId ? "You" : "Someone"))
-    : null;
-  const localScreen = m.isScreenSharing && m.screenStream;
-  const remoteScreenPeer = m.screenSharerId && !m.isScreenSharing
-    ? m.peers.find((p) => p.userId === m.screenSharerId && p.stream && p.stream.getVideoTracks().length > 0)
-    : null;
+  // "Here now" list. Screen shares were retired in the audio-only rewrite.
   const showLocalAudio = m.joined;
-  const sharing = !!(localScreen || remoteScreenPeer);
-
   const speakerCount = (showLocalAudio ? 1 : 0) + m.peers.length;
   // Tighten bubble size as the room fills so all 10 fit a single desktop row.
   const bubbleSize: "lg" | "md" | "sm" = speakerCount >= 7 ? "sm" : speakerCount >= 4 ? "md" : "lg";
@@ -585,40 +573,8 @@ export function VideoStage({
   const eyebrow = (
     <div className="mb-1.5 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
       <span>Speakers · {speakerCount}/{LOUNGE_CAP}</span>
-      {sharing && (
-        <span className="inline-flex items-center gap-1 text-primary normal-case tracking-normal">
-          <MonitorPlay className="h-3 w-3" />
-          <span className="text-[11px]">
-            {localScreen ? "You're sharing" : `${sharerName} is sharing`}
-          </span>
-        </span>
-      )}
     </div>
   );
-
-  // SPOTLIGHT MODE — screen share dominates the stage; speaker bubbles sit below.
-  if (sharing) {
-    const spotlightStream = (localScreen ? m.screenStream : remoteScreenPeer!.stream) as MediaStream;
-    const sourceLabel = screenSourceLabel(spotlightStream);
-    const spotlightLabel = localScreen
-      ? `Your screen${sourceLabel ? ` — ${sourceLabel}` : ""}`
-      : `${sharerName}'s screen${sourceLabel ? ` — ${sourceLabel}` : ""}`;
-    const audioPeers = m.peers.filter((p) => p.userId !== m.screenSharerId);
-    return (
-      <div className="relative border-b border-border bg-surface/40 px-3 py-2 md:px-4 space-y-2">
-        {eyebrow}
-        <div className="overflow-hidden rounded-2xl ring-2 ring-primary/40 bg-black">
-          <SpotlightVideo stream={spotlightStream} label={spotlightLabel} muted={!!localScreen} />
-        </div>
-        {(showLocalAudio || audioPeers.length > 0) && (
-          <div className="flex flex-wrap items-start justify-center gap-x-3 gap-y-2 pt-1">
-            {localBubble}
-            {audioPeers.map(renderPeerBubble)}
-          </div>
-        )}
-      </div>
-    );
-  }
 
   // EMPTY STAGE — nobody has joined audio yet. Keep it quiet and low-height.
   if (speakerCount === 0) {
@@ -703,33 +659,6 @@ function SpeakerBubble({
   );
 }
 
-
-
-/** Large-format video used for the screen-share spotlight. Uses object-contain
- *  so slides/code aren't cropped, and a tall max-height so it dominates. */
-function SpotlightVideo({ stream, label, muted }: { stream: MediaStream; label: string; muted?: boolean }) {
-  const ref = useRef<HTMLVideoElement>(null);
-  useEffect(() => {
-    if (ref.current) {
-      ref.current.srcObject = stream;
-      ref.current.play().catch(() => {});
-    }
-  }, [stream]);
-  return (
-    <div className="relative w-full" style={{ aspectRatio: "16 / 9", maxHeight: "70vh" }}>
-      <video
-        ref={ref}
-        autoPlay
-        playsInline
-        muted={muted}
-        className="absolute inset-0 h-full w-full object-contain bg-black"
-      />
-      <div className="absolute bottom-2 left-2 rounded-full bg-ink/70 px-2.5 py-1 text-[11px] text-background">
-        {label}
-      </div>
-    </div>
-  );
-}
 
 
 // ============================================================================
@@ -1123,12 +1052,9 @@ export function FullscreenRoom({
             <div className="flex h-full flex-col gap-3">
               {/* Stage surface */}
               <div className="flex-1 min-h-0 overflow-hidden rounded-2xl ring-1 ring-background/10 bg-black">
-                {stageStream ? (
-                  <SpotlightVideo stream={stageStream} label={stageLabel || "Stage"} muted={m.isScreenSharing} />
-                ) : (
-                  <div className="h-full w-full overflow-auto bg-[#111]">{stageSlot}</div>
-                )}
+                <div className="h-full w-full overflow-auto bg-[#111]">{stageSlot}</div>
               </div>
+
               {/* Filmstrip — hidden in Tool-only */}
               {layoutMode === "stage" && (
                 <div className="shrink-0 overflow-x-auto">

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { STAGE_TOOL_OPTIONS } from "@/components/workshop-tools-panel";
 import { WorkshopPresenceWorksRail } from "@/components/workshop-presence-works-rail";
-import { useWorkshopPip, PopOutButton } from "@/components/workshop-pip";
+
 import { HopButton } from "@/components/hop-button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
@@ -684,16 +684,6 @@ export function ChannelView({
   const me = user ? profileLookup.get(user.id) : undefined;
   const meDisplay = me?.display_name || me?.username || "You";
   const meAvatar = me?.avatar_url ?? null;
-  const pip = useWorkshopPip({ media, meDisplay, profileLookup });
-  // Allow the Pop-out tool (and anywhere else) to trigger PiP via a global event.
-  useEffect(() => {
-    function onOpen(e: Event) {
-      const detail = (e as CustomEvent<{ source?: "me" | "speaker" | "tool" | "director" }>).detail;
-      pip.open({ initialSource: detail?.source });
-    }
-    window.addEventListener("workshop:pip-open", onOpen);
-    return () => window.removeEventListener("workshop:pip-open", onOpen);
-  }, [pip]);
   const others = useMemo(
     () => presence.filter((p) => p.user_id !== user?.id),
     [presence, user?.id],
@@ -899,7 +889,6 @@ export function ChannelView({
                 <Columns2 className="h-3.5 w-3.5" />
               )}
             </button>
-            <PopOutButton onClick={pip.open} supported={pip.supported} isOpen={pip.isOpen} inline />
             <button
               type="button"
               onClick={() => setFsView(fsTarget)}
@@ -912,8 +901,8 @@ export function ChannelView({
           </div>
 
 
-          {pip.portal}
           <VideoStage m={media} meDisplay={meDisplay} meAvatar={meAvatar} profileLookup={profileLookup} />
+
           <StageTabs value={viewMode} onChange={setViewMode} activeTool={activeTool} onPickTool={pickTool} showTools={!!toolsSlot} />
 
           {viewMode === "tools" ? (
