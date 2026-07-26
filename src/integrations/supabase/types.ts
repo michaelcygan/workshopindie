@@ -919,6 +919,64 @@ export type Database = {
           },
         ]
       }
+      collab_tasks: {
+        Row: {
+          collab_post_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          collab_post_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          id?: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          collab_post_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collab_tasks_collab_post_id_fkey"
+            columns: ["collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collab_vouches: {
         Row: {
           collab_post_id: string
@@ -7004,6 +7062,10 @@ export type Database = {
       release_lounge_screen_share: {
         Args: { _room_id: string; _user_id: string }
         Returns: Json
+      }
+      reorder_collab_tasks: {
+        Args: { _collab_post_id: string; _ordered_ids: string[] }
+        Returns: undefined
       }
       replace_blog_post_entity_tags: {
         Args: { _actor: string; _post_id: string; _tags: Json }
