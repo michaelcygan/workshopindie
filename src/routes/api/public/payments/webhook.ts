@@ -230,6 +230,28 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription, env:
     .eq("environment", env);
 }
 
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice, env: StripeEnv) {
+  const subId = typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+  if (subId) {
+    await supabaseAdmin
+      .from("subscriptions")
+      .update({ status: "past_due", updated_at: new Date().toISOString() })
+      .eq("stripe_subscription_id", subId)
+      .eq("environment", env);
+  }
+
+  const userId = (invoice.subscription_details?.metadata as Record<string, string> | null)?.userId
+    || (invoice.metadata as Record<string, string> | null)?.userId;
+  if (userId) {
+    await supabaseAdmin.from("notifications").insert({
+      user_id: userId,
+      kind: "payment_failed",
+      entity_type: "invoice",
+      payload: { hosted_invoice_url: invoice.hosted_invoice_url ?? null },
+    });
+  }
+}
+
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
   const eventId = event.id;
