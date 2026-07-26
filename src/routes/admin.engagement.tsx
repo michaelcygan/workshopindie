@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getAdminEngagement } from "@/lib/admin-analytics.functions";
+import { getAdminEngagement, getAdminLoungeAudio } from "@/lib/admin-analytics.functions";
 import { KpiTile } from "@/components/admin/kpi-tile";
 import { MetricChart } from "@/components/admin/metric-chart";
 
@@ -9,10 +9,16 @@ export const Route = createFileRoute("/admin/engagement")({ component: Engagemen
 
 function EngagementPage() {
   const fn = useServerFn(getAdminEngagement);
+  const loungeFn = useServerFn(getAdminLoungeAudio);
   const { data, isLoading } = useQuery({ queryKey: ["admin", "engagement"], queryFn: () => fn() });
+  const { data: loungeData, isLoading: loungeLoading } = useQuery({
+    queryKey: ["admin", "lounge-audio"],
+    queryFn: () => loungeFn(),
+  });
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
   const k = data?.kpi as any;
   const stickiness = k?.mau ? Math.round((k.dau / k.mau) * 100) : 0;
+  const t = loungeData?.totals as any;
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -25,6 +31,28 @@ function EngagementPage() {
       <div className="rounded-2xl border border-border bg-surface p-4">
         <h3 className="mb-2 font-display text-lg text-ink">DAU (90d)</h3>
         <MetricChart data={(data?.dau ?? []) as any} xKey="day" yKey="dau" />
+      </div>
+
+      <div>
+        <h3 className="mb-3 font-display text-lg text-ink">Lounge audio</h3>
+        {loungeLoading ? (
+          <div className="text-sm text-ink-muted">Loading…</div>
+        ) : (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+              <KpiTile label="Connected minutes" value={(t?.minutes ?? 0).toLocaleString()} />
+              <KpiTile label="Mic grabs" value={(t?.mic_grabs ?? 0).toLocaleString()} />
+              <KpiTile label="Speaker joins" value={(t?.speaker_joins ?? 0).toLocaleString()} />
+              <KpiTile label="Queue abandons" value={(t?.queue_abandons ?? 0).toLocaleString()} />
+              <KpiTile label="Reconnects" value={(t?.reconnects ?? 0).toLocaleString()} />
+              <KpiTile label="Mic denials" value={(t?.mic_denials ?? 0).toLocaleString()} />
+            </div>
+            <div className="rounded-2xl border border-border bg-surface p-4">
+              <h4 className="mb-2 text-sm font-medium text-ink">Connected minutes / day</h4>
+              <MetricChart data={(loungeData?.daily ?? []) as any} xKey="day" yKey="minutes" kind="bar" />
+            </div>
+          </div>
+        )}
       </div>
 
       <div>

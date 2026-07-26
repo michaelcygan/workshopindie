@@ -71,6 +71,72 @@ export const getAdminEngagement = createServerFn({ method: "GET" })
     };
   });
 
+export const getAdminLoungeAudio = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireAdmin(context.supabase, context.userId);
+    const admin = await getAdmin();
+    const { data, error } = await admin
+      .from("lounge_audio_daily")
+      .select("day, minutes, mic_grabs, queue_abandons, reconnects, mic_denials, speaker_joins")
+      .order("day", { ascending: true });
+    if (error) throw new Error(error.message);
+    const rows = (data ?? []) as Array<{
+      day: string;
+      minutes: number;
+      mic_grabs: number;
+      queue_abandons: number;
+      reconnects: number;
+      mic_denials: number;
+      speaker_joins: number;
+    }>;
+    // Aggregate by day across all users.
+    const byDay = new Map<string, {
+      day: string;
+      minutes: number;
+      mic_grabs: number;
+      queue_abandons: number;
+      reconnects: number;
+      mic_denials: number;
+      speaker_joins: number;
+    }>();
+    for (const r of rows) {
+      const agg = byDay.get(r.day) ?? {
+        day: r.day,
+        minutes: 0,
+        mic_grabs: 0,
+        queue_abandons: 0,
+        reconnects: 0,
+        mic_denials: 0,
+        speaker_joins: 0,
+      };
+      agg.minutes += r.minutes;
+      agg.mic_grabs += r.mic_grabs;
+      agg.queue_abandons += r.queue_abandons;
+      agg.reconnects += r.reconnects;
+      agg.mic_denials += r.mic_denials;
+      agg.speaker_joins += r.speaker_joins;
+      byDay.set(r.day, agg);
+    }
+    const daily = Array.from(byDay.values()).sort((a, b) => a.day.localeCompare(b.day));
+    const totals = daily.reduce((acc, d) => ({
+      minutes: acc.minutes + d.minutes,
+      mic_grabs: acc.mic_grabs + d.mic_grabs,
+      queue_abandons: acc.queue_abandons + d.queue_abandons,
+      reconnects: acc.reconnects + d.reconnects,
+      mic_denials: acc.mic_denials + d.mic_denials,
+      speaker_joins: acc.speaker_joins + d.speaker_joins,
+    }), {
+      minutes: 0,
+      mic_grabs: 0,
+      queue_abandons: 0,
+      reconnects: 0,
+      mic_denials: 0,
+      speaker_joins: 0,
+    });
+    return { daily, totals };
+  });
+
 export const getAdminMarketplace = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {

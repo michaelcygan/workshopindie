@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2 } from "lucide-react";
+import { Mic, MicOff, LogOut, Minimize2, Send, MessageSquare, MessageCircle, LayoutGrid, Users, Wrench, MonitorPlay, MonitorOff, Maximize2, MoreHorizontal, Link2, UserX } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -8,11 +8,20 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ProfilePeek } from "@/components/profile-peek";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { toast } from "sonner";
 import type { useMediaRoom, MediaPeer } from "@/hooks/use-media-room";
 import { LOUNGE_CAP, LOUNGE_SPEAKER_CAP, LOUNGE_SCREEN_SHARE_ENABLED } from "@/lib/lounge-constants";
 import { useOptionalLoungeAudio } from "@/hooks/use-lounge-audio";
 import type { LoungeAudioApi } from "@/lib/lounge-audio-types";
 import { RenderLinks } from "@/lib/render-links";
+import { useAuth } from "@/hooks/use-auth";
+import { useUserRoles } from "@/hooks/use-user-role";
 
 /** Best-effort: derive a human label from a screen capture track.
  *  Chrome's `track.label` is typically "screen:1:0", "window:12345:0", or for
@@ -67,6 +76,7 @@ export function MediaPanel({
   onViewModeChange,
   onOpenWork,
   roomId,
+  hostUserId,
   dockExtra,
   nextLoungeSlot,
 }: {
@@ -82,12 +92,17 @@ export function MediaPanel({
   onViewModeChange?: (v: RoomViewMode) => void;
   onOpenWork?: (workId: string) => void;
   roomId?: string;
+  hostUserId?: string | null;
   /** Optional extra control rendered in the dock alongside Mute/Camera/Exit. */
   dockExtra?: React.ReactNode;
   /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
   nextLoungeSlot?: React.ReactNode;
 }) {
   const api = useOptionalLoungeAudio();
+  const { user } = useAuth();
+  const { isAdmin } = useUserRoles();
+  const isHost = !!user && hostUserId === user.id;
+  const canModerate = isHost || isAdmin;
   // Prefer the API's participant roll when the provider is mounted; falls back
   // to legacy presence counts under bare mesh so nothing regresses.
   const totalHere = api ? Math.max(api.participants.length, 1 + others.length) : 1 + others.length;
@@ -234,6 +249,7 @@ export function MediaPanel({
             avatarUrl={meAvatar}
             username={null}
             isMe
+            canModerate={canModerate}
             onOpenWork={onOpenWork}
             roomId={roomId}
           />
@@ -249,6 +265,7 @@ export function MediaPanel({
                     displayName={o.profile?.display_name || o.profile?.username || "Anon"}
                     avatarUrl={o.profile?.avatar_url ?? null}
                     username={o.profile?.username ?? null}
+                    canModerate={canModerate}
                     onOpenWork={onOpenWork}
                     roomId={roomId}
                   />
@@ -1472,7 +1489,7 @@ function ChatPanel({
 }
 
 function SpeakerRow({
-  userId, onStage, muted, displayName, avatarUrl, username, isMe, onOpenWork, roomId,
+  userId, onStage, muted, displayName, avatarUrl, username, isMe, canModerate, onOpenWork, roomId,
 }: {
   userId: string;
   /** Is this participant currently on the audio stage (i.e. joined audio). */
@@ -1482,9 +1499,20 @@ function SpeakerRow({
   avatarUrl: string | null;
   username: string | null;
   isMe?: boolean;
+  canModerate?: boolean;
   onOpenWork?: (workId: string) => void;
   roomId?: string;
 }) {
+  const audio = useOptionalLoungeAudio();
+  const showModeration = canModerate && !isMe && !!roomId;
+  const handleModerate = async (action: "mute" | "remove") => {
+    try {
+      await audio?.moderateSpeaker({ userId, action });
+      toast(action === "mute" ? "Speaker muted" : "Speaker removed from audio", { duration: 2000 });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Moderation action failed");
+    }
+  };
   // Status dot: filled primary = on stage & unmuted, hollow = on stage & muted,
   // no dot = chat-only listener. Activity/speaking rings live on the Stage,
   // not here — this row is about identity + presence status.
@@ -1512,10 +1540,35 @@ function SpeakerRow({
     </button>
   );
   return (
-    <li>
-      <ProfilePeek userId={userId} speaking={onStage && !muted} onWorkClick={onOpenWork} roomId={roomId}>
-        {inner}
-      </ProfilePeek>
+    <li className="flex items-center gap-1">
+      <div className="min-w-0 flex-1">
+        <ProfilePeek userId={userId} speaking={onStage && !muted} onWorkClick={onOpenWork} roomId={roomId}>
+          {inner}
+        </ProfilePeek>
+      </div>
+      {showModeration && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="Moderate participant"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted hover:bg-muted hover:text-ink"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={() => handleModerate("mute")}>
+              <MicOff className="mr-2 h-4 w-4" />
+              Mute
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleModerate("remove")} className="text-destructive focus:text-destructive">
+              <UserX className="mr-2 h-4 w-4" />
+              Remove from audio
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </li>
   );
 }
