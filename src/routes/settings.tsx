@@ -159,7 +159,7 @@ function SettingsPage() {
             <AccountSection />
           </Section>
 
-          <Section id="plus" title="Plus membership" subtitle="Manage your Galleryhop Plus subscription." refMap={sectionRefs}>
+          <Section id="plus" title="Plus membership" subtitle="Manage your Workshop Plus subscription." refMap={sectionRefs}>
             <PlusSection />
           </Section>
 
