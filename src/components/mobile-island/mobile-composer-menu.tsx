@@ -65,8 +65,16 @@ export function MobileComposerMenu({ open, onClose, menuId, isAuthed }: Props) {
                   onClick={() => {
                     hapticTap(10);
                     onClose();
-                    navigate({ to: action.to } as never);
+                    if (isAuthed) {
+                      navigate({ to: action.to } as never);
+                    } else {
+                      navigate({
+                        to: "/login",
+                        search: { redirect: action.to },
+                      } as never);
+                    }
                   }}
+
 
                   initial={
                     reduced
