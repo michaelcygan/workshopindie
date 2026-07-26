@@ -231,13 +231,13 @@ export function WorkshopToolsPanel(props: Props) {
     return (
       <div className="mt-4 rounded-2xl border border-dashed border-border/60 bg-surface/60 backdrop-blur-sm p-4">
         <p className="text-sm text-ink-soft text-center">
-          Spin up a shared surface. Realtime for live moments, Objects for things you keep.
+          Spin up a shared surface — Drive for cloud links and files, Player for a shared media queue.
         </p>
-        <ToolGroup label="Realtime" types={TOOL_REALTIME} suggested={suggested} onEnable={enableTool} />
-        <ToolGroup label="Objects" types={TOOL_OBJECTS} suggested={suggested} onEnable={enableTool} />
+        <ToolGroup label="Objects" types={TOOL_ORDER} suggested={suggested} onEnable={enableTool} />
       </div>
     );
   }
+
 
   return (
     <div className="mt-4 rounded-2xl border border-border">
