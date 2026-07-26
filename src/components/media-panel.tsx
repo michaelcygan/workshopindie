@@ -87,8 +87,12 @@ export function MediaPanel({
   /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
   nextLoungeSlot?: React.ReactNode;
 }) {
-  const totalHere = 1 + others.length;
+  const api = useOptionalLoungeAudio();
+  // Prefer the API's participant roll when the provider is mounted; falls back
+  // to legacy presence counts under bare mesh so nothing regresses.
+  const totalHere = api ? Math.max(api.participants.length, 1 + others.length) : 1 + others.length;
   const peerById = new Map(m.peers.map((p) => [p.userId, p]));
+  const waitingCount = api ? api.participants.filter((p) => p.role === "waiting").length : 0;
   return (
     <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
@@ -113,86 +117,96 @@ export function MediaPanel({
         </div>
       )}
 
-      {/* Participation controls (Wave 2).
-          The Lounge is audio-first with three states:
-            - Chat only        → primary: Join audio
-            - Muted + audio    → label "Listening", primary: Unmute
-            - Unmuted + audio  → primary: Mute, secondary: Leave audio
-          Cameras no longer exist in the Lounge, so there's no camera toggle. */}
-      {!m.audioJoined ? (
-        <div className="mt-3 space-y-2">
-          <p className="text-xs text-ink-muted">
-            {m.busy
-              ? "Connecting to audio…"
-              : "You're here through chat. Add audio when you're ready."}
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => { m.joinAudio().catch(() => {}); }}
-              disabled={m.busy}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
-            >
-              <Mic className="h-3.5 w-3.5" /> Join audio
-            </button>
-            <button
-              type="button"
-              onClick={onExit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
-            >
-              <LogOut className="h-3.5 w-3.5" /> Exit
-            </button>
+      {/* Participation controls (Wave 3).
+          Driven by the transport-neutral LoungeAudioApi when a provider is
+          mounted; falls back to the legacy mesh strip otherwise so nothing
+          regresses in raw mesh mode. Stream/mesh both surface the same
+          state machine here: listener → requesting → waiting → offered →
+          speaker (with mute). Screen sharing is gated separately. */}
+      <div className="mt-3">
+        {api ? (
+          <LoungeAudioStrip
+            api={api}
+            speakerCap={LOUNGE_SPEAKER_CAP}
+            onExit={onExit}
+            dockExtra={dockExtra}
+            nextLoungeSlot={nextLoungeSlot}
+          />
+        ) : !m.audioJoined ? (
+          <div className="space-y-2">
+            <p className="text-xs text-ink-muted">
+              {m.busy
+                ? "Connecting to audio…"
+                : "You're here through chat. Add audio when you're ready."}
+            </p>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={() => { m.joinAudio().catch(() => {}); }}
+                disabled={m.busy}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition disabled:opacity-50"
+              >
+                <Mic className="h-3.5 w-3.5" /> Join audio
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/60 text-ink hover:bg-muted transition"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Exit
+              </button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <div className="mt-3 space-y-2">
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={m.toggleMute}
-              className={cn(
-                "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
-                m.muted
-                  ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                  : "bg-muted/60 text-ink hover:bg-muted",
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-1.5">
+              <button
+                type="button"
+                onClick={m.toggleMute}
+                className={cn(
+                  "inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition",
+                  m.muted
+                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                    : "bg-muted/60 text-ink hover:bg-muted",
+                )}
+                title={m.muted ? "Unmute microphone" : "Mute microphone"}
+              >
+                {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+                {m.muted ? "Unmute" : "Mute"}
+              </button>
+              <button
+                type="button"
+                onClick={m.leaveAudio}
+                disabled={m.busy}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition disabled:opacity-50"
+                title="Leave audio and continue in chat"
+              >
+                <MicOff className="h-3.5 w-3.5" /> Leave audio
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {nextLoungeSlot ? (
+                <div className="[&_button]:w-full">{nextLoungeSlot}</div>
+              ) : dockExtra ? (
+                <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
+                  {dockExtra}
+                </div>
+              ) : (
+                <span />
               )}
-              title={m.muted ? "Unmute microphone" : "Mute microphone"}
-            >
-              {m.muted ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
-              {m.muted ? "Unmute" : "Mute"}
-            </button>
-            <button
-              type="button"
-              onClick={m.leaveAudio}
-              disabled={m.busy}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-muted/40 text-ink-soft hover:bg-muted/70 transition disabled:opacity-50"
-              title="Leave audio and continue in chat"
-            >
-              <MicOff className="h-3.5 w-3.5" /> Leave audio
-            </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition"
+              >
+                <LogOut className="h-3.5 w-3.5" /> Exit
+              </button>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-1.5">
-            {nextLoungeSlot ? (
-              <div className="[&_button]:w-full">{nextLoungeSlot}</div>
-            ) : dockExtra ? (
-              <div className="[&_button]:w-full [&_button]:rounded-full [&_button]:!bg-transparent [&_button]:!text-ink-soft [&_button]:hover:!text-ink [&_button]:text-xs">
-                {dockExtra}
-              </div>
-            ) : (
-              <span />
-            )}
-            <button
-              type="button"
-              onClick={onExit}
-              className="inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 transition"
-            >
-              <LogOut className="h-3.5 w-3.5" /> Exit
-            </button>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {m.screenSharerId && (
+      {m.screenSharerId && LOUNGE_SCREEN_SHARE_ENABLED && (
         <p className="mt-3 rounded-full bg-primary/10 px-3 py-1 text-center text-[11px] text-primary inline-flex items-center justify-center gap-1.5 w-full">
           <MonitorPlay className="h-3 w-3" />
           {m.isScreenSharing
@@ -202,8 +216,13 @@ export function MediaPanel({
       )}
 
       <div className="border-t border-border/50 pt-3 mt-3">
-        <h4 className="mb-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
-          Here now · {totalHere}
+        <h4 className="mb-2 flex items-center gap-2 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <span>Here now · {totalHere}</span>
+          {waitingCount > 0 && (
+            <span className="ml-auto rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium normal-case tracking-normal text-primary">
+              {waitingCount} waiting for mic
+            </span>
+          )}
         </h4>
         <ul className="space-y-2">
           <SpeakerRow
