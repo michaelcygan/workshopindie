@@ -679,8 +679,8 @@ export function CollabComposer({
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title="You've hit 2 active Collabs"
-        description="Free can run 2 open Collabs at a time. Go Plus for unlimited."
+        title={openCollabCapCopy(FREE_OPEN_COLLAB_CAP, FREE_OPEN_COLLAB_CAP).title}
+        description={openCollabCapCopy(FREE_OPEN_COLLAB_CAP, FREE_OPEN_COLLAB_CAP).body}
       />
       <Dialog open={!!postedDialog} onOpenChange={(o) => { if (!o) setPostedDialog(null); }}>
         <DialogContent className="sm:max-w-md">
