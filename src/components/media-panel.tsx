@@ -1096,36 +1096,6 @@ export function FullscreenRoom({
               </button>
             )}
 
-            {/* More: screen share (gated on the Lounge flag; hidden in Stream v1). */}
-            {LOUNGE_SCREEN_SHARE_ENABLED && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="More controls"
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-background/10 text-background/90 hover:bg-background/15"
-                  >
-                    <MoreHorizontal className="h-4 w-4" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" sideOffset={6} className="w-52 p-1">
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        if (m.isScreenSharing) await m.stopScreenShare();
-                        else await m.startScreenShare();
-                      } catch { /* ignore */ }
-                    }}
-                    disabled={!m.joined || (!!m.screenSharerId && !m.isScreenSharing)}
-                    className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-sm text-ink hover:bg-muted disabled:opacity-40"
-                  >
-                    {m.isScreenSharing ? <MonitorOff className="h-4 w-4" /> : <MonitorPlay className="h-4 w-4" />}
-                    <span>{m.isScreenSharing ? "Stop sharing" : m.screenSharerId ? "Someone else is sharing" : "Share screen"}</span>
-                  </button>
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
           <button
             type="button"
