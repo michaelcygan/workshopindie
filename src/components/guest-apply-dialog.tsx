@@ -25,6 +25,8 @@ type Props = {
   collabRoleId: string | null;
   postTitle: string;
   hostFirstName: string;
+  /** Human name of the role being applied to. Omit for a suggestion. */
+  roleName?: string | null;
 };
 
 type Step = "form" | "success";
