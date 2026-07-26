@@ -548,8 +548,7 @@ function NewWork() {
       <PlusGate
         open={plusGate}
         onOpenChange={setPlusGate}
-        title={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).title}
-        description={publishedWorkCapCopy(FREE_PORTFOLIO_CAP, FREE_PORTFOLIO_CAP).body}
+        reason="work_limit"
       />
     </main>
   );
