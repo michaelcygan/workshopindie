@@ -1,66 +1,64 @@
-## Wave 3: Lounge audio monthly quota (10 h / UTC month for Free)
+## Wave 3 status
 
-Server-authoritative tracking of connected minutes with a hard cap enforced before join, plus the deferred `work_applications` privilege-escalation fix.
+Wave 3 (authoritative 10 h/month Lounge audio quota) is functionally complete:
 
-### 1. Data model (migration)
+- DB: `lounge_minutes_this_month` + advisory-locked `try_reserve_lounge_minute` RPC.
+- Server: `resolveLoungeAudioAccess`, `getLoungeAudioAccess`, `reserveLoungeMinute`.
+- Client: `useLoungeAudioAccess` hook, per-minute reservation tick in `use-stream-lounge-audio.ts` that force-leaves on quota exhaustion.
+- UI: sidebar shows "X of 600 min used · resets <date>", Join Audio disabled at 0, "Go Plus for unlimited Lounge time" link; fullscreen dock button also disables with "Audio limit reached".
+- Security: `work_applications` privilege-escalation fixed via trigger + policy.
 
-Add lightweight monthly rollup, computed from the existing `lounge_audio_events` `connected_minutes` pings (already fired once per minute by `use-stream-lounge-audio.ts`). No new client instrumentation needed.
+Optional Wave 3 polish (small, ~1 file each) to fold into Wave 4 if you want:
+- A pre-join "You have N min left this month" hint on the sidebar strip even when quota is not yet exhausted (currently only shown when blocked).
+- A one-time toast on join when < 30 min remain.
 
-- SQL function `public.lounge_minutes_this_month(_user_id uuid) returns int`
-  - `security definer`, `stable`, `set search_path = public`
-  - `SELECT count(*) FROM lounge_audio_events WHERE user_id=_user_id AND event='connected_minutes' AND created_at >= date_trunc('month', now() at time zone 'utc')`
-  - Grants: `EXECUTE TO authenticated`.
-- SQL function `public.try_reserve_lounge_minute(_user_id uuid, _room_id uuid, _limit int) returns boolean`
-  - Advisory-lock key `hashtext('lounge_minute:'||_user_id::text)`.
-  - Counts current month minutes; if `_limit IS NULL OR count < _limit`, inserts a `connected_minutes` telemetry row and returns true; else returns false.
-  - Grants: `EXECUTE TO authenticated`.
-  - Callers: server-side minute-tick path (see §3) — replaces the direct client insert.
+Say if you want those in Wave 4 or skipped.
 
-### 2. Access resolver
+## Wave 4 plan — UI/UX for gates and pricing
 
-New `src/lib/lounge-access.server.ts`:
+Goal: every place a Free user hits a limit reads as one voice — same copy, same "Go Plus" pattern, same reset language — and the pricing page reflects the current numbers exactly.
 
-- `resolveLoungeAudioAccess(userId)` returns `{ minutesUsed, monthlyLimit, canJoinAudio, remainingMinutes, resetLabel, reason }`.
-- Reads the user's subscription with `supabaseAdmin` and calls `resolveEntitlements`; Plus/trial → `monthlyLimit = null`, `canJoinAudio = true`.
-- Reads `lounge_minutes_this_month` for Free/lapsed.
+### 1. Central gate copy
 
-### 3. Server enforcement
+Add `src/lib/entitlement-copy.ts` exporting one function per gate that returns `{ title, body, cta }`:
+- `blogQuotaCopy(used, cap, resetLabel)`
+- `loungeAudioQuotaCopy(used, cap, resetLabel)`
+- `publishedWorkCapCopy(used, cap)`
+- `openCollabCapCopy(used, cap)`
 
-- New `getLoungeAudioAccess` server fn (`.middleware([requireSupabaseAuth])`) returning the resolver output for the caller.
-- New `reserveLoungeMinute({ roomId })` server fn:
-  - Calls `try_reserve_lounge_minute` with the user's `monthlyLimit` (bypass when null).
-  - Returns `{ ok: true }` or `{ ok: false, reason }` — never throws.
-- Replace the client's direct `emitLoungeAudioEvent("connected_minutes", ...)` in `use-stream-lounge-audio.ts` with `reserveLoungeMinute`. When it returns `{ ok:false }`, call the new `onQuotaExhausted` callback (see §4). Other telemetry events keep their current path.
+Every gated surface imports from here — no more per-call ad-hoc strings.
 
-### 4. Client UX
+### 2. Sweep existing gates to use the shared copy
 
-- `use-stream-lounge-audio.ts`:
-  - Add `quotaExhausted: boolean` and `minutesRemaining: number | null` to state.
-  - On mount / roomId change, fetch `getLoungeAudioAccess`; if `!canJoinAudio`, set `error = { kind: "quota", ... }` and skip Stream `call.join()`.
-  - Every minute-tick RPC failure flips `quotaExhausted = true` and calls `call.leave()`.
-- `media-panel.tsx`:
-  - Show a "Lounge audio time" chip near the join controls: `X of 600 min used this month · resets [date]` for Free.
-  - When quota is exhausted or would block join: replace the "Join audio" button with a disabled state + `Link to /pricing` "Go Plus for unlimited Lounge time". Chat remains fully available (no gating on chat-only presence).
+- `src/routes/me.blog.index.tsx`, `src/routes/me.blog.$id.tsx` — Blog quota chip + Publish disabled state.
+- `src/components/media-panel.tsx` (sidebar + fullscreen dock) — Lounge audio quota.
+- `src/components/plus-gate.tsx` — generic Plus upsell now pulls titles/CTA from the same module.
+- Work publish path (find via `FREE_PUBLISHED_WORK_CAP`) — replace inline strings.
+- Open-collab creation path (find via `FREE_OPEN_COLLAB_CAP`) — replace inline strings.
 
-### 5. Fix `work_applications` privilege escalation (deferred from Wave 1)
+### 3. Pricing page refresh
 
-Same migration. Current "self updates own application" policy allows a self-referential `status` subquery that the applicant can subvert — an applicant can set their own status to `approved`.
+`src/routes/pricing.tsx`:
+- Read caps live from `@/lib/entitlements` constants (already central) — no hard-coded numbers in JSX.
+- Free column bullets: "10 published Works", "2 open Collabs", "10 hours of Lounge audio / month", "2 Blog posts / month".
+- Plus column: "Unlimited" for each of the four.
+- Add a small "What resets monthly?" caption under the Free column.
 
-- Drop the existing `self updates own application` UPDATE policy.
-- Replace with a policy that keeps `USING (applicant_user_id = auth.uid())` but the `WITH CHECK` also requires `applicant_user_id = auth.uid()` only — status protection moves to a trigger.
-- Add `BEFORE UPDATE` trigger `work_applications_guard_status`:
-  - If `NEW.status IS DISTINCT FROM OLD.status AND NOT is_work_owner(NEW.work_id, auth.uid())` → `RAISE EXCEPTION 'Only the work owner can change application status'`.
-  - Same guard blocks changes to `work_id` and `applicant_user_id`.
-- Call `manage_security_finding(mark_as_fixed)` after the migration runs.
+### 4. Settings usage panel
 
-### 6. Out of scope for this wave
+`src/routes/settings.tsx` (or the account tab that already shows Plus status): add a "This month" block with four rows — Blog posts, Lounge audio minutes, Published Works, Open Collabs — each showing `used / cap` and reset date for Free, "Unlimited" for Plus. Reuses `getLoungeAudioAccess` + a new lightweight `getUsageSummary` server fn that returns all four numbers in one call.
 
-- Backfill historical usage (rollup starts from the last 30 days of existing `connected_minutes` rows automatically since we key off `created_at`).
-- Admin-side per-user reset (Wave 5 hardening).
-- Copy sweeps on non-lounge pages (Wave 4).
+### 5. Empty-state / near-limit nudges
 
-### Verification
+- Blog editor: when `used === cap - 1`, show a subtle "Last free post this month" chip next to Publish.
+- Lounge sidebar: mirror this pattern for audio when `minutesRemaining <= 30`.
 
-- Typecheck.
-- Manual: as a Free user, `SELECT public.lounge_minutes_this_month(auth.uid())` before/after a minute tick.
-- Manual: attempt `UPDATE work_applications SET status='approved' WHERE applicant_user_id = auth.uid()` — expect the trigger to raise.
+No schema changes in Wave 4 — all pulled from Wave 2/3 RPCs.
+
+### Deliverables
+
+- 1 new file: `src/lib/entitlement-copy.ts`
+- 1 new server fn: `getUsageSummary` in `src/lib/entitlements.functions.ts`
+- Edits: pricing, settings, blog editor + list, media-panel, plus-gate, work publish, collab create.
+
+Say "continue" (with or without the optional Wave 3 polish) and I'll implement.
