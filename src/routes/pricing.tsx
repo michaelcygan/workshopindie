@@ -45,15 +45,7 @@ function PricingPage() {
           price="$0"
           tagline="The complete Workshop, within generous limits."
           cta={user ? <Button variant="outline" className="w-full rounded-full" disabled>You're on Free</Button> : <Link to="/signup" className="block"><Button variant="outline" className="w-full rounded-full">Start free</Button></Link>}
-          features={[
-            "10 published Works",
-            "2 active open Collabs",
-            "10 hours of Lounge audio each month",
-            "2 Blog publications each month",
-            "Unlimited Collab applications",
-            "All cities, Groups, and Events",
-            "DMs, comments, reactions, saves, and credits",
-          ]}
+          features={freePlanBullets()}
         />
         <PlanCard
           highlight
