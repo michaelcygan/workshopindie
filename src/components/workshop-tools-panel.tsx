@@ -404,16 +404,14 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
       </div>
     );
   }
-  if (tool.tool_type === "screen_share") {
+  if (tool.tool_type === "screen_share" || tool.tool_type === "pip") {
     return (
-      <div className="p-4">
-        <WorkshopScreenSharePanel scope={scope.kind} media={media} />
+      <div className="p-4 text-sm text-ink-muted">
+        This tool was retired. The Lounge is now chat + audio only — use Drive to share files, links, and recordings.
       </div>
     );
   }
-  if (tool.tool_type === "pip") {
-    return <PipBody />;
-  }
+
   if (tool.tool_type === "player") {
     const playerScope = scope.kind === "instant"
       ? { kind: "instant" as const, roomId: scope.roomId, hostUserId: scope.hostUserId }
