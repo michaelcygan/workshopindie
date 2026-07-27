@@ -39,7 +39,7 @@ type SectionId = "identity" | "mediums" | "location" | "links" | "pinned";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "mediums", label: "Mediums & bio", icon: Sparkles },
-  { id: "location", label: "Location", icon: MapPin },
+  { id: "location", label: "Location & languages", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned pieces", icon: Pin },
 ];
@@ -61,6 +61,7 @@ type FormState = {
   cats: Category[];
   mediums: ExtraMedium[];
   tools: string[];
+  languages: string[];
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
@@ -70,7 +71,7 @@ type FormState = {
 const EMPTY: FormState = {
   username: "",
   firstName: "", lastName: "", aliases: [], aliasUrls: [], instagram: "",
-  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], links: [],
+  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], languages: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
@@ -137,7 +138,7 @@ function EditProfile() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
+    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,languages,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
       if (error) { toast.error(error.message); setHydrated(true); return; }
       if (!data) return;
       const first = (data.first_name as string | null) ?? "";
@@ -163,6 +164,7 @@ function EditProfile() {
         cats: (data.categories ?? []) as Category[],
         mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
         tools: ((data.tools as string[] | null) ?? []),
+        languages: (((data as { languages?: string[] | null }).languages) ?? []),
         links: ((data.external_links as ExtLink[] | null) ?? []),
         cityId: data.city_id ?? "",
         pinnedIds: (data.pinned_work_ids ?? []) as string[],
