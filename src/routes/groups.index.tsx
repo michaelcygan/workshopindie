@@ -39,6 +39,7 @@ const CATEGORY_VALUES = [
   "performance",
   "audio",
   "scene_life",
+  "language",
 ] as const;
 type Category = (typeof CATEGORY_VALUES)[number];
 
@@ -53,7 +54,9 @@ const CATEGORY_LABELS: Record<Category, string> = {
   performance: "Performance",
   audio: "Audio",
   scene_life: "Scene & Lifestyle",
+  language: "Languages",
 };
+
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   city: "City",
