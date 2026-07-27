@@ -248,6 +248,7 @@ function EditProfile() {
       .slice(0, 5);
     const cleanAliases = pairs.map((p) => p.a);
     const cleanAliasUrls = pairs.map((p) => normalizeAliasUrl(p.u));
+    const cleanLangs = cleanLanguages(form.languages);
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
@@ -266,11 +267,12 @@ function EditProfile() {
       categories: form.cats,
       mediums: form.mediums,
       tools: form.tools,
+      languages: cleanLangs,
       external_links: form.links.filter((l) => l.url),
       city_id: form.cityId || null,
       pinned_work_ids: cleanPinned,
       onboarded: true,
-    }).eq("id", user.id);
+    } as never).eq("id", user.id);
     if (error) { setSaving(false); return toast.error(error.message); }
 
     // Age filter saves through a server fn (column is server-protected).
