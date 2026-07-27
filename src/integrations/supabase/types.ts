@@ -3885,6 +3885,125 @@ export type Database = {
           },
         ]
       }
+      plus_offer_links: {
+        Row: {
+          active: boolean
+          benefit_type: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          duration_months: number | null
+          environment: Database["public"]["Enums"]["stripe_environment"]
+          expires_at: string | null
+          id: string
+          max_redemptions: number | null
+          name: string
+          redemption_count: number
+          token_hash: string
+        }
+        Insert: {
+          active?: boolean
+          benefit_type: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_months?: number | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          name: string
+          redemption_count?: number
+          token_hash: string
+        }
+        Update: {
+          active?: boolean
+          benefit_type?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          duration_months?: number | null
+          environment?: Database["public"]["Enums"]["stripe_environment"]
+          expires_at?: string | null
+          id?: string
+          max_redemptions?: number | null
+          name?: string
+          redemption_count?: number
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plus_offer_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_links_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plus_offer_redemptions: {
+        Row: {
+          grant_id: string
+          id: string
+          ip_hash: string | null
+          offer_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          grant_id: string
+          id?: string
+          ip_hash?: string | null
+          offer_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          grant_id?: string
+          id?: string
+          ip_hash?: string | null
+          offer_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plus_offer_redemptions_grant_id_fkey"
+            columns: ["grant_id"]
+            isOneToOne: false
+            referencedRelation: "plus_access_grants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_redemptions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "plus_offer_links"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plus_offer_redemptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       processed_stripe_events: {
         Row: {
           event_id: string
@@ -6871,6 +6990,14 @@ export type Database = {
       claim_lounge_slot: {
         Args: { _cap?: number; _room_id: string; _user_id: string }
         Returns: Json
+      }
+      claim_plus_offer: {
+        Args: { _token: string }
+        Returns: {
+          access_ends_at: string
+          benefit_type: string
+          grant_id: string
+        }[]
       }
       contains_blocked_term: { Args: { _text: string }; Returns: string }
       count_member_active_drafts: {

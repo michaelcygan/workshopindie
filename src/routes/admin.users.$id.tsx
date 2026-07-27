@@ -14,6 +14,7 @@ import {
 import {
   getUserBlogAccess, grantUserBlogAccess, revokeUserBlogAccess, suspendUserBlogAccess,
 } from "@/lib/admin-blog-access.functions";
+import { UserPlusPanel } from "@/components/admin/user-plus-panel";
 
 export const Route = createFileRoute("/admin/users/$id")({ component: UserDetail });
 
@@ -129,6 +130,8 @@ function UserDetail() {
           </div>
         </div>
       ) : null}
+
+      <UserPlusPanel userId={id} />
 
       <BlogAccessPanel userId={id} />
 
