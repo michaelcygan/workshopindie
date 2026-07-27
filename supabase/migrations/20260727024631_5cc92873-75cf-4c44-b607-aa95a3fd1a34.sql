@@ -1,0 +1,1 @@
+ALTER TYPE public.group_category ADD VALUE IF NOT EXISTS 'language';

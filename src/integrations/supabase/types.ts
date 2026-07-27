@@ -7330,6 +7330,7 @@ export type Database = {
         | "audio"
         | "scene_life"
         | "city"
+        | "language"
       group_event_format: "in_person" | "online" | "hybrid"
       group_event_kind:
         | "open_mic"
@@ -7607,6 +7608,7 @@ export const Constants = {
         "audio",
         "scene_life",
         "city",
+        "language",
       ],
       group_event_format: ["in_person", "online", "hybrid"],
       group_event_kind: [
