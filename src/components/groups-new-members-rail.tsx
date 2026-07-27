@@ -19,18 +19,18 @@ async function fetchNewMembers(): Promise<Row[]> {
   const { data: joins } = await supabase
     .from("group_members")
     .select(
-      "user_id,group_id,created_at,group:groups!inner(id,slug,name,accent_color,avatar_url,visibility,deleted_at)",
+      "user_id,group_id,joined_at,group:groups!inner(id,slug,name,accent_color,avatar_url,visibility,deleted_at)",
     )
-    .gte("created_at", sinceIso)
-    .order("created_at", { ascending: false })
+    .gte("joined_at", sinceIso)
+    .order("joined_at", { ascending: false })
     .limit(400);
 
   const grouped = new Map<string, Row>();
   const userIds = new Set<string>();
-  for (const row of (joins ?? []) as Array<{
+  for (const row of (joins ?? []) as unknown as Array<{
     user_id: string;
     group_id: string;
-    created_at: string;
+    joined_at: string;
     group: { id: string; slug: string; name: string; accent_color: string | null; avatar_url: string | null; visibility: string; deleted_at: string | null };
   }>) {
     if (!row.group || row.group.visibility !== "public" || row.group.deleted_at) continue;

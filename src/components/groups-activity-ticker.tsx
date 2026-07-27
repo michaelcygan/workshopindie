@@ -45,10 +45,10 @@ async function fetchGroupsActivity(): Promise<ActivityItem[]> {
     supabase
       .from("group_members")
       .select(
-        "group_id,created_at,group:groups!inner(slug,name,accent_color,visibility,deleted_at)",
+        "group_id,joined_at,group:groups!inner(slug,name,accent_color,visibility,deleted_at)",
       )
-      .gte("created_at", sinceIso)
-      .order("created_at", { ascending: false })
+      .gte("joined_at", sinceIso)
+      .order("joined_at", { ascending: false })
       .limit(20),
   ]);
 
@@ -103,9 +103,9 @@ async function fetchGroupsActivity(): Promise<ActivityItem[]> {
   }
   // Roll up members by group so we don't spam.
   const memberCounts = new Map<string, { count: number; row: { slug: string; name: string; accent_color: string | null }; at: string }>();
-  for (const row of (newMembers.data ?? []) as Array<{
+  for (const row of (newMembers.data ?? []) as unknown as Array<{
     group_id: string;
-    created_at: string;
+    joined_at: string;
     group: { slug: string; name: string; accent_color: string | null; visibility: string; deleted_at: string | null };
   }>) {
     if (!row.group || row.group.visibility !== "public" || row.group.deleted_at) continue;
@@ -115,7 +115,7 @@ async function fetchGroupsActivity(): Promise<ActivityItem[]> {
       memberCounts.set(row.group_id, {
         count: 1,
         row: { slug: row.group.slug, name: row.group.name, accent_color: row.group.accent_color },
-        at: row.created_at,
+        at: row.joined_at,
       });
   }
   for (const [gid, entry] of memberCounts) {

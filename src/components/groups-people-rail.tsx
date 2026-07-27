@@ -50,10 +50,10 @@ async function fetchSuggestedPeople(userId: string): Promise<Person[]> {
   const candidateIds = [...overlap.keys()];
   const { data: existingFollows } = await supabase
     .from("follows")
-    .select("followee_id")
-    .eq("follower_id", userId)
-    .in("followee_id", candidateIds);
-  const followedSet = new Set((existingFollows ?? []).map((r) => r.followee_id as string));
+    .select("followed_user_id")
+    .eq("follower_user_id", userId)
+    .in("followed_user_id", candidateIds);
+  const followedSet = new Set((existingFollows ?? []).map((r) => r.followed_user_id as string));
 
   const ranked = candidateIds
     .filter((id) => !followedSet.has(id))
