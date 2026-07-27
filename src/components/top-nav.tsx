@@ -82,12 +82,7 @@ export function TopNav() {
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
           </Link>
-          <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Events
-          </Link>
-          <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Gallery
-          </Link>
+          <MoreNavMenu />
         </nav>
 
 
