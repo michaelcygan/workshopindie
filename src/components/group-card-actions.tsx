@@ -1,19 +1,27 @@
-import { Link } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Check, Plus } from "lucide-react";
+import { Check, Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { joinGroup, leaveGroup } from "@/lib/groups.functions";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
-type Props = { groupId: string; joined?: boolean };
+type Props = {
+  groupId: string;
+  joined?: boolean;
+  className?: string;
+};
 
 /**
- * Hover-revealed Join / Joined pill on group cards (desktop).
- * Stops propagation so the parent card link doesn't intercept.
+ * Always-visible, keyboard-reachable Join / Joined control.
+ * - Owns auth handling, join/leave mutation, loading, toasts, invalidation.
+ * - Never rendered inside a parent <Link>; card puts it as a sibling absolute
+ *   element to avoid nested interactive descendants.
  */
-export function GroupCardActions({ groupId, joined }: Props) {
+export function GroupCardActions({ groupId, joined, className }: Props) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const joinFn = useServerFn(joinGroup);
   const leaveFn = useServerFn(leaveGroup);
@@ -43,49 +51,53 @@ export function GroupCardActions({ groupId, joined }: Props) {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const stop = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-  };
+  const busy = join.isPending || leave.isPending;
+
+  const baseClass =
+    "inline-flex min-h-[36px] items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 disabled:opacity-60";
+
+  if (!user) {
+    return (
+      <button
+        type="button"
+        onClick={() => navigate({ to: "/login" })}
+        aria-label="Sign in to join this group"
+        className={cn(baseClass, "bg-ink text-background hover:bg-ink/90", className)}
+      >
+        <Plus className="h-3.5 w-3.5" /> Join
+      </button>
+    );
+  }
+
+  if (joined) {
+    return (
+      <button
+        type="button"
+        onClick={() => leave.mutate()}
+        disabled={busy}
+        aria-label="Leave this group"
+        className={cn(
+          baseClass,
+          "border border-border bg-background text-ink-soft hover:bg-muted",
+          className,
+        )}
+      >
+        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+        Joined
+      </button>
+    );
+  }
 
   return (
-    <div
-      className="pointer-events-none absolute right-2 top-2 z-10 translate-y-1 opacity-0 transition group-hover:pointer-events-auto group-hover:translate-y-0 group-hover:opacity-100"
-      onClick={stop}
+    <button
+      type="button"
+      onClick={() => join.mutate()}
+      disabled={busy}
+      aria-label="Join this group"
+      className={cn(baseClass, "bg-ink text-background hover:bg-ink/90", className)}
     >
-      {!user ? (
-        <Link
-          to="/login"
-          onClick={stop}
-          className="inline-flex items-center gap-1 rounded-full bg-ink/90 px-2.5 py-1 text-[11px] font-medium text-background shadow-soft backdrop-blur transition hover:bg-ink"
-        >
-          <Plus className="h-3 w-3" /> Join
-        </Link>
-      ) : joined ? (
-        <button
-          type="button"
-          onClick={(e) => {
-            stop(e);
-            leave.mutate();
-          }}
-          disabled={leave.isPending}
-          className="inline-flex items-center gap-1 rounded-full bg-background/95 px-2.5 py-1 text-[11px] font-medium text-ink shadow-soft backdrop-blur transition hover:bg-background"
-        >
-          <Check className="h-3 w-3" /> Joined
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={(e) => {
-            stop(e);
-            join.mutate();
-          }}
-          disabled={join.isPending}
-          className="inline-flex items-center gap-1 rounded-full bg-ink/90 px-2.5 py-1 text-[11px] font-medium text-background shadow-soft backdrop-blur transition hover:bg-ink"
-        >
-          <Plus className="h-3 w-3" /> Join
-        </button>
-      )}
-    </div>
+      {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+      Join
+    </button>
   );
 }
