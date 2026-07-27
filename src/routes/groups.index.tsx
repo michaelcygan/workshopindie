@@ -399,12 +399,13 @@ function GroupsIndex() {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent align="end">
-                    {CATEGORY_VALUES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {CATEGORY_LABELS[c]}
+                    {categoryOptions.map(({ id, count }) => (
+                      <SelectItem key={id} value={id}>
+                        {CATEGORY_LABELS[id]} ({count})
                       </SelectItem>
                     ))}
                   </SelectContent>
+
                 </Select>
               </div>
             )}
