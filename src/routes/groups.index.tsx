@@ -1,26 +1,28 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useRef } from "react";
-import { Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
-import { cn } from "@/lib/utils";
+import { GroupFeaturedCard } from "@/components/group-featured-card";
+import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
 import { PageHeaderCompact } from "@/components/page-header-compact";
-import { KickerChip } from "@/components/kicker-chip";
-import { RecapChip } from "@/components/recap-chip";
-import { EmptySpark } from "@/components/empty-spark";
-import { GroupsTrendingList } from "@/components/groups-trending-list";
-import { GroupsBrowseByKind } from "@/components/groups-browse-by-kind";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
-import { SceneTicker } from "@/components/scene-ticker";
-import { FeaturedEventsCompact } from "@/components/featured-events-compact";
-import { GroupsJoinFeedStrip } from "@/components/groups-join-feed-strip";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
-type Tab = (typeof TAB_VALUES)[number];
+type Tab = KindTab;
 
 const CATEGORY_VALUES = [
   "all",
@@ -49,12 +51,29 @@ const CATEGORY_LABELS: Record<Category, string> = {
   scene_life: "Scene & Lifestyle",
 };
 
+const KIND_LABELS: Record<GroupCardData["kind"], string> = {
+  city: "City",
+  genre: "Genre",
+  micro: "Micro",
+  scene: "Scene",
+};
+
+const SORT_VALUES = ["featured", "members", "content", "az"] as const;
+type Sort = (typeof SORT_VALUES)[number];
+
+const SORT_LABELS: Record<Sort, string> = {
+  featured: "Featured",
+  members: "Most members",
+  content: "Most content",
+  az: "A–Z",
+};
+
 const searchSchema = z.object({
   t: fallback(z.enum(TAB_VALUES), "all").default("all"),
   q: fallback(z.string(), "").default(""),
   c: fallback(z.enum(CATEGORY_VALUES), "all").default("all"),
+  s: fallback(z.enum(SORT_VALUES), "featured").default("featured"),
 });
-
 
 export const Route = createFileRoute("/groups/")({
   validateSearch: zodValidator(searchSchema),
@@ -62,27 +81,83 @@ export const Route = createFileRoute("/groups/")({
   head: () => ({
     meta: [
       { title: "Groups — Workshop" },
-      { name: "description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
+      {
+        name: "description",
+        content:
+          "Find the people, places, and creative movements your work belongs with.",
+      },
       { property: "og:title", content: "Groups — Workshop" },
-      { property: "og:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
+      {
+        property: "og:description",
+        content:
+          "Find the people, places, and creative movements your work belongs with.",
+      },
       { property: "og:url", content: "https://workshopindie.com/groups" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "Groups — Workshop" },
-      { name: "twitter:description", content: "Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in." },
+      {
+        name: "twitter:description",
+        content:
+          "Find the people, places, and creative movements your work belongs with.",
+      },
     ],
     links: [{ rel: "canonical", href: "https://workshopindie.com/groups" }],
   }),
 });
 
-const TABS: { id: Tab; label: string }[] = [
-  { id: "for-you", label: "For you" },
-  { id: "all", label: "All" },
-  { id: "genre", label: "Genres" },
-  { id: "scene", label: "Scenes" },
-  { id: "micro", label: "Micro" },
-  { id: "city", label: "Cities" },
-];
+const PAGE_SIZE = 24;
+const FEATURED_MAX = 4;
+const FEATURED_MIN = 2;
+
+const TITLE_BY_TAB: Record<Tab, string> = {
+  all: "Explore groups",
+  "for-you": "Your groups",
+  genre: "Genres",
+  scene: "Scenes",
+  micro: "Micro Groups",
+  city: "Cities",
+};
+
+function matchesSearch(group: GroupCardData, needle: string): boolean {
+  if (!needle) return true;
+  const categoryLabel =
+    group.category && (CATEGORY_LABELS as Record<string, string>)[group.category]
+      ? CATEGORY_LABELS[group.category as Category]
+      : "";
+  const hay = [group.name, group.tagline ?? "", KIND_LABELS[group.kind], categoryLabel]
+    .filter(Boolean)
+    .join(" ")
+    .toLocaleLowerCase();
+  return hay.includes(needle);
+}
+
+function sortGroups(rows: GroupCardData[], sort: Sort): GroupCardData[] {
+  const copy = rows.slice();
+  const byName = (a: GroupCardData, b: GroupCardData) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  switch (sort) {
+    case "members":
+      return copy.sort((a, b) => b.member_count - a.member_count || byName(a, b));
+    case "content":
+      return copy.sort(
+        (a, b) =>
+          b.work_count + b.collab_count + b.workshop_count -
+            (a.work_count + a.collab_count + a.workshop_count) || byName(a, b),
+      );
+    case "az":
+      return copy.sort(byName);
+    case "featured":
+    default:
+      return copy.sort((a, b) => {
+        const af = a.featured_at ? Date.parse(a.featured_at) : 0;
+        const bf = b.featured_at ? Date.parse(b.featured_at) : 0;
+        if (af !== bf) return bf - af;
+        if (a.member_count !== b.member_count) return b.member_count - a.member_count;
+        return byName(a, b);
+      });
+  }
+}
 
 function GroupsIndex() {
   const { user } = useAuth();
@@ -91,7 +166,7 @@ function GroupsIndex() {
   const tab: Tab = search.t;
   const query = search.q;
   const category: Category = search.c;
-  const allGroupsRef = useRef<HTMLElement>(null);
+  const sort: Sort = search.s;
 
   const setTab = (t: Tab) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, t }), replace: true });
@@ -99,7 +174,14 @@ function GroupsIndex() {
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, q }), replace: true });
   const setCategory = (c: Category) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, c }), replace: true });
+  const setSort = (s: Sort) =>
+    navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, s }), replace: true });
 
+  const resetAll = () =>
+    navigate({
+      search: () => ({ t: "all" as Tab, q: "", c: "all" as Category, s: "featured" as Sort }),
+      replace: true,
+    });
 
   const { data: allGroups = [], isLoading } = useQuery({
     queryKey: ["groups", "all"],
@@ -118,7 +200,6 @@ function GroupsIndex() {
     },
   });
 
-
   const { data: myIds = [] } = useQuery({
     queryKey: ["my-group-ids", user?.id ?? "anon"],
     enabled: !!user,
@@ -134,8 +215,20 @@ function GroupsIndex() {
 
   const myIdSet = useMemo(() => new Set(myIds), [myIds]);
 
+  const kindCounts = useMemo(
+    () => ({
+      all: allGroups.length,
+      "for-you": allGroups.filter((g) => myIdSet.has(g.id)).length,
+      genre: allGroups.filter((g) => g.kind === "genre").length,
+      scene: allGroups.filter((g) => g.kind === "scene").length,
+      micro: allGroups.filter((g) => g.kind === "micro").length,
+      city: allGroups.filter((g) => g.kind === "city").length,
+    }),
+    [allGroups, myIdSet],
+  ) satisfies Record<Tab, number>;
+
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = query.trim().toLocaleLowerCase();
     let rows = allGroups;
     if (tab === "for-you") {
       rows = rows.filter((g) => myIdSet.has(g.id));
@@ -145,277 +238,349 @@ function GroupsIndex() {
     if (category !== "all") {
       rows = rows.filter((g) => g.category === category);
     }
-    if (q) {
-      rows = rows.filter(
-        (g) => g.name.toLowerCase().includes(q) || (g.tagline ?? "").toLowerCase().includes(q),
-      );
-    }
-    return rows;
-  }, [allGroups, tab, query, category, myIdSet]);
+    if (q) rows = rows.filter((g) => matchesSearch(g, q));
+    return sortGroups(rows, sort);
+  }, [allGroups, tab, query, category, sort, myIdSet]);
 
+  // Featured rail: only on the pristine All view.
+  const showFeatured =
+    tab === "all" && !query.trim() && category === "all" && sort === "featured";
+  const featured = useMemo(() => {
+    if (!showFeatured) return [];
+    return allGroups.filter((g) => !!g.featured_at).slice(0, FEATURED_MAX);
+  }, [allGroups, showFeatured]);
+  const showFeaturedRail = featured.length >= FEATURED_MIN;
 
-  const trending = useMemo(
-    () =>
-      [...allGroups]
-        .sort((a, b) => b.member_count - a.member_count)
-        .slice(0, 5),
-    [allGroups],
+  // Progressive rendering.
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [tab, query, category, sort]);
+  const visibleRows = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
   );
 
-  // Ticker: randomized view of the top 25 groups by member count. Reshuffles
-  // when the underlying list changes so it feels alive across visits.
-  const tickerGroups = useMemo(() => {
-    const top = [...allGroups]
-      .sort((a, b) => b.member_count - a.member_count)
-      .slice(0, 25);
-    for (let i = top.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [top[i], top[j]] = [top[j], top[i]];
-    }
-    return top;
-  }, [allGroups]);
+  // Batched avatar fetch — covers featured rail + first page of directory.
+  const avatarIds = useMemo(() => {
+    const ids = new Set<string>();
+    featured.forEach((g) => ids.add(g.id));
+    visibleRows.slice(0, 32).forEach((g) => ids.add(g.id));
+    return Array.from(ids);
+  }, [featured, visibleRows]);
+  const { data: avatarMap } = useGroupMemberAvatars(avatarIds);
 
+  const filtersActive =
+    tab !== "all" || category !== "all" || sort !== "featured" || !!query.trim();
 
-
-
-  const showClusters = (tab === "all" || tab === "for-you") && !query;
-
-  // Batched avatar fetch for visible cards (capped to avoid huge query).
-  const visibleIds = useMemo(
-    () => filtered.slice(0, 32).map((g) => g.id),
-    [filtered],
-  );
-  const { data: avatarMap } = useGroupMemberAvatars(visibleIds);
+  const resultsTitle = query.trim() ? "Search results" : TITLE_BY_TAB[tab];
+  const showSuggestFooter = !isLoading && filtered.length > 0;
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-6 md:px-6 md:py-8">
+      {/* Editorial header */}
       <PageHeaderCompact title="Groups" />
+      <p className="mt-3 max-w-2xl text-sm text-ink-muted md:text-base">
+        Find the people, places, and creative movements your work belongs with.
+      </p>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <KickerChip live={myIds.length > 0}>
-          {myIds.length > 0 ? "Your scenes" : "Find your scene"}
-        </KickerChip>
-        <p className="text-sm text-ink-muted">
-          Scenes, genres, cities, micro-sprints. Join the rooms your work belongs in.
-        </p>
-        <RecapChip count={allGroups.length} label="groups open" />
-      </div>
-
-      {/* Sticky filter strip — placed directly under header so Groups content lands above the fold. */}
+      {/* Sticky discovery bar: search + kind switcher */}
       <div className="sticky top-0 z-30 -mx-4 mt-5 border-b border-border/60 bg-background/85 px-4 py-3 backdrop-blur md:-mx-6 md:px-6">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
-          <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTab(t.id)}
-                className={cn(
-                  "shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition",
-                  tab === t.id
-                    ? "bg-ink text-background"
-                    : "border border-border bg-surface text-ink-soft hover:bg-muted",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex h-10 flex-1 items-center gap-2 rounded-full border border-border bg-surface px-3.5 shadow-soft md:max-w-md md:self-auto">
-            <Search className="h-4 w-4 text-ink-muted" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search — Indie Filmmakers, Hyperpop, Hackathon…"
-              className="flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="text-xs text-ink-muted hover:text-ink"
-                aria-label="Clear search"
-              >
-                Clear
-              </button>
-            )}
-          </div>
+        <label className="flex h-12 items-center gap-2 rounded-full border border-border bg-surface px-4 shadow-soft">
+          <Search className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+          <span className="sr-only">Search groups</span>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search groups, cities, scenes, or languages…"
+            aria-label="Search groups"
+            className="min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-muted/70 focus:outline-none"
+          />
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              aria-label="Clear search"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-muted transition hover:bg-muted hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </label>
+        <div className="mt-3">
+          <GroupsKindSwitcher
+            value={tab}
+            counts={kindCounts}
+            authenticated={!!user}
+            onChange={setTab}
+          />
         </div>
       </div>
 
-      {/* Ambient scene ticker — drifts slowly, pauses on hover. */}
-      {allGroups.length > 0 && (
-        <div className="mt-4">
-          <SceneTicker groups={tickerGroups.length > 0 ? tickerGroups : allGroups.slice(0, 12)} />
-        </div>
-      )}
-
-
-      {/* Discovery band: balanced 12-col grid so both columns share the same
-          vertical rhythm — no orphaned space on either side. */}
-      {showClusters && (
-        <>
-          <div className="mt-4 grid grid-cols-1 items-stretch gap-6 lg:grid-cols-12">
-            <div className="flex flex-col gap-6 lg:col-span-4">
-              <div className="flex-1">
-                <FeaturedEventsCompact />
-              </div>
-              {trending.length > 0 && (
-                <div className="flex-1">
-                  <GroupsTrendingList groups={trending} joinedIds={myIdSet} />
-                </div>
-              )}
-            </div>
-            <div className="lg:col-span-8">
-              <GroupsBrowseByKind
-                groups={allGroups}
-                joinedIds={myIdSet}
-                onJump={(k) => setTab(k)}
-              />
-            </div>
+      {/* Featured Groups rail */}
+      {showFeaturedRail && (
+        <section className="mt-6">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-display text-lg text-ink md:text-xl">Featured Groups</h2>
+            <span className="text-xs text-ink-muted">{featured.length} handpicked</span>
           </div>
-
-          <div className="mt-6">
-            <GroupsJoinFeedStrip
-              hasGroups={myIds.length > 0}
-              onBrowseAll={() =>
-                allGroupsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-              }
-            />
-          </div>
-        </>
-      )}
-
-      <section ref={allGroupsRef} className="mt-8 scroll-mt-24">
-
-        {tab === "for-you" && !user ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
-            <h3 className="font-display text-2xl text-ink">Sign in to see your Groups.</h3>
-            <Link to="/login" className="mt-3 inline-block text-sm text-primary underline">
-              Sign in
-            </Link>
-          </div>
-        ) : isLoading ? (
-          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
-            ))}
-          </div>
-        ) : filtered.length === 0 ? (
-          <EmptySpark
-            title={
-              query
-                ? "No groups match that search."
-                : tab === "for-you"
-                  ? "You haven't joined any Groups yet."
-                  : "No groups here yet."
-            }
-            body={
-              tab === "for-you"
-                ? "Browse the catalog and join the scenes your work belongs in."
-                : "More launching soon — check back."
-            }
-            action={
-              tab === "for-you" ? (
-                <button
-                  type="button"
-                  onClick={() => setTab("all")}
-                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
-                >
-                  Browse all Groups
-                </button>
-              ) : undefined
-            }
-          />
-        ) : (
-          <>
-            <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
-              <div className="min-w-0">
-                <h2 className="font-display text-xl text-ink md:text-2xl">
-                  {tab === "all" || tab === "for-you" ? "All groups" : TABS.find((t) => t.id === tab)?.label}
-                </h2>
-                <p className="mt-1 text-sm text-ink-muted">
-                  {tab === "for-you"
-                    ? "The scenes you've joined — everything happening across them."
-                    : tab === "all"
-                      ? "Every scene, genre, city, and micro-sprint open right now."
-                      : `All ${TABS.find((t) => t.id === tab)?.label.toLowerCase()} on Workshop.`}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-soft">
-                  {filtered.length} {filtered.length === 1 ? "group" : "groups"}
-                </span>
-                {tab !== "city" && (
-                  <label className="relative">
-                    <span className="sr-only">Filter by category</span>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value as Category)}
-                      className={cn(
-                        "appearance-none rounded-full border px-3 py-1 pr-7 text-[11px] font-medium transition focus:outline-none focus:ring-2 focus:ring-ink/20",
-                        category === "all"
-                          ? "border-border bg-surface text-ink-soft hover:bg-muted"
-                          : "border-ink bg-ink text-background",
-                      )}
-                    >
-                      {CATEGORY_VALUES.map((c) => (
-                        <option key={c} value={c} className="bg-background text-ink">
-                          {c === "all" ? "Category" : CATEGORY_LABELS[c]}
-                        </option>
-                      ))}
-                    </select>
-                    <span
-                      aria-hidden
-                      className={cn(
-                        "pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[9px]",
-                        category === "all" ? "text-ink-muted" : "text-background",
-                      )}
-                    >
-                      ▾
-                    </span>
-                  </label>
-                )}
-                <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-background">
-                  {TABS.find((t) => t.id === tab)?.label}
-                </span>
-                {query && (
-                  <span className="rounded-full border border-border bg-surface px-2.5 py-1 text-[11px] text-ink-soft">
-                    "{query}"
-                  </span>
-                )}
-              </div>
-
-            </div>
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {filtered.map((g) => (
-                <GroupCard
-                  key={g.id}
+          <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 md:mx-0 md:grid md:snap-none md:grid-cols-3 md:overflow-visible md:px-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {featured.map((g) => (
+              <div
+                key={g.id}
+                className="w-[85vw] shrink-0 snap-start sm:w-[70vw] md:w-auto"
+              >
+                <GroupFeaturedCard
                   group={g}
                   joined={myIdSet.has(g.id)}
                   avatars={avatarMap?.get(g.id)}
                 />
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Results toolbar */}
+      <section className="mt-8">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-display text-xl text-ink md:text-2xl">{resultsTitle}</h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              {isLoading
+                ? "Loading…"
+                : `${filtered.length.toLocaleString()} ${filtered.length === 1 ? "result" : "results"}`}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {tab !== "city" && (
+              <div className="flex items-center gap-1.5">
+                <span className="sr-only" id="category-label">Category</span>
+                <Select value={category} onValueChange={(v) => setCategory(v as Category)}>
+                  <SelectTrigger
+                    aria-labelledby="category-label"
+                    className={cn(
+                      "h-9 rounded-full border-border bg-surface text-xs",
+                      category !== "all" && "border-ink bg-ink text-background",
+                    )}
+                  >
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {CATEGORY_VALUES.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {CATEGORY_LABELS[c]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5">
+              <span className="sr-only" id="sort-label">Sort</span>
+              <Select value={sort} onValueChange={(v) => setSort(v as Sort)}>
+                <SelectTrigger
+                  aria-labelledby="sort-label"
+                  className="h-9 rounded-full border-border bg-surface text-xs"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {SORT_VALUES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      Sort: {SORT_LABELS[s]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {filtersActive && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-9 rounded-full text-xs"
+                onClick={resetAll}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Directory */}
+        <div className="mt-5">
+          {tab === "for-you" && !user ? (
+            <EmptyState
+              title="Sign in to see your Groups."
+              body="The communities you join will appear here."
+              primary={
+                <Link
+                  to="/login"
+                  className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
+                >
+                  Sign in
+                </Link>
+              }
+              secondary={
+                <button
+                  type="button"
+                  onClick={() => setTab("all")}
+                  className="text-sm text-ink-soft underline-offset-2 hover:underline"
+                >
+                  Browse all Groups
+                </button>
+              }
+            />
+          ) : isLoading ? (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-40 animate-pulse rounded-2xl bg-surface-2" />
               ))}
             </div>
-            <div className="mt-8 flex flex-col items-center gap-2 border-t border-border/60 pt-6 text-center">
-              <p className="text-sm text-ink-muted">
-                That's every group {query ? "matching your search" : tab === "for-you" ? "you're in" : "open right now"}.
-              </p>
-              <p className="text-xs text-ink-muted/80">
-                Missing your scene?{" "}
-                <a
-                  href="mailto:hello@workshopindie.com?subject=Suggest%20a%20group"
-                  className="text-ink underline-offset-2 hover:underline"
-                >
-                  Suggest a group
-                </a>{" "}
-                — we add new rooms weekly.
-              </p>
-            </div>
-          </>
+          ) : filtered.length === 0 ? (
+            query.trim() ? (
+              <EmptyState
+                title="No Groups match that search."
+                body="Try a different word — a city, scene, medium, or language."
+                primary={
+                  <button
+                    type="button"
+                    onClick={() => setQuery("")}
+                    className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
+                  >
+                    Clear search
+                  </button>
+                }
+              />
+            ) : tab === "for-you" ? (
+              <EmptyState
+                title="You haven't joined any Groups yet."
+                body="Browse the communities where your work, interests, and city belong."
+                primary={
+                  <button
+                    type="button"
+                    onClick={() => setTab("all")}
+                    className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
+                  >
+                    Explore Groups
+                  </button>
+                }
+              />
+            ) : (
+              <EmptyState
+                title={`No ${TITLE_BY_TAB[tab].toLowerCase()} match those filters.`}
+                body="Adjust the category or sort to see more."
+                primary={
+                  <button
+                    type="button"
+                    onClick={resetAll}
+                    className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-background"
+                  >
+                    Reset filters
+                  </button>
+                }
+              />
+            )
+          ) : (
+            <>
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+                {visibleRows.map((g) => (
+                  <GroupCard
+                    key={g.id}
+                    group={g}
+                    joined={myIdSet.has(g.id)}
+                    avatars={avatarMap?.get(g.id)}
+                  />
+                ))}
+              </div>
+              <ShowMore
+                total={filtered.length}
+                visible={visibleRows.length}
+                onMore={() =>
+                  setVisibleCount((n) => Math.min(n + PAGE_SIZE, filtered.length))
+                }
+              />
+            </>
+          )}
+        </div>
 
+        {/* Suggest a group footer */}
+        {showSuggestFooter && (
+          <div className="mt-10 rounded-3xl border border-dashed border-border bg-surface p-6 text-center md:p-8">
+            <h3 className="font-display text-lg text-ink md:text-xl">Missing a community?</h3>
+            <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
+              Suggest a Group and tell us where your work belongs.
+            </p>
+            <div className="mt-4">
+              <a
+                href="mailto:hello@workshopindie.com?subject=Suggest%20a%20group"
+                className="inline-flex items-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-background hover:bg-ink/90"
+              >
+                Suggest a Group
+              </a>
+            </div>
+          </div>
         )}
       </section>
     </main>
+  );
+}
+
+function EmptyState({
+  title,
+  body,
+  primary,
+  secondary,
+}: {
+  title: string;
+  body?: string;
+  primary?: React.ReactNode;
+  secondary?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center md:p-12">
+      <h3 className="font-display text-xl text-ink md:text-2xl">{title}</h3>
+      {body && <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{body}</p>}
+      {(primary || secondary) && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          {primary}
+          {secondary}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShowMore({
+  total,
+  visible,
+  onMore,
+}: {
+  total: number;
+  visible: number;
+  onMore: () => void;
+}) {
+  const remaining = total - visible;
+  return (
+    <div className="mt-8 flex flex-col items-center gap-2 border-t border-border/60 pt-6 text-center">
+      <p className="text-xs text-ink-muted">
+        Showing {visible.toLocaleString()} of {total.toLocaleString()}{" "}
+        {total === 1 ? "group" : "groups"}
+      </p>
+      {remaining > 0 ? (
+        <button
+          type="button"
+          onClick={onMore}
+          className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-ink hover:bg-muted"
+        >
+          {remaining >= PAGE_SIZE
+            ? `Show ${PAGE_SIZE} more`
+            : `Show remaining ${remaining}`}
+        </button>
+      ) : (
+        <p className="text-xs text-ink-muted/80">That's every group.</p>
+      )}
+    </div>
   );
 }

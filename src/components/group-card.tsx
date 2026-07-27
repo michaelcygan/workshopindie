@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MapPin, Sparkles, Users, Star, Radio, Megaphone, LayoutGrid } from "lucide-react";
+import { MapPin, Sparkles, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GroupCardActions } from "@/components/group-card-actions";
 
@@ -21,21 +21,37 @@ export type GroupCardData = {
   category?: string | null;
 };
 
-
-const kindLabel: Record<GroupCardData["kind"], string> = {
+const KIND_LABEL: Record<GroupCardData["kind"], string> = {
   city: "City",
   genre: "Genre",
   micro: "Micro",
   scene: "Scene",
 };
 
-function accentStyle(color: string | null) {
-  const base = color ?? "#c2410c";
-  return {
-    backgroundImage: `linear-gradient(135deg, ${base} 0%, ${base}cc 55%, ${base}55 100%)`,
-  } as React.CSSProperties;
+function memberLabel(n: number) {
+  if (n <= 0) return "Be among the first";
+  if (n === 1) return "1 member";
+  return `${n.toLocaleString()} members`;
 }
 
+function activityLabel(g: GroupCardData): string | null {
+  const parts: string[] = [];
+  if (g.work_count > 0) parts.push(`${g.work_count} ${g.work_count === 1 ? "work" : "works"}`);
+  if (g.collab_count > 0)
+    parts.push(`${g.collab_count} ${g.collab_count === 1 ? "collab" : "collabs"}`);
+  if (g.workshop_count > 0)
+    parts.push(`${g.workshop_count} ${g.workshop_count === 1 ? "Lounge" : "Lounges"}`);
+  if (parts.length === 0) return null;
+  return parts.slice(0, 2).join(" · ");
+}
+
+/**
+ * Standard community-first Group card.
+ * - No large decorative banner; accent color is used restrainedly.
+ * - Header row: [avatar] KIND · FEATURED?, with visible Join action.
+ * - Article wraps a content-only <Link>; the action is a sibling to avoid
+ *   nested interactive descendants.
+ */
 export function GroupCard({
   group,
   joined,
@@ -45,89 +61,80 @@ export function GroupCard({
   joined?: boolean;
   avatars?: string[];
 }) {
-  const Icon = group.kind === "city" ? MapPin : Sparkles;
   const accent = group.accent_color ?? "#c2410c";
+  const Icon = group.kind === "city" ? MapPin : Sparkles;
+  const activity = activityLabel(group);
+
   return (
-    <Link
-      to="/g/$slug"
-      params={{ slug: group.slug }}
-      className="group relative flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-      style={{ boxShadow: `inset 0 0 0 1px ${accent}10` }}
+    <article
+      className="group relative flex h-full flex-col rounded-2xl border border-border bg-surface p-4 shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+      style={{ boxShadow: `inset 0 0 0 1px ${accent}14` }}
     >
-      <div
-        className="relative h-20 w-full overflow-hidden"
-        style={group.cover_url ? { backgroundImage: `url(${group.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : accentStyle(group.accent_color)}
-      >
-        {/* top-light sheen */}
-        {!group.cover_url && (
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0"
-            style={{
-              backgroundImage:
-                "linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 55%)",
-            }}
+      {/* Header row: identity + featured chip + join */}
+      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
+        {group.avatar_url ? (
+          <img
+            src={group.avatar_url}
+            alt=""
+            loading="lazy"
+            className="h-10 w-10 shrink-0 rounded-full border border-border object-cover"
           />
-        )}
-        {!group.cover_url && (
-          <Icon className="absolute -bottom-2 -right-2 h-20 w-20 text-white/15" />
-        )}
-        <div className="absolute bottom-2 left-3 flex items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft backdrop-blur">
-            <Icon className="h-3 w-3" />
-            {kindLabel[group.kind]}
+        ) : (
+          <span
+            aria-hidden
+            className="grid h-10 w-10 shrink-0 place-items-center rounded-full text-white"
+            style={{ backgroundColor: accent }}
+          >
+            <Icon className="h-5 w-5" />
           </span>
+        )}
+        <div className="flex min-w-0 items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
+          <span className="truncate">{KIND_LABEL[group.kind]}</span>
           {group.featured_at && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-primary backdrop-blur">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
               <Star className="h-3 w-3" /> Featured
             </span>
           )}
         </div>
-        {joined ? (
-          <span className="absolute right-2 top-2 rounded-full bg-ink/90 px-1.5 py-0.5 text-[10px] font-medium text-background backdrop-blur">
-            In
-          </span>
-        ) : (
-          <GroupCardActions groupId={group.id} joined={joined} />
-        )}
+        <GroupCardActions groupId={group.id} joined={joined} className="shrink-0" />
       </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className={cn("font-display text-lg text-ink line-clamp-1")}>{group.name}</h3>
+
+      {/* Content link — covers name, tagline, and footer for full-card nav */}
+      <Link
+        to="/g/$slug"
+        params={{ slug: group.slug }}
+        className="mt-3 flex flex-1 flex-col rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink/30"
+        aria-label={`Open ${group.name}`}
+      >
+        <h3 className="font-display text-lg leading-snug text-ink line-clamp-2 group-hover:underline">
+          {group.name}
+        </h3>
         {group.tagline && (
-          <p className="text-sm text-ink-muted line-clamp-2">{group.tagline}</p>
+          <p className="mt-1 text-sm text-ink-muted line-clamp-2">{group.tagline}</p>
         )}
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2">
-          {avatars && avatars.length > 0 ? (
-            <div className="flex -space-x-1.5">
-              {avatars.slice(0, 3).map((src, i) => (
-                <img
-                  key={i}
-                  src={src}
-                  alt=""
-                  className="h-5 w-5 rounded-full border border-surface object-cover"
-                  loading="lazy"
-                />
-              ))}
-            </div>
-          ) : (
-            <span />
-          )}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-ink-muted">
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3 w-3" /> {group.member_count}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Radio className="h-3 w-3" /> {group.workshop_count}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Megaphone className="h-3 w-3" /> {group.collab_count}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <LayoutGrid className="h-3 w-3" /> {group.work_count}
-            </span>
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-4 text-xs text-ink-muted">
+          <div className="flex min-w-0 items-center gap-2">
+            {avatars && avatars.length > 0 && (
+              <div className="flex -space-x-1.5">
+                {avatars.slice(0, 3).map((src, i) => (
+                  <img
+                    key={i}
+                    src={src}
+                    alt=""
+                    className="h-5 w-5 rounded-full border border-surface object-cover"
+                    loading="lazy"
+                  />
+                ))}
+              </div>
+            )}
+            <span className="truncate">{memberLabel(group.member_count)}</span>
           </div>
+          <span className={cn("shrink-0 text-right", !activity && "text-ink-muted/70")}>
+            {activity ?? "New community"}
+          </span>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </article>
   );
 }
