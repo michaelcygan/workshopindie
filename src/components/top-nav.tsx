@@ -177,13 +177,10 @@ export function TopNav() {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => navigate({ to: "/blog" })}>
-                  <BookOpen className="mr-2 h-4 w-4" /> Blog
-                </DropdownMenuItem>
-
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                   <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
+
 
 
                 {isAdmin && (
