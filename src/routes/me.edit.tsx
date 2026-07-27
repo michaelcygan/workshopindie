@@ -772,3 +772,90 @@ function ToolsField({
   );
 }
 
+const MAX_LANGUAGES = 8;
+const MAX_LANGUAGE_LEN = 40;
+
+function cleanLanguages(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values
+    .map((v) => v.trim().slice(0, MAX_LANGUAGE_LEN))
+    .filter((v) => {
+      if (!v) return false;
+      const key = v.toLocaleLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, MAX_LANGUAGES);
+}
+
+function LanguagesField({
+  languages,
+  onChange,
+}: {
+  languages: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const commit = (raw: string) => {
+    const next = [...languages];
+    const seen = new Set(next.map((l) => l.toLocaleLowerCase()));
+    for (const piece of raw.split(",")) {
+      const v = piece.trim().slice(0, MAX_LANGUAGE_LEN);
+      if (!v) continue;
+      const key = v.toLocaleLowerCase();
+      if (seen.has(key)) continue;
+      if (next.length >= MAX_LANGUAGES) break;
+      next.push(v);
+      seen.add(key);
+    }
+    onChange(next);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="languages">Languages <span className="text-ink-muted">(optional)</span></Label>
+      <div className="flex flex-wrap gap-1.5">
+        {languages.map((l, i) => (
+          <span key={`${l}-${i}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+            {l}
+            <button
+              type="button"
+              aria-label={`Remove ${l}`}
+              onClick={() => onChange(languages.filter((_, j) => j !== i))}
+              className="text-ink-muted hover:text-ink"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <Input
+        id="languages"
+        value={draft}
+        maxLength={MAX_LANGUAGE_LEN}
+        placeholder={languages.length >= MAX_LANGUAGES ? "Max reached" : "English, Spanish, ASL…"}
+        disabled={languages.length >= MAX_LANGUAGES}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v.includes(",")) commit(v);
+          else setDraft(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (draft.trim()) commit(draft);
+          } else if (e.key === "Backspace" && !draft && languages.length > 0) {
+            onChange(languages.slice(0, -1));
+          }
+        }}
+        onBlur={() => { if (draft.trim()) commit(draft); }}
+      />
+      <p className="text-xs text-ink-muted">Languages you are comfortable creating or connecting in. Shown in the About section of your profile. Press Enter or comma to add. {languages.length}/{MAX_LANGUAGES}</p>
+    </div>
+  );
+}
+
+
