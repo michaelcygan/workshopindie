@@ -1,57 +1,29 @@
+## Goal
+Make the Groups filters reflect real data, and let language-specific groups (e.g. "Creadores en Español") show up under a proper filter.
 
-# Groups page — showcase polish pass
+## Changes
 
-Make `/groups` feel like a live showcase of what's happening across Groups, then land the full directory ("All") at the bottom. Same editorial system already in place — no new visual language, just more modules that surface real activity.
+### 1. Add `language` to the group_category enum
+Migration: `ALTER TYPE group_category ADD VALUE 'language';`
+Then backfill the existing seeded language group(s) so they carry the new value:
+- `UPDATE groups SET category = 'language' WHERE slug = 'creadores-en-espanol'` (and any other future language groups by naming convention).
 
-## New page order
+### 2. Dynamic category dropdown on `/groups`
+In `src/routes/groups.index.tsx`:
+- Compute category options from `allGroups`: `{ id, label, count }` for every category actually present, sorted by count desc, with "All categories (N)" first.
+- Hide any category with zero groups (empty list is fine — just "All").
+- Add `language` to `CATEGORY_VALUES` and `CATEGORY_LABELS` (label: "Languages") so the enum type stays exhaustive.
+- The Zod search schema stays permissive via `fallback`, so a URL param for a category that no longer exists silently falls back to `all`.
+- Keep filtering logic as-is; it already keys off `g.category === category`.
 
-```text
-1. Editorial header + sticky search / kind switcher   (existing, unchanged)
-2. Featured rail                                       (existing, unchanged)
-3. Live activity ticker                                (new)
-4. New members this week                               (new)
-5. People to follow from your groups                   (new, signed-in only)
-6. Adjacent scenes for you                             (new, signed-in only)
-7. All groups — sortable/filterable directory          (existing, moved to bottom)
-8. Suggest a group footer                              (existing, unchanged)
-```
-
-Anonymous visitors see 1, 2, 3, 4, 7, 8. Signed-in members also get 5 and 6.
-
-## New modules
-
-### Live activity ticker
-Horizontal marquee-style rail (same visual family as the homepage news ticker) showing the last ~20 events across public groups: new group created, new event posted, new Today post, new Work shared to a group. Each chip links to the group. Auto-refreshes every 60s. Source: union of recent rows from `groups`, `group_events`, `group_today_posts`, `group_works` filtered to `visibility = 'public'` groups. Server function returns a normalized `{ kind, groupSlug, groupName, actor, title, at }[]`.
-
-### New members this week
-Compact horizontal rail of `{ group, joiner avatar stack (up to 5), count }` for the top ~8 public groups by new-member count in the last 7 days. Encourages "join where momentum is." Source: `group_members` joined `groups` with `created_at >= now() - 7d`, grouped by `group_id`.
-
-### People to follow from your groups
-Only if the viewer belongs to any group. Shows up to 8 profile cards of active members from the viewer's groups whom they don't already follow, ranked by recent activity (Today posts, works, event RSVPs in that group). Reuses `ProfilePeek` on hover and the existing follow button. Source: server fn that joins `group_members` (viewer's groups) → other members → excludes existing `follows`.
-
-### Adjacent scenes for you
-Only if signed-in. Up to 6 group cards the viewer isn't in yet, ranked by overlap: shared categories, shared city, and shared members with their current groups. Reuses `GroupCard` (compact variant already in place). Falls back to "Popular right now" when overlap is thin.
-
-## Directory move
-
-Cut the "All groups" section (kind switcher tabs + sort/filter + progressive list) out of its current mid-page position and re-mount it below the new modules under an `<h2>All groups</h2>` anchor. The sticky search bar at the top still deep-links into it (scrolls / filters). URL search params (`t`, `q`, `c`, `s`) keep working unchanged.
-
-## Technical notes
-
-- New server functions live in `src/lib/groups-showcase.functions.ts`:
-  - `getGroupsActivityFeed()` — public, 60s stale
-  - `getGroupsNewMembers()` — public, 5min stale
-  - `getSuggestedGroupPeople()` — `requireSupabaseAuth`, 5min stale
-  - `getAdjacentScenes()` — `requireSupabaseAuth`, 5min stale
-- All four use `queryOptions` + `ensureQueryData` in the route loader, with `useSuspenseQuery` in the component. Auth-gated ones only mount their `<Suspense>` block when `viewerId` is present, so anonymous SSR never hits them.
-- New components under `src/components/`:
-  - `groups-activity-ticker.tsx`
-  - `groups-new-members-rail.tsx`
-  - `groups-people-rail.tsx`
-  - `groups-adjacent-rail.tsx`
-- No schema changes. No new tables. Reuses existing RLS-safe reads on public groups; suggestions filter through the viewer's own memberships server-side.
-- Design tokens only — no hardcoded colors. Reuses `KickerChip`, `EditorialCard`, `GroupCard`, `ProfilePeek` for consistency with the rest of the refresh.
+### 3. Keep the top "circles" (kind switcher) as-is
+Per your answer, languages live in the category dropdown, not the top kind row. No change to `GroupsKindSwitcher`. Language groups will still appear under whatever `kind` they were seeded with (currently `scene`), and users can narrow via the new "Languages" category chip.
 
 ## Out of scope
+- No changes to `groups-kind-switcher.tsx` circles.
+- No new column on `groups`; language identity rides on `category = 'language'`.
+- Sort/search unchanged.
 
-Group detail page (`/g/$slug`) refresh, admin "feature a group" UI, and personalized ranking beyond the simple heuristics above — those stay open for a future pass.
+## Technical notes
+- Postgres won't allow `ALTER TYPE ... ADD VALUE` inside a transaction that then uses the new value — the migration will run the `ALTER TYPE` and the backfill `UPDATE` as separate statements; if the runner wraps them in one tx we'll split into two migrations (enum add first, then the backfill).
+- `CATEGORY_VALUES` in the route file is only used for Zod `fallback`, so adding `"language"` is safe and non-breaking.
