@@ -30,6 +30,7 @@ import {
   LayoutGrid,
   Calendar,
   BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
