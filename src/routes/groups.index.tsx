@@ -234,6 +234,21 @@ function GroupsIndex() {
     [allGroups, myIdSet],
   ) satisfies Record<Tab, number>;
 
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<Category, number>();
+    for (const g of allGroups) {
+      const c = g.category as Category | null | undefined;
+      if (!c) continue;
+      if (!(CATEGORY_VALUES as readonly string[]).includes(c)) continue;
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    const present = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || CATEGORY_LABELS[a[0]].localeCompare(CATEGORY_LABELS[b[0]]))
+      .map(([id, count]) => ({ id, count }));
+    return [{ id: "all" as Category, count: allGroups.length }, ...present];
+  }, [allGroups]);
+
+
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     let rows = allGroups;
