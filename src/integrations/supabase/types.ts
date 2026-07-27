@@ -4053,6 +4053,7 @@ export type Database = {
           id: string
           indexable: boolean
           instagram_handle: string | null
+          languages: string[]
           last_active_at: string | null
           last_name: string | null
           mediums: string[]
@@ -4101,6 +4102,7 @@ export type Database = {
           id: string
           indexable?: boolean
           instagram_handle?: string | null
+          languages?: string[]
           last_active_at?: string | null
           last_name?: string | null
           mediums?: string[]
@@ -4149,6 +4151,7 @@ export type Database = {
           id?: string
           indexable?: boolean
           instagram_handle?: string | null
+          languages?: string[]
           last_active_at?: string | null
           last_name?: string | null
           mediums?: string[]
@@ -6626,6 +6629,7 @@ export type Database = {
           id: string | null
           indexable: boolean | null
           instagram_handle: string | null
+          languages: string[] | null
           mediums: string[] | null
           onboarded: boolean | null
           pinned_work_ids: string[] | null
@@ -6663,6 +6667,7 @@ export type Database = {
           id?: string | null
           indexable?: boolean | null
           instagram_handle?: string | null
+          languages?: string[] | null
           mediums?: string[] | null
           onboarded?: boolean | null
           pinned_work_ids?: string[] | null
@@ -6700,6 +6705,7 @@ export type Database = {
           id?: string | null
           indexable?: boolean | null
           instagram_handle?: string | null
+          languages?: string[] | null
           mediums?: string[] | null
           onboarded?: boolean | null
           pinned_work_ids?: string[] | null
