@@ -287,8 +287,8 @@ function EditProfile() {
 
     setSaving(false);
     toast.success("Profile saved");
-    setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig });
-    setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig }));
+    setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs });
+    setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs }));
   }
 
   async function onSaveBirthdate() {
@@ -597,8 +597,8 @@ function EditProfile() {
           </Section>
 
 
-          {/* LOCATION */}
-          <Section id="location" title="Location" subtitle="Helps us surface nearby Lounges and Meetups." refMap={sectionRefs}>
+          {/* LOCATION & LANGUAGES */}
+          <Section id="location" title="Location & languages" subtitle="Help people understand where you are and how you connect." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>City</Label>
               <select value={form.cityId} onChange={(e) => set("cityId", e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
@@ -606,7 +606,12 @@ function EditProfile() {
                 {cities.map((c) => <option key={c.id} value={c.id}>{c.name}, {c.country}</option>)}
               </select>
             </div>
+            <LanguagesField
+              languages={form.languages}
+              onChange={(next) => set("languages", next)}
+            />
           </Section>
+
 
           {/* LINKS */}
           <Section id="links" title="Links" subtitle="Portfolio, label, agency, anywhere else you live online." refMap={sectionRefs}>
