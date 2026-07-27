@@ -11,6 +11,10 @@ import { GroupFeaturedCard } from "@/components/group-featured-card";
 import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
+import { GroupsActivityTicker } from "@/components/groups-activity-ticker";
+import { GroupsNewMembersRail } from "@/components/groups-new-members-rail";
+import { GroupsPeopleRail } from "@/components/groups-people-rail";
+import { GroupsAdjacentScenesRail } from "@/components/groups-adjacent-scenes-rail";
 import {
   Select,
   SelectContent,
