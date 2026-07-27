@@ -39,6 +39,7 @@ const CATEGORY_VALUES = [
   "performance",
   "audio",
   "scene_life",
+  "language",
 ] as const;
 type Category = (typeof CATEGORY_VALUES)[number];
 
@@ -53,7 +54,9 @@ const CATEGORY_LABELS: Record<Category, string> = {
   performance: "Performance",
   audio: "Audio",
   scene_life: "Scene & Lifestyle",
+  language: "Languages",
 };
+
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
   city: "City",
@@ -231,6 +234,21 @@ function GroupsIndex() {
     [allGroups, myIdSet],
   ) satisfies Record<Tab, number>;
 
+  const categoryOptions = useMemo(() => {
+    const counts = new Map<Category, number>();
+    for (const g of allGroups) {
+      const c = g.category as Category | null | undefined;
+      if (!c) continue;
+      if (!(CATEGORY_VALUES as readonly string[]).includes(c)) continue;
+      counts.set(c, (counts.get(c) ?? 0) + 1);
+    }
+    const present = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1] || CATEGORY_LABELS[a[0]].localeCompare(CATEGORY_LABELS[b[0]]))
+      .map(([id, count]) => ({ id, count }));
+    return [{ id: "all" as Category, count: allGroups.length }, ...present];
+  }, [allGroups]);
+
+
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
     let rows = allGroups;
@@ -381,12 +399,13 @@ function GroupsIndex() {
                     <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent align="end">
-                    {CATEGORY_VALUES.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        {CATEGORY_LABELS[c]}
+                    {categoryOptions.map(({ id, count }) => (
+                      <SelectItem key={id} value={id}>
+                        {CATEGORY_LABELS[id]} ({count})
                       </SelectItem>
                     ))}
                   </SelectContent>
+
                 </Select>
               </div>
             )}
