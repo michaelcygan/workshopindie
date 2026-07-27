@@ -11,6 +11,10 @@ import { GroupFeaturedCard } from "@/components/group-featured-card";
 import { GroupsKindSwitcher, type KindTab } from "@/components/groups-kind-switcher";
 import { PageHeaderCompact } from "@/components/page-header-compact";
 import { useGroupMemberAvatars } from "@/hooks/use-group-member-avatars";
+import { GroupsActivityTicker } from "@/components/groups-activity-ticker";
+import { GroupsNewMembersRail } from "@/components/groups-new-members-rail";
+import { GroupsPeopleRail } from "@/components/groups-people-rail";
+import { GroupsAdjacentScenesRail } from "@/components/groups-adjacent-scenes-rail";
 import {
   Select,
   SelectContent,
@@ -111,7 +115,7 @@ const FEATURED_MAX = 4;
 const FEATURED_MIN = 2;
 
 const TITLE_BY_TAB: Record<Tab, string> = {
-  all: "Explore groups",
+  all: "All Groups",
   "for-you": "Your groups",
   genre: "Genres",
   scene: "Scenes",
@@ -341,8 +345,18 @@ function GroupsIndex() {
         </section>
       )}
 
+      {/* Showcase modules — only on the pristine landing view */}
+      {showFeatured && (
+        <>
+          <GroupsActivityTicker />
+          <GroupsNewMembersRail />
+          <GroupsPeopleRail />
+          <GroupsAdjacentScenesRail />
+        </>
+      )}
+
       {/* Results toolbar */}
-      <section className="mt-8">
+      <section className="mt-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="min-w-0">
             <h2 className="font-display text-xl text-ink md:text-2xl">{resultsTitle}</h2>
