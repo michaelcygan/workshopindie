@@ -30,6 +30,7 @@ import {
   LayoutGrid,
   Calendar,
   BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
@@ -82,12 +83,7 @@ export function TopNav() {
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
           </Link>
-          <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Events
-          </Link>
-          <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Gallery
-          </Link>
+          <MoreNavMenu />
         </nav>
 
 
@@ -181,13 +177,10 @@ export function TopNav() {
 
                 <DropdownMenuSeparator />
 
-                <DropdownMenuItem onClick={() => navigate({ to: "/blog" })}>
-                  <BookOpen className="mr-2 h-4 w-4" /> Blog
-                </DropdownMenuItem>
-
                 <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
                   <SettingsIcon className="mr-2 h-4 w-4" /> Settings
                 </DropdownMenuItem>
+
 
 
                 {isAdmin && (
@@ -223,6 +216,44 @@ export function TopNav() {
         </div>
       </div>
     </header>
+  );
+}
+
+function MoreNavMenu() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const isActive =
+    pathname.startsWith("/events") ||
+    pathname.startsWith("/gallery") ||
+    pathname.startsWith("/blog");
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={`${isActive ? navLinkActive : navLinkBase} inline-flex items-center gap-1`}
+        >
+          More
+          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="center" className="w-44">
+        <DropdownMenuItem asChild>
+          <Link to="/events">
+            <Calendar className="mr-2 h-4 w-4" /> Events
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/gallery">
+            <LayoutGrid className="mr-2 h-4 w-4" /> Gallery
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link to="/blog">
+            <BookOpen className="mr-2 h-4 w-4" /> Blog
+          </Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

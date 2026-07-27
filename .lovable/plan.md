@@ -1,35 +1,19 @@
-## Wave 4 — Seed language-specific Groups
+## Changes to `src/components/top-nav.tsx`
 
-Seed six public `scene` Groups so multilingual creators have a home immediately. Uses the existing Group system unchanged (no new tables, no new UI).
+**1. Center nav** — replace the individual `Events` and `Gallery` links with a single "More" dropdown:
 
-### Seed set
+```
+Lounge · Groups ▾ · Collabs · More ▾
+```
 
-| Slug | Name | Tagline |
-|---|---|---|
-| `creadores-en-espanol` | Creadores en Español | Comunidad de creativos hispanohablantes |
-| `createurs-francophones` | Créateurs Francophones | Communauté créative francophone |
-| `criadores-em-portugues` | Criadores em Português | Comunidade criativa lusófona |
-| `kreative-auf-deutsch` | Kreative auf Deutsch | Deutschsprachige Kreativ-Community |
-| `creativi-in-italiano` | Creativi in Italiano | Comunità creativa italofona |
-| `nihongo-creators` | 日本語クリエイター | 日本語で活動するクリエイターのコミュニティ |
+The "More" dropdown (using existing `DropdownMenu` primitives) contains:
+- Events → `/events`
+- Gallery → `/gallery`
+- Blog → `/blog`
 
-Each row:
-- `kind = 'scene'`, `visibility = 'public'`, `join_mode = 'open'`
-- `is_official = true` (Workshop-curated)
-- `created_by = NULL` (system-seeded; matches existing seeded scenes)
-- `description` = one short paragraph in the group's language inviting members to introduce themselves, share Works, and start Lounges in that language.
-- No `city_id`, no cover art (admins can add later via `/admin/groups`).
+The trigger uses the same `navLinkBase` styling as sibling links, with a small chevron. It receives `navLinkActive` styling when the current route matches `/events`, `/gallery`, or `/blog` (checked via `useRouterState` on `location.pathname`).
 
-Insert with `ON CONFLICT (slug) DO NOTHING` so re-running is a no-op.
+**2. Avatar dropdown** — remove the standalone "Blog" `DropdownMenuItem` (and its now-redundant `BookOpen` usage in that spot) since Blog is now reachable from the top-level "More" menu. Leave "Blog posts" under the "My stuff" submenu untouched (that's the user's own posts, different destination `/me/blog`).
 
-### Technical details
-
-- Single migration: `INSERT INTO public.groups (slug, name, tagline, description, kind, visibility, join_mode, is_official) VALUES (...) ON CONFLICT (slug) DO NOTHING;`
-- No schema changes. No RLS/GRANT changes (existing `groups` policies already handle public read + admin write).
-- Nothing to change in app code — these appear automatically in `/g`, admin `/admin/groups`, and search.
-
-### Out of scope
-
-- Cover art / avatars (admin can upload later).
-- Auto-adding members.
-- Language filtering UI anywhere else (was explicitly deferred).
+No mobile changes — mobile nav (bottom island) is unaffected.
+No other files touched.
