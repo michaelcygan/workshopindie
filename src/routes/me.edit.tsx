@@ -39,7 +39,7 @@ type SectionId = "identity" | "mediums" | "location" | "links" | "pinned";
 const SECTIONS: { id: SectionId; label: string; icon: typeof User }[] = [
   { id: "identity", label: "Identity", icon: User },
   { id: "mediums", label: "Mediums & bio", icon: Sparkles },
-  { id: "location", label: "Location", icon: MapPin },
+  { id: "location", label: "Location & languages", icon: MapPin },
   { id: "links", label: "Links", icon: Link2 },
   { id: "pinned", label: "Pinned pieces", icon: Pin },
 ];
@@ -61,6 +61,7 @@ type FormState = {
   cats: Category[];
   mediums: ExtraMedium[];
   tools: string[];
+  languages: string[];
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
@@ -70,7 +71,7 @@ type FormState = {
 const EMPTY: FormState = {
   username: "",
   firstName: "", lastName: "", aliases: [], aliasUrls: [], instagram: "",
-  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], links: [],
+  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], languages: [], links: [],
   cityId: "", pinnedIds: [], ageFilterMin: null,
 };
 
@@ -137,7 +138,7 @@ function EditProfile() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
+    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,languages,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
       if (error) { toast.error(error.message); setHydrated(true); return; }
       if (!data) return;
       const first = (data.first_name as string | null) ?? "";
@@ -163,6 +164,7 @@ function EditProfile() {
         cats: (data.categories ?? []) as Category[],
         mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
         tools: ((data.tools as string[] | null) ?? []),
+        languages: (((data as { languages?: string[] | null }).languages) ?? []),
         links: ((data.external_links as ExtLink[] | null) ?? []),
         cityId: data.city_id ?? "",
         pinnedIds: (data.pinned_work_ids ?? []) as string[],
@@ -246,6 +248,7 @@ function EditProfile() {
       .slice(0, 5);
     const cleanAliases = pairs.map((p) => p.a);
     const cleanAliasUrls = pairs.map((p) => normalizeAliasUrl(p.u));
+    const cleanLangs = cleanLanguages(form.languages);
     const { error } = await supabase.from("profiles").update({
       display_name: finalDisplay,
       username: form.username || null,
@@ -264,11 +267,12 @@ function EditProfile() {
       categories: form.cats,
       mediums: form.mediums,
       tools: form.tools,
+      languages: cleanLangs,
       external_links: form.links.filter((l) => l.url),
       city_id: form.cityId || null,
       pinned_work_ids: cleanPinned,
       onboarded: true,
-    }).eq("id", user.id);
+    } as never).eq("id", user.id);
     if (error) { setSaving(false); return toast.error(error.message); }
 
     // Age filter saves through a server fn (column is server-protected).
@@ -283,8 +287,8 @@ function EditProfile() {
 
     setSaving(false);
     toast.success("Profile saved");
-    setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig });
-    setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig }));
+    setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs });
+    setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs }));
   }
 
   async function onSaveBirthdate() {
@@ -593,8 +597,8 @@ function EditProfile() {
           </Section>
 
 
-          {/* LOCATION */}
-          <Section id="location" title="Location" subtitle="Helps us surface nearby Lounges and Meetups." refMap={sectionRefs}>
+          {/* LOCATION & LANGUAGES */}
+          <Section id="location" title="Location & languages" subtitle="Help people understand where you are and how you connect." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>City</Label>
               <select value={form.cityId} onChange={(e) => set("cityId", e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
@@ -602,7 +606,12 @@ function EditProfile() {
                 {cities.map((c) => <option key={c.id} value={c.id}>{c.name}, {c.country}</option>)}
               </select>
             </div>
+            <LanguagesField
+              languages={form.languages}
+              onChange={(next) => set("languages", next)}
+            />
           </Section>
+
 
           {/* LINKS */}
           <Section id="links" title="Links" subtitle="Portfolio, label, agency, anywhere else you live online." refMap={sectionRefs}>
@@ -762,4 +771,91 @@ function ToolsField({
     </div>
   );
 }
+
+const MAX_LANGUAGES = 8;
+const MAX_LANGUAGE_LEN = 40;
+
+function cleanLanguages(values: string[]): string[] {
+  const seen = new Set<string>();
+  return values
+    .map((v) => v.trim().slice(0, MAX_LANGUAGE_LEN))
+    .filter((v) => {
+      if (!v) return false;
+      const key = v.toLocaleLowerCase();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, MAX_LANGUAGES);
+}
+
+function LanguagesField({
+  languages,
+  onChange,
+}: {
+  languages: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  const commit = (raw: string) => {
+    const next = [...languages];
+    const seen = new Set(next.map((l) => l.toLocaleLowerCase()));
+    for (const piece of raw.split(",")) {
+      const v = piece.trim().slice(0, MAX_LANGUAGE_LEN);
+      if (!v) continue;
+      const key = v.toLocaleLowerCase();
+      if (seen.has(key)) continue;
+      if (next.length >= MAX_LANGUAGES) break;
+      next.push(v);
+      seen.add(key);
+    }
+    onChange(next);
+    setDraft("");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="languages">Languages <span className="text-ink-muted">(optional)</span></Label>
+      <div className="flex flex-wrap gap-1.5">
+        {languages.map((l, i) => (
+          <span key={`${l}-${i}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+            {l}
+            <button
+              type="button"
+              aria-label={`Remove ${l}`}
+              onClick={() => onChange(languages.filter((_, j) => j !== i))}
+              className="text-ink-muted hover:text-ink"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <Input
+        id="languages"
+        value={draft}
+        maxLength={MAX_LANGUAGE_LEN}
+        placeholder={languages.length >= MAX_LANGUAGES ? "Max reached" : "English, Spanish, ASL…"}
+        disabled={languages.length >= MAX_LANGUAGES}
+        onChange={(e) => {
+          const v = e.target.value;
+          if (v.includes(",")) commit(v);
+          else setDraft(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            if (draft.trim()) commit(draft);
+          } else if (e.key === "Backspace" && !draft && languages.length > 0) {
+            onChange(languages.slice(0, -1));
+          }
+        }}
+        onBlur={() => { if (draft.trim()) commit(draft); }}
+      />
+      <p className="text-xs text-ink-muted">Languages you are comfortable creating or connecting in. Shown in the About section of your profile. Press Enter or comma to add. {languages.length}/{MAX_LANGUAGES}</p>
+    </div>
+  );
+}
+
 
