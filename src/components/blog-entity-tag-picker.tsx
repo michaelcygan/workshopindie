@@ -22,6 +22,9 @@ type Props = {
   onPick: (tag: BlogEntityTag) => void;
   disabledKeys?: string[];
   title?: string;
+  description?: string;
+  /** Tab the picker opens on. Defaults to every kind. */
+  initialKind?: BlogEntityKind | "all";
 };
 
 const KIND_TABS: Array<{ value: BlogEntityKind | "all"; label: string }> = [
@@ -33,16 +36,27 @@ const KIND_TABS: Array<{ value: BlogEntityKind | "all"; label: string }> = [
   { value: "profile", label: "People" },
 ];
 
-export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, title }: Props) {
-  const [tab, setTab] = useState<BlogEntityKind | "all">("all");
+export function BlogEntityTagPicker({
+  open,
+  onOpenChange,
+  onPick,
+  disabledKeys,
+  title,
+  description,
+  initialKind = "all",
+}: Props) {
+  const [tab, setTab] = useState<BlogEntityKind | "all">(initialKind);
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setTab(initialKind);
+    } else {
       setQ("");
-      setTab("all");
+      setTab(initialKind);
     }
-  }, [open]);
+  }, [open, initialKind]);
+
 
   const disabled = useMemo(() => new Set(disabledKeys ?? []), [disabledKeys]);
 
