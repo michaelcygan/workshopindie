@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { adminListPosts } from "@/lib/blog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ExternalLink, Pencil, EyeOff } from "lucide-react";
+import { Plus, ExternalLink, Pencil, EyeOff, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
+import type { BlogEntityKind } from "@/lib/blog-entity-tags";
 
 export const Route = createFileRoute("/admin/blog/")({
   component: AdminBlogIndex,
@@ -14,6 +15,17 @@ export const Route = createFileRoute("/admin/blog/")({
 type PubType = "all" | "editorial" | "member";
 type Status = "all" | "published" | "draft";
 type Vis = "all" | "public" | "hidden";
+type Conn = "all" | "some" | "none";
+
+type Connection = { kind: BlogEntityKind; id: string; label: string };
+
+const CONNECTION_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
+  work: Briefcase,
+  collab: Users,
+  group: MapPin,
+  event: Calendar,
+  profile: User,
+};
 
 function AdminBlogIndex() {
   const list = useServerFn(adminListPosts);
@@ -25,20 +37,34 @@ function AdminBlogIndex() {
   const [pubType, setPubType] = useState<PubType>("all");
   const [status, setStatus] = useState<Status>("all");
   const [vis, setVis] = useState<Vis>("all");
+  const [conn, setConn] = useState<Conn>("all");
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
     const rows = data ?? [];
     const term = q.trim().toLowerCase();
     return rows.filter((p) => {
+      const connections = (p.connections ?? []) as Connection[];
       if (pubType !== "all" && (p.publication_type ?? "editorial") !== pubType) return false;
       if (status !== "all" && p.status !== status) return false;
       if (vis === "public" && p.show_in_blog_index === false) return false;
       if (vis === "hidden" && p.show_in_blog_index !== false) return false;
-      if (term && !(p.title?.toLowerCase().includes(term) || p.slug?.toLowerCase().includes(term) || p.author_name?.toLowerCase().includes(term))) return false;
+      if (conn === "some" && connections.length === 0) return false;
+      if (conn === "none" && connections.length > 0) return false;
+      if (
+        term &&
+        !(
+          p.title?.toLowerCase().includes(term) ||
+          p.slug?.toLowerCase().includes(term) ||
+          p.author_name?.toLowerCase().includes(term) ||
+          connections.some((c) => c.label?.toLowerCase().includes(term))
+        )
+      )
+        return false;
       return true;
     });
-  }, [data, pubType, status, vis, q]);
+  }, [data, pubType, status, vis, conn, q]);
+
 
   return (
     <div>
