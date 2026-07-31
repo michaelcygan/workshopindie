@@ -33,6 +33,11 @@ import { toast } from "sonner";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  validateSearch: (search: Record<string, unknown>) => ({
+    story: typeof search.story === "string" && search.story ? search.story : undefined,
+  }),
+
   loader: async ({ params }) => {
     try {
       return await getEventBySlug({ data: { groupSlug: params.slug, eventSlug: params.eventSlug } });
