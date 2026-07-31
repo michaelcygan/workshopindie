@@ -13,10 +13,6 @@ import { ChannelView } from "@/components/channel-view";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  acceptWorkshopJoinInvite,
-  declineWorkshopJoinInvite,
-} from "@/lib/collab-workshop.functions";
 import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
 
 
