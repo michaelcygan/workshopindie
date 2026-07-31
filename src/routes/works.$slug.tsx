@@ -38,7 +38,12 @@ import { format } from "date-fns";
 
 
 export const Route = createFileRoute("/works/$slug")({
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  validateSearch: (search: Record<string, unknown>) => ({
+    story: typeof search.story === "string" && search.story ? search.story : undefined,
+  }),
   component: WorkDetail,
+
   errorComponent: ({ error, reset }) => (
     <main className="mx-auto max-w-3xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-ink">Couldn't load this piece</h1>
