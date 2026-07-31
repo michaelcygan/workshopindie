@@ -149,17 +149,14 @@ export function WorkStoriesCarousel({ className }: { className?: string }) {
   if (items.length === 0) return null;
 
   return (
-    <HomeSection className={className}>
-      <HomeSectionHeader
-        eyebrow="The connected graph"
-        title="Stories around the Work"
-        subtitle="Process notes and essays written by the people who made these."
-        action={
-          <Link to="/blog" className="text-xs text-ink-muted hover:text-ink">
-            All stories →
-          </Link>
-        }
-      />
+    <HomeSection
+      className={className}
+      eyebrow="The connected graph"
+      title="Stories around the Work"
+      kicker="Process notes and essays written by the people who made these."
+      href="/blog"
+      cta="All stories"
+    >
       <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
         {items.map((item) => (
           <StoryCard key={item.work.id} item={item} onPeek={setPeekSlug} />
