@@ -17,13 +17,7 @@ function categoryLabel(id: string) {
   );
 }
 
-function StoryCard({
-  item,
-  onPeek,
-}: {
-  item: HomeWorkStory;
-  onPeek: (slug: string) => void;
-}) {
+function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: string) => void }) {
   const w = item.work;
   const lead = item.stories[0];
   const rest = item.stories.slice(1);
@@ -98,8 +92,12 @@ function StoryCard({
               <BookOpen className="h-3 w-3" />
               {HOME_STORY_LABEL_TEXT[lead.label]}
             </span>
-            <span className="mt-1 block text-sm font-medium leading-snug text-ink">{lead.title}</span>
-            {lead.excerpt && <span className="mt-1 line-clamp-2 block text-xs text-ink-soft">{lead.excerpt}</span>}
+            <span className="mt-1 block text-sm font-medium leading-snug text-ink">
+              {lead.title}
+            </span>
+            {lead.excerpt && (
+              <span className="mt-1 line-clamp-2 block text-xs text-ink-soft">{lead.excerpt}</span>
+            )}
           </button>
         )}
 

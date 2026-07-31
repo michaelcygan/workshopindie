@@ -3,7 +3,16 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Radio, Sparkles, MapPin, ArrowRight, Calendar, Compass, Hammer } from "lucide-react";
+import {
+  Megaphone,
+  Radio,
+  Sparkles,
+  MapPin,
+  ArrowRight,
+  Calendar,
+  Compass,
+  Hammer,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { type WorkCardData } from "@/components/work-card";
@@ -31,34 +40,62 @@ type SortKey = "newest" | "trending";
 async function fetchWorks(category: Category | "all", sort: SortKey, blockedIds: string[]) {
   let q = supabase
     .from("works")
-    .select("id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name, username))")
+    .select(
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name, username))",
+    )
     .eq("status", "published")
     .eq("visibility", "public")
     .limit(12);
 
   if (category !== "all") q = q.contains("categories", [category]);
-  if (sort === "newest") q = q.order("published_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false });
-  else q = q.order("popularity_score", { ascending: false }).order("like_count", { ascending: false });
+  if (sort === "newest")
+    q = q
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .order("created_at", { ascending: false });
+  else
+    q = q.order("popularity_score", { ascending: false }).order("like_count", { ascending: false });
 
   const { data, error } = await q;
   if (error) throw error;
   type Row = {
-    id: string; title: string; slug: string; category: Category;
-    cover_url: string | null; embed_url: string | null; source_type: string;
-    like_count: number; save_count: number; view_count: number;
+    id: string;
+    title: string;
+    slug: string;
+    category: Category;
+    cover_url: string | null;
+    embed_url: string | null;
+    source_type: string;
+    like_count: number;
+    save_count: number;
+    view_count: number;
     created_by: string;
-    work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
+    work_credits?: {
+      sort_order: number;
+      display_name: string | null;
+      profiles: { id: string; display_name: string | null; username: string | null } | null;
+    }[];
   };
   const blocked = new Set(blockedIds);
   return (data as Row[])
     .filter((r) => !blocked.has(r.created_by))
     .map<WorkCardData>((r) => ({
-      id: r.id, title: r.title, slug: r.slug, category: r.category,
-      cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
-      like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
+      id: r.id,
+      title: r.title,
+      slug: r.slug,
+      category: r.category,
+      cover_url: r.cover_url,
+      embed_url: r.embed_url,
+      source_type: r.source_type,
+      like_count: r.like_count,
+      save_count: r.save_count,
+      view_count: r.view_count,
       credits: (r.work_credits ?? [])
         .sort((a, b) => a.sort_order - b.sort_order)
-        .map((c) => ({ id: c.profiles?.id ?? null, display_name: c.profiles?.display_name ?? c.display_name ?? null, username: c.profiles?.username ?? null })),
+        .map((c) => ({
+          id: c.profiles?.id ?? null,
+          display_name: c.profiles?.display_name ?? c.display_name ?? null,
+          username: c.profiles?.username ?? null,
+        })),
     }));
 }
 
@@ -82,26 +119,41 @@ function Hero() {
 
       <div className="relative mx-auto w-full max-w-6xl px-4 py-10 md:px-6 md:py-14 text-center pb-mobile-island md:pb-14">
         <motion.div
-          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/90 backdrop-blur px-3 py-1 text-xs text-ink-soft shadow-soft"
         >
-          <span className="gradient-motion inline-flex h-5 w-5 items-center justify-center rounded-full text-primary-foreground"><Sparkles className="h-3 w-3" /></span> A creative collaboration network
+          <span className="gradient-motion inline-flex h-5 w-5 items-center justify-center rounded-full text-primary-foreground">
+            <Sparkles className="h-3 w-3" />
+          </span>{" "}
+          A creative collaboration network
         </motion.div>
         <motion.h1
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.05 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.05 }}
           className="font-display mt-4 text-4xl leading-[1.15] tracking-tight text-ink sm:text-5xl md:text-6xl lg:text-7xl pb-2"
         >
-          Build your network. <span className="italic text-gradient-motion inline-block pr-1 pb-1">Create together.</span>
+          Build your network.{" "}
+          <span className="italic text-gradient-motion inline-block pr-1 pb-1">
+            Create together.
+          </span>
         </motion.h1>
         <motion.p
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.1 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-4 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Drop into the Lounge with other artists and creators. Post a Collab, join a Group, and find an event near you.
+          Drop into the Lounge with other artists and creators. Post a Collab, join a Group, and
+          find an event near you.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.18 }}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.18 }}
           className="mx-auto mt-6 grid max-w-4xl gap-4 md:grid-cols-3"
         >
           <Link
@@ -112,9 +164,12 @@ function Hero() {
               <Radio className="h-5 w-5" />
             </span>
             <div>
-              <div className="font-display text-xl md:text-2xl leading-tight">Drop into the Lounge</div>
+              <div className="font-display text-xl md:text-2xl leading-tight">
+                Drop into the Lounge
+              </div>
               <p className="mt-2 text-sm text-primary-foreground/85">
-                Live, drop-in audio and chat rooms. Jam, critique, hack, or just work alongside other people.
+                Live, drop-in audio and chat rooms. Jam, critique, hack, or just work alongside
+                other people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -132,7 +187,8 @@ function Hero() {
             <div>
               <div className="font-display text-xl md:text-2xl leading-tight">Post a Collab</div>
               <p className="mt-2 text-sm text-ink-muted">
-                Describe what you're making and accept applications. Publish the thing, credit the cast, keep the receipts.
+                Describe what you're making and accept applications. Publish the thing, credit the
+                cast, keep the receipts.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
@@ -150,7 +206,8 @@ function Hero() {
             <div>
               <div className="font-display text-xl md:text-2xl leading-tight">Find an Event</div>
               <p className="mt-2 text-sm text-ink-muted">
-                Workshops, open mics, listening parties, networking — in person and online. Build your creative network and get to work.
+                Workshops, open mics, listening parties, networking — in person and online. Build
+                your creative network and get to work.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-gradient-motion transition group-hover:gap-2">
@@ -164,8 +221,16 @@ function Hero() {
 }
 
 function GalleryControls({
-  category, setCategory, sort, setSort,
-}: { category: Category | "all"; setCategory: (c: Category | "all") => void; sort: SortKey; setSort: (s: SortKey) => void }) {
+  category,
+  setCategory,
+  sort,
+  setSort,
+}: {
+  category: Category | "all";
+  setCategory: (c: Category | "all") => void;
+  sort: SortKey;
+  setSort: (s: SortKey) => void;
+}) {
   const tabs: { id: Category | "all"; label: string }[] = [
     { id: "all", label: "All" },
     ...WORK_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
@@ -272,14 +337,23 @@ function GalleryRail() {
 
   return (
     <HomeSection
-      eyebrow={<><Hammer className="h-3.5 w-3.5" /> Gallery</>}
+      eyebrow={
+        <>
+          <Hammer className="h-3.5 w-3.5" /> Gallery
+        </>
+      }
       title="Finished things people made together."
       kicker="A curated look at what the network has been making lately."
       href="/gallery"
       cta="Browse all"
     >
       <div className="mb-6">
-        <GalleryControls category={category} setCategory={setCategory} sort={sort} setSort={setSort} />
+        <GalleryControls
+          category={category}
+          setCategory={setCategory}
+          sort={sort}
+          setSort={setSort}
+        />
       </div>
       {isLoading ? (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -312,18 +386,20 @@ function GalleryRail() {
                   eyebrow={
                     <>
                       {CATEGORY_LABELS[w.category] ?? w.category}
-                      {author ? <> · by {author}{extra > 0 ? ` +${extra}` : ""}</> : null}
+                      {author ? (
+                        <>
+                          {" "}
+                          · by {author}
+                          {extra > 0 ? ` +${extra}` : ""}
+                        </>
+                      ) : null}
                     </>
                   }
                   title={w.title}
                   chips={
                     <>
-                      {w.like_count > 0 && (
-                        <EditorialChip>{w.like_count} likes</EditorialChip>
-                      )}
-                      {w.view_count > 0 && (
-                        <EditorialChip>{w.view_count} views</EditorialChip>
-                      )}
+                      {w.like_count > 0 && <EditorialChip>{w.like_count} likes</EditorialChip>}
+                      {w.view_count > 0 && <EditorialChip>{w.view_count} views</EditorialChip>}
                     </>
                   }
                   href="/works/$slug"
@@ -336,7 +412,13 @@ function GalleryRail() {
           <div className="mt-10 flex justify-center">
             <Link
               to="/gallery"
-              search={{ q: "", tab: "for-you", cat: category, src: "all", sort: sort === "newest" ? "recent" : "trending" }}
+              search={{
+                q: "",
+                tab: "for-you",
+                cat: category,
+                src: "all",
+                sort: sort === "newest" ? "recent" : "trending",
+              }}
               className="group inline-flex items-center gap-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink-soft transition hover:bg-muted hover:text-ink"
             >
               Browse the full Gallery
@@ -383,7 +465,11 @@ function CollabsRail() {
 
   return (
     <HomeSection
-      eyebrow={<><Megaphone className="h-3.5 w-3.5" /> Collabs</>}
+      eyebrow={
+        <>
+          <Megaphone className="h-3.5 w-3.5" /> Collabs
+        </>
+      }
       title="People building things now."
       kicker="Open roles across music, film, writing, and code. Help out — or post your own."
       href="/collab"
@@ -410,9 +496,10 @@ function CollabsRail() {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {posts.map((p) => {
               const author = p.user?.display_name || p.user?.username || "Anon";
-              const location = p.location_mode === "online"
-                ? "Online"
-                : p.city?.name || (p.location_mode === "hybrid" ? "Hybrid" : "In person");
+              const location =
+                p.location_mode === "online"
+                  ? "Online"
+                  : p.city?.name || (p.location_mode === "hybrid" ? "Hybrid" : "In person");
               const roles = (p.roles ?? []).slice(0, 3);
               const extraRoles = Math.max(0, (p.roles?.length ?? 0) - roles.length);
               return (
@@ -433,7 +520,11 @@ function CollabsRail() {
                       </div>
                     </div>
                   }
-                  eyebrow={<>by {author} · {location}</>}
+                  eyebrow={
+                    <>
+                      by {author} · {location}
+                    </>
+                  }
                   title={p.title}
                   dek={p.description ?? undefined}
                   chips={
@@ -490,7 +581,11 @@ function CityEventsStrip() {
   return (
     <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-10 md:px-6 md:py-12">
       <HomeSectionHeader
-        eyebrow={<><Compass className="h-3.5 w-3.5" /> IRL</>}
+        eyebrow={
+          <>
+            <Compass className="h-3.5 w-3.5" /> IRL
+          </>
+        }
         title="Happening in cities"
         kicker="Upcoming gatherings, in real life."
         href="/events"
