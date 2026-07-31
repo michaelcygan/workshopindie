@@ -22,6 +22,9 @@ type Props = {
   onPick: (tag: BlogEntityTag) => void;
   disabledKeys?: string[];
   title?: string;
+  description?: string;
+  /** Tab the picker opens on. Defaults to every kind. */
+  initialKind?: BlogEntityKind | "all";
 };
 
 const KIND_TABS: Array<{ value: BlogEntityKind | "all"; label: string }> = [
@@ -33,16 +36,27 @@ const KIND_TABS: Array<{ value: BlogEntityKind | "all"; label: string }> = [
   { value: "profile", label: "People" },
 ];
 
-export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, title }: Props) {
-  const [tab, setTab] = useState<BlogEntityKind | "all">("all");
+export function BlogEntityTagPicker({
+  open,
+  onOpenChange,
+  onPick,
+  disabledKeys,
+  title,
+  description,
+  initialKind = "all",
+}: Props) {
+  const [tab, setTab] = useState<BlogEntityKind | "all">(initialKind);
   const [q, setQ] = useState("");
 
   useEffect(() => {
-    if (!open) {
+    if (open) {
+      setTab(initialKind);
+    } else {
       setQ("");
-      setTab("all");
+      setTab(initialKind);
     }
-  }, [open]);
+  }, [open, initialKind]);
+
 
   const disabled = useMemo(() => new Set(disabledKeys ?? []), [disabledKeys]);
 
@@ -69,7 +83,8 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         slug: r.slug,
         label: r.title,
         sublabel: r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null,
-        image: null,
+        image: r.cover_url ?? null,
+
       }));
     },
   });
@@ -151,7 +166,8 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
           groupSlug: r.group!.slug,
           label: r.title,
           sublabel: r.group!.name,
-          image: null,
+          image: r.cover_url ?? null,
+
         }));
     },
   });
@@ -193,8 +209,11 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{title ?? "Tag a Workshop item"}</DialogTitle>
-          <DialogDescription>Connect this post to a Work, Collab, Group, Event, or Person.</DialogDescription>
+          <DialogTitle>{title ?? "Add a connection"}</DialogTitle>
+          <DialogDescription>
+            {description ?? "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."}
+          </DialogDescription>
+
         </DialogHeader>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />

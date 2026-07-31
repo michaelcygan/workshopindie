@@ -341,6 +341,13 @@ function MemberBlogEditorPage() {
             )}
           </div>
 
+          {/* Connections are post metadata: above the body, never buried under it. */}
+          <BlogEntityTagsEditor
+            value={entityTags}
+            readOnly={readOnly}
+            onChange={(next) => { setEntityTags(next); setDirty(true); }}
+          />
+
           <div>
             <BlogBodyEditor
               value={body}
@@ -353,11 +360,7 @@ function MemberBlogEditorPage() {
             />
           </div>
 
-          <BlogEntityTagsEditor
-            value={entityTags}
-            readOnly={readOnly}
-            onChange={(next) => { setEntityTags(next); setDirty(true); }}
-          />
+
 
 
 
@@ -426,7 +429,14 @@ function MemberBlogEditorPage() {
       <BlogEntityTagPicker
         open={entityPickerOpen}
         onOpenChange={setEntityPickerOpen}
-        disabledKeys={entityTags.map(tagKey)}
+        title={pendingInsertRef ? "Insert Workshop link" : "Add a connection"}
+        description={
+          pendingInsertRef
+            ? "Insert an inline link to a Work, Collab, Group, Event, or person."
+            : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
+        }
+        disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
+
         onPick={(tag) => {
           if (pendingInsertRef) {
             pendingInsertRef(entityMarkdown(tag));
