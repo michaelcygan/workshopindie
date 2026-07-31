@@ -294,8 +294,29 @@ function WorkDetail() {
           creditCount={credits.length}
         />
 
+        {/* Stories first — context before the cast list */}
+        <EntityBlogPosts
+          kind="work"
+          entityId={work.id}
+          heading="The story behind this Work"
+          trustedOnly
+          canWrite={isOwnerOrCredited}
+          writeLabel="Write about this Work"
+          emptyLabel="No story yet. Write the one behind this Work."
+          className="mt-14"
+          openSlug={storySlug}
+          onOpenSlugChange={(slug) =>
+            navigate({
+              to: "/works/$slug",
+              params: { slug: work.slug },
+              search: { story: slug ?? undefined },
+              replace: true,
+            })
+          }
+        />
+
         {/* Credits — cast strip + provenance chips */}
-        <div id="credits">
+        <div id="credits" className="mt-14">
           <WorkCreditLayer
             workId={work.id}
             credits={credits.map<CreditChip>((c) => ({
@@ -317,15 +338,6 @@ function WorkDetail() {
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
 
-        <EntityBlogPosts
-          kind="work"
-          entityId={work.id}
-          heading="Stories about this Work"
-          trustedOnly
-          canWrite={isOwnerOrCredited}
-          writeLabel="Write about this Work"
-          className="mt-14"
-        />
 
         {/* Comments */}
         <section className="mt-14">
