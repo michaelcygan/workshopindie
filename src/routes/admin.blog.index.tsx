@@ -189,6 +189,36 @@ function AdminBlogIndex() {
   );
 }
 
+/** Compact connection summary: first two labels, then an overflow count. */
+function ConnectionCell({ connections }: { connections: Connection[] }) {
+  if (connections.length === 0) return <span className="text-ink-muted">—</span>;
+  const shown = connections.slice(0, 2);
+  const overflow = connections.length - shown.length;
+  return (
+    <div
+      className="flex max-w-[220px] flex-wrap items-center gap-1"
+      title={connections.map((c) => c.label).join(", ")}
+    >
+      {shown.map((c) => {
+        const Icon = CONNECTION_ICONS[c.kind];
+        return (
+          <span
+            key={`${c.kind}:${c.id}`}
+            className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft"
+          >
+            <Icon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{c.label}</span>
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] text-ink-muted">+{overflow}</span>
+      )}
+    </div>
+  );
+}
+
+
 function FilterChips<T extends string>({
   label,
   value,
