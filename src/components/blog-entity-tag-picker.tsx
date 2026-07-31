@@ -209,8 +209,11 @@ export function BlogEntityTagPicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{title ?? "Tag a Workshop item"}</DialogTitle>
-          <DialogDescription>Connect this post to a Work, Collab, Group, Event, or Person.</DialogDescription>
+          <DialogTitle>{title ?? "Add a connection"}</DialogTitle>
+          <DialogDescription>
+            {description ?? "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."}
+          </DialogDescription>
+
         </DialogHeader>
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
