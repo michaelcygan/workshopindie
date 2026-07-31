@@ -80,8 +80,6 @@ export function useMediaRoom(
     peers,
     error: api.error?.message ?? null,
     busy: api.busy,
-    localStream: null,
-
     screenStream: null,
     screenSharerId: null,
     isScreenSharing: false,
