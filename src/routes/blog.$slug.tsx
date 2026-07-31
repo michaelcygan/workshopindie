@@ -3,6 +3,7 @@ import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
 import { BlogEntityTags } from "@/components/blog-entity-tags";
+import { BlogWorkContext } from "@/components/blog-work-context";
 import { entityUrl, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { ReportDialog } from "@/components/report-dialog";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,12 @@ export const Route = createFileRoute("/blog/$slug")({
 function BlogPostPage() {
   const { post } = Route.useLoaderData();
 
+  const entityTags = (post.entity_tags ?? []) as BlogEntityTag[];
+  const richWorkIds = new Set(
+    entityTags.filter((t) => t.kind === "work" && !!t.work).map((t) => t.id),
+  );
+  const otherTags = entityTags.filter((t) => !(t.kind === "work" && richWorkIds.has(t.id)));
+
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
   const meaningfullyUpdated =
@@ -182,11 +189,13 @@ function BlogPostPage() {
         />
       )}
 
+      <BlogWorkContext tags={entityTags} className="mt-8" />
+
       <div className="mt-8">
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
-      <BlogEntityTags tags={(post.entity_tags ?? []) as BlogEntityTag[]} className="mt-10" />
+      <BlogEntityTags tags={otherTags} className="mt-10" />
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
