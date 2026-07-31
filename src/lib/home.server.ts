@@ -470,7 +470,7 @@ export async function nextEventServer(
       .select(EVENT_SELECT)
       .gt("starts_at", nowIso)
       .is("deleted_at", null)
-      .neq("visibility", "private")
+      .in("visibility", ["public", "unlisted", "group_only"])
       .order("starts_at", { ascending: true })
       .limit(5);
   }
@@ -815,7 +815,7 @@ export async function circleStoriesServer(
           .in("group_id", groupIds)
           .gt("starts_at", nowIso)
           .is("deleted_at", null)
-          .neq("visibility", "private")
+          .in("visibility", ["public", "unlisted", "group_only"])
           .order("starts_at", { ascending: true })
           .limit(6)
       : Promise.resolve({ data: [] }),
