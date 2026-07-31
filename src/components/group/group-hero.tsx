@@ -1,7 +1,8 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { JoinGroupButton } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 
@@ -40,6 +41,31 @@ export function GroupHero({
     },
     onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
   });
+
+  // Ambient signal: how many people are in this Group's Lounge right now.
+  const { data: liveCount = 0 } = useQuery({
+    queryKey: ["group-lounge-live", group.id],
+    refetchInterval: 45_000,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { data: rooms } = await supabase
+        .from("instant_rooms")
+        .select("id")
+        .eq("group_id", group.id)
+        .eq("status", "active")
+        .limit(5);
+      const ids = (rooms ?? []).map((r) => r.id as string);
+      if (ids.length === 0) return 0;
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+      const { count } = await supabase
+        .from("instant_presence")
+        .select("user_id", { count: "exact", head: true })
+        .in("room_id", ids)
+        .gt("last_seen_at", since);
+      return count ?? 0;
+    },
+  });
+
 
   const onShare = async () => {
     const url = typeof window !== "undefined" ? `${window.location.origin}/g/${group.slug}` : "";
@@ -134,9 +160,20 @@ export function GroupHero({
             >
               <Radio className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
-                {openLounge.isPending ? "Opening…" : "Open the Lounge"}
+                {openLounge.isPending
+                  ? "Opening…"
+                  : liveCount > 0
+                    ? `Lounge · ${liveCount} live`
+                    : "Open the Lounge"}
               </span>
+              {liveCount > 0 ? (
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+                />
+              ) : null}
             </Button>
+
             <Button
               variant="ghost"
               size="icon"

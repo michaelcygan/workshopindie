@@ -112,7 +112,8 @@ export function ChannelView({
    * Only "audio" triggers an automatic mic pre-grant on entry; every other
    * value enters as chat-only.
    */
-  initialMode?: MediaMode | "chat" | "audio";
+  /** Legacy "voice"/"video" URLs are accepted and treated as audio entry. */
+  initialMode?: MediaMode | "chat" | "audio" | "video";
   workshopId?: string;
   hostUserId?: string | null;
   medium?: string | null;
@@ -213,7 +214,7 @@ export function ChannelView({
   const scrollRef = useRef<HTMLDivElement>(null);
 
 
-  const media = useMediaRoom(roomId, { camera: false });
+  const media = useMediaRoom(roomId);
   const { screeningWork } = useRoomPinsAndScreening(roomId, screeningWorkId);
   const { pinnedId: pinnedMessageId } = useRoomPin(roomId);
   const stopScreeningFn = useServerFn(stopScreening);

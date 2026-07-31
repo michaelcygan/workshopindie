@@ -3319,6 +3319,47 @@ export type Database = {
         }
         Relationships: []
       }
+      lounge_invitations: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          invitee_user_id: string
+          inviter_user_id: string
+          room_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_user_id: string
+          inviter_user_id: string
+          room_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invitee_user_id?: string
+          inviter_user_id?: string
+          room_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lounge_invitations_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "instant_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       media_assets: {
         Row: {
           bytes: number | null

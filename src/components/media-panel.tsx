@@ -774,7 +774,7 @@ export function FullscreenRoom({
   const audioBlocked = !!audioAccess && !audioAccess.canJoinAudio;
   const peerById = new Map(m.peers.map((p) => [p.userId, p] as const));
   const totalHere = 1 + others.length;
-  const showLocalVideo = m.cameraOn && m.localStream;
+  
 
   // Lock body scroll while fullscreen.
   useEffect(() => {
