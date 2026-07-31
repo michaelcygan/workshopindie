@@ -30,7 +30,8 @@ import { dismissPublishNudge } from "@/lib/collab-publish.functions";
 import { getFrequentCollaborators, type Collaborator } from "@/lib/network.functions";
 import { useDocumentMeta, useJsonLd } from "@/lib/seo";
 import { cn } from "@/lib/utils";
-import { CATEGORIES, CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { CANONICAL_CATEGORIES, categoryClassFor, categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 import { extraMediumLabel } from "@/lib/mediums";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 import { EditorialCard, EditorialChip } from "@/components/editorial-card";
@@ -1058,7 +1059,8 @@ function WorksTab({
   isLoading: boolean;
 }) {
   const [roleFilter, setRoleFilter] = useState<"all" | "created" | "credited">("all");
-  const [activeCat, setActiveCat] = useState<Category | "all">("all");
+  // Canonical category id, or "all".
+  const [activeCat, setActiveCat] = useState<string>("all");
   const [sort, setSort] = useState<SortMode>("recent");
 
   const merged: MergedWork[] = useMemo(() => {
@@ -1070,14 +1072,20 @@ function WorksTab({
   const roleFiltered = useMemo(() => merged.filter((w) => roleFilter === "all" || w._role === roleFilter), [merged, roleFilter]);
 
   const catCounts = useMemo(() => {
-    const m = new Map<Category, number>();
-    for (const w of roleFiltered) m.set(w.category, (m.get(w.category) ?? 0) + 1);
+    const m = new Map<string, number>();
+    for (const w of roleFiltered) {
+      const c = normalizeCategory(w.category);
+      m.set(c, (m.get(c) ?? 0) + 1);
+    }
     return m;
   }, [roleFiltered]);
-  const availableCats = useMemo(() => CATEGORIES.filter((c) => catCounts.get(c.id as Category)), [catCounts]);
+  const availableCats = useMemo(
+    () => CANONICAL_CATEGORIES.filter((c) => catCounts.get(c.id)).map((c) => ({ id: c.id, label: c.label })),
+    [catCounts],
+  );
 
   const filtered = useMemo(() => {
-    const arr = activeCat === "all" ? roleFiltered : roleFiltered.filter((w) => w.category === activeCat);
+    const arr = activeCat === "all" ? roleFiltered : roleFiltered.filter((w) => normalizeCategory(w.category) === activeCat);
     const sorted = [...arr];
     if (sort === "loved") {
       sorted.sort((a, b) => b.like_count - a.like_count);
@@ -1121,10 +1129,10 @@ function WorksTab({
           <CategoryScroller
             tabs={[
               { id: "all" as const, label: "All" },
-              ...availableCats.map((c) => ({ id: c.id as Category, label: c.label })),
+              ...availableCats.map((c) => ({ id: c.id as string, label: c.label })),
             ]}
             value={activeCat}
-            onChange={(v) => setActiveCat(v as Category | "all")}
+            onChange={(v) => setActiveCat(v as string)}
           />
         </div>
       )}
@@ -1133,12 +1141,12 @@ function WorksTab({
       {showMobileTiles && (
         <div className="mb-6 space-y-3 md:hidden">
           {availableCats.map((c, catIndex) => {
-            const cid = c.id as Category;
+            const cid = c.id;
             const covers = Array.from(
               new Set(
                 [
-                  ...pinnedWorks.filter((w) => w.category === cid).map((w) => w.cover_url),
-                  ...roleFiltered.filter((w) => w.category === cid).map((w) => w.cover_url),
+                  ...pinnedWorks.filter((w) => normalizeCategory(w.category) === cid).map((w) => w.cover_url),
+                  ...roleFiltered.filter((w) => normalizeCategory(w.category) === cid).map((w) => w.cover_url),
                 ].filter((u): u is string => typeof u === "string" && u.length > 0),
               ),
             ).slice(0, 5);
@@ -1153,7 +1161,7 @@ function WorksTab({
                 {covers.length > 0 ? (
                   <CategoryTileMedia covers={covers} index={catIndex} categoryId={cid} />
                 ) : (
-                  <div className={cn("h-full w-full", categoryClass(cid))} />
+                  <div className={cn("h-full w-full", categoryClassFor(cid))} />
                 )}
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/85 via-background/10 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4">
@@ -1191,9 +1199,9 @@ function WorksTab({
               <MediumChip
                 key={c.id}
                 active={activeCat === c.id}
-                onClick={() => setActiveCat(c.id as Category)}
+                onClick={() => setActiveCat(c.id)}
                 label={c.label}
-                count={catCounts.get(c.id as Category) ?? 0}
+                count={catCounts.get(c.id) ?? 0}
               />
             ))}
           </div>
@@ -1233,7 +1241,7 @@ function WorksTab({
 }
 
 function EditorialWorkTile({ work, creditBadge }: { work: MergedWork; creditBadge: string | null }) {
-  const mediumLabel = CATEGORY_LABELS[work.category] ?? "Work";
+  const mediumLabel = categoryLabel(work.category) ?? "Work";
   const ownerName =
     work._role === "credited"
       ? (work.owner?.display_name || work.owner?.username || null)

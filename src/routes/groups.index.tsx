@@ -24,38 +24,15 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { categoryLabel, normalizeCategory } from "@/lib/taxonomy";
 
 const TAB_VALUES = ["for-you", "city", "genre", "micro", "scene", "all"] as const;
 type Tab = KindTab;
 
-const CATEGORY_VALUES = [
-  "all",
-  "city",
-  "music",
-  "film_video",
-  "writing",
-  "visual_art",
-  "games_tech",
-  "performance",
-  "audio",
-  "scene_life",
-  "language",
-] as const;
-type Category = (typeof CATEGORY_VALUES)[number];
+/** Filter value: a canonical category id, or "all". Derived from live results. */
+type Category = string;
 
-const CATEGORY_LABELS: Record<Category, string> = {
-  all: "All categories",
-  city: "Cities",
-  music: "Music",
-  film_video: "Film & Video",
-  writing: "Writing",
-  visual_art: "Visual Art",
-  games_tech: "Games & Tech",
-  performance: "Performance",
-  audio: "Audio",
-  scene_life: "Scene & Lifestyle",
-  language: "Languages",
-};
+const catLabel = (id: Category) => (id === "all" ? "All categories" : categoryLabel(id));
 
 
 const KIND_LABELS: Record<GroupCardData["kind"], string> = {
@@ -78,7 +55,8 @@ const SORT_LABELS: Record<Sort, string> = {
 const searchSchema = z.object({
   t: fallback(z.enum(TAB_VALUES), "all").default("all"),
   q: fallback(z.string(), "").default(""),
-  c: fallback(z.enum(CATEGORY_VALUES), "all").default("all"),
+  // Free string so any group_category value (and legacy aliases) resolves.
+  c: fallback(z.string(), "all").default("all"),
   s: fallback(z.enum(SORT_VALUES), "featured").default("featured"),
 });
 
@@ -128,11 +106,8 @@ const TITLE_BY_TAB: Record<Tab, string> = {
 
 function matchesSearch(group: GroupCardData, needle: string): boolean {
   if (!needle) return true;
-  const categoryLabel =
-    group.category && (CATEGORY_LABELS as Record<string, string>)[group.category]
-      ? CATEGORY_LABELS[group.category as Category]
-      : "";
-  const hay = [group.name, group.tagline ?? "", KIND_LABELS[group.kind], categoryLabel]
+  const label = group.category ? categoryLabel(group.category) : "";
+  const hay = [group.name, group.tagline ?? "", KIND_LABELS[group.kind], label]
     .filter(Boolean)
     .join(" ")
     .toLocaleLowerCase();
@@ -172,7 +147,7 @@ function GroupsIndex() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab: Tab = search.t;
   const query = search.q;
-  const category: Category = search.c;
+  const category: Category = search.c === "all" ? "all" : normalizeCategory(search.c);
   const sort: Sort = search.s;
 
   const setTab = (t: Tab) =>
@@ -237,13 +212,12 @@ function GroupsIndex() {
   const categoryOptions = useMemo(() => {
     const counts = new Map<Category, number>();
     for (const g of allGroups) {
-      const c = g.category as Category | null | undefined;
-      if (!c) continue;
-      if (!(CATEGORY_VALUES as readonly string[]).includes(c)) continue;
+      if (!g.category) continue;
+      const c = normalizeCategory(g.category);
       counts.set(c, (counts.get(c) ?? 0) + 1);
     }
     const present = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1] || CATEGORY_LABELS[a[0]].localeCompare(CATEGORY_LABELS[b[0]]))
+      .sort((a, b) => b[1] - a[1] || catLabel(a[0]).localeCompare(catLabel(b[0])))
       .map(([id, count]) => ({ id, count }));
     return [{ id: "all" as Category, count: allGroups.length }, ...present];
   }, [allGroups]);
@@ -258,7 +232,7 @@ function GroupsIndex() {
       rows = rows.filter((g) => g.kind === tab);
     }
     if (category !== "all") {
-      rows = rows.filter((g) => g.category === category);
+      rows = rows.filter((g) => !!g.category && normalizeCategory(g.category) === category);
     }
     if (q) rows = rows.filter((g) => matchesSearch(g, q));
     return sortGroups(rows, sort);
@@ -401,7 +375,7 @@ function GroupsIndex() {
                   <SelectContent align="end">
                     {categoryOptions.map(({ id, count }) => (
                       <SelectItem key={id} value={id}>
-                        {CATEGORY_LABELS[id]} ({count})
+                        {catLabel(id)} ({count})
                       </SelectItem>
                     ))}
                   </SelectContent>

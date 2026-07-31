@@ -1,3 +1,29 @@
+/**
+ * Compatibility layer over the canonical taxonomy (`src/lib/taxonomy.ts`).
+ *
+ * `Category` values are the ones actually stored in the `category` Postgres
+ * enum. Labels and colors are derived from the canonical taxonomy so a concept
+ * renders identically everywhere (Work, Collab, Group, Profile).
+ */
+import {
+  CANONICAL_SUBTYPES,
+  categoryClassFor,
+  categoryLabel,
+  TOPICS,
+  WORK_CANONICAL_IDS,
+} from "@/lib/taxonomy";
+
+export {
+  normalizeCategory,
+  storageValuesFor,
+  categoryLabel,
+  categoryClassFor,
+  CANONICAL_CATEGORIES,
+  WORK_CANONICAL_IDS,
+  GROUP_CATEGORY_IDS,
+  type CanonicalCategory,
+} from "@/lib/taxonomy";
+
 export type Category =
   | "film"
   | "music"
@@ -16,27 +42,19 @@ export type Category =
   | "jam"
   | "standup";
 
-/** Categories that can be published as a Work (excludes discussion-style topics). */
+/** Stored category values that can be published as a Work (excludes topics). */
 export const WORK_CATEGORY_IDS = ["film", "music", "writing", "writing_book", "build", "visual"] as const;
 export type WorkCategory = (typeof WORK_CATEGORY_IDS)[number];
 
+/** Canonical work categories, for filter tabs and pickers that want one entry per concept. */
+export const CANONICAL_WORK_CATEGORIES = WORK_CANONICAL_IDS.map((id) => ({
+  id,
+  label: categoryLabel(id),
+}));
+
 export const CATEGORIES: { id: Category; label: string }[] = [
-  { id: "film", label: "Film" },
-  { id: "music", label: "Music" },
-  { id: "writing", label: "Writing" },
-  { id: "writing_book", label: "Book" },
-  { id: "build", label: "Build" },
-  { id: "visual", label: "Visual" },
-  { id: "critique", label: "Critique" },
-  { id: "business", label: "Business of Art" },
-  { id: "coworking", label: "Co-working" },
-  { id: "office_hours", label: "Office Hours" },
-  { id: "roundtable", label: "Roundtable" },
-  { id: "pitch", label: "Pitch" },
-  { id: "listen_party", label: "Listen Party" },
-  { id: "open_mic", label: "Open Mic" },
-  { id: "jam", label: "Jam" },
-  { id: "standup", label: "Stand-up" },
+  ...(WORK_CATEGORY_IDS.map((id) => ({ id, label: categoryLabel(id) })) as { id: Category; label: string }[]),
+  ...(TOPICS.map((t) => ({ id: t.id as Category, label: t.label })) as { id: Category; label: string }[]),
 ];
 
 export const CATEGORY_LABELS: Record<Category, string> = Object.fromEntries(
@@ -47,10 +65,10 @@ export const WORK_CATEGORIES = CATEGORIES.filter((c) =>
   (WORK_CATEGORY_IDS as readonly string[]).includes(c.id),
 );
 
-/** Optional sub-category labels per work category. Stored as a free string on works.subtype. */
+/** Optional sub-category labels per stored work category (works.subtype). */
 export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
-  film: ["Short film", "Music video", "Trailer", "Documentary", "Animation", "Reel"],
-  music: ["Single", "EP / Album", "Live set", "Remix", "Beat", "Demo"],
+  film: CANONICAL_SUBTYPES.film_video,
+  music: CANONICAL_SUBTYPES.music,
   writing: ["Essay", "Poem", "Short story", "Screenplay", "Newsletter", "Article"],
   writing_book: [
     "Novel",
@@ -63,8 +81,8 @@ export const WORK_SUBTYPES: Record<WorkCategory, string[]> = {
     "Zine",
     "Serial",
   ],
-  build: ["App", "Site", "Tool", "Plugin", "Hardware", "Game"],
-  visual: ["Photo", "Illustration", "Design", "Painting", "Collage", "3D"],
+  build: CANONICAL_SUBTYPES.games_tech,
+  visual: CANONICAL_SUBTYPES.visual_art,
 };
 
 export const SOURCE_LABELS: Record<string, string> = {
@@ -75,22 +93,4 @@ export const SOURCE_LABELS: Record<string, string> = {
   manual: "Portfolio",
 };
 
-export const categoryClass = (c: Category) =>
-  ({
-    film: "bg-cat-film text-cat-film-ink",
-    music: "bg-cat-music text-cat-music-ink",
-    writing: "bg-cat-writing text-cat-writing-ink",
-    writing_book: "bg-cat-book text-cat-book-ink",
-    build: "bg-cat-build text-cat-build-ink",
-    visual: "bg-cat-visual text-cat-visual-ink",
-    critique: "bg-cat-critique text-cat-critique-ink",
-    business: "bg-cat-business text-cat-business-ink",
-    coworking: "bg-cat-coworking text-cat-coworking-ink",
-    office_hours: "bg-cat-office-hours text-cat-office-hours-ink",
-    roundtable: "bg-cat-roundtable text-cat-roundtable-ink",
-    pitch: "bg-cat-pitch text-cat-pitch-ink",
-    listen_party: "bg-cat-listen-party text-cat-listen-party-ink",
-    open_mic: "bg-cat-open-mic text-cat-open-mic-ink",
-    jam: "bg-cat-jam text-cat-jam-ink",
-    standup: "bg-cat-standup text-cat-standup-ink",
-  })[c];
+export const categoryClass = (c: Category) => categoryClassFor(c);

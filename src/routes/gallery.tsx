@@ -7,7 +7,8 @@ import { zodValidator, fallback } from "@tanstack/zod-adapter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { WorkCard, type WorkCardData } from "@/components/work-card";
-import { WORK_CATEGORIES, type Category } from "@/lib/categories";
+import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
+import { normalizeCategory, workStorageValuesFor } from "@/lib/taxonomy";
 import { CategoryScroller } from "@/components/category-scroller";
 import { GalleryCityFilter, type CityOption } from "@/components/gallery-city-filter";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,7 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Work — Workshop" },
-      { name: "description", content: "Browse everything people have published on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
+      { name: "description", content: "Browse everything people have published on Workshop. Music, film & video, writing, visual art, games & tech — filter by medium, city, and what your network is making." },
       { property: "og:title", content: "Work — Workshop" },
       { property: "og:description", content: "Browse everything people have published on Workshop." },
       { property: "og:url", content: "https://workshopindie.com/gallery" },
@@ -117,7 +118,7 @@ async function fetchForYouPage(params: {
     .in("visibility", ["public", "unlisted"])
     .limit(PAGE_SIZE);
 
-  if (params.category !== "all") qb = qb.contains("categories", [params.category as Category]);
+  if (params.category !== "all") qb = qb.overlaps("categories", workStorageValuesFor(params.category) as Category[]);
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
@@ -196,7 +197,7 @@ async function fetchFavoritesPage(params: {
       "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
     )
     .in("id", ids);
-  if (params.category !== "all") qb = qb.contains("categories", [params.category as Category]);
+  if (params.category !== "all") qb = qb.overlaps("categories", workStorageValuesFor(params.category) as Category[]);
   if (params.citySlug !== "all") {
     const cid = params.cityIdMap.get(params.citySlug);
     if (!cid) return { works: [], nextCursor: null };
@@ -261,7 +262,8 @@ function GalleryPage() {
   }, [qDebounced]);
 
   const tab = search.tab;
-  const category = search.cat;
+  // Accept legacy values (?cat=film / visual / build) from old shared links.
+  const category = search.cat === "all" ? "all" : normalizeCategory(search.cat);
   const citySlug = search.city;
   const sort = search.sort;
   const q = search.q;
@@ -363,7 +365,7 @@ function GalleryPage() {
 
   const categoryTabs: { id: string; label: string }[] = [
     { id: "all", label: "All" },
-    ...WORK_CATEGORIES.map((c) => ({ id: c.id, label: c.label })),
+    ...CANONICAL_WORK_CATEGORIES.map((c) => ({ id: c.id as string, label: c.label })),
   ];
 
   const filtersActive =
@@ -390,7 +392,7 @@ function GalleryPage() {
               Gallery
             </h1>
             <p className="mt-1 truncate text-sm text-ink-muted">
-              Everything people made across Workshop — film, music, writing, build, visuals.
+              Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
             </p>
           </div>
           <Link to="/works/new" className="shrink-0">
