@@ -50,17 +50,14 @@ export function WorkCreditLayer({ workId, credits }: Props) {
               <span className="font-medium text-ink">{data.collab.title}</span>
             </Link>
           )}
-          {data?.workshop && (
-            <Link
-              to="/workshops/$slug"
-              params={{ slug: data.workshop.slug }}
-              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft transition hover:border-ink/20 hover:text-ink hover:shadow-soft"
-              title="The Lounge where this was made"
+          {data?.madeTogether && (
+            <span
+              className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-ink-soft"
+              title="This Work was made collaboratively on Workshop"
             >
               <Hammer className="h-3.5 w-3.5 text-primary" />
-              <span className="text-ink-muted">Born in this Workshop ·</span>
-              <span className="font-medium text-ink">{data.workshop.title}</span>
-            </Link>
+              <span className="font-medium text-ink">Made together on Workshop</span>
+            </span>
           )}
         </div>
       )}
