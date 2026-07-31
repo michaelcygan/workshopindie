@@ -525,3 +525,74 @@ export const joinGroupLounge = createServerFn({ method: "POST" })
 // Existing rooms with a `collab_id` still work if someone has the /lounge/$id link,
 // but new Collab-scoped Lounges can no longer be created.
 
+
+export type MyGroupLounge = {
+  roomId: string;
+  title: string;
+  medium: string | null;
+  groupId: string;
+  groupName: string;
+  groupSlug: string;
+  liveCount: number;
+};
+
+/**
+ * Active Lounges attached to Groups the viewer has joined, with live
+ * presence counts. Powers the "Your Groups are live" rail on /lounge.
+ */
+export const listMyGroupLounges = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<MyGroupLounge[]> => {
+    const { userId } = context;
+    const { data: memberships } = await supabaseAdmin
+      .from("group_members")
+      .select("group_id")
+      .eq("user_id", userId)
+      .limit(200);
+    const groupIds = (memberships ?? []).map((m) => m.group_id as string);
+    if (groupIds.length === 0) return [];
+
+    const { data: rooms } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id,title,medium,group_id")
+      .in("group_id", groupIds)
+      .eq("status", "active")
+      .limit(30);
+    const roomRows = rooms ?? [];
+    if (roomRows.length === 0) return [];
+
+    const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+    const [{ data: groups }, { data: presence }] = await Promise.all([
+      supabaseAdmin.from("groups").select("id,name,slug").in("id", groupIds),
+      supabaseAdmin
+        .from("instant_presence")
+        .select("room_id")
+        .in("room_id", roomRows.map((r) => r.id as string))
+        .gt("last_seen_at", since)
+        .limit(500),
+    ]);
+
+    const groupById = new Map((groups ?? []).map((g) => [g.id as string, g]));
+    const counts = new Map<string, number>();
+    for (const p of presence ?? []) {
+      const rid = p.room_id as string;
+      counts.set(rid, (counts.get(rid) ?? 0) + 1);
+    }
+
+    return roomRows
+      .flatMap((r) => {
+        const g = groupById.get(r.group_id as string);
+        if (!g) return [];
+        return [{
+          roomId: r.id as string,
+          title: (r.title as string | null) ?? "Lounge",
+          medium: (r.medium as string | null) ?? null,
+          groupId: g.id as string,
+          groupName: g.name as string,
+          groupSlug: g.slug as string,
+          liveCount: counts.get(r.id as string) ?? 0,
+        }];
+      })
+      .sort((a, b) => b.liveCount - a.liveCount)
+      .slice(0, 8);
+  });
