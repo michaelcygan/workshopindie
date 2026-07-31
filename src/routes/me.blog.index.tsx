@@ -86,7 +86,7 @@ function MyBlogPage() {
   });
 
   const createMut = useMutation({
-    mutationFn: () => createFn(),
+    mutationFn: () => createFn({ data: {} }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
       navigate({ to: "/me/blog/$id", params: { id: res.id } });
