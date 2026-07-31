@@ -341,6 +341,13 @@ function MemberBlogEditorPage() {
             )}
           </div>
 
+          {/* Connections are post metadata: above the body, never buried under it. */}
+          <BlogEntityTagsEditor
+            value={entityTags}
+            readOnly={readOnly}
+            onChange={(next) => { setEntityTags(next); setDirty(true); }}
+          />
+
           <div>
             <BlogBodyEditor
               value={body}
@@ -353,11 +360,7 @@ function MemberBlogEditorPage() {
             />
           </div>
 
-          <BlogEntityTagsEditor
-            value={entityTags}
-            readOnly={readOnly}
-            onChange={(next) => { setEntityTags(next); setDirty(true); }}
-          />
+
 
 
 
