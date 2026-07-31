@@ -469,6 +469,17 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           )}
         </div>
 
+        {/* Connections are post metadata: above the body, never buried under it. */}
+        <div className="mt-4">
+          <BlogEntityTagsEditor
+            value={entityTags}
+            onChange={(next) => {
+              setEntityTags(next);
+              setDirty(true);
+            }}
+          />
+        </div>
+
         <div className="mt-6">
           <Tabs defaultValue="edit">
             <TabsList>
@@ -486,15 +497,9 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
                     setEntityPickerOpen(true);
                   }}
                 />
-                <BlogEntityTagsEditor
-                  value={entityTags}
-                  onChange={(next) => {
-                    setEntityTags(next);
-                    setDirty(true);
-                  }}
-                />
               </div>
             </TabsContent>
+
             <TabsContent value="preview">
               <div className="mt-2 rounded-2xl border border-border bg-surface p-6">
                 <h1 className="font-display text-3xl text-ink">{title || "Untitled"}</h1>
