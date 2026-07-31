@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowRight, BookOpen } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { BlogPostPeek } from "@/components/blog-post-peek";
-import { HomeSection, HomeSectionHeader } from "@/components/home-section";
+import { HomeSection } from "@/components/home-section";
 import { listHomeWorkStories } from "@/lib/home.functions";
 import { HOME_STORY_LABEL_TEXT, type HomeWorkStory } from "@/lib/home-types";
 import { CATEGORY_LABELS } from "@/lib/categories";
