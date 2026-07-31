@@ -253,8 +253,26 @@ export async function adminListPostsServer(context: AuthContext) {
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
-  return data ?? [];
+  const rows = data ?? [];
+
+  // One batched round trip for the whole page — never one query per row.
+  // Admins see every connection, including ones hidden from the public view.
+  const { getBlogPostEntityTagsBulkServer } = await import("./blog-entity-tags.server");
+  const tagsByPost = await getBlogPostEntityTagsBulkServer(
+    rows.map((r) => r.id),
+    { publicOnly: false },
+  );
+
+  return rows.map((r) => ({
+    ...r,
+    connections: (tagsByPost.get(r.id) ?? []).map((t) => ({
+      kind: t.kind,
+      id: t.id,
+      label: t.label,
+    })),
+  }));
 }
+
 
 
 export async function adminListAuthorProfilesServer(context: AuthContext) {
