@@ -74,13 +74,14 @@ export function useMediaRoom(
     audioJoined: api.connected && api.role === "speaker",
     mode: "voice",
     muted: api.muted,
-    cameraOn: false,
+    
     speaking: self?.isSpeaking ?? false,
     count: api.participants.length,
     peers,
     error: api.error?.message ?? null,
     busy: api.busy,
     localStream: null,
+
     screenStream: null,
     screenSharerId: null,
     isScreenSharing: false,
