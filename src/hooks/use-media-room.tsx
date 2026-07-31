@@ -6,17 +6,15 @@
  * module keeps the old return shape so `ChannelView` and `MediaPanel` can
  * consume it unchanged, but every call now delegates to `useLoungeAudio()`.
  *
- * Video/camera/screen fields are frozen stubs — the Lounge no longer supports
- * those surfaces. Do not add new consumers of the removed fields; new code
- * should use `useLoungeAudio()` directly.
+ * Camera/local-stream fields have been removed entirely — new code should use
+ * `useLoungeAudio()` directly.
  */
 import { useCallback, useMemo } from "react";
 import { useLoungeAudio } from "@/hooks/use-lounge-audio";
 
 export const ROOM_CAP = 20;
-export const VIDEO_CAP = 0;
 
-export type MediaMode = "voice" | "video";
+export type MediaMode = "voice";
 
 export type MediaPeer = {
   userId: string;
@@ -30,13 +28,11 @@ export type UseMediaRoomReturn = {
   audioJoined: boolean;
   mode: MediaMode;
   muted: boolean;
-  cameraOn: boolean;
   speaking: boolean;
   count: number;
   peers: MediaPeer[];
   error: string | null;
   busy: boolean;
-  localStream: MediaStream | null;
   screenStream: MediaStream | null;
   screenSharerId: string | null;
   isScreenSharing: boolean;
@@ -48,7 +44,6 @@ export type UseMediaRoomReturn = {
 
 export function useMediaRoom(
   _roomId: string | undefined,
-  _opts: { camera?: boolean } = {},
 ): UseMediaRoomReturn {
   const api = useLoungeAudio();
 
