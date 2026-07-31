@@ -248,7 +248,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
                 };
                 onRequestEntityInsert(insert);
               }}
-              title="Tag a Workshop item"
+              title="Insert Workshop link"
               disabled={readOnly}
             >
               <AtSign className="h-4 w-4" />
