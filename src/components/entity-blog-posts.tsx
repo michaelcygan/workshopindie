@@ -112,8 +112,9 @@ export function EntityBlogPosts({
 
       {posts.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-ink-muted">
-          No stories yet. Be the first to write about this.
+          {emptyLabel ?? "No stories yet. Be the first to write about this."}
         </p>
+
       ) : (
         <div className="grid gap-3 md:grid-cols-3">
           {posts.map((p) => {
