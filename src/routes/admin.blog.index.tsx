@@ -71,7 +71,10 @@ function AdminBlogIndex() {
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex-1">
           <h2 className="font-display text-2xl text-ink">Blog</h2>
-          <p className="text-sm text-ink-muted">All posts — editorial and member drafts.</p>
+          <p className="text-sm text-ink-muted">
+            All posts — editorial and member drafts. Connections surface a published post on the pages it connects
+            to; drafts stay private.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/admin/blog/subscribers">
@@ -89,13 +92,15 @@ function AdminBlogIndex() {
         <FilterChips label="Type" value={pubType} onChange={setPubType} options={[["all","All"],["editorial","Editorial"],["member","Member"]]} />
         <FilterChips label="Status" value={status} onChange={setStatus} options={[["all","All"],["published","Published"],["draft","Draft"]]} />
         <FilterChips label="Visibility" value={vis} onChange={setVis} options={[["all","All"],["public","In index"],["hidden","Profile-only"]]} />
+        <FilterChips label="Connections" value={conn} onChange={setConn} options={[["all","All"],["some","Has connections"],["none","None"]]} />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title, slug, author…"
+          placeholder="Search title, slug, author, connection…"
           className="ml-auto h-9 max-w-xs"
         />
       </div>
+
 
       {isLoading ? (
         <div className="rounded-2xl border border-border bg-surface p-6 text-sm text-ink-muted">Loading…</div>
