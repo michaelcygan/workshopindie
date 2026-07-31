@@ -6,7 +6,7 @@ import { Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { getFriends } from "@/lib/friends.functions";
 import { FriendRow } from "@/components/friend-row";
-import { InviteToWorkshopDialog } from "@/components/invite-to-workshop-dialog";
+import { LoungeInviteDialog } from "@/components/lounge-invite-dialog";
 
 export const Route = createFileRoute("/me/friends")({
   component: MyFriendsPage,
@@ -117,7 +117,7 @@ function MyFriendsPage() {
       )}
 
       {invitee && (
-        <InviteToWorkshopDialog
+        <LoungeInviteDialog
           open={!!invitee}
           onOpenChange={(o) => !o && setInvitee(null)}
           invitee={invitee}
