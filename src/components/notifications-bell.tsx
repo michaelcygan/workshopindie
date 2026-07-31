@@ -28,6 +28,7 @@ const ICONS: Record<string, typeof Bell> = {
   work_credit: Sparkles,
   payment_failed: CreditCard,
   comp_redeemed: Sparkles,
+  lounge_invite: Radio,
   workshop_starting: Radio,
   workshop_now_live: Radio,
   workshop_ran_without_you: Radio,
@@ -69,6 +70,14 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
         title: `${actor} applied to ${collabTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
         href: convId ? `/dms/${convId}` : collabSlug ? `/collab/${collabSlug}` : "/collab",
+      };
+    }
+    case "lounge_invite": {
+      const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      return {
+        title: `${actor} invited you into a Lounge`,
+        subtitle: wsTitle,
+        href: roomId ? `/lounge/${roomId}` : "/lounge",
       };
     }
     case "follow":

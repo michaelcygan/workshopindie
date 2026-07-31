@@ -278,7 +278,12 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
         actor_user_id: userId,
         entity_type: "lounge_room",
         entity_id: room.id,
-        payload: { room_id: room.id, title: room.title },
+        payload: {
+          room_id: room.id,
+          title: room.title,
+          medium: room.medium ?? null,
+          actor_name: inviterName,
+        },
       })
       .then(() => null, () => null);
 
