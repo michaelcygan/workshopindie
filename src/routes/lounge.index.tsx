@@ -19,6 +19,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { RequireAuth } from "@/components/require-auth";
+import { LoungeInvitesStrip } from "@/components/lounge-invites-strip";
+import { GroupLoungesRail } from "@/components/group-lounges-rail";
 
 const loungeSearchSchema = z.object({
   prompt: fallback(z.string(), "").default(""),
@@ -426,6 +428,9 @@ function WorkshopPreflight() {
         </div>
       )}
 
+
+      <LoungeInvitesStrip />
+      <GroupLoungesRail />
 
       {/* Live decision surface — stack on mobile, split on desktop.
           Both mount the same LiveTopicsList; its internal useQuery(["instant-active-rooms"])

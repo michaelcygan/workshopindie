@@ -10,6 +10,7 @@ import { useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { GroupNextEvent } from "@/components/group/group-next-event";
+import { GroupLoungeCard } from "@/components/group/group-lounge-card";
 import { TodayMentionPopover } from "@/components/group/today-mention-popover";
 import { renderTodayBody } from "@/lib/today-text";
 import { postTodayMessage } from "@/lib/today-chat.functions";
@@ -90,6 +91,9 @@ function TodayModuleRail({ group }: { group: GroupRefForToday }) {
         ref={scrollerRef}
         className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
       >
+        <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
+          <GroupLoungeCard groupId={group.id} />
+        </div>
         <div className="w-[85%] shrink-0 snap-start sm:w-[320px]">
           <GroupNextEvent group={group} />
         </div>

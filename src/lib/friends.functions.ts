@@ -234,7 +234,7 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
 
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id,title,status,group_id")
+      .select("id,title,medium,status,group_id")
       .eq("id", data.roomId)
       .maybeSingle();
     if (!room || room.status !== "active") throw new Error("That Lounge is no longer live.");
@@ -270,6 +270,14 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
       )
       .then(() => null, () => null);
 
+    const { data: inviter } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name,username")
+      .eq("id", userId)
+      .maybeSingle();
+    const inviterName =
+      (inviter?.display_name as string | null) ?? (inviter?.username as string | null) ?? null;
+
     await supabaseAdmin
       .from("notifications")
       .insert({
@@ -278,10 +286,99 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
         actor_user_id: userId,
         entity_type: "lounge_room",
         entity_id: room.id,
-        payload: { room_id: room.id, title: room.title },
+        payload: {
+          room_id: room.id,
+          title: room.title,
+          medium: room.medium ?? null,
+          actor_name: inviterName,
+        },
       })
       .then(() => null, () => null);
 
     return { ok: true, roomId: room.id };
   });
+
+export type PendingLoungeInvite = {
+  id: string;
+  roomId: string;
+  title: string;
+  medium: string | null;
+  inviterName: string | null;
+  inviterAvatar: string | null;
+  expiresAt: string;
+};
+
+/**
+ * Pending Lounge invitations for the signed-in viewer. Only returns invites
+ * that are still pending, unexpired, and point at a room that's still active.
+ */
+export const listMyLoungeInvites = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<PendingLoungeInvite[]> => {
+    const { userId } = context;
+    const { data: invites } = await supabaseAdmin
+      .from("lounge_invitations")
+      .select("id,room_id,inviter_user_id,expires_at")
+      .eq("invitee_user_id", userId)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    const rows = invites ?? [];
+    if (rows.length === 0) return [];
+
+    const [{ data: rooms }, { data: profiles }] = await Promise.all([
+      supabaseAdmin
+        .from("instant_rooms")
+        .select("id,title,medium,status")
+        .in("id", rows.map((r) => r.room_id as string)),
+      supabaseAdmin
+        .from("profiles")
+        .select("id,display_name,username,avatar_url")
+        .in("id", rows.map((r) => r.inviter_user_id as string)),
+    ]);
+
+    const roomById = new Map((rooms ?? []).map((r) => [r.id as string, r]));
+    const profById = new Map((profiles ?? []).map((p) => [p.id as string, p]));
+
+    return rows.flatMap((r) => {
+      const room = roomById.get(r.room_id as string);
+      if (!room || room.status !== "active") return [];
+      const p = profById.get(r.inviter_user_id as string);
+      return [{
+        id: r.id as string,
+        roomId: room.id as string,
+        title: (room.title as string | null) ?? "Lounge",
+        medium: (room.medium as string | null) ?? null,
+        inviterName: (p?.display_name as string | null) ?? (p?.username as string | null) ?? null,
+        inviterAvatar: (p?.avatar_url as string | null) ?? null,
+        expiresAt: r.expires_at as string,
+      }];
+    });
+  });
+
+/** Marks an invite accepted or declined. Only the invitee may act on it. */
+export const respondToLoungeInvite = createServerFn({ method: "POST" })
+  .inputValidator((d: unknown) =>
+    z.object({ inviteId: z.string().uuid(), action: z.enum(["accept", "decline"]) }).parse(d),
+  )
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ data, context }) => {
+    const { userId } = context;
+    const { data: row, error } = await supabaseAdmin
+      .from("lounge_invitations")
+      .update({
+        status: data.action === "accept" ? "accepted" : "declined",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", data.inviteId)
+      .eq("invitee_user_id", userId)
+      .eq("status", "pending")
+      .select("room_id")
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    return { ok: true, roomId: (row?.room_id as string | undefined) ?? null };
+  });
+
 
