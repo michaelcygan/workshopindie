@@ -981,7 +981,25 @@ function ProfilePage() {
             {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
 
-          <EntityBlogPosts kind="profile" entityId={profile.id} className="mt-10" />
+          <EntityBlogPosts
+            kind="profile"
+            entityId={profile.id}
+            heading={`Stories by ${profile.display_name || `@${profile.username}`}`}
+            canWrite={isOwn}
+            writeLabel="Write a post"
+            emptyLabel="No stories yet."
+            className="mt-10"
+            openSlug={search.story}
+            onOpenSlugChange={(s) =>
+              navigate({
+                to: "/u/$username",
+                params: { username },
+                search: (prev) => ({ ...prev, story: s ?? undefined }),
+                replace: true,
+              })
+            }
+          />
+
         </div>
       </div>
     </main>
