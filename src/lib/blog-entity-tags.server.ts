@@ -161,8 +161,11 @@ export async function getBlogPostEntityTagsServer(
   return resolveTags((data ?? []) as Row[], opts);
 }
 
-/** Bulk fetch tags for multiple posts (public mode). Returns Map<postId, tags>. */
-export async function getBlogPostEntityTagsBulkServer(postIds: string[]): Promise<Map<string, BlogEntityTag[]>> {
+/** Bulk fetch tags for multiple posts. Returns Map<postId, tags>. */
+export async function getBlogPostEntityTagsBulkServer(
+  postIds: string[],
+  opts: { publicOnly: boolean } = { publicOnly: true },
+): Promise<Map<string, BlogEntityTag[]>> {
   const out = new Map<string, BlogEntityTag[]>();
   if (!postIds.length) return out;
   const { data } = await supabaseAdmin
@@ -177,10 +180,11 @@ export async function getBlogPostEntityTagsBulkServer(postIds: string[]): Promis
     rowsByPost.set(r.blog_post_id, arr);
   }
   for (const [postId, rows] of rowsByPost) {
-    out.set(postId, await resolveTags(rows, { publicOnly: true }));
+    out.set(postId, await resolveTags(rows, opts));
   }
   return out;
 }
+
 
 async function validateEntitiesExist(inputs: EntityInput[]) {
   const byKind: Record<BlogEntityKind, string[]> = { work: [], collab: [], group: [], event: [], profile: [] };
