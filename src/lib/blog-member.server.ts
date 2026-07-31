@@ -168,11 +168,15 @@ async function seedDraftTag(
   try {
     const current = await getBlogPostEntityTagsServer(postId, { publicOnly: false });
     const next = current.map((t) => ({ kind: t.kind, id: t.id }));
-    if (next.some((t) => t.kind === tag.kind && t.id === tag.id)) return;
+    if (next.some((t) => t.kind === tag.kind && t.id === tag.id)) return true;
     next.push(tag);
     await setBlogPostEntityTagsForOwnerServer(postId, userId, next);
-  } catch {
-    // Seeding is a convenience; never block draft creation on it.
+    return true;
+  } catch (e) {
+    // Seeding never blocks draft creation, but the caller must be able to tell
+    // the writer the connection didn't stick instead of silently dropping it.
+    console.error("[blog] seedDraftTag failed", { postId, tag, error: (e as Error).message });
+    return false;
   }
 }
 
@@ -197,8 +201,8 @@ export async function createMyBlogDraftServer(
       .limit(1);
     if (existing && existing.length >= access.activeDraftLimit) {
       const id = (existing[0] as { id: string }).id;
-      if (seedTag) await seedDraftTag(id, context.userId, seedTag);
-      return { id, reused: true };
+      const seeded = seedTag ? await seedDraftTag(id, context.userId, seedTag) : true;
+      return { id, reused: true, seedTagFailed: !seeded };
     }
   }
 
@@ -209,8 +213,8 @@ export async function createMyBlogDraftServer(
   });
   if (error) throw new Error(error.message);
   await audit("blog.member.draft_create", data as string, context.userId);
-  if (seedTag) await seedDraftTag(data as string, context.userId, seedTag);
-  return { id: data as string, reused: false };
+  const seeded = seedTag ? await seedDraftTag(data as string, context.userId, seedTag) : true;
+  return { id: data as string, reused: false, seedTagFailed: !seeded };
 }
 
 export async function getMyBlogPostServer(context: AuthContext, id: string) {
