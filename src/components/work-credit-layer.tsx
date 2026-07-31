@@ -27,7 +27,7 @@ export function WorkCreditLayer({ workId, credits }: Props) {
   });
 
   const hasCredits = credits.length > 0;
-  const hasProvenance = !!(data?.collab || data?.workshop);
+  const hasProvenance = !!(data?.collab || data?.madeTogether);
   if (!hasCredits && !hasProvenance) return null;
 
   return (
