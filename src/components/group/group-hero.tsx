@@ -134,9 +134,20 @@ export function GroupHero({
             >
               <Radio className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">
-                {openLounge.isPending ? "Opening…" : "Open the Lounge"}
+                {openLounge.isPending
+                  ? "Opening…"
+                  : liveCount > 0
+                    ? `Lounge · ${liveCount} live`
+                    : "Open the Lounge"}
               </span>
+              {liveCount > 0 ? (
+                <span
+                  aria-hidden
+                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+                />
+              ) : null}
             </Button>
+
             <Button
               variant="ghost"
               size="icon"
