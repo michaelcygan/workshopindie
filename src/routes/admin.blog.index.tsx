@@ -117,6 +117,8 @@ function AdminBlogIndex() {
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Connections</th>
+
                 <th className="px-4 py-3">Published</th>
                 <th className="px-4 py-3">Updated</th>
                 <th className="px-4 py-3 text-right">Actions</th>
