@@ -15,12 +15,12 @@ export type Friend = {
   last_active_at: string | null;
 };
 
-export type HostableWorkshop = {
+export type LiveLoungeRoom = {
   id: string;
-  slug: string;
   title: string;
-  is_lobby: boolean;
-  starts_at: string | null;
+  medium: string | null;
+  groupName: string | null;
+  createdAt: string;
 };
 
 const COME_ONLINE_THRESHOLD_MS = 10 * 60 * 1000;
@@ -162,57 +162,84 @@ export const getFriends = createServerFn({ method: "GET" })
       });
   });
 
-/** Active/upcoming Workshops the signed-in user hosts. Used in the invite picker. */
-export const listMyHostableWorkshops = createServerFn({ method: "GET" })
+/**
+ * Live Lounge rooms the signed-in user can invite someone into: rooms they
+ * created, or rooms they're currently present in. Used by the invite picker.
+ */
+export const listMyLoungeRooms = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }): Promise<HostableWorkshop[]> => {
+  .handler(async ({ context }): Promise<LiveLoungeRoom[]> => {
     const { userId } = context;
-    const { data } = await supabaseAdmin
-      .from("workshops")
-      .select("id, slug, title, is_lobby, starts_at, status, ends_at")
-      .eq("host_user_id", userId)
-      .in("status", ["draft", "open", "active", "check_in"])
-      .order("starts_at", { ascending: true, nullsFirst: true })
-      .limit(30);
-    const now = Date.now();
-    return (data ?? [])
-      .filter((w) => !w.ends_at || new Date(w.ends_at).getTime() > now)
-      .map((w) => ({
-        id: w.id,
-        slug: w.slug,
-        title: w.title,
-        is_lobby: w.is_lobby,
-        starts_at: w.starts_at,
-      }));
+    const liveCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+    const [{ data: presence }, { data: mine }] = await Promise.all([
+      supabaseAdmin
+        .from("instant_presence")
+        .select("room_id")
+        .eq("user_id", userId)
+        .gt("last_seen_at", liveCutoff),
+      supabaseAdmin
+        .from("instant_rooms")
+        .select("id")
+        .eq("creator_id", userId)
+        .eq("status", "active")
+        .limit(30),
+    ]);
+
+    const ids = [
+      ...new Set([
+        ...(presence ?? []).map((p) => p.room_id as string),
+        ...(mine ?? []).map((r) => r.id as string),
+      ]),
+    ];
+    if (ids.length === 0) return [];
+
+    const { data: rooms } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id,title,medium,group_id,status,created_at,groups:groups(name)")
+      .in("id", ids)
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    return (rooms ?? []).map((r) => ({
+      id: r.id as string,
+      title: (r.title as string | null) ?? "Lounge",
+      medium: (r.medium as string | null) ?? null,
+      groupName:
+        ((r as unknown as { groups: { name: string } | null }).groups?.name ?? null) as
+          | string
+          | null,
+      createdAt: r.created_at as string,
+    }));
   });
 
 /**
- * Invite a friend to one of the signed-in user's Workshops.
- * Idempotent — workshop_join_invites has a unique (workshop_id, invitee_user_id).
+ * Invite a mutual follow into one specific live Lounge room.
+ * Idempotent — lounge_invitations is unique on (room_id, invitee_user_id).
  */
-export const inviteFriendToWorkshop = createServerFn({ method: "POST" })
+export const inviteFriendToLounge = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) =>
     z
       .object({
-        workshopId: z.string().uuid(),
+        roomId: z.string().uuid(),
         inviteeId: z.string().uuid(),
-        sourceRoomId: z.string().uuid().optional().nullable(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
     const { userId } = context;
-    const { data: ws } = await supabaseAdmin
-      .from("workshops")
-      .select("id, host_user_id, slug, title, is_lobby")
-      .eq("id", data.workshopId)
-      .maybeSingle();
-    if (!ws) throw new Error("Workshop not found.");
-    if (ws.host_user_id !== userId) throw new Error("Only the host can invite people.");
     if (data.inviteeId === userId) throw new Error("Pick someone other than yourself.");
 
-    // Require mutual follow (matches lobby invite rules).
+    const { data: room } = await supabaseAdmin
+      .from("instant_rooms")
+      .select("id,title,status,group_id")
+      .eq("id", data.roomId)
+      .maybeSingle();
+    if (!room || room.status !== "active") throw new Error("That Lounge is no longer live.");
+
+    // Require mutual follow.
     const [{ data: a }, { data: b }] = await Promise.all([
       supabaseAdmin
         .from("follows")
@@ -230,16 +257,16 @@ export const inviteFriendToWorkshop = createServerFn({ method: "POST" })
     if (!a || !b) throw new Error("You can only invite mutual follows.");
 
     await supabaseAdmin
-      .from("workshop_join_invites")
+      .from("lounge_invitations")
       .upsert(
         {
-          workshop_id: ws.id,
+          room_id: room.id,
           invitee_user_id: data.inviteeId,
           inviter_user_id: userId,
-          source_room_id: data.sourceRoomId ?? null,
           status: "pending",
+          expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
         },
-        { onConflict: "workshop_id,invitee_user_id" },
+        { onConflict: "room_id,invitee_user_id" },
       )
       .then(() => null, () => null);
 
@@ -247,13 +274,14 @@ export const inviteFriendToWorkshop = createServerFn({ method: "POST" })
       .from("notifications")
       .insert({
         user_id: data.inviteeId,
-        kind: "workshop_invite_from_room",
+        kind: "lounge_invite",
         actor_user_id: userId,
-        entity_type: "workshop",
-        entity_id: ws.id,
-        payload: { workshop_slug: ws.slug, title: ws.title, is_lobby: ws.is_lobby },
+        entity_type: "lounge_room",
+        entity_id: room.id,
+        payload: { room_id: room.id, title: room.title },
       })
       .then(() => null, () => null);
 
-    return { ok: true };
+    return { ok: true, roomId: room.id };
   });
+
