@@ -35,7 +35,6 @@ import { GroupTodayTab } from "@/components/group/group-today-tab";
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
-import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 
 
