@@ -59,8 +59,8 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       Promise.all([
         admin.from("works").select("id", { count: "exact", head: true }).eq("created_by", data.userId),
         admin.from("collab_posts").select("id", { count: "exact", head: true }).eq("user_id", data.userId),
-        admin.from("workshops").select("id", { count: "exact", head: true }).eq("host_user_id", data.userId),
-        admin.from("workshop_applications").select("id", { count: "exact", head: true }).eq("user_id", data.userId),
+        admin.from("instant_rooms").select("id", { count: "exact", head: true }).eq("creator_id", data.userId),
+        admin.from("blog_posts").select("id", { count: "exact", head: true }).eq("created_by", data.userId),
         admin.from("group_event_rsvps").select("event_id", { count: "exact", head: true }).eq("user_id", data.userId),
         admin.from("follows").select("follower_user_id", { count: "exact", head: true }).eq("follower_user_id", data.userId),
         admin.from("reports").select("id", { count: "exact", head: true }).eq("reporter_user_id", data.userId),
@@ -78,8 +78,8 @@ export const getAdminUserDetail = createServerFn({ method: "GET" })
       counts: {
         works: counts[0].count ?? 0,
         collabs: counts[1].count ?? 0,
-        workshops: counts[2].count ?? 0,
-        workshopApps: counts[3].count ?? 0,
+        lounges: counts[2].count ?? 0,
+        blogPosts: counts[3].count ?? 0,
         rsvps: counts[4].count ?? 0,
         following: counts[5].count ?? 0,
         reportsFiled: counts[6].count ?? 0,

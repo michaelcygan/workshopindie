@@ -12,7 +12,7 @@ function MarketplacePage() {
   const { data, isLoading } = useQuery({ queryKey: ["admin", "marketplace"], queryFn: () => fn() });
   if (isLoading) return <div className="text-sm text-ink-muted">Loading…</div>;
   const c = data?.collabFunnel as any;
-  const w = data?.workshopFunnel as any;
+  const w = data?.loungeFunnel as any;
   const wk = data?.worksFunnel as any;
   const h = data?.health as any;
 
@@ -51,13 +51,13 @@ function MarketplacePage() {
       </section>
 
       <section>
-        <h2 className="mb-3 font-display text-xl text-ink">Workshops</h2>
+        <h2 className="mb-3 font-display text-xl text-ink">Lounges</h2>
         <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-5">
-          <KpiTile label="Created (30d)" value={w?.created_30d ?? 0} />
+          <KpiTile label="Rooms opened (30d)" value={w?.rooms_created_30d ?? 0} />
           <KpiTile label="Live now" value={w?.live_now ?? 0} tone="good" />
-          <KpiTile label="Apps (30d)" value={w?.apps_30d ?? 0} />
-          <KpiTile label="Confirmed (30d)" value={w?.confirmed_30d ?? 0} />
-          <KpiTile label="Avg fill % (90d)" value={w?.avg_fill_pct_90d != null ? `${w.avg_fill_pct_90d}%` : "—"} />
+          <KpiTile label="Participants (30d)" value={w?.participants_30d ?? 0} />
+          <KpiTile label="Audio minutes (30d)" value={w?.audio_minutes_30d ?? 0} />
+          <KpiTile label="Messages (30d)" value={w?.messages_30d ?? 0} />
         </div>
       </section>
 

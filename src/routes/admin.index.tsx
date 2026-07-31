@@ -39,8 +39,10 @@ function Overview() {
           <KpiTile label="Works shipped" value={fmt(k?.works_published_7d)} sublabel={`${fmt(k?.works_total)} all-time`} />
           <KpiTile label="Collabs posted" value={fmt(k?.collabs_posted_7d)} sublabel={`${fmt(k?.collabs_total)} all-time`} />
           <KpiTile label="Collab apps" value={fmt(k?.collab_applications_7d)} sublabel={`${fmt(k?.collab_guest_applications_7d)} guest`} />
-          <KpiTile label="Workshops created" value={fmt(k?.workshops_created_7d)} sublabel={`${fmt(k?.workshops_total)} all-time`} />
-          <KpiTile label="Workshop apps" value={fmt(k?.workshop_apps_7d)} />
+          <KpiTile label="Lounges opened" value={fmt(k?.lounge_rooms_opened_7d)} sublabel={`${fmt(k?.lounge_participants_7d)} people`} />
+          <KpiTile label="Lounge audio min" value={fmt(k?.lounge_audio_minutes_7d)} />
+          <KpiTile label="Blog posts" value={fmt(k?.blog_posts_published_7d)} />
+          <KpiTile label="Events created" value={fmt(k?.group_events_7d)} />
           <KpiTile label="Event RSVPs" value={fmt(k?.event_rsvps_7d)} />
         </div>
       </section>
