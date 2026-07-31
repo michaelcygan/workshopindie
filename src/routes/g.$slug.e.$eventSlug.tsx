@@ -129,7 +129,10 @@ type EventRow = {
 
 function EventPage() {
   const ev = Route.useLoaderData() as unknown as EventRow;
+  const { story: storySlug } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { user } = useAuth();
+
   const { isPlus } = usePlus();
   const qc = useQueryClient();
   const getMyRsvpFn = useServerFn(getMyRsvp);
