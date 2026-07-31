@@ -44,7 +44,10 @@ type ProfileTab = typeof TAB_VALUES[number];
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
   post: z.string().optional(),
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  story: z.string().optional(),
 });
+
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
@@ -978,7 +981,26 @@ function ProfilePage() {
             {blogCount > 0 && <Stat label="Posts" value={blogCount} />}
           </div>
 
-          <EntityBlogPosts kind="profile" entityId={profile.id} className="mt-10" />
+          <EntityBlogPosts
+            kind="profile"
+            entityId={profile.id}
+            heading={`Stories by ${profile.display_name || `@${profile.username}`}`}
+            canWrite={isOwn}
+            writeLabel="Write a post"
+            emptyLabel="No stories yet."
+            className="mt-10"
+            openSlug={search.story}
+            onOpenSlugChange={(s) =>
+              navigate({
+                to: "/u/$username",
+                params: { username },
+                search: { ...search, story: s ?? undefined },
+                replace: true,
+
+              })
+            }
+          />
+
         </div>
       </div>
     </main>

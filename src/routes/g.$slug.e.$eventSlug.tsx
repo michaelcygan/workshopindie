@@ -33,6 +33,11 @@ import { toast } from "sonner";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  validateSearch: (search: Record<string, unknown>) => ({
+    story: typeof search.story === "string" && search.story ? search.story : undefined,
+  }),
+
   loader: async ({ params }) => {
     try {
       return await getEventBySlug({ data: { groupSlug: params.slug, eventSlug: params.eventSlug } });
@@ -124,7 +129,10 @@ type EventRow = {
 
 function EventPage() {
   const ev = Route.useLoaderData() as unknown as EventRow;
+  const { story: storySlug } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { user } = useAuth();
+
   const { isPlus } = usePlus();
   const qc = useQueryClient();
   const getMyRsvpFn = useServerFn(getMyRsvp);
@@ -529,7 +537,26 @@ function EventPage() {
           </Tabs>
         </div>
 
-        <EntityBlogPosts kind="event" entityId={ev.id} className="mt-10" />
+        <EntityBlogPosts
+          kind="event"
+          entityId={ev.id}
+          heading="Stories from this Event"
+          trustedOnly
+          canWrite={!!user && user.id === ev.created_by}
+          writeLabel="Write about this Event"
+          emptyLabel="No stories yet. Write the first one from this Event."
+          className="mt-10"
+          openSlug={storySlug}
+          onOpenSlugChange={(s) =>
+            navigate({
+              to: "/g/$slug/e/$eventSlug",
+              params: { slug: ev.group.slug, eventSlug: ev.slug },
+              search: { story: s ?? undefined },
+              replace: true,
+            })
+          }
+        />
+
       </div>
     </main>
   );

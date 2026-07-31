@@ -33,7 +33,12 @@ import { PlusGate } from "@/components/plus-gate";
 
 
 export const Route = createFileRoute("/collab/$slug")({
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  validateSearch: (search: Record<string, unknown>) => ({
+    story: typeof search.story === "string" && search.story ? search.story : undefined,
+  }),
   component: CollabDetail,
+
   loader: async ({ params }) => {
     const { getCollabSeo } = await import("@/lib/seo-loaders.functions");
     const seo = await getCollabSeo({ data: { slug: params.slug } });
@@ -138,8 +143,11 @@ const RIGHTS_LABEL: Record<string, string> = {
 
 function CollabDetail() {
   const { slug } = Route.useParams();
+  const { story: storySlug } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { user } = useAuth();
   const router = useRouter();
+
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
   const extendFn = useServerFn(extendCollabDeadline);
@@ -811,7 +819,26 @@ function CollabDetail() {
       {/* Reverse provenance — public Works born from this Collab. */}
       <WorksBornHere collabPostId={post.id} excludeWorkId={post.resulting_work_id ?? null} />
 
-      <EntityBlogPosts kind="collab" entityId={post.id} className="mt-10" />
+      <EntityBlogPosts
+        kind="collab"
+        entityId={post.id}
+        heading="The story behind this Collab"
+        trustedOnly
+        canWrite={isOwner}
+        writeLabel="Write about this Collab"
+        emptyLabel="No story yet. Write the one behind this Collab."
+        className="mt-10"
+        openSlug={storySlug}
+        onOpenSlugChange={(s) =>
+          navigate({
+            to: "/collab/$slug",
+            params: { slug: post.slug },
+            search: { story: s ?? undefined },
+            replace: true,
+          })
+        }
+      />
+
 
       {hostUser?.username && (
         <div className="mt-10 md:hidden">
