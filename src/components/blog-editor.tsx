@@ -566,7 +566,14 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       <BlogEntityTagPicker
         open={entityPickerOpen}
         onOpenChange={setEntityPickerOpen}
-        disabledKeys={entityTags.map(tagKey)}
+        title={pendingInsertRef ? "Insert Workshop link" : "Add a connection"}
+        description={
+          pendingInsertRef
+            ? "Insert an inline link to a Work, Collab, Group, Event, or person."
+            : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
+        }
+        disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
+
         onPick={(tag) => {
           if (pendingInsertRef) {
             pendingInsertRef(entityMarkdown(tag));
