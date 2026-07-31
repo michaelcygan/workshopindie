@@ -44,7 +44,10 @@ type ProfileTab = typeof TAB_VALUES[number];
 const profileSearch = z.object({
   tab: z.enum(TAB_VALUES).optional(),
   post: z.string().optional(),
+  // ?story=<slug> makes an open story peek shareable and back-button friendly.
+  story: z.string().optional(),
 });
+
 
 export const Route = createFileRoute("/u/$username")({
   component: ProfilePage,
