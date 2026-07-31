@@ -156,6 +156,8 @@ function WorkDetail() {
   }, [work?.id]);
 
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
+  const isOwnerOrCredited = !!user && !!work && (user.id === work.created_by || credits.some((c) => c.profiles?.id === user.id));
+
 
   useDocumentMeta({
     title: work?.title,
