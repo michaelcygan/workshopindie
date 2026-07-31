@@ -117,6 +117,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
 
 
   async function flushAuthors(postId: string) {
+    // Author failures must fail the save — never report success with authors dropped.
     try {
       await setPostAuthors({
         data: {
@@ -128,12 +129,12 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         },
       });
     } catch (e) {
-      toast.error(`Attributed authors: ${(e as Error).message}`);
+      throw new Error(`Attributed profiles: ${(e as Error).message}`);
     }
   }
 
   async function flushEntityTags(postId: string) {
-    // Tag failures must fail the save — never report success with tags dropped.
+    // Connection failures must fail the save — never report success with connections dropped.
     try {
       await setEntityTagsFn({
         data: {
@@ -142,34 +143,45 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         },
       });
     } catch (e) {
-      throw new Error(`Tags: ${(e as Error).message}`);
+      throw new Error(`Connections: ${(e as Error).message}`);
     }
     invalidateEntityTagCaches(qc, entityTags, initial?.entity_tags ?? []);
   }
 
-
-  async function onSave() {
-    if (!title.trim()) return toast.error("Title is required.");
+  /** Throws on any failure. Only clears dirty state when every step succeeded. */
+  async function runSave(): Promise<{ id: string }> {
+    if (!title.trim()) throw new Error("Title is required.");
     setSaving(true);
     try {
       if (isNew) {
         const res = await create({ data: buildPayload() });
         await flushAuthors(res.id);
         await flushEntityTags(res.id);
-        toast.success("Draft saved.");
         setDirty(false);
+        return { id: res.id };
+      }
+      const id = initial!.id!;
+      await update({ data: { id, ...buildPayload(), slug: everPublished ? undefined : slug } });
+      await flushAuthors(id);
+      await flushEntityTags(id);
+      setDirty(false);
+      return { id };
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function onSave() {
+    try {
+      const res = await runSave();
+      if (isNew) {
+        toast.success("Draft saved.");
         navigate({ to: "/admin/blog/$id", params: { id: res.id } });
       } else {
-        await update({ data: { id: initial!.id!, ...buildPayload(), slug: everPublished ? undefined : slug } });
-        await flushAuthors(initial!.id!);
-        await flushEntityTags(initial!.id!);
         toast.success("Saved.");
-        setDirty(false);
       }
     } catch (e) {
       toast.error((e as Error).message);
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -189,14 +201,22 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   }
 
   async function onPublish() {
-    if (!initial?.id) { await onSave(); return; }
-    if (dirty) await onSave();
     try {
+      if (!initial?.id) {
+        const res = await runSave();
+        toast.success("Draft saved.");
+        navigate({ to: "/admin/blog/$id", params: { id: res.id } });
+        return;
+      }
+      if (dirty) await runSave();
       await publish({ data: { id: initial.id } });
       toast.success("Published.");
       navigate({ to: "/admin/blog" });
-    } catch (e) { toast.error((e as Error).message); }
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   }
+
 
   async function onUnpublish() {
     if (!initial?.id) return;
