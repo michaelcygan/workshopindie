@@ -994,8 +994,9 @@ function ProfilePage() {
               navigate({
                 to: "/u/$username",
                 params: { username },
-                search: (prev) => ({ ...prev, story: s ?? undefined }),
+                search: { ...search, story: s ?? undefined },
                 replace: true,
+
               })
             }
           />
