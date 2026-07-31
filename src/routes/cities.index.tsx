@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { MapPin, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,15 +8,16 @@ import { PageHeaderCompact } from "@/components/page-header-compact";
 import { KickerChip } from "@/components/kicker-chip";
 import { DottedRow } from "@/components/dotted-row";
 import { EmptySpark } from "@/components/empty-spark";
+import { listCityEventCounts } from "@/lib/group-events.functions";
 
 export const Route = createFileRoute("/cities/")({
   component: CitiesIndex,
   head: () => ({
     meta: [
       { title: "Cities — Workshop" },
-      { name: "description", content: "Find local Workshops, standing meetups, and creators in your city." },
+      { name: "description", content: "Find local events, Lounges, and creators in your city." },
       { property: "og:title", content: "Cities — Workshop" },
-      { property: "og:description", content: "Find local Workshops, standing meetups, and creators in your city." },
+      { property: "og:description", content: "Find local events, Lounges, and creators in your city." },
       { property: "og:url", content: "https://workshopindie.com/cities" },
       { property: "og:type", content: "website" },
     ],
@@ -27,7 +29,7 @@ export const Route = createFileRoute("/cities/")({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           name: "Cities — Workshop",
-          description: "Find local Workshops, standing meetups, and creators in your city.",
+          description: "Find local events, Lounges, and creators in your city.",
           url: "https://workshopindie.com/cities",
           isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
         }),
@@ -38,7 +40,6 @@ export const Route = createFileRoute("/cities/")({
 
 type CityRow = {
   id: string; name: string; slug: string; country: string; state_region: string | null;
-  meetups: { count: number }[] | null;
   creators: { count: number }[] | null;
 };
 
@@ -49,11 +50,20 @@ function CitiesIndex() {
     queryFn: async () => {
       const { data } = await supabase
         .from("cities")
-        .select("id,name,slug,country,state_region, meetups:standing_meetups(count), creators:profiles!profiles_city_id_fkey(count)")
+        .select("id,name,slug,country,state_region, creators:profiles!profiles_city_id_fkey(count)")
         .order("name");
       return (data ?? []) as unknown as CityRow[];
     },
   });
+
+  const fetchEventCounts = useServerFn(listCityEventCounts);
+  const { data: eventCounts } = useQuery({
+    queryKey: ["cities-event-counts"],
+    queryFn: () => fetchEventCounts(),
+    staleTime: 60_000,
+  });
+  const eventCountFor = (cityId: string) =>
+    (eventCounts as Record<string, number> | undefined)?.[cityId] ?? 0;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -70,12 +80,13 @@ function CitiesIndex() {
     () =>
       [...cities]
         .sort((a, b) => {
-          const ax = (a.meetups?.[0]?.count ?? 0) + (a.creators?.[0]?.count ?? 0) * 0.1;
-          const bx = (b.meetups?.[0]?.count ?? 0) + (b.creators?.[0]?.count ?? 0) * 0.1;
+          const ax = eventCountFor(a.id) + (a.creators?.[0]?.count ?? 0) * 0.1;
+          const bx = eventCountFor(b.id) + (b.creators?.[0]?.count ?? 0) * 0.1;
           return bx - ax;
         })
         .slice(0, 6),
-    [cities],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cities, eventCounts],
   );
 
   return (
@@ -85,7 +96,7 @@ function CitiesIndex() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <KickerChip>Pick a city</KickerChip>
         <p className="text-sm text-ink-muted">
-          Lounges, standing meetups, and the people making things nearby.
+          Lounges, events, and the people making things nearby.
         </p>
       </div>
 
@@ -97,16 +108,16 @@ function CitiesIndex() {
           </div>
           <ul className="mt-3 flex flex-col gap-0.5">
             {featured.slice(0, 6).map((c) => {
-              const meetups = c.meetups?.[0]?.count ?? 0;
+              const events = eventCountFor(c.id);
               const creators = c.creators?.[0]?.count ?? 0;
               return (
                 <li key={c.id}>
                   <Link to="/g/$slug" params={{ slug: c.slug }} className="block">
                     <DottedRow
                       label={c.name}
-                      live={meetups > 0}
+                      live={events > 0}
                       count={creators}
-                      meta={meetups > 0 ? `${meetups} meetup${meetups === 1 ? "" : "s"}` : null}
+                      meta={events > 0 ? `${events} event${events === 1 ? "" : "s"}` : null}
                     />
                   </Link>
                 </li>
@@ -144,7 +155,7 @@ function CitiesIndex() {
             ) : (
               <ul className="flex flex-col gap-0.5">
                 {filtered.map((c) => {
-                  const meetups = c.meetups?.[0]?.count ?? 0;
+                  const events = eventCountFor(c.id);
                   const creators = c.creators?.[0]?.count ?? 0;
                   return (
                     <li key={c.id}>
@@ -155,7 +166,7 @@ function CitiesIndex() {
                               <MapPin className="h-3 w-3 text-ink-muted/60" /> {c.name}
                             </span>
                           }
-                          live={meetups > 0}
+                          live={events > 0}
                           count={creators}
                           meta={c.state_region ?? c.country}
                         />
