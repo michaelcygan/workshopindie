@@ -537,7 +537,26 @@ function EventPage() {
           </Tabs>
         </div>
 
-        <EntityBlogPosts kind="event" entityId={ev.id} className="mt-10" />
+        <EntityBlogPosts
+          kind="event"
+          entityId={ev.id}
+          heading="Stories from this Event"
+          trustedOnly
+          canWrite={!!user && user.id === ev.created_by}
+          writeLabel="Write about this Event"
+          emptyLabel="No stories yet. Write the first one from this Event."
+          className="mt-10"
+          openSlug={storySlug}
+          onOpenSlugChange={(s) =>
+            navigate({
+              to: "/g/$slug/e/$eventSlug",
+              params: { slug: ev.group.slug, eventSlug: ev.slug },
+              search: { story: s ?? undefined },
+              replace: true,
+            })
+          }
+        />
+
       </div>
     </main>
   );
