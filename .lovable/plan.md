@@ -1,63 +1,75 @@
-Wave 5 is done. Here is Wave 6.
+# Wave 7 — Migrate historical LegacyWorkshop relationships
 
-# Wave 6 — Evaluate Group Posts
+Wave 6 is complete (Group Blog tab shipped). Here is Wave 7.
 
-## Findings (verified this turn)
+## Audit findings (verified this turn)
 
-"Group Posts" is not a content type. There is **no `group_posts` table** — nothing to delete and no records to migrate. The name currently covers two unrelated things:
+**There is no historical data to migrate.** Production counts:
 
-| Surface | What it actually is | Backing data | Production usage |
-| --- | --- | --- | --- |
-| Group **Posts** tab (`?t=posts` on `/g/$slug`) | A derived list of *published Blog posts* authored by anyone in `group_members`, rendered by `GroupPostsTab` → `LoungePosts` (the same component the Lounge uses) | `blog_posts` via `listPostsByAuthors` | 111 published blog posts exist platform-wide; the tab shows a member-filtered slice |
-| Group **Today** board | Ephemeral chat/board messages with `expires_at` | `group_today_posts` | **0 rows**, 0 rows in the last 30 days, 0 pins, 0 groups with any post |
+| Check | Rows |
+| --- | --- |
+| `works` total | 12 |
+| `works.source_workshop_id` not null | **0** |
+| `works.source_type = 'workshop'` | **0** |
+| `works.source_collab_post_id` / `source_meetup_id` not null | 0 / 0 |
+| `workshops` | **0** |
+| `workshop_participants` | **0** |
+| `work_credits` | 12 (none tied to a LegacyWorkshop) |
+| `instant_rooms` (Lounge) | 74 |
+| `collab_posts` | 3 |
 
-Other dependency checks:
-- Notifications: none reference the Posts tab. `group_today_posts` only feeds the activity ticker (`groups-activity-ticker.tsx`) and the Today tab.
-- Moderation: the `enforce_moderation_group_today_posts` trigger guards Today writes and stays untouched (Core memory rule).
-- Search/feeds: the Posts tab is not indexed or fed anywhere else.
-- `blog_post_entity_tags` has **0 rows total** (0 group tags), so the "From the Blog" module (`EntityBlogPosts`) already mounted on the same Group page at line 373 renders nothing today.
+So no Work needs re-pointing, no credit needs rescuing, and no archive/audit table is warranted — there is nothing to archive. What remains is **dead UI that would link into a retired interface** and **admin metrics that describe the retired product**.
 
-### Verdict
+Dead-end surfaces still in the code:
 
-Group Posts has **no distinct product purpose**. Long-form publishing is Blog; ephemeral conversation is Today; creative output is Works; opportunities are Collabs; scheduled activity is Events. What the tab *does* add is a useful lens — "what have people in this Group published" — but it duplicates the Blog module already on the page and, worse, ignores posts explicitly tagged to the Group.
+- `src/components/enter-workshop-button.tsx` — queries `workshops` + `workshop_participants` and links to `/workshops/$slug`. Rendered on the Work detail page (`src/routes/works.$slug.tsx:317`) whenever `source_workshop_id` is set.
+- `src/components/work-credit-layer.tsx:52-65` — "Born in this Workshop · {title}" provenance chip linking to `/workshops/$slug`.
+- `src/lib/work-provenance.functions.ts` — reads the `workshops` table for both `getWorkProvenance` and the `workshop_id` branch of `getWorksBySource` (the reverse rail is only used by `collab.$slug.tsx`, with `collabPostId`).
+- Admin metrics: `vw_kpi_now` exposes `workshops_created_7d`, `workshops_total`, `workshop_apps_7d`; `vw_engagement_by_surface_7d` lists `workshops` and `workshop_applications` surfaces; `vw_workshop_funnel` drives an entire "Workshops" section on `/admin/marketplace`; `admin-users.functions.ts` counts `workshops` + `workshop_applications` per user. All read empty tables, so the dashboard reports zeros for the retired product and says nothing about Lounge, Groups, or Blog.
 
-So this is a **consolidation, not a retirement**: one Blog surface per Group instead of two half-surfaces, and no data change.
+Out of scope for this wave (belongs to Wave 8): deleting `/workshops/*` routes, `workshop-*.functions.ts`, the Workshop-tools components, and the ad "Workshop links" admin page.
 
 ## Changes
 
-**1. One Group blog surface.** `GroupPostsTab` becomes a real component instead of a Lounge re-skin: it merges two sources, de-duplicated by post id, newest first —
-- posts tagged to this Group via `blog_post_entity_tags.group_id` (`listBlogPostsForEntity`), shown first and marked "About this Group";
-- posts authored by current group members (`listPostsByAuthors`, existing behavior).
+**1. Work detail — no link into a dead room**
+- Delete `src/components/enter-workshop-button.tsx` and its usage in `src/routes/works.$slug.tsx`.
+- In `work-credit-layer.tsx`, the Workshop provenance chip becomes a **non-clickable** chip reading "Made together on Workshop" (kept only because the field could theoretically be set; it renders for zero current rows). The Collab chip is unchanged and stays the primary provenance link.
 
-**2. Rename the tab to "Blog"** in `src/routes/g.$slug.index.tsx`. The tab *value* stays `posts` so existing `?t=posts` links keep working; only the label changes.
+**2. Provenance reads stop touching legacy tables**
+- `getWorkProvenance` drops its `workshops` lookup and returns `made_on_workshop: boolean` (derived from `source_workshop_id`) instead of a `workshop` object.
+- `getWorksBySource` drops the unused `workshop_id` branch; it keeps `collab_post_id`, its only live caller.
 
-**3. Drop the duplicate module.** Remove the standalone `<EntityBlogPosts kind="group" …>` at the bottom of the Group page — its content now lives inside the tab.
-
-**4. Hide the tab when there is nothing to show.** Groups with no member-authored and no tagged posts no longer render an empty tab; the tab list is computed from a lightweight count query. If someone lands on `?t=posts` for an empty Group, it falls back to Today.
-
-**5. Leave Today alone.** `group_today_posts` keeps its table, trigger, RLS, ticker, and expiry sweep. It is empty because it is ephemeral by design, not because it is dead — retiring it is not part of this wave.
+**3. Admin metrics describe the current product** (one migration, views only)
+- Replace `vw_kpi_now`'s three Workshop columns with: `lounge_rooms_opened_7d`, `lounge_participants_7d` (unique), `lounge_audio_minutes_7d`, `blog_posts_published_7d`, `group_events_7d`. Existing columns (users, DAU/WAU/MAU, works, collabs, RSVPs, subs, follows, reports) are unchanged.
+- Replace the `workshops` / `workshop_applications` rows in `vw_engagement_by_surface_7d` with `lounge_messages`, `group_today`, and `blog_posts` surfaces.
+- New `vw_lounge_funnel` (rooms created 30d, live now, unique participants 30d, audio minutes 30d, chat messages 30d) replaces `vw_workshop_funnel` in `getAdminMarketplace`.
+- `/admin` KPI tiles and the `/admin/marketplace` "Workshops" section are re-labelled to Lounge / community metrics accordingly.
+- `admin-users.functions.ts` swaps the per-user `workshops` / `workshop_applications` counts for Lounge rooms opened and Works published; `/admin/users/$id` labels follow.
+- `vw_workshop_funnel` is **left in place, unused**, and dropped in Wave 9 alongside the tables — no destructive DB change this wave.
 
 ## Database changes
 
-None.
+One migration, additive/replace only, no table or column drops and no data writes:
+- `CREATE OR REPLACE`/recreate `vw_kpi_now`, `vw_engagement_by_surface_7d`
+- `CREATE VIEW vw_lounge_funnel`
+- Grants re-applied on each recreated view to match current privileges.
 
 ## Acceptance criteria
 
-- A Group shows exactly one blog surface, labelled "Blog", containing both Group-tagged and member-authored posts with no duplicates.
-- `?t=posts` deep links still resolve.
-- Groups with no relevant posts show no Blog tab and no empty module.
-- Today, its moderation trigger, and the activity ticker are unchanged.
-- No table, column, policy, or row is modified.
-- `tsgo` typecheck clean.
+- No Work page renders a control that navigates to `/workshops/*`.
+- Contributor credits render exactly as they do today (the `CreditStrip` is untouched).
+- `/admin`, `/admin/marketplace`, `/admin/engagement`, and `/admin/users/$id` show Lounge, Group, Event, Works, Blog and Plus metrics — no Workshop KPI tiles.
+- No runtime read of `workshops` or `workshop_participants` remains outside the still-existing (Wave 8) `/workshops/*` routes.
+- `tsgo` clean apart from the known pre-existing router search-param errors.
 
 ## Verification
 
-Typecheck, then a Playwright pass over a Group page: default Today tab, the Blog tab (member-authored posts render, peek modal opens), a Group expected to have no posts (tab absent, `?t=posts` falls back), and console clean. Because `blog_post_entity_tags` is empty, the tagged-posts branch is verified by a temporary local tag in a scratch check rather than a production write.
+Typecheck, then a Playwright pass: a Work detail page (credits + Collab chip intact, no Enter-Workshop control), `/collab/$slug` ("Works born here" rail still renders), and the four admin pages signed in as admin — checking each tile resolves and the console is clean.
 
 ## Risks and rollback
 
-Low. The only behavioral risk is hiding the tab for a Group that does have posts — mitigated by driving visibility off the same queries that populate the tab. No migration, so rollback is a code revert.
+Main risk is a recreated view losing a grant or a column the UI still reads; the migration re-grants explicitly and every consuming tile is updated in the same wave. Views are recreated, not dropped-with-data, so rollback is re-running the previous view definitions plus a code revert.
 
-## Deferred
+## Deferred to Wave 8/9
 
-Any decision about retiring `group_today_posts` itself, and backfilling Group tags onto existing blog posts, move to Wave 9 alongside the other schema work.
+Deleting `/workshops/*` routes and their server functions/components, the admin "Workshop links" ad tool, then dropping `vw_workshop_funnel`, the `workshop_*` tables, and `works.source_workshop_id`.
