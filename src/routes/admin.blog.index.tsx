@@ -5,7 +5,8 @@ import { useMemo, useState } from "react";
 import { adminListPosts } from "@/lib/blog.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ExternalLink, Pencil, EyeOff } from "lucide-react";
+import { Plus, ExternalLink, Pencil, EyeOff, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
+import type { BlogEntityKind } from "@/lib/blog-entity-tags";
 
 export const Route = createFileRoute("/admin/blog/")({
   component: AdminBlogIndex,
@@ -14,6 +15,17 @@ export const Route = createFileRoute("/admin/blog/")({
 type PubType = "all" | "editorial" | "member";
 type Status = "all" | "published" | "draft";
 type Vis = "all" | "public" | "hidden";
+type Conn = "all" | "some" | "none";
+
+type Connection = { kind: BlogEntityKind; id: string; label: string };
+
+const CONNECTION_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
+  work: Briefcase,
+  collab: Users,
+  group: MapPin,
+  event: Calendar,
+  profile: User,
+};
 
 function AdminBlogIndex() {
   const list = useServerFn(adminListPosts);
@@ -25,27 +37,44 @@ function AdminBlogIndex() {
   const [pubType, setPubType] = useState<PubType>("all");
   const [status, setStatus] = useState<Status>("all");
   const [vis, setVis] = useState<Vis>("all");
+  const [conn, setConn] = useState<Conn>("all");
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
     const rows = data ?? [];
     const term = q.trim().toLowerCase();
     return rows.filter((p) => {
+      const connections = (p.connections ?? []) as Connection[];
       if (pubType !== "all" && (p.publication_type ?? "editorial") !== pubType) return false;
       if (status !== "all" && p.status !== status) return false;
       if (vis === "public" && p.show_in_blog_index === false) return false;
       if (vis === "hidden" && p.show_in_blog_index !== false) return false;
-      if (term && !(p.title?.toLowerCase().includes(term) || p.slug?.toLowerCase().includes(term) || p.author_name?.toLowerCase().includes(term))) return false;
+      if (conn === "some" && connections.length === 0) return false;
+      if (conn === "none" && connections.length > 0) return false;
+      if (
+        term &&
+        !(
+          p.title?.toLowerCase().includes(term) ||
+          p.slug?.toLowerCase().includes(term) ||
+          p.author_name?.toLowerCase().includes(term) ||
+          connections.some((c) => c.label?.toLowerCase().includes(term))
+        )
+      )
+        return false;
       return true;
     });
-  }, [data, pubType, status, vis, q]);
+  }, [data, pubType, status, vis, conn, q]);
+
 
   return (
     <div>
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <div className="flex-1">
           <h2 className="font-display text-2xl text-ink">Blog</h2>
-          <p className="text-sm text-ink-muted">All posts — editorial and member drafts.</p>
+          <p className="text-sm text-ink-muted">
+            All posts — editorial and member drafts. Connections surface a published post on the pages it connects
+            to; drafts stay private.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/admin/blog/subscribers">
@@ -63,13 +92,15 @@ function AdminBlogIndex() {
         <FilterChips label="Type" value={pubType} onChange={setPubType} options={[["all","All"],["editorial","Editorial"],["member","Member"]]} />
         <FilterChips label="Status" value={status} onChange={setStatus} options={[["all","All"],["published","Published"],["draft","Draft"]]} />
         <FilterChips label="Visibility" value={vis} onChange={setVis} options={[["all","All"],["public","In index"],["hidden","Profile-only"]]} />
+        <FilterChips label="Connections" value={conn} onChange={setConn} options={[["all","All"],["some","Has connections"],["none","None"]]} />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title, slug, author…"
+          placeholder="Search title, slug, author, connection…"
           className="ml-auto h-9 max-w-xs"
         />
       </div>
+
 
       {isLoading ? (
         <div className="rounded-2xl border border-border bg-surface p-6 text-sm text-ink-muted">Loading…</div>
@@ -86,6 +117,8 @@ function AdminBlogIndex() {
                 <th className="px-4 py-3">Title</th>
                 <th className="px-4 py-3">Type</th>
                 <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Connections</th>
+
                 <th className="px-4 py-3">Published</th>
                 <th className="px-4 py-3">Updated</th>
                 <th className="px-4 py-3 text-right">Actions</th>
@@ -115,6 +148,10 @@ function AdminBlogIndex() {
                       p.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-ink-muted"
                     }`}>{p.status}</span>
                   </td>
+                  <td className="px-4 py-3">
+                    <ConnectionCell connections={(p.connections ?? []) as Connection[]} />
+                  </td>
+
                   <td className="px-4 py-3 text-ink-muted">
                     {p.published_at ? new Date(p.published_at).toLocaleDateString() : "—"}
                   </td>
@@ -151,6 +188,36 @@ function AdminBlogIndex() {
     </div>
   );
 }
+
+/** Compact connection summary: first two labels, then an overflow count. */
+function ConnectionCell({ connections }: { connections: Connection[] }) {
+  if (connections.length === 0) return <span className="text-ink-muted">—</span>;
+  const shown = connections.slice(0, 2);
+  const overflow = connections.length - shown.length;
+  return (
+    <div
+      className="flex max-w-[220px] flex-wrap items-center gap-1"
+      title={connections.map((c) => c.label).join(", ")}
+    >
+      {shown.map((c) => {
+        const Icon = CONNECTION_ICONS[c.kind];
+        return (
+          <span
+            key={`${c.kind}:${c.id}`}
+            className="inline-flex max-w-full items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft"
+          >
+            <Icon className="h-3 w-3 shrink-0" />
+            <span className="truncate">{c.label}</span>
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] text-ink-muted">+{overflow}</span>
+      )}
+    </div>
+  );
+}
+
 
 function FilterChips<T extends string>({
   label,

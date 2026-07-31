@@ -35,6 +35,9 @@ export function EntityBlogPosts({
   trustedOnly = false,
   canWrite = false,
   writeLabel = "Write about this",
+  emptyLabel,
+  openSlug,
+  onOpenSlugChange,
 }: {
   kind: BlogEntityKind;
   entityId: string;
@@ -44,18 +47,28 @@ export function EntityBlogPosts({
   trustedOnly?: boolean;
   canWrite?: boolean;
   writeLabel?: string;
+  emptyLabel?: string;
+  /** When provided, the peek is driven by the caller (e.g. a URL search param). */
+  openSlug?: string | null;
+  onOpenSlugChange?: (slug: string | null) => void;
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const listFn = useServerFn(listBlogPostsForEntity);
   const createFn = useServerFn(createMyBlogDraft);
-  const [peekSlug, setPeekSlug] = useState<string | null>(null);
+  const [localPeekSlug, setLocalPeekSlug] = useState<string | null>(null);
+
+  // Controlled when the caller owns the state (URL-backed), local otherwise.
+  const controlled = onOpenSlugChange != null;
+  const peekSlug = controlled ? (openSlug ?? null) : localPeekSlug;
+  const setPeekSlug = controlled ? onOpenSlugChange! : setLocalPeekSlug;
 
   const q = useQuery({
     queryKey: ["entity-blog-posts", kind, entityId, limit, trustedOnly],
     queryFn: () => listFn({ data: { kind, entityId, limit, trustedOnly } }),
     staleTime: 60_000,
   });
+
 
   const createMut = useMutation({
     mutationFn: () => createFn({ data: { seedTag: { kind, id: entityId } } }),
@@ -99,8 +112,9 @@ export function EntityBlogPosts({
 
       {posts.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-ink-muted">
-          No stories yet. Be the first to write about this.
+          {emptyLabel ?? "No stories yet. Be the first to write about this."}
         </p>
+
       ) : (
         <div className="grid gap-3 md:grid-cols-3">
           {posts.map((p) => {
