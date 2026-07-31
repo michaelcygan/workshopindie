@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Heart, Bookmark, Eye, Play, Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import { Heart, Bookmark, Eye, Play, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { CategoryChipsCompact } from "./category-chips";
 import { ProfilePeek } from "./profile-peek";
@@ -25,8 +25,6 @@ export type WorkCardData = {
   like_count: number;
   save_count: number;
   view_count: number;
-  vouch_count?: number;
-  boost_count?: number;
   published_at?: string | null;
   created_by?: string;
   embed_url?: string | null;
@@ -69,8 +67,6 @@ export function WorkCard({
   const isFresh =
     !!work.published_at &&
     Date.now() - new Date(work.published_at).getTime() < 24 * 60 * 60 * 1000;
-  const vouchCount = work.vouch_count ?? 0;
-  const boostCount = work.boost_count ?? 0;
   const titleClass = density === "hero" ? "font-display text-2xl leading-tight" : "font-display text-lg leading-tight";
   const padClass = density === "hero" ? "p-5" : "p-4";
   const mediaAspectClass =
@@ -131,11 +127,6 @@ export function WorkCard({
           {creditBadge && (
             <div className="rounded-full bg-ink/90 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-background shadow-soft">
               as {creditBadge}
-            </div>
-          )}
-          {boostCount > 0 && (
-            <div className="inline-flex items-center gap-1 rounded-full bg-primary/95 px-2 py-0.5 text-[10px] font-semibold text-primary-foreground shadow-soft">
-              <Rocket className="h-2.5 w-2.5" /> Boosted
             </div>
           )}
         </div>
@@ -209,11 +200,6 @@ export function WorkCard({
             <span className="inline-flex items-center gap-1"><Heart className="h-3.5 w-3.5" /> {work.like_count}</span>
             <span className="inline-flex items-center gap-1"><Bookmark className="h-3.5 w-3.5" /> {work.save_count}</span>
             <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {work.view_count}</span>
-            {vouchCount > 0 && (
-              <span className="inline-flex items-center gap-1 text-ink-soft">
-                <ShieldCheck className="h-3.5 w-3.5" /> {vouchCount}
-              </span>
-            )}
           </div>
         )}
       </div>

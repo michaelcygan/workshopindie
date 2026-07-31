@@ -20,7 +20,7 @@ export default defineTool({
     });
     const { data, error } = await sb
       .from("works")
-      .select("id, slug, title, category, boost_count, created_at")
+      .select("id, slug, title, category, created_at")
       .ilike("title", `%${query}%`)
       .limit(limit ?? 20);
     if (error) return { content: [{ type: "text", text: error.message }], isError: true };
