@@ -143,8 +143,11 @@ const RIGHTS_LABEL: Record<string, string> = {
 
 function CollabDetail() {
   const { slug } = Route.useParams();
+  const { story: storySlug } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const { user } = useAuth();
   const router = useRouter();
+
   const qc = useQueryClient();
   const closeFn = useServerFn(closeCollab);
   const extendFn = useServerFn(extendCollabDeadline);
