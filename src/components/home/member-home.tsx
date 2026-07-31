@@ -52,7 +52,14 @@ function timeUntil(iso: string) {
 function AtmosphereHeader({ data }: { data: MemberHomePayload }) {
   const name = data.greetingName;
   const hour = new Date().getHours();
-  const greeting = hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting =
+    hour < 5
+      ? "Still up"
+      : hour < 12
+        ? "Good morning"
+        : hour < 18
+          ? "Good afternoon"
+          : "Good evening";
 
   return (
     <header className="relative overflow-hidden border-b border-border/60">
@@ -115,7 +122,11 @@ function TodaySlot({ today }: { today: HomeTodaySummary[] }) {
     <NowCard icon={MessageSquare} eyebrow="Today">
       {top ? (
         <>
-          <Link to="/g/$slug" params={{ slug: top.groupSlug }} className="font-display text-lg text-ink hover:underline">
+          <Link
+            to="/g/$slug"
+            params={{ slug: top.groupSlug }}
+            className="font-display text-lg text-ink hover:underline"
+          >
             {top.groupName}
           </Link>
           <p className="line-clamp-2 text-sm text-ink-soft">
@@ -163,7 +174,11 @@ function LoungeSlot({
     <NowCard icon={Radio} eyebrow={top ? "Live now" : "Lounge"}>
       {top ? (
         <>
-          <Link to="/lounge/$id" params={{ id: top.roomId }} className="font-display text-lg text-ink hover:underline">
+          <Link
+            to="/lounge/$id"
+            params={{ id: top.roomId }}
+            className="font-display text-lg text-ink hover:underline"
+          >
             {top.title}
           </Link>
           <p className="text-sm text-ink-soft">
@@ -181,7 +196,8 @@ function LoungeSlot({
       ) : (
         <>
           <p className="text-sm text-ink-soft">
-            No one's talking yet{fallbackGroup ? ` in ${fallbackGroup.name}` : ""}. Open a room and see who joins.
+            No one's talking yet{fallbackGroup ? ` in ${fallbackGroup.name}` : ""}. Open a room and
+            see who joins.
           </p>
           <Button asChild variant="outline" size="sm" className="mt-auto w-fit rounded-full">
             <Link to="/lounge">Open a Lounge</Link>
@@ -206,7 +222,11 @@ function EventSlot({ event }: { event: HomeEvent | null }) {
           </Link>
           <p className="text-sm text-ink-soft">
             {timeUntil(event.startsAt)}
-            {event.venueName ? ` · ${event.venueName}` : event.cityName ? ` · ${event.cityName}` : ""}
+            {event.venueName
+              ? ` · ${event.venueName}`
+              : event.cityName
+                ? ` · ${event.cityName}`
+                : ""}
           </p>
           <span className="mt-auto inline-flex items-center gap-1 text-xs text-ink-muted">
             <MapPin className="h-3 w-3" /> {event.groupName}
@@ -268,11 +288,7 @@ function ContinueCard({ action }: { action: HomeContinueAction }) {
   }
 
   return (
-    <Link
-      to={action.to as never}
-      params={(action.params ?? {}) as never}
-      className={cls}
-    >
+    <Link to={action.to as never} params={(action.params ?? {}) as never} className={cls}>
       {body}
     </Link>
   );
@@ -310,8 +326,12 @@ function CircleCard({ item }: { item: HomeCircleStory }) {
           <Icon className="h-3 w-3" />
           {item.reasonText}
         </span>
-        <span className="font-display text-base leading-snug text-ink group-hover:underline">{item.title}</span>
-        {item.subtitle && <span className="line-clamp-2 text-xs text-ink-soft">{item.subtitle}</span>}
+        <span className="font-display text-base leading-snug text-ink group-hover:underline">
+          {item.title}
+        </span>
+        {item.subtitle && (
+          <span className="line-clamp-2 text-xs text-ink-soft">{item.subtitle}</span>
+        )}
       </div>
     </Link>
   );
@@ -388,7 +408,13 @@ export function MemberHome() {
       )}
 
       {data.groupSuggestions.length > 0 && (
-        <HomeSection eyebrow="Start somewhere" title="Groups to join" href="/groups" cta="All Groups" tone="quiet">
+        <HomeSection
+          eyebrow="Start somewhere"
+          title="Groups to join"
+          href="/groups"
+          cta="All Groups"
+          tone="quiet"
+        >
           <div className="grid gap-4 md:grid-cols-3">
             {data.groupSuggestions.map((g) => (
               <Link
@@ -402,7 +428,9 @@ export function MemberHome() {
                   <AvatarFallback>{g.name.slice(0, 1)}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <div className="truncate font-display text-base text-ink group-hover:underline">{g.name}</div>
+                  <div className="truncate font-display text-base text-ink group-hover:underline">
+                    {g.name}
+                  </div>
                   <div className="truncate text-xs text-ink-muted">
                     {g.reason} · {g.memberCount} members
                   </div>
@@ -425,14 +453,20 @@ export function MemberHome() {
               >
                 <Avatar className="h-10 w-10">
                   {p.avatarUrl ? <AvatarImage src={p.avatarUrl} alt="" /> : null}
-                  <AvatarFallback>{(p.displayName || p.username).slice(0, 1).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>
+                    {(p.displayName || p.username).slice(0, 1).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
                   <div className="truncate font-display text-base text-ink group-hover:underline">
                     {p.displayName || p.username}
                   </div>
-                  {p.headline && <div className="line-clamp-2 text-xs text-ink-soft">{p.headline}</div>}
-                  <div className="mt-1 text-[11px] uppercase tracking-wider text-ink-muted">{p.reasonText}</div>
+                  {p.headline && (
+                    <div className="line-clamp-2 text-xs text-ink-soft">{p.headline}</div>
+                  )}
+                  <div className="mt-1 text-[11px] uppercase tracking-wider text-ink-muted">
+                    {p.reasonText}
+                  </div>
                 </div>
               </Link>
             ))}
@@ -472,8 +506,12 @@ export function MemberHome() {
                     {categoryLabel(d.category)}
                     {d.bridge && <span className="text-ink-soft">· {d.bridge}</span>}
                   </div>
-                  <div className="mt-1 font-display text-lg leading-snug text-ink group-hover:underline">{d.title}</div>
-                  {d.excerpt && <p className="mt-1 line-clamp-2 text-sm text-ink-soft">{d.excerpt}</p>}
+                  <div className="mt-1 font-display text-lg leading-snug text-ink group-hover:underline">
+                    {d.title}
+                  </div>
+                  {d.excerpt && (
+                    <p className="mt-1 line-clamp-2 text-sm text-ink-soft">{d.excerpt}</p>
+                  )}
                 </div>
               </Link>
             ))}

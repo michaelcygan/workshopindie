@@ -48,7 +48,12 @@ type CreditRow = {
   user_id: string | null;
   role_label: string | null;
   sort_order: number | null;
-  profiles: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null;
+  profiles: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
 type AuthorRow = {
@@ -56,10 +61,19 @@ type AuthorRow = {
   profile_id: string;
   role_label: string | null;
   sort_order: number | null;
-  profiles: { id: string; username: string | null; display_name: string | null; avatar_url: string | null } | null;
+  profiles: {
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null;
 };
 
-function storyLabel(post: PostRow, trustedCreators: Set<string>, authorIds: string[]): HomeStoryLabel {
+function storyLabel(
+  post: PostRow,
+  trustedCreators: Set<string>,
+  authorIds: string[],
+): HomeStoryLabel {
   if (post.publication_type && post.publication_type !== "member") return "workshop";
   if (authorIds.some((id) => trustedCreators.has(id))) return "process";
   return "story";
@@ -122,7 +136,9 @@ export async function listHomeWorkStoriesServer(): Promise<HomeWorkStory[]> {
       .order("sort_order", { ascending: true }),
     supabaseAdmin
       .from("blog_post_authors")
-      .select("blog_post_id,profile_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)")
+      .select(
+        "blog_post_id,profile_id,role_label,sort_order,profiles(id,username,display_name,avatar_url)",
+      )
       .in("blog_post_id", postIds)
       .order("sort_order", { ascending: true }),
   ]);
@@ -227,9 +243,11 @@ export async function listHomeWorkStoriesServer(): Promise<HomeWorkStory[]> {
       })),
       stories: sorted.slice(0, MAX_STORIES_PER_WORK).map((p) => {
         const authors = authorsByPost.get(p.id) ?? [];
-        const authorIds = [p.created_by, p.author_profile_id, ...authors.map((a) => a.profile_id)].filter(
-          Boolean,
-        ) as string[];
+        const authorIds = [
+          p.created_by,
+          p.author_profile_id,
+          ...authors.map((a) => a.profile_id),
+        ].filter(Boolean) as string[];
         return {
           id: p.id,
           slug: p.slug,
@@ -316,8 +334,13 @@ export async function todaySummariesServer(
   if (!groups.length) return [];
   const { data } = await supabaseAdmin
     .from("group_today_posts")
-    .select("id,group_id,author_id,body,created_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)")
-    .in("group_id", groups.map((g) => g.id))
+    .select(
+      "id,group_id,author_id,body,created_at,author:profiles!group_today_posts_author_profile_fkey(username,display_name,avatar_url)",
+    )
+    .in(
+      "group_id",
+      groups.map((g) => g.id),
+    )
     .gt("expires_at", new Date().toISOString())
     .order("created_at", { ascending: false })
     .limit(300);
@@ -328,7 +351,11 @@ export async function todaySummariesServer(
     author_id: string;
     body: string;
     created_at: string;
-    author: { username: string | null; display_name: string | null; avatar_url: string | null } | null;
+    author: {
+      username: string | null;
+      display_name: string | null;
+      avatar_url: string | null;
+    } | null;
   };
   const rows = ((data ?? []) as unknown as Row[]).filter((r) => !blocked.has(r.author_id));
   const byGroup = new Map<string, Row[]>();
@@ -379,7 +406,10 @@ export async function myGroupLoungesServer(groups: MyGroup[]): Promise<HomeLoung
   const { data: presence } = await supabaseAdmin
     .from("instant_presence")
     .select("room_id,user_id")
-    .in("room_id", roomRows.map((r) => r.id))
+    .in(
+      "room_id",
+      roomRows.map((r) => r.id),
+    )
     .gt("last_seen_at", since)
     .limit(500);
   const presenceRows = (presence ?? []) as unknown as Array<{ room_id: string; user_id: string }>;
@@ -460,7 +490,9 @@ export async function nextEventServer(
     .in("status", ["going", "maybe"]);
   const rsvpIds = ((rsvps ?? []) as Array<{ event_id: string }>).map((r) => r.event_id);
 
-  async function fetchEvents(apply: (q: ReturnType<typeof baseQuery>) => ReturnType<typeof baseQuery>) {
+  async function fetchEvents(
+    apply: (q: ReturnType<typeof baseQuery>) => ReturnType<typeof baseQuery>,
+  ) {
     const { data } = await apply(baseQuery());
     return (data ?? []) as unknown as Row[];
   }
@@ -470,7 +502,7 @@ export async function nextEventServer(
       .select(EVENT_SELECT)
       .gt("starts_at", nowIso)
       .is("deleted_at", null)
-      .in("visibility", ["public", "unlisted", "group_only"])
+      .in("visibility", ["public", "group_only"])
       .order("starts_at", { ascending: true })
       .limit(5);
   }
@@ -580,7 +612,10 @@ export async function continueActionsServer(
     const { data: contacts } = await supabaseAdmin
       .from("collab_contact_events")
       .select("collab_post_id")
-      .in("collab_post_id", collabs.map((c) => c.id))
+      .in(
+        "collab_post_id",
+        collabs.map((c) => c.id),
+      )
       .gt("sent_at", new Date(Date.now() - 21 * 24 * 3600 * 1000).toISOString());
     const counts = new Map<string, number>();
     for (const c of (contacts ?? []) as Array<{ collab_post_id: string }>) {
@@ -614,7 +649,10 @@ export async function continueActionsServer(
     const { data: tagged } = await supabaseAdmin
       .from("blog_post_entity_tags")
       .select("work_id,blog_post:blog_posts!inner(status,created_by)")
-      .in("work_id", myWorks.map((w) => w.id));
+      .in(
+        "work_id",
+        myWorks.map((w) => w.id),
+      );
     const covered = new Set<string>();
     for (const t of (tagged ?? []) as unknown as Array<{
       work_id: string;
@@ -675,7 +713,10 @@ export async function continueActionsServer(
         actionLabel: "Post to Gallery",
         to: "/works/new",
       });
-    } else if (profile && (!profile.headline || !profile.avatar_url || !(profile.mediums ?? []).length)) {
+    } else if (
+      profile &&
+      (!profile.headline || !profile.avatar_url || !(profile.mediums ?? []).length)
+    ) {
       actions.push({
         kind: "complete_profile",
         title: "Finish your profile",
@@ -697,7 +738,10 @@ export async function groupSuggestionsServer(
   const out: HomeGroupSuggestion[] = [];
   const seen = new Set<string>();
 
-  async function add(reason: string, apply: (q: ReturnType<typeof base>) => ReturnType<typeof base>) {
+  async function add(
+    reason: string,
+    apply: (q: ReturnType<typeof base>) => ReturnType<typeof base>,
+  ) {
     const { data } = await apply(base());
     for (const g of (data ?? []) as unknown as Array<{
       id: string;
@@ -731,7 +775,8 @@ export async function groupSuggestionsServer(
   }
 
   if (homeCityId) await add("In your city", (q) => q.eq("city_id", homeCityId));
-  if (out.length < 3 && mediums.length) await add("Matches your mediums", (q) => q.eq("kind", "genre"));
+  if (out.length < 3 && mediums.length)
+    await add("Matches your mediums", (q) => q.eq("kind", "genre"));
   if (out.length < 3) await add("Active on Workshop", (q) => q);
   return out.slice(0, 3);
 }
@@ -769,7 +814,8 @@ export async function circleStoriesServer(
       .in("work_id", myWorkIds)
       .limit(300);
     for (const p of (peers ?? []) as Array<{ user_id: string | null }>) {
-      if (p.user_id && p.user_id !== userId && !blocked.has(p.user_id)) collaborators.add(p.user_id);
+      if (p.user_id && p.user_id !== userId && !blocked.has(p.user_id))
+        collaborators.add(p.user_id);
     }
   }
 
@@ -781,7 +827,9 @@ export async function circleStoriesServer(
     peopleIds.length
       ? supabaseAdmin
           .from("works")
-          .select("id,slug,title,excerpt,cover_url,category,created_by,published_at,source_collab_post_id")
+          .select(
+            "id,slug,title,excerpt,cover_url,category,created_by,published_at,source_collab_post_id",
+          )
           .in("created_by", peopleIds)
           .eq("status", "published")
           .eq("visibility", "public")
@@ -815,22 +863,27 @@ export async function circleStoriesServer(
           .in("group_id", groupIds)
           .gt("starts_at", nowIso)
           .is("deleted_at", null)
-          .in("visibility", ["public", "unlisted", "group_only"])
+          .in("visibility", ["public", "group_only"])
           .order("starts_at", { ascending: true })
           .limit(6)
       : Promise.resolve({ data: [] }),
     peopleIds.length
-      ? supabaseAdmin.from("profiles").select("id,username,display_name,avatar_url").in("id", peopleIds)
+      ? supabaseAdmin
+          .from("profiles")
+          .select("id,username,display_name,avatar_url")
+          .in("id", peopleIds)
       : Promise.resolve({ data: [] }),
   ]);
 
   const nameById = new Map(
-    ((namesRes.data ?? []) as Array<{
-      id: string;
-      username: string | null;
-      display_name: string | null;
-      avatar_url: string | null;
-    }>).map((p) => [p.id, p]),
+    (
+      (namesRes.data ?? []) as Array<{
+        id: string;
+        username: string | null;
+        display_name: string | null;
+        avatar_url: string | null;
+      }>
+    ).map((p) => [p.id, p]),
   );
   const followedSet = new Set(followed);
   const groupById = new Map(groups.map((g) => [g.id, g]));
@@ -971,7 +1024,12 @@ export async function circleStoriesServer(
 
   // Deterministic ranking + per-source caps so one prolific person or Group
   // cannot dominate the rail.
-  const kindRank: Record<HomeCircleStory["kind"], number> = { event: 0, collab: 1, work: 2, blog: 3 };
+  const kindRank: Record<HomeCircleStory["kind"], number> = {
+    event: 0,
+    collab: 1,
+    work: 2,
+    blog: 3,
+  };
   const sorted = items.sort((a, b) => {
     if (kindRank[a.kind] !== kindRank[b.kind]) return kindRank[a.kind] - kindRank[b.kind];
     return (b.occurredAt ?? "").localeCompare(a.occurredAt ?? "");
@@ -1002,7 +1060,10 @@ export async function peopleSuggestionsServer(
   const { data: members } = await supabaseAdmin
     .from("group_members")
     .select("user_id,group_id")
-    .in("group_id", groups.map((g) => g.id))
+    .in(
+      "group_id",
+      groups.map((g) => g.id),
+    )
     .limit(500);
   const rows = (members ?? []) as Array<{ user_id: string; group_id: string }>;
 
@@ -1031,15 +1092,17 @@ export async function peopleSuggestionsServer(
 
   const groupById = new Map(groups.map((g) => [g.id, g]));
   const mySet = new Set(mediums);
-  return ((profiles ?? []) as unknown as Array<{
-    id: string;
-    username: string | null;
-    display_name: string | null;
-    headline: string | null;
-    avatar_url: string | null;
-    mediums: string[] | null;
-    home_city_id: string | null;
-  }>)
+  return (
+    (profiles ?? []) as unknown as Array<{
+      id: string;
+      username: string | null;
+      display_name: string | null;
+      headline: string | null;
+      avatar_url: string | null;
+      mediums: string[] | null;
+      home_city_id: string | null;
+    }>
+  )
     .filter((p) => !!p.username)
     .map((p) => {
       const shared = (p.mediums ?? []).filter((m) => mySet.has(m));
@@ -1136,27 +1199,25 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
 
   const today = await todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]);
 
-  const [
-    loungesR,
-    eventR,
-    continueR,
-    suggestR,
-    circleR,
-    peopleR,
-    disciplineR,
-    coverWorkR,
-  ] = await Promise.allSettled([
-    myGroupLoungesServer(groups),
-    nextEventServer(userId, groups, homeCityId),
-    continueActionsServer(userId, groups, today),
-    groups.length ? Promise.resolve([] as HomeGroupSuggestion[]) : groupSuggestionsServer(homeCityId, mediums),
-    circleStoriesServer(userId, groups, blocked),
-    peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
-    disciplineItemsServer(mediums),
-    profile?.cover_work_id
-      ? supabaseAdmin.from("works").select("slug,title").eq("id", profile.cover_work_id).maybeSingle()
-      : Promise.resolve({ data: null }),
-  ]);
+  const [loungesR, eventR, continueR, suggestR, circleR, peopleR, disciplineR, coverWorkR] =
+    await Promise.allSettled([
+      myGroupLoungesServer(groups),
+      nextEventServer(userId, groups, homeCityId),
+      continueActionsServer(userId, groups, today),
+      groups.length
+        ? Promise.resolve([] as HomeGroupSuggestion[])
+        : groupSuggestionsServer(homeCityId, mediums),
+      circleStoriesServer(userId, groups, blocked),
+      peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
+      disciplineItemsServer(mediums),
+      profile?.cover_work_id
+        ? supabaseAdmin
+            .from("works")
+            .select("slug,title")
+            .eq("id", profile.cover_work_id)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
+    ]);
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
   const cont =
@@ -1175,7 +1236,9 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
         : null,
     today,
     lounges,
-    loungeFallbackGroup: fallbackGroup ? { slug: fallbackGroup.slug, name: fallbackGroup.name } : null,
+    loungeFallbackGroup: fallbackGroup
+      ? { slug: fallbackGroup.slug, name: fallbackGroup.name }
+      : null,
     nextEvent: eventR.status === "fulfilled" ? eventR.value : null,
     continueActions: cont.actions,
     groupSuggestions: suggestR.status === "fulfilled" ? suggestR.value : [],

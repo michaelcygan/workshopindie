@@ -1,64 +1,34 @@
-# Homepage Redesign — Public/Member split with a connected creative graph
+## Where the homepage refresh stands
 
-## What I confirmed in the current code
+Waves 1–4 are in and typecheck clean:
 
-- `src/routes/index.tsx` (563 lines) is one conditional monolith: a `min-h-[88vh]` marketing `Hero` with the globe + three CTA cards, then `HomePulseRail`, `HomeLiveWorkshopsRail`, `YourGroupsStrip`, `NetworkRail`, `CollabsRail`, `GalleryRail`, `FeaturedEventsCarousel`, `UpcomingInMyGroupsRail`, `CityEventsStrip`, `HomeBlogRail`. Every rail fetches on the client independently (many waterfalls).
-- `src/components/home-live-workshops-rail.tsx` is still rendered for everyone — this is the legacy scheduled-Workshop rail that must not render for members.
-- `useAuth()` already exposes `loading`; `index.tsx` currently ignores it, so members briefly see the public hero.
-- `WorldArcs({ className, promos })` sizes from its container (`Math.max(320, r.height)`) and already checks `prefers-reduced-motion` — a compact member atmosphere is a container-size change only.
-- Server helpers that already exist and will be reused/extracted: `listMyGroupLounges` (instant_rooms + presence, group-scoped), `listUpcomingForMyGroups`, `listMyUpcomingRsvps`, `listOpenForMyGroups`, `getNetworkFeed` / `getFrequentCollaborators` (plain async, already server-level), `listBlogPostsForEntityServer` (has the trusted-author rule), `getBlogPostEntityTagsBulkServer` (already batched), `blogPublicCacheHeader()`, `createMyBlogDraftServer(..., seedTag)`.
-- `seedDraftTag` in `src/lib/blog-member.server.ts:160` swallows errors in a bare `catch {}` and `createMyBlogDraftServer` returns only `{ id, reused }` — Home cannot tell whether the pre-tag succeeded.
-- Group Today rows (`group_today_posts`) are read client-side in `group-today-tab.tsx` with `.gt("expires_at", now)`; there is no server-level Today summary helper yet.
+- Public vs member split (`src/routes/index.tsx` → `public-home.tsx` / `member-home.tsx`), with an auth-loading shell so members never see the logged-out page flash.
+- Server aggregator `src/lib/home.server.ts` + `src/lib/home.functions.ts`: one authenticated round trip, every section fault-isolated with `Promise.allSettled`.
+- "Now" (Today / Live Lounge / Next Event), "Continue making", "Stories around the Work", "Circles", People, Across disciplines.
+- Route-level `head()` metadata for `/`.
 
-No schema migration is required for any of this.
+What's genuinely left is Wave 5: verification and cleanup. Two concrete things I found:
 
-## Wave 0 — Baseline
+1. `src/components/upcoming-in-my-groups-rail.tsx` and the `NetworkRail` data path (`getNetworkFeed`) are no longer referenced by any route — leftovers from the old monolithic index.
+2. The signed-in home has never been rendered end-to-end; only the logged-out page has been confirmed serving.
 
-Record lint/build baseline, then write no product code. (Audit above is the deliverable; anything else uncovered mid-wave gets folded in.)
+## Wave 5 plan
 
-## Wave 1 — Public/Member split + atmosphere
+**1. Verify the signed-in home for real**
+Drive the preview with an authenticated session and screenshot at both 390px (your current viewport) and desktop. Confirm each section renders with real data or its intended empty state: Today, Lounge, Next Event, Continue making, Stories around the Work, Circles, People, Across disciplines. Check the browser console and the server-function logs for errors from the aggregator.
 
-- `src/routes/index.tsx` becomes a thin chooser: `loading → <HomeSkeleton/>`, `user → <MemberHome/>`, else `<PublicHome/>`.
-- `src/components/home/public-home.tsx` — current markup moved verbatim (minus member-only branches) so the public page does not regress.
-- `src/components/home/member-home.tsx` + `src/components/home/member-atmosphere.tsx` — compact 320–400px desktop / ~200–240px mobile globe band, greeting, one-line summary ("3 of your Groups are active today"), one primary action. No marketing copy, no CTA trio.
-- `src/components/home/home-background-toggle.tsx` — Globe / My cover, persisted at `workshop:home-background` in localStorage. Uses existing `profiles.cover_url`; if the cover came from a Work, show a small attribution link. If no cover: globe + quiet "Set your background" → `/me/edit`. Gradient scrim for contrast; reduced-motion honored.
+**2. Fix whatever that surfaces**
+Most likely candidates, based on the queries written: the `group_today_posts` author join alias, the Lounge presence window, and the Event fallback chain when a member has no Groups and no home city.
 
-## Wave 2 — Now + Continue
+**3. Remove the orphans**
+Delete `upcoming-in-my-groups-rail.tsx`; drop `getNetworkFeed` only if nothing else consumes it (verified before deleting, not assumed).
 
-- New `src/lib/home.server.ts` + `src/lib/home.functions.ts` exposing one authed `getMemberHome` aggregator using `Promise.allSettled` so any one module failing cannot blank the page.
-  - `todaySummariesServer` — new batched query over joined groups' unexpired `group_today_posts` (count, latest snippet, author, group accent), blocked-user filtered.
-  - Lounge: extract the body of `listMyGroupLounges` into a server-level function and call it from the aggregator.
-  - Events: extract `listUpcomingForMyGroups` + RSVP priority into a server helper; pick one Next Event (RSVPed > joined Group > home city > online).
-  - `resolveContinueActions` — deterministic, max 3: recent Blog draft → open Collab with applicants → public Work with no trusted Blog story → newly joined Group with no Today post → upcoming RSVP → profile completion (new users only).
-- Components: `home/now-today-card.tsx`, `home/now-lounge-card.tsx`, `home/now-event-card.tsx`, `home/continue-making.tsx`. One primary action each; Today action deep-links to the Group with a focus param rather than duplicating the composer.
-- `HomeLiveWorkshopsRail` no longer renders for members.
-- Every slot has the specified productive fallback (recommend Groups, start today's conversation, open a Group Lounge, city/online event).
-- Member payload cached in React Query ~45s; Lounge slice refetched ~30–45s.
+**4. Mobile polish pass**
+The new rails are horizontal snap-scrollers. Confirm edge bleed, snap alignment, and tap targets on 390px, and that the bottom action island never overlaps the last section (the `pb-24` on member home).
 
-## Wave 3 — Stories around the Work
+**5. Empty-state honesty**
+A brand-new member with no Groups, no follows, and no Works should get a coherent page — "Now" falls back to Group discovery, "Continue making" offers first Work / complete profile. Verify that path explicitly rather than trusting the branches.
 
-- `listHomeWorkStoriesServer` in `home.server.ts`: one pass — latest ~40 eligible published posts → all work tag rows for those ids → all public/published works → all work credits → all attributed authors → trusted filter (creator, credited collaborator, or editorial/admin) → group by Work, ≤3 stories each, ≤8 composites, dedupe a post to its first eligible Work. Ranks on `published_at` / story count / work publish date — never `blog_post_entity_tags.created_at`. Public variant served with `blogPublicCacheHeader()`.
-- `src/components/home/work-stories-carousel.tsx` — CSS scroll-snap rail (no new dependency), keyboard-operable, no autoplay, responsive card widths. Composite card: Work cover + credits, story title/excerpt, conservative label (Process note / From Workshop / Story about this Work), "N more stories", distinct **Read story** (opens existing `BlogPostPeek`) and **View Work** actions.
-- Final participatory card: "Write about a Work" → pre-seeded draft, or "Post your first Work".
-- Harden `createMyBlogDraftServer`/`seedDraftTag` to return `{ id, reused, tagSeeded: boolean }`; Home shows an honest message + manual-tag path when seeding fails.
-- Invalidate the Home story query alongside existing entity-tag invalidation on blog save/publish/unpublish/delete.
-- Placed high on both Public Home (after the globe) and Member Home.
+### Technical notes
 
-## Wave 4 — Circles, people, disciplines
-
-- `listCircleStoriesServer` — bounded 8–12 typed items (`{ kind, primary, related, occurredAt, reason, primaryAction, secondary }`) merged server-side from follows, frequent credited collaborators, joined-Group Collabs/Events, and Collab-resulting Works. Reason enum rendered as "You follow Mina" / "From Chicago Filmmakers" / "Made with Alex". Repeat-author/Group/Work caps. No new table, no infinite scroll.
-- `src/components/home/people-to-make-with.tsx` — promotes the existing shared-Group people logic (as used by `groups-people-rail`), reusing `FollowButton`; excludes self, already-followed, blocked, undiscoverable.
-- `src/components/home/across-disciplines.tsx` — small medium-appropriate editorial set from existing Work fields/embeds/categories; for members, 1–2 adjacent-discipline slots that require a real bridge (shared Group/city/collaborator/Blog/Event).
-
-## Wave 5 — Consolidation and QA
-
-- Remove member-only rendering of shelves now superseded (`YourGroupsStrip`, `NetworkRail`, member Collabs/Gallery/Events duplication) while keeping them on Public Home where they still aid discovery.
-- Audit loading/empty/error/partial states, visibility + blocking, query counts (no N+1), keyboard nav, reduced motion, alt text/contrast, and 320 / 390 / 430px plus desktop.
-- Run lint, typecheck, and production build after each wave; fix related failures before advancing.
-
-## Technical notes
-
-- Everything reads existing tables; **no migrations**.
-- Reusable logic is extracted into `*.server.ts` helpers rather than calling one `createServerFn` from another.
-- Home is presentation/orchestration only — no new content primitive, feed table, AI ranking, or dashboard framework.
-- The typed response contract for stories/circle items is stable so a future scorer can be swapped in without UI changes.
+No schema changes, no new tables, no migrations. All work is in `src/components/home/*`, `src/lib/home.server.ts`, and deletions of dead files.
