@@ -51,7 +51,7 @@ export function SettingsMenuButton() {
             <BookOpen className="mr-2 h-4 w-4" /> Blog
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate({ to: "/auth" })}>
+          <DropdownMenuItem onClick={() => navigate({ to: "/login" })}>
             Sign in
           </DropdownMenuItem>
         </DropdownMenuContent>

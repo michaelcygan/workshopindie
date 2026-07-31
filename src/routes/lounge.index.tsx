@@ -50,14 +50,15 @@ function WorkshopPreflight() {
   const host = useServerFn(hostInstantWorkshop);
   const [busy, setBusy] = useState<"drop" | "host" | null>(null);
   const [busyMedium, setBusyMedium] = useState<string | null>(null);
-  const [devices, setDevices] = useState<{ mic: boolean; cam: boolean } | null>(null);
-  const [prefs, setPrefs] = useState<{ mic: boolean; cam: boolean }>(() => {
-    if (typeof window === "undefined") return { mic: true, cam: true };
+  // Lounge is audio + chat only — we detect microphones, never cameras.
+  const [devices, setDevices] = useState<{ mic: boolean } | null>(null);
+  const [prefs, setPrefs] = useState<{ mic: boolean }>(() => {
+    if (typeof window === "undefined") return { mic: true };
     try {
       const raw = window.localStorage.getItem("workshop:av-prefs");
-      if (raw) return JSON.parse(raw);
+      if (raw) return { mic: JSON.parse(raw).mic !== false };
     } catch { /* noop */ }
-    return { mic: true, cam: true };
+    return { mic: true };
   });
   const [liveCount, setLiveCount] = useState(0);
   const [liveByMedium, setLiveByMedium] = useState<Map<Category, number>>(new Map());
@@ -103,15 +104,14 @@ function WorkshopPreflight() {
     async function detect() {
       try {
         if (!navigator.mediaDevices?.enumerateDevices) {
-          if (!cancelled) setDevices({ mic: false, cam: false });
+          if (!cancelled) setDevices({ mic: false });
           return;
         }
         const list = await navigator.mediaDevices.enumerateDevices();
         const mic = list.some((d) => d.kind === "audioinput");
-        const cam = list.some((d) => d.kind === "videoinput");
-        if (!cancelled) setDevices({ mic, cam });
+        if (!cancelled) setDevices({ mic });
       } catch {
-        if (!cancelled) setDevices({ mic: false, cam: false });
+        if (!cancelled) setDevices({ mic: false });
       }
     }
     detect();
