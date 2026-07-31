@@ -6907,6 +6907,7 @@ export type Database = {
       vw_kpi_now: {
         Row: {
           active_subs: number | null
+          blog_posts_published_7d: number | null
           collab_applications_7d: number | null
           collab_guest_applications_7d: number | null
           collabs_posted_7d: number | null
@@ -6914,6 +6915,10 @@ export type Database = {
           dau: number | null
           event_rsvps_7d: number | null
           follows_7d: number | null
+          group_events_7d: number | null
+          lounge_audio_minutes_7d: number | null
+          lounge_participants_7d: number | null
+          lounge_rooms_opened_7d: number | null
           mau: number | null
           open_reports: number | null
           signups_30d: number | null
@@ -6922,9 +6927,16 @@ export type Database = {
           wau: number | null
           works_published_7d: number | null
           works_total: number | null
-          workshop_apps_7d: number | null
-          workshops_created_7d: number | null
-          workshops_total: number | null
+        }
+        Relationships: []
+      }
+      vw_lounge_funnel: {
+        Row: {
+          audio_minutes_30d: number | null
+          live_now: number | null
+          messages_30d: number | null
+          participants_30d: number | null
+          rooms_created_30d: number | null
         }
         Relationships: []
       }
