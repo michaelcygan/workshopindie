@@ -344,7 +344,7 @@ function GroupPage() {
 
         <div className="px-4 md:px-6">
           <GroupTabBar
-            tab={tab}
+            tab={viewTab}
             setTab={setTab}
             slug={group.slug}
             counts={{
@@ -353,32 +353,32 @@ function GroupPage() {
               members: group.member_count,
             }}
             childCount={childCount}
+            showPosts={groupBlogLoading || hasBlogPosts}
           />
 
         <div className="mt-5">
 
-          {tab === "today" && <GroupTodayTab group={group} />}
-          {tab === "collab" && <GroupCollabTab group={group} />}
+          {viewTab === "today" && <GroupTodayTab group={group} />}
+          {viewTab === "collab" && <GroupCollabTab group={group} />}
 
-          {tab === "work" && <GroupWorkTab group={group} />}
-          {tab === "posts" && <GroupPostsTab group={group} />}
-          {tab === "events" && <GroupEventsTab group={group} />}
-          {tab === "subgroups" && (
+          {viewTab === "work" && <GroupWorkTab group={group} />}
+          {viewTab === "posts" && <GroupPostsTab group={group} />}
+          {viewTab === "events" && <GroupEventsTab group={group} />}
+          {viewTab === "subgroups" && (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {childGroups.map((g) => (
                 <GroupCard key={g.id} group={g} />
               ))}
             </div>
           )}
-          {tab === "members" && <GroupMembersTab group={group} />}
-          {tab === "about" && <GroupAboutTab group={group} />}
+          {viewTab === "members" && <GroupMembersTab group={group} />}
+          {viewTab === "about" && <GroupAboutTab group={group} />}
         </div>
 
         <div className="mt-16">
           <AdjacentGroupsRail groupId={group.id} />
         </div>
 
-        <EntityBlogPosts kind="group" entityId={group.id} className="mt-10" />
       </div>
       </div>
     </main>
