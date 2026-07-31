@@ -166,7 +166,8 @@ export function BlogEntityTagPicker({
           groupSlug: r.group!.slug,
           label: r.title,
           sublabel: r.group!.name,
-          image: null,
+          image: r.cover_url ?? null,
+
         }));
     },
   });
