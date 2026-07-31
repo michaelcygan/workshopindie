@@ -199,34 +199,8 @@ function LiveRoomPage() {
 
 
 
-  // Pending opt-in invite for the persistent fork
-  const { data: invite } = useQuery({
-    queryKey: ["wji", room?.source_workshop_id, user?.id],
-    enabled: !!user && !!room?.source_workshop_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("workshop_join_invites")
-        .select("workshop_id, status")
-        .eq("workshop_id", room!.source_workshop_id!)
-        .eq("invitee_user_id", user!.id)
-        .maybeSingle();
-      return data;
-    },
-  });
-
-  // Persistent fork slug, when promoted
-  const { data: forkedWs } = useQuery({
-    queryKey: ["forked-ws", room?.source_workshop_id],
-    enabled: !!room?.source_workshop_id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("workshops")
-        .select("id, slug, title")
-        .eq("id", room!.source_workshop_id!)
-        .maybeSingle();
-      return data;
-    },
-  });
+  // Legacy Workshop fork invites retired — Lounge invitations are bound to the
+  // room itself (see `lounge_invitations` + inviteFriendToLounge).
 
   const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
   // v1 "namer" model: host_user_id doubles as named_by_user_id.
@@ -299,25 +273,6 @@ function LiveRoomPage() {
   // Participants query retired — used to be for the HostMenu remove picker (v0).
 
 
-  const acceptInvite = useServerFn(acceptWorkshopJoinInvite);
-  const declineInvite = useServerFn(declineWorkshopJoinInvite);
-
-  async function onAcceptInvite() {
-    if (!room?.source_workshop_id) return;
-    try {
-      const { workshopSlug } = await acceptInvite({
-        data: { workshopId: room.source_workshop_id },
-      });
-      if (workshopSlug) router.navigate({ to: "/workshops/$slug", params: { slug: workshopSlug } });
-    } catch (e: any) {
-      toast.error(e?.message ?? "Couldn't accept");
-    }
-  }
-  async function onDeclineInvite() {
-    if (!room?.source_workshop_id) return;
-    await declineInvite({ data: { workshopId: room.source_workshop_id } });
-    qc.invalidateQueries({ queryKey: ["wji", room.source_workshop_id, user?.id] });
-  }
 
   // All hooks above run unconditionally on every render. Only branch on rendering below.
   if (roomMissing) return <LoungeNotFound />;
