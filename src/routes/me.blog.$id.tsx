@@ -11,7 +11,7 @@ import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
-import { entityMarkdown, tagKey, type BlogEntityTag } from "@/lib/blog-entity-tags";
+import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import {
   getMyBlogPost,
   updateMyBlogPost,
@@ -19,7 +19,6 @@ import {
   unpublishMyBlogPost,
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
-import { setBlogPostEntityTagsForMember } from "@/lib/blog-entity-tags.functions";
 import { PlusGate } from "@/components/plus-gate";
 import { ArrowLeft, Loader2 } from "lucide-react";
 
@@ -62,7 +61,6 @@ function MemberBlogEditorPage() {
   const publishFn = useServerFn(publishMyBlogPost);
   const unpublishFn = useServerFn(unpublishMyBlogPost);
   const deleteFn = useServerFn(deleteMyBlogDraft);
-  const setEntityTagsFn = useServerFn(setBlogPostEntityTagsForMember);
 
   useEffect(() => {
     if (!authLoading && !user) navigate({ to: "/login" });
@@ -108,14 +106,8 @@ function MemberBlogEditorPage() {
     setLoadedForId(p.id);
   }, [post, loadedForId]);
 
-  async function flushEntityTags() {
-    try {
-      await setEntityTagsFn({
-        data: { postId: id, tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })) },
-      });
-    } catch (e) {
-      toast.error(`Tags: ${(e as Error).message}`);
-    }
+  function refreshEntityCaches() {
+    invalidateEntityTagCaches(qc, entityTags, post?.entity_tags ?? []);
   }
 
   const saveMut = useMutation({
@@ -131,33 +123,35 @@ function MemberBlogEditorPage() {
           cover_image_alt: coverAlt || null,
           seo_title: seoTitle || null,
           seo_description: seoDesc || null,
+          tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: post?.post.updated_at,
         },
       });
-      await flushEntityTags();
     },
     onSuccess: () => {
       toast.success("Saved");
       setDirty(false);
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+      refreshEntityCaches();
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const publishMut = useMutation({
     mutationFn: async () => {
-      if (dirty) await saveMut.mutateAsync();
-      else await flushEntityTags();
+      await saveMut.mutateAsync();
       return publishFn({ data: { id } });
     },
     onSuccess: () => {
       toast.success("Published");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+      refreshEntityCaches();
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   const unpublishMut = useMutation({
     mutationFn: () => unpublishFn({ data: { id } }),
@@ -165,6 +159,7 @@ function MemberBlogEditorPage() {
       toast.success("Unpublished");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+      refreshEntityCaches();
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -174,10 +169,12 @@ function MemberBlogEditorPage() {
     onSuccess: () => {
       toast.success("Draft deleted");
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
+      refreshEntityCaches();
       navigate({ to: "/me/blog" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (authLoading || !user) return null;
   if (q.isLoading) {

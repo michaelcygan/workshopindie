@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
+import type { BlogEntityTag } from "@/lib/blog-entity-tags";
+
 import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
 
@@ -207,7 +209,9 @@ type MemberUpdateInput = {
   seo_title?: string | null;
   seo_description?: string | null;
   expected_updated_at?: string;
+  tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
+
 
 export async function updateMyBlogPostServer(context: AuthContext, id: string, input: MemberUpdateInput) {
   const current = await assertOwner(id, context.userId);
@@ -289,8 +293,17 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
     .select(EDITOR_FIELDS)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data;
+
+  // Entity tags are part of the same save. A tag failure must fail the save so
+  // the editor never reports success with tags silently dropped.
+  let entity_tags: BlogEntityTag[] | null = null;
+  if (input.tags !== undefined) {
+    const { setBlogPostEntityTagsForOwnerServer } = await import("./blog-entity-tags.server");
+    entity_tags = await setBlogPostEntityTagsForOwnerServer(id, context.userId, input.tags);
+  }
+  return { ...(data as Record<string, unknown>), entity_tags };
 }
+
 
 export async function publishMyBlogPostServer(context: AuthContext, id: string) {
   const current = await assertOwner(id, context.userId);

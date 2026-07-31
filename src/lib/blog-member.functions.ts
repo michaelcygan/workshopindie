@@ -50,7 +50,17 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         cover_image_alt: z.string().max(300).nullable().optional(),
         seo_title: z.string().max(120).nullable().optional(),
         seo_description: z.string().max(240).nullable().optional(),
+        tags: z
+          .array(
+            z.object({
+              kind: z.enum(["work", "collab", "group", "event", "profile"]),
+              id: z.string().uuid(),
+            }),
+          )
+          .max(20)
+          .optional(),
         expected_updated_at: z.string().optional(),
+
       })
       .parse(input),
   )
