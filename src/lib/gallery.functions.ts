@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { WorkCardData } from "@/components/work-card";
 import type { Category } from "@/lib/categories";
+import { storageValuesFor } from "@/lib/taxonomy";
 
 const FilterSchema = z.object({
   limit: z.number().int().min(1).max(60).default(30),
@@ -63,7 +64,7 @@ export const listFollowingWorks = createServerFn({ method: "POST" })
       .in("id", workIds)
       .limit(data.limit);
 
-    if (data.category !== "all") q = q.contains("categories", [data.category as Category]);
+    if (data.category !== "all") q = q.overlaps("categories", storageValuesFor(data.category) as Category[]);
     if (cityId) q = q.eq("city_id", cityId);
     if (data.q.trim()) {
       const s = data.q.trim().replace(/[%,]/g, " ");

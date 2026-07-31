@@ -9,7 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { CategoryScroller } from "@/components/category-scroller";
-import { WORK_CATEGORIES, type WorkCategory } from "@/lib/categories";
+import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
+import { normalizeCategory, storageValuesFor } from "@/lib/taxonomy";
+
+/** Category filter value: a canonical category id, or "all". */
+type CatFilter = string;
 import { cn } from "@/lib/utils";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
 import { useBlockedIds } from "@/hooks/use-blocked-ids";
@@ -23,7 +27,8 @@ import { KickerChip } from "@/components/kicker-chip";
 
 
 const searchSchema = z.object({
-  cat: fallback(z.enum(["all", "film", "music", "writing", "build", "visual"]), "all").default("all"),
+  // Free string so legacy links (?cat=film / visual / build) still resolve; normalized below.
+  cat: fallback(z.string(), "all").default("all"),
   city: z.string().uuid().catch(undefined as unknown as string).optional(),
   cityName: z.string().catch(undefined as unknown as string).optional(),
   online: fallback(z.boolean(), false).default(false),
@@ -59,7 +64,7 @@ export const Route = createFileRoute("/collab/")({
 });
 
 type Filters = {
-  cat: WorkCategory | "all";
+  cat: CatFilter;
   city?: string;
   online: boolean;
 };
@@ -78,7 +83,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (cat !== "all") q = q.contains("categories", [cat]);
+  if (cat !== "all") q = q.overlaps("categories", storageValuesFor(cat) as Category[]);
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {
@@ -213,7 +218,11 @@ function CollabPage() {
   const navigate = useNavigate({ from: "/collab" });
 
   const filters: Filters = useMemo(
-    () => ({ cat: search.cat, city: search.city, online: search.online }),
+    () => ({
+      cat: search.cat === "all" ? "all" : normalizeCategory(search.cat),
+      city: search.city,
+      online: search.online,
+    }),
     [search.cat, search.city, search.online],
   );
 
@@ -243,13 +252,13 @@ function CollabPage() {
   const tabs = useMemo(
     () => [
       { id: "all" as const, label: "All" },
-      ...WORK_CATEGORIES.map((c) => ({ id: c.id as WorkCategory, label: c.label })),
+      ...CANONICAL_WORK_CATEGORIES.map((c) => ({ id: c.id as string, label: c.label })),
     ],
     [],
   );
 
-  type SearchShape = { cat: WorkCategory | "all"; city?: string; cityName?: string; online: boolean };
-  function setCat(next: WorkCategory | "all") {
+  type SearchShape = { cat: CatFilter; city?: string; cityName?: string; online: boolean };
+  function setCat(next: CatFilter) {
     navigate({ search: (prev: SearchShape) => ({ ...prev, cat: next }) });
   }
   function setCity(next: { id?: string; name?: string }) {
