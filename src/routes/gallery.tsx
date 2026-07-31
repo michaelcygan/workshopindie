@@ -37,7 +37,7 @@ export const Route = createFileRoute("/gallery")({
   head: () => ({
     meta: [
       { title: "Work — Workshop" },
-      { name: "description", content: "Browse everything people have published on Workshop. Film, music, writing, build, visuals — filter by medium, city, and what your network is making." },
+      { name: "description", content: "Browse everything people have published on Workshop. Music, film & video, writing, visual art, games & tech — filter by medium, city, and what your network is making." },
       { property: "og:title", content: "Work — Workshop" },
       { property: "og:description", content: "Browse everything people have published on Workshop." },
       { property: "og:url", content: "https://workshopindie.com/gallery" },
@@ -392,7 +392,7 @@ function GalleryPage() {
               Gallery
             </h1>
             <p className="mt-1 truncate text-sm text-ink-muted">
-              Everything people made across Workshop — film, music, writing, build, visuals.
+              Everything people made across Workshop — music, film & video, writing, visual art, games & tech.
             </p>
           </div>
           <Link to="/works/new" className="shrink-0">
