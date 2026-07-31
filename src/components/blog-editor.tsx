@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -17,7 +17,7 @@ import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
-import { entityMarkdown, tagKey, type BlogEntityTag } from "@/lib/blog-entity-tags";
+import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 
 const SITE = "https://workshopindie.com";
 
@@ -80,6 +80,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const unpublish = useServerFn(adminUnpublishPost);
   const del = useServerFn(adminDeleteDraft);
   const setEntityTagsFn = useServerFn(setBlogPostEntityTagsForAdmin);
+  const qc = useQueryClient();
   const listAuthorProfiles = useServerFn(adminListAuthorProfiles);
   const { data: authorProfiles } = useQuery({
     queryKey: ["admin-blog-author-profiles"],
@@ -132,6 +133,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   }
 
   async function flushEntityTags(postId: string) {
+    // Tag failures must fail the save — never report success with tags dropped.
     try {
       await setEntityTagsFn({
         data: {
@@ -140,9 +142,11 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         },
       });
     } catch (e) {
-      toast.error(`Tags: ${(e as Error).message}`);
+      throw new Error(`Tags: ${(e as Error).message}`);
     }
+    invalidateEntityTagCaches(qc, entityTags, initial?.entity_tags ?? []);
   }
+
 
   async function onSave() {
     if (!title.trim()) return toast.error("Title is required.");

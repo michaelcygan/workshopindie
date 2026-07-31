@@ -58,7 +58,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         .from("works")
         .select("id,slug,title,category,cover_url")
         .eq("status", "published")
-        .in("visibility", ["public", "unlisted"])
+        .eq("visibility", "public")
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(8);
       if (query) req = req.ilike("title", `%${query}%`);
@@ -132,7 +132,7 @@ export function BlogEntityTagPicker({ open, onOpenChange, onPick, disabledKeys, 
         .from("group_events")
         .select("id,slug,title,tagline,cover_url,starts_at,group:groups!group_events_group_id_fkey(slug,name)")
         .is("deleted_at", null)
-        .in("visibility", ["public", "unlisted"])
+        .eq("visibility", "public")
         .order("starts_at", { ascending: false })
         .limit(12);
       if (query) req = req.ilike("title", `%${query}%`);

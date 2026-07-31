@@ -29,7 +29,20 @@ export const listMyBlogPosts = createServerFn({ method: "GET" })
 
 export const createMyBlogDraft = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .handler(({ context }) => createMyBlogDraftServer(context));
+  .inputValidator((input: unknown) =>
+    z
+      .object({
+        seedTag: z
+          .object({
+            kind: z.enum(["work", "collab", "group", "event", "profile"]),
+            id: z.string().uuid(),
+          })
+          .optional(),
+      })
+      .optional()
+      .parse(input ?? {}),
+  )
+  .handler(({ context, data }) => createMyBlogDraftServer(context, data?.seedTag));
 
 export const getMyBlogPost = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -50,7 +63,17 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         cover_image_alt: z.string().max(300).nullable().optional(),
         seo_title: z.string().max(120).nullable().optional(),
         seo_description: z.string().max(240).nullable().optional(),
+        tags: z
+          .array(
+            z.object({
+              kind: z.enum(["work", "collab", "group", "event", "profile"]),
+              id: z.string().uuid(),
+            }),
+          )
+          .max(20)
+          .optional(),
         expected_updated_at: z.string().optional(),
+
       })
       .parse(input),
   )

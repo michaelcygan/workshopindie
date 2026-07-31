@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
+import type { BlogEntityTag } from "@/lib/blog-entity-tags";
+
 import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
 
@@ -151,7 +153,33 @@ export async function listMyBlogPostsServer(
   return { posts, nextCursor };
 }
 
-export async function createMyBlogDraftServer(context: AuthContext) {
+/**
+ * Pre-connects a freshly created (or reused) draft to the entity the writer
+ * started from, merging with any tags the draft already carries.
+ */
+async function seedDraftTag(
+  postId: string,
+  userId: string,
+  tag: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
+) {
+  const { getBlogPostEntityTagsServer, setBlogPostEntityTagsForOwnerServer } = await import(
+    "./blog-entity-tags.server"
+  );
+  try {
+    const current = await getBlogPostEntityTagsServer(postId, { publicOnly: false });
+    const next = current.map((t) => ({ kind: t.kind, id: t.id }));
+    if (next.some((t) => t.kind === tag.kind && t.id === tag.id)) return;
+    next.push(tag);
+    await setBlogPostEntityTagsForOwnerServer(postId, userId, next);
+  } catch {
+    // Seeding is a convenience; never block draft creation on it.
+  }
+}
+
+export async function createMyBlogDraftServer(
+  context: AuthContext,
+  seedTag?: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
+) {
   const access = await resolveBlogAccess(context.userId);
   if (!access.canCreateDraft) throw new Error(access.reason ?? "Publishing is a Plus feature.");
   await bumpRate(context, "blog_member_draft_create", 3600, 10);
@@ -168,7 +196,9 @@ export async function createMyBlogDraftServer(context: AuthContext) {
       .order("updated_at", { ascending: false })
       .limit(1);
     if (existing && existing.length >= access.activeDraftLimit) {
-      return { id: (existing[0] as { id: string }).id, reused: true };
+      const id = (existing[0] as { id: string }).id;
+      if (seedTag) await seedDraftTag(id, context.userId, seedTag);
+      return { id, reused: true };
     }
   }
 
@@ -179,6 +209,7 @@ export async function createMyBlogDraftServer(context: AuthContext) {
   });
   if (error) throw new Error(error.message);
   await audit("blog.member.draft_create", data as string, context.userId);
+  if (seedTag) await seedDraftTag(data as string, context.userId, seedTag);
   return { id: data as string, reused: false };
 }
 
@@ -207,7 +238,9 @@ type MemberUpdateInput = {
   seo_title?: string | null;
   seo_description?: string | null;
   expected_updated_at?: string;
+  tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
+
 
 export async function updateMyBlogPostServer(context: AuthContext, id: string, input: MemberUpdateInput) {
   const current = await assertOwner(id, context.userId);
@@ -289,8 +322,17 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
     .select(EDITOR_FIELDS)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data;
+
+  // Entity tags are part of the same save. A tag failure must fail the save so
+  // the editor never reports success with tags silently dropped.
+  let entity_tags: BlogEntityTag[] | null = null;
+  if (input.tags !== undefined) {
+    const { setBlogPostEntityTagsForOwnerServer } = await import("./blog-entity-tags.server");
+    entity_tags = await setBlogPostEntityTagsForOwnerServer(id, context.userId, input.tags);
+  }
+  return { ...(data as Record<string, unknown>), entity_tags };
 }
+
 
 export async function publishMyBlogPostServer(context: AuthContext, id: string) {
   const current = await assertOwner(id, context.userId);

@@ -57,11 +57,19 @@ export const setBlogPostEntityTagsForAdmin = createServerFn({ method: "POST" })
 export const listBlogPostsForEntity = createServerFn({ method: "GET" })
   .inputValidator((d: unknown) =>
     z
-      .object({ kind: kindSchema, entityId: z.string().uuid(), limit: z.number().int().min(1).max(6).optional() })
+      .object({
+        kind: kindSchema,
+        entityId: z.string().uuid(),
+        limit: z.number().int().min(1).max(6).optional(),
+        trustedOnly: z.boolean().optional(),
+      })
       .parse(d),
   )
   .handler(async ({ data }) => {
     const { listBlogPostsForEntityServer } = await import("./blog-entity-tags.server");
     setResponseHeader("cache-control", "public, s-maxage=60, stale-while-revalidate=600");
-    return listBlogPostsForEntityServer(data.kind, data.entityId, data.limit ?? 3);
+    return listBlogPostsForEntityServer(data.kind, data.entityId, data.limit ?? 3, {
+      trustedOnly: data.trustedOnly ?? false,
+    });
   });
+

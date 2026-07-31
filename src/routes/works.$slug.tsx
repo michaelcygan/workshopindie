@@ -156,6 +156,8 @@ function WorkDetail() {
   }, [work?.id]);
 
   const credits = useMemo(() => (work?.work_credits ?? []).slice().sort((a, b) => a.sort_order - b.sort_order), [work]);
+  const isOwnerOrCredited = !!user && !!work && (user.id === work.created_by || credits.some((c) => c.profiles?.id === user.id));
+
 
   useDocumentMeta({
     title: work?.title,
@@ -310,12 +312,21 @@ function WorkDetail() {
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
 
+        <EntityBlogPosts
+          kind="work"
+          entityId={work.id}
+          heading="Stories about this Work"
+          trustedOnly
+          canWrite={isOwnerOrCredited}
+          writeLabel="Write about this Work"
+          className="mt-14"
+        />
+
         {/* Comments */}
         <section className="mt-14">
           <CommentThread workId={work.id} ownerId={work.created_by} />
         </section>
 
-        <EntityBlogPosts kind="work" entityId={work.id} className="mt-14" />
       </article>
     </main>
   );
