@@ -277,6 +277,14 @@ function GroupPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // One Blog surface per Group: tagged posts + member-authored posts. Drives
+  // both the tab content and whether the tab is shown at all.
+  const { posts: groupBlogPosts, isLoading: groupBlogLoading } = useGroupBlogPosts(group.id);
+  const hasBlogPosts = groupBlogPosts.length > 0;
+  const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
+
+
+
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
     enabled: tab === "subgroups" && childCount > 0,
