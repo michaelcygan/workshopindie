@@ -234,7 +234,7 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
 
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id,title,status,group_id")
+      .select("id,title,medium,status,group_id")
       .eq("id", data.roomId)
       .maybeSingle();
     if (!room || room.status !== "active") throw new Error("That Lounge is no longer live.");
@@ -269,6 +269,14 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
         { onConflict: "room_id,invitee_user_id" },
       )
       .then(() => null, () => null);
+
+    const { data: inviter } = await supabaseAdmin
+      .from("profiles")
+      .select("display_name,username")
+      .eq("id", userId)
+      .maybeSingle();
+    const inviterName =
+      (inviter?.display_name as string | null) ?? (inviter?.username as string | null) ?? null;
 
     await supabaseAdmin
       .from("notifications")
