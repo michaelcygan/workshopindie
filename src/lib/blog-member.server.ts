@@ -153,7 +153,33 @@ export async function listMyBlogPostsServer(
   return { posts, nextCursor };
 }
 
-export async function createMyBlogDraftServer(context: AuthContext) {
+/**
+ * Pre-connects a freshly created (or reused) draft to the entity the writer
+ * started from, merging with any tags the draft already carries.
+ */
+async function seedDraftTag(
+  postId: string,
+  userId: string,
+  tag: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
+) {
+  const { getBlogPostEntityTagsServer, setBlogPostEntityTagsForOwnerServer } = await import(
+    "./blog-entity-tags.server"
+  );
+  try {
+    const current = await getBlogPostEntityTagsServer(postId, { publicOnly: false });
+    const next = current.map((t) => ({ kind: t.kind, id: t.id }));
+    if (next.some((t) => t.kind === tag.kind && t.id === tag.id)) return;
+    next.push(tag);
+    await setBlogPostEntityTagsForOwnerServer(postId, userId, next);
+  } catch {
+    // Seeding is a convenience; never block draft creation on it.
+  }
+}
+
+export async function createMyBlogDraftServer(
+  context: AuthContext,
+  seedTag?: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
+) {
   const access = await resolveBlogAccess(context.userId);
   if (!access.canCreateDraft) throw new Error(access.reason ?? "Publishing is a Plus feature.");
   await bumpRate(context, "blog_member_draft_create", 3600, 10);
@@ -170,7 +196,9 @@ export async function createMyBlogDraftServer(context: AuthContext) {
       .order("updated_at", { ascending: false })
       .limit(1);
     if (existing && existing.length >= access.activeDraftLimit) {
-      return { id: (existing[0] as { id: string }).id, reused: true };
+      const id = (existing[0] as { id: string }).id;
+      if (seedTag) await seedDraftTag(id, context.userId, seedTag);
+      return { id, reused: true };
     }
   }
 
@@ -181,6 +209,7 @@ export async function createMyBlogDraftServer(context: AuthContext) {
   });
   if (error) throw new Error(error.message);
   await audit("blog.member.draft_create", data as string, context.userId);
+  if (seedTag) await seedDraftTag(data as string, context.userId, seedTag);
   return { id: data as string, reused: false };
 }
 
