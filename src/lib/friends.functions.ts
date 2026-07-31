@@ -322,12 +322,12 @@ export const listMyLoungeInvites = createServerFn({ method: "GET" })
         .in("id", rows.map((r) => r.room_id as string)),
       supabaseAdmin
         .from("profiles")
-        .select("user_id,display_name,username,avatar_url")
-        .in("user_id", rows.map((r) => r.inviter_user_id as string)),
+        .select("id,display_name,username,avatar_url")
+        .in("id", rows.map((r) => r.inviter_user_id as string)),
     ]);
 
     const roomById = new Map((rooms ?? []).map((r) => [r.id as string, r]));
-    const profById = new Map((profiles ?? []).map((p) => [p.user_id as string, p]));
+    const profById = new Map((profiles ?? []).map((p) => [p.id as string, p]));
 
     return rows.flatMap((r) => {
       const room = roomById.get(r.room_id as string);
