@@ -32,10 +32,9 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
-import { GroupPostsTab } from "@/components/group/group-posts-tab";
+import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
-import { EntityBlogPosts } from "@/components/entity-blog-posts";
 
 
 
@@ -277,6 +276,14 @@ function GroupPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // One Blog surface per Group: tagged posts + member-authored posts. Drives
+  // both the tab content and whether the tab is shown at all.
+  const { posts: groupBlogPosts, isLoading: groupBlogLoading } = useGroupBlogPosts(group.id);
+  const hasBlogPosts = groupBlogPosts.length > 0;
+  const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
+
+
+
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
     enabled: tab === "subgroups" && childCount > 0,
@@ -336,7 +343,7 @@ function GroupPage() {
 
         <div className="px-4 md:px-6">
           <GroupTabBar
-            tab={tab}
+            tab={viewTab}
             setTab={setTab}
             slug={group.slug}
             counts={{
@@ -345,32 +352,32 @@ function GroupPage() {
               members: group.member_count,
             }}
             childCount={childCount}
+            showPosts={groupBlogLoading || hasBlogPosts}
           />
 
         <div className="mt-5">
 
-          {tab === "today" && <GroupTodayTab group={group} />}
-          {tab === "collab" && <GroupCollabTab group={group} />}
+          {viewTab === "today" && <GroupTodayTab group={group} />}
+          {viewTab === "collab" && <GroupCollabTab group={group} />}
 
-          {tab === "work" && <GroupWorkTab group={group} />}
-          {tab === "posts" && <GroupPostsTab group={group} />}
-          {tab === "events" && <GroupEventsTab group={group} />}
-          {tab === "subgroups" && (
+          {viewTab === "work" && <GroupWorkTab group={group} />}
+          {viewTab === "posts" && <GroupPostsTab group={group} />}
+          {viewTab === "events" && <GroupEventsTab group={group} />}
+          {viewTab === "subgroups" && (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {childGroups.map((g) => (
                 <GroupCard key={g.id} group={g} />
               ))}
             </div>
           )}
-          {tab === "members" && <GroupMembersTab group={group} />}
-          {tab === "about" && <GroupAboutTab group={group} />}
+          {viewTab === "members" && <GroupMembersTab group={group} />}
+          {viewTab === "about" && <GroupAboutTab group={group} />}
         </div>
 
         <div className="mt-16">
           <AdjacentGroupsRail groupId={group.id} />
         </div>
 
-        <EntityBlogPosts kind="group" entityId={group.id} className="mt-10" />
       </div>
       </div>
     </main>

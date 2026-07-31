@@ -25,18 +25,23 @@ export function GroupTabBar({
   slug,
   counts,
   childCount,
+  showPosts = true,
 }: {
   tab: GroupTab;
   setTab: (t: GroupTab) => void;
   slug: string;
   counts: { collab: number; work: number; members: number };
   childCount: number;
+  /** Hide the Blog tab when the Group has no tagged or member-authored posts. */
+  showPosts?: boolean;
 }) {
   const items: { id: GroupTab; label: string; icon: typeof LayoutGrid; count: number | null }[] = [
     { id: "today", label: "Today", icon: Sun, count: null },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
     { id: "work", label: "Gallery", icon: LayoutGrid, count: counts.work },
-    { id: "posts", label: "Posts", icon: FileText, count: null },
+    ...(showPosts
+      ? [{ id: "posts" as const, label: "Blog", icon: FileText, count: null }]
+      : []),
     { id: "events", label: "Events", icon: Calendar, count: null },
     ...(childCount > 0
       ? [{ id: "subgroups" as const, label: "Groups", icon: Sparkles, count: childCount }]
@@ -44,6 +49,7 @@ export function GroupTabBar({
     { id: "members", label: "Members", icon: Users, count: counts.members },
     { id: "about", label: "About", icon: Info, count: null },
   ];
+
 
 
   return (

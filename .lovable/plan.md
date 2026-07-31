@@ -1,67 +1,41 @@
-Wave 4 is done. Here is Wave 5.
+Wave 5 is done. Here is Wave 6.
 
-# Wave 5 — Normalize creative categories
+# Wave 6 — Evaluate Group Posts
 
-## Audit findings (verified this turn)
+## Findings (verified this turn)
 
-There are **two independent taxonomies plus a local duplicate**, and they disagree on labels:
+"Group Posts" is not a content type. There is **no `group_posts` table** — nothing to delete and no records to migrate. The name currently covers two unrelated things:
 
-| Source | Values in use | Where |
-| --- | --- | --- |
-| `category` enum (`src/lib/categories.ts`) | `film`, `music`, `writing`, `writing_book`, `build`, `visual` + 10 discussion/format values (`critique`, `business`, `coworking`, `office_hours`, `roundtable`, `pitch`, `listen_party`, `open_mic`, `jam`, `standup`) | `works.category`, `collab_posts.category`, `profiles.categories`, Gallery filters, Lounge topics |
-| `group_category` enum | `music`, `film_video`, `writing`, `visual_art`, `games_tech`, `performance`, `audio`, `scene_life`, `city`, `language` | `groups.category` |
-| Hardcoded copy of the group list | same 10 values, its own labels | `src/routes/groups.index.tsx` lines 31–58 — shadows the shared import |
+| Surface | What it actually is | Backing data | Production usage |
+| --- | --- | --- | --- |
+| Group **Posts** tab (`?t=posts` on `/g/$slug`) | A derived list of *published Blog posts* authored by anyone in `group_members`, rendered by `GroupPostsTab` → `LoungePosts` (the same component the Lounge uses) | `blog_posts` via `listPostsByAuthors` | 111 published blog posts exist platform-wide; the tab shows a member-filtered slice |
+| Group **Today** board | Ephemeral chat/board messages with `expires_at` | `group_today_posts` | **0 rows**, 0 rows in the last 30 days, 0 pins, 0 groups with any post |
 
-Label drift is real and visible today: the same concept renders as **"Film"** on a Work and **"Film & Video"** on a Group; **"Visual"** vs **"Visual Art"**; **"Build"** vs **"Games & Tech"**.
+Other dependency checks:
+- Notifications: none reference the Posts tab. `group_today_posts` only feeds the activity ticker (`groups-activity-ticker.tsx`) and the Today tab.
+- Moderation: the `enforce_moderation_group_today_posts` trigger guards Today writes and stays untouched (Core memory rule).
+- Search/feeds: the Posts tab is not indexed or fed anywhere else.
+- `blog_post_entity_tags` has **0 rows total** (0 group tags), so the "From the Blog" module (`EntityBlogPosts`) already mounted on the same Group page at line 373 renders nothing today.
 
-Production data (counts):
-- `works`: music 6, writing_book 3, film 2, build 1
-- `collab_posts`: music 3
-- `groups`: music 14, city 10, scene_life 9, film_video 7, visual_art 7, games_tech 6, performance 5, writing 5, audio 2, language 1, unset 5
-- `profiles.categories`: film 2, build 2, writing 2, music 1, visual 1
-- `profiles.mediums`: 11 distinct free-form descriptors (separate `src/lib/mediums.ts` list)
-- `group_events.kind` uses `group_event_kind` (open_mic, screening, workshop_irl…), which is an **event format**, not a creative category — out of scope.
+### Verdict
 
-So nothing needs re-categorizing; the problem is that one concept has three definitions.
+Group Posts has **no distinct product purpose**. Long-form publishing is Blog; ephemeral conversation is Today; creative output is Works; opportunities are Collabs; scheduled activity is Events. What the tab *does* add is a useful lens — "what have people in this Group published" — but it duplicates the Blog module already on the page and, worse, ignores posts explicitly tagged to the Group.
 
-## Approach
-
-Build one canonical taxonomy in code and normalize at the data boundary. **No database changes in this wave** — enum values and stored rows stay exactly as they are, so no existing filter, RLS policy, or write path can break. Enum consolidation and any row backfill are deferred to Wave 9, once every surface reads through the canonical layer.
-
-### Canonical categories
-
-| id | Label | Legacy values that map to it |
-| --- | --- | --- |
-| `music` | Music | `music` |
-| `film_video` | Film & Video | `film`, `film_video` |
-| `writing` | Writing | `writing`, `writing_book` (Book becomes a subtype) |
-| `visual_art` | Visual Art | `visual`, `visual_art` |
-| `games_tech` | Games & Tech | `build`, `games_tech` |
-| `performance` | Performance | `performance` |
-| `audio` | Audio | `audio` |
-| `design` | Design | (new; no stored rows yet) |
-| `other` | Other | anything unrecognized |
-
-Community-flavor categories `scene_life`, `city`, and `language` stay first-class but are tagged as community-only, so they keep appearing in Group filters and stay out of Work/Collab pickers. The 10 discussion/format values (`critique`, `coworking`, `open_mic`, …) are reclassified as **topics**, not creative categories — they describe a conversation or gathering, not a medium, and they keep their current labels and colors.
-
-Subtypes stay where they are (`works.subtype`, free text) and are consolidated under the canonical ids, with Book, Essay, Poetry, Screenplay, Song, Album, Score, Photography, Painting, Game, Software, Podcast folded into the existing per-category lists.
+So this is a **consolidation, not a retirement**: one Blog surface per Group instead of two half-surfaces, and no data change.
 
 ## Changes
 
-**1. New `src/lib/taxonomy.ts`** — the single source of truth: canonical ids, labels, color-token classes, subtypes, community/topic flags, plus three helpers:
-- `normalizeCategory(value)` — legacy or canonical value in, canonical id out.
-- `categoryLabel(value)` / `categoryClassFor(value)` — accept legacy values so no caller has to normalize first.
-- `storageValuesFor(canonicalId)` — canonical id out to the stored enum values a query must filter on (`writing` → `['writing','writing_book']`, `games_tech` → `['build']`, `film_video` → `['film']`, `visual_art` → `['visual']`). This is what keeps existing content discoverable under the new labels.
+**1. One Group blog surface.** `GroupPostsTab` becomes a real component instead of a Lounge re-skin: it merges two sources, de-duplicated by post id, newest first —
+- posts tagged to this Group via `blog_post_entity_tags.group_id` (`listBlogPostsForEntity`), shown first and marked "About this Group";
+- posts authored by current group members (`listPostsByAuthors`, existing behavior).
 
-**2. `src/lib/categories.ts` becomes a compatibility layer** re-exporting `CATEGORY_LABELS`, `categoryClass`, `WORK_CATEGORIES` etc. from the taxonomy module, so the ~40 files importing it pick up unified labels without being touched. Its own hardcoded label/color maps are deleted.
+**2. Rename the tab to "Blog"** in `src/routes/g.$slug.index.tsx`. The tab *value* stays `posts` so existing `?t=posts` links keep working; only the label changes.
 
-**3. `src/routes/groups.index.tsx`** — delete the local `CATEGORY_VALUES` / `CATEGORY_LABELS` duplicate and drive the filter circles, counts, search haystack, and `?c=` param off the shared taxonomy. The `?c=` validator accepts legacy aliases and normalizes them so existing shared links keep working.
+**3. Drop the duplicate module.** Remove the standalone `<EntityBlogPosts kind="group" …>` at the bottom of the Group page — its content now lives inside the tab.
 
-**4. Filter call sites use `storageValuesFor`** — Gallery (`src/routes/gallery.tsx`), Collabs (`src/routes/collab.index.tsx`), and the profile Works tabs (`src/routes/u.$username.tsx`) filter with `.in(...)` over the expanded storage values instead of a single equality, so a Writing filter surfaces the 3 `writing_book` works and a Games & Tech filter surfaces the `build` work.
+**4. Hide the tab when there is nothing to show.** Groups with no member-authored and no tagged posts no longer render an empty tab; the tab list is computed from a lightweight count query. If someone lands on `?t=posts` for an empty Group, it falls back to Today.
 
-**5. Work display keeps the Book distinction** — a `writing_book` work renders the canonical "Writing" chip plus its subtype; where `subtype` is null the taxonomy supplies "Book" as the derived fallback, so nothing reads as less specific than it does today. No row is rewritten.
-
-**6. Pickers stay storage-safe** — `works.new`, `works.$slug.edit`, `collab.new`, `me.edit`, and `onboarding` show canonical labels but continue writing the existing enum values, so the `category` enum needs no ALTER this wave.
+**5. Leave Today alone.** `group_today_posts` keeps its table, trigger, RLS, ticker, and expiry sweep. It is empty because it is ephemeral by design, not because it is dead — retiring it is not part of this wave.
 
 ## Database changes
 
@@ -69,22 +43,21 @@ None.
 
 ## Acceptance criteria
 
-- One module defines categories; no component or route declares its own list.
-- The same concept shows the same label everywhere (Film & Video, Visual Art, Games & Tech).
-- Every existing Work, Collab, Group, and profile stays discoverable — Writing includes Book works, Games & Tech includes Build works.
-- Legacy `?c=film` / `?c=visual` / `?c=build` URLs still resolve.
-- Group filter circles still list all ten group categories with live counts.
-- Topics (Open Mic, Critique, Co-working…) are unchanged in Lounge and Events.
+- A Group shows exactly one blog surface, labelled "Blog", containing both Group-tagged and member-authored posts with no duplicates.
+- `?t=posts` deep links still resolve.
+- Groups with no relevant posts show no Blog tab and no empty module.
+- Today, its moderation trigger, and the activity ticker are unchanged.
+- No table, column, policy, or row is modified.
 - `tsgo` typecheck clean.
 
 ## Verification
 
-Typecheck, then a Playwright pass over `/gallery` (each category tab, confirming Writing returns the Book works), `/groups` (each filter circle + a legacy `?c=` URL), `/collab`, a Work detail page, and a profile — checking labels and console errors.
+Typecheck, then a Playwright pass over a Group page: default Today tab, the Blog tab (member-authored posts render, peek modal opens), a Group expected to have no posts (tab absent, `?t=posts` falls back), and console clean. Because `blog_post_entity_tags` is empty, the tagged-posts branch is verified by a temporary local tag in a scratch check rather than a production write.
 
 ## Risks and rollback
 
-Main risk is a filter that silently returns nothing because a canonical id was passed where a stored enum value was expected; `storageValuesFor` is the single chokepoint for that and the Playwright pass exercises every filter. No migration, so rollback is a code revert.
+Low. The only behavioral risk is hiding the tab for a Group that does have posts — mitigated by driving visibility off the same queries that populate the tab. No migration, so rollback is a code revert.
 
 ## Deferred
 
-Enum consolidation (`ALTER TYPE`), backfilling `works.category`/`groups.category` to canonical ids, dropping unused enum members, and adding a `design` option to writable pickers — all to Wave 9, after this layer has been live.
+Any decision about retiring `group_today_posts` itself, and backfilling Group tags onto existing blog posts, move to Wave 9 alongside the other schema work.
