@@ -172,6 +172,27 @@ export function storageValuesFor(canonical: string): string[] {
   return CANONICAL_TO_STORAGE[canonical as CanonicalCategory] ?? [canonical];
 }
 
+/** Values the legacy `category` Postgres enum (works / collabs / profiles) accepts. */
+export const CATEGORY_ENUM_VALUES = new Set<string>([
+  "film",
+  "music",
+  "writing",
+  "writing_book",
+  "build",
+  "visual",
+  ...TOPICS.map((t) => t.id),
+]);
+
+/**
+ * Like `storageValuesFor`, but restricted to values the `category` enum can
+ * hold — passing a canonical-only id (e.g. "film_video") to PostgREST against
+ * that enum is a 400.
+ */
+export function workStorageValuesFor(canonical: string): string[] {
+  const vals = storageValuesFor(canonical).filter((v) => CATEGORY_ENUM_VALUES.has(v));
+  return vals.length > 0 ? vals : [];
+}
+
 /** Subtypes shown per canonical category (stored free-form on works.subtype). */
 export const CANONICAL_SUBTYPES: Record<string, string[]> = {
   film_video: ["Short film", "Music video", "Trailer", "Documentary", "Animation", "Reel"],

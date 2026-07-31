@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { CollabCard, type CollabCardData } from "@/components/collab-card";
 import { CategoryScroller } from "@/components/category-scroller";
 import { CANONICAL_WORK_CATEGORIES, type Category } from "@/lib/categories";
-import { normalizeCategory, storageValuesFor } from "@/lib/taxonomy";
+import { normalizeCategory, workStorageValuesFor } from "@/lib/taxonomy";
 
 /** Category filter value: a canonical category id, or "all". */
 type CatFilter = string;
@@ -83,7 +83,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
     .order("created_at", { ascending: false })
     .limit(60);
 
-  if (cat !== "all") q = q.overlaps("categories", storageValuesFor(cat) as Category[]);
+  if (cat !== "all") q = q.overlaps("categories", workStorageValuesFor(cat) as Category[]);
   if (online) {
     q = q.eq("location_mode", "online");
   } else if (city) {
