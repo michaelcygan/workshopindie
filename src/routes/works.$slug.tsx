@@ -10,7 +10,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { CategoryChips } from "@/components/category-chips";
 import { WorkActions } from "@/components/work-actions";
-import { EnterWorkshopButton } from "@/components/enter-workshop-button";
 import { CommentThread } from "@/components/comment-thread";
 import { ReportDialog } from "@/components/report-dialog";
 import { MessageButton } from "@/components/message-button";
@@ -310,13 +309,6 @@ function WorkDetail() {
 
         {/* Also worked together — the first visible network payoff */}
         <AlsoWorkedTogether workId={work.id} createdBy={work.created_by} />
-
-        {/* Members-only: re-enter the studio while the Workshop is still alive */}
-        {work.source_workshop_id && (
-          <div className="mt-10 flex items-center justify-end">
-            <EnterWorkshopButton workshopId={work.source_workshop_id} />
-          </div>
-        )}
 
         {/* Comments */}
         <section className="mt-14">

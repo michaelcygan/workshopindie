@@ -142,15 +142,15 @@ export const getAdminMarketplace = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await requireAdmin(context.supabase, context.userId);
     const admin = await getAdmin();
-    const [collabFunnel, workshopFunnel, worksFunnel, health] = await Promise.all([
+    const [collabFunnel, loungeFunnel, worksFunnel, health] = await Promise.all([
       admin.from("vw_collab_funnel").select("*").maybeSingle(),
-      admin.from("vw_workshop_funnel").select("*").maybeSingle(),
+      admin.from("vw_lounge_funnel" as never).select("*").maybeSingle(),
       admin.from("vw_works_funnel").select("*").maybeSingle(),
       admin.from("vw_marketplace_health").select("*").maybeSingle(),
     ]);
     return {
       collabFunnel: collabFunnel.data ?? null,
-      workshopFunnel: workshopFunnel.data ?? null,
+      loungeFunnel: loungeFunnel.data ?? null,
       worksFunnel: worksFunnel.data ?? null,
       health: health.data ?? null,
     };

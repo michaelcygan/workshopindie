@@ -13,7 +13,8 @@ function publicClient() {
 
 export type WorkProvenance = {
   collab: { id: string; slug: string; title: string } | null;
-  workshop: { id: string; slug: string; title: string } | null;
+  /** True when this Work was made collaboratively on Workshop (legacy source rooms). */
+  madeTogether: boolean;
 };
 
 /**
@@ -24,7 +25,7 @@ export type WorkProvenance = {
 export const getWorkProvenance = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ work_id: z.string().uuid() }).parse(i))
   .handler(async ({ data }): Promise<WorkProvenance> => {
-    const empty: WorkProvenance = { collab: null, workshop: null };
+    const empty: WorkProvenance = { collab: null, madeTogether: false };
     try {
       const sb = publicClient();
       const { data: w } = await sb
@@ -34,30 +35,19 @@ export const getWorkProvenance = createServerFn({ method: "POST" })
         .maybeSingle();
       if (!w || w.visibility !== "public") return empty;
 
-      const [collabRes, wsRes] = await Promise.all([
-        w.source_collab_post_id
-          ? sb
-              .from("collab_posts")
-              .select("id, slug, title, status")
-              .eq("id", w.source_collab_post_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-        w.source_workshop_id
-          ? sb
-              .from("workshops")
-              .select("id, slug, title")
-              .eq("id", w.source_workshop_id)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
-      ]);
+      const collabRes = w.source_collab_post_id
+        ? await sb
+            .from("collab_posts")
+            .select("id, slug, title, status")
+            .eq("id", w.source_collab_post_id)
+            .maybeSingle()
+        : { data: null };
 
       return {
         collab: collabRes.data
           ? { id: collabRes.data.id, slug: collabRes.data.slug, title: collabRes.data.title }
           : null,
-        workshop: wsRes.data
-          ? { id: wsRes.data.id, slug: wsRes.data.slug, title: wsRes.data.title }
-          : null,
+        madeTogether: !!w.source_workshop_id,
       };
     } catch {
       return empty;
@@ -76,19 +66,17 @@ export type WorkFromSource = {
 };
 
 /**
- * Reverse provenance: list public Works that were born from a given Workshop
- * or Collab post. Used by the "Works born here" rails on `/workshops/$slug`
- * and `/collab/$slug`. Returns [] on any failure so the page never blanks.
+ * Reverse provenance: list public Works that were born from a given Collab
+ * post. Used by the "Works born here" rail on `/collab/$slug`. Returns [] on
+ * any failure so the page never blanks.
  */
 export const getWorksBySource = createServerFn({ method: "POST" })
   .inputValidator((i) =>
     z
       .object({
-        workshop_id: z.string().uuid().optional(),
-        collab_post_id: z.string().uuid().optional(),
+        collab_post_id: z.string().uuid(),
         limit: z.number().int().min(1).max(24).optional(),
       })
-      .refine((v) => !!(v.workshop_id || v.collab_post_id), { message: "source required" })
       .parse(i),
   )
   .handler(async ({ data }): Promise<WorkFromSource[]> => {
@@ -103,7 +91,6 @@ export const getWorksBySource = createServerFn({ method: "POST" })
         .not("published_at", "is", null)
         .order("published_at", { ascending: false })
         .limit(data.limit ?? 12);
-      if (data.workshop_id) q = q.eq("source_workshop_id", data.workshop_id);
       if (data.collab_post_id) q = q.eq("source_collab_post_id", data.collab_post_id);
       const { data: rows } = await q;
       type Row = {

@@ -88,7 +88,7 @@ function UserDetail() {
         <div className="mt-5 grid grid-cols-3 gap-2 text-center text-sm sm:grid-cols-7">
           {[
             ["Works", data!.counts.works], ["Collabs", data!.counts.collabs],
-            ["Workshops", data!.counts.workshops], ["Wkshp apps", data!.counts.workshopApps],
+            ["Lounges", data!.counts.lounges], ["Blog posts", data!.counts.blogPosts],
             ["RSVPs", data!.counts.rsvps], ["Following", data!.counts.following],
             ["Reports filed", data!.counts.reportsFiled],
           ].map(([label, v]) => (

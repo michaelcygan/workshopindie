@@ -4,12 +4,10 @@ import { Link } from "@tanstack/react-router";
 import { Sparkles, ArrowRight } from "lucide-react";
 import { getWorksBySource } from "@/lib/work-provenance.functions";
 
-type Props =
-  | { workshopId: string; collabPostId?: never; excludeWorkId?: string | null; title?: string }
-  | { collabPostId: string; workshopId?: never; excludeWorkId?: string | null; title?: string };
+type Props = { collabPostId: string; excludeWorkId?: string | null; title?: string };
 
 /**
- * Reverse-provenance rail: lists public Works born from a Workshop or Collab.
+ * Reverse-provenance rail: lists public Works born from a Collab.
  *
  * Renders nothing when no public Works exist yet — pages stay clean instead of
  * filling with a "no works yet" void. The `excludeWorkId` prop lets a caller
@@ -18,9 +16,7 @@ type Props =
  */
 export function WorksBornHere(props: Props) {
   const fn = useServerFn(getWorksBySource);
-  const key = "workshopId" in props && props.workshopId
-    ? ["works-by-source", "workshop", props.workshopId]
-    : ["works-by-source", "collab", (props as { collabPostId: string }).collabPostId];
+  const key = ["works-by-source", "collab", props.collabPostId];
 
   const { data: works = [] } = useQuery({
     queryKey: key,
@@ -28,8 +24,7 @@ export function WorksBornHere(props: Props) {
     queryFn: () =>
       fn({
         data: {
-          workshop_id: "workshopId" in props ? props.workshopId : undefined,
-          collab_post_id: "collabPostId" in props ? props.collabPostId : undefined,
+          collab_post_id: props.collabPostId,
           limit: 12,
         },
       }),
