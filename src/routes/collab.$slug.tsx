@@ -819,7 +819,26 @@ function CollabDetail() {
       {/* Reverse provenance — public Works born from this Collab. */}
       <WorksBornHere collabPostId={post.id} excludeWorkId={post.resulting_work_id ?? null} />
 
-      <EntityBlogPosts kind="collab" entityId={post.id} className="mt-10" />
+      <EntityBlogPosts
+        kind="collab"
+        entityId={post.id}
+        heading="The story behind this Collab"
+        trustedOnly
+        canWrite={isOwner}
+        writeLabel="Write about this Collab"
+        emptyLabel="No story yet. Write the one behind this Collab."
+        className="mt-10"
+        openSlug={storySlug}
+        onOpenSlugChange={(s) =>
+          navigate({
+            to: "/collab/$slug",
+            params: { slug: post.slug },
+            search: { story: s ?? undefined },
+            replace: true,
+          })
+        }
+      />
+
 
       {hostUser?.username && (
         <div className="mt-10 md:hidden">
