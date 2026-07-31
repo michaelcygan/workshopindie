@@ -43,10 +43,9 @@ function MarketplacePage() {
 
       <section>
         <h2 className="mb-3 font-display text-xl text-ink">Marketplace health</h2>
-        <div className="grid gap-3 md:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-3">
           <KpiTile label="Avg time to first app" value={h?.avg_time_to_first_app_hours != null ? `${h.avg_time_to_first_app_hours}h` : "—"} />
           <KpiTile label="Avg time to close" value={h?.avg_time_to_close_days != null ? `${h.avg_time_to_close_days}d` : "—"} />
-          <KpiTile label="% with vouches (90d)" value={h?.pct_with_vouches_90d != null ? `${h.pct_with_vouches_90d}%` : "—"} />
           <KpiTile label="Open / closed ratio" value={h?.collabs_closed ? `${((h.collabs_open / h.collabs_closed) * 100).toFixed(0)}%` : "—"} />
         </div>
       </section>

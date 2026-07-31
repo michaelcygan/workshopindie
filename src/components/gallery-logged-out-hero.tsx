@@ -46,7 +46,7 @@ export function GalleryLoggedOutHero() {
             Real Work, made by real people.
           </h2>
           <p className="mt-1 max-w-xl text-sm text-ink-muted">
-            Follow the people you make things with. Vouch for what moves you. Publish your own.
+            Follow the people you make things with. Save what moves you. Publish your own.
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
