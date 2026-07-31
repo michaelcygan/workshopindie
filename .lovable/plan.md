@@ -1,48 +1,64 @@
-# Reciprocal Work ↔ Blog Context
+# Homepage Redesign — Public/Member split with a connected creative graph
 
-## Wave 0 — Audit findings (verified in repo)
+## What I confirmed in the current code
 
-- Work page: `src/routes/works.$slug.tsx` — loads work + `work_credits(role_label, sort_order, display_name, profiles(...))`; renders Credits (`WorkCreditLayer`), Comments, then `<EntityBlogPosts kind="work" …>` **last**, after comments.
-- Blog page: `src/routes/blog.$slug.tsx` — SSR loader (`getPublishedPost`) already hydrates `entity_tags`; renders all tags as chips (`src/components/blog-entity-tags.tsx`) after the body.
-- Reciprocal list: `src/components/entity-blog-posts.tsx` → `listBlogPostsForEntity` → `listBlogPostsForEntityServer` (`src/lib/blog-entity-tags.server.ts`). Correctly filters `status=published` and `published_at <= now`, but does **not** filter deleted/blocked authors or check contributor eligibility. Cards link away to `/blog/$slug` (no peek).
-- Peek: `src/components/blog-post-peek.tsx` — full article dialog with cover, authors, body, footer reactions, copy link, unavailable state. Reusable as-is.
-- Card: `src/components/editorial-card.tsx` exists and is the house card design.
-- Editor: `src/routes/me.blog.$id.tsx` calls `flushEntityTags()` which **catches tag errors, toasts, and continues** — save still reports "Saved" and publish still proceeds. This is the correctness bug named in the brief. Admin editor `src/components/blog-editor.tsx` uses the same split path.
-- Publish already calls `assertTaggedEntitiesPubliclyVisibleServer(id)` (`src/lib/blog-member.server.ts`), so publish-time leak protection exists; it just isn't reached when tag writes silently failed earlier.
-- Picker: `src/components/blog-entity-tag-picker.tsx` queries `works` with `.in("visibility", ["public","unlisted"])` — unlisted must be dropped.
-- Draft creation: `createMyBlogDraft` / `createMyBlogDraftServer` → RPC `create_member_blog_draft`; no initial-entity support.
-- Schema: `works` already has `excerpt, category, categories, cover_url, cover_aspect, cover_focal_x, cover_focal_y, visibility, status, created_by`; `blog_post_entity_tags` has ordered `sort_order` and an RPC `replace_blog_post_entity_tags`. **No migration required.**
-- Analytics: no general client analytics utility exists (only Lounge telemetry). Skip analytics per "do not create new infrastructure".
+- `src/routes/index.tsx` (563 lines) is one conditional monolith: a `min-h-[88vh]` marketing `Hero` with the globe + three CTA cards, then `HomePulseRail`, `HomeLiveWorkshopsRail`, `YourGroupsStrip`, `NetworkRail`, `CollabsRail`, `GalleryRail`, `FeaturedEventsCarousel`, `UpcomingInMyGroupsRail`, `CityEventsStrip`, `HomeBlogRail`. Every rail fetches on the client independently (many waterfalls).
+- `src/components/home-live-workshops-rail.tsx` is still rendered for everyone — this is the legacy scheduled-Workshop rail that must not render for members.
+- `useAuth()` already exposes `loading`; `index.tsx` currently ignores it, so members briefly see the public hero.
+- `WorldArcs({ className, promos })` sizes from its container (`Math.max(320, r.height)`) and already checks `prefers-reduced-motion` — a compact member atmosphere is a container-size change only.
+- Server helpers that already exist and will be reused/extracted: `listMyGroupLounges` (instant_rooms + presence, group-scoped), `listUpcomingForMyGroups`, `listMyUpcomingRsvps`, `listOpenForMyGroups`, `getNetworkFeed` / `getFrequentCollaborators` (plain async, already server-level), `listBlogPostsForEntityServer` (has the trusted-author rule), `getBlogPostEntityTagsBulkServer` (already batched), `blogPublicCacheHeader()`, `createMyBlogDraftServer(..., seedTag)`.
+- `seedDraftTag` in `src/lib/blog-member.server.ts:160` swallows errors in a bare `catch {}` and `createMyBlogDraftServer` returns only `{ id, reused }` — Home cannot tell whether the pre-tag succeeded.
+- Group Today rows (`group_today_posts`) are read client-side in `group-today-tab.tsx` with `.gt("expires_at", now)`; there is no server-level Today summary helper yet.
 
-## Wave 1 — Make tagging reliable
+No schema migration is required for any of this.
 
-- `src/lib/blog-member.functions.ts` + `blog-member.server.ts`: add `tags` to `updateMyBlogPost` (optional, validated, max/ dedupe server-side) and apply them via the existing `replace_blog_post_entity_tags` RPC in the same handler; any tag failure throws so no success state is shown.
-- `src/routes/me.blog.$id.tsx`: send tags with the save mutation, delete `flushEntityTags`'s swallow; publish path saves first and aborts on error.
-- `src/components/blog-editor.tsx` (admin): same single-call pattern using the admin tag setter, failures propagate.
-- Cache invalidation helper in `src/lib/blog-entity-tags.ts` (client-safe): given previous + next tags, invalidate `["entity-blog-posts", kind, id]` for the union, plus existing `["my-blog-posts"]`, `["blog-post", id]`, `["blog-peek", slug]`. Called after save, publish, unpublish, delete.
-- Picker: works search restricted to `visibility = 'public'`.
-- `listBlogPostsForEntityServer`: also exclude posts whose entity is no longer publicly visible and respect existing blocking helpers.
+## Wave 0 — Baseline
 
-## Wave 2 — Work context on the Blog post
+Record lint/build baseline, then write no product code. (Audit above is the deliverable; anything else uncovered mid-wave gets folded in.)
 
-- `src/lib/blog-entity-tags.server.ts`: extend the work branch of `resolveTags` to attach a `work` summary (slug, title, excerpt, category/categories, cover_url + aspect/focal, up to 3 credits from `work_credits` → `profiles`), public works only. Types extended in `src/lib/blog-entity-tags.ts`. Loaded in the existing SSR loader — no client waterfall.
-- New `src/components/blog-work-context.tsx`: "WORK IN THIS STORY" horizontal card (cover w/ focal position, category, title, one-line excerpt, up to 3 credited creators, "View Work →"). Multiple works → "Works in this story", restrained grid, max 3 rich + remainder as chips; single column on mobile.
-- `src/routes/blog.$slug.tsx`: render it after byline / before body; filter work tags out of the lower `BlogEntityTags` chip row (other kinds unchanged). Omit entirely if summary is missing.
+## Wave 1 — Public/Member split + atmosphere
 
-## Wave 3 — Blog context on the Work page
+- `src/routes/index.tsx` becomes a thin chooser: `loading → <HomeSkeleton/>`, `user → <MemberHome/>`, else `<PublicHome/>`.
+- `src/components/home/public-home.tsx` — current markup moved verbatim (minus member-only branches) so the public page does not regress.
+- `src/components/home/member-home.tsx` + `src/components/home/member-atmosphere.tsx` — compact 320–400px desktop / ~200–240px mobile globe band, greeting, one-line summary ("3 of your Groups are active today"), one primary action. No marketing copy, no CTA trio.
+- `src/components/home/home-background-toggle.tsx` — Globe / My cover, persisted at `workshop:home-background` in localStorage. Uses existing `profiles.cover_url`; if the cover came from a Work, show a small attribution link. If no cover: globe + quiet "Set your background" → `/me/edit`. Gradient scrim for contrast; reduced-motion honored.
 
-- Move the reciprocal section in `src/routes/works.$slug.tsx` to sit after description/source action and before Credits.
-- Rewrite `src/components/entity-blog-posts.tsx` into a work-aware editorial section: "FROM THE BLOG / The story behind this Work", 1 / 2 / 3+ responsive layouts built on `EditorialCard`, max 6, hidden when empty, no "All posts" link.
-- Eligibility (server, in `listBlogPostsForEntityServer` with a `trustedOnly` mode for kind `work`): surface only posts authored/attributed to the work creator, a credited collaborator, or an editorial/admin publication (`publication_type`). Other members' posts keep their own Blog-side context only.
-- Role-aware byline derived by matching `blog_post_authors.profile_id` against `work_credits` (supports legacy single-author too) — no new fields.
-- Peek: add a validated search param `story` on the works route (`fallback(z.string(), "")`), open `BlogPostPeek` from it. Clicking a card navigates (Back closes the peek), direct URL opens it, close resets to the clean URL, and the slug is verified against the eligible list before opening.
+## Wave 2 — Now + Continue
 
-## Wave 4 — "Write about this Work"
+- New `src/lib/home.server.ts` + `src/lib/home.functions.ts` exposing one authed `getMemberHome` aggregator using `Promise.allSettled` so any one module failing cannot blank the page.
+  - `todaySummariesServer` — new batched query over joined groups' unexpired `group_today_posts` (count, latest snippet, author, group accent), blocked-user filtered.
+  - Lounge: extract the body of `listMyGroupLounges` into a server-level function and call it from the aggregator.
+  - Events: extract `listUpcomingForMyGroups` + RSVP priority into a server helper; pick one Next Event (RSVPed > joined Group > home city > online).
+  - `resolveContinueActions` — deterministic, max 3: recent Blog draft → open Collab with applicants → public Work with no trusted Blog story → newly joined Group with no Today post → upcoming RSVP → profile completion (new users only).
+- Components: `home/now-today-card.tsx`, `home/now-lounge-card.tsx`, `home/now-event-card.tsx`, `home/continue-making.tsx`. One primary action each; Today action deep-links to the Group with a focus param rather than duplicating the composer.
+- `HomeLiveWorkshopsRail` no longer renders for members.
+- Every slot has the specified productive fallback (recommend Groups, start today's conversation, open a Group Lounge, city/online event).
+- Member payload cached in React Query ~45s; Lounge slice refetched ~30–45s.
 
-- `createMyBlogDraft` gains optional `initialEntity: { kind: "work", id }`; server verifies blog access, verifies the work is public + published, creates the draft, then inserts the single tag; duplicates prevented.
-- Contextual action rendered for the signed-in work creator or credited contributors near the blog section; navigates to `/me/blog/$id` with the work already in "Connected to this post".
-- When a work has no eligible posts, contributors see a quiet private nudge ("Add context to this Work") with the same action; signed-out and non-contributors see nothing.
+## Wave 3 — Stories around the Work
 
-## Verification per wave
+- `listHomeWorkStoriesServer` in `home.server.ts`: one pass — latest ~40 eligible published posts → all work tag rows for those ids → all public/published works → all work credits → all attributed authors → trusted filter (creator, credited collaborator, or editorial/admin) → group by Work, ≤3 stories each, ≤8 composites, dedupe a post to its first eligible Work. Ranks on `published_at` / story count / work publish date — never `blog_post_entity_tags.created_at`. Public variant served with `blogPublicCacheHeader()`.
+- `src/components/home/work-stories-carousel.tsx` — CSS scroll-snap rail (no new dependency), keyboard-operable, no autoplay, responsive card widths. Composite card: Work cover + credits, story title/excerpt, conservative label (Process note / From Workshop / Story about this Work), "N more stories", distinct **Read story** (opens existing `BlogPostPeek`) and **View Work** actions.
+- Final participatory card: "Write about a Work" → pre-seeded draft, or "Post your first Work".
+- Harden `createMyBlogDraftServer`/`seedDraftTag` to return `{ id, reused, tagSeeded: boolean }`; Home shows an honest message + manual-tag path when seeding fails.
+- Invalidate the Home story query alongside existing entity-tag invalidation on blog save/publish/unpublish/delete.
+- Placed high on both Public Home (after the globe) and Member Home.
 
-Typecheck + lint + production build; manual passes on `/works/$slug` and `/blog/$slug` at 320/390/430 px and desktop; peek Back/Escape/direct-URL behavior; tag-failure path shows an error and no false success; draft/publish/unpublish/delete refresh the work page immediately.
+## Wave 4 — Circles, people, disciplines
+
+- `listCircleStoriesServer` — bounded 8–12 typed items (`{ kind, primary, related, occurredAt, reason, primaryAction, secondary }`) merged server-side from follows, frequent credited collaborators, joined-Group Collabs/Events, and Collab-resulting Works. Reason enum rendered as "You follow Mina" / "From Chicago Filmmakers" / "Made with Alex". Repeat-author/Group/Work caps. No new table, no infinite scroll.
+- `src/components/home/people-to-make-with.tsx` — promotes the existing shared-Group people logic (as used by `groups-people-rail`), reusing `FollowButton`; excludes self, already-followed, blocked, undiscoverable.
+- `src/components/home/across-disciplines.tsx` — small medium-appropriate editorial set from existing Work fields/embeds/categories; for members, 1–2 adjacent-discipline slots that require a real bridge (shared Group/city/collaborator/Blog/Event).
+
+## Wave 5 — Consolidation and QA
+
+- Remove member-only rendering of shelves now superseded (`YourGroupsStrip`, `NetworkRail`, member Collabs/Gallery/Events duplication) while keeping them on Public Home where they still aid discovery.
+- Audit loading/empty/error/partial states, visibility + blocking, query counts (no N+1), keyboard nav, reduced motion, alt text/contrast, and 320 / 390 / 430px plus desktop.
+- Run lint, typecheck, and production build after each wave; fix related failures before advancing.
+
+## Technical notes
+
+- Everything reads existing tables; **no migrations**.
+- Reusable logic is extracted into `*.server.ts` helpers rather than calling one `createServerFn` from another.
+- Home is presentation/orchestration only — no new content primitive, feed table, AI ranking, or dashboard framework.
+- The typed response contract for stories/circle items is stable so a future scorer can be swapped in without UI changes.
