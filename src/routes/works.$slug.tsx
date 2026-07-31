@@ -139,7 +139,10 @@ async function fetchWork(slug: string) {
 
 function WorkDetail() {
   const { slug } = Route.useParams();
+  const { story: storySlug } = Route.useSearch();
+  const navigate = Route.useNavigate();
   const goBack = useSmartBack({ to: "/gallery" });
+
   const { user } = useAuth();
   const { data: work, isLoading } = useQuery({ queryKey: ["work", slug], queryFn: () => fetchWork(slug) });
 
