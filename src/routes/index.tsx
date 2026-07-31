@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Megaphone, Radio, Sparkles, MapPin, ArrowRight, Calendar, Users, Compass, Hammer } from "lucide-react";
@@ -19,6 +20,7 @@ import { YourGroupsStrip } from "@/components/your-groups-strip";
 import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { HomePulseRail } from "@/components/home-pulse-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
+import { listCityEventsStrip } from "@/lib/group-events.functions";
 import { UpcomingInMyGroupsRail } from "@/components/upcoming-in-my-groups-rail";
 import { HomeBlogRail } from "@/components/home-blog-rail";
 import { useMyGroupIdSet } from "@/hooks/use-my-groups";
@@ -251,7 +253,7 @@ function Index() {
         <UpcomingInMyGroupsRail />
       </section>
 
-      <CityMeetupsStrip />
+      <CityEventsStrip />
 
       {/* ─── Blog closer ─── */}
       <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-12 md:px-6 md:py-16">
@@ -480,41 +482,43 @@ function CollabsRail() {
   );
 }
 
-function CityMeetupsStrip() {
+function CityEventsStrip() {
+  const fetchFn = useServerFn(listCityEventsStrip);
   const { data } = useQuery({
-    queryKey: ["home-city-meetups"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("standing_meetups")
-        .select("id,title,description,default_category,city:cities(name,slug)")
-        .eq("status", "active")
-        .order("created_at", { ascending: false })
-        .limit(8);
-      return data ?? [];
-    },
+    queryKey: ["home-city-events"],
+    queryFn: () => fetchFn(),
+    staleTime: 60_000,
   });
-  if (!data || data.length === 0) return null;
+  const rows = (data ?? []) as unknown as {
+    id: string;
+    slug: string;
+    title: string;
+    starts_at: string;
+    city: { name: string; slug: string } | null;
+    group: { slug: string } | null;
+  }[];
+  if (rows.length === 0) return null;
   return (
     <section className="mx-auto max-w-7xl border-t border-border/60 px-4 py-10 md:px-6 md:py-12">
       <HomeSectionHeader
         eyebrow={<><Compass className="h-3.5 w-3.5" /> IRL</>}
-        title="City meetups"
-        kicker="Standing creative gatherings, in real life."
-        href="/cities"
-        cta="All cities"
+        title="Happening in cities"
+        kicker="Upcoming gatherings, in real life."
+        href="/events"
+        cta="All events"
       />
       <div className="mt-6 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
-        {data.map((m) => (
+        {rows.map((e) => (
           <Link
-            key={m.id}
-            to="/g/$slug"
-            params={{ slug: m.city?.slug ?? "" }}
+            key={e.id}
+            to="/g/$slug/e/$eventSlug"
+            params={{ slug: e.group?.slug ?? "", eventSlug: e.slug }}
             className="group inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-sm text-ink-soft transition hover:border-primary/40 hover:bg-muted hover:text-ink"
           >
             <MapPin className="h-3.5 w-3.5 text-ink-muted" />
-            <span className="font-medium text-ink">{m.city?.name ?? "—"}</span>
+            <span className="font-medium text-ink">{e.city?.name ?? "—"}</span>
             <span className="text-ink-muted/70">·</span>
-            <span className="max-w-[220px] truncate">{m.title}</span>
+            <span className="max-w-[220px] truncate">{e.title}</span>
           </Link>
         ))}
       </div>

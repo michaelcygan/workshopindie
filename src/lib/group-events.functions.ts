@@ -32,6 +32,42 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     return row;
   });
 
+/** Public: upcoming public events that are tied to a city, for the homepage IRL strip. */
+export const listCityEventsStrip = createServerFn({ method: "GET" }).handler(async () => {
+  const supabase = publicClient();
+  const { data, error } = await supabase
+    .from("group_events")
+    .select("id,slug,title,starts_at,city:cities!group_events_venue_city_id_fkey(name,slug),group:groups!group_events_group_id_fkey!inner(slug)")
+    .is("deleted_at", null)
+    .eq("visibility", "public")
+    .not("venue_city_id", "is", null)
+    .gt("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(8);
+  if (error) throw new Error(error.message);
+  return data ?? [];
+});
+
+/** Public: count of upcoming public events per city. */
+export const listCityEventCounts = createServerFn({ method: "GET" }).handler(async () => {
+  const supabase = publicClient();
+  const { data, error } = await supabase
+    .from("group_events")
+    .select("venue_city_id")
+    .is("deleted_at", null)
+    .eq("visibility", "public")
+    .not("venue_city_id", "is", null)
+    .gt("starts_at", new Date().toISOString())
+    .limit(1000);
+  if (error) throw new Error(error.message);
+  const counts: Record<string, number> = {};
+  for (const r of data ?? []) {
+    const id = (r as { venue_city_id: string | null }).venue_city_id;
+    if (id) counts[id] = (counts[id] ?? 0) + 1;
+  }
+  return counts;
+});
+
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
   const supabase = publicClient();
   const nowIso = new Date().toISOString();
