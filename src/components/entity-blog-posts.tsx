@@ -59,8 +59,15 @@ export function EntityBlogPosts({
 
   const createMut = useMutation({
     mutationFn: () => createFn({ data: { seedTag: { kind, id: entityId } } }),
-    onSuccess: (res: { id: string }) => navigate({ to: "/me/blog/$id", params: { id: res.id } }),
+    onSuccess: (res: { id: string; seedTagFailed?: boolean }) => {
+      // Never let a dropped connection pass silently as a successful start.
+      if (res.seedTagFailed) {
+        toast.warning("Draft created, but the connection didn't save. Add it in Connections.");
+      }
+      navigate({ to: "/me/blog/$id", params: { id: res.id } });
+    },
     onError: (e: Error) => toast.error(e.message),
+
   });
 
   const posts = q.data ?? [];
