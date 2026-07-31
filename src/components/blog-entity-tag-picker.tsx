@@ -83,7 +83,8 @@ export function BlogEntityTagPicker({
         slug: r.slug,
         label: r.title,
         sublabel: r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null,
-        image: null,
+        image: r.cover_url ?? null,
+
       }));
     },
   });
