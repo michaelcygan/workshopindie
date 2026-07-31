@@ -148,6 +148,10 @@ function AdminBlogIndex() {
                       p.status === "published" ? "bg-primary/10 text-primary" : "bg-muted text-ink-muted"
                     }`}>{p.status}</span>
                   </td>
+                  <td className="px-4 py-3">
+                    <ConnectionCell connections={(p.connections ?? []) as Connection[]} />
+                  </td>
+
                   <td className="px-4 py-3 text-ink-muted">
                     {p.published_at ? new Date(p.published_at).toLocaleDateString() : "—"}
                   </td>
