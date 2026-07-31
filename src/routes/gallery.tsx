@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Search, X, Plus } from "lucide-react";
 import { z } from "zod";
@@ -111,7 +111,7 @@ async function fetchForYouPage(params: {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,popularity_score,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
     )
     .eq("status", "published")
     .in("visibility", ["public", "unlisted"])
@@ -144,7 +144,6 @@ async function fetchForYouPage(params: {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
-    vouch_count: number; boost_count: number;
     published_at: string | null;
     created_by: string;
     work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
@@ -155,7 +154,6 @@ async function fetchForYouPage(params: {
     id: r.id, title: r.title, slug: r.slug, category: r.category,
     cover_url: r.cover_url, embed_url: r.embed_url, source_type: r.source_type,
     like_count: r.like_count, save_count: r.save_count, view_count: r.view_count,
-    vouch_count: r.vouch_count, boost_count: r.boost_count,
     published_at: r.published_at, created_by: r.created_by,
     credits: (r.work_credits ?? [])
       .sort((a, b) => a.sort_order - b.sort_order)
@@ -195,7 +193,7 @@ async function fetchFavoritesPage(params: {
   let qb = supabase
     .from("works")
     .select(
-      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,vouch_count,boost_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
+      "id,title,slug,category,categories,cover_url,embed_url,source_type,like_count,save_count,view_count,published_at,created_at,created_by, work_credits(role_label, sort_order, display_name, profiles(id,display_name,username))",
     )
     .in("id", ids);
   if (params.category !== "all") qb = qb.contains("categories", [params.category as Category]);
@@ -214,7 +212,6 @@ async function fetchFavoritesPage(params: {
     id: string; title: string; slug: string; category: Category;
     cover_url: string | null; embed_url: string | null; source_type: string;
     like_count: number; save_count: number; view_count: number;
-    vouch_count: number; boost_count: number;
     published_at: string | null;
     created_by: string;
     work_credits?: { sort_order: number; display_name: string | null; profiles: { id: string; display_name: string | null; username: string | null } | null }[];
@@ -234,7 +231,6 @@ async function fetchFavoritesPage(params: {
       id: w.id, title: w.title, slug: w.slug, category: w.category,
       cover_url: w.cover_url, embed_url: w.embed_url, source_type: w.source_type,
       like_count: w.like_count, save_count: w.save_count, view_count: w.view_count,
-      vouch_count: w.vouch_count, boost_count: w.boost_count,
       published_at: w.published_at, created_by: w.created_by,
       credits: (w.work_credits ?? [])
         .sort((a, b) => a.sort_order - b.sort_order)
@@ -354,32 +350,6 @@ function GalleryPage() {
   const setSearch = (patch: Partial<typeof search>) =>
     navigate({ search: (prev: Record<string, unknown>) => ({ ...prev, ...patch }), replace: true });
 
-  // Realtime: refresh the feed when anyone vouches or boosts a Work
-  const qc = useQueryClient();
-  useEffect(() => {
-    const ch = supabase
-      .channel("gallery-social")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "work_vouches" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["gallery"] });
-          qc.invalidateQueries({ queryKey: ["work-vouchers-batch"] });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "work_boosts" },
-        () => {
-          qc.invalidateQueries({ queryKey: ["boosted-works"] });
-          qc.invalidateQueries({ queryKey: ["gallery"] });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [qc]);
 
   // Geo-default: auto-apply user's home city (or IP-inferred nearest) on first visit
   const defaultCityQuery = useDefaultCity();

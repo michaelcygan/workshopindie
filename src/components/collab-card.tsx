@@ -27,8 +27,6 @@ export type CollabCardData = {
   created_at: string;
   live_workshop_id?: string | null;
   resulting_work_id?: string | null;
-  vouch_count?: number | null;
-  boost_count?: number | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
@@ -69,15 +67,11 @@ function locationLabel(post: CollabCardData): string {
 
 export function CollabCard({
   post,
-  boosted,
   groups,
   myGroupIds,
   className,
 }: {
   post: CollabCardData;
-  /** Deprecated — kept for API stability while Boosts are flag-off. */
-  vouchers?: unknown;
-  boosted?: boolean;
   groups?: GroupTag[];
   myGroupIds?: Set<string>;
   className?: string;
@@ -106,7 +100,7 @@ export function CollabCard({
       whileHover={{ y: -3 }}
       className={cn(
         "group relative flex flex-col overflow-hidden rounded-3xl border bg-surface shadow-soft transition-shadow hover:shadow-lift",
-        boosted ? "border-primary/40 ring-1 ring-primary/20" : "border-border",
+        "border-border",
         isLive && "ring-1 ring-primary/30",
         className,
       )}
@@ -132,11 +126,6 @@ export function CollabCard({
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
             </span>
             <Radio className="h-3 w-3" /> Live
-          </span>
-        )}
-        {boosted && (
-          <span className="inline-flex items-center gap-1 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
-            Boosted
           </span>
         )}
         <span className="ml-auto shrink-0 text-[11px] text-ink-muted">{relativeTime(post.created_at)}</span>
