@@ -49,7 +49,7 @@ export function ScreeningStage({
               type="button"
               onClick={onStop}
               className="inline-flex items-center gap-1 rounded-full bg-background/10 px-2 py-1 text-[11px] text-background/90 hover:bg-background/15"
-              title="Stop screening for the Lounge"
+              title="Stop screening for the room"
             >
               <X className="h-3 w-3" /> Stop
             </button>

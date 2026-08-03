@@ -106,7 +106,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
           />
         ) : !hasGroups ? (
           <EmptyState
-            title="Join a group to unlock collabs and Lounges from your scenes."
+            title="Join a group to unlock collabs and Group audio from your scenes."
             cta={
               <button
                 type="button"
@@ -127,7 +127,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
         ) : items.length === 0 ? (
           <EmptyState
             title="Quiet in your groups right now."
-            body="No open collabs or upcoming Lounges — yet."
+            body="No open collabs or live audio — yet."
             cta={
               <button
                 type="button"
@@ -156,7 +156,7 @@ function FeedItemView({
   canSkip: boolean;
 }) {
   const Icon = item.kind === "collab" ? Megaphone : Radio;
-  const kindLabel = item.kind === "collab" ? "Collab" : "Lounge";
+  const kindLabel = item.kind === "collab" ? "Collab" : "Audio";
   const accent = item.group.accent_color ?? undefined;
   const href =
     item.kind === "collab"

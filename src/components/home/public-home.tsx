@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { EtherealBackground } from "@/components/ethereal-background";
 import { WorldArcs } from "@/components/world-arcs";
 import { useGlobePromos } from "@/lib/globe-promos";
-import { HomeLiveWorkshopsRail } from "@/components/home-live-workshops-rail";
 import { HomePulseRail } from "@/components/home-pulse-rail";
 import { FeaturedEventsCarousel } from "@/components/featured-events-carousel";
 import { listCityEventsStrip } from "@/lib/group-events.functions";
@@ -146,7 +145,7 @@ function Hero() {
           transition={{ duration: 0.7, delay: 0.1 }}
           className="mx-auto mt-4 max-w-xl text-base text-ink-soft md:text-lg"
         >
-          Drop into the Lounge with other artists and creators. Post a Collab, join a Group, and
+          Drop into live audio with other artists and creators. Post a Collab, join a Group, and
           find an event near you.
         </motion.p>
 
@@ -157,7 +156,7 @@ function Hero() {
           className="mx-auto mt-6 grid max-w-4xl gap-4 md:grid-cols-3"
         >
           <Link
-            to="/lounge"
+            to="/groups"
             className="gradient-motion group relative flex min-h-[180px] flex-col items-start gap-3 rounded-3xl p-6 text-left text-primary-foreground shadow-lift transition md:hover:-translate-y-0.5 md:hover:shadow-xl md:p-7"
           >
             <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/15">
@@ -165,11 +164,11 @@ function Hero() {
             </span>
             <div>
               <div className="font-display text-xl md:text-2xl leading-tight">
-                Drop into the Lounge
+                Join a Group
               </div>
               <p className="mt-2 text-sm text-primary-foreground/85">
-                Live, drop-in audio and chat rooms. Jam, critique, hack, or just work alongside
-                other people.
+                Groups are where your scene lives — realtime chat plus drop-in audio. Jam,
+                critique, hack, or just work alongside other people.
               </p>
             </div>
             <span className="mt-auto inline-flex items-center gap-1 text-sm font-medium opacity-90 transition group-hover:gap-2">
@@ -291,7 +290,6 @@ export function PublicHome() {
       </section>
 
       {/* ─── ACT 1: Happening now ─── */}
-      <HomeLiveWorkshopsRail />
 
       <section className="mx-auto max-w-7xl px-4 pt-4 md:px-6">
         <GalleryLoggedOutHero />

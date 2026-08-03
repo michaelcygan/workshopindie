@@ -98,7 +98,7 @@ export function MediaPanel({
   hostUserId?: string | null;
   /** Optional extra control rendered in the dock alongside Mute/Camera/Exit. */
   dockExtra?: React.ReactNode;
-  /** Optional prominent slot (e.g. "Next Lounge") rendered above the Mute/Camera row. */
+  /** Optional prominent slot (e.g. "Next room") rendered above the Mute/Camera row. */
   nextLoungeSlot?: React.ReactNode;
 }) {
   const api = useOptionalLoungeAudio();

@@ -238,7 +238,7 @@ export function ChannelView({
   }, [user]);
 
   // Audio errors are informational only. A denied/absent mic must never
-  // bounce someone out of the Lounge — they can keep chatting, watching
+  // bounce someone out of the room — they can keep chatting, watching
   // Work screenings, and using Collabs/Links without ever joining audio.
   useEffect(() => {
     if (media.error && !media.audioJoined && !media.busy) {
@@ -295,7 +295,7 @@ export function ChannelView({
       if (inactive) {
         toast.error("Leaving the room because you've been quiet.");
         media.leave();
-        router.navigate({ to: "/lounge" });
+        router.navigate({ to: "/groups" });
       }
     }, QUIET_KICK_MS);
     return () => clearTimeout(kickT);
@@ -421,7 +421,7 @@ export function ChannelView({
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't find a new room");
       setJoiningNew(false);
-      router.navigate({ to: "/lounge" });
+      router.navigate({ to: "/groups" });
     }
   }
 
@@ -432,7 +432,7 @@ export function ChannelView({
 
     async function join() {
       // Atomic slot claim (5-cap) — see claim_lounge_slot() migration. Returns
-      // 'joined' | 'rejoined' | 'full'. On 'full' we bounce back to /lounge so
+      // 'joined' | 'rejoined' | 'full'. On 'full' we bounce back to /groups so
       // the user isn't half-in a room that has no seat.
       const { data: claim } = await supabase.rpc("claim_lounge_slot", {
         _room_id: roomId,
@@ -442,7 +442,7 @@ export function ChannelView({
       if (status === "full") {
         if (cancelled) return;
         toast.error("Room filled up while you were joining.");
-        router.navigate({ to: "/lounge" });
+        router.navigate({ to: "/groups" });
         return;
       }
 
@@ -1036,7 +1036,7 @@ export function ChannelView({
                     }}
                     onLeaveForLobby={() => {
                       media.leave();
-                      router.navigate({ to: "/lounge" });
+                      router.navigate({ to: "/groups" });
                     }}
                   />
                 ) : (
@@ -1216,7 +1216,7 @@ export function ChannelView({
               <AlertDialogTitle>Keep going?</AlertDialogTitle>
               <AlertDialogDescription>
                 You've been muted for a while. Keep going or unmute — otherwise
-                we'll leave this Lounge automatically.
+                we'll leave this room automatically.
               </AlertDialogDescription>
               <div
                 role="timer"
@@ -1260,7 +1260,7 @@ export function ChannelView({
             <AlertDialogHeader>
               <AlertDialogTitle>Room wrapped</AlertDialogTitle>
               <AlertDialogDescription>
-                You're the only one left. Want to drop into a new Lounge?
+                You're the only one left. Want to drop into a new room?
                 <br />
                 <span className="mt-2 inline-block text-ink-muted">
                   Returning home in <span className="font-medium text-ink">{secondsLeft}s</span>…
