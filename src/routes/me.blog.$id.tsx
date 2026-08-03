@@ -119,7 +119,10 @@ function MemberBlogEditorPage() {
 
   function refreshEntityCaches() {
     invalidateEntityTagCaches(qc, entityTags, post?.entity_tags ?? []);
+    // Member Home surfaces the author's own posts + the Blog rail.
+    qc.invalidateQueries({ queryKey: ["member-home"] });
   }
+
 
   const saveMut = useMutation({
     mutationFn: async (opts?: { silent?: boolean }) => {
