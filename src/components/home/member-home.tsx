@@ -98,34 +98,54 @@ export function MemberHome() {
   const data = q.data as MemberHomePayload;
 
   return (
-    <div className="pb-24">
-      <AtmosphereHeader data={data} />
+    <div className="pb-28">
+      <HomeFeaturedBlog
+        greetingName={data.greetingName}
+        posts={data.featuredPosts}
+        isFallback={data.featuredIsFallback}
+      />
 
-      {/* Now — the three live slots, always rendered so the shape is stable. */}
-      <HomeSection eyebrow="Right now" title="Now" divider={false} tone="quiet">
-        <div className="grid gap-4 md:grid-cols-3">
-          <TodaySlot today={data.today} />
-          <LoungeSlot lounges={data.lounges} fallbackGroup={data.loungeFallbackGroup} />
-          <EventSlot event={data.nextEvent} />
-        </div>
+      {/* Now — one compact module; empty states no longer get card weight. */}
+      <HomeSection title="Now" divider={false} tone="quiet" density="compact">
+        <NowModule
+          today={data.today}
+          lounges={data.lounges}
+          fallbackGroup={data.loungeFallbackGroup}
+          nextEvent={data.nextEvent}
+        />
       </HomeSection>
 
-      {data.continueActions.length > 0 && (
+      <HomeSection
+        eyebrow="Yours"
+        title="Your Workshop"
+        kicker="What you've made and what's still open."
+        density="compact"
+        tone="quiet"
+      >
+        <YourWorkshop mine={data.mine} actions={data.continueActions} />
+      </HomeSection>
+
+      {data.blogRail.length > 0 && (
         <HomeSection
-          eyebrow="Pick it back up"
-          title="Continue making"
-          kicker="Small, finishable next steps from work you've already started."
-          tone="quiet"
+          eyebrow="Reading"
+          title="From the Blog"
+          href="/blog"
+          cta="Open Blog"
+          density="compact"
         >
-          <div className="grid gap-4 md:grid-cols-3">
-            {data.continueActions.map((a) => (
-              <ContinueCard key={`${a.kind}:${a.title}`} action={a} />
-            ))}
+          <BlogRail posts={data.blogRail} />
+          <div className="mt-3">
+            <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+              <Link to="/me/blog">
+                <PenLine className="h-3.5 w-3.5" /> Write a story
+              </Link>
+            </Button>
           </div>
         </HomeSection>
       )}
 
       <WorkStoriesCarousel />
+
 
       {data.circle.length > 0 && (
         <HomeSection
