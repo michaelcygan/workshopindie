@@ -74,7 +74,6 @@ function MemberBlogEditorPage() {
   });
 
   const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
   const [cover, setCover] = useState<string | null>(null);
@@ -87,6 +86,7 @@ function MemberBlogEditorPage() {
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   const [blogGateOpen, setBlogGateOpen] = useState(false);
+  const [published, setPublished] = useState<PublishedPostSummary | null>(null);
 
   const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
 
@@ -94,7 +94,6 @@ function MemberBlogEditorPage() {
     if (!post || loadedForId === post.post.id) return;
     const p = post.post;
     setTitle(p.title);
-    setSlug(p.slug);
     setExcerpt(p.excerpt);
     setBody(p.body_markdown);
     setCover(p.cover_image_url);
@@ -111,12 +110,11 @@ function MemberBlogEditorPage() {
   }
 
   const saveMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { silent?: boolean }) => {
       await updateFn({
         data: {
           id,
           title,
-          slug: post?.post.published_at ? undefined : slug,
           excerpt,
           body_markdown: body,
           cover_image_url: cover,
@@ -127,9 +125,11 @@ function MemberBlogEditorPage() {
           expected_updated_at: post?.post.updated_at,
         },
       });
+      return { silent: opts?.silent ?? false };
     },
-    onSuccess: () => {
-      toast.success("Saved");
+    onSuccess: (r) => {
+      // During a publish the success dialog is the single confirmation.
+      if (!r.silent) toast.success("Saved");
       setDirty(false);
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
@@ -140,11 +140,14 @@ function MemberBlogEditorPage() {
 
   const publishMut = useMutation({
     mutationFn: async () => {
-      await saveMut.mutateAsync();
+      await saveMut.mutateAsync({ silent: true });
       return publishFn({ data: { id } });
     },
-    onSuccess: () => {
-      toast.success("Published");
+    onSuccess: (result) => {
+      // Always use the slug the server finalized, never local draft state.
+      const p = result as unknown as { id: string; slug: string; title: string; excerpt: string | null } | null;
+      if (p?.slug) setPublished({ id: p.id, slug: p.slug, title: p.title, excerpt: p.excerpt });
+      else toast.success("Published");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
       refreshEntityCaches();
