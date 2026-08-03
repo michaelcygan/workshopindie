@@ -134,7 +134,7 @@ export function SiteFooter() {
             <div>
               <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Explore</div>
               <ul className="mt-3 space-y-2">
-                <li><Link to="/lounge" className="text-ink-soft hover:text-ink">Lounge</Link></li>
+                
                 <li><Link to="/g" className="text-ink-soft hover:text-ink">Groups</Link></li>
                 <li><Link to="/collab" className="text-ink-soft hover:text-ink">Collabs</Link></li>
                 <li><Link to="/events" className="text-ink-soft hover:text-ink">Events</Link></li>
