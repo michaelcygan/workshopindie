@@ -96,7 +96,7 @@ function CitiesIndex() {
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <KickerChip>Pick a city</KickerChip>
         <p className="text-sm text-ink-muted">
-          Lounges, events, and the people making things nearby.
+          Live audio, events, and the people making things nearby.
         </p>
       </div>
 
