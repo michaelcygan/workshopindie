@@ -4,7 +4,7 @@ import { RequireAuth } from "@/components/require-auth";
 import { ArrowLeft } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { ChannelView } from "@/components/channel-view";
