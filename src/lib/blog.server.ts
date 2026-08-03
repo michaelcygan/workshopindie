@@ -437,14 +437,8 @@ export async function adminUpdatePostServer(context: AuthContext, data: BlogWrit
 
 export async function adminSetPostFeaturedServer(context: AuthContext, id: string, featured: boolean) {
   await requireAdmin(context);
-  // Only one featured post at a time — it renders as the single hero on /blog.
-  if (featured) {
-    const { error: clearError } = await supabaseAdmin
-      .from("blog_posts")
-      .update({ featured: false, updated_by: context.userId })
-      .eq("featured", true);
-    if (clearError) throw new Error(clearError.message);
-  }
+  // Multiple posts can be featured — 2+ render as an auto-advancing carousel on /blog.
+
   const { error } = await supabaseAdmin
     .from("blog_posts")
     .update({ featured, updated_by: context.userId })

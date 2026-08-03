@@ -1,30 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listPublishedPosts } from "@/lib/blog.functions";
+import {
+  BlogFeaturedCarousel,
+  Byline,
+  FeaturedHero,
+  type BlogListItem,
+} from "@/components/blog-featured-carousel";
 
 const SITE = "https://workshopindie.com";
 const TITLE = "Workshop Blog — Creative Collaboration, Independent Art & Artist Portfolios";
 const DESC = "Ideas, guides, and stories about finding collaborators, making independent creative work, and building a portfolio that shows how the work happened.";
 
-type AuthorProfile = {
-  username: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-} | null;
-
-type BlogListItem = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  cover_image_url: string | null;
-  cover_image_alt: string | null;
-  author_name: string;
-  published_at: string | null;
-  updated_at: string;
-  featured?: boolean | null;
-  publication_type?: string | null;
-  author_profile?: AuthorProfile;
-};
 
 export const Route = createFileRoute("/blog/")({
   loader: async () => {
@@ -68,84 +54,6 @@ export const Route = createFileRoute("/blog/")({
   component: BlogIndexPage,
 });
 
-function formatDate(value: string | null, long = false) {
-  if (!value) return "";
-  return new Date(value).toLocaleDateString(undefined, long
-    ? { year: "numeric", month: "long", day: "numeric" }
-    : { month: "short", day: "numeric", year: "numeric" });
-}
-
-function authorOf(p: BlogListItem) {
-  const profile = p.author_profile ?? null;
-  return {
-    name: profile?.display_name || p.author_name,
-    username: profile?.username ?? null,
-    avatar: profile?.avatar_url ?? null,
-  };
-}
-
-function Byline({ post, className = "" }: { post: BlogListItem; className?: string }) {
-  const author = authorOf(post);
-  return (
-    <div className={`flex min-w-0 items-center gap-2 text-xs text-ink-muted ${className}`}>
-      {author.avatar ? (
-        <img
-          src={author.avatar}
-          alt=""
-          className="h-5 w-5 shrink-0 rounded-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <span className="h-5 w-5 shrink-0 rounded-full bg-muted" aria-hidden />
-      )}
-      <span className="truncate">{author.name}</span>
-      {post.published_at && (
-        <>
-          <span aria-hidden className="text-ink-muted/60">·</span>
-          <span className="shrink-0">{formatDate(post.published_at)}</span>
-        </>
-      )}
-    </div>
-  );
-}
-
-function FeaturedHero({ post }: { post: BlogListItem }) {
-  return (
-    <Link
-      to="/blog/$slug"
-      params={{ slug: post.slug }}
-      className="group mt-6 block overflow-hidden rounded-3xl border border-border bg-surface hover:bg-muted md:mt-10"
-    >
-      <div className="grid gap-0 md:grid-cols-2">
-        <div className="relative">
-          {post.cover_image_url ? (
-            <img
-              src={post.cover_image_url}
-              alt={post.cover_image_alt ?? post.title}
-              className="aspect-[16/10] w-full object-cover md:aspect-auto md:h-full"
-            />
-          ) : (
-            <div className="aspect-[16/10] w-full gradient-motion md:aspect-auto md:h-full" />
-          )}
-          <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-ink backdrop-blur">
-            Featured
-          </span>
-        </div>
-        <div className="p-5 md:p-10">
-          <h2 className="font-display text-2xl leading-tight text-ink group-hover:underline md:text-3xl">
-            {post.title}
-          </h2>
-          {post.excerpt && (
-            <p className="mt-2 line-clamp-2 text-sm text-ink-soft md:mt-3 md:line-clamp-none md:text-base">
-              {post.excerpt}
-            </p>
-          )}
-          <Byline post={post} className="mt-3" />
-        </div>
-      </div>
-    </Link>
-  );
-}
 
 /** Mobile: dense horizontal row. Desktop: the row is hidden in favor of PostCard. */
 function PostRow({ post }: { post: BlogListItem }) {
@@ -206,8 +114,10 @@ function PostCard({ post }: { post: BlogListItem }) {
 
 function BlogIndexPage() {
   const { posts } = Route.useLoaderData() as { posts: BlogListItem[] };
-  const featured = posts.find((p) => p.featured) ?? null;
-  const rest = featured ? posts.filter((p) => p.id !== featured.id) : posts;
+  const featured = posts.filter((p) => p.featured);
+  const featuredIds = new Set(featured.map((p) => p.id));
+  const rest = featured.length ? posts.filter((p) => !featuredIds.has(p.id)) : posts;
+
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-6 md:py-14 md:pb-16">
@@ -227,7 +137,9 @@ function BlogIndexPage() {
         </div>
       ) : (
         <>
-          {featured && <FeaturedHero post={featured} />}
+          {featured.length === 1 && <FeaturedHero post={featured[0]!} />}
+          {featured.length > 1 && <BlogFeaturedCarousel posts={featured} />}
+
 
           {rest.length > 0 && (
             <>
