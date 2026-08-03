@@ -1199,29 +1199,51 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
 
   const today = await todaySummariesServer(groups, blocked).catch(() => [] as HomeTodaySummary[]);
 
-  const [loungesR, eventR, continueR, suggestR, circleR, peopleR, disciplineR, coverWorkR] =
-    await Promise.allSettled([
-      myGroupLoungesServer(groups),
-      nextEventServer(userId, groups, homeCityId),
-      continueActionsServer(userId, groups, today),
-      groups.length
-        ? Promise.resolve([] as HomeGroupSuggestion[])
-        : groupSuggestionsServer(homeCityId, mediums),
-      circleStoriesServer(userId, groups, blocked),
-      peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
-      disciplineItemsServer(mediums),
-      profile?.cover_work_id
-        ? supabaseAdmin
-            .from("works")
-            .select("slug,title")
-            .eq("id", profile.cover_work_id)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
+  const [
+    loungesR,
+    eventR,
+    continueR,
+    suggestR,
+    circleR,
+    peopleR,
+    disciplineR,
+    coverWorkR,
+    featuredR,
+    mineR,
+  ] = await Promise.allSettled([
+    myGroupLoungesServer(groups),
+    nextEventServer(userId, groups, homeCityId),
+    continueActionsServer(userId, groups, today),
+    groups.length
+      ? Promise.resolve([] as HomeGroupSuggestion[])
+      : groupSuggestionsServer(homeCityId, mediums),
+    circleStoriesServer(userId, groups, blocked),
+    peopleSuggestionsServer(userId, groups, blocked, homeCityId, mediums),
+    disciplineItemsServer(mediums),
+    profile?.cover_work_id
+      ? supabaseAdmin
+          .from("works")
+          .select("slug,title")
+          .eq("id", profile.cover_work_id)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    featuredBlogServer(),
+    myWorkshopServer(userId),
+  ]);
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
   const cont =
     continueR.status === "fulfilled" ? continueR.value : { actions: [], hasEligibleWork: false };
+  const featured =
+    featuredR.status === "fulfilled"
+      ? featuredR.value
+      : { posts: [] as HomeBlogCard[], isFallback: false };
+  const mine = mineR.status === "fulfilled" ? mineR.value : [];
+
+  const blogRail = await blogRailServer([
+    ...featured.posts.map((p) => p.id),
+    ...mine.filter((m) => m.kind === "blog").map((m) => m.id),
+  ]).catch(() => [] as HomeBlogCard[]);
 
   // Prefer a Group with Today activity for the "open a Lounge" fallback.
   const fallbackGroup =
@@ -1246,5 +1268,251 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     people: peopleR.status === "fulfilled" ? peopleR.value : [],
     disciplines: disciplineR.status === "fulfilled" ? disciplineR.value : [],
     hasEligibleWorkToWriteAbout: cont.hasEligibleWork,
+    featuredPosts: featured.posts,
+    featuredIsFallback: featured.isFallback,
+    mine,
+    blogRail,
   };
 }
+
+/* ───────────────────── Blog: featured header + rail ───────────────────── */
+
+const BLOG_CARD_COLS =
+  "id,slug,title,excerpt,cover_image_url,author_name,published_at,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
+
+type BlogCardRow = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover_image_url: string | null;
+  author_name: string | null;
+  published_at: string | null;
+  author_profile: { display_name: string | null; avatar_url: string | null } | null;
+};
+
+function toBlogCard(r: BlogCardRow): HomeBlogCard {
+  return {
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt,
+    coverUrl: r.cover_image_url,
+    publishedAt: r.published_at,
+    authorName: r.author_profile?.display_name || r.author_name,
+    authorAvatar: r.author_profile?.avatar_url ?? null,
+  };
+}
+
+/** Up to 5 admin-featured posts; falls back to the newest indexed post. */
+export async function featuredBlogServer(): Promise<{
+  posts: HomeBlogCard[];
+  isFallback: boolean;
+}> {
+  const now = new Date().toISOString();
+  const base = () =>
+    supabaseAdmin
+      .from("blog_posts")
+      .select(BLOG_CARD_COLS)
+      .eq("status", "published")
+      .eq("show_in_blog_index", true)
+      .lte("published_at", now)
+      .order("published_at", { ascending: false });
+
+  const { data } = await base().eq("featured", true).limit(FEATURED_POST_CAP);
+  const rows = (data ?? []) as unknown as BlogCardRow[];
+  if (rows.length) return { posts: rows.map(toBlogCard), isFallback: false };
+
+  const { data: latest } = await base().limit(1);
+  const fb = (latest ?? []) as unknown as BlogCardRow[];
+  return { posts: fb.map(toBlogCard), isFallback: true };
+}
+
+/** Recent public Blog posts for the "From the Blog" rail. */
+export async function blogRailServer(excludeIds: string[]): Promise<HomeBlogCard[]> {
+  const { data } = await supabaseAdmin
+    .from("blog_posts")
+    .select(BLOG_CARD_COLS)
+    .eq("status", "published")
+    .eq("show_in_blog_index", true)
+    .lte("published_at", new Date().toISOString())
+    .order("published_at", { ascending: false })
+    .limit(12);
+  const seen = new Set(excludeIds);
+  return ((data ?? []) as unknown as BlogCardRow[])
+    .filter((r) => !seen.has(r.id))
+    .slice(0, 6)
+    .map(toBlogCard);
+}
+
+/* ───────────────────────────── Your Workshop ───────────────────────────── */
+
+/**
+ * The signed-in member's own recent material. Scoped to `userId` on every
+ * query, so it may safely include profile-only Blog posts
+ * (`show_in_blog_index = false`) and unlisted Works — those never reach the
+ * public rails. Drafts and private Works are always excluded.
+ */
+export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> {
+  const [worksRes, creditsRes, postsRes, authoredRes, collabsRes] = await Promise.all([
+    supabaseAdmin
+      .from("works")
+      .select("id,slug,title,excerpt,cover_url,cover_focal_x,cover_focal_y,visibility,published_at")
+      .eq("created_by", userId)
+      .eq("status", "published")
+      .in("visibility", ["public", "unlisted"])
+      .order("published_at", { ascending: false })
+      .limit(8),
+    supabaseAdmin.from("work_credits").select("work_id").eq("user_id", userId).limit(30),
+    supabaseAdmin
+      .from("blog_posts")
+      .select("id,slug,title,excerpt,cover_image_url,published_at,show_in_blog_index")
+      .eq("created_by", userId)
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(8),
+    supabaseAdmin.from("blog_post_authors").select("blog_post_id").eq("profile_id", userId).limit(30),
+    supabaseAdmin
+      .from("collab_posts")
+      .select("id,slug,title,description,created_at")
+      .eq("user_id", userId)
+      .eq("status", "open")
+      .order("created_at", { ascending: false })
+      .limit(6),
+  ]);
+
+  const ownWorks = (worksRes.data ?? []) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    cover_url: string | null;
+    cover_focal_x: number | null;
+    cover_focal_y: number | null;
+    visibility: string;
+    published_at: string | null;
+  }>;
+  const ownIds = new Set(ownWorks.map((w) => w.id));
+
+  const creditIds = ((creditsRes.data ?? []) as Array<{ work_id: string }>)
+    .map((c) => c.work_id)
+    .filter((id) => !ownIds.has(id));
+  let creditedWorks: typeof ownWorks = [];
+  if (creditIds.length) {
+    const { data } = await supabaseAdmin
+      .from("works")
+      .select("id,slug,title,excerpt,cover_url,cover_focal_x,cover_focal_y,visibility,published_at")
+      .in("id", creditIds.slice(0, 20))
+      .eq("status", "published")
+      .eq("visibility", "public")
+      .order("published_at", { ascending: false })
+      .limit(6);
+    creditedWorks = (data ?? []) as typeof ownWorks;
+  }
+
+  type PostLite = {
+    id: string;
+    slug: string;
+    title: string;
+    excerpt: string | null;
+    cover_image_url: string | null;
+    published_at: string | null;
+  };
+  const posts = new Map<string, PostLite>();
+  for (const p of (postsRes.data ?? []) as PostLite[]) posts.set(p.id, p);
+
+  const authoredIds = ((authoredRes.data ?? []) as Array<{ blog_post_id: string }>)
+    .map((a) => a.blog_post_id)
+    .filter((id) => !posts.has(id));
+  if (authoredIds.length) {
+    const { data } = await supabaseAdmin
+      .from("blog_posts")
+      .select("id,slug,title,excerpt,cover_image_url,published_at")
+      .in("id", authoredIds.slice(0, 20))
+      .eq("status", "published")
+      .order("published_at", { ascending: false })
+      .limit(6);
+    for (const p of (data ?? []) as PostLite[]) posts.set(p.id, p);
+  }
+
+  const collabs = (collabsRes.data ?? []) as Array<{
+    id: string;
+    slug: string;
+    title: string;
+    description: string | null;
+    created_at: string;
+  }>;
+
+  const buckets: HomeMineItem[][] = [
+    ownWorks.map((w) => ({
+      id: w.id,
+      kind: "work" as const,
+      label: w.visibility === "unlisted" ? "Your Work · Unlisted" : "Your Work",
+      title: w.title,
+      subtitle: w.excerpt,
+      coverUrl: w.cover_url,
+      focalX: w.cover_focal_x,
+      focalY: w.cover_focal_y,
+      to: "/works/$slug",
+      params: { slug: w.slug },
+      occurredAt: w.published_at,
+    })),
+    [...posts.values()].map((p) => ({
+      id: p.id,
+      kind: "blog" as const,
+      label: "Your story",
+      title: p.title,
+      subtitle: p.excerpt,
+      coverUrl: p.cover_image_url,
+      focalX: null,
+      focalY: null,
+      to: "/blog/$slug",
+      params: { slug: p.slug },
+      occurredAt: p.published_at,
+    })),
+    creditedWorks.map((w) => ({
+      id: w.id,
+      kind: "credited_work" as const,
+      label: "Credited Work",
+      title: w.title,
+      subtitle: w.excerpt,
+      coverUrl: w.cover_url,
+      focalX: w.cover_focal_x,
+      focalY: w.cover_focal_y,
+      to: "/works/$slug",
+      params: { slug: w.slug },
+      occurredAt: w.published_at,
+    })),
+    collabs.map((c) => ({
+      id: c.id,
+      kind: "collab" as const,
+      label: "Your Collab",
+      title: c.title,
+      subtitle: c.description ? c.description.slice(0, 140) : "Open for collaborators",
+      coverUrl: null,
+      focalX: null,
+      focalY: null,
+      to: "/collab/$slug",
+      params: { slug: c.slug },
+      occurredAt: c.created_at,
+    })),
+  ];
+
+  // Image-bearing items lead inside each bucket, then round-robin across
+  // buckets so a single content type can't consume the whole rail.
+  for (const b of buckets) {
+    b.sort((a, z) => {
+      if (!!a.coverUrl !== !!z.coverUrl) return a.coverUrl ? -1 : 1;
+      return (z.occurredAt ?? "").localeCompare(a.occurredAt ?? "");
+    });
+  }
+  const out: HomeMineItem[] = [];
+  for (let i = 0; out.length < MAX_MINE_ITEMS && i < 8; i++) {
+    for (const b of buckets) {
+      const item = b[i];
+      if (item && out.length < MAX_MINE_ITEMS) out.push(item);
+    }
+  }
+  return out;
+}
+
