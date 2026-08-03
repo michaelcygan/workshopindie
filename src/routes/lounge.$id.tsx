@@ -205,29 +205,23 @@ function LiveRoomPage() {
   // would change the hook count between renders and trip the React hooks-order guard).
   const roomMissing = isFetched && room === null;
 
-  // Legacy Workshop fork invites retired — Lounge invitations are bound to the
+  // Legacy Workshop fork invites retired — audio invitations are bound to the
   // room itself (see `lounge_invitations` + inviteFriendToLounge).
 
   const title = formatRoomTitle(room?.title, room?.medium) || FALLBACK_TITLE;
-  // v1 "namer" model: host_user_id doubles as named_by_user_id.
-  // Null = unnamed → anyone (or, for group rooms, any member) can name it.
-  const namedByUserId = room?.host_user_id ?? null;
-  const isNamed = !!namedByUserId;
-  const isNamer = !!user && namedByUserId === user.id;
-  const isHost = isNamer; // legacy rooms with host_user_id keep rename/end rights
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status === "ended";
   const isArchived = !!room && room.status === "archived";
 
-  // If the room is archived, bounce everyone; if it was manually ended, non-hosts bounce.
-  // Host stays only for manual endings so they can wrap up gracefully.
+  // Ended or archived rooms bounce everyone back to Groups, which own the live layer.
   useEffect(() => {
     if (!room || isPromoted) return;
-    if (isArchived || (isEnded && !isHost)) {
-      toast(isEnded ? "This Lounge ended." : "That Lounge is no longer live.");
-      router.navigate({ to: "/lounge" });
+    if (isArchived || isEnded) {
+      toast(isEnded ? "This audio room ended." : "That audio room is no longer live.");
+      router.navigate({ to: "/groups" });
     }
-  }, [room, isEnded, isArchived, isHost, isPromoted, router]);
+  }, [room, isEnded, isArchived, isPromoted, router]);
+
 
   // Stash this room so /workshop can offer a quick "Rejoin" pill for 60s.
   // Skip when ended/locked — no point offering a rejoin into a dead room.
