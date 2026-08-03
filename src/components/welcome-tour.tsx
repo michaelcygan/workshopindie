@@ -56,7 +56,9 @@ export function WelcomeTour() {
         sessionStorage.removeItem("ws.welcome_open");
         forcedOpen = true;
       }
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
 
     supabase
       .from("profiles")
@@ -65,10 +67,15 @@ export function WelcomeTour() {
       .maybeSingle()
       .then(({ data }) => {
         if (cancelled) return;
-        if (forcedOpen && data?.onboarded) { setOpen(true); return; }
+        if (forcedOpen && data?.onboarded) {
+          setOpen(true);
+          return;
+        }
         if (data?.onboarded && !data?.tour_completed_at) setOpen(true);
       });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading]);
 
   const markFinished = async () => {
@@ -82,7 +89,11 @@ export function WelcomeTour() {
 
   const pick = async (c: Choice) => {
     setOpen(false);
-    try { sessionStorage.setItem("ws.first_run_hint", c.id); } catch { /* ignore */ }
+    try {
+      sessionStorage.setItem("ws.first_run_hint", c.id);
+    } catch {
+      /* ignore */
+    }
     await markFinished();
     navigate({ to: c.to });
   };
@@ -119,9 +130,15 @@ export function WelcomeTour() {
               <X className="h-4 w-4" />
             </button>
 
-            <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Step 2 of 2 — Pick your first move</p>
-            <h2 className="mt-1 font-display text-2xl text-ink">You're in. What do you want to do first?</h2>
-            <p className="mt-1 text-sm text-ink-muted">Pick one — we'll point you there. You can do the others anytime.</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">
+              Step 2 of 2 — Pick your first move
+            </p>
+            <h2 className="mt-1 font-display text-2xl text-ink">
+              You're in. What do you want to do first?
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted">
+              Pick one — we'll point you there. You can do the others anytime.
+            </p>
 
             <div className="mt-5 space-y-2.5">
               {CHOICES.map((c, i) => (
@@ -129,7 +146,12 @@ export function WelcomeTour() {
                   key={c.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.08 + i * 0.07, type: "spring", stiffness: 240, damping: 22 }}
+                  transition={{
+                    delay: 0.08 + i * 0.07,
+                    type: "spring",
+                    stiffness: 240,
+                    damping: 22,
+                  }}
                   whileHover={{ y: -2 }}
                   onClick={() => pick(c)}
                   className={`group relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border border-border bg-gradient-to-br ${c.accent} p-4 text-left transition hover:border-ink/20 hover:shadow-soft`}
@@ -147,10 +169,7 @@ export function WelcomeTour() {
             </div>
 
             <div className="mt-5 flex justify-center">
-              <button
-                onClick={skip}
-                className="text-xs text-ink-muted hover:text-ink"
-              >
+              <button onClick={skip} className="text-xs text-ink-muted hover:text-ink">
                 I'll explore on my own
               </button>
             </div>

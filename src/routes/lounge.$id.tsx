@@ -15,7 +15,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
 
-
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
 import { HopButton } from "@/components/hop-button";
@@ -25,8 +24,6 @@ import { formatRoomTitle } from "@/lib/instant";
 import { CollabComposer } from "@/routes/collab.new";
 import { LoungeAudioProvider } from "@/components/stream-lounge-provider";
 import { normalizeLoungeMode } from "@/lib/lounge-constants";
-
-
 
 // Accepts the new chat|audio vocabulary and coerces legacy voice|video values
 // (voice → audio, video → audio). Cameras no longer exist in Lounge; legacy
@@ -89,7 +86,8 @@ function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
       <h1 className="font-display text-3xl text-ink">Lounge hit a snag</h1>
       <p className="mt-2 text-sm text-ink-muted">
-        A temporary problem interrupted this Lounge. Try reconnecting, or head back to Lounge discovery.
+        A temporary problem interrupted this Lounge. Try reconnecting, or head back to Lounge
+        discovery.
       </p>
       {error?.message && (
         <p className="mt-3 mx-auto max-w-md break-words text-[11px] text-ink-muted/70">
@@ -121,7 +119,6 @@ function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void
     </main>
   );
 }
-
 
 type Room = {
   id: string;
@@ -162,7 +159,6 @@ function LiveRoomPage() {
   const [collabOpen, setCollabOpen] = useState(false);
 
   // Composer is rendered in-place via <CollabComposer/> below; no cross-frame messaging needed.
-
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
@@ -215,8 +211,6 @@ function LiveRoomPage() {
   // would change the hook count between renders and trip the React hooks-order guard).
   const roomMissing = isFetched && room === null;
 
-
-
   // Legacy Workshop fork invites retired — Lounge invitations are bound to the
   // room itself (see `lounge_invitations` + inviteFriendToLounge).
 
@@ -230,7 +224,6 @@ function LiveRoomPage() {
   const isPromoted = !!room?.promoted_at;
   const isEnded = !!room && room.status === "ended";
   const isArchived = !!room && room.status === "archived";
-
 
   // If the room is archived, bounce everyone; if it was manually ended, non-hosts bounce.
   // Host stays only for manual endings so they can wrap up gracefully.
@@ -290,250 +283,247 @@ function LiveRoomPage() {
 
   // Participants query retired — used to be for the HostMenu remove picker (v0).
 
-
-
   // All hooks above run unconditionally on every render. Only branch on rendering below.
   if (roomMissing) return <LoungeNotFound />;
 
   return (
     <LoungeAudioProvider roomId={id} participation={normalizeLoungeMode(entryMode)}>
-    <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
-      <CcConsentDialog />
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
-        <div className="min-w-0">
-          <Link
-            to="/lounge"
-            className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
-          >
-            <ArrowLeft className="h-3 w-3" /> Lounge
-          </Link>
-          {/* Editable Lounge name. Unnamed rooms show a "Name this Lounge" affordance
+      <main className="mx-auto max-w-6xl px-4 py-4 md:px-6 md:py-5">
+        <CcConsentDialog />
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+          <div className="min-w-0">
+            <Link
+              to="/lounge"
+              className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
+            >
+              <ArrowLeft className="h-3 w-3" /> Lounge
+            </Link>
+            {/* Editable Lounge name. Unnamed rooms show a "Name this Lounge" affordance
               to any signed-in viewer (members-only for group Lounges, enforced server-side).
               Named rooms are read-only for everyone except the namer. */}
-          {(() => {
-            const MediumIcon = mediumIcon(room?.medium ?? room?.category ?? null);
-            const canRename = !!user && !isPromoted && (!isNamed || isNamer);
+            {(() => {
+              const MediumIcon = mediumIcon(room?.medium ?? room?.category ?? null);
+              const canRename = !!user && !isPromoted && (!isNamed || isNamer);
 
-            async function saveTitle() {
-              const next = draftTitle.trim();
-              if (!next) { setEditingTitle(false); return; }
-              if (next === title) { setEditingTitle(false); return; }
-              setSavingTitle(true);
-              try {
-                await rename({ data: { roomId: id, title: next } });
-                await qc.invalidateQueries({ queryKey: ["instant-room", id] });
-                setEditingTitle(false);
-                toast.success(isNamed ? "Renamed." : "You named this Lounge.");
-              } catch (e: any) {
-                toast.error(e?.message ?? "Couldn't rename");
-              } finally {
-                setSavingTitle(false);
+              async function saveTitle() {
+                const next = draftTitle.trim();
+                if (!next) {
+                  setEditingTitle(false);
+                  return;
+                }
+                if (next === title) {
+                  setEditingTitle(false);
+                  return;
+                }
+                setSavingTitle(true);
+                try {
+                  await rename({ data: { roomId: id, title: next } });
+                  await qc.invalidateQueries({ queryKey: ["instant-room", id] });
+                  setEditingTitle(false);
+                  toast.success(isNamed ? "Renamed." : "You named this Lounge.");
+                } catch (e: any) {
+                  toast.error(e?.message ?? "Couldn't rename");
+                } finally {
+                  setSavingTitle(false);
+                }
               }
-            }
 
-            return (
-              <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
-                <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
-                  <MediumIcon className="h-3.5 w-3.5" />
-                </span>
-                {editingTitle && canRename ? (
-                  <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                    <input
-                      ref={titleInputRef}
-                      value={draftTitle}
-                      onChange={(e) => setDraftTitle(e.target.value.slice(0, 80))}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") saveTitle();
-                        if (e.key === "Escape") setEditingTitle(false);
-                      }}
-                      placeholder="Name this Lounge"
-                      maxLength={80}
-                      disabled={savingTitle}
-                      className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-0.5 font-display text-xl md:text-2xl text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
-                    <button
-                      type="button"
-                      onClick={saveTitle}
-                      disabled={savingTitle}
-                      className="grid h-7 w-7 place-items-center rounded-full text-primary hover:bg-primary/10"
-                      aria-label="Save name"
-                    >
-                      <Check className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEditingTitle(false)}
-                      className="grid h-7 w-7 place-items-center rounded-full text-ink-muted hover:bg-muted/40"
-                      aria-label="Cancel"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+              return (
+                <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
+                  <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
+                    <MediumIcon className="h-3.5 w-3.5" />
                   </span>
-                ) : (
-                  <span className="flex min-w-0 items-center gap-1.5">
-                    {(() => {
-                      // Show the actual room title whenever we have one — matchmaker
-                      // rooms already carry a sensible default ("Artist's Lounge",
-                      // "Lounge: Film"). Only show the italic placeholder when we
-                      // truly have nothing beyond the bare fallback.
-                      const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
-                      return (
-                        <span
-                          className={
-                            "truncate" +
-                            (!hasTitle ? " text-ink-muted italic font-normal text-lg md:text-xl" : "")
-                          }
-                        >
-                          {hasTitle ? title : "Name this Lounge"}
-                        </span>
-                      );
-                    })()}
-                    {canRename && (
+                  {editingTitle && canRename ? (
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
+                      <input
+                        ref={titleInputRef}
+                        value={draftTitle}
+                        onChange={(e) => setDraftTitle(e.target.value.slice(0, 80))}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveTitle();
+                          if (e.key === "Escape") setEditingTitle(false);
+                        }}
+                        placeholder="Name this Lounge"
+                        maxLength={80}
+                        disabled={savingTitle}
+                        className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-0.5 font-display text-xl md:text-2xl text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      />
                       <button
                         type="button"
-                        onClick={() => {
-                          const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
-                          setDraftTitle(hasTitle ? title : "");
-                          setEditingTitle(true);
-                          setTimeout(() => titleInputRef.current?.focus(), 0);
-                        }}
-                        className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40"
-                        aria-label={isNamed ? "Rename Lounge" : "Name this Lounge"}
-                        title={isNamed ? "Rename" : "Name this Lounge"}
+                        onClick={saveTitle}
+                        disabled={savingTitle}
+                        className="grid h-7 w-7 place-items-center rounded-full text-primary hover:bg-primary/10"
+                        aria-label="Save name"
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Check className="h-4 w-4" />
                       </button>
-                    )}
-                  </span>
-
-                )}
-              </h1>
-            );
-          })()}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted">
-            <span className="inline-flex items-center gap-1">
-              <span className="relative inline-flex h-1.5 w-1.5">
-                <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                      <button
+                        type="button"
+                        onClick={() => setEditingTitle(false)}
+                        className="grid h-7 w-7 place-items-center rounded-full text-ink-muted hover:bg-muted/40"
+                        aria-label="Cancel"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="flex min-w-0 items-center gap-1.5">
+                      {(() => {
+                        // Show the actual room title whenever we have one — matchmaker
+                        // rooms already carry a sensible default ("Artist's Lounge",
+                        // "Lounge: Film"). Only show the italic placeholder when we
+                        // truly have nothing beyond the bare fallback.
+                        const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
+                        return (
+                          <span
+                            className={
+                              "truncate" +
+                              (!hasTitle
+                                ? " text-ink-muted italic font-normal text-lg md:text-xl"
+                                : "")
+                            }
+                          >
+                            {hasTitle ? title : "Name this Lounge"}
+                          </span>
+                        );
+                      })()}
+                      {canRename && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
+                            setDraftTitle(hasTitle ? title : "");
+                            setEditingTitle(true);
+                            setTimeout(() => titleInputRef.current?.focus(), 0);
+                          }}
+                          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40"
+                          aria-label={isNamed ? "Rename Lounge" : "Name this Lounge"}
+                          title={isNamed ? "Rename" : "Name this Lounge"}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </span>
+                  )}
+                </h1>
+              );
+            })()}
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-muted">
+              <span className="inline-flex items-center gap-1">
+                <span className="relative inline-flex h-1.5 w-1.5">
+                  <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
+                </span>
+                Live · {liveCount}/10
               </span>
-              Live · {liveCount}/10
-            </span>
+            </div>
           </div>
+
+          {!isPromoted && user && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setCollabOpen(true)}
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-medium text-ink hover:bg-muted/40 transition"
+                title="Post a Collab from this Lounge — it'll auto-pin here"
+              >
+                <Rocket className="h-3 w-3" /> New Collab
+              </button>
+
+              {isNamer && room?.status === "active" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (!confirm("End this Lounge for everyone?")) return;
+                    try {
+                      await endRoom({ data: { roomId: id } });
+                      toast("Lounge ended.");
+                      router.navigate({ to: "/lounge" });
+                    } catch (e: any) {
+                      toast.error(e?.message ?? "Couldn't end");
+                    }
+                  }}
+                  className="rounded-full gap-1.5"
+                  title="End this Lounge"
+                >
+                  <DoorOpen className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">End</span>
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
-        {!isPromoted && user && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setCollabOpen(true)}
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-medium text-ink hover:bg-muted/40 transition"
-              title="Post a Collab from this Lounge — it'll auto-pin here"
-            >
-              <Rocket className="h-3 w-3" /> New Collab
-            </button>
-
-            {isNamer && room?.status === "active" && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={async () => {
-                  if (!confirm("End this Lounge for everyone?")) return;
-                  try {
-                    await endRoom({ data: { roomId: id } });
-                    toast("Lounge ended.");
-                    router.navigate({ to: "/lounge" });
-                  } catch (e: any) {
-                    toast.error(e?.message ?? "Couldn't end");
-                  }
-                }}
-                className="rounded-full gap-1.5"
-                title="End this Lounge"
-              >
-                <DoorOpen className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">End</span>
-              </Button>
-            )}
-          </div>
-        )}
-      </div>
-
-
-      {/* Focus message — visible to everyone. In v1 there's no in-room host,
+        {/* Focus message — visible to everyone. In v1 there's no in-room host,
           so nobody sees the "set focus" affordance from here. */}
-      {!isPromoted && (
-        <FocusStrip
-          text={room?.focus_message ?? null}
-          isHost={false}
-          onHostSet={() => {}}
-        />
-      )}
+        {!isPromoted && (
+          <FocusStrip text={room?.focus_message ?? null} isHost={false} onHostSet={() => {}} />
+        )}
 
-      <ChannelView
-        key={id}
-        roomId={id}
-        title={title}
-        hostUserId={room?.host_user_id ?? null}
-        medium={(room?.medium as any) ?? (room?.category as any) ?? null}
-        // Wave 2: forward the entry preference. `entryMode` is "chat" | "audio"
-        // (legacy voice/video already coerced to "audio" by the search schema).
-        // Undefined → chat-only entry (Drop in button default).
-        initialMode={entryMode ?? "chat"}
-        screeningWorkId={room?.screening_work_id ?? null}
-        nextLoungeSlot={
-          !isPromoted && room?.status === "active" ? (
-            <HopButton
-              roomId={id}
-              medium={(room?.medium as any) ?? null}
-              // Preserve current participation intent when hopping.
-              mode={entryMode ?? "chat"}
-              tone="primary"
-            />
-          ) : null
-        }
-      />
-
-
-      <WaitingForOthersCard
-        roomId={id}
-        visible={!isPromoted && liveCount <= 1}
-        canPingMutuals={false}
-        filledSeats={Math.max(1, liveCount)}
-        viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
-      />
-
-      {!isPromoted && (
-        <CreateCollabNudge
+        <ChannelView
+          key={id}
           roomId={id}
-          visible={!!user && liveCount >= 1}
-          onCreate={() => setCollabOpen(true)}
+          title={title}
+          hostUserId={room?.host_user_id ?? null}
+          medium={(room?.medium as any) ?? (room?.category as any) ?? null}
+          // Wave 2: forward the entry preference. `entryMode` is "chat" | "audio"
+          // (legacy voice/video already coerced to "audio" by the search schema).
+          // Undefined → chat-only entry (Drop in button default).
+          initialMode={entryMode ?? "chat"}
+          screeningWorkId={room?.screening_work_id ?? null}
+          nextLoungeSlot={
+            !isPromoted && room?.status === "active" ? (
+              <HopButton
+                roomId={id}
+                medium={(room?.medium as any) ?? null}
+                // Preserve current participation intent when hopping.
+                mode={entryMode ?? "chat"}
+                tone="primary"
+              />
+            ) : null
+          }
         />
-      )}
 
-      <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
-        <DialogContent
-          className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
-          onOpenAutoFocus={(e) => e.preventDefault()}
-        >
-          <DialogTitle className="sr-only">New Collab</DialogTitle>
-          {collabOpen && (
-            <CollabComposer
-              embed
-              fromLounge={id}
-              onCancel={() => setCollabOpen(false)}
-              onPosted={() => {
-                setCollabOpen(false);
-                toast.success("Collab posted — pinned to this Lounge.");
-                qc.invalidateQueries({ queryKey: ["room-pins", id] });
-              }}
-              onDraftSaved={() => setCollabOpen(false)}
-              onBackToLounge={() => setCollabOpen(false)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </main>
+        <WaitingForOthersCard
+          roomId={id}
+          visible={!isPromoted && liveCount <= 1}
+          canPingMutuals={false}
+          filledSeats={Math.max(1, liveCount)}
+          viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
+        />
+
+        {!isPromoted && (
+          <CreateCollabNudge
+            roomId={id}
+            visible={!!user && liveCount >= 1}
+            onCreate={() => setCollabOpen(true)}
+          />
+        )}
+
+        <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
+          <DialogContent
+            className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
+            onOpenAutoFocus={(e) => e.preventDefault()}
+          >
+            <DialogTitle className="sr-only">New Collab</DialogTitle>
+            {collabOpen && (
+              <CollabComposer
+                embed
+                fromLounge={id}
+                onCancel={() => setCollabOpen(false)}
+                onPosted={() => {
+                  setCollabOpen(false);
+                  toast.success("Collab posted — pinned to this Lounge.");
+                  qc.invalidateQueries({ queryKey: ["room-pins", id] });
+                }}
+                onDraftSaved={() => setCollabOpen(false)}
+                onBackToLounge={() => setCollabOpen(false)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </main>
     </LoungeAudioProvider>
   );
 }
-
-

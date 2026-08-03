@@ -16,10 +16,10 @@ export type MobileTab = {
  * layout (two per side, composer in the middle) is unchanged.
  */
 export const mobileTabs: readonly MobileTab[] = [
-  { id: "groups",  label: "Groups",  to: "/groups",  icon: Sparkles,  side: "left"  },
-  { id: "collabs", label: "Collabs", to: "/collab",  icon: Users,     side: "left"  },
+  { id: "groups", label: "Groups", to: "/groups", icon: Sparkles, side: "left" },
+  { id: "collabs", label: "Collabs", to: "/collab", icon: Users, side: "left" },
   { id: "gallery", label: "Gallery", to: "/gallery", icon: Briefcase, side: "right" },
-  { id: "you",     label: "You",     to: "/me",      icon: null,      side: "right" },
+  { id: "you", label: "You", to: "/me", icon: null, side: "right" },
 ] as const;
 
 export type MobileCreateAction = {
@@ -31,7 +31,25 @@ export type MobileCreateAction = {
 };
 
 export const mobileCreateActions: readonly MobileCreateAction[] = [
-  { id: "work",   label: "Post to Gallery",   description: "Add a Work to your portfolio",    to: "/works/new", icon: Briefcase },
-  { id: "collab", label: "Post a Collab",     description: "Find people to make something",   to: "/collab/new", icon: Megaphone },
-  { id: "blog",   label: "Write a blog post", description: "Share process, notes, or essays", to: "/me/blog",    icon: BookOpen  },
+  {
+    id: "work",
+    label: "Post to Gallery",
+    description: "Add a Work to your portfolio",
+    to: "/works/new",
+    icon: Briefcase,
+  },
+  {
+    id: "collab",
+    label: "Post a Collab",
+    description: "Find people to make something",
+    to: "/collab/new",
+    icon: Megaphone,
+  },
+  {
+    id: "blog",
+    label: "Write a blog post",
+    description: "Share process, notes, or essays",
+    to: "/me/blog",
+    icon: BookOpen,
+  },
 ] as const;

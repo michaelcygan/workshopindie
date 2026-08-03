@@ -38,7 +38,11 @@ export const Route = createFileRoute("/lounge/")({
   beforeLoad: () => {
     throw redirect({ to: "/groups" });
   },
-  component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
+  component: () => (
+    <RequireAuth>
+      <WorkshopPreflight />
+    </RequireAuth>
+  ),
   head: () => ({
     meta: [
       { title: "Lounge — moved to Groups" },
@@ -50,7 +54,6 @@ export const Route = createFileRoute("/lounge/")({
     ],
   }),
 });
-
 
 function WorkshopPreflight() {
   const { user, loading } = useAuth();
@@ -68,7 +71,9 @@ function WorkshopPreflight() {
     try {
       const raw = window.localStorage.getItem("workshop:av-prefs");
       if (raw) return { mic: JSON.parse(raw).mic !== false };
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
     return { mic: true };
   });
   const [liveCount, setLiveCount] = useState(0);
@@ -78,7 +83,9 @@ function WorkshopPreflight() {
   const [rejoin, setRejoin] = useState<{ id: string; title: string; leftAt: number } | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [idleNudge, setIdleNudge] = useState(false);
-  const hostLabel = hostMedium ? CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null : null;
+  const hostLabel = hostMedium
+    ? (CATEGORIES.find((c) => c.id === hostMedium)?.label ?? null)
+    : null;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -165,7 +172,12 @@ function WorkshopPreflight() {
   const favoriteMedium: Category | null = useMemo(() => {
     let best: Category | null = null;
     let bestN = -1;
-    liveByMedium.forEach((n, m) => { if (n > bestN) { bestN = n; best = m; } });
+    liveByMedium.forEach((n, m) => {
+      if (n > bestN) {
+        bestN = n;
+        best = m;
+      }
+    });
     return best ?? "writing";
   }, [liveByMedium]);
 
@@ -176,11 +188,18 @@ function WorkshopPreflight() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try { window.localStorage.setItem("workshop:av-prefs", JSON.stringify({ mic: prefs.mic })); } catch { /* noop */ }
+    try {
+      window.localStorage.setItem("workshop:av-prefs", JSON.stringify({ mic: prefs.mic }));
+    } catch {
+      /* noop */
+    }
   }, [prefs.mic]);
 
   const toggleMic = () => {
-    if (!devices?.mic) { toast.error("No microphone detected."); return; }
+    if (!devices?.mic) {
+      toast.error("No microphone detected.");
+      return;
+    }
     setPrefs((p) => ({ ...p, mic: !p.mic }));
   };
 
@@ -209,9 +228,7 @@ function WorkshopPreflight() {
       if (medium == null && liveCount === 0) {
         toast("Opening a fresh Lounge — others can drop in any second.");
       }
-      const { roomId } = medium
-        ? await dropMedium({ data: { medium } })
-        : await drop({ data: {} });
+      const { roomId } = medium ? await dropMedium({ data: { medium } }) : await drop({ data: {} });
       router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode } });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Couldn't open that room");
@@ -247,7 +264,6 @@ function WorkshopPreflight() {
     openLounge(hostMedium, hostTitle.trim() || null);
   }
 
-
   function handleUsePrompt(p: RoomPrompt) {
     openLounge(p.medium, p.title);
   }
@@ -272,14 +288,12 @@ function WorkshopPreflight() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search.prompt, search.medium, loading, user, devices, busy, canDrop]);
 
-
-
   const subtitle =
     liveCount === 0
       ? "No one's in yet. Open the first room — it fills fast."
       : liveCount === 1
-      ? "One room is open. Take a seat or start your own."
-      : `${liveCount} rooms going. Drop in or host your own.`;
+        ? "One room is open. Take a seat or start your own."
+        : `${liveCount} rooms going. Drop in or host your own.`;
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-8">
@@ -338,8 +352,20 @@ function WorkshopPreflight() {
                   type="button"
                   onClick={toggleMic}
                   disabled={!devices.mic}
-                  title={!devices.mic ? "No mic detected" : effMic ? "Mic on — click to mute on join" : "Mic muted — click to unmute"}
-                  aria-label={!devices.mic ? "No microphone detected" : effMic ? "Mute microphone" : "Unmute microphone"}
+                  title={
+                    !devices.mic
+                      ? "No mic detected"
+                      : effMic
+                        ? "Mic on — click to mute on join"
+                        : "Mic muted — click to unmute"
+                  }
+                  aria-label={
+                    !devices.mic
+                      ? "No microphone detected"
+                      : effMic
+                        ? "Mute microphone"
+                        : "Unmute microphone"
+                  }
                   aria-pressed={effMic}
                   className={cn(
                     "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
@@ -352,7 +378,6 @@ function WorkshopPreflight() {
                 >
                   {effMic ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
                 </button>
-
               </>
             )}
           </div>
@@ -362,7 +387,8 @@ function WorkshopPreflight() {
       {/* One-line subtitle — adapts to live state */}
       <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
         <p className="text-sm text-ink-muted">
-          {subtitle} <span className="text-ink-muted/70">· Audio and chat · 10 seats per room.</span>
+          {subtitle}{" "}
+          <span className="text-ink-muted/70">· Audio and chat · 10 seats per room.</span>
         </p>
         {recap24h > 0 && (
           <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-ink-soft">
@@ -376,57 +402,67 @@ function WorkshopPreflight() {
       )}
 
       <AnimatePresence>
-        {rejoin && (() => {
-          const elapsed = Math.min(60_000, now - rejoin.leftAt);
-          const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
-          const pct = Math.min(100, (elapsed / 60_000) * 100);
-          return (
-            <motion.div
-              key="rejoin"
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="mt-3 flex"
-            >
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface pl-1 pr-1 py-1 text-xs text-ink shadow-soft">
-                <Link
-                  to="/lounge/$id"
-                  params={{ id: rejoin.id }}
-                  search={{ mode: "audio" }}
-                  className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"
-                >
-                  <span
-                    className="grid h-5 w-5 place-items-center rounded-full"
-                    style={{ background: `conic-gradient(var(--primary) ${pct}%, var(--muted) 0)` }}
+        {rejoin &&
+          (() => {
+            const elapsed = Math.min(60_000, now - rejoin.leftAt);
+            const remaining = Math.max(0, 60 - Math.floor(elapsed / 1000));
+            const pct = Math.min(100, (elapsed / 60_000) * 100);
+            return (
+              <motion.div
+                key="rejoin"
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="mt-3 flex"
+              >
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-surface pl-1 pr-1 py-1 text-xs text-ink shadow-soft">
+                  <Link
+                    to="/lounge/$id"
+                    params={{ id: rejoin.id }}
+                    search={{ mode: "audio" }}
+                    className="inline-flex items-center gap-2 rounded-full pl-1 pr-2 py-0.5 hover:bg-muted/40 transition"
                   >
-                    <span className="h-3 w-3 rounded-full bg-surface grid place-items-center">
-                      <span className="gradient-motion h-1.5 w-1.5 rounded-full" />
+                    <span
+                      className="grid h-5 w-5 place-items-center rounded-full"
+                      style={{
+                        background: `conic-gradient(var(--primary) ${pct}%, var(--muted) 0)`,
+                      }}
+                    >
+                      <span className="h-3 w-3 rounded-full bg-surface grid place-items-center">
+                        <span className="gradient-motion h-1.5 w-1.5 rounded-full" />
+                      </span>
                     </span>
-                  </span>
-                  <span>Rejoin {rejoin.title || "your room"}</span>
-                  <span className="tabular-nums text-ink-muted/80">{remaining}s</span>
-                </Link>
-                <button
-                  type="button"
-                  aria-label="Dismiss rejoin"
-                  onClick={() => {
-                    setRejoin(null);
-                    try { window.sessionStorage.removeItem("workshop:last-room"); } catch { /* ignore */ }
-                  }}
-                  className="grid h-5 w-5 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40 transition"
-                >
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            </motion.div>
-          );
-        })()}
+                    <span>Rejoin {rejoin.title || "your room"}</span>
+                    <span className="tabular-nums text-ink-muted/80">{remaining}s</span>
+                  </Link>
+                  <button
+                    type="button"
+                    aria-label="Dismiss rejoin"
+                    onClick={() => {
+                      setRejoin(null);
+                      try {
+                        window.sessionStorage.removeItem("workshop:last-room");
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="grid h-5 w-5 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40 transition"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              </motion.div>
+            );
+          })()}
       </AnimatePresence>
 
       {idleNudge && liveCount === 0 && devices && canDrop && (
         <div className="mt-3 flex items-center gap-2 rounded-full bg-primary/5 border border-primary/15 px-3 py-1.5 text-xs text-ink-soft">
           <Sparkles className="h-3 w-3 text-primary shrink-0" />
-          <span>Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"} Lounge.</span>
+          <span>
+            Be first — start a {CATEGORIES.find((c) => c.id === favoriteMedium)?.label ?? "Writing"}{" "}
+            Lounge.
+          </span>
           <button
             type="button"
             onClick={() => openLounge(favoriteMedium, null)}
@@ -436,7 +472,6 @@ function WorkshopPreflight() {
           </button>
         </div>
       )}
-
 
       <LoungeInvitesStrip />
       <GroupLoungesRail />
@@ -451,7 +486,11 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
+            router.navigate({
+              to: "/lounge/$id",
+              params: { id: roomId },
+              search: { mode: mode ?? "chat" },
+            });
           }}
         />
         <div className="mt-3">
@@ -494,7 +533,6 @@ function WorkshopPreflight() {
         />
       </div>
 
-
       {devices && !canDrop && (
         <div className="mt-3 rounded-2xl border border-border/70 bg-surface px-4 py-3 flex items-center gap-3">
           <div className="hidden sm:grid h-9 w-9 place-items-center rounded-full bg-muted/40 text-ink shrink-0">
@@ -510,7 +548,9 @@ function WorkshopPreflight() {
             variant="outline"
             size="sm"
             className="rounded-full shrink-0"
-            onClick={async () => { await preGrantMedia(); }}
+            onClick={async () => {
+              await preGrantMedia();
+            }}
           >
             Test setup
           </Button>
@@ -544,19 +584,29 @@ function WorkshopPreflight() {
             disabled={!canDrop || busy !== null}
             className="shrink-0 rounded-full h-11 sm:h-9 gap-2 px-4 w-full sm:w-auto justify-center"
           >
-            {busy === "host" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RadioTower className="h-4 w-4" />}
-            {busy === "host" ? "Opening…" : hostLabel ? `Open a ${hostLabel} Lounge` : "Open the Lounge"}
+            {busy === "host" ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RadioTower className="h-4 w-4" />
+            )}
+            {busy === "host"
+              ? "Opening…"
+              : hostLabel
+                ? `Open a ${hostLabel} Lounge`
+                : "Open the Lounge"}
           </Button>
         </div>
       </div>
 
-
       <p className="mt-3 text-center text-[11px] text-ink-muted">
         Lounges are ephemeral and deleted at close — start a{" "}
-        <Link to="/collab/new" className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition">
+        <Link
+          to="/collab/new"
+          className="underline decoration-ink-muted/40 hover:text-ink hover:decoration-ink/60 transition"
+        >
           Collab
-        </Link>
-        {" "}to keep the work.
+        </Link>{" "}
+        to keep the work.
       </p>
 
       <div className="hidden md:block">
@@ -565,11 +615,14 @@ function WorkshopPreflight() {
           medium={null}
           onTakeSeat={async (roomId) => {
             const mode = await preGrantMedia();
-            router.navigate({ to: "/lounge/$id", params: { id: roomId }, search: { mode: mode ?? "chat" } });
+            router.navigate({
+              to: "/lounge/$id",
+              params: { id: roomId },
+              search: { mode: mode ?? "chat" },
+            });
           }}
         />
       </div>
-
     </main>
   );
 }

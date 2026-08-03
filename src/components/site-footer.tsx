@@ -15,8 +15,8 @@ const HIDE_PREFIXES = [
   "/onboarding",
   "/checkout",
   "/dms",
-  "/lounge/",         // /lounge/$id room; /lounge index still shows footer
-  "/workshops/",      // /workshops/$slug and tool routes; /workshops index still shows footer
+  "/lounge/", // /lounge/$id room; /lounge index still shows footer
+  "/workshops/", // /workshops/$slug and tool routes; /workshops index still shows footer
   "/w/",
   "/e/",
   "/redeem/",
@@ -28,7 +28,9 @@ const HIDE_PREFIXES = [
 
 function shouldHide(pathname: string): boolean {
   return HIDE_PREFIXES.some((p) =>
-    p.endsWith("/") ? pathname.startsWith(p) : (pathname === p || pathname.startsWith(p + "/") || pathname === p),
+    p.endsWith("/")
+      ? pathname.startsWith(p)
+      : pathname === p || pathname.startsWith(p + "/") || pathname === p,
   );
 }
 
@@ -95,7 +97,8 @@ export function SiteFooter() {
                 Notes from Workshop
               </label>
               <p className="mt-1 text-sm text-ink-soft">
-                Occasional notes on independent art, creative collaboration, and what's happening on Workshop.
+                Occasional notes on independent art, creative collaboration, and what's happening on
+                Workshop.
               </p>
               <div className="mt-3 flex gap-2">
                 <input
@@ -132,21 +135,52 @@ export function SiteFooter() {
           {/* Links */}
           <div className="grid grid-cols-2 gap-6 text-sm">
             <div>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">Explore</div>
+              <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+                Explore
+              </div>
               <ul className="mt-3 space-y-2">
-                
-                <li><Link to="/g" className="text-ink-soft hover:text-ink">Groups</Link></li>
-                <li><Link to="/collab" className="text-ink-soft hover:text-ink">Collabs</Link></li>
-                <li><Link to="/events" className="text-ink-soft hover:text-ink">Events</Link></li>
-                <li><Link to="/gallery" className="text-ink-soft hover:text-ink">Gallery</Link></li>
+                <li>
+                  <Link to="/g" className="text-ink-soft hover:text-ink">
+                    Groups
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/collab" className="text-ink-soft hover:text-ink">
+                    Collabs
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/events" className="text-ink-soft hover:text-ink">
+                    Events
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/gallery" className="text-ink-soft hover:text-ink">
+                    Gallery
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
-              <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">More</div>
+              <div className="text-[11px] font-medium uppercase tracking-wider text-ink-muted">
+                More
+              </div>
               <ul className="mt-3 space-y-2">
-                <li><Link to="/blog" className="text-ink-soft hover:text-ink">Blog</Link></li>
-                <li><Link to="/pricing" className="text-ink-soft hover:text-ink">Pricing</Link></li>
-                <li><Link to="/refer" className="text-ink-soft hover:text-ink">Refer & Earn</Link></li>
+                <li>
+                  <Link to="/blog" className="text-ink-soft hover:text-ink">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/pricing" className="text-ink-soft hover:text-ink">
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/refer" className="text-ink-soft hover:text-ink">
+                    Refer & Earn
+                  </Link>
+                </li>
               </ul>
             </div>
           </div>
