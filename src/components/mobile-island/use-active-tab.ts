@@ -1,8 +1,8 @@
 import type { MobileTab } from "./mobile-tabs-config";
 
 export function getActiveTabId(pathname: string): MobileTab["id"] | null {
-  if (pathname === "/lounge" || pathname.startsWith("/lounge/")) return "lounge";
   if (pathname === "/collab" || pathname.startsWith("/collab/")) return "collabs";
+  if (pathname === "/gallery" || pathname.startsWith("/gallery/")) return "gallery";
   if (
     pathname === "/groups" ||
     pathname.startsWith("/groups/") ||
