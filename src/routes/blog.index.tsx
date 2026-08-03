@@ -114,8 +114,10 @@ function PostCard({ post }: { post: BlogListItem }) {
 
 function BlogIndexPage() {
   const { posts } = Route.useLoaderData() as { posts: BlogListItem[] };
-  const featured = posts.find((p) => p.featured) ?? null;
-  const rest = featured ? posts.filter((p) => p.id !== featured.id) : posts;
+  const featured = posts.filter((p) => p.featured);
+  const featuredIds = new Set(featured.map((p) => p.id));
+  const rest = featured.length ? posts.filter((p) => !featuredIds.has(p.id)) : posts;
+
 
   return (
     <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-6 md:py-14 md:pb-16">
