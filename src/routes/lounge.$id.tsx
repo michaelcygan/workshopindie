@@ -1,19 +1,15 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { RequireAuth } from "@/components/require-auth";
-import { ArrowLeft, Rocket, X, Pencil, Check, DoorOpen } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { mediumIcon } from "@/lib/medium-icons";
-import { CreateCollabNudge } from "@/components/create-collab-nudge";
 import { z } from "zod";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { ChannelView } from "@/components/channel-view";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { renameLounge, endLounge, getInstantRoom } from "@/lib/instant.functions";
+import { getInstantRoom } from "@/lib/instant.functions";
 
 import { WaitingForOthersCard } from "@/components/waiting-for-others-card";
 import { FocusStrip } from "@/components/focus-strip";
@@ -21,12 +17,11 @@ import { HopButton } from "@/components/hop-button";
 import { CcConsentDialog } from "@/components/cc-consent-dialog";
 import { toast } from "sonner";
 import { formatRoomTitle } from "@/lib/instant";
-import { CollabComposer } from "@/routes/collab.new";
 import { LoungeAudioProvider } from "@/components/stream-lounge-provider";
 import { normalizeLoungeMode } from "@/lib/lounge-constants";
 
 // Accepts the new chat|audio vocabulary and coerces legacy voice|video values
-// (voice → audio, video → audio). Cameras no longer exist in Lounge; legacy
+// (voice → audio, video → audio). Cameras no longer exist in audio rooms; legacy
 // video links never reactivate camera behavior — they simply enter as audio.
 const searchSchema = z.object({
   mode: z
@@ -34,7 +29,7 @@ const searchSchema = z.object({
     .optional()
     .transform((v) => (v === "video" || v === "voice" ? "audio" : v)),
 });
-const FALLBACK_TITLE = "Lounge";
+const FALLBACK_TITLE = "Audio room";
 
 export const Route = createFileRoute("/lounge/$id")({
   component: () => (
@@ -45,8 +40,8 @@ export const Route = createFileRoute("/lounge/$id")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Lounge" },
-      { name: "description", content: "A live Lounge. Drop in, talk shop, find your people." },
+      { title: "Audio room" },
+      { name: "description", content: "A live audio room. Drop in, talk shop, find your people." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -57,7 +52,7 @@ export const Route = createFileRoute("/lounge/$id")({
 function LoungeNotFound() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="font-display text-3xl text-ink">This Lounge isn't here</h1>
+      <h1 className="font-display text-3xl text-ink">This room isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
       <Link
         to="/groups"
@@ -72,7 +67,7 @@ function LoungeNotFound() {
 function LoungeLoading() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <p className="text-sm text-ink-muted">Loading Lounge…</p>
+      <p className="text-sm text-ink-muted">Loading room…</p>
     </main>
   );
 }
@@ -81,13 +76,12 @@ function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void
   const router = useRouter();
   const qc = useQueryClient();
   // Log for diagnostics; keep user-facing copy friendly.
-  if (typeof console !== "undefined") console.error("[Lounge] boundary:", error);
+  if (typeof console !== "undefined") console.error("[audio-room] boundary:", error);
   return (
     <main className="mx-auto max-w-2xl px-4 py-20 text-center">
-      <h1 className="font-display text-3xl text-ink">Lounge hit a snag</h1>
+      <h1 className="font-display text-3xl text-ink">This room hit a snag</h1>
       <p className="mt-2 text-sm text-ink-muted">
-        A temporary problem interrupted this Lounge. Try reconnecting, or head back to Lounge
-        discovery.
+        A temporary problem interrupted this room. Try reconnecting, or head back to Groups.
       </p>
       {error?.message && (
         <p className="mt-3 mx-auto max-w-md break-words text-[11px] text-ink-muted/70">
@@ -109,11 +103,11 @@ function LoungeErrorBoundary({ error, reset }: { error: Error; reset: () => void
           Try again
         </button>
         <Link
-          to="/lounge"
+          to="/groups"
           onClick={() => reset()}
           className="rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
         >
-          Return to Lounge
+          Back to Groups
         </Link>
       </div>
     </main>
@@ -246,7 +240,7 @@ function LiveRoomPage() {
     try {
       if (window.localStorage.getItem("ws:first_done") === "1") return;
       window.localStorage.setItem("ws:first_done", "1");
-      const t = setTimeout(() => toast.success("First Lounge — nicely done."), 1200);
+      const t = setTimeout(() => toast.success("First audio room — nicely done."), 1200);
       return () => clearTimeout(t);
     } catch {
       // ignore
