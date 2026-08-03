@@ -328,6 +328,11 @@ function GroupPage() {
   }, [group.id, qc]);
 
   return (
+    <GroupLiveShell
+      groupId={group.id}
+      groupName={group.name}
+      isMember={isGroupMember}
+    >
     <main className="mx-auto max-w-7xl pb-20">
       {seedToken && !user && seedInfo && (
         <div className="px-4 md:px-6">
@@ -364,6 +369,7 @@ function GroupPage() {
           {viewTab === "collab" && <GroupCollabTab group={group} />}
 
           {viewTab === "work" && <GroupWorkTab group={group} />}
+          {viewTab === "links" && <GroupLinksTab group={group} />}
           {viewTab === "posts" && <GroupPostsTab group={group} />}
           {viewTab === "events" && <GroupEventsTab group={group} />}
           {viewTab === "subgroups" && (
@@ -384,9 +390,10 @@ function GroupPage() {
       </div>
       </div>
     </main>
-
+    </GroupLiveShell>
   );
 }
+
 
 
 function GroupEventsTab({ group }: { group: GroupRow }) {
