@@ -188,6 +188,28 @@ function LiveRoomPage() {
     retry: 1,
   });
 
+  // Compatibility redirect: group-backed rooms now live inside their Group,
+  // which owns the audio layer. Rooms with no group (legacy / instant /
+  // collab-spawned) keep rendering here exactly as before.
+  const roomGroupId = (room as { group_id?: string | null } | null)?.group_id ?? null;
+  useEffect(() => {
+    if (!roomGroupId) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("groups")
+        .select("slug")
+        .eq("id", roomGroupId)
+        .maybeSingle();
+      const slug = (data as { slug?: string } | null)?.slug;
+      if (!cancelled && slug) {
+        router.navigate({ to: "/g/$slug", params: { slug }, replace: true });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [roomGroupId, router]);
 
   // Bad room ID → render inline NotFound AFTER all hooks (never mid-render — that
   // would change the hook count between renders and trip the React hooks-order guard).
