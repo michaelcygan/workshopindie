@@ -222,7 +222,7 @@ export function BlogEntityTagPicker({
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search…"
-            className="w-full rounded-full border border-border bg-background px-9 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+            className="h-11 w-full rounded-full border border-border bg-background px-9 text-[16px] text-ink focus:border-primary focus:outline-none"
           />
         </div>
         <div className="-mx-1 mt-1 flex items-center gap-1 overflow-x-auto px-1">
