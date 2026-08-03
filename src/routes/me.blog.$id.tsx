@@ -21,6 +21,7 @@ import {
 } from "@/lib/blog-member.functions";
 import { PlusGate } from "@/components/plus-gate";
 import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
+import { Switch } from "@/components/ui/switch";
 import { generateExcerpt } from "@/lib/blog-excerpt";
 import {
   DropdownMenu,
@@ -89,6 +90,7 @@ function MemberBlogEditorPage() {
   const [coverAlt, setCoverAlt] = useState("");
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
+  const [listInBlog, setListInBlog] = useState(true);
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
@@ -109,6 +111,7 @@ function MemberBlogEditorPage() {
     setCoverAlt(p.cover_image_alt ?? "");
     setSeoTitle(p.seo_title ?? "");
     setSeoDesc(p.seo_description ?? "");
+    setListInBlog(p.show_in_blog_index !== false);
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     setLoadedForId(p.id);
@@ -130,6 +133,7 @@ function MemberBlogEditorPage() {
           cover_image_alt: coverAlt || null,
           seo_title: seoTitle || null,
           seo_description: seoDesc || null,
+          show_in_blog_index: listInBlog,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: post?.post.updated_at,
         },
@@ -389,6 +393,21 @@ function MemberBlogEditorPage() {
         </TabsContent>
 
         <TabsContent value="details" className="mt-4 space-y-4">
+          <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
+            <div className="min-w-0">
+              <div className="text-sm font-medium text-ink">List on the public Blog page</div>
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Off keeps your post live at its own link, but out of the Blog feed and RSS.
+              </p>
+            </div>
+            <Switch
+              checked={listInBlog}
+              disabled={readOnly}
+              onCheckedChange={(v) => { setListInBlog(v); setDirty(true); }}
+              className="mt-1 shrink-0"
+            />
+          </div>
+
           <div>
             <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Preview text (optional)</label>
             <p className="mt-1 text-[11px] text-ink-muted">
