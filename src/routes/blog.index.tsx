@@ -1,30 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { listPublishedPosts } from "@/lib/blog.functions";
+import {
+  BlogFeaturedCarousel,
+  Byline,
+  FeaturedHero,
+  type BlogListItem,
+} from "@/components/blog-featured-carousel";
 
 const SITE = "https://workshopindie.com";
 const TITLE = "Workshop Blog — Creative Collaboration, Independent Art & Artist Portfolios";
 const DESC = "Ideas, guides, and stories about finding collaborators, making independent creative work, and building a portfolio that shows how the work happened.";
 
-type AuthorProfile = {
-  username: string | null;
-  display_name: string | null;
-  avatar_url: string | null;
-} | null;
-
-type BlogListItem = {
-  id: string;
-  title: string;
-  slug: string;
-  excerpt: string | null;
-  cover_image_url: string | null;
-  cover_image_alt: string | null;
-  author_name: string;
-  published_at: string | null;
-  updated_at: string;
-  featured?: boolean | null;
-  publication_type?: string | null;
-  author_profile?: AuthorProfile;
-};
 
 export const Route = createFileRoute("/blog/")({
   loader: async () => {
