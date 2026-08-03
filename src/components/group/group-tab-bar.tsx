@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Calendar, FileText, Info, LayoutGrid, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
+import { Calendar, FileText, Info, LayoutGrid, Link2, Megaphone, Plus, Sparkles, Sun, Users } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,12 @@ export type GroupTab =
   | "events"
   | "collab"
   | "work"
+  | "links"
   | "posts"
   | "members"
   | "subgroups"
   | "about";
+
 
 export function GroupTabBar({
   tab,
