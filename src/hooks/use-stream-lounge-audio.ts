@@ -102,9 +102,8 @@ export function useStreamLoungeAudio(
     }
   }, [callingState, roomId]);
 
-  // Connected-minutes rollup — reserve one minute against the Free monthly
-  // cap on each tick. The RPC also writes the telemetry row on success;
-  // Plus/trial subscribers are `monthlyLimit: null` and never blocked.
+  // Connected-minutes rollup — records telemetry only. Group/Lounge audio is
+  // free in V1: a quota result never disconnects or blocks a member.
   useEffect(() => {
     if (!connected) return;
     let cancelled = false;
@@ -113,16 +112,8 @@ export function useStreamLoungeAudio(
         const { reserveLoungeMinute } = await import(
           "@/lib/lounge-access.functions"
         );
-        const res = await reserveLoungeMinute({ data: { roomId } });
+        await reserveLoungeMinute({ data: { roomId } });
         if (cancelled) return;
-        if (!res.ok) {
-          setError({ code: "quota", message: res.reason ?? "Monthly Lounge audio limit reached." });
-          try {
-            await call?.leave();
-          } catch {
-            // ignore
-          }
-        }
       } catch {
         // Fail-open: never break the audio path on telemetry errors.
       }
@@ -132,7 +123,7 @@ export function useStreamLoungeAudio(
       cancelled = true;
       window.clearInterval(iv);
     };
-  }, [connected, roomId, call]);
+  }, [connected, roomId]);
 
   // Load + subscribe to presence audio_state.
   useEffect(() => {
