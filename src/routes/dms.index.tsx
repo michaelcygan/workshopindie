@@ -218,7 +218,7 @@ function DmsIndex() {
     { id: "all", label: "All", count: counts.all },
     { id: "unread", label: "Unread", count: counts.unread },
     { id: "collabs", label: "Collabs", count: counts.collabs },
-    { id: "workshops", label: "Lounges", count: counts.workshops },
+    { id: "workshops", label: "Audio", count: counts.workshops },
   ];
 
   return (
@@ -247,7 +247,7 @@ function DmsIndex() {
             </span>
             {counts.all > 0
               ? `${counts.all} thread${counts.all === 1 ? "" : "s"}${counts.unread > 0 ? ` · ${counts.unread} unread` : ""}`
-              : "DM mutuals — or anyone connected to your collabs and Lounges."}
+              : "DM mutuals — or anyone connected to your collabs and Group audio."}
           </p>
         </div>
         <Button
