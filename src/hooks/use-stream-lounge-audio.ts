@@ -35,12 +35,16 @@ import {
   revokeLoungeSpeaker,
 } from "@/lib/stream-video.functions";
 
-/** Presence row shape (subset) — mirrors the DB columns we depend on. */
-type AudioState = "chat" | "queued" | "offered" | "speaker";
+/**
+ * Presence row shape (subset) — mirrors the DB columns we depend on.
+ * The vocabulary here is the deployed `instant_presence.audio_state` one:
+ * `listener` (default) | `waiting` | `offered` | `speaker`.
+ */
+type AudioState = "listener" | "waiting" | "offered" | "speaker";
 type PresenceRow = {
   user_id: string;
   audio_state: AudioState;
-  queued_at: string | null;
+  audio_requested_at: string | null;
 };
 
 function stateToRole(state: AudioState, connected: boolean): LoungeRole {
@@ -51,7 +55,7 @@ function stateToRole(state: AudioState, connected: boolean): LoungeRole {
     case "offered":
       // Host-less queue: treat any lingering "offered" row as waiting.
       return "waiting";
-    case "queued":
+    case "waiting":
       return "waiting";
     default:
       return "listener";
