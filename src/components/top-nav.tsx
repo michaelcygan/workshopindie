@@ -71,14 +71,6 @@ export function TopNav() {
 
         {/* Center: primary nav */}
         <nav className="flex flex-1 items-center justify-center gap-1">
-          <Link
-            data-firstrun="instant"
-            to="/lounge"
-            className={navLinkBase}
-            activeProps={{ className: navLinkActive }}
-          >
-            Lounge
-          </Link>
           <GroupsNavItem />
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
