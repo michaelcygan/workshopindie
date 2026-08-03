@@ -291,7 +291,7 @@ export function CollabComposer({
         await pinToRoom({ data: { roomId: fromLounge, collabPostId: post.id } });
       } catch (e) {
         toast.error(
-          e instanceof Error ? `Posted, but couldn't pin to the Lounge: ${e.message}` : "Posted, but couldn't pin to the Lounge",
+          e instanceof Error ? `Posted, but couldn't pin to the audio room: ${e.message}` : "Posted, but couldn't pin to the audio room",
         );
       }
     }
@@ -723,7 +723,7 @@ export function CollabComposer({
                   onBackToLounge?.(lounge);
                 }}
               >
-                Back to the Lounge
+                Back to the audio room
               </Button>
             ) : (
               <Button
