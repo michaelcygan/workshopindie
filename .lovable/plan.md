@@ -25,7 +25,7 @@ All become "Group audio" / "audio room" / "live audio" depending on whether the 
 
 ## 3. Prune the standalone room UI
 
-`src/routes/lounge.$id.tsx` still carries features Groups replaced: room renaming, "end this Lounge", and the Collab-post-and-pin dialog. Group-backed rooms already redirect to `/g/$slug`, so this page only serves legacy non-group rooms. The plan keeps the page joinable (audio + chat) and removes the ownership/管理 affordances that no longer have a home in the Groups model, so the page reads as a plain legacy audio room rather than a competing product surface.
+`src/routes/lounge.$id.tsx` still carries features Groups replaced: room renaming, "end this Lounge", and the Collab-post-and-pin dialog. Group-backed rooms already redirect to `/g/$slug`, so this page only serves legacy non-group rooms. The plan keeps the page joinable (audio + chat) and removes the ownership and moderation affordances that no longer have a home in the Groups model, so the page reads as a plain legacy audio room rather than a competing product surface.
 
 If you'd rather keep the standalone page fully featured for legacy rooms, say so and I'll drop this section and only do the copy pass.
 
