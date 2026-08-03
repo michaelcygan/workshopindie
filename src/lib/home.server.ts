@@ -575,7 +575,7 @@ export async function continueActionsServer(
   const [draftsRes, myWorksRes, collabsRes, profileRes] = await Promise.all([
     supabaseAdmin
       .from("blog_posts")
-      .select("id,title,updated_at")
+      .select("id,title,updated_at,cover_image_url")
       .eq("created_by", userId)
       .eq("status", "draft")
       .order("updated_at", { ascending: false })
