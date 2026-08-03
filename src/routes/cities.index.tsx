@@ -15,9 +15,9 @@ export const Route = createFileRoute("/cities/")({
   head: () => ({
     meta: [
       { title: "Cities — Workshop" },
-      { name: "description", content: "Find local events, Lounges, and creators in your city." },
+      { name: "description", content: "Find local events, live audio, and creators in your city." },
       { property: "og:title", content: "Cities — Workshop" },
-      { property: "og:description", content: "Find local events, Lounges, and creators in your city." },
+      { property: "og:description", content: "Find local events, live audio, and creators in your city." },
       { property: "og:url", content: "https://workshopindie.com/cities" },
       { property: "og:type", content: "website" },
     ],
@@ -29,7 +29,7 @@ export const Route = createFileRoute("/cities/")({
           "@context": "https://schema.org",
           "@type": "CollectionPage",
           name: "Cities — Workshop",
-          description: "Find local events, Lounges, and creators in your city.",
+          description: "Find local events, live audio, and creators in your city.",
           url: "https://workshopindie.com/cities",
           isPartOf: { "@type": "WebSite", name: "Workshop", url: "https://workshopindie.com" },
         }),
