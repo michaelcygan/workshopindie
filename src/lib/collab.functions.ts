@@ -206,7 +206,9 @@ export const listApplicants = createServerFn({ method: "POST" })
       supabase
         .from("collab_guest_applications")
         .select(
-          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id,claim_token,claim_token_expires_at",
+          // claim_token is deliberately excluded: it must never be visible to the post
+          // owner, only to the guest who submitted the application.
+          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id",
         )
         .eq("collab_post_id", data.collabPostId)
         .order("created_at", { ascending: false }),

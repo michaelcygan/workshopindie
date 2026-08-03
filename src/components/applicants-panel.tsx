@@ -254,16 +254,6 @@ export function ApplicantsPanel({ postId }: Props) {
                 </div>
 
                 <div className="flex shrink-0 flex-col gap-1">
-                  {g.claim_token && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full gap-1"
-                      onClick={() => copyClaimLink(g.claim_token!)}
-                    >
-                      <Copy className="h-3.5 w-3.5" /> {copiedToken === g.claim_token ? "Copied" : "Copy claim link"}
-                    </Button>
-                  )}
                   <Button
                     size="sm"
                     variant={g.status === "contacted" ? "secondary" : "outline"}
