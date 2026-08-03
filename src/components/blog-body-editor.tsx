@@ -321,7 +321,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
         ref={ref}
         value={value}
         readOnly={readOnly}
-        onChange={(e) => commit(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Write your post…"
         className={cn(
@@ -332,7 +332,11 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       />
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
-        <span>Use the toolbar to format text or add a link. Markdown is supported.</span>
+        <span>
+          {onRequestEntityInsert
+            ? "Use @ to tag a person, Work, Collab, Group, or Event. Markdown is supported."
+            : "Use the toolbar to format text or add a link. Markdown is supported."}
+        </span>
         <span>
           {wordCount} words · ~{readingMin} min read
         </span>
