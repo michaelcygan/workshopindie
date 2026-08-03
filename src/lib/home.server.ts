@@ -12,12 +12,14 @@
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type {
+  HomeBlogCard,
   HomeCircleStory,
   HomeContinueAction,
   HomeDisciplineItem,
   HomeEvent,
   HomeGroupSuggestion,
   HomeLounge,
+  HomeMineItem,
   HomePersonSuggestion,
   HomeStoryCredit,
   HomeStoryLabel,
@@ -29,6 +31,10 @@ import type {
 const POST_SCAN_LIMIT = 40;
 const MAX_WORK_STORIES = 8;
 const MAX_STORIES_PER_WORK = 3;
+/** Admins may feature at most this many Blog posts at once. */
+export const FEATURED_POST_CAP = 5;
+const MAX_MINE_ITEMS = 6;
+
 
 type PostRow = {
   id: string;
