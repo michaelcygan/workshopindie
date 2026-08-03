@@ -149,30 +149,37 @@ export function GroupHero({
             )}
           </div>
 
-          {/* Right column: compact — Lounge + Share + Join. Create lives in the tab bar. */}
+          {/* Right column: compact — Audio + Share + Join. Create lives in the tab bar. */}
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button
-              size="sm"
-              onClick={() => openLounge.mutate()}
-              disabled={openLounge.isPending}
-              className="rounded-full gap-1.5"
-              title="Drop into the Lounge — auto-joins this group"
-            >
-              <Radio className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">
-                {openLounge.isPending
-                  ? "Opening…"
-                  : liveCount > 0
-                    ? `Lounge · ${liveCount} live`
-                    : "Open the Lounge"}
-              </span>
-              {liveCount > 0 ? (
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
-                />
-              ) : null}
-            </Button>
+            {live && !live.roomId ? (
+              <Button
+                size="sm"
+                onClick={() => void live.joinAudio()}
+                disabled={live.status === "joining" || !isMember}
+                className="gap-1.5 rounded-full"
+                title={
+                  isMember
+                    ? "Join this Group's live audio — no camera, mic stays off until you ask"
+                    : "Join the Group to enter live audio"
+                }
+              >
+                <Radio className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {live.status === "joining"
+                    ? "Joining…"
+                    : live.connectedCount > 0
+                      ? `Join audio · ${live.connectedCount} live`
+                      : "Join audio"}
+                </span>
+                {live.isLive ? (
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+                  />
+                ) : null}
+              </Button>
+            ) : null}
+
 
             <Button
               variant="ghost"
