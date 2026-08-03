@@ -22,6 +22,8 @@ function pathHidesIsland(pathname: string): boolean {
   if (pathname.startsWith("/oauth/")) return true;
   if (pathname.startsWith("/redeem/")) return true;
   if (pathname.startsWith("/auth/")) return true;
+  // Blog editor: distraction-free writing surface (not the /me/blog dashboard).
+  if (/^\/me\/blog\/[^/]+/.test(pathname)) return true;
   return false;
 }
 

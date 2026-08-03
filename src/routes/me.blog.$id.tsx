@@ -20,7 +20,16 @@ import {
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
 import { PlusGate } from "@/components/plus-gate";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
+import { generateExcerpt } from "@/lib/blog-excerpt";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
+import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
@@ -74,7 +83,6 @@ function MemberBlogEditorPage() {
   });
 
   const [title, setTitle] = useState("");
-  const [slug, setSlug] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [body, setBody] = useState("");
   const [cover, setCover] = useState<string | null>(null);
@@ -87,6 +95,7 @@ function MemberBlogEditorPage() {
   const [entityPickerOpen, setEntityPickerOpen] = useState(false);
   const [pendingInsertRef, setPendingInsertRef] = useState<((md: string) => void) | null>(null);
   const [blogGateOpen, setBlogGateOpen] = useState(false);
+  const [published, setPublished] = useState<PublishedPostSummary | null>(null);
 
   const post = (q.data as { post: EditorPost; entity_tags?: BlogEntityTag[]; access: { canPublish: boolean; canEditExisting: boolean; canUnpublish: boolean; canDeleteNeverPublishedDraft: boolean; reason: string | null; mode: string; publicationsThisMonth: number; monthlyPublicationLimit: number | null } } | undefined);
 
@@ -94,7 +103,6 @@ function MemberBlogEditorPage() {
     if (!post || loadedForId === post.post.id) return;
     const p = post.post;
     setTitle(p.title);
-    setSlug(p.slug);
     setExcerpt(p.excerpt);
     setBody(p.body_markdown);
     setCover(p.cover_image_url);
@@ -111,12 +119,11 @@ function MemberBlogEditorPage() {
   }
 
   const saveMut = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (opts?: { silent?: boolean }) => {
       await updateFn({
         data: {
           id,
           title,
-          slug: post?.post.published_at ? undefined : slug,
           excerpt,
           body_markdown: body,
           cover_image_url: cover,
@@ -127,9 +134,11 @@ function MemberBlogEditorPage() {
           expected_updated_at: post?.post.updated_at,
         },
       });
+      return { silent: opts?.silent ?? false };
     },
-    onSuccess: () => {
-      toast.success("Saved");
+    onSuccess: (r) => {
+      // During a publish the success dialog is the single confirmation.
+      if (!r.silent) toast.success("Saved");
       setDirty(false);
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
@@ -140,11 +149,14 @@ function MemberBlogEditorPage() {
 
   const publishMut = useMutation({
     mutationFn: async () => {
-      await saveMut.mutateAsync();
+      await saveMut.mutateAsync({ silent: true });
       return publishFn({ data: { id } });
     },
-    onSuccess: () => {
-      toast.success("Published");
+    onSuccess: (result) => {
+      // Always use the slug the server finalized, never local draft state.
+      const p = result as unknown as { id: string; slug: string; title: string; excerpt: string | null } | null;
+      if (p?.slug) setPublished({ id: p.id, slug: p.slug, title: p.title, excerpt: p.excerpt });
+      else toast.success("Published");
       qc.invalidateQueries({ queryKey: ["my-blog-post", id] });
       qc.invalidateQueries({ queryKey: ["my-blog-posts", user?.id] });
       refreshEntityCaches();
@@ -195,58 +207,83 @@ function MemberBlogEditorPage() {
 
   const access = post.access;
   const isPublished = post.post.status === "published";
-  const slugLocked = !!post.post.published_at;
   const readOnly = !access.canEditExisting;
   const publishBlockedByQuota = !access.canPublish && (access.mode === "free" || access.mode === "lapsed");
   const nearBlogLimit = access.monthlyPublicationLimit != null && access.publicationsThisMonth === access.monthlyPublicationLimit - 1;
+  const canDeleteDraft = !post.post.published_at && access.canDeleteNeverPublishedDraft;
+  const showOverflow = isPublished || canDeleteDraft;
+  const generatedExcerpt = generateExcerpt(body);
+  const effectiveExcerpt = excerpt.trim() || generatedExcerpt;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         <Link
           to="/me/blog"
-          className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink"
+          className="inline-flex h-11 shrink-0 items-center gap-1 text-sm text-ink-soft hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" /> Your posts
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {isPublished && (
             <Link
               to="/blog/$slug"
               params={{ slug: post.post.slug }}
-              className="rounded-full border border-border px-3 py-1.5 text-xs text-ink-soft hover:bg-muted"
+              className="inline-flex h-11 shrink-0 items-center rounded-full border border-border px-4 text-sm text-ink-soft hover:bg-muted"
             >
               View live
             </Link>
           )}
           <Button
-            size="sm"
             variant="outline"
-            className="rounded-full"
+            className="h-11 shrink-0 rounded-full px-4"
             disabled={!dirty || saveMut.isPending || readOnly}
-            onClick={() => saveMut.mutate()}
+            onClick={() => saveMut.mutate(undefined)}
           >
             {saveMut.isPending ? "Saving…" : "Save"}
           </Button>
-          {isPublished ? (
+          {!isPublished && (
             <Button
-              size="sm"
-              variant="outline"
-              className="rounded-full"
-              disabled={!access.canUnpublish || unpublishMut.isPending}
-              onClick={() => unpublishMut.mutate()}
-            >
-              Unpublish
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              className="rounded-full gradient-motion text-primary-foreground"
+              className="h-11 shrink-0 rounded-full px-5 gradient-motion text-primary-foreground"
               disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
               onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
             >
               {publishMut.isPending ? "Publishing…" : "Publish"}
             </Button>
+          )}
+          {showOverflow && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More post actions"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-muted"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isPublished && (
+                  <DropdownMenuItem
+                    disabled={!access.canUnpublish || unpublishMut.isPending}
+                    onSelect={() => unpublishMut.mutate()}
+                  >
+                    Unpublish
+                  </DropdownMenuItem>
+                )}
+                {canDeleteDraft && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={deleteMut.isPending}
+                    onSelect={() => {
+                      if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
+                    }}
+                  >
+                    Delete draft
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
@@ -276,7 +313,7 @@ function MemberBlogEditorPage() {
         <TabsList>
           <TabsTrigger value="edit">Edit</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
         <TabsContent value="edit" className="mt-4 space-y-4">
@@ -286,36 +323,14 @@ function MemberBlogEditorPage() {
               type="text"
               value={title}
               readOnly={readOnly}
+              maxLength={160}
               onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
               className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-display text-2xl text-ink focus:border-primary focus:outline-none"
               placeholder="Give your post a title"
             />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">
-              URL slug {slugLocked && <span className="text-ink-muted normal-case tracking-normal">— locked after first publish</span>}
-            </label>
-            <input
-              type="text"
-              value={slug}
-              readOnly={slugLocked || readOnly}
-              onChange={(e) => { setSlug(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Excerpt</label>
-            <textarea
-              value={excerpt}
-              readOnly={readOnly}
-              onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
-              rows={2}
-              maxLength={320}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-primary focus:outline-none"
-              placeholder="A one- or two-line summary (shown in listings)"
-            />
+            {title.length > 140 && (
+              <p className="mt-1 text-right text-[11px] text-ink-muted">{title.length}/160</p>
+            )}
           </div>
 
           <div>
@@ -323,22 +338,17 @@ function MemberBlogEditorPage() {
             <div className="mt-2">
               <ImageUpload
                 value={cover}
-                onChange={(url) => { setCover(url); setDirty(true); }}
+                onChange={(url) => {
+                  // A new image invalidates the old description.
+                  if (url !== cover) setCoverAlt("");
+                  setCover(url);
+                  setDirty(true);
+                }}
                 bucket="covers"
                 aspect="wide"
                 label="Add cover"
               />
             </div>
-            {cover && (
-              <input
-                type="text"
-                value={coverAlt}
-                readOnly={readOnly}
-                onChange={(e) => { setCoverAlt(e.target.value); setDirty(true); }}
-                placeholder="Describe the cover image (required to publish)"
-                className="mt-2 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none"
-              />
-            )}
           </div>
 
           {/* Connections are post metadata: above the body, never buried under it. */}
@@ -359,26 +369,6 @@ function MemberBlogEditorPage() {
               }}
             />
           </div>
-
-
-
-
-
-          {!post.post.published_at && access.canDeleteNeverPublishedDraft && (
-            <div className="border-t border-border pt-4">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={() => {
-                  if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
-                }}
-                disabled={deleteMut.isPending}
-              >
-                Delete draft
-              </Button>
-            </div>
-          )}
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
@@ -391,14 +381,47 @@ function MemberBlogEditorPage() {
               />
             )}
             <h1 className="font-display text-4xl text-ink">{title || "Untitled"}</h1>
-            {excerpt && <p className="mt-3 text-lg text-ink-soft">{excerpt}</p>}
+            {effectiveExcerpt && <p className="mt-3 text-lg text-ink-soft">{effectiveExcerpt}</p>}
             <div className="mt-6">
               <BlogPostBody markdown={body} />
             </div>
           </article>
         </TabsContent>
 
-        <TabsContent value="seo" className="mt-4 space-y-4">
+        <TabsContent value="details" className="mt-4 space-y-4">
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Preview text (optional)</label>
+            <p className="mt-1 text-[11px] text-ink-muted">
+              Generated from the opening of your post when you publish.
+            </p>
+            <textarea
+              value={excerpt}
+              readOnly={readOnly}
+              onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
+              rows={2}
+              maxLength={320}
+              className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-[16px] text-ink focus:border-primary focus:outline-none"
+              placeholder={generatedExcerpt || "A one- or two-line summary (shown in listings)"}
+            />
+          </div>
+
+          {cover && (
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Image description (optional)</label>
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Used by screen readers; the post title is used if left blank.
+              </p>
+              <input
+                type="text"
+                value={coverAlt}
+                readOnly={readOnly}
+                onChange={(e) => { setCoverAlt(e.target.value); setDirty(true); }}
+                placeholder="Describe the cover image"
+                className="mt-2 h-11 w-full rounded-full border border-border bg-surface px-4 text-[16px] text-ink focus:border-primary focus:outline-none"
+              />
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">SEO title (optional)</label>
             <input
@@ -407,7 +430,7 @@ function MemberBlogEditorPage() {
               readOnly={readOnly}
               maxLength={80}
               onChange={(e) => { setSeoTitle(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+              className="mt-1 h-11 w-full rounded-full border border-border bg-surface px-4 text-[16px] text-ink focus:border-primary focus:outline-none"
               placeholder="Defaults to the post title"
             />
           </div>
@@ -419,7 +442,7 @@ function MemberBlogEditorPage() {
               rows={2}
               maxLength={160}
               onChange={(e) => { setSeoDesc(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-[16px] text-ink focus:border-primary focus:outline-none"
               placeholder="Defaults to the excerpt"
             />
           </div>
@@ -428,25 +451,41 @@ function MemberBlogEditorPage() {
 
       <BlogEntityTagPicker
         open={entityPickerOpen}
-        onOpenChange={setEntityPickerOpen}
-        title={pendingInsertRef ? "Insert Workshop link" : "Add a connection"}
+        onOpenChange={(v) => { setEntityPickerOpen(v); if (!v) setPendingInsertRef(null); }}
+        title={pendingInsertRef ? "Tag something" : "Add a connection"}
         description={
           pendingInsertRef
-            ? "Insert an inline link to a Work, Collab, Group, Event, or person."
+            ? "Insert an inline link and connect this post to it."
             : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
         }
         disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
 
         onPick={(tag) => {
+          const already = entityTags.some((t) => tagKey(t) === tagKey(tag));
           if (pendingInsertRef) {
+            // Inline tagging creates a real reciprocal connection, not just a link.
             pendingInsertRef(entityMarkdown(tag));
             setPendingInsertRef(null);
-          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            if (!already) {
+              if (entityTags.length >= MAX_BLOG_ENTITY_TAGS) {
+                toast.message(`Linked, but you're at ${MAX_BLOG_ENTITY_TAGS} connections — not added to Connections.`);
+              } else {
+                setEntityTags([...entityTags, tag]);
+              }
+            }
+            setDirty(true);
+          } else if (!already) {
             setEntityTags([...entityTags, tag]);
             setDirty(true);
           }
           setEntityPickerOpen(false);
         }}
+      />
+      <BlogPublishSuccessDialog
+        post={published}
+        open={!!published}
+        onOpenChange={(v) => { if (!v) setPublished(null); }}
+        authorUserId={user?.id}
       />
       <PlusGate
         open={blogGateOpen}

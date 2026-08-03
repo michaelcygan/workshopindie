@@ -187,6 +187,48 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     });
   }
 
+  /**
+   * Opens the consumer's entity picker with an insert callback pinned to the
+   * current cursor. `replaceFrom` lets the inline "@" trigger swap out the
+   * typed character itself.
+   */
+  function requestEntityInsert(range?: { start: number; end: number; source: string }) {
+    if (!onRequestEntityInsert) return;
+    const el = ref.current;
+    const source = range?.source ?? value;
+    const start = range?.start ?? el?.selectionStart ?? source.length;
+    const end = range?.end ?? el?.selectionEnd ?? source.length;
+    const insert = (md: string) => {
+      const next = source.slice(0, start) + md + source.slice(Math.max(end, start));
+      commit(next);
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.focus();
+        const pos = start + md.length;
+        el.setSelectionRange(pos, pos);
+      });
+    };
+    onRequestEntityInsert(insert);
+  }
+
+  /**
+   * Typing "@" at the start of a line or after whitespace opens the picker.
+   * Inside a word (e.g. an email address) it stays a plain character.
+   */
+  function handleChange(next: string) {
+    commit(next);
+    if (readOnly || !onRequestEntityInsert) return;
+    const el = ref.current;
+    const caret = el?.selectionStart ?? next.length;
+    if (next.length !== value.length + 1) return;
+    if (next[caret - 1] !== "@") return;
+    const prev = caret >= 2 ? next[caret - 2] : "";
+    if (prev && !/\s/.test(prev)) return;
+    requestAnimationFrame(() =>
+      requestEntityInsert({ start: caret - 1, end: caret, source: next }),
+    );
+  }
+
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (readOnly) return;
     const mod = e.metaKey || e.ctrlKey;
@@ -231,28 +273,16 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             <Film className="h-4 w-4" />
           </ToolBtn>
           {onRequestEntityInsert && (
-            <ToolBtn
-              onClick={() => {
-                const el = ref.current;
-                const start = el?.selectionStart ?? value.length;
-                const end = el?.selectionEnd ?? value.length;
-                const insert = (md: string) => {
-                  const next = value.slice(0, start) + md + value.slice(end);
-                  commit(next);
-                  requestAnimationFrame(() => {
-                    if (!el) return;
-                    el.focus();
-                    const pos = start + md.length;
-                    el.setSelectionRange(pos, pos);
-                  });
-                };
-                onRequestEntityInsert(insert);
-              }}
-              title="Insert Workshop link"
+            <button
+              type="button"
+              onClick={() => requestEntityInsert()}
               disabled={readOnly}
+              title="Tag a person, Work, Collab, Group, or Event"
+              aria-label="Tag a person, Work, Collab, Group, or Event"
+              className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-sm text-ink-soft hover:bg-muted disabled:opacity-40"
             >
-              <AtSign className="h-4 w-4" />
-            </ToolBtn>
+              <AtSign className="h-4 w-4" /> Tag
+            </button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -291,7 +321,7 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
         ref={ref}
         value={value}
         readOnly={readOnly}
-        onChange={(e) => commit(e.target.value)}
+        onChange={(e) => handleChange(e.target.value)}
         onKeyDown={onKeyDown}
         placeholder="Write your post…"
         className={cn(
@@ -302,7 +332,11 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
       />
 
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-ink-muted">
-        <span>Use the toolbar to format text or add a link. Markdown is supported.</span>
+        <span>
+          {onRequestEntityInsert
+            ? "Use @ to tag a person, Work, Collab, Group, or Event. Markdown is supported."
+            : "Use the toolbar to format text or add a link. Markdown is supported."}
+        </span>
         <span>
           {wordCount} words · ~{readingMin} min read
         </span>

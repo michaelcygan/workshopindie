@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
 import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 
+import { generateExcerpt } from "@/lib/blog-excerpt";
 import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
 
@@ -366,17 +367,18 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
   if (!p.body_markdown.trim() || p.body_markdown.trim().length < 30) {
     throw new Error("Write a little more before publishing.");
   }
-  if (p.cover_image_url && !p.cover_image_alt?.trim()) {
-    throw new Error("Add alt text for the cover image before publishing.");
-  }
   validateMemberContent(p.body_markdown);
+
+  // Excerpt is optional for the author: when blank, derive it from the opening
+  // of the body so listings and SEO always have readable preview text.
+  const effectiveExcerpt = p.excerpt?.trim() ? p.excerpt.trim() : generateExcerpt(p.body_markdown);
   const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
   await assertTaggedEntitiesPubliclyVisibleServer(id);
 
   const name = await authorNameFor(context.userId);
   await moderateFields(context.userId, "blog_post", {
     title: p.title,
-    excerpt: p.excerpt,
+    excerpt: effectiveExcerpt,
     body: p.body_markdown,
     cover_alt: p.cover_image_alt ?? undefined,
     seo_title: p.seo_title ?? undefined,
@@ -395,12 +397,12 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
     .from("blog_post_authors")
     .upsert({ blog_post_id: id, profile_id: context.userId, sort_order: 0 }, { onConflict: "blog_post_id,profile_id" });
 
-  // Slug is a separate update so the quota RPC only owns the status flip.
-  if (finalSlug !== current.slug) {
-    await supabaseAdmin.from("blog_posts").update({ slug: finalSlug, author_name: name }).eq("id", id);
-  } else {
-    await supabaseAdmin.from("blog_posts").update({ author_name: name }).eq("id", id);
-  }
+  // Slug + generated excerpt are a separate update so the quota RPC only owns
+  // the status flip.
+  const prePatch: Record<string, unknown> = { author_name: name };
+  if (finalSlug !== current.slug) prePatch.slug = finalSlug;
+  if (effectiveExcerpt !== p.excerpt) prePatch.excerpt = effectiveExcerpt;
+  await supabaseAdmin.from("blog_posts").update(prePatch as never).eq("id", id);
 
   // For quota-bound tiers (free, lapsed), the RPC atomically re-checks the
   // monthly count under an advisory lock and flips status → published.
