@@ -114,12 +114,19 @@ export function MobileActionIsland() {
           </LayoutGroup>
 
           {/* Center composer */}
-          {composerVisible && (
+          {composerVisible ? (
             <div className="flex items-start justify-center">
               <MobileComposerTrigger
                 open={composerOpen}
                 onToggle={onComposerToggle}
                 ariaControlsId={menuId}
+              />
+            </div>
+          ) : (
+            <div className="flex items-start justify-center">
+              <div
+                aria-hidden="true"
+                className="relative -mt-6 h-12 w-12 rounded-full border border-border/50 bg-muted/50 shadow-sm"
               />
             </div>
           )}
