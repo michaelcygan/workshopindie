@@ -34,9 +34,9 @@ const CHOICES: Choice[] = [
   {
     id: "instant",
     icon: <Sparkles className="h-5 w-5" />,
-    title: "Drop into a live Lounge",
-    body: "Walk into a room of up to 5 and just start making something, right now.",
-    to: "/lounge",
+    title: "Join a Group",
+    body: "Groups are the places: a daily Today board, live audio when people show up, and the work that comes out of it.",
+    to: "/groups",
     accent: "from-emerald-500/15 to-teal-400/10",
   },
 ];
