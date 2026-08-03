@@ -167,6 +167,35 @@ export type HomeDisciplineItem = {
   bridge: string | null;
 };
 
+/** A Blog post rendered as a card (featured header + "From the Blog" rail). */
+export type HomeBlogCard = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  coverUrl: string | null;
+  publishedAt: string | null;
+  authorName: string | null;
+  authorAvatar: string | null;
+};
+
+export type HomeMineKind = "work" | "credited_work" | "blog" | "collab";
+
+/** Something the signed-in member made or is credited on. */
+export type HomeMineItem = {
+  id: string;
+  kind: HomeMineKind;
+  label: string;
+  title: string;
+  subtitle: string | null;
+  coverUrl: string | null;
+  focalX: number | null;
+  focalY: number | null;
+  to: string;
+  params: Record<string, string>;
+  occurredAt: string | null;
+};
+
 export type MemberHomePayload = {
   greetingName: string | null;
   coverUrl: string | null;
@@ -181,4 +210,12 @@ export type MemberHomePayload = {
   people: HomePersonSuggestion[];
   disciplines: HomeDisciplineItem[];
   hasEligibleWorkToWriteAbout: boolean;
+  /** Up to 5 admin-featured Blog posts; falls back to the newest indexed post. */
+  featuredPosts: HomeBlogCard[];
+  featuredIsFallback: boolean;
+  /** The member's own recent Works / stories / Collabs. */
+  mine: HomeMineItem[];
+  /** Recent public Blog posts, excluding whatever the header already shows. */
+  blogRail: HomeBlogCard[];
 };
+
