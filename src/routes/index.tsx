@@ -4,9 +4,10 @@ import { PublicHome } from "@/components/home/public-home";
 import { MemberHome } from "@/components/home/member-home";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const TITLE = "Workshop — Make things with other people";
+const TITLE = "Workshop — Independent culture, made together";
 const DESCRIPTION =
-  "Workshop is a creative network for people who actually make things: post Work, credit collaborators, open Collabs, host Group audio, and write the stories behind the work.";
+  "Read stories from independent creators, discover the Work behind them, find open Collabs, and join Groups where creative communities gather.";
+const URL = "https://workshopindie.com/";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -16,11 +17,17 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: TITLE },
       { property: "og:description", content: DESCRIPTION },
       { property: "og:type", content: "website" },
+      { property: "og:url", content: URL },
+      { property: "og:site_name", content: "Workshop" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: TITLE },
+      { name: "twitter:description", content: DESCRIPTION },
     ],
+    links: [{ rel: "canonical", href: URL }],
   }),
   component: Index,
 });
+
 
 /**
  * Home is two distinct surfaces, never a conditional monolith:
