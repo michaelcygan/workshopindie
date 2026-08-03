@@ -63,10 +63,10 @@ function LoungeNotFound() {
       <h1 className="font-display text-3xl text-ink">This Lounge isn't here</h1>
       <p className="mt-2 text-ink-muted">It may have ended or the link is wrong.</p>
       <Link
-        to="/lounge"
+        to="/groups"
         className="mt-6 inline-block rounded-full border border-border px-4 py-2 text-sm hover:bg-surface"
       >
-        Back to Lounge
+        Browse Groups
       </Link>
     </main>
   );
