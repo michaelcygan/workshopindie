@@ -8,7 +8,13 @@ const INTERVAL_MS = 8000;
 function greetingFor(name: string | null) {
   const hour = new Date().getHours();
   const g =
-    hour < 5 ? "Still up" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    hour < 5
+      ? "Still up"
+      : hour < 12
+        ? "Good morning"
+        : hour < 18
+          ? "Good afternoon"
+          : "Good evening";
   return name ? `${g}, ${name}` : g;
 }
 
@@ -51,7 +57,11 @@ function Slide({ post }: { post: HomeBlogCard }) {
         )}
         <div className="mt-2 flex min-w-0 items-center gap-2 text-[11px] text-ink-muted">
           {post.authorAvatar ? (
-            <img src={post.authorAvatar} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+            <img
+              src={post.authorAvatar}
+              alt=""
+              className="h-4 w-4 shrink-0 rounded-full object-cover"
+            />
           ) : null}
           <span className="truncate">{post.authorName}</span>
           {post.publishedAt && (

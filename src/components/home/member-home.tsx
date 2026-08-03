@@ -1,15 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import {
-  BookOpen,
-  Calendar,
-  Compass,
-  PenLine,
-  Radio,
-  Sparkles,
-  Users,
-} from "lucide-react";
+import { BookOpen, Calendar, Compass, PenLine, Radio, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -85,7 +77,6 @@ function HomeSkeleton() {
   );
 }
 
-
 export function MemberHome() {
   const fetchHome = useServerFn(getMemberHome);
   const q = useQuery({
@@ -146,7 +137,6 @@ export function MemberHome() {
 
       <WorkStoriesCarousel />
 
-
       {data.circle.length > 0 && (
         <HomeSection
           eyebrow="Your circles"
@@ -154,7 +144,6 @@ export function MemberHome() {
           kicker="People you follow, collaborators you've been credited with, and your Groups."
           density="compact"
         >
-
           <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
             {data.circle.map((item) => (
               <CircleCard key={item.id} item={item} />
@@ -199,7 +188,12 @@ export function MemberHome() {
       )}
 
       {data.people.length > 0 && (
-        <HomeSection eyebrow="Worth knowing" title="People in your orbit" tone="quiet" density="compact">
+        <HomeSection
+          eyebrow="Worth knowing"
+          title="People in your orbit"
+          tone="quiet"
+          density="compact"
+        >
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
             {data.people.map((p) => (
               <Link
@@ -277,7 +271,13 @@ export function MemberHome() {
         </HomeSection>
       )}
 
-      <HomeSection eyebrow="Make something" title="Start a new thing" divider tone="quiet" density="compact">
+      <HomeSection
+        eyebrow="Make something"
+        title="Start a new thing"
+        divider
+        tone="quiet"
+        density="compact"
+      >
         <div className="flex flex-wrap gap-3">
           <Button asChild className="rounded-full gap-1.5">
             <Link to="/works/new">

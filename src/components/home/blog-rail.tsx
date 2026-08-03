@@ -35,7 +35,11 @@ function BlogRailCard({ post }: { post: HomeBlogCard }) {
         {post.excerpt && <span className="line-clamp-2 text-xs text-ink-soft">{post.excerpt}</span>}
         <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[11px] text-ink-muted">
           {post.authorAvatar ? (
-            <img src={post.authorAvatar} alt="" className="h-4 w-4 shrink-0 rounded-full object-cover" />
+            <img
+              src={post.authorAvatar}
+              alt=""
+              className="h-4 w-4 shrink-0 rounded-full object-cover"
+            />
           ) : null}
           <span className="truncate">{post.authorName}</span>
           {post.publishedAt && (

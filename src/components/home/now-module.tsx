@@ -129,7 +129,11 @@ export function NowModule({
         <Row
           icon={Radio}
           title="No one live yet"
-          detail={fallbackGroup ? `Open a room in ${fallbackGroup.name}` : "Open a room and see who joins."}
+          detail={
+            fallbackGroup
+              ? `Open a room in ${fallbackGroup.name}`
+              : "Open a room and see who joins."
+          }
           action="Open a Lounge"
           to="/lounge"
         />
