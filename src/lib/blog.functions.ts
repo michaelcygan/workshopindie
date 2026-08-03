@@ -149,6 +149,16 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
     return adminUpdatePostServer(context, data);
   });
 
+export const adminSetPostFeatured = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({ id: z.string().uuid(), featured: z.boolean() }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    const { adminSetPostFeaturedServer } = await import("./blog.server");
+    return adminSetPostFeaturedServer(context, data.id, data.featured);
+  });
+
 export const adminPublishPost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: { id: string }) => z.object({ id: z.string().uuid() }).parse(d))
