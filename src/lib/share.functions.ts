@@ -3,7 +3,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const schema = z.object({
-  entityType: z.enum(["work", "workshop", "profile", "collab"]),
+  entityType: z.enum(["work", "workshop", "profile", "collab", "blog_post"]),
   entityId: z.string().uuid(),
   channel: z.enum(["copy", "native", "twitter", "facebook", "whatsapp", "email", "other"]),
 });

@@ -366,10 +366,11 @@ export async function publishMyBlogPostServer(context: AuthContext, id: string) 
   if (!p.body_markdown.trim() || p.body_markdown.trim().length < 30) {
     throw new Error("Write a little more before publishing.");
   }
-  if (p.cover_image_url && !p.cover_image_alt?.trim()) {
-    throw new Error("Add alt text for the cover image before publishing.");
-  }
   validateMemberContent(p.body_markdown);
+
+  // Excerpt is optional for the author: when blank, derive it from the opening
+  // of the body so listings and SEO always have readable preview text.
+  const effectiveExcerpt = p.excerpt?.trim() ? p.excerpt.trim() : generateExcerpt(p.body_markdown);
   const { assertTaggedEntitiesPubliclyVisibleServer } = await import("./blog-entity-tags.server");
   await assertTaggedEntitiesPubliclyVisibleServer(id);
 
