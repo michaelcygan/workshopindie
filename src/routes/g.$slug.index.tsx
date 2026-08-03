@@ -9,7 +9,7 @@ import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { JoinGroupButton } from "@/components/join-group-button";
+import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
