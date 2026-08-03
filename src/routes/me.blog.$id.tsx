@@ -207,58 +207,81 @@ function MemberBlogEditorPage() {
 
   const access = post.access;
   const isPublished = post.post.status === "published";
-  const slugLocked = !!post.post.published_at;
   const readOnly = !access.canEditExisting;
   const publishBlockedByQuota = !access.canPublish && (access.mode === "free" || access.mode === "lapsed");
   const nearBlogLimit = access.monthlyPublicationLimit != null && access.publicationsThisMonth === access.monthlyPublicationLimit - 1;
+  const canDeleteDraft = !post.post.published_at && access.canDeleteNeverPublishedDraft;
+  const showOverflow = isPublished || canDeleteDraft;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center justify-between gap-2">
         <Link
           to="/me/blog"
-          className="inline-flex items-center gap-1 text-sm text-ink-soft hover:text-ink"
+          className="inline-flex h-11 shrink-0 items-center gap-1 text-sm text-ink-soft hover:text-ink"
         >
           <ArrowLeft className="h-4 w-4" /> Your posts
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
           {isPublished && (
             <Link
               to="/blog/$slug"
               params={{ slug: post.post.slug }}
-              className="rounded-full border border-border px-3 py-1.5 text-xs text-ink-soft hover:bg-muted"
+              className="inline-flex h-11 shrink-0 items-center rounded-full border border-border px-4 text-sm text-ink-soft hover:bg-muted"
             >
               View live
             </Link>
           )}
           <Button
-            size="sm"
             variant="outline"
-            className="rounded-full"
+            className="h-11 shrink-0 rounded-full px-4"
             disabled={!dirty || saveMut.isPending || readOnly}
-            onClick={() => saveMut.mutate()}
+            onClick={() => saveMut.mutate(undefined)}
           >
             {saveMut.isPending ? "Saving…" : "Save"}
           </Button>
-          {isPublished ? (
+          {!isPublished && (
             <Button
-              size="sm"
-              variant="outline"
-              className="rounded-full"
-              disabled={!access.canUnpublish || unpublishMut.isPending}
-              onClick={() => unpublishMut.mutate()}
-            >
-              Unpublish
-            </Button>
-          ) : (
-            <Button
-              size="sm"
-              className="rounded-full gradient-motion text-primary-foreground"
+              className="h-11 shrink-0 rounded-full px-5 gradient-motion text-primary-foreground"
               disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
               onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
             >
               {publishMut.isPending ? "Publishing…" : "Publish"}
             </Button>
+          )}
+          {showOverflow && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More post actions"
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-border text-ink-soft hover:bg-muted"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {isPublished && (
+                  <DropdownMenuItem
+                    disabled={!access.canUnpublish || unpublishMut.isPending}
+                    onSelect={() => unpublishMut.mutate()}
+                  >
+                    Unpublish
+                  </DropdownMenuItem>
+                )}
+                {canDeleteDraft && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={deleteMut.isPending}
+                    onSelect={() => {
+                      if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
+                    }}
+                  >
+                    Delete draft
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>
