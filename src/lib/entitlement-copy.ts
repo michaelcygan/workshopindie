@@ -33,7 +33,7 @@ export type PlusGateReason =
   | "work_limit"
   | "collab_limit"
   | "blog_limit"
-  | "lounge_limit";
+  | "audio_limit";
 
 export function plusGateCopy(reason: PlusGateReason): { title: string; body: string } {
   switch (reason) {
@@ -52,10 +52,10 @@ export function plusGateCopy(reason: PlusGateReason): { title: string; body: str
         title: "You've used this month's Blog publications",
         body: "Keep writing in drafts, or go Plus to publish without a monthly limit.",
       };
-    case "lounge_limit":
+    case "audio_limit":
       return {
-        title: "You've used your Free Lounge audio",
-        body: "Chat remains available. Go Plus for unlimited Lounge listening and speaking.",
+        title: "You've used your Free Group audio",
+        body: "Chat remains available. Go Plus for unlimited Group audio listening and speaking.",
       };
   }
 }
@@ -85,7 +85,7 @@ export function blogQuotaCopy(
   };
 }
 
-/** Lounge audio monthly quota. */
+/** Group audio monthly quota. */
 export function loungeAudioQuotaCopy(
   minutesUsed: number,
   minutesCap: number = FREE_LOUNGE_MINUTES_PER_MONTH,
@@ -93,8 +93,8 @@ export function loungeAudioQuotaCopy(
 ): GateCopy {
   const reset = resetLabel ? ` Resets ${resetLabel}.` : "";
   return {
-    title: `You've used your ${formatMinutes(minutesCap)} of Lounge audio`,
-    body: `Free includes ${formatMinutes(minutesCap)} of Lounge audio each month.${reset} You can still chat — Go Plus for unlimited audio.`,
+    title: `You've used your ${formatMinutes(minutesCap)} of Group audio`,
+    body: `Free includes ${formatMinutes(minutesCap)} of Group audio each month.${reset} You can still chat — Go Plus for unlimited audio.`,
     chip: `${minutesUsed} of ${minutesCap} min used${resetLabel ? ` · resets ${resetLabel}` : ""}`,
     cta: PLUS_CTA,
   };
@@ -142,7 +142,7 @@ export function freePlanBullets(): string[] {
   return [
     `${FREE_PUBLISHED_WORK_CAP} published Works`,
     `${FREE_OPEN_COLLAB_CAP} active open Collabs`,
-    `${formatMinutes(FREE_LOUNGE_MINUTES_PER_MONTH)} of Lounge audio each month`,
+    `${formatMinutes(FREE_LOUNGE_MINUTES_PER_MONTH)} of Group audio each month`,
     `${FREE_BLOG_PUBLICATIONS_PER_MONTH} Blog publications each month`,
     "Unlimited Collab applications",
     "All cities, Groups, and Events",
@@ -156,7 +156,7 @@ export function plusPlanBullets(): string[] {
     "14 days free, then $4.99 per month",
     "Unlimited published Works",
     "Unlimited active open Collabs",
-    "Unlimited Lounge audio",
+    "Unlimited Group audio",
     "Unlimited Blog publishing",
     "Everything included in Free",
     "Cancel anytime",

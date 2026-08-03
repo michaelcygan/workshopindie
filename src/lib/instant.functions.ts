@@ -537,8 +537,8 @@ export type MyGroupLounge = {
 };
 
 /**
- * Active Lounges attached to Groups the viewer has joined, with live
- * presence counts. Powers the "Your Groups are live" rail on /lounge.
+ * Active Group audio rooms attached to Groups the viewer has joined, with live
+ * presence counts. Powers the "Your Groups are live" rail.
  */
 export const listMyGroupLounges = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])

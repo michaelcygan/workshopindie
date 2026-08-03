@@ -23,8 +23,8 @@ type Props = {
 };
 
 /**
- * Invite a mutual follow into a specific live Lounge room. The invitation is
- * bound to the room id, so the notification deep-links into that exact room.
+ * Invite a mutual follow into a specific live Group audio room. The invitation is
+ * bound to the room id, so the notification deep-links into that exact Group audio.
  */
 export function LoungeInviteDialog({ open, onOpenChange, invitee }: Props) {
   const listFn = useServerFn(listMyLoungeRooms);
@@ -56,7 +56,7 @@ export function LoungeInviteDialog({ open, onOpenChange, invitee }: Props) {
         <DialogHeader>
           <DialogTitle>Invite {invitee.displayName ?? invitee.username ?? "them"}</DialogTitle>
           <DialogDescription>
-            Pick a Lounge you're in right now, or open a new one together.
+            Pick a Group audio room you're in right now, or open a new one together.
           </DialogDescription>
         </DialogHeader>
 
@@ -91,7 +91,7 @@ export function LoungeInviteDialog({ open, onOpenChange, invitee }: Props) {
             })
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center text-sm text-ink-muted">
-              You aren't in a live Lounge. Open one to invite them.
+              You aren't in a live Group audio room. Open one to invite them.
             </div>
           )}
         </div>
@@ -112,11 +112,11 @@ export function LoungeInviteDialog({ open, onOpenChange, invitee }: Props) {
             <Button
               onClick={() => {
                 onOpenChange(false);
-                navigate({ to: "/lounge" });
+                navigate({ to: "/groups" });
               }}
             >
               <Sparkles className="mr-1.5 h-3.5 w-3.5" />
-              Open a Lounge
+              Open a Group
             </Button>
           )}
         </DialogFooter>

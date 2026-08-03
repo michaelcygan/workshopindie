@@ -54,7 +54,7 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
   const actor = (n.payload?.actor_name as string) || (n.payload?.sender_name as string) || "Someone";
   const actorUsername = (n.payload?.actor_username as string) || undefined;
   const wsSlug = (n.payload?.slug as string) || undefined;
-  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "A Lounge";
+  const wsTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "Group audio";
   switch (n.kind) {
     case "dm":
       return {
@@ -74,10 +74,11 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
     }
     case "lounge_invite": {
       const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      const groupSlug = (n.payload?.group_slug as string) || undefined;
       return {
-        title: `${actor} invited you into a Lounge`,
+        title: `${actor} invited you into Group audio`,
         subtitle: wsTitle,
-        href: roomId ? `/lounge/${roomId}` : "/lounge",
+        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "follow":
@@ -129,20 +130,22 @@ function labelFor(n: Row): { title: string; subtitle: string; href: string } {
       return { title: `${wsTitle} ran without you`, subtitle: "It auto-converted to a live drop-in.", href: wsSlug ? `/events/${wsSlug}` : "/events" };
     case "workshop_live": {
       const roomId = (n.payload?.room_id as string) || n.entity_id || "";
+      const groupSlug = (n.payload?.group_slug as string) || undefined;
       const mediumLabel = (n.payload?.medium as string) || null;
       return {
         title: `${actor} is live${mediumLabel ? ` · ${mediumLabel}` : ""}`,
-        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Lounge while there's a seat.",
-        href: roomId ? `/lounge/${roomId}` : "/lounge",
+        subtitle: formatRoomTitle((n.payload?.title as string) || "", mediumLabel) || "Drop into their Group audio while there's a seat.",
+        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "chat_mention": {
       const roomId = (n.payload?.room_id as string) || n.entity_id || "";
-      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "a Lounge";
+      const groupSlug = (n.payload?.group_slug as string) || undefined;
+      const roomTitle = formatRoomTitle((n.payload?.title as string) || "", (n.payload?.medium as string) ?? null) || "Group audio";
       return {
         title: `${actor} mentioned you in ${roomTitle}`,
         subtitle: (n.payload?.preview as string) ?? "",
-        href: roomId ? `/lounge/${roomId}` : "/lounge",
+        href: groupSlug ? `/g/${groupSlug}` : roomId ? `/lounge/${roomId}` : "/groups",
       };
     }
     case "today_mention": {

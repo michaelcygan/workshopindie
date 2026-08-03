@@ -20,6 +20,7 @@ export type LiveLoungeRoom = {
   title: string;
   medium: string | null;
   groupName: string | null;
+  groupSlug: string | null;
   createdAt: string;
 };
 
@@ -196,7 +197,7 @@ export const listMyLoungeRooms = createServerFn({ method: "GET" })
 
     const { data: rooms } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id,title,medium,group_id,status,created_at,groups:groups(name)")
+      .select("id,title,medium,group_id,status,created_at,groups:groups(name,slug)")
       .in("id", ids)
       .eq("status", "active")
       .order("created_at", { ascending: false })
@@ -204,10 +205,14 @@ export const listMyLoungeRooms = createServerFn({ method: "GET" })
 
     return (rooms ?? []).map((r) => ({
       id: r.id as string,
-      title: (r.title as string | null) ?? "Lounge",
+      title: (r.title as string | null) ?? "Group audio",
       medium: (r.medium as string | null) ?? null,
       groupName:
         ((r as unknown as { groups: { name: string } | null }).groups?.name ?? null) as
+          | string
+          | null,
+      groupSlug:
+        ((r as unknown as { groups: { slug: string } | null }).groups?.slug ?? null) as
           | string
           | null,
       createdAt: r.created_at as string,
@@ -234,10 +239,11 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
 
     const { data: room } = await supabaseAdmin
       .from("instant_rooms")
-      .select("id,title,medium,status,group_id")
+      .select("id,title,medium,status,group_id,groups:groups(slug)")
       .eq("id", data.roomId)
       .maybeSingle();
-    if (!room || room.status !== "active") throw new Error("That Lounge is no longer live.");
+    if (!room || room.status !== "active") throw new Error("That Group audio is no longer live.");
+    const groupSlug = (room as unknown as { groups?: { slug: string } | null }).groups?.slug ?? null;
 
     // Require mutual follow.
     const [{ data: a }, { data: b }] = await Promise.all([
@@ -291,6 +297,7 @@ export const inviteFriendToLounge = createServerFn({ method: "POST" })
           title: room.title,
           medium: room.medium ?? null,
           actor_name: inviterName,
+          group_slug: groupSlug,
         },
       })
       .then(() => null, () => null);
