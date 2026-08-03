@@ -31,7 +31,7 @@ export function GroupHero({
 
   // Audio is a layer on this Group, not a separate room the hero navigates to.
   const live = useGroupLive();
-  const isMember = useIsMemberOfGroup(group.id);
+  const isMember = useIsMemberOfGroup(group.id).data === true;
 
 
 
