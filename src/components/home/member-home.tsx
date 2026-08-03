@@ -152,7 +152,9 @@ export function MemberHome() {
           eyebrow="Your circles"
           title="Around you"
           kicker="People you follow, collaborators you've been credited with, and your Groups."
+          density="compact"
         >
+
           <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
             {data.circle.map((item) => (
               <CircleCard key={item.id} item={item} />
