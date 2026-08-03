@@ -35,7 +35,12 @@ function AdminBlogIndex() {
   const featureMut = useMutation({
     mutationFn: (vars: { id: string; featured: boolean }) => setFeaturedFn({ data: vars }),
     onSuccess: (_r, vars) => {
-      toast.success(vars.featured ? "Featured on the Blog page" : "Removed from the featured slot");
+      toast.success(
+        vars.featured
+          ? "Featured on the Blog page and member Home"
+          : "Removed from the featured set (Blog page + member Home)",
+      );
+
       qc.invalidateQueries({ queryKey: ["admin-blog-posts"] });
     },
     onError: (e: Error) => toast.error(e.message),
