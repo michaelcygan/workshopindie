@@ -27,17 +27,26 @@ const loungeSearchSchema = z.object({
   medium: fallback(z.string(), "").default(""),
 });
 
+/**
+ * `/lounge` is compatibility only. Groups own the live layer now (Today chat +
+ * the Group audio dock), so this path forwards to `/groups` instead of
+ * competing as a destination. The matchmaking server fns below are untouched
+ * and still power Group audio; only this entry point is retired.
+ */
 export const Route = createFileRoute("/lounge/")({
   validateSearch: zodValidator(loungeSearchSchema),
+  beforeLoad: () => {
+    throw redirect({ to: "/groups" });
+  },
   component: () => <RequireAuth><WorkshopPreflight /></RequireAuth>,
   head: () => ({
     meta: [
-      { title: "Lounge — Drop in or host" },
+      { title: "Lounge — moved to Groups" },
       {
         name: "description",
-        content:
-          "Drop into a live creative Lounge. Join through chat, connect to audio, and share what you're making. 10 seats per room.",
+        content: "The Lounge now lives inside Groups. Redirecting you to Groups.",
       },
+      { name: "robots", content: "noindex, nofollow" },
     ],
   }),
 });
