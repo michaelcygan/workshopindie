@@ -69,14 +69,35 @@ export function TopNav() {
 
         {/* Center: primary nav */}
         <nav className="flex flex-1 items-center justify-center gap-1">
-          <GroupsNavItem />
-          <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-            Collabs
-          </Link>
-          <MoreNavMenu />
+          {loading ? null : user ? (
+            <>
+              <GroupsNavItem />
+              <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Collabs
+              </Link>
+              <MoreNavMenu />
+            </>
+          ) : (
+            <>
+              <Link to="/blog" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Blog
+              </Link>
+              <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Gallery
+              </Link>
+              <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Collabs
+              </Link>
+              <Link to="/groups" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Groups
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="flex flex-1 items-center justify-end gap-2">
+          {loading ? null : user ? (
+            <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -107,9 +128,6 @@ export function TopNav() {
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-
-          {loading ? null : user ? (
-            <>
               <MessagesInboxButton />
               <NotificationsBell />
               <DropdownMenu>
@@ -204,8 +222,8 @@ export function TopNav() {
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" variant="outline" className="rounded-full">
-                  Get started
+                <Button size="sm" className="rounded-full">
+                  Join
                 </Button>
               </Link>
             </>

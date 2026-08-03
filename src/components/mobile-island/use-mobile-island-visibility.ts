@@ -40,7 +40,15 @@ function pathHidesComposer(pathname: string): boolean {
 
 export function useMobileIslandVisibility(): MobileIslandVisibility {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  // Never flash member chrome while auth is still resolving.
+  if (loading) return { islandVisible: false, composerVisible: false };
+
+  // The logged-out homepage is an editorial surface — no member chrome.
+  if (!user && pathname === "/") {
+    return { islandVisible: false, composerVisible: false };
+  }
 
   // Preserve existing standalone behavior for logged-out visitors.
   if (!user && (pathname.startsWith("/u/") || pathname.startsWith("/works/"))) {

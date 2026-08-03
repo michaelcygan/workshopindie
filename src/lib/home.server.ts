@@ -26,6 +26,11 @@ import type {
   HomeTodaySummary,
   HomeWorkStory,
   MemberHomePayload,
+  PublicBlogCard,
+  PublicCollabCall,
+  PublicGroupScene,
+  PublicHomePayload,
+  PublicWorkTile,
 } from "@/lib/home-types";
 
 const POST_SCAN_LIMIT = 40;
@@ -1528,3 +1533,228 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
   return out;
 }
 
+
+/* ─────────────────────── Public (logged-out) home ─────────────────────── */
+
+const PUBLIC_BLOG_COLS =
+  "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
+
+type PublicBlogRow = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  cover_image_url: string | null;
+  cover_image_alt: string | null;
+  author_name: string | null;
+  published_at: string | null;
+  author_profile: { display_name: string | null; avatar_url: string | null } | null;
+};
+
+function toPublicBlogCard(r: PublicBlogRow): PublicBlogCard {
+  return {
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt,
+    coverUrl: r.cover_image_url,
+    coverAlt: r.cover_image_alt,
+    publishedAt: r.published_at,
+    authorName: r.author_profile?.display_name || r.author_name,
+    authorAvatar: r.author_profile?.avatar_url ?? null,
+  };
+}
+
+/**
+ * One concurrent payload for the logged-out homepage.
+ *
+ * Every query enforces public status/visibility explicitly — service-role
+ * access is never the only gate. Supporting sections fail closed to empty
+ * arrays; the Blog read is the one that may surface an error.
+ */
+export async function getPublicHomeServer(): Promise<PublicHomePayload> {
+  const nowIso = new Date().toISOString();
+  const today = nowIso.slice(0, 10);
+
+  const postsPromise = supabaseAdmin
+    .from("blog_posts")
+    .select(PUBLIC_BLOG_COLS)
+    .eq("status", "published")
+    .eq("show_in_blog_index", true)
+    .lte("published_at", nowIso)
+    .order("published_at", { ascending: false })
+    .limit(24);
+
+  const collabsPromise = supabaseAdmin
+    .from("collab_posts")
+    .select(
+      "id,slug,title,category,description,timeline_text,location_mode,status,ends_on,created_at," +
+        "user:profiles!collab_posts_user_id_fkey(display_name,username)," +
+        "city:cities!collab_posts_city_id_fkey(name)," +
+        "roles:collab_roles(id,role_name,sort_order)",
+    )
+    .eq("status", "open")
+    .or(`ends_on.is.null,ends_on.gte.${today}`)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  const groupsPromise = supabaseAdmin
+    .from("groups")
+    .select(
+      "id,slug,name,tagline,kind,cover_url,avatar_url,accent_color,member_count,is_official,featured_at,category",
+    )
+    .is("deleted_at", null)
+    .eq("visibility", "public")
+    .order("featured_at", { ascending: false, nullsFirst: false })
+    .order("member_count", { ascending: false })
+    .limit(12);
+
+  const worksPromise = supabaseAdmin
+    .from("works")
+    .select(
+      "id,slug,title,category,cover_url,published_at,work_credits(sort_order,display_name,profiles(display_name,username))",
+    )
+    .eq("status", "published")
+    .eq("visibility", "public")
+    .not("cover_url", "is", null)
+    .order("published_at", { ascending: false, nullsFirst: false })
+    .limit(8);
+
+  const [postsRes, storiesRes, collabsRes, groupsRes, worksRes] = await Promise.all([
+    postsPromise,
+    listHomeWorkStoriesServer().catch(() => [] as HomeWorkStory[]),
+    collabsPromise,
+    groupsPromise,
+    worksPromise,
+  ]);
+
+  if (postsRes.error) throw postsRes.error;
+  const allPosts = ((postsRes.data ?? []) as unknown as PublicBlogRow[]).map(toPublicBlogCard);
+
+  // Featured set: admin-selected, capped, newest first; newest post as fallback.
+  const { data: featuredData, error: featuredErr } = await supabaseAdmin
+    .from("blog_posts")
+    .select(PUBLIC_BLOG_COLS)
+    .eq("status", "published")
+    .eq("show_in_blog_index", true)
+    .eq("featured", true)
+    .lte("published_at", nowIso)
+    .order("published_at", { ascending: false })
+    .limit(FEATURED_POST_CAP);
+  if (featuredErr) throw featuredErr;
+
+  const featuredRows = ((featuredData ?? []) as unknown as PublicBlogRow[]).map(toPublicBlogCard);
+  const featuredIsFallback = featuredRows.length === 0;
+  const featuredPosts = featuredIsFallback ? allPosts.slice(0, 1) : featuredRows;
+
+  const seen = new Set(featuredPosts.map((p) => p.id));
+  const latestPosts = allPosts.filter((p) => !seen.has(p.id)).slice(0, 6);
+  for (const p of latestPosts) seen.add(p.id);
+  const morePosts = allPosts.filter((p) => !seen.has(p.id)).slice(0, 6);
+
+  type CollabRow = {
+    id: string;
+    slug: string;
+    title: string;
+    category: string;
+    description: string | null;
+    timeline_text: string | null;
+    location_mode: string | null;
+    user: { display_name: string | null; username: string | null } | null;
+    city: { name: string | null } | null;
+    roles: { id: string; role_name: string; sort_order: number | null }[] | null;
+  };
+  const openCollabs: PublicCollabCall[] = ((collabsRes.data ?? []) as unknown as CollabRow[])
+    .slice(0, 3)
+    .map((c) => {
+      const roles = (c.roles ?? [])
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+        .map((r) => r.role_name);
+      return {
+        id: c.id,
+        slug: c.slug,
+        title: c.title,
+        category: c.category,
+        description: c.description,
+        creatorName: c.user?.display_name || c.user?.username || null,
+        locationLabel:
+          c.location_mode === "online"
+            ? "Online"
+            : (c.city?.name ?? (c.location_mode === "hybrid" ? "Hybrid" : "In person")),
+        roles: roles.slice(0, 3),
+        extraRoles: Math.max(0, roles.length - 3),
+        timeline: c.timeline_text,
+      };
+    });
+
+  type GroupRow = {
+    id: string;
+    slug: string;
+    name: string;
+    tagline: string | null;
+    kind: string | null;
+    category: string | null;
+    cover_url: string | null;
+    avatar_url: string | null;
+    accent_color: string | null;
+    member_count: number | null;
+    is_official: boolean | null;
+  };
+  const featuredGroups: PublicGroupScene[] = ((groupsRes.data ?? []) as unknown as GroupRow[])
+    .slice(0, 3)
+    .map((g) => ({
+      id: g.id,
+      slug: g.slug,
+      name: g.name,
+      tagline: g.tagline,
+      kind: g.kind,
+      category: g.category,
+      coverUrl: g.cover_url,
+      avatarUrl: g.avatar_url,
+      accentColor: g.accent_color,
+      memberCount: g.member_count ?? 0,
+      isOfficial: !!g.is_official,
+    }));
+
+  type WorkRow = {
+    id: string;
+    slug: string;
+    title: string;
+    category: string;
+    cover_url: string | null;
+    work_credits?: {
+      sort_order: number | null;
+      display_name: string | null;
+      profiles: { display_name: string | null; username: string | null } | null;
+    }[];
+  };
+  const visualWorks: PublicWorkTile[] = ((worksRes.data ?? []) as unknown as WorkRow[])
+    .filter((w) => !!w.cover_url)
+    .slice(0, 3)
+    .map((w) => {
+      const credit = (w.work_credits ?? [])
+        .slice()
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0];
+      return {
+        id: w.id,
+        slug: w.slug,
+        title: w.title,
+        category: w.category,
+        coverUrl: w.cover_url as string,
+        creditName:
+          credit?.profiles?.display_name || credit?.display_name || credit?.profiles?.username || null,
+      };
+    });
+
+  return {
+    featuredPosts,
+    featuredIsFallback,
+    latestPosts,
+    morePosts,
+    workStories: (storiesRes as HomeWorkStory[]).slice(0, 3),
+    openCollabs,
+    featuredGroups,
+    visualWorks,
+  };
+}

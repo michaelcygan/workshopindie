@@ -219,3 +219,71 @@ export type MemberHomePayload = {
   blogRail: HomeBlogCard[];
 };
 
+
+// ─────────────────────── Public (logged-out) home ───────────────────────
+
+/** A Blog post as the public homepage renders it. */
+export type PublicBlogCard = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  coverUrl: string | null;
+  coverAlt: string | null;
+  publishedAt: string | null;
+  authorName: string | null;
+  authorAvatar: string | null;
+};
+
+/** An open Collab rendered as a type-led "open call". */
+export type PublicCollabCall = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  description: string | null;
+  creatorName: string | null;
+  locationLabel: string;
+  roles: string[];
+  extraRoles: number;
+  timeline: string | null;
+};
+
+/** A public Group rendered as a creative scene. */
+export type PublicGroupScene = {
+  id: string;
+  slug: string;
+  name: string;
+  tagline: string | null;
+  kind: string | null;
+  category: string | null;
+  coverUrl: string | null;
+  avatarUrl: string | null;
+  accentColor: string | null;
+  memberCount: number;
+  isOfficial: boolean;
+};
+
+/** A published public Work with real cover imagery. */
+export type PublicWorkTile = {
+  id: string;
+  slug: string;
+  title: string;
+  category: string;
+  coverUrl: string;
+  creditName: string | null;
+};
+
+export type PublicHomePayload = {
+  /** Up to 5 admin-featured posts; newest first. */
+  featuredPosts: PublicBlogCard[];
+  featuredIsFallback: boolean;
+  /** Six recent posts not already featured. */
+  latestPosts: PublicBlogCard[];
+  /** Next 4–6 posts not shown above. */
+  morePosts: PublicBlogCard[];
+  workStories: HomeWorkStory[];
+  openCollabs: PublicCollabCall[];
+  featuredGroups: PublicGroupScene[];
+  visualWorks: PublicWorkTile[];
+};

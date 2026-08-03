@@ -62,7 +62,10 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ claimToken: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }) => {
     const supabase = context.supabase;
-    const { data: rsvp, error: fetchErr } = await supabase
+    // Claim tokens are not readable by ordinary authenticated roles (they must
+    // stay invisible to event hosts), so the token lookup runs with admin.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rsvp, error: fetchErr } = await supabaseAdmin
       .from("event_guest_rsvps")
       .select("id, event_id, status, matched_user_id, claim_token_expires_at")
       .eq("claim_token", data.claimToken)
@@ -75,11 +78,17 @@ export const claimGuestEventRsvp = createServerFn({ method: "POST" })
     if (rsvp.matched_user_id && rsvp.matched_user_id !== context.userId) {
       throw new Error("Claim link already used by another account");
     }
-    const { error: updateErr } = await supabase
+    const { error: updateErr } = await supabaseAdmin
       .from("event_guest_rsvps")
-      .update({ matched_user_id: context.userId, matched_at: new Date().toISOString() })
+      .update({
+        matched_user_id: context.userId,
+        matched_at: new Date().toISOString(),
+        claim_token: null,
+        claim_token_expires_at: null,
+      })
       .eq("id", rsvp.id);
     if (updateErr) throw new Error(updateErr.message);
+
     const { error: rsvpErr } = await supabase
       .from("group_event_rsvps")
       .upsert({
