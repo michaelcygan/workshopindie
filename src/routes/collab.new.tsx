@@ -127,6 +127,8 @@ export function CollabComposer({
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
