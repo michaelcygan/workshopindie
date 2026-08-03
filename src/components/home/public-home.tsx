@@ -1,7 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Button } from "@/components/ui/button";
 import { getPublicHome } from "@/lib/home.functions";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import {
@@ -44,7 +43,6 @@ export function PublicHome() {
           <PublicWorkStrip works={data.visualWorks} />
         </>
       ) : null}
-      <ClosingInvitation />
     </>
   );
 }
@@ -95,30 +93,5 @@ function HomeSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-function ClosingInvitation() {
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
-      <div className="max-w-xl">
-        <h2 className="font-display text-[26px] text-ink md:text-[32px]">
-          Make something with people.
-        </h2>
-        <p className="mt-2 text-[15px] text-ink-soft">
-          Create a free portfolio, find collaborators, and join creative communities.
-        </p>
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Link to="/signup">
-            <Button className="rounded-full">Join Workshop</Button>
-          </Link>
-          <Link to="/login">
-            <Button variant="outline" className="rounded-full">
-              Sign in
-            </Button>
-          </Link>
-        </div>
-      </div>
-    </section>
   );
 }
