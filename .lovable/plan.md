@@ -1,81 +1,43 @@
-## Wave 4 — "Lounge" language retirement and group-backed destination consolidation
+# Wave 5 — Last mile: retire "Lounge" from remaining screens and prune dead audio surfaces
 
-Wave 3 made Groups the destination and kept Lounge as infrastructure. Wave 4 finishes the job by removing the word "Lounge" from every user-facing surface and ensuring any group-backed room experience flows through the Group page (`/g/$slug`). Files, functions, and tables keep their names to avoid churn and keep external links alive.
+Wave 4 cleaned settings, friends, DMs, notifications and the invite flow. A scan of the codebase shows the word "Lounge" is still visible to users in several places, and some standalone audio-room UI is still shipping even though Groups now own the live layer. Wave 5 closes those gaps. No table, function, or route file gets renamed, so existing links and audio rooms keep working.
 
-### 1. User-facing copy rebrand: "Lounge" → "Group audio" / "live audio"
+## 1. Copy still showing "Lounge" to users
 
-**`src/lib/entitlement-copy.ts`**
-- Rename `PlusGateReason` value `lounge_limit` → `audio_limit` (and keep an alias for any internal callers if needed).
-- Update `plusGateCopy("lounge_limit")` title/body to "Group audio" framing.
-- Update `loungeAudioQuotaCopy` title, body, and chip to say "Group audio" instead of "Lounge audio".
-- Update `freePlanBullets` and `plusPlanBullets` bullet text.
+Confirmed remaining user-visible strings:
 
-**`src/lib/entitlements.ts`**
-- Update JSDoc copy and field descriptions to describe "Group audio" (no public API change; the field `loungeMinutesPerMonth` remains internal).
+- `src/routes/lounge.$id.tsx` — the standalone room page: page title and meta, error/empty states ("This Lounge isn't here", "Lounge hit a snag"), loading text, toasts ("This Lounge ended.", "First Lounge — nicely done."), the rename affordance ("Name this Lounge"), the end-room confirm, and the Collab pin tooltip.
+- `src/routes/index.tsx` — homepage meta description says "run Lounges".
+- `src/routes/u.$username.tsx` — "Drop into a Lounge" button (links to `/lounge`, which now redirects) and the empty-state line "drop into a Lounge".
+- `src/routes/collab.index.tsx` — meta description "open a Lounge on it" and the live strip caption "Lounges on these Collabs are running".
+- `src/routes/collab.$slug.tsx` — "A Lounge artist" host fallback and "Try opening the Lounge or another share."
+- `src/routes/collab.new.tsx` — pin-failure toasts referencing the Lounge.
+- `src/routes/g.$slug.index.tsx` — mention label map renders `workshop: "Lounge"`.
+- `src/components/workshop-presence-works-rail.tsx` — "In this Lounge".
+- `src/components/workshop-tools-panel.tsx` — two retired-tool blurbs mention the Lounge.
+- `src/routes/dms.index.tsx` — conversation context fallback "Re: Lounge".
 
-**`src/routes/settings.tsx`**
-- Usage meter label: "Lounge" → "Audio".
-- Privacy section subtitle: "Lounge contributions" → "Group audio contributions".
-- Age filter label: "Lounges age filter" → "Audio age filter".
-- CC consent section title/body: "Lounge rights" / "enter a Lounge" → "Audio rights" / "join Group audio".
-- Notification preference row: "Lounge updates" → "Group audio updates".
-- Data export description: "Lounges" → "audio sessions".
+All become "Group audio" / "audio room" / "live audio" depending on whether the sentence refers to the feature or to a specific room. Admin-only labels (`admin.engagement.tsx`, `admin.marketplace.tsx`) stay as-is — they name internal tables and are not member-facing.
 
-**`src/routes/me.friends.tsx`**
-- Meta description: "Lounges" → "Group audio".
-- Logged-out empty state: "Lounges" → "live audio".
-- `inviteLabel` on `FriendRow`: "Invite to Lounge" → "Invite to audio".
+## 2. Fix links that point at the retired destination
 
-### 2. Group rooms route through `/g/$slug`
+`/lounge` now hard-redirects to `/groups`, so any button still pointing there sends users through a bounce. The profile CTA in `u.$username.tsx` should link straight to `/groups` with wording that matches ("Find a Group").
 
-**`src/components/group-lounges-rail.tsx`**
-- Currently links to `/lounge/$id` and is only rendered inside `/lounge` (which redirects). If it stays in the product, it should link to the group page instead.
-- Extend `listMyGroupLounges` in `src/lib/instant.functions.ts` to return `groupSlug`.
-- Update the card to `to="/g/$slug"` with a search param that auto-opens the audio dock (`?t=audio` or `?audio=1`).
-- Update copy to "Group audio" / "live now".
+## 3. Prune the standalone room UI
 
-**`src/components/lounge-invite-dialog.tsx`**
-- Extend `LiveLoungeRoom` in `src/lib/friends.functions.ts` to include `groupSlug` (already selecting `group_id` from `instant_rooms`).
-- In the dialog: label rooms as "Group audio" when `groupSlug` is set; the "Open a new one together" fallback navigates to `/groups` instead of `/lounge`.
-- When sending an invite, include `groupSlug` in the notification payload so the receiver lands on the group page.
+`src/routes/lounge.$id.tsx` still carries features Groups replaced: room renaming, "end this Lounge", and the Collab-post-and-pin dialog. Group-backed rooms already redirect to `/g/$slug`, so this page only serves legacy non-group rooms. The plan keeps the page joinable (audio + chat) and removes the ownership/管理 affordances that no longer have a home in the Groups model, so the page reads as a plain legacy audio room rather than a competing product surface.
 
-**`src/components/notifications-bell.tsx`**
-- `lounge_invite` notification title: "invited you into a Lounge" → "invited you into Group audio".
-- Derive `href`: if the payload has `group_slug`, link to `/g/$slug`; otherwise keep `/lounge/${roomId}` for legacy/non-group rooms.
+If you'd rather keep the standalone page fully featured for legacy rooms, say so and I'll drop this section and only do the copy pass.
 
-**`src/routes/lounge.$id.tsx`**
-- The group-room redirect already exists. No change required, but verify it fires correctly for all group-backed rooms.
+## 4. Verify nothing regressed
 
-### 3. Remove unused Lounge destination surfaces
+- Typecheck the app.
+- Load a Group page and confirm the audio dock still joins and leaves.
+- Load a legacy `/lounge/$id` room and confirm chat + audio still work after the prune.
+- Grep for member-facing "Lounge" and confirm only internal identifiers remain.
 
-**`src/components/group/group-lounge-card.tsx`**
-- Not currently imported anywhere. Delete this file to avoid stale "Lounge" language.
+## Technical notes
 
-**`src/routes/lounge.index.tsx`**
-- The `beforeLoad` redirect already prevents the UI from rendering. Simplify the file to the redirect + `RequireAuth` placeholder only, stripping the unused matchmaking UI, topics, and `GroupLoungesRail`. This is purely cleanup; the route still exists for external links.
-
-### 4. Legacy/edge references
-
-**`src/components/channel-view.tsx` and `src/components/stream-lounge-provider.tsx`**
-- Keep internal names as-is. Only audit for any user-visible copy (e.g., "Lounge" in loading/error text) and update it to "Group audio".
-
-**`src/routes/workshops.*`**
-- References are only comments. No action needed.
-
-**`src/lib/lounge-*.ts`, `src/lib/instant.ts`, `src/lib/stream-video.*`**
-- Leave file/function names and internal code alone. Rename only user-facing strings or comments if they describe the product as "Lounge".
-
-### 5. Notification payload update
-
-**`src/lib/friends.functions.ts` (`inviteFriendToLounge`)**
-- Include `group_slug` in the `notifications` payload when `room.group_id` is set. If `group_slug` is unavailable, include `group_id` and let the client resolve it, or join `groups` in the insert query.
-
-### Verification
-
-- Typecheck with `tsgo`.
-- Search the codebase for user-visible "Lounge" strings after edits (excluding file paths, internal identifiers, and route names like `/lounge/*`).
-- Playwright pass: group audio flows from the Group hero, friend invite dialog, notification bell, and `/lounge/$id` redirect all work; no console errors.
-
-### Files expected to change
-
-`src/lib/entitlement-copy.ts`, `src/lib/entitlements.ts`, `src/routes/settings.tsx`, `src/routes/me.friends.tsx`, `src/components/lounge-invite-dialog.tsx`, `src/components/notifications-bell.tsx`, `src/components/group-lounges-rail.tsx`, `src/lib/instant.functions.ts`, `src/lib/friends.functions.ts`, `src/components/group/group-lounge-card.tsx` (delete), `src/routes/lounge.index.tsx` (simplify).
+- Files touched are all presentation-layer routes and components; no server functions, migrations, or RLS changes.
+- `PlusGateReason`, `loungeAudioQuotaCopy`, `instant_rooms`, `/api/public/lounge/sweep` and the `lounge_*` tables keep their names — internal only.
+- Route files `lounge.tsx`, `lounge.index.tsx`, `lounge.$id.tsx` stay in place so external links continue to resolve.
