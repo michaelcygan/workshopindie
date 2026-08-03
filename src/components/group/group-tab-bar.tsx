@@ -40,7 +40,9 @@ export function GroupTabBar({
   const items: { id: GroupTab; label: string; icon: typeof LayoutGrid; count: number | null }[] = [
     { id: "today", label: "Today", icon: Sun, count: null },
     { id: "collab", label: "Collabs", icon: Megaphone, count: counts.collab },
-    { id: "work", label: "Gallery", icon: LayoutGrid, count: counts.work },
+    { id: "work", label: "Work", icon: LayoutGrid, count: counts.work },
+    { id: "links", label: "Links", icon: Link2, count: null },
+
     ...(showPosts
       ? [{ id: "posts" as const, label: "Blog", icon: FileText, count: null }]
       : []),
@@ -105,14 +107,10 @@ export function GroupTabBar({
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/works/new" search={{ group: slug }}>
-                Post to Gallery
+                Post Work
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link to="/lounge" search={{ group: slug }}>
-                Open the Lounge
-              </Link>
-            </DropdownMenuItem>
+
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
