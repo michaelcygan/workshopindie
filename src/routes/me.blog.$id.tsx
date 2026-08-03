@@ -311,7 +311,7 @@ function MemberBlogEditorPage() {
         <TabsList>
           <TabsTrigger value="edit">Edit</TabsTrigger>
           <TabsTrigger value="preview">Preview</TabsTrigger>
-          <TabsTrigger value="seo">SEO</TabsTrigger>
+          <TabsTrigger value="details">Details</TabsTrigger>
         </TabsList>
 
         <TabsContent value="edit" className="mt-4 space-y-4">
@@ -321,36 +321,14 @@ function MemberBlogEditorPage() {
               type="text"
               value={title}
               readOnly={readOnly}
+              maxLength={160}
               onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
               className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 font-display text-2xl text-ink focus:border-primary focus:outline-none"
               placeholder="Give your post a title"
             />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">
-              URL slug {slugLocked && <span className="text-ink-muted normal-case tracking-normal">— locked after first publish</span>}
-            </label>
-            <input
-              type="text"
-              value={slug}
-              readOnly={slugLocked || readOnly}
-              onChange={(e) => { setSlug(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none disabled:opacity-60"
-            />
-          </div>
-
-          <div>
-            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Excerpt</label>
-            <textarea
-              value={excerpt}
-              readOnly={readOnly}
-              onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
-              rows={2}
-              maxLength={320}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-primary focus:outline-none"
-              placeholder="A one- or two-line summary (shown in listings)"
-            />
+            {title.length > 140 && (
+              <p className="mt-1 text-right text-[11px] text-ink-muted">{title.length}/160</p>
+            )}
           </div>
 
           <div>
@@ -358,22 +336,17 @@ function MemberBlogEditorPage() {
             <div className="mt-2">
               <ImageUpload
                 value={cover}
-                onChange={(url) => { setCover(url); setDirty(true); }}
+                onChange={(url) => {
+                  // A new image invalidates the old description.
+                  if (url !== cover) setCoverAlt("");
+                  setCover(url);
+                  setDirty(true);
+                }}
                 bucket="covers"
                 aspect="wide"
                 label="Add cover"
               />
             </div>
-            {cover && (
-              <input
-                type="text"
-                value={coverAlt}
-                readOnly={readOnly}
-                onChange={(e) => { setCoverAlt(e.target.value); setDirty(true); }}
-                placeholder="Describe the cover image (required to publish)"
-                className="mt-2 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none"
-              />
-            )}
           </div>
 
           {/* Connections are post metadata: above the body, never buried under it. */}
@@ -394,26 +367,6 @@ function MemberBlogEditorPage() {
               }}
             />
           </div>
-
-
-
-
-
-          {!post.post.published_at && access.canDeleteNeverPublishedDraft && (
-            <div className="border-t border-border pt-4">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="text-destructive hover:text-destructive"
-                onClick={() => {
-                  if (confirm("Delete this draft? This can't be undone.")) deleteMut.mutate();
-                }}
-                disabled={deleteMut.isPending}
-              >
-                Delete draft
-              </Button>
-            </div>
-          )}
         </TabsContent>
 
         <TabsContent value="preview" className="mt-4">
@@ -426,14 +379,47 @@ function MemberBlogEditorPage() {
               />
             )}
             <h1 className="font-display text-4xl text-ink">{title || "Untitled"}</h1>
-            {excerpt && <p className="mt-3 text-lg text-ink-soft">{excerpt}</p>}
+            {effectiveExcerpt && <p className="mt-3 text-lg text-ink-soft">{effectiveExcerpt}</p>}
             <div className="mt-6">
               <BlogPostBody markdown={body} />
             </div>
           </article>
         </TabsContent>
 
-        <TabsContent value="seo" className="mt-4 space-y-4">
+        <TabsContent value="details" className="mt-4 space-y-4">
+          <div>
+            <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Preview text (optional)</label>
+            <p className="mt-1 text-[11px] text-ink-muted">
+              Generated from the opening of your post when you publish.
+            </p>
+            <textarea
+              value={excerpt}
+              readOnly={readOnly}
+              onChange={(e) => { setExcerpt(e.target.value); setDirty(true); }}
+              rows={2}
+              maxLength={320}
+              className="mt-2 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-[16px] text-ink focus:border-primary focus:outline-none"
+              placeholder={generatedExcerpt || "A one- or two-line summary (shown in listings)"}
+            />
+          </div>
+
+          {cover && (
+            <div>
+              <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">Image description (optional)</label>
+              <p className="mt-1 text-[11px] text-ink-muted">
+                Used by screen readers; the post title is used if left blank.
+              </p>
+              <input
+                type="text"
+                value={coverAlt}
+                readOnly={readOnly}
+                onChange={(e) => { setCoverAlt(e.target.value); setDirty(true); }}
+                placeholder="Describe the cover image"
+                className="mt-2 h-11 w-full rounded-full border border-border bg-surface px-4 text-[16px] text-ink focus:border-primary focus:outline-none"
+              />
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-medium uppercase tracking-wider text-ink-muted">SEO title (optional)</label>
             <input
@@ -442,7 +428,7 @@ function MemberBlogEditorPage() {
               readOnly={readOnly}
               maxLength={80}
               onChange={(e) => { setSeoTitle(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+              className="mt-1 h-11 w-full rounded-full border border-border bg-surface px-4 text-[16px] text-ink focus:border-primary focus:outline-none"
               placeholder="Defaults to the post title"
             />
           </div>
@@ -454,7 +440,7 @@ function MemberBlogEditorPage() {
               rows={2}
               maxLength={160}
               onChange={(e) => { setSeoDesc(e.target.value); setDirty(true); }}
-              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-sm text-ink focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-2xl border border-border bg-surface px-4 py-3 text-[16px] text-ink focus:border-primary focus:outline-none"
               placeholder="Defaults to the excerpt"
             />
           </div>
@@ -463,20 +449,30 @@ function MemberBlogEditorPage() {
 
       <BlogEntityTagPicker
         open={entityPickerOpen}
-        onOpenChange={setEntityPickerOpen}
-        title={pendingInsertRef ? "Insert Workshop link" : "Add a connection"}
+        onOpenChange={(v) => { setEntityPickerOpen(v); if (!v) setPendingInsertRef(null); }}
+        title={pendingInsertRef ? "Tag something" : "Add a connection"}
         description={
           pendingInsertRef
-            ? "Insert an inline link to a Work, Collab, Group, Event, or person."
+            ? "Insert an inline link and connect this post to it."
             : "Connect this post to the Work, Collab, Group, Event, or person it is substantially about."
         }
         disabledKeys={pendingInsertRef ? [] : entityTags.map(tagKey)}
 
         onPick={(tag) => {
+          const already = entityTags.some((t) => tagKey(t) === tagKey(tag));
           if (pendingInsertRef) {
+            // Inline tagging creates a real reciprocal connection, not just a link.
             pendingInsertRef(entityMarkdown(tag));
             setPendingInsertRef(null);
-          } else if (!entityTags.some((t) => tagKey(t) === tagKey(tag))) {
+            if (!already) {
+              if (entityTags.length >= MAX_BLOG_ENTITY_TAGS) {
+                toast.message(`Linked, but you're at ${MAX_BLOG_ENTITY_TAGS} connections — not added to Connections.`);
+              } else {
+                setEntityTags([...entityTags, tag]);
+              }
+            }
+            setDirty(true);
+          } else if (!already) {
             setEntityTags([...entityTags, tag]);
             setDirty(true);
           }
