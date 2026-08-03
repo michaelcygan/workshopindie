@@ -131,7 +131,7 @@ export function useStreamLoungeAudio(
     (async () => {
       const { data } = await supabase
         .from("instant_presence")
-        .select("user_id, audio_state, queued_at")
+        .select("user_id, audio_state, audio_requested_at")
         .eq("room_id", roomId);
       if (cancelled || !data) return;
       const m = new Map<string, PresenceRow>();
@@ -170,10 +170,10 @@ export function useStreamLoungeAudio(
     };
   }, [roomId]);
 
-  // Derive my audio_state; default to "chat" until presence lands.
+  // Derive my audio_state; default to "listener" until presence lands.
   const myState: AudioState = user
-    ? (presence.get(user.id)?.audio_state ?? "chat")
-    : "chat";
+    ? (presence.get(user.id)?.audio_state ?? "listener")
+    : "listener";
 
   // Host-less auto-claim: when connected with audio participation, request
   // the mic once. The DB fast-paths to `speaker` if a stage seat is open,
@@ -186,9 +186,9 @@ export function useStreamLoungeAudio(
       return;
     }
     if (autoRequestedRef.current) return;
-    // Only auto-request if we're currently a chat listener; don't clobber
+    // Only auto-request if we're currently a plain listener; don't clobber
     // an existing speaker/waiting row (e.g. after reconnect).
-    if (myState !== "chat") {
+    if (myState !== "listener") {
       autoRequestedRef.current = true;
       return;
     }
@@ -296,7 +296,7 @@ export function useStreamLoungeAudio(
     const list: LoungeParticipant[] = [];
     for (const [uid, sdk] of bySdkId.entries()) {
       const row = presence.get(uid);
-      const state = row?.audio_state ?? "chat";
+      const state = row?.audio_state ?? "listener";
       list.push({
         userId: uid,
         displayName: sdk.name ?? null,
@@ -309,11 +309,11 @@ export function useStreamLoungeAudio(
         connectionQuality: (sdk.connectionQuality ?? 2) as 0 | 1 | 2 | 3,
       });
     }
-    // Include presence-only rows that are queued/offered (they may not be in
+    // Include presence-only rows that are waiting/offered (they may not be in
     // the SFU yet but still deserve a "waiting" affordance).
     for (const row of presence.values()) {
       if (bySdkId.has(row.user_id)) continue;
-      if (row.audio_state === "queued" || row.audio_state === "offered") {
+      if (row.audio_state === "waiting" || row.audio_state === "offered") {
         list.push({
           userId: row.user_id,
           displayName: null,
@@ -336,16 +336,19 @@ export function useStreamLoungeAudio(
   );
 
   const queuePosition = useMemo(() => {
-    if (!user || myState !== "queued") return 0;
+    if (!user || myState !== "waiting") return 0;
     const queued = Array.from(presence.values())
-      .filter((r) => r.audio_state === "queued")
-      .sort((a, b) => (a.queued_at ?? "").localeCompare(b.queued_at ?? ""));
+      .filter((r) => r.audio_state === "waiting")
+      .sort((a, b) =>
+        (a.audio_requested_at ?? "").localeCompare(b.audio_requested_at ?? ""),
+      );
     const idx = queued.findIndex((r) => r.user_id === user.id);
     return idx < 0 ? 0 : idx + 1;
   }, [presence, user, myState]);
 
   const requestMic = useCallback(async () => {
-    if (opts.participation !== "audio") return;
+    // Deliberately not gated on `participation`: a listener who joined in
+    // chat mode must be able to opt into the mic without remounting.
     if (!user || busy) return;
     setBusy(true);
     setError(null);
@@ -363,7 +366,7 @@ export function useStreamLoungeAudio(
     } finally {
       setBusy(false);
     }
-  }, [opts.participation, user, busy, roomId]);
+  }, [user, busy, roomId]);
 
   const acceptMicOffer = useCallback(async () => {
     if (!user || busy) return;
