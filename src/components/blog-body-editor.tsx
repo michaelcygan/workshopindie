@@ -187,6 +187,46 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     });
   }
 
+  /**
+   * Opens the consumer's entity picker with an insert callback pinned to the
+   * current cursor. `replaceFrom` lets the inline "@" trigger swap out the
+   * typed character itself.
+   */
+  function requestEntityInsert(replaceFrom?: number) {
+    if (!onRequestEntityInsert) return;
+    const el = ref.current;
+    const start = replaceFrom ?? el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const source = value;
+    const insert = (md: string) => {
+      const next = source.slice(0, start) + md + source.slice(Math.max(end, start));
+      commit(next);
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.focus();
+        const pos = start + md.length;
+        el.setSelectionRange(pos, pos);
+      });
+    };
+    onRequestEntityInsert(insert);
+  }
+
+  /**
+   * Typing "@" at the start of a line or after whitespace opens the picker.
+   * Inside a word (e.g. an email address) it stays a plain character.
+   */
+  function handleChange(next: string) {
+    commit(next);
+    if (readOnly || !onRequestEntityInsert) return;
+    const el = ref.current;
+    const caret = el?.selectionStart ?? next.length;
+    if (next.length !== value.length + 1) return;
+    if (next[caret - 1] !== "@") return;
+    const prev = caret >= 2 ? next[caret - 2] : "";
+    if (prev && !/\s/.test(prev)) return;
+    requestAnimationFrame(() => requestEntityInsert(caret - 1));
+  }
+
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (readOnly) return;
     const mod = e.metaKey || e.ctrlKey;
