@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { adminListPosts } from "@/lib/blog.functions";
+import { adminListPosts, adminSetPostFeatured } from "@/lib/blog.functions";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, ExternalLink, Pencil, EyeOff, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
+import { Plus, ExternalLink, Pencil, EyeOff, Star, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
 import type { BlogEntityKind } from "@/lib/blog-entity-tags";
 
 export const Route = createFileRoute("/admin/blog/")({
@@ -29,6 +30,16 @@ const CONNECTION_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
 
 function AdminBlogIndex() {
   const list = useServerFn(adminListPosts);
+  const setFeaturedFn = useServerFn(adminSetPostFeatured);
+  const qc = useQueryClient();
+  const featureMut = useMutation({
+    mutationFn: (vars: { id: string; featured: boolean }) => setFeaturedFn({ data: vars }),
+    onSuccess: (_r, vars) => {
+      toast.success(vars.featured ? "Featured on the Blog page" : "Removed from the featured slot");
+      qc.invalidateQueries({ queryKey: ["admin-blog-posts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
   const { data, isLoading } = useQuery({
     queryKey: ["admin-blog-posts"],
     queryFn: () => list(),
@@ -130,6 +141,11 @@ function AdminBlogIndex() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-ink">{p.title}</span>
+                      {p.featured && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+                          <Star className="h-3 w-3" /> Featured
+                        </span>
+                      )}
                       {p.show_in_blog_index === false && (
                         <span title="Hidden from public index" className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-ink-muted">
                           <EyeOff className="h-3 w-3" /> Hidden
@@ -160,6 +176,22 @@ function AdminBlogIndex() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
+                      {p.status === "published" && p.show_in_blog_index !== false && (
+                        <button
+                          type="button"
+                          disabled={featureMut.isPending}
+                          onClick={() => featureMut.mutate({ id: p.id, featured: !p.featured })}
+                          title={p.featured ? "Remove from the featured slot" : "Feature at the top of /blog"}
+                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs disabled:opacity-50 ${
+                            p.featured
+                              ? "border-primary/40 bg-primary/10 text-primary"
+                              : "border-border text-ink-soft hover:bg-muted"
+                          }`}
+                        >
+                          <Star className={`h-3 w-3 ${p.featured ? "fill-current" : ""}`} />
+                          {p.featured ? "Featured" : "Feature"}
+                        </button>
+                      )}
                       {p.status === "published" && (
                         <Link
                           to="/blog/$slug"

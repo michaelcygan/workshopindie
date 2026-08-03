@@ -242,6 +242,7 @@ type MemberUpdateInput = {
   cover_image_alt?: string | null;
   seo_title?: string | null;
   seo_description?: string | null;
+  show_in_blog_index?: boolean;
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
@@ -297,6 +298,8 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
     if (s && s.length > 160) throw new Error("SEO description too long.");
     patch.seo_description = s;
   }
+
+  if (input.show_in_blog_index !== undefined) patch.show_in_blog_index = input.show_in_blog_index;
 
   // Slug editable only before first publish.
   if (input.slug !== undefined) {

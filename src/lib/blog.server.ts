@@ -119,7 +119,7 @@ export function blogPublicCacheHeader() {
 export async function listPublishedPostsServer() {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at")
+    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at,featured,publication_type,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
     .eq("status", "published")
     .eq("show_in_blog_index", true)
     .lte("published_at", new Date().toISOString())
@@ -249,7 +249,7 @@ export async function adminListPostsServer(context: AuthContext) {
   await requireAdmin(context);
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,author_profile_id")
+    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id")
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
@@ -433,6 +433,25 @@ export async function adminUpdatePostServer(context: AuthContext, data: BlogWrit
   if (error) throw new Error(error.message);
   await audit("blog_post.updated", data.id, context.userId);
   return { id: data.id, slug };
+}
+
+export async function adminSetPostFeaturedServer(context: AuthContext, id: string, featured: boolean) {
+  await requireAdmin(context);
+  // Only one featured post at a time — it renders as the single hero on /blog.
+  if (featured) {
+    const { error: clearError } = await supabaseAdmin
+      .from("blog_posts")
+      .update({ featured: false, updated_by: context.userId })
+      .eq("featured", true);
+    if (clearError) throw new Error(clearError.message);
+  }
+  const { error } = await supabaseAdmin
+    .from("blog_posts")
+    .update({ featured, updated_by: context.userId })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+  await audit("blog_post.featured", id, context.userId, { featured });
+  return { id, featured };
 }
 
 export async function adminPublishPostServer(context: AuthContext, id: string) {
