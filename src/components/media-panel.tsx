@@ -127,7 +127,7 @@ export function MediaPanel({
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary" />
         </span>
         <h3 className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted truncate">
-          Lounge
+          Group audio
         </h3>
         <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] text-ink-soft">
           {totalHere}/{LOUNGE_CAP}
@@ -164,7 +164,7 @@ export function MediaPanel({
               {m.busy
                 ? "Connecting to audio…"
                 : audioBlocked
-                  ? audioBlockReason ?? "You've used your Lounge audio time this month."
+                  ? audioBlockReason ?? "You've used your Group audio time this month."
                   : "You're here through chat. Add audio when you're ready."}
             </p>
             {audioAccess?.monthlyLimit != null && (
@@ -205,7 +205,7 @@ export function MediaPanel({
                 onClick={() => setLoungeGateOpen(true)}
                 className="inline-flex items-center rounded-full bg-muted px-3 py-1 text-[11px] font-medium text-primary hover:bg-muted/80"
               >
-                Go Plus for unlimited Lounge time →
+                Go Plus for unlimited audio time →
               </button>
             )}
           </div>

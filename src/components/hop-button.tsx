@@ -22,7 +22,7 @@ type Props = {
 };
 
 /**
- * "Hop to next Lounge" — matchmaker call that excludes the current room
+ * "Hop to next room" — matchmaker call that excludes the current room
  * plus any recently-exited rooms. Drops presence in the current room before
  * navigating so the previous room reflects the exit immediately.
  *
@@ -79,12 +79,12 @@ export function HopButton({ roomId, medium, mode, tone = "outline", fullWidth = 
         (fullWidth ? " w-full" : "") +
         (tone === "primary" ? " bg-primary text-primary-foreground hover:bg-primary/90" : "")
       }
-      title="Find another live Lounge"
-      aria-label="Go to next Lounge"
+      title="Find another live room"
+      aria-label="Go to next room"
       data-hop-button
     >
       {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <SkipForward className="h-3.5 w-3.5" />}
-      <span className={fullWidth ? "" : "hidden sm:inline"}>{busy ? "Finding…" : "Next Lounge"}</span>
+      <span className={fullWidth ? "" : "hidden sm:inline"}>{busy ? "Finding…" : "Next room"}</span>
     </Button>
   );
 }

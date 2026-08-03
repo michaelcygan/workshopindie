@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const TITLE = "Workshop — Make things with other people";
 const DESCRIPTION =
-  "Workshop is a creative network for people who actually make things: post Work, credit collaborators, open Collabs, run Lounges, and write the stories behind the work.";
+  "Workshop is a creative network for people who actually make things: post Work, credit collaborators, open Collabs, host Group audio, and write the stories behind the work.";
 
 export const Route = createFileRoute("/")({
   head: () => ({

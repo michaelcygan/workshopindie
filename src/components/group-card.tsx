@@ -40,7 +40,7 @@ function activityLabel(g: GroupCardData): string | null {
   if (g.collab_count > 0)
     parts.push(`${g.collab_count} ${g.collab_count === 1 ? "collab" : "collabs"}`);
   if (g.workshop_count > 0)
-    parts.push(`${g.workshop_count} ${g.workshop_count === 1 ? "Lounge" : "Lounges"}`);
+    parts.push(`${g.workshop_count} ${g.workshop_count === 1 ? "audio room" : "audio rooms"}`);
   if (parts.length === 0) return null;
   return parts.slice(0, 2).join(" · ");
 }

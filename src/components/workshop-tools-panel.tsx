@@ -47,8 +47,8 @@ const PRESETS: Record<ShippedToolType | LegacyStoredToolType, Preset> = {
   drive:        { label: "Drive",        icon: FolderOpen,  blurb: "Share cloud links and recordings.", fields: [] },
   player:       { label: "Player",       icon: ListMusic,   blurb: "Stream a shared queue — YouTube, SoundCloud, Spotify…", fields: [] },
   // Legacy — no longer offered in the picker.
-  screen_share: { label: "Screen Share (retired)", icon: FolderOpen, blurb: "Screen sharing was retired — the Lounge is chat + audio only.", fields: [] },
-  pip:          { label: "Pop-out (retired)",      icon: FolderOpen, blurb: "Picture-in-Picture was retired — the Lounge is chat + audio only.", fields: [] },
+  screen_share: { label: "Screen Share (retired)", icon: FolderOpen, blurb: "Screen sharing was retired — rooms are chat + audio only.", fields: [] },
+  pip:          { label: "Pop-out (retired)",      icon: FolderOpen, blurb: "Picture-in-Picture was retired — rooms are chat + audio only.", fields: [] },
   recorder:     { label: "Recording",    icon: Mic,         blurb: "Drop in your Zoom, Riverside, or SquadCast link — everyone joins from here.", fields: [] },
   outline:      { label: "Docs",         icon: FileText,    blurb: "Collaborative notes, drafts, scripts.", fields: [] },
   board:        { label: "Board",        icon: PenLine,     blurb: "Shared whiteboard.", fields: [] },
@@ -407,7 +407,7 @@ function ActiveToolBody({ scope, tool, media }: { scope: ToolsScope; tool: { id:
   if (tool.tool_type === "screen_share" || tool.tool_type === "pip") {
     return (
       <div className="p-4 text-sm text-ink-muted">
-        This tool was retired. The Lounge is now chat + audio only — use Drive to share files, links, and recordings.
+        This tool was retired. Rooms are now chat + audio only — use Drive to share files, links, and recordings.
       </div>
     );
   }

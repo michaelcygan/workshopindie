@@ -1639,7 +1639,7 @@ function AddMineToGroup({
 
   if (!user) return null;
 
-  const labelMap = { work: "Work", collab: "Collab", workshop: "Lounge" };
+  const labelMap = { work: "Work", collab: "Collab", workshop: "Audio room" };
 
   return (
     <div

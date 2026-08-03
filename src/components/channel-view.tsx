@@ -293,7 +293,7 @@ export function ChannelView({
     if (!warnOpen) return;
     const kickT = setTimeout(() => {
       if (inactive) {
-        toast.error("Leaving the Lounge because you've been quiet.");
+        toast.error("Leaving the room because you've been quiet.");
         media.leave();
         router.navigate({ to: "/lounge" });
       }
@@ -419,7 +419,7 @@ export function ChannelView({
       setEndedOpen(false);
       router.navigate({ to: "/lounge/$id", params: { id: newId }, search: { mode: nextMode } });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't find a new Lounge");
+      toast.error(e instanceof Error ? e.message : "Couldn't find a new room");
       setJoiningNew(false);
       router.navigate({ to: "/lounge" });
     }
@@ -862,7 +862,7 @@ export function ChannelView({
                 setWarnSince(null);
               }}
               aria-live="polite"
-              title="Stay in this Lounge — unmute to clear this timer."
+              title="Stay in this room — unmute to clear this timer."
               className={cn(
                 "absolute left-3 top-3 z-20 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium shadow-sm transition hover:bg-background",
                 idleTone,
@@ -1258,7 +1258,7 @@ export function ChannelView({
               </button>
             )}
             <AlertDialogHeader>
-              <AlertDialogTitle>Lounge wrapped</AlertDialogTitle>
+              <AlertDialogTitle>Room wrapped</AlertDialogTitle>
               <AlertDialogDescription>
                 You're the only one left. Want to drop into a new Lounge?
                 <br />
@@ -1272,7 +1272,7 @@ export function ChannelView({
                 Back to home
               </AlertDialogCancel>
               <AlertDialogAction onClick={handleJoinNew} disabled={joiningNew}>
-                {joiningNew ? "Finding a seat…" : "Join new Lounge"}
+                {joiningNew ? "Finding a seat…" : "Join new room"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1520,7 +1520,7 @@ function StageTabs({
   return (
     <div
       role="tablist"
-      aria-label="Lounge view"
+      aria-label="Audio room view"
       className="flex items-center gap-1 border-b border-border bg-surface/60 px-3 py-2 md:px-4"
     >
       <TabButton

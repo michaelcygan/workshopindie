@@ -354,7 +354,7 @@ function DmsIndex() {
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
                       collab ? "bg-primary/10 text-primary" : "bg-violet/10 text-violet"
                     }`}>
-                      Re: {collab?.title ?? workshop?.title ?? "Lounge"}
+                      Re: {collab?.title ?? workshop?.title ?? "Audio room"}
                     </span>
                   )}
                   <p className={`truncate text-xs ${unread > 0 ? "text-ink" : "text-ink-muted"}`}>
@@ -388,7 +388,7 @@ function EmptyInbox({ onNew }: { onNew: () => void }) {
         </div>
         <h3 className="mt-4 font-display text-2xl text-ink md:text-3xl">No conversations yet.</h3>
         <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">
-          DM your mutuals, or anyone you're connected to through a collab or Lounge.
+          DM your mutuals, or anyone you're connected to through a collab or Group audio.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           <Button onClick={onNew} className="rounded-full gap-1.5">

@@ -389,7 +389,7 @@ function CollabDetail() {
               postId={post.id}
               slug={post.slug}
               title={post.title}
-              hostName={hostUser?.display_name || hostUser?.username || "A Lounge artist"}
+              hostName={hostUser?.display_name || hostUser?.username || "A Workshop artist"}
               hostAvatarUrl={hostUser?.avatar_url}
               roles={roles.map((r: { role_name: string }) => r.role_name)}
               category={post.category}
@@ -579,7 +579,7 @@ function CollabDetail() {
               <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface p-4">
                 <Sparkles className="h-5 w-5 text-ink-muted" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-ink">Quiet so far. Try opening the Lounge or another share.</p>
+                  <p className="font-medium text-ink">Quiet so far. Try opening live audio or another share.</p>
                   <p className="text-xs text-ink-muted">A live session and one fresh share usually unstick a post.</p>
                 </div>
               </div>
