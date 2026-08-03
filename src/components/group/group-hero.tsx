@@ -1,13 +1,10 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { JoinGroupButton } from "@/components/join-group-button";
+import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
+import { useGroupLive } from "@/components/group/group-live-shell";
 
 import { toast } from "sonner";
-import { joinGroupLounge } from "@/lib/instant.functions";
 
 export type GroupHeroData = {
   id: string;
@@ -32,39 +29,10 @@ export function GroupHero({
 }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
-  const router = useRouter();
-  const joinLoungeFn = useServerFn(joinGroupLounge);
-  const openLounge = useMutation({
-    mutationFn: () => joinLoungeFn({ data: { groupId: group.id } }),
-    onSuccess: ({ roomId }) => {
-      router.navigate({ to: "/lounge/$id", params: { id: roomId } });
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
-  });
+  // Audio is a layer on this Group, not a separate room the hero navigates to.
+  const live = useGroupLive();
+  const isMember = useIsMemberOfGroup(group.id);
 
-  // Ambient signal: how many people are in this Group's Lounge right now.
-  const { data: liveCount = 0 } = useQuery({
-    queryKey: ["group-lounge-live", group.id],
-    refetchInterval: 45_000,
-    staleTime: 30_000,
-    queryFn: async () => {
-      const { data: rooms } = await supabase
-        .from("instant_rooms")
-        .select("id")
-        .eq("group_id", group.id)
-        .eq("status", "active")
-        .limit(5);
-      const ids = (rooms ?? []).map((r) => r.id as string);
-      if (ids.length === 0) return 0;
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { count } = await supabase
-        .from("instant_presence")
-        .select("user_id", { count: "exact", head: true })
-        .in("room_id", ids)
-        .gt("last_seen_at", since);
-      return count ?? 0;
-    },
-  });
 
 
   const onShare = async () => {
