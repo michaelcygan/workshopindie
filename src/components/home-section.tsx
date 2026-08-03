@@ -24,6 +24,7 @@ export function HomeSection({
   className,
   divider = true,
   tone = "default",
+  density = "default",
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
@@ -34,18 +35,36 @@ export function HomeSection({
   className?: string;
   divider?: boolean;
   tone?: "default" | "quiet";
+  /** "compact" is the member-home rhythm; PublicHome keeps "default". */
+  density?: "default" | "compact";
 }) {
+  const compact = density === "compact";
   return (
     <section
       className={cn(
         "mx-auto max-w-7xl px-4 md:px-6",
-        tone === "quiet" ? "py-8 md:py-10" : "py-12 md:py-16",
+        compact
+          ? tone === "quiet"
+            ? "py-6 md:py-8"
+            : "py-7 md:py-10"
+          : tone === "quiet"
+            ? "py-8 md:py-10"
+            : "py-12 md:py-16",
         divider && "border-t border-border/60",
         className,
       )}
     >
-      <HomeSectionHeader eyebrow={eyebrow} title={title} kicker={kicker} href={href} cta={cta} />
-      <div className={cn(tone === "quiet" ? "mt-4" : "mt-8")}>{children}</div>
+      <HomeSectionHeader
+        eyebrow={eyebrow}
+        title={title}
+        kicker={kicker}
+        href={href}
+        cta={cta}
+        density={density}
+      />
+      <div className={cn(compact ? "mt-3 md:mt-4" : tone === "quiet" ? "mt-4" : "mt-8")}>
+        {children}
+      </div>
     </section>
   );
 }
@@ -56,26 +75,46 @@ export function HomeSectionHeader({
   kicker,
   href,
   cta,
+  density = "default",
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   kicker?: ReactNode;
   href?: LinkProps["to"];
   cta?: string;
+  density?: "default" | "compact";
 }) {
+  const compact = density === "compact";
   return (
-    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
+    <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-2">
       <div className="min-w-0">
         {eyebrow ? (
-          <div className="mb-2 inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted">
+          <div
+            className={cn(
+              "inline-flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.14em] text-ink-muted",
+              compact ? "mb-1" : "mb-2",
+            )}
+          >
             {eyebrow}
           </div>
         ) : null}
-        <h2 className="font-display text-3xl leading-[1.05] text-ink md:text-[40px]">
+        <h2
+          className={cn(
+            "font-display leading-[1.05] text-ink",
+            compact ? "text-[26px] md:text-[32px]" : "text-3xl md:text-[40px]",
+          )}
+        >
           {title}
         </h2>
         {kicker ? (
-          <p className="mt-2 max-w-xl text-sm text-ink-muted md:text-[15px]">{kicker}</p>
+          <p
+            className={cn(
+              "max-w-xl text-ink-muted",
+              compact ? "mt-1 text-[13px] md:text-sm" : "mt-2 text-sm md:text-[15px]",
+            )}
+          >
+            {kicker}
+          </p>
         ) : null}
       </div>
       {href && cta ? (
@@ -90,6 +129,7 @@ export function HomeSectionHeader({
     </div>
   );
 }
+
 
 /** Small dot separator for eyebrow strings. */
 export function Dot() {

@@ -35,7 +35,12 @@ function AdminBlogIndex() {
   const featureMut = useMutation({
     mutationFn: (vars: { id: string; featured: boolean }) => setFeaturedFn({ data: vars }),
     onSuccess: (_r, vars) => {
-      toast.success(vars.featured ? "Featured on the Blog page" : "Removed from the featured slot");
+      toast.success(
+        vars.featured
+          ? "Featured on the Blog page and member Home"
+          : "Removed from the featured set (Blog page + member Home)",
+      );
+
       qc.invalidateQueries({ queryKey: ["admin-blog-posts"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -181,7 +186,12 @@ function AdminBlogIndex() {
                           type="button"
                           disabled={featureMut.isPending}
                           onClick={() => featureMut.mutate({ id: p.id, featured: !p.featured })}
-                          title={p.featured ? "Remove from the featured slot" : "Feature at the top of /blog"}
+                          title={
+                            p.featured
+                              ? "Remove from the featured set (Blog page + member Home)"
+                              : "Feature this post — it appears at the top of /blog and in the member Home header (max 5)"
+                          }
+
                           className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-xs disabled:opacity-50 ${
                             p.featured
                               ? "border-primary/40 bg-primary/10 text-primary"

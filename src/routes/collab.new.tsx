@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Plus, X, Globe2, Scale, Check, Copy } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -126,6 +127,8 @@ export function CollabComposer({
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
+
 
   const tagGroup = useServerFn(tagCollabInGroup);
   const pinToRoom = useServerFn(pinCollab);
@@ -293,7 +296,7 @@ export function CollabComposer({
       }
     }
     setSubmitting(false);
-
+    qc.invalidateQueries({ queryKey: ["member-home"] });
 
     if (targetStatus === "draft") {
       toast.success("Draft saved — find it in My Collabs.");

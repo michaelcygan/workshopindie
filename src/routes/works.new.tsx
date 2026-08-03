@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link2, Loader2, Sparkles, ArrowRight, Play, ChevronDown } from "lucide-react";
 import { z } from "zod";
@@ -51,6 +52,7 @@ function NewWork() {
   const { isPlus } = usePlus();
   const [plusGate, setPlusGate] = useState(false);
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const search = useSearch({ from: "/works/new" });
   const extract = useServerFn(extractWorkFromUrl);
   const tagWorkGroup = useServerFn(tagWorkInGroup);
@@ -275,6 +277,7 @@ function NewWork() {
     }
 
     setSubmitting(false);
+    qc.invalidateQueries({ queryKey: ["member-home"] });
     toast.success("Work published");
 
     if (opts.thenAddAnother) {
