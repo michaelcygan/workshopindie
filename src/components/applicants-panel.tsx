@@ -13,7 +13,6 @@ import {
   UserCircle2,
   MessageCircle,
   Send,
-  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { acceptCollabApplicant, listApplicants, updateGuestApplicationStatus } from "@/lib/collab.functions";
@@ -27,7 +26,6 @@ export function ApplicantsPanel({ postId }: Props) {
   const updateStatus = useServerFn(updateGuestApplicationStatus);
   const acceptFn = useServerFn(acceptCollabApplicant);
   const qc = useQueryClient();
-  const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const accept = useMutation({
     mutationFn: (vars: { applicantUserId: string; contactEventId: string | null }) =>
@@ -45,18 +43,6 @@ export function ApplicantsPanel({ postId }: Props) {
     },
     onError: (e: Error) => toast.error(e.message),
   });
-
-  async function copyClaimLink(token: string) {
-    const url = `${window.location.origin}/collab/claim/${token}`;
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedToken(token);
-      setTimeout(() => setCopiedToken(null), 1800);
-      toast.success("Claim link copied — paste it to the applicant.");
-    } catch {
-      toast.error("Couldn't copy the link.");
-    }
-  }
 
 
   const { data, isLoading, error } = useQuery({
