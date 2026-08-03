@@ -137,7 +137,9 @@ function BlogIndexPage() {
         </div>
       ) : (
         <>
-          {featured && <FeaturedHero post={featured} />}
+          {featured.length === 1 && <FeaturedHero post={featured[0]!} />}
+          {featured.length > 1 && <BlogFeaturedCarousel posts={featured} />}
+
 
           {rest.length > 0 && (
             <>
