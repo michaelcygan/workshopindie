@@ -63,6 +63,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         cover_image_alt: z.string().max(300).nullable().optional(),
         seo_title: z.string().max(120).nullable().optional(),
         seo_description: z.string().max(240).nullable().optional(),
+        show_in_blog_index: z.boolean().optional(),
         tags: z
           .array(
             z.object({
