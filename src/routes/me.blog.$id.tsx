@@ -20,7 +20,16 @@ import {
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
 import { PlusGate } from "@/components/plus-gate";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { BlogPublishSuccessDialog, type PublishedPostSummary } from "@/components/blog-publish-success";
+import { generateExcerpt } from "@/lib/blog-excerpt";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
+import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
