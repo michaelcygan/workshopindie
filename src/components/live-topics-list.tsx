@@ -220,7 +220,7 @@ export function LiveTopicsList({
           noneLive ? "bg-primary/40" : "bg-primary",
         )} />
       </span>
-      <span>{noneLive ? "Open a Lounge" : "Live now"}</span>
+      <span>{noneLive ? "Open audio" : "Live now"}</span>
       {!noneLive && (
         <span className="tabular-nums text-primary/70">· {liveCount}</span>
       )}
@@ -245,7 +245,7 @@ export function LiveTopicsList({
     <motion.li key="lounge" layout transition={{ duration: 0.2 }}>
       <TopicRow
         id="lounge"
-        label="Lounge"
+        label="Group audio"
         eyebrow="Pinned"
         accent
         description="Mixed-medium drop-in. Whoever shows up."
@@ -510,7 +510,7 @@ function SplitOpenButton({
                     loungeLive > 0 ? "bg-primary" : "border border-ink/20",
                   )}
                 />
-                <span className="flex-1 text-left">Lounge</span>
+                <span className="flex-1 text-left">Group audio</span>
                 <span className="text-[9px] uppercase tracking-[0.14em] text-ink-muted/70">General</span>
                 {loungeLive > 0 && (
                   <span className="text-[10.5px] tabular-nums text-ink-muted">{loungeLive} live</span>

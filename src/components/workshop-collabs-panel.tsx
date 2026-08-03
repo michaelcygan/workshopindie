@@ -365,7 +365,7 @@ export function WorkshopCollabsPanel({
 
       <div className="flex items-center gap-2 text-sm text-ink-soft">
         <Megaphone className="h-4 w-4 text-primary" />
-        <span>Collabs from people in this Lounge</span>
+        <span>Collabs from people in this room</span>
       </div>
 
       {isLoading ? (
@@ -410,7 +410,7 @@ export function WorkshopCollabsPanel({
                             <DropdownMenuLabel className="text-xs">Invite someone here</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             {otherUsers.length === 0 ? (
-                              <DropdownMenuItem disabled>Only you in this Lounge</DropdownMenuItem>
+                              <DropdownMenuItem disabled>Only you in this room</DropdownMenuItem>
                             ) : otherUsers.map((p) => (
                               <DropdownMenuItem
                                 key={p.user_id}
