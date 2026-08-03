@@ -170,6 +170,7 @@ export function MemberHome() {
           href="/groups"
           cta="All Groups"
           tone="quiet"
+          density="compact"
         >
           <div className="grid gap-4 md:grid-cols-3">
             {data.groupSuggestions.map((g) => (
@@ -198,7 +199,7 @@ export function MemberHome() {
       )}
 
       {data.people.length > 0 && (
-        <HomeSection eyebrow="Worth knowing" title="People in your orbit" tone="quiet">
+        <HomeSection eyebrow="Worth knowing" title="People in your orbit" tone="quiet" density="compact">
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
             {data.people.map((p) => (
               <Link
@@ -237,6 +238,7 @@ export function MemberHome() {
           kicker="One Work from each medium moving on Workshop this week."
           href="/gallery"
           cta="Open Gallery"
+          density="compact"
         >
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.disciplines.map((d) => (
@@ -275,7 +277,7 @@ export function MemberHome() {
         </HomeSection>
       )}
 
-      <HomeSection eyebrow="Make something" title="Start a new thing" divider tone="quiet">
+      <HomeSection eyebrow="Make something" title="Start a new thing" divider tone="quiet" density="compact">
         <div className="flex flex-wrap gap-3">
           <Button asChild className="rounded-full gap-1.5">
             <Link to="/works/new">
