@@ -194,6 +194,9 @@ function GroupPage() {
 
 
   const qc = useQueryClient();
+  // Audio admission is membership-gated; viewing the Group never is.
+  const isGroupMember = useIsMemberOfGroup(group.id).data === true;
+
 
   // Admin seed-link flow (?j=<token>):
   //  • Always call resolve once (records click, surfaces banner copy).
