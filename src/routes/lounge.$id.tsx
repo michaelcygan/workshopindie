@@ -148,17 +148,11 @@ function LiveRoomPage() {
   const { mode: entryMode } = Route.useSearch();
   const { user, loading } = useAuth();
   const router = useRouter();
-  const qc = useQueryClient();
-  const [editingTitle, setEditingTitle] = useState(false);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [savingTitle, setSavingTitle] = useState(false);
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  const rename = useServerFn(renameLounge);
-  const endRoom = useServerFn(endLounge);
   const fetchRoom = useServerFn(getInstantRoom);
-  const [collabOpen, setCollabOpen] = useState(false);
 
-  // Composer is rendered in-place via <CollabComposer/> below; no cross-frame messaging needed.
+  // Legacy standalone room: Groups own naming, ending and Collab pinning now,
+  // so this page is chat + audio only.
+
 
   useEffect(() => {
     if (!loading && !user) router.navigate({ to: "/login" });
