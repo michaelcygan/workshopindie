@@ -39,9 +39,9 @@ export function GroupsJoinFeedStrip({ hasGroups, onBrowseAll }: Props) {
           </span>
           <span className="truncate text-sm text-ink-soft">
             {!user
-              ? "Sign in to surface live collabs and Lounges from your scenes."
+              ? "Sign in to surface live collabs and Group audio from your scenes."
               : !hasGroups
-                ? "Join a group to unlock live collabs and Lounges from your scenes."
+                ? "Join a group to unlock live collabs and Group audio from your scenes."
                 : isLoading
                   ? "Loading what's open in your scenes…"
                   : "Quiet in your scenes right now."}
@@ -129,7 +129,7 @@ export function GroupsJoinFeedStrip({ hasGroups, onBrowseAll }: Props) {
 
 function StripItem({ item }: { item: MyGroupsFeedItem }) {
   const Icon = item.kind === "collab" ? Megaphone : Radio;
-  const kindLabel = item.kind === "collab" ? "Collab" : "Lounge";
+  const kindLabel = item.kind === "collab" ? "Collab" : "Audio";
   const accent = item.group.accent_color ?? "var(--ink)";
   const href =
     item.kind === "collab"

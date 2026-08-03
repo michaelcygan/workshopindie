@@ -180,7 +180,7 @@ function Signup() {
       <p className="mt-2 text-sm text-ink-muted">
         {fromGuest
           ? "Your application is sent. Members get replied to faster — finish your profile so the host can see your face and past work."
-          : "Show your Work. Drop into a Lounge, or post a Collab and pull a team together."}
+          : "Show your Work. Join a Group, or post a Collab and pull a team together."}
       </p>
       <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">

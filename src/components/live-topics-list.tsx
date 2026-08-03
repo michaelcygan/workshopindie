@@ -22,7 +22,7 @@ type Props = {
   disabled?: boolean;
   /** "stack" = single column (mobile default), "split" = featured Any + topic grid (desktop). */
   layout?: "stack" | "split";
-  /** Optional slot rendered under the featured "Lounge" card (e.g. prompt marquee). */
+  /** Optional slot rendered under the featured Group audio card (e.g. prompt marquee). */
   featuredFooter?: React.ReactNode;
 };
 
@@ -240,7 +240,7 @@ export function LiveTopicsList({
     />
   );
 
-  // Pinned "Lounge" row — rendered as the first item in the topic list.
+  // Pinned Group audio row — rendered as the first item in the topic list.
   const loungeRow = (
     <motion.li key="lounge" layout transition={{ duration: 0.2 }}>
       <TopicRow
@@ -267,12 +267,12 @@ export function LiveTopicsList({
         onKeyDown={handleListKeyDown}
         className="relative rounded-[2rem] bg-surface shadow-halo border border-border/50 overflow-hidden grid md:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)]"
       >
-        {/* Featured: Lounge */}
+        {/* Featured: Group audio */}
         <div className="md:border-r border-border/50 border-b md:border-b-0 flex flex-col relative bg-background/40">
           <div className="p-7 md:p-9 pb-5 flex-1 flex flex-col">
             {eyebrow}
             <h2 className="mt-6 font-display text-[44px] md:text-[54px] leading-[0.95] text-ink tracking-tight">
-              The Lounge
+              Group audio
             </h2>
             <p className="mt-4 text-[15px] leading-relaxed text-ink-muted max-w-[34ch]">
               {noneLive
@@ -350,7 +350,7 @@ export function LiveTopicsList({
       <div className="p-6 pb-5 bg-background/40">
         {eyebrow}
         <h2 className="mt-5 font-display text-[34px] leading-[0.95] text-ink tracking-tight">
-          The Lounge
+          Group audio
         </h2>
         <p className="mt-3 text-[14px] leading-relaxed text-ink-muted">
           {noneLive
@@ -589,7 +589,7 @@ function TopicRow({
   const [subOpen, setSubOpen] = useState(false);
   const showDescription = !!description && (hovered || subOpen);
 
-  // Color swatch: per-category token, or primary for the Lounge / accent row.
+  // Color swatch: per-category token, or primary for the featured / accent row.
   const swatchClass = id === "lounge" || accent
     ? "bg-primary"
     : (categoryClass(id as Category)?.split(" ")[0] ?? "bg-muted");

@@ -311,7 +311,7 @@ function EditProfile() {
     <main className="mx-auto max-w-6xl px-4 py-8 pb-40 md:px-6 md:py-12 md:pb-32">
       <header className="mb-6">
         <h1 className="font-display text-3xl text-ink md:text-4xl">Edit profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Lounges, and across the network.</p>
+        <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Groups, and across the network.</p>
       </header>
 
       {/* Mobile sub-nav */}
@@ -529,14 +529,14 @@ function EditProfile() {
               <p className="text-xs text-ink-muted">
                 {birthdateLocked
                   ? "Locked. Contact support if this needs to change."
-                  : "Never shown on your profile. Powers optional age filters for Lounges."}
+                  : "Never shown on your profile. Powers optional age filters for Groups."}
               </p>
             </div>
           </Section>
 
 
           {/* MEDIUMS & BIO */}
-          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Gallery tabs, gallery filters, and which Lounges show up for you." refMap={sectionRefs}>
+          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you." refMap={sectionRefs}>
             <div className="space-y-2">
               <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">
