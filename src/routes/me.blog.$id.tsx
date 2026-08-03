@@ -481,6 +481,12 @@ function MemberBlogEditorPage() {
           setEntityPickerOpen(false);
         }}
       />
+      <BlogPublishSuccessDialog
+        post={published}
+        open={!!published}
+        onOpenChange={(v) => { if (!v) setPublished(null); }}
+        authorUserId={user?.id}
+      />
       <PlusGate
         open={blogGateOpen}
         onOpenChange={setBlogGateOpen}
