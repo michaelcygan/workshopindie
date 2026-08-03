@@ -231,28 +231,16 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
             <Film className="h-4 w-4" />
           </ToolBtn>
           {onRequestEntityInsert && (
-            <ToolBtn
-              onClick={() => {
-                const el = ref.current;
-                const start = el?.selectionStart ?? value.length;
-                const end = el?.selectionEnd ?? value.length;
-                const insert = (md: string) => {
-                  const next = value.slice(0, start) + md + value.slice(end);
-                  commit(next);
-                  requestAnimationFrame(() => {
-                    if (!el) return;
-                    el.focus();
-                    const pos = start + md.length;
-                    el.setSelectionRange(pos, pos);
-                  });
-                };
-                onRequestEntityInsert(insert);
-              }}
-              title="Insert Workshop link"
+            <button
+              type="button"
+              onClick={() => requestEntityInsert()}
               disabled={readOnly}
+              title="Tag a person, Work, Collab, Group, or Event"
+              aria-label="Tag a person, Work, Collab, Group, or Event"
+              className="inline-flex h-11 shrink-0 items-center gap-1 rounded-full px-3 text-sm text-ink-soft hover:bg-muted disabled:opacity-40"
             >
-              <AtSign className="h-4 w-4" />
-            </ToolBtn>
+              <AtSign className="h-4 w-4" /> Tag
+            </button>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
