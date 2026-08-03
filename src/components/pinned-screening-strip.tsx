@@ -244,7 +244,7 @@ export function PinnedScreeningStrip({
                     ? "bg-background/15 text-background hover:bg-background/25"
                     : "bg-background/5 text-background/40 cursor-not-allowed",
                 )}
-                title={canScreen ? "Screen this Work for the Lounge" : "Not screenable — no playable embed"}
+                title={canScreen ? "Screen this Work for the room" : "Not screenable — no playable embed"}
               >
                 <Play className="h-3 w-3 fill-current" /> Watch
               </button>
@@ -254,7 +254,7 @@ export function PinnedScreeningStrip({
                 type="button"
                 onClick={() => unpin.mutate(p.id)}
                 className="opacity-0 group-hover:opacity-100 rounded-full bg-background/10 p-1 text-background/70 hover:bg-background/20 transition"
-                title="Unpin from Lounge"
+                title="Unpin from room"
                 aria-label="Unpin"
               >
                 <PinOff className="h-3 w-3" />
