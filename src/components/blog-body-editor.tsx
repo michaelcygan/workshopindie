@@ -192,12 +192,12 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
    * current cursor. `replaceFrom` lets the inline "@" trigger swap out the
    * typed character itself.
    */
-  function requestEntityInsert(replaceFrom?: number) {
+  function requestEntityInsert(range?: { start: number; end: number; source: string }) {
     if (!onRequestEntityInsert) return;
     const el = ref.current;
-    const start = replaceFrom ?? el?.selectionStart ?? value.length;
-    const end = el?.selectionEnd ?? value.length;
-    const source = value;
+    const source = range?.source ?? value;
+    const start = range?.start ?? el?.selectionStart ?? source.length;
+    const end = range?.end ?? el?.selectionEnd ?? source.length;
     const insert = (md: string) => {
       const next = source.slice(0, start) + md + source.slice(Math.max(end, start));
       commit(next);
@@ -224,7 +224,9 @@ export function BlogBodyEditor({ value, onChange, readOnly, onDirty, onRequestEn
     if (next[caret - 1] !== "@") return;
     const prev = caret >= 2 ? next[caret - 2] : "";
     if (prev && !/\s/.test(prev)) return;
-    requestAnimationFrame(() => requestEntityInsert(caret - 1));
+    requestAnimationFrame(() =>
+      requestEntityInsert({ start: caret - 1, end: caret, source: next }),
+    );
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
