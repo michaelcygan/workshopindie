@@ -293,118 +293,20 @@ function LiveRoomPage() {
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
           <div className="min-w-0">
             <Link
-              to="/lounge"
+              to="/groups"
               className="inline-flex items-center gap-1 text-[11px] text-ink-muted hover:text-ink md:hidden"
             >
-              <ArrowLeft className="h-3 w-3" /> Lounge
+              <ArrowLeft className="h-3 w-3" /> Groups
             </Link>
-            {/* Editable Lounge name. Unnamed rooms show a "Name this Lounge" affordance
-              to any signed-in viewer (members-only for group Lounges, enforced server-side).
-              Named rooms are read-only for everyone except the namer. */}
             {(() => {
               const MediumIcon = mediumIcon(room?.medium ?? room?.category ?? null);
-              const canRename = !!user && !isPromoted && (!isNamed || isNamer);
-
-              async function saveTitle() {
-                const next = draftTitle.trim();
-                if (!next) {
-                  setEditingTitle(false);
-                  return;
-                }
-                if (next === title) {
-                  setEditingTitle(false);
-                  return;
-                }
-                setSavingTitle(true);
-                try {
-                  await rename({ data: { roomId: id, title: next } });
-                  await qc.invalidateQueries({ queryKey: ["instant-room", id] });
-                  setEditingTitle(false);
-                  toast.success(isNamed ? "Renamed." : "You named this Lounge.");
-                } catch (e: any) {
-                  toast.error(e?.message ?? "Couldn't rename");
-                } finally {
-                  setSavingTitle(false);
-                }
-              }
-
+              const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
               return (
                 <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
                   <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
                     <MediumIcon className="h-3.5 w-3.5" />
                   </span>
-                  {editingTitle && canRename ? (
-                    <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                      <input
-                        ref={titleInputRef}
-                        value={draftTitle}
-                        onChange={(e) => setDraftTitle(e.target.value.slice(0, 80))}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") saveTitle();
-                          if (e.key === "Escape") setEditingTitle(false);
-                        }}
-                        placeholder="Name this Lounge"
-                        maxLength={80}
-                        disabled={savingTitle}
-                        className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-0.5 font-display text-xl md:text-2xl text-ink focus:outline-none focus:ring-2 focus:ring-primary/40"
-                      />
-                      <button
-                        type="button"
-                        onClick={saveTitle}
-                        disabled={savingTitle}
-                        className="grid h-7 w-7 place-items-center rounded-full text-primary hover:bg-primary/10"
-                        aria-label="Save name"
-                      >
-                        <Check className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingTitle(false)}
-                        className="grid h-7 w-7 place-items-center rounded-full text-ink-muted hover:bg-muted/40"
-                        aria-label="Cancel"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </span>
-                  ) : (
-                    <span className="flex min-w-0 items-center gap-1.5">
-                      {(() => {
-                        // Show the actual room title whenever we have one — matchmaker
-                        // rooms already carry a sensible default ("Artist's Lounge",
-                        // "Lounge: Film"). Only show the italic placeholder when we
-                        // truly have nothing beyond the bare fallback.
-                        const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
-                        return (
-                          <span
-                            className={
-                              "truncate" +
-                              (!hasTitle
-                                ? " text-ink-muted italic font-normal text-lg md:text-xl"
-                                : "")
-                            }
-                          >
-                            {hasTitle ? title : "Name this Lounge"}
-                          </span>
-                        );
-                      })()}
-                      {canRename && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
-                            setDraftTitle(hasTitle ? title : "");
-                            setEditingTitle(true);
-                            setTimeout(() => titleInputRef.current?.focus(), 0);
-                          }}
-                          className="grid h-6 w-6 place-items-center rounded-full text-ink-muted hover:text-ink hover:bg-muted/40"
-                          aria-label={isNamed ? "Rename Lounge" : "Name this Lounge"}
-                          title={isNamed ? "Rename" : "Name this Lounge"}
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                      )}
-                    </span>
-                  )}
+                  <span className="truncate">{hasTitle ? title : FALLBACK_TITLE}</span>
                 </h1>
               );
             })()}
@@ -418,45 +320,10 @@ function LiveRoomPage() {
               </span>
             </div>
           </div>
-
-          {!isPromoted && user && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setCollabOpen(true)}
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/60 px-3 py-1 text-[11px] font-medium text-ink hover:bg-muted/40 transition"
-                title="Post a Collab from this Lounge — it'll auto-pin here"
-              >
-                <Rocket className="h-3 w-3" /> New Collab
-              </button>
-
-              {isNamer && room?.status === "active" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={async () => {
-                    if (!confirm("End this Lounge for everyone?")) return;
-                    try {
-                      await endRoom({ data: { roomId: id } });
-                      toast("Lounge ended.");
-                      router.navigate({ to: "/lounge" });
-                    } catch (e: any) {
-                      toast.error(e?.message ?? "Couldn't end");
-                    }
-                  }}
-                  className="rounded-full gap-1.5"
-                  title="End this Lounge"
-                >
-                  <DoorOpen className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">End</span>
-                </Button>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Focus message — visible to everyone. In v1 there's no in-room host,
-          so nobody sees the "set focus" affordance from here. */}
+        {/* Focus message — visible to everyone. Groups own hosting now, so
+          nobody sees the "set focus" affordance from this legacy room. */}
         {!isPromoted && (
           <FocusStrip text={room?.focus_message ?? null} isHost={false} onHostSet={() => {}} />
         )}
@@ -492,38 +359,8 @@ function LiveRoomPage() {
           filledSeats={Math.max(1, liveCount)}
           viewerInitials={(user?.email ?? "?").slice(0, 1).toUpperCase()}
         />
-
-        {!isPromoted && (
-          <CreateCollabNudge
-            roomId={id}
-            visible={!!user && liveCount >= 1}
-            onCreate={() => setCollabOpen(true)}
-          />
-        )}
-
-        <Dialog open={collabOpen} onOpenChange={setCollabOpen}>
-          <DialogContent
-            className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto p-0 gap-0"
-            onOpenAutoFocus={(e) => e.preventDefault()}
-          >
-            <DialogTitle className="sr-only">New Collab</DialogTitle>
-            {collabOpen && (
-              <CollabComposer
-                embed
-                fromLounge={id}
-                onCancel={() => setCollabOpen(false)}
-                onPosted={() => {
-                  setCollabOpen(false);
-                  toast.success("Collab posted — pinned to this Lounge.");
-                  qc.invalidateQueries({ queryKey: ["room-pins", id] });
-                }}
-                onDraftSaved={() => setCollabOpen(false)}
-                onBackToLounge={() => setCollabOpen(false)}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
       </main>
     </LoungeAudioProvider>
   );
 }
+
