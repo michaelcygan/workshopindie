@@ -222,8 +222,8 @@ export function TopNav() {
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" variant="outline" className="rounded-full">
-                  Get started
+                <Button size="sm" className="rounded-full">
+                  Join
                 </Button>
               </Link>
             </>

@@ -140,8 +140,13 @@ export function SiteFooter() {
               </div>
               <ul className="mt-3 space-y-2">
                 <li>
-                  <Link to="/g" className="text-ink-soft hover:text-ink">
-                    Groups
+                  <Link to="/blog" className="text-ink-soft hover:text-ink">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link to="/gallery" className="text-ink-soft hover:text-ink">
+                    Gallery
                   </Link>
                 </li>
                 <li>
@@ -150,13 +155,8 @@ export function SiteFooter() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/events" className="text-ink-soft hover:text-ink">
-                    Events
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/gallery" className="text-ink-soft hover:text-ink">
-                    Gallery
+                  <Link to="/groups" className="text-ink-soft hover:text-ink">
+                    Groups
                   </Link>
                 </li>
               </ul>
@@ -167,8 +167,8 @@ export function SiteFooter() {
               </div>
               <ul className="mt-3 space-y-2">
                 <li>
-                  <Link to="/blog" className="text-ink-soft hover:text-ink">
-                    Blog
+                  <Link to="/events" className="text-ink-soft hover:text-ink">
+                    Events
                   </Link>
                 </li>
                 <li>
