@@ -1,13 +1,10 @@
-import { Link, useRouter } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { MapPin, Radio, Share2, Sparkles, Star, Users } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
-import { JoinGroupButton } from "@/components/join-group-button";
+import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { Button } from "@/components/ui/button";
+import { useGroupLive } from "@/components/group/group-live-shell";
 
 import { toast } from "sonner";
-import { joinGroupLounge } from "@/lib/instant.functions";
 
 export type GroupHeroData = {
   id: string;
@@ -32,39 +29,10 @@ export function GroupHero({
 }) {
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
-  const router = useRouter();
-  const joinLoungeFn = useServerFn(joinGroupLounge);
-  const openLounge = useMutation({
-    mutationFn: () => joinLoungeFn({ data: { groupId: group.id } }),
-    onSuccess: ({ roomId }) => {
-      router.navigate({ to: "/lounge/$id", params: { id: roomId } });
-    },
-    onError: (e: Error) => toast.error(e.message ?? "Couldn't open the Lounge"),
-  });
+  // Audio is a layer on this Group, not a separate room the hero navigates to.
+  const live = useGroupLive();
+  const isMember = useIsMemberOfGroup(group.id).data === true;
 
-  // Ambient signal: how many people are in this Group's Lounge right now.
-  const { data: liveCount = 0 } = useQuery({
-    queryKey: ["group-lounge-live", group.id],
-    refetchInterval: 45_000,
-    staleTime: 30_000,
-    queryFn: async () => {
-      const { data: rooms } = await supabase
-        .from("instant_rooms")
-        .select("id")
-        .eq("group_id", group.id)
-        .eq("status", "active")
-        .limit(5);
-      const ids = (rooms ?? []).map((r) => r.id as string);
-      if (ids.length === 0) return 0;
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-      const { count } = await supabase
-        .from("instant_presence")
-        .select("user_id", { count: "exact", head: true })
-        .in("room_id", ids)
-        .gt("last_seen_at", since);
-      return count ?? 0;
-    },
-  });
 
 
   const onShare = async () => {
@@ -149,30 +117,37 @@ export function GroupHero({
             )}
           </div>
 
-          {/* Right column: compact — Lounge + Share + Join. Create lives in the tab bar. */}
+          {/* Right column: compact — Audio + Share + Join. Create lives in the tab bar. */}
           <div className="flex shrink-0 items-center gap-1.5">
-            <Button
-              size="sm"
-              onClick={() => openLounge.mutate()}
-              disabled={openLounge.isPending}
-              className="rounded-full gap-1.5"
-              title="Drop into the Lounge — auto-joins this group"
-            >
-              <Radio className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">
-                {openLounge.isPending
-                  ? "Opening…"
-                  : liveCount > 0
-                    ? `Lounge · ${liveCount} live`
-                    : "Open the Lounge"}
-              </span>
-              {liveCount > 0 ? (
-                <span
-                  aria-hidden
-                  className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
-                />
-              ) : null}
-            </Button>
+            {live && !live.roomId ? (
+              <Button
+                size="sm"
+                onClick={() => void live.joinAudio()}
+                disabled={live.status === "joining" || !isMember}
+                className="gap-1.5 rounded-full"
+                title={
+                  isMember
+                    ? "Join this Group's live audio — no camera, mic stays off until you ask"
+                    : "Join the Group to enter live audio"
+                }
+              >
+                <Radio className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">
+                  {live.status === "joining"
+                    ? "Joining…"
+                    : live.connectedCount > 0
+                      ? `Join audio · ${live.connectedCount} live`
+                      : "Join audio"}
+                </span>
+                {live.isLive ? (
+                  <span
+                    aria-hidden
+                    className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400"
+                  />
+                ) : null}
+              </Button>
+            ) : null}
+
 
             <Button
               variant="ghost"

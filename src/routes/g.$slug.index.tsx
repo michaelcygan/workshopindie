@@ -9,7 +9,7 @@ import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
-import { JoinGroupButton } from "@/components/join-group-button";
+import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
 import { GroupSeedJoinPrompt } from "@/components/group-seed-join-prompt";
 import { GroupCard, type GroupCardData } from "@/components/group-card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -32,6 +32,9 @@ import { GroupHero } from "@/components/group/group-hero";
 import { GroupTabBar, type GroupTab } from "@/components/group/group-tab-bar";
 import { GroupEmpty } from "@/components/group/group-empty";
 import { GroupTodayTab } from "@/components/group/group-today-tab";
+import { GroupLinksTab } from "@/components/group/group-links-tab";
+import { GroupLiveShell } from "@/components/group/group-live-shell";
+
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
@@ -85,7 +88,7 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
 }
 
 
-const TAB_VALUES = ["today", "collab", "work", "posts", "events", "members", "subgroups", "about"] as const;
+const TAB_VALUES = ["today", "collab", "work", "links", "posts", "events", "members", "subgroups", "about"] as const;
 type TabValue = (typeof TAB_VALUES)[number];
 
 
@@ -191,6 +194,9 @@ function GroupPage() {
 
 
   const qc = useQueryClient();
+  // Audio admission is membership-gated; viewing the Group never is.
+  const isGroupMember = useIsMemberOfGroup(group.id).data === true;
+
 
   // Admin seed-link flow (?j=<token>):
   //  • Always call resolve once (records click, surfaces banner copy).
@@ -325,6 +331,11 @@ function GroupPage() {
   }, [group.id, qc]);
 
   return (
+    <GroupLiveShell
+      groupId={group.id}
+      groupName={group.name}
+      isMember={isGroupMember}
+    >
     <main className="mx-auto max-w-7xl pb-20">
       {seedToken && !user && seedInfo && (
         <div className="px-4 md:px-6">
@@ -361,6 +372,7 @@ function GroupPage() {
           {viewTab === "collab" && <GroupCollabTab group={group} />}
 
           {viewTab === "work" && <GroupWorkTab group={group} />}
+          {viewTab === "links" && <GroupLinksTab group={group} />}
           {viewTab === "posts" && <GroupPostsTab group={group} />}
           {viewTab === "events" && <GroupEventsTab group={group} />}
           {viewTab === "subgroups" && (
@@ -381,9 +393,10 @@ function GroupPage() {
       </div>
       </div>
     </main>
-
+    </GroupLiveShell>
   );
 }
+
 
 
 function GroupEventsTab({ group }: { group: GroupRow }) {
