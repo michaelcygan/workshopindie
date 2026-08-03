@@ -601,7 +601,11 @@ export async function continueActionsServer(
       .maybeSingle(),
   ]);
 
-  const draft = ((draftsRes.data ?? []) as Array<{ id: string; title: string }>)[0];
+  const draft = ((draftsRes.data ?? []) as Array<{
+    id: string;
+    title: string;
+    cover_image_url: string | null;
+  }>)[0];
   if (draft) {
     actions.push({
       kind: "blog_draft",
@@ -610,8 +614,10 @@ export async function continueActionsServer(
       actionLabel: "Continue writing",
       to: "/me/blog/$id",
       params: { id: draft.id },
+      coverUrl: draft.cover_image_url,
     });
   }
+
 
   const collabs = (collabsRes.data ?? []) as Array<{ id: string; slug: string; title: string }>;
   if (collabs.length) {
