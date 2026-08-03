@@ -26,6 +26,11 @@ import type {
   HomeTodaySummary,
   HomeWorkStory,
   MemberHomePayload,
+  PublicBlogCard,
+  PublicCollabCall,
+  PublicGroupScene,
+  PublicHomePayload,
+  PublicWorkTile,
 } from "@/lib/home-types";
 
 const POST_SCAN_LIMIT = 40;

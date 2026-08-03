@@ -19,3 +19,9 @@ export const getMemberHome = createServerFn({ method: "GET" })
     const { getMemberHomeServer } = await import("@/lib/home.server");
     return getMemberHomeServer(context.userId);
   });
+
+/** Public: the whole logged-out homepage payload in one round trip. */
+export const getPublicHome = createServerFn({ method: "GET" }).handler(async () => {
+  const { getPublicHomeServer } = await import("@/lib/home.server");
+  return getPublicHomeServer();
+});
