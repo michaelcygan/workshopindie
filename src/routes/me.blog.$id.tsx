@@ -212,6 +212,8 @@ function MemberBlogEditorPage() {
   const nearBlogLimit = access.monthlyPublicationLimit != null && access.publicationsThisMonth === access.monthlyPublicationLimit - 1;
   const canDeleteDraft = !post.post.published_at && access.canDeleteNeverPublishedDraft;
   const showOverflow = isPublished || canDeleteDraft;
+  const generatedExcerpt = generateExcerpt(body);
+  const effectiveExcerpt = excerpt.trim() || generatedExcerpt;
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-8 md:px-6 md:py-12">
