@@ -110,8 +110,8 @@ export function NowModule({
           title={topLounge.title}
           detail={`${topLounge.liveCount} live in ${topLounge.groupName}`}
           action="Join"
-          to="/lounge/$id"
-          params={{ id: topLounge.roomId }}
+          to="/g/$slug"
+          params={{ slug: topLounge.groupSlug }}
           trailing={
             topLounge.avatars.length ? (
               <span className="flex -space-x-2">
@@ -125,17 +125,22 @@ export function NowModule({
             ) : null
           }
         />
+      ) : fallbackGroup ? (
+        <Row
+          icon={Radio}
+          title="No one live yet"
+          detail={`Start the audio layer in ${fallbackGroup.name}`}
+          action="Open the Group"
+          to="/g/$slug"
+          params={{ slug: fallbackGroup.slug }}
+        />
       ) : (
         <Row
           icon={Radio}
           title="No one live yet"
-          detail={
-            fallbackGroup
-              ? `Open a room in ${fallbackGroup.name}`
-              : "Open a room and see who joins."
-          }
-          action="Open a Lounge"
-          to="/lounge"
+          detail="Join a Group and see who shows up."
+          action="Find a Group"
+          to="/groups"
         />
       )}
 

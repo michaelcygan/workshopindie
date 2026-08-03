@@ -5,11 +5,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 type Pulse =
-  | { kind: "event"; id: string; title: string; group_slug: string; event_slug: string; starts_at: string; cover_url: string | null }
-  | { kind: "work"; id: string; title: string; slug: string; cover_url: string | null; from_collab: boolean; from_workshop: boolean }
+  | {
+      kind: "event";
+      id: string;
+      title: string;
+      group_slug: string;
+      event_slug: string;
+      starts_at: string;
+      cover_url: string | null;
+    }
+  | {
+      kind: "work";
+      id: string;
+      title: string;
+      slug: string;
+      cover_url: string | null;
+      from_collab: boolean;
+      from_workshop: boolean;
+    }
   | { kind: "collab"; id: string; title: string; slug: string; user_name: string | null }
   | { kind: "group"; id: string; name: string; slug: string; avatar_url: string | null }
-  | { kind: "blog"; id: string; title: string; slug: string; cover_url: string | null; author_name: string | null };
+  | {
+      kind: "blog";
+      id: string;
+      title: string;
+      slug: string;
+      cover_url: string | null;
+      author_name: string | null;
+    };
 
 /**
  * Ambient pulse rail — a single horizontal mixer of the platform's most
@@ -74,7 +97,9 @@ export function HomePulseRail({ compact = false }: { compact?: boolean } = {}) {
               </span>
               <div>
                 <p className="font-display text-sm text-ink">Quiet across the network right now.</p>
-                <p className="mt-0.5 text-xs text-ink-muted">Be the spark — follow a few makers, or post a Collab.</p>
+                <p className="mt-0.5 text-xs text-ink-muted">
+                  Be the spark — follow a few makers, or post a Collab.
+                </p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2 sm:shrink-0">
@@ -108,13 +133,27 @@ function TickerItem({ pulse }: { pulse: Pulse }) {
   const base =
     "group inline-flex shrink-0 items-center gap-2 rounded-full border border-border/60 bg-surface px-3 py-1.5 text-xs text-ink-soft transition hover:border-primary/40 hover:text-ink";
   const iconFor = (k: Pulse["kind"]) =>
-    k === "event" ? <Calendar className="h-3 w-3" /> :
-    k === "work" ? <Hammer className="h-3 w-3" /> :
-    k === "collab" ? <Megaphone className="h-3 w-3" /> :
-    k === "blog" ? <BookOpen className="h-3 w-3" /> :
-    <Users className="h-3 w-3" />;
+    k === "event" ? (
+      <Calendar className="h-3 w-3" />
+    ) : k === "work" ? (
+      <Hammer className="h-3 w-3" />
+    ) : k === "collab" ? (
+      <Megaphone className="h-3 w-3" />
+    ) : k === "blog" ? (
+      <BookOpen className="h-3 w-3" />
+    ) : (
+      <Users className="h-3 w-3" />
+    );
   const labelFor = (k: Pulse["kind"]) =>
-    k === "event" ? "Event" : k === "work" ? "New work" : k === "collab" ? "Open collab" : k === "blog" ? "Read" : "Group";
+    k === "event"
+      ? "Event"
+      : k === "work"
+        ? "New work"
+        : k === "collab"
+          ? "Open collab"
+          : k === "blog"
+            ? "Read"
+            : "Group";
   const eyebrow = (
     <span className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.1em] text-ink-muted">
       {iconFor(pulse.kind)} {labelFor(pulse.kind)}
@@ -129,7 +168,11 @@ function TickerItem({ pulse }: { pulse: Pulse }) {
   );
   if (pulse.kind === "event") {
     return (
-      <Link to="/g/$slug/e/$eventSlug" params={{ slug: pulse.group_slug, eventSlug: pulse.event_slug }} className={base}>
+      <Link
+        to="/g/$slug/e/$eventSlug"
+        params={{ slug: pulse.group_slug, eventSlug: pulse.event_slug }}
+        className={base}
+      >
         {body}
       </Link>
     );
@@ -180,7 +223,15 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
             "aspect-video w-full overflow-hidden rounded-xl bg-muted",
             !pulse.cover_url && "gradient-soft",
           )}
-          style={pulse.cover_url ? { backgroundImage: `url(${pulse.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+          style={
+            pulse.cover_url
+              ? {
+                  backgroundImage: `url(${pulse.cover_url})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
         />
         <div>
           <div className="line-clamp-1 font-display text-sm text-ink">{pulse.title}</div>
@@ -200,7 +251,7 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
           <PulseChip icon={<Hammer className="h-3 w-3" />} label="Gallery" />
           {(pulse.from_collab || pulse.from_workshop) && (
             <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
-              {pulse.from_workshop ? "from Lounge" : "from Collab"}
+              {pulse.from_workshop ? "from a Group session" : "from Collab"}
             </span>
           )}
         </div>
@@ -209,7 +260,15 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
             "aspect-video w-full overflow-hidden rounded-xl bg-muted",
             !pulse.cover_url && "gradient-soft",
           )}
-          style={pulse.cover_url ? { backgroundImage: `url(${pulse.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+          style={
+            pulse.cover_url
+              ? {
+                  backgroundImage: `url(${pulse.cover_url})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
         />
         <div className="line-clamp-2 font-display text-sm text-ink">{pulse.title}</div>
       </Link>
@@ -235,10 +294,20 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
             "aspect-video w-full overflow-hidden rounded-xl bg-muted",
             !pulse.cover_url && "gradient-soft",
           )}
-          style={pulse.cover_url ? { backgroundImage: `url(${pulse.cover_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+          style={
+            pulse.cover_url
+              ? {
+                  backgroundImage: `url(${pulse.cover_url})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
         />
         <div className="line-clamp-2 font-display text-sm text-ink">{pulse.title}</div>
-        {pulse.author_name && <div className="text-[11px] text-ink-muted">by {pulse.author_name}</div>}
+        {pulse.author_name && (
+          <div className="text-[11px] text-ink-muted">by {pulse.author_name}</div>
+        )}
       </Link>
     );
   }
@@ -253,7 +322,15 @@ function PulseCard({ pulse }: { pulse: Pulse }) {
             "h-10 w-10 shrink-0 rounded-full bg-muted",
             !pulse.avatar_url && "gradient-soft",
           )}
-          style={pulse.avatar_url ? { backgroundImage: `url(${pulse.avatar_url})`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}
+          style={
+            pulse.avatar_url
+              ? {
+                  backgroundImage: `url(${pulse.avatar_url})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
         />
         <div className="line-clamp-2 font-display text-sm text-ink">{pulse.name}</div>
       </div>
@@ -275,7 +352,9 @@ async function fetchPulse(): Promise<Pulse[]> {
   const [eventsRes, worksRes, collabsRes, groupsRes, blogRes] = await Promise.allSettled([
     supabase
       .from("group_events")
-      .select("id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)")
+      .select(
+        "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)",
+      )
       .eq("status", "scheduled")
       .eq("visibility", "public")
       .gte("starts_at", today)
@@ -290,7 +369,9 @@ async function fetchPulse(): Promise<Pulse[]> {
       .limit(4),
     supabase
       .from("collab_posts")
-      .select("id, title, slug, created_at, user:profiles!collab_posts_user_id_fkey(display_name,username)")
+      .select(
+        "id, title, slug, created_at, user:profiles!collab_posts_user_id_fkey(display_name,username)",
+      )
       .eq("status", "open")
       .order("created_at", { ascending: false })
       .limit(4),
@@ -313,7 +394,11 @@ async function fetchPulse(): Promise<Pulse[]> {
 
   if (eventsRes.status === "fulfilled" && eventsRes.value.data) {
     for (const r of eventsRes.value.data as Array<{
-      id: string; slug: string; title: string; starts_at: string; cover_url: string | null;
+      id: string;
+      slug: string;
+      title: string;
+      starts_at: string;
+      cover_url: string | null;
       group: { slug: string } | null;
     }>) {
       if (!r.group?.slug) continue;
@@ -331,8 +416,12 @@ async function fetchPulse(): Promise<Pulse[]> {
 
   if (worksRes.status === "fulfilled" && worksRes.value.data) {
     for (const r of worksRes.value.data as Array<{
-      id: string; title: string; slug: string; cover_url: string | null;
-      source_collab_post_id: string | null; source_workshop_id: string | null;
+      id: string;
+      title: string;
+      slug: string;
+      cover_url: string | null;
+      source_collab_post_id: string | null;
+      source_workshop_id: string | null;
     }>) {
       items.push({
         kind: "work",
@@ -348,7 +437,9 @@ async function fetchPulse(): Promise<Pulse[]> {
 
   if (collabsRes.status === "fulfilled" && collabsRes.value.data) {
     for (const r of collabsRes.value.data as Array<{
-      id: string; title: string; slug: string;
+      id: string;
+      title: string;
+      slug: string;
       user: { display_name: string | null; username: string | null } | null;
     }>) {
       items.push({
@@ -363,7 +454,10 @@ async function fetchPulse(): Promise<Pulse[]> {
 
   if (groupsRes.status === "fulfilled" && groupsRes.value.data) {
     for (const r of groupsRes.value.data as Array<{
-      id: string; name: string; slug: string; avatar_url: string | null;
+      id: string;
+      name: string;
+      slug: string;
+      avatar_url: string | null;
     }>) {
       items.push({
         kind: "group",
@@ -377,7 +471,11 @@ async function fetchPulse(): Promise<Pulse[]> {
 
   if (blogRes.status === "fulfilled" && blogRes.value.data) {
     for (const r of blogRes.value.data as Array<{
-      id: string; title: string; slug: string; cover_image_url: string | null; author_name: string | null;
+      id: string;
+      title: string;
+      slug: string;
+      cover_image_url: string | null;
+      author_name: string | null;
     }>) {
       items.push({
         kind: "blog",
@@ -390,9 +488,14 @@ async function fetchPulse(): Promise<Pulse[]> {
     }
   }
 
-
   // Light interleave so kinds aren't clumped: round-robin by kind.
-  const byKind: Record<Pulse["kind"], Pulse[]> = { event: [], work: [], collab: [], group: [], blog: [] };
+  const byKind: Record<Pulse["kind"], Pulse[]> = {
+    event: [],
+    work: [],
+    collab: [],
+    group: [],
+    blog: [],
+  };
   for (const it of items) byKind[it.kind].push(it);
   const order: Pulse["kind"][] = ["event", "work", "blog", "collab", "group"];
   const interleaved: Pulse[] = [];

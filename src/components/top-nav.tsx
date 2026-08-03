@@ -36,10 +36,8 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { GroupsNavItem } from "@/components/groups-nav-item";
 
-const navLinkBase =
-  "rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition";
-const navLinkActive =
-  "rounded-full px-3 py-1.5 text-sm text-ink bg-muted";
+const navLinkBase = "rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition";
+const navLinkActive = "rounded-full px-3 py-1.5 text-sm text-ink bg-muted";
 
 export function TopNav() {
   const { user, loading } = useAuth();
@@ -71,14 +69,6 @@ export function TopNav() {
 
         {/* Center: primary nav */}
         <nav className="flex flex-1 items-center justify-center gap-1">
-          <Link
-            data-firstrun="instant"
-            to="/lounge"
-            className={navLinkBase}
-            activeProps={{ className: navLinkActive }}
-          >
-            Lounge
-          </Link>
           <GroupsNavItem />
           <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
             Collabs
@@ -86,12 +76,14 @@ export function TopNav() {
           <MoreNavMenu />
         </nav>
 
-
         <div className="flex flex-1 items-center justify-end gap-2">
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button data-firstrun="collab" size="sm" className="hidden md:inline-flex rounded-full gap-1.5">
+              <Button
+                data-firstrun="collab"
+                size="sm"
+                className="hidden md:inline-flex rounded-full gap-1.5"
+              >
                 <Plus className="h-4 w-4" /> Create
               </Button>
             </DropdownMenuTrigger>
@@ -116,100 +108,105 @@ export function TopNav() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-
           {loading ? null : user ? (
             <>
-            <MessagesInboxButton />
-            <NotificationsBell />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button data-firstrun="publish" className="relative flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition" aria-label="Your account">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
-                    <AvatarFallback className="text-xs">{initial}</AvatarFallback>
-                  </Avatar>
-                </button>
+              <MessagesInboxButton />
+              <NotificationsBell />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    data-firstrun="publish"
+                    className="relative flex items-center rounded-full ring-1 ring-border hover:ring-border-strong transition"
+                    aria-label="Your account"
+                  >
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user.user_metadata?.avatar_url} />
+                      <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-60">
+                  {/* Identity header → profile */}
+                  <button
+                    type="button"
+                    onClick={() => navigate({ to: "/me" })}
+                    className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-muted/70 rounded-sm transition"
+                  >
+                    <Avatar className="h-9 w-9">
+                      <AvatarImage src={user.user_metadata?.avatar_url} />
+                      <AvatarFallback className="text-xs">{initial}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-ink">{displayName}</div>
+                      <div className="truncate text-xs text-ink-muted">View your profile</div>
+                    </div>
+                  </button>
 
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-60">
-                {/* Identity header → profile */}
-                <button
-                  type="button"
-                  onClick={() => navigate({ to: "/me" })}
-                  className="flex w-full items-center gap-3 px-2 py-2 text-left hover:bg-muted/70 rounded-sm transition"
-                >
-                  <Avatar className="h-9 w-9">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
-                    <AvatarFallback className="text-xs">{initial}</AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <div className="truncate text-sm font-medium text-ink">{displayName}</div>
-                    <div className="truncate text-xs text-ink-muted">View your profile</div>
-                  </div>
-                </button>
+                  <DropdownMenuSeparator />
 
-                <DropdownMenuSeparator />
+                  {/* My stuff submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <Briefcase className="mr-2 h-4 w-4" /> My stuff
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="w-52">
+                      <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
+                        <Briefcase className="mr-2 h-4 w-4" /> My Collabs
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
+                        <Users className="mr-2 h-4 w-4" /> Network
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
+                        <BookOpen className="mr-2 h-4 w-4" /> Blog posts
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => navigate({ to: "/events", search: { mine: true } })}
+                      >
+                        <Ticket className="mr-2 h-4 w-4" /> My RSVPs
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
+                        <Gift className="mr-2 h-4 w-4" /> Refer & Earn
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
 
-                {/* My stuff submenu */}
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <Briefcase className="mr-2 h-4 w-4" /> My stuff
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-52">
-                    <DropdownMenuItem onClick={() => navigate({ to: "/me/collabs" })}>
-                      <Briefcase className="mr-2 h-4 w-4" /> My Collabs
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: "/me/network" })}>
-                      <Users className="mr-2 h-4 w-4" /> Network
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: "/me/blog" })}>
-                      <BookOpen className="mr-2 h-4 w-4" /> Blog posts
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: "/events", search: { mine: true } })}>
-                      <Ticket className="mr-2 h-4 w-4" /> My RSVPs
+                  <DropdownMenuSeparator />
 
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate({ to: "/refer" })}>
-                      <Gift className="mr-2 h-4 w-4" /> Refer & Earn
-                    </DropdownMenuItem>
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
+                  <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
+                    <SettingsIcon className="mr-2 h-4 w-4" /> Settings
+                  </DropdownMenuItem>
 
-                <DropdownMenuSeparator />
-
-                <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
-                  <SettingsIcon className="mr-2 h-4 w-4" /> Settings
-                </DropdownMenuItem>
-
-
-
-                {isAdmin && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
-                      <Shield className="mr-2 h-4 w-4" /> Admin
-                    </DropdownMenuItem>
-                  </>
-                )}
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate({ to: "/" });
-                  }}
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
+                        <Shield className="mr-2 h-4 w-4" /> Admin
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={async () => {
+                      await supabase.auth.signOut();
+                      navigate({ to: "/" });
+                    }}
+                  >
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
               <Link to="/login" className="hidden md:block">
-                <Button size="sm" variant="ghost" className="rounded-full">Sign in</Button>
+                <Button size="sm" variant="ghost" className="rounded-full">
+                  Sign in
+                </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" variant="outline" className="rounded-full">Get started</Button>
+                <Button size="sm" variant="outline" className="rounded-full">
+                  Get started
+                </Button>
               </Link>
             </>
           )}
@@ -256,5 +253,3 @@ function MoreNavMenu() {
     </DropdownMenu>
   );
 }
-
-
