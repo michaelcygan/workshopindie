@@ -59,7 +59,7 @@ function CheckoutReturn() {
         ) : (
           <>
             <Link to="/me"><Button className="rounded-full">Go to your profile</Button></Link>
-            <Link to="/lounge"><Button variant="outline" className="rounded-full">Drop in</Button></Link>
+            <Link to="/groups"><Button variant="outline" className="rounded-full">Find your group</Button></Link>
           </>
         )}
       </div>

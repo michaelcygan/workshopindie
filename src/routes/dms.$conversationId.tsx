@@ -514,7 +514,7 @@ function DmsThread() {
                   to="/workshops/$slug"
                   params={{ slug: workshop.slug }}
                   className="inline-flex max-w-full items-center rounded-full bg-violet/10 px-2 py-0.5 text-[11px] text-violet hover:bg-violet/15"
-                  title={`Re: ${workshop.title ?? "Lounge"}`}
+                  title={`Re: ${workshop.title ?? "Group audio"}`}
                 >
                   <span className="truncate">Re: {workshop.title ?? "Workshop"}</span>
                 </Link>

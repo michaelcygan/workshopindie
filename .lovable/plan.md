@@ -1,43 +1,81 @@
-## Wave 3 — Navigation, Home, and legacy Lounge routes
+## Wave 4 — "Lounge" language retirement and group-backed destination consolidation
 
-Finishes the consolidation: Groups become the destination, Lounge stays as infrastructure and compatibility only. No table changes, no deletion of realtime code.
+Wave 3 made Groups the destination and kept Lounge as infrastructure. Wave 4 finishes the job by removing the word "Lounge" from every user-facing surface and ensuring any group-backed room experience flows through the Group page (`/g/$slug`). Files, functions, and tables keep their names to avoid churn and keep external links alive.
 
-### 1. Navigation
+### 1. User-facing copy rebrand: "Lounge" → "Group audio" / "live audio"
 
-**`src/components/top-nav.tsx`** — remove the `/lounge` primary nav link (currently the first item, carrying `data-firstrun="instant"`). Groups moves into that first slot; move the `data-firstrun` hook onto the Groups item so the first-run tour still has an anchor. Order becomes Groups · Collabs · More.
+**`src/lib/entitlement-copy.ts`**
+- Rename `PlusGateReason` value `lounge_limit` → `audio_limit` (and keep an alias for any internal callers if needed).
+- Update `plusGateCopy("lounge_limit")` title/body to "Group audio" framing.
+- Update `loungeAudioQuotaCopy` title, body, and chip to say "Group audio" instead of "Lounge audio".
+- Update `freePlanBullets` and `plusPlanBullets` bullet text.
 
-**`src/components/mobile-island/mobile-tabs-config.ts`** — replace the `lounge` tab (`/lounge`, `Radio`) with a `groups` entry (`/groups`, `Users`) on the left side, keeping the existing four-slot layout. Tab id union updates accordingly.
+**`src/lib/entitlements.ts`**
+- Update JSDoc copy and field descriptions to describe "Group audio" (no public API change; the field `loungeMinutesPerMonth` remains internal).
 
-**`src/components/mobile-island/use-active-tab.ts`** — `/lounge` and `/lounge/*` no longer map to a tab; `/g/*` and `/groups` map to `groups`.
+**`src/routes/settings.tsx`**
+- Usage meter label: "Lounge" → "Audio".
+- Privacy section subtitle: "Lounge contributions" → "Group audio contributions".
+- Age filter label: "Lounges age filter" → "Audio age filter".
+- CC consent section title/body: "Lounge rights" / "enter a Lounge" → "Audio rights" / "join Group audio".
+- Notification preference row: "Lounge updates" → "Group audio updates".
+- Data export description: "Lounges" → "audio sessions".
 
-**`src/components/site-footer.tsx`** — drop the Lounge link from the public Explore list (line ~137). Keep the `/lounge/` hide-footer path rule intact, since rooms still render.
+**`src/routes/me.friends.tsx`**
+- Meta description: "Lounges" → "Group audio".
+- Logged-out empty state: "Lounges" → "live audio".
+- `inviteLabel` on `FriendRow`: "Invite to Lounge" → "Invite to audio".
 
-**`src/components/welcome-tour.tsx`** — the "Drop into a live Lounge" step becomes a Groups step pointing at `/groups`, described as joining a scene where Today chat and audio live.
+### 2. Group rooms route through `/g/$slug`
 
-### 2. Home "Pulse" row
+**`src/components/group-lounges-rail.tsx`**
+- Currently links to `/lounge/$id` and is only rendered inside `/lounge` (which redirects). If it stays in the product, it should link to the group page instead.
+- Extend `listMyGroupLounges` in `src/lib/instant.functions.ts` to return `groupSlug`.
+- Update the card to `to="/g/$slug"` with a search param that auto-opens the audio dock (`?t=audio` or `?audio=1`).
+- Update copy to "Group audio" / "live now".
 
-**`src/components/home-pulse-rail.tsx`** — the only Lounge surface here is the `from_workshop ? "from Lounge"` label. Relabel to "from a Group session" so Pulse stops advertising Lounge as a destination; the underlying `from_workshop` derivation is unchanged.
+**`src/components/lounge-invite-dialog.tsx`**
+- Extend `LiveLoungeRoom` in `src/lib/friends.functions.ts` to include `groupSlug` (already selecting `group_id` from `instant_rooms`).
+- In the dialog: label rooms as "Group audio" when `groupSlug` is set; the "Open a new one together" fallback navigates to `/groups` instead of `/lounge`.
+- When sending an invite, include `groupSlug` in the notification payload so the receiver lands on the group page.
 
-**`src/components/home/now-module.tsx`** — the live row currently links to `/lounge/$id` and falls back to "Open a Lounge" → `/lounge`. Repoint both at Groups: an active session links to its group (`/g/$slug`, using `HomeLounge.groupSlug`), and the empty state becomes "Open a Group" → `/groups`. If `HomeLounge` does not already carry a group slug, add it in `myGroupLoungesServer()` in `src/lib/home.server.ts` (the rows already join `instant_rooms.group_id`) and to the `HomeLounge` type in `src/lib/home-types.ts`.
+**`src/components/notifications-bell.tsx`**
+- `lounge_invite` notification title: "invited you into a Lounge" → "invited you into Group audio".
+- Derive `href`: if the payload has `group_slug`, link to `/g/$slug`; otherwise keep `/lounge/${roomId}` for legacy/non-group rooms.
 
-### 3. Legacy `/lounge` routes
+**`src/routes/lounge.$id.tsx`**
+- The group-room redirect already exists. No change required, but verify it fires correctly for all group-backed rooms.
 
-Both routes stay on disk — external links, invites, and notifications still point at them.
+### 3. Remove unused Lounge destination surfaces
 
-**`src/routes/lounge.index.tsx`** — keep the route, but make it a redirect surface rather than a competing destination: `beforeLoad` issues `redirect({ to: "/groups" })`. The existing matchmaking UI (`joinLounge`, `LiveTopicsList`, `GroupLoungesRail`, etc.) is left in the file's history but no longer rendered from this path; the server fns it calls remain untouched for Group audio.
+**`src/components/group/group-lounge-card.tsx`**
+- Not currently imported anywhere. Delete this file to avoid stale "Lounge" language.
 
-**`src/routes/lounge.$id.tsx`** — keep the room fully functional (Group audio dock currently depends on the same realtime stack), but add a soft compatibility redirect: on load, look up the room's `group_id`; when set, redirect to that group's page so the group owns the experience. Rooms with no `group_id` (legacy/instant/collab-spawned) continue to render in place exactly as today.
+**`src/routes/lounge.index.tsx`**
+- The `beforeLoad` redirect already prevents the UI from rendering. Simplify the file to the redirect + `RequireAuth` placeholder only, stripping the unused matchmaking UI, topics, and `GroupLoungesRail`. This is purely cleanup; the route still exists for external links.
 
-**Metadata** — `/lounge` head copy no longer advertises a standalone product; title/description shift to a short "Redirecting to Groups" framing with `robots: noindex`, so search results stop surfacing Lounge as a top-level destination.
+### 4. Legacy/edge references
 
-### Out of scope (explicitly untouched)
+**`src/components/channel-view.tsx` and `src/components/stream-lounge-provider.tsx`**
+- Keep internal names as-is. Only audit for any user-visible copy (e.g., "Lounge" in loading/error text) and update it to "Group audio".
 
-`use-stream-lounge-audio.ts`, `stream-lounge-provider.tsx`, `lounge-access.*`, `lounge-telemetry.*`, `lounge-constants.ts`, `lounge-invite*`, `channel-view.tsx`, `instant_*` tables and RPCs, and every Group audio file added in Waves 1–2. Signed-in Group behavior from Wave 2 is unchanged.
+**`src/routes/workshops.*`**
+- References are only comments. No action needed.
+
+**`src/lib/lounge-*.ts`, `src/lib/instant.ts`, `src/lib/stream-video.*`**
+- Leave file/function names and internal code alone. Rename only user-facing strings or comments if they describe the product as "Lounge".
+
+### 5. Notification payload update
+
+**`src/lib/friends.functions.ts` (`inviteFriendToLounge`)**
+- Include `group_slug` in the `notifications` payload when `room.group_id` is set. If `group_slug` is unavailable, include `group_id` and let the client resolve it, or join `groups` in the insert query.
 
 ### Verification
 
-Typecheck with `tsgo`, Prettier + ESLint on changed files only, then a Playwright pass: anonymous and signed-in nav render without Lounge; `/lounge` redirects to `/groups`; a group-backed `/lounge/$id` lands on its group; a non-group room still opens; mobile island shows the Groups tab and highlights it on `/g/*`; no console errors.
+- Typecheck with `tsgo`.
+- Search the codebase for user-visible "Lounge" strings after edits (excluding file paths, internal identifiers, and route names like `/lounge/*`).
+- Playwright pass: group audio flows from the Group hero, friend invite dialog, notification bell, and `/lounge/$id` redirect all work; no console errors.
 
 ### Files expected to change
 
-`src/components/top-nav.tsx`, `src/components/mobile-island/mobile-tabs-config.ts`, `src/components/mobile-island/use-active-tab.ts`, `src/components/site-footer.tsx`, `src/components/welcome-tour.tsx`, `src/components/home-pulse-rail.tsx`, `src/components/home/now-module.tsx`, `src/lib/home.server.ts`, `src/lib/home-types.ts`, `src/routes/lounge.index.tsx`, `src/routes/lounge.$id.tsx`.
+`src/lib/entitlement-copy.ts`, `src/lib/entitlements.ts`, `src/routes/settings.tsx`, `src/routes/me.friends.tsx`, `src/components/lounge-invite-dialog.tsx`, `src/components/notifications-bell.tsx`, `src/components/group-lounges-rail.tsx`, `src/lib/instant.functions.ts`, `src/lib/friends.functions.ts`, `src/components/group/group-lounge-card.tsx` (delete), `src/routes/lounge.index.tsx` (simplify).

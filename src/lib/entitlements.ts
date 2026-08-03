@@ -7,7 +7,7 @@
  * best-effort client checks that must agree with the server.
  *
  * Product rules (source of truth):
- *   - Free: 10 published Works, 2 open Collabs, 10 h/mo Lounge audio,
+ *   - Free: 10 published Works, 2 open Collabs, 10 h/mo Group audio,
  *     2 Blog publications / UTC calendar month. Drafts unlimited.
  *   - Plus: everything unlimited. Only removes operating limits — no status,
  *     ranking, priority, or badge changes.
