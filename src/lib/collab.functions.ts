@@ -292,8 +292,8 @@ export const listApplicants = createServerFn({ method: "POST" })
     return { members, guests };
   });
 
-const REVIEW_STATUSES = ["new", "reviewing", "accepted", "declined", "withdrawn", "spam"] as const;
-export type CollabReviewStatus = (typeof REVIEW_STATUSES)[number];
+const reviewStatusEnum = z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]);
+
 
 /** Owner-only review vocabulary for member applications (collab_contact_events). */
 export const setApplicationReviewStatus = createServerFn({ method: "POST" })
