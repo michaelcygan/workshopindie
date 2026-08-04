@@ -162,7 +162,7 @@ export function renderTodayBody(body: string): ReactNode {
           <Link
             to="/g/$slug"
             params={{ slug: s.slug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
           >
             <Users className="h-3 w-3" />
             {s.label}
@@ -176,7 +176,7 @@ export function renderTodayBody(body: string): ReactNode {
           <Link
             to="/g/$slug/e/$eventSlug"
             params={{ slug: s.groupSlug, eventSlug: s.eventSlug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
           >
             <Calendar className="h-3 w-3" />
             {s.label}
@@ -276,7 +276,7 @@ function WorkPill({ label, slug }: { label: string; slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
       >
         <ImageIcon className="h-3 w-3" />
         {label}
@@ -293,7 +293,7 @@ function PostPill({ label, slug }: { label: string; slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
       >
         <BookOpen className="h-3 w-3" />
         {label}

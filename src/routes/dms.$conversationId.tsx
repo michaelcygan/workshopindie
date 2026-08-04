@@ -476,7 +476,7 @@ function DmsThread() {
         <div className="relative">
           <Avatar className="h-10 w-10 ring-1 ring-border">
             {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
-            <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+            <AvatarFallback className="bg-gradient-to-br from-primary/15 to-destructive/15 font-display text-sm text-ink">
               {initials(other)}
             </AvatarFallback>
           </Avatar>
@@ -513,7 +513,7 @@ function DmsThread() {
                 <Link
                   to="/workshops/$slug"
                   params={{ slug: workshop.slug }}
-                  className="inline-flex max-w-full items-center rounded-full bg-violet/10 px-2 py-0.5 text-[11px] text-violet hover:bg-violet/15"
+                  className="inline-flex max-w-full items-center rounded-full bg-signal/10 px-2 py-0.5 text-[11px] text-signal hover:bg-signal/15"
                   title={`Re: ${workshop.title ?? "Group audio"}`}
                 >
                   <span className="truncate">Re: {workshop.title ?? "Workshop"}</span>
@@ -557,7 +557,7 @@ function DmsThread() {
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => setBlockOpen(true)}
-              className="text-coral focus:text-coral"
+              className="text-destructive focus:text-destructive"
             >
               <UserX className="mr-2 h-4 w-4" /> Block
             </DropdownMenuItem>
@@ -611,11 +611,11 @@ function DmsThread() {
             if (g.kind === "unread-divider") {
               return (
                 <div key={g.id} className="my-3 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-coral/40" />
-                  <span className="rounded-full bg-coral/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-coral">
+                  <div className="h-px flex-1 bg-destructive/40" />
+                  <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-destructive">
                     New
                   </span>
-                  <div className="h-px flex-1 bg-coral/40" />
+                  <div className="h-px flex-1 bg-destructive/40" />
                 </div>
               );
             }
@@ -647,7 +647,7 @@ function DmsThread() {
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <label htmlFor="dm-composer" className="sr-only">Message</label>
-        <div className="relative flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+        <div className="relative flex items-end gap-2 rounded-xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
           <MentionPopover
             open={mentionOpen}
             query={mention?.query ?? ""}
@@ -697,7 +697,7 @@ function DmsThread() {
           />
           <div className="flex shrink-0 items-center gap-1.5 pb-1 pr-1">
             {showCounter && (
-              <span className={`text-[11px] ${charsLeft < 0 ? "text-coral" : "text-ink-muted"}`}>
+              <span className={`text-[11px] ${charsLeft < 0 ? "text-destructive" : "text-ink-muted"}`}>
                 {charsLeft}
               </span>
             )}
@@ -758,7 +758,7 @@ function DmsThread() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={blockOther} className="bg-coral text-background hover:bg-coral/90">
+            <AlertDialogAction onClick={blockOther} className="bg-destructive text-background hover:bg-destructive/90">
               Block
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -884,7 +884,7 @@ function MessageCluster({
               className={`${radius} px-3.5 py-2 text-sm ${
                 mine
                   ? m._failed
-                    ? "bg-coral/15 text-coral border border-coral/40"
+                    ? "bg-destructive/15 text-destructive border border-destructive/40"
                     : `bg-ink text-background ${m._optimistic ? "opacity-70" : ""}`
                   : "bg-surface-2 text-ink border border-border"
               } transition`}
@@ -903,7 +903,7 @@ function MessageCluster({
               <button
                 type="button"
                 onClick={() => onRetry(m)}
-                className="mt-0.5 mr-1 text-[10px] text-coral underline-offset-2 hover:underline"
+                className="mt-0.5 mr-1 text-[10px] text-destructive underline-offset-2 hover:underline"
               >
                 Failed — tap to retry
               </button>

@@ -38,7 +38,7 @@ function SubscribersPage() {
             {data ? `${data.active} active · ${data.total} total` : "Loading…"}
           </p>
         </div>
-        <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={download}>
+        <Button variant="outline" size="sm" className="rounded-md gap-1.5" onClick={download}>
           <Download className="h-4 w-4" /> Export CSV
         </Button>
       </div>

@@ -243,21 +243,21 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Link to="/admin/blog" className="text-sm text-ink-muted hover:text-ink">← Blog</Link>
           <div className="ml-auto flex items-center gap-2">
-            <Button variant="outline" size="sm" className="rounded-full" onClick={onSave} disabled={saving}>
+            <Button variant="outline" size="sm" className="rounded-md" onClick={onSave} disabled={saving}>
               {saving ? "Saving…" : "Save draft"}
             </Button>
             {isPublished ? (
-              <Button variant="outline" size="sm" className="rounded-full" onClick={onUnpublish}>Unpublish</Button>
+              <Button variant="outline" size="sm" className="rounded-md" onClick={onUnpublish}>Unpublish</Button>
             ) : (
-              <Button size="sm" className="rounded-full" onClick={onPublish}>{everPublished ? "Republish" : "Publish"}</Button>
+              <Button size="sm" className="rounded-md" onClick={onPublish}>{everPublished ? "Republish" : "Publish"}</Button>
             )}
             {isPublished && (
               <Link to="/blog/$slug" params={{ slug: initial!.slug! }} target="_blank">
-                <Button variant="ghost" size="sm" className="rounded-full">View</Button>
+                <Button variant="ghost" size="sm" className="rounded-md">View</Button>
               </Link>
             )}
             {!everPublished && !isNew && (
-              <Button variant="ghost" size="sm" className="rounded-full text-destructive" onClick={onDelete}>Delete</Button>
+              <Button variant="ghost" size="sm" className="rounded-md text-destructive" onClick={onDelete}>Delete</Button>
             )}
           </div>
         </div>
@@ -534,7 +534,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             {cover ? (
               <img src={cover} alt="" className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full gradient-motion" />
+              <div className="aspect-video w-full bg-secondary" />
             )}
             <div className="p-3">
               <div className="text-xs text-ink-muted">workshopindie.com</div>

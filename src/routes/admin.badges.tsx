@@ -65,7 +65,7 @@ function BadgesAdmin() {
             placeholder="Username or display name…"
             className="rounded-full"
           />
-          <Button className="rounded-full gap-1.5" onClick={search} disabled={loading}>
+          <Button className="rounded-md gap-1.5" onClick={search} disabled={loading}>
             <Search className="h-4 w-4" /> Search
           </Button>
         </div>

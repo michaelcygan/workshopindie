@@ -39,7 +39,7 @@ function Slide({ post }: { post: HomeBlogCard }) {
             className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full w-full items-end gradient-motion p-2 opacity-80">
+          <div className="flex h-full w-full items-end bg-secondary p-2 opacity-80">
             <span className="font-display text-[11px] uppercase tracking-widest text-ink/70">
               Workshop
             </span>
@@ -160,7 +160,7 @@ export function HomeFeaturedBlog({
     >
       <p className="font-display text-lg leading-tight text-ink md:text-xl">{greeting}.</p>
 
-      <div className="mt-2 rounded-3xl border border-border bg-surface p-3 md:p-4">
+      <div className="mt-2 rounded-xl border border-border bg-surface p-3 md:p-4">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">
             {isFallback ? "Latest from the Blog" : "Featured from the Blog"}

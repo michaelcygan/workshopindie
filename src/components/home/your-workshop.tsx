@@ -34,7 +34,7 @@ function Cover({
     );
   }
   return (
-    <div className="flex aspect-[16/10] w-full items-end gradient-motion p-3 opacity-80">
+    <div className="flex aspect-[16/10] w-full items-end bg-secondary p-3 opacity-80">
       <span className="line-clamp-2 font-display text-sm leading-snug text-ink/80">{title}</span>
     </div>
   );
@@ -45,7 +45,7 @@ function MineCard({ item }: { item: HomeMineItem }) {
     <Link
       to={item.to as never}
       params={item.params as never}
-      className="group flex w-[70vw] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-auto"
+      className="group flex w-[70vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-auto"
     >
       <Cover url={item.coverUrl} focalX={item.focalX} focalY={item.focalY} title={item.title} />
       <div className="flex flex-1 flex-col gap-1 p-3.5">
@@ -142,16 +142,16 @@ export function YourWorkshop({
           ))}
         </div>
       ) : (
-        <div className="flex flex-wrap items-center gap-3 rounded-3xl border border-dashed border-border bg-surface-2/40 px-4 py-3.5">
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-dashed border-border bg-surface-2/40 px-4 py-3.5">
           <p className="min-w-0 flex-1 text-sm text-ink-soft">
             Nothing published yet — start with one thing.
           </p>
-          <Button asChild size="sm" className="rounded-full gap-1.5">
+          <Button asChild size="sm" className="rounded-md gap-1.5">
             <Link to="/works/new">
               <Sparkles className="h-3.5 w-3.5" /> Post a Work
             </Link>
           </Button>
-          <Button asChild size="sm" variant="outline" className="rounded-full gap-1.5">
+          <Button asChild size="sm" variant="outline" className="rounded-md gap-1.5">
             <Link to="/me/blog">
               <PenLine className="h-3.5 w-3.5" /> Write a story
             </Link>

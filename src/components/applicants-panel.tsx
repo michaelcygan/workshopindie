@@ -160,7 +160,7 @@ export function ApplicantsPanel({ postId }: Props) {
                   ) : (
                     <Button
                       size="sm"
-                      className="rounded-full gap-1"
+                      className="rounded-md gap-1"
                       disabled={accept.isPending}
                       onClick={() => accept.mutate({ applicantUserId: m.sender_user_id, contactEventId: m.id })}
                     >
@@ -168,7 +168,7 @@ export function ApplicantsPanel({ postId }: Props) {
                     </Button>
                   )}
                   {m.conversation_id && (
-                    <Button asChild size="sm" variant={m.accepted ? "secondary" : "outline"} className="rounded-full gap-1">
+                    <Button asChild size="sm" variant={m.accepted ? "secondary" : "outline"} className="rounded-md gap-1">
                       <Link to="/dms/$conversationId" params={{ conversationId: m.conversation_id }}>
                         <Send className="h-3.5 w-3.5" /> {m.accepted ? "Message" : "Reply"}
                       </Link>
@@ -243,7 +243,7 @@ export function ApplicantsPanel({ postId }: Props) {
                   <Button
                     size="sm"
                     variant={g.status === "contacted" ? "secondary" : "outline"}
-                    className="rounded-full gap-1"
+                    className="rounded-md gap-1"
                     onClick={() => setStatus.mutate({ id: g.id, status: g.status === "contacted" ? "new" : "contacted" })}
                   >
                     <Check className="h-3.5 w-3.5" /> {g.status === "contacted" ? "Done" : "Mark contacted"}
@@ -251,7 +251,7 @@ export function ApplicantsPanel({ postId }: Props) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="rounded-full gap-1 text-ink-muted hover:text-destructive"
+                    className="rounded-md gap-1 text-ink-muted hover:text-destructive"
                     onClick={() => setStatus.mutate({ id: g.id, status: g.status === "spam" ? "new" : "spam" })}
                   >
                     <Trash2 className="h-3.5 w-3.5" /> {g.status === "spam" ? "Unspam" : "Spam"}

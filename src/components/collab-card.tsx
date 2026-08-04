@@ -99,7 +99,7 @@ export function CollabCard({
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       whileHover={{ y: -3 }}
       className={cn(
-        "group relative flex flex-col overflow-hidden rounded-3xl border bg-surface shadow-soft transition-shadow hover:shadow-lift",
+        "group relative flex flex-col overflow-hidden rounded-xl border bg-surface shadow-soft transition-shadow hover:shadow-lift",
         "border-border",
         isLive && "ring-1 ring-primary/30",
         className,
@@ -133,7 +133,7 @@ export function CollabCard({
 
 
       <div className="flex flex-1 flex-col gap-3 px-5 pb-5 pt-3">
-        <h3 className="font-display text-[20px] leading-[1.15] text-ink line-clamp-2 break-words transition-colors group-hover:text-gradient-motion sm:text-[22px]">
+        <h3 className="font-display text-[20px] leading-[1.15] text-ink line-clamp-2 break-words transition-colors group-hover:text-signal sm:text-[22px]">
           {post.title}
         </h3>
         <InlineGroupChips groups={groups} myGroupIds={myGroupIds} />

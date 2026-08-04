@@ -48,7 +48,7 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
       <div
         className={cn(
           "relative h-36 w-full",
-          event.cover_url ? "bg-cover bg-center" : "gradient-motion",
+          event.cover_url ? "bg-cover bg-center" : "bg-secondary",
         )}
         style={event.cover_url ? { backgroundImage: `url(${event.cover_url})` } : undefined}
       >
@@ -118,7 +118,7 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
         target="_blank"
         rel="noopener noreferrer"
         className={cn(
-          "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
+          "group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
           className,
         )}
       >
@@ -132,7 +132,7 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
       to="/g/$slug/e/$eventSlug"
       params={{ slug: event.group.slug, eventSlug: event.slug }}
       className={cn(
-        "group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
+        "group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
         className,
       )}
     >

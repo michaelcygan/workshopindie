@@ -17,7 +17,7 @@ type Props = {
 export function GroupsSparkCard({ totalGroups, cityCount, microCount, onBrowseAll }: Props) {
   const { isAdmin } = useUserRoles();
   return (
-    <section className="rounded-3xl border border-border bg-surface p-4 shadow-soft">
+    <section className="rounded-xl border border-border bg-surface p-4 shadow-soft">
       <div className="mb-3 flex items-center gap-2 px-1">
         <Sparkles className="h-3.5 w-3.5 text-ink-muted" />
         <h3 className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-muted">

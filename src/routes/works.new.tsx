@@ -529,7 +529,7 @@ function NewWork() {
             <Button
               type="button"
               variant="ghost"
-              className="rounded-full mr-auto"
+              className="rounded-md mr-auto"
               onClick={() => {
                 if (step === "confirm") { setStep("drop"); setExtracted(null); }
                 else navigate({ to: "/" });
@@ -546,7 +546,7 @@ function NewWork() {
             >
               + Add another
             </Button>
-            <Button type="submit" disabled={submitting} className="rounded-full">
+            <Button type="submit" disabled={submitting} className="rounded-md">
               {submitting ? "Publishing…" : "Post to Gallery"}
             </Button>
           </div>
@@ -576,7 +576,7 @@ function DropStep({
       initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
       className="mt-8 space-y-6"
     >
-      <div className="rounded-3xl border border-border bg-surface p-6 shadow-soft md:p-8">
+      <div className="rounded-xl border border-border bg-surface p-6 shadow-soft md:p-8">
         <div className="flex items-center gap-2 text-sm text-ink-muted">
           <Sparkles className="h-4 w-4 text-primary" />
           Paste a link — we'll pull the cover, title, and embed
@@ -598,7 +598,7 @@ function DropStep({
               disabled={extracting}
             />
           </div>
-          <Button type="submit" disabled={extracting || !urlInput.trim()} className="h-12 rounded-full gap-1.5 px-5">
+          <Button type="submit" disabled={extracting || !urlInput.trim()} className="h-12 rounded-md gap-1.5 px-5">
             {extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading…</> : <>Continue <ArrowRight className="h-4 w-4" /></>}
           </Button>
         </form>
@@ -642,7 +642,7 @@ function PreviewCard({
 }) {
   const label = providerLabel(extracted.provider);
   return (
-    <div className="overflow-hidden rounded-3xl border border-border bg-surface shadow-soft">
+    <div className="overflow-hidden rounded-xl border border-border bg-surface shadow-soft">
       <EmbedPlayer url={embedUrl} provider={extracted.provider} title={title} className="rounded-none border-0" />
       <div className="p-4">
         <div className="flex items-center gap-2 text-xs text-ink-muted">

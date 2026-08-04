@@ -124,7 +124,7 @@ function AdminPlusPage() {
         </div>
         <div className="mt-4 flex justify-end">
           <Button
-            className="gradient-motion rounded-full text-primary-foreground"
+            className="bg-primary text-primary-foreground"
             disabled={!name.trim() || create.isPending || (benefitType === "months" && !Number(durationMonths))}
             onClick={() => create.mutate()}
           >

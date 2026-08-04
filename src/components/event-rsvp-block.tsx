@@ -98,7 +98,7 @@ export function EventRsvpBlock({
   }
 
   return (
-    <div className="rounded-3xl border border-border bg-surface p-4 shadow-soft sm:p-5">
+    <div className="rounded-xl border border-border bg-surface p-4 shadow-soft sm:p-5">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         <h3 className="font-display text-lg text-ink">RSVP</h3>
         {status === "waitlist" && (

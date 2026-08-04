@@ -120,7 +120,7 @@ export function MediaPanel({
     : null;
   const lowMinutes = remainingMinutes != null && remainingMinutes > 0 && remainingMinutes < 30;
   return (
-    <section className="rounded-3xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
+    <section className="rounded-xl border border-border/60 bg-surface/70 backdrop-blur-md p-4 shadow-soft">
       <header className="flex items-center gap-2">
         <span className="relative inline-flex h-1.5 w-1.5">
           <span className="absolute inset-0 animate-ping rounded-full bg-primary/60" />
@@ -1436,7 +1436,7 @@ function ChatPanel({
                   </div>
                   <div className={cn(
                     "max-w-[80%] rounded-2xl px-3 py-1.5 text-sm",
-                    mine ? "gradient-motion text-primary-foreground" : "bg-background/10 text-background",
+                    mine ? "bg-primary text-primary-foreground" : "bg-background/10 text-background",
                   )}>
                     {!mine && prof && (
                       <div className="text-[10px] font-medium opacity-60 mb-0.5">{prof.display_name || prof.username}</div>

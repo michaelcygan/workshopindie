@@ -60,7 +60,7 @@ export function GroupNextEvent({ group }: Props) {
   });
 
   return (
-    <section className="rounded-3xl border border-border bg-surface p-4">
+    <section className="rounded-xl border border-border bg-surface p-4">
       <header className="mb-3 flex items-center gap-2">
         <Calendar className="h-4 w-4 text-primary" />
         <h3 className="font-display text-base text-ink">Upcoming events</h3>

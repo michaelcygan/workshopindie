@@ -197,7 +197,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
                   }}
                   maxLength={80}
                 />
-                <Button type="button" variant="outline" className="rounded-full gap-1" disabled={!newExtra.trim()}
+                <Button type="button" variant="outline" className="rounded-md gap-1" disabled={!newExtra.trim()}
                   onClick={() => { setExtras((p) => [...p, { name: newExtra.trim() }]); setNewExtra(""); }}>
                   <Plus className="h-4 w-4" /> Add
                 </Button>
@@ -211,7 +211,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
                 {coverUrl ? (
                   <img src={coverUrl} alt="" className="h-24 w-20 shrink-0 rounded-xl object-cover" />
                 ) : (
-                  <div className="h-24 w-20 shrink-0 rounded-xl gradient-motion" />
+                  <div className="h-24 w-20 shrink-0 rounded-xl bg-secondary" />
                 )}
                 <div className="min-w-0 flex-1">
                   <h3 className="font-display text-xl text-ink line-clamp-2">{title}</h3>
@@ -230,11 +230,11 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
 
         <DialogFooter className="mt-4 gap-2">
           {step > 1 && (
-            <Button variant="ghost" className="rounded-full" onClick={() => setStep((s) => (s - 1) as Step)}>Back</Button>
+            <Button variant="ghost" className="rounded-md" onClick={() => setStep((s) => (s - 1) as Step)}>Back</Button>
           )}
           <div className="flex-1" />
           {step < 3 ? (
-            <Button className="rounded-full gap-1" onClick={next}>
+            <Button className="rounded-md gap-1" onClick={next}>
               Next <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (

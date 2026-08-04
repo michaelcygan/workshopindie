@@ -52,7 +52,7 @@ export const Route = createFileRoute("/g/$slug/e/$eventSlug")({
       <main className="mx-auto max-w-2xl px-4 py-20 text-center">
         <h1 className="font-display text-3xl text-ink">Couldn't load this event.</h1>
         <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
-        <Button onClick={() => { reset(); router.invalidate(); }} className="mt-6 rounded-full">Try again</Button>
+        <Button onClick={() => { reset(); router.invalidate(); }} className="mt-6 rounded-md">Try again</Button>
       </main>
     );
   },
@@ -219,7 +219,7 @@ function EventPage() {
     <main className="pb-28 md:pb-20">
       {/* Cover */}
       <div
-        className={cn("relative h-56 w-full md:h-80", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
+        className={cn("relative h-56 w-full md:h-80", ev.cover_url ? "bg-cover bg-center" : "bg-secondary")}
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />
@@ -248,7 +248,7 @@ function EventPage() {
       </div>
 
       <div className="mx-auto mt-6 max-w-2xl px-4 md:px-6">
-        <div className="rounded-3xl border border-border bg-surface p-6 shadow-lift">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-lift">
           <div className="flex items-center gap-2">
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-soft">
               <Tag className="h-3 w-3" /> {ev.kind.replace(/_/g, " ")}
@@ -463,7 +463,7 @@ function EventPage() {
             <EventAttendeeWork eventId={ev.id} />
           </div>
         ) : (
-          <div className="mt-6 rounded-3xl border border-dashed border-border bg-surface p-6 text-center">
+          <div className="mt-6 rounded-xl border border-dashed border-border bg-surface p-6 text-center">
             <Sparkles className="mx-auto mb-2 h-5 w-5 text-ink-muted" />
             <p className="text-sm text-ink-soft">
               <Link to="/login" className="font-medium text-primary underline">Sign in</Link> to see what people are bringing.
@@ -483,7 +483,7 @@ function EventPage() {
             </TabsList>
 
             <TabsContent value="wall" className="mt-5 space-y-5">
-              <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+              <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
                 <EventWall
                   eventId={ev.id}
                   canPost={myRsvp?.status === "going"}
@@ -498,7 +498,7 @@ function EventPage() {
 
             <TabsContent value="about" className="mt-5 space-y-6">
               {ev.description ? (
-                <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
                   <h3 className="mb-2 font-display text-lg text-ink">About</h3>
                   <p className="whitespace-pre-wrap text-sm text-ink-soft">{ev.description}</p>
                 </div>
@@ -508,7 +508,7 @@ function EventPage() {
                 </p>
               )}
               {updates && updates.length > 0 && (
-                <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+                <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
                   <h3 className="mb-3 font-display text-lg text-ink">Host updates</h3>
                   <ul className="space-y-3">
                     {updates.map((u) => (
@@ -609,10 +609,10 @@ function SeriesAdminStrip({ eventId, seriesKey }: { eventId: string; seriesKey: 
         <span className="font-medium text-ink">Part of a recurring series</span>
         <span className="text-xs text-ink-muted">Admin actions affect this and all future occurrences.</span>
         <div className="ml-auto flex items-center gap-1">
-          <Button size="sm" variant="ghost" className="h-7 rounded-full" disabled={busy} onClick={() => setEditing((e) => !e)}>
+          <Button size="sm" variant="ghost" className="h-7 rounded-md" disabled={busy} onClick={() => setEditing((e) => !e)}>
             {editing ? "Close" : "Edit all future"}
           </Button>
-          <Button size="sm" variant="ghost" className="h-7 rounded-full text-destructive" disabled={busy} onClick={cancelFuture}>
+          <Button size="sm" variant="ghost" className="h-7 rounded-md text-destructive" disabled={busy} onClick={cancelFuture}>
             Cancel all future
           </Button>
         </div>
@@ -636,7 +636,7 @@ function SeriesAdminStrip({ eventId, seriesKey }: { eventId: string; seriesKey: 
           <p className="text-[11px] text-ink-muted">
             Time, date, and cadence stay unchanged. Edit individual occurrences for time shifts.
           </p>
-          <Button size="sm" className="rounded-full" disabled={busy} onClick={applyEdit}>Apply to all future</Button>
+          <Button size="sm" className="rounded-md" disabled={busy} onClick={applyEdit}>Apply to all future</Button>
         </div>
       )}
     </div>

@@ -346,7 +346,7 @@ function AccountSection() {
         <Button
           variant="outline"
           size="sm"
-          className="rounded-full"
+          className="rounded-md"
           onClick={() => { setNewEmail(""); setEmailOpen(true); }}
         >
           Change
@@ -361,7 +361,7 @@ function AccountSection() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="rounded-md"
             disabled={resetting}
             onClick={sendPasswordReset}
           >
@@ -489,7 +489,7 @@ function PlusSection() {
     return (
       <div className="rounded-2xl border border-border bg-surface p-5">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 icon-gradient-motion" />
+          <Sparkles className="h-4 w-4 text-signal" />
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
         <ul className="mt-2 space-y-1">
@@ -503,12 +503,12 @@ function PlusSection() {
         <UsageSummary />
         <div className="mt-4 flex flex-wrap gap-2">
           <Link to="/pricing">
-            <Button size="sm" className="rounded-full">
+            <Button size="sm" className="rounded-md">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
             </Button>
           </Link>
           <Link to="/me/blog">
-            <Button size="sm" variant="outline" className="rounded-full">
+            <Button size="sm" variant="outline" className="rounded-md">
               Manage Blog
             </Button>
           </Link>
@@ -526,8 +526,8 @@ function PlusSection() {
     <div className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-          <Sparkles className="h-3 w-3 icon-gradient-motion" />
-          <span className="text-gradient-motion">Plus</span>
+          <Sparkles className="h-3 w-3 text-signal" />
+          <span className="text-signal">Plus</span>
         </span>
         <span className="text-sm text-ink-muted">
           {subscription?.status === "trialing" ? "Free trial" : "Active"}
@@ -546,7 +546,7 @@ function PlusSection() {
         <Button
           size="sm"
           variant="outline"
-          className="rounded-full"
+          className="rounded-md"
           onClick={openPortal}
           disabled={opening}
         >
@@ -554,13 +554,13 @@ function PlusSection() {
           <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
         </Button>
         <Link to="/me/blog">
-          <Button size="sm" variant="outline" className="rounded-full">
+          <Button size="sm" variant="outline" className="rounded-md">
             Manage Blog
           </Button>
         </Link>
         {willCancel && (
           <Link to="/pricing">
-            <Button size="sm" className="rounded-full">
+            <Button size="sm" className="rounded-md">
               Resume subscription
             </Button>
           </Link>
@@ -974,7 +974,7 @@ function BlockedSection() {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-full gap-1.5"
+              className="rounded-md gap-1.5"
               onClick={() => unblock(row.blocked_user_id)}
             >
               <Ban className="h-3.5 w-3.5" /> Unblock
@@ -1028,7 +1028,7 @@ function DangerSection() {
       <Button
         variant="destructive"
         size="sm"
-        className="mt-3 rounded-full"
+        className="mt-3 rounded-md"
         onClick={() => setOpen(true)}
       >
         Delete my account
@@ -1257,7 +1257,7 @@ function DataSection() {
         comments, follows, blocks, and reports filed. Useful for keeping a personal backup or
         moving your portfolio elsewhere.
       </p>
-      <Button size="sm" variant="outline" className="mt-3 rounded-full gap-1.5" onClick={download} disabled={busy}>
+      <Button size="sm" variant="outline" className="mt-3 rounded-md gap-1.5" onClick={download} disabled={busy}>
         <Download className="h-3.5 w-3.5" /> {busy ? "Preparing…" : "Download my data"}
       </Button>
       <p className="mt-3 text-xs text-ink-muted">

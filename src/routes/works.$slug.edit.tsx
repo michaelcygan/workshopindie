@@ -178,7 +178,7 @@ function EditWork() {
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-3xl text-ink">Not found</h1>
         <Link to="/gallery" className="mt-6 inline-block">
-          <Button variant="outline" className="rounded-full">Back to Gallery</Button>
+          <Button variant="outline" className="rounded-md">Back to Gallery</Button>
         </Link>
       </main>
     );
@@ -301,7 +301,7 @@ function EditWork() {
           <Button
             onClick={save}
             disabled={submitting}
-            className="rounded-full"
+            className="rounded-md"
           >
             {submitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…</> : "Save changes"}
           </Button>

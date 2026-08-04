@@ -59,7 +59,7 @@ export function GroupsJoinFeedCard({ hasGroups, onBrowseAll, className }: Props)
   return (
     <section
       className={cn(
-        "flex h-full flex-col rounded-3xl border border-border bg-surface p-4 shadow-soft",
+        "flex h-full flex-col rounded-xl border border-border bg-surface p-4 shadow-soft",
         className,
       )}
       onMouseEnter={() => setPaused(true)}

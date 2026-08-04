@@ -37,7 +37,7 @@ function CircleCard({ item }: { item: HomeCircleStory }) {
     <Link
       to={item.to as never}
       params={item.params as never}
-      className="group flex w-[74vw] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-[300px]"
+      className="group flex w-[74vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-[300px]"
     >
       {item.coverUrl ? (
         <img
@@ -47,7 +47,7 @@ function CircleCard({ item }: { item: HomeCircleStory }) {
           className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="aspect-[16/10] w-full gradient-motion opacity-60" />
+        <div className="aspect-[16/10] w-full bg-secondary opacity-60" />
       )}
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-ink-muted">
@@ -71,8 +71,8 @@ function HomeSkeleton() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
       <Skeleton className="h-8 w-56" />
-      <Skeleton className="mt-3 h-36 rounded-3xl" />
-      <Skeleton className="mt-6 h-40 rounded-3xl" />
+      <Skeleton className="mt-3 h-36 rounded-xl" />
+      <Skeleton className="mt-6 h-40 rounded-xl" />
     </div>
   );
 }
@@ -126,7 +126,7 @@ export function MemberHome() {
         >
           <BlogRail posts={data.blogRail} />
           <div className="mt-3">
-            <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+            <Button asChild variant="outline" size="sm" className="rounded-md gap-1.5">
               <Link to="/me/blog">
                 <PenLine className="h-3.5 w-3.5" /> Write a story
               </Link>
@@ -167,7 +167,7 @@ export function MemberHome() {
                 key={g.id}
                 to="/g/$slug"
                 params={{ slug: g.slug }}
-                className="group flex items-center gap-3 rounded-3xl border border-border bg-surface p-4 transition hover:border-ink/20"
+                className="group flex items-center gap-3 rounded-xl border border-border bg-surface p-4 transition hover:border-ink/20"
               >
                 <Avatar className="h-10 w-10">
                   {g.avatarUrl ? <AvatarImage src={g.avatarUrl} alt="" /> : null}
@@ -200,7 +200,7 @@ export function MemberHome() {
                 key={p.id}
                 to="/u/$username"
                 params={{ username: p.username }}
-                className="group flex w-56 shrink-0 snap-start flex-col items-start gap-2 rounded-3xl border border-border bg-surface p-4 transition hover:border-ink/20"
+                className="group flex w-56 shrink-0 snap-start flex-col items-start gap-2 rounded-xl border border-border bg-surface p-4 transition hover:border-ink/20"
               >
                 <Avatar className="h-10 w-10">
                   {p.avatarUrl ? <AvatarImage src={p.avatarUrl} alt="" /> : null}
@@ -240,7 +240,7 @@ export function MemberHome() {
                 key={d.id}
                 to="/works/$slug"
                 params={{ slug: d.slug }}
-                className="group overflow-hidden rounded-3xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft"
+                className="group overflow-hidden rounded-xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft"
               >
                 {d.coverUrl ? (
                   <img
@@ -250,7 +250,7 @@ export function MemberHome() {
                     className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
-                  <div className="aspect-[16/10] w-full gradient-motion opacity-60" />
+                  <div className="aspect-[16/10] w-full bg-secondary opacity-60" />
                 )}
                 <div className="p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">
@@ -279,7 +279,7 @@ export function MemberHome() {
         density="compact"
       >
         <div className="flex flex-wrap gap-3">
-          <Button asChild className="rounded-full gap-1.5">
+          <Button asChild className="rounded-md gap-1.5">
             <Link to="/works/new">
               <Sparkles className="h-4 w-4" /> Post a Work
             </Link>

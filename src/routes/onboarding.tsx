@@ -160,7 +160,7 @@ function Onboarding() {
 
   return (
     <div className="mx-auto max-w-xl px-4 py-12">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-surface p-8 shadow-soft">
         {stage === "groups" ? (
           <OnboardingGroupsStep
             homeCityId={cityId || null}
@@ -265,7 +265,7 @@ function Onboarding() {
             <Textarea id="bio" rows={3} maxLength={280} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="One line about your work." />
           </div>
 
-          <Button type="submit" className="w-full rounded-full" disabled={saving}>
+          <Button type="submit" className="w-full rounded-md" disabled={saving}>
             {saving ? "Saving…" : "Continue"}
           </Button>
 

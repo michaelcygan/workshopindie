@@ -50,14 +50,14 @@ function ClaimPage() {
         </p>
         <div className="mt-6 flex flex-col gap-2">
           <Button
-            className="rounded-full"
+            className="rounded-md"
             onClick={() => navigate({ to: "/signup", search: { claim: token, from: "guest_apply" } as never })}
           >
             Create an account
           </Button>
           <Button
             variant="outline"
-            className="rounded-full"
+            className="rounded-md"
             onClick={() => navigate({ to: "/login", search: { claim: token } as never })}
           >
             I already have one
@@ -72,7 +72,7 @@ function ClaimPage() {
       <main className="mx-auto max-w-md px-4 py-16 text-center">
         <h1 className="font-display text-2xl text-ink">Can't claim this one</h1>
         <p className="mt-2 text-sm text-ink-muted">{error}</p>
-        <Button variant="outline" className="mt-6 rounded-full" onClick={() => navigate({ to: "/collab" })}>
+        <Button variant="outline" className="mt-6 rounded-md" onClick={() => navigate({ to: "/collab" })}>
           Browse the Collab Board
         </Button>
       </main>

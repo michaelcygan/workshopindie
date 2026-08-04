@@ -118,7 +118,7 @@ function ReportsQueue() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="rounded-full">{r.entity_type}</Badge>
-                    <Badge className="rounded-full bg-coral/10 text-coral hover:bg-coral/10">{r.reason}</Badge>
+                    <Badge className="rounded-full bg-destructive/10 text-destructive hover:bg-destructive/10">{r.reason}</Badge>
                     <span className="text-xs text-ink-muted">{new Date(r.created_at).toLocaleString()}</span>
                   </div>
                   {r.description && (
@@ -131,22 +131,22 @@ function ReportsQueue() {
                 <div className="flex flex-wrap gap-2">
                   {r.status === "open" && (
                     <>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => hideEntity(r)} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => hideEntity(r)} disabled={acting === r.id}>
                         <EyeOff className="h-3.5 w-3.5" /> Hide
                       </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "reviewed")} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "reviewed")} disabled={acting === r.id}>
                         <Eye className="h-3.5 w-3.5" /> Mark reviewed
                       </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "dismissed")} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "dismissed")} disabled={acting === r.id}>
                         <X className="h-3.5 w-3.5" /> Dismiss
                       </Button>
-                      <Button size="sm" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "action_taken")} disabled={acting === r.id}>
+                      <Button size="sm" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "action_taken")} disabled={acting === r.id}>
                         <Check className="h-3.5 w-3.5" /> Action taken
                       </Button>
                     </>
                   )}
                   {r.status !== "open" && (
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setStatus(r.id, "open")}>Reopen</Button>
+                    <Button size="sm" variant="outline" className="rounded-md" onClick={() => setStatus(r.id, "open")}>Reopen</Button>
                   )}
                 </div>
               </div>

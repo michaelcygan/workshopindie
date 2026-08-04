@@ -35,7 +35,7 @@ export function GroupsBrowseByKind({ groups, joinedIds, onJump }: Props) {
           return (
             <div
               key={k}
-              className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-4 shadow-soft"
+              className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-4 shadow-soft"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex min-w-0 items-start gap-2.5">

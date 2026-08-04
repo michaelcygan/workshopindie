@@ -154,7 +154,7 @@ export function WaitingForOthersCard({
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <Button
                   size="sm"
-                  className="rounded-full h-9 gap-1.5 px-4 min-w-[160px] justify-center"
+                  className="rounded-md h-9 gap-1.5 px-4 min-w-[160px] justify-center"
                   onClick={copyLink}
                 >
                   <AnimatePresence mode="wait" initial={false}>

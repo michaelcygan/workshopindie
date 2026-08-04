@@ -100,7 +100,7 @@ export function WorkActions({ workId, initialLikes, initialSaves }: Props) {
           disabled={savePending}
           className={cn(
             "inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3.5 py-1.5 text-sm transition hover:shadow-soft",
-            saved && "bg-violet/10 border-violet/30 text-violet",
+            saved && "bg-signal/10 border-signal/30 text-signal",
           )}
         >
           <Bookmark className={cn("h-4 w-4", saved && "fill-current")} /> {saves}

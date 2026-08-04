@@ -80,7 +80,7 @@ export function EventRsvpAuthSheet({
           <form onSubmit={handleEmail} className="flex flex-col gap-2">
             <Input type="email" placeholder="you@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
             <Input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required />
-            <Button type="submit" className="rounded-full" disabled={busy}>
+            <Button type="submit" className="rounded-md" disabled={busy}>
               {mode === "signup" ? "Sign up & RSVP" : "Log in & RSVP"}
             </Button>
             <button

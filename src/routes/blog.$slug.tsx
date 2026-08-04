@@ -185,7 +185,7 @@ function BlogPostPage() {
           alt={post.cover_image_alt ?? post.title}
           fetchPriority="high"
           decoding="async"
-          className="mt-8 w-full rounded-3xl border border-border object-cover"
+          className="mt-8 w-full rounded-xl border border-border object-cover"
         />
       )}
 
@@ -228,7 +228,7 @@ function ShareRow({ slug, title, postId }: { slug: string; title: string; postId
   return (
     <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-6">
       <div className="flex items-center gap-2">
-        <Button variant="outline" size="sm" className="rounded-full gap-1.5" onClick={share}>
+        <Button variant="outline" size="sm" className="rounded-md gap-1.5" onClick={share}>
           <Link2 className="h-4 w-4" /> Share
         </Button>
       </div>
@@ -236,7 +236,7 @@ function ShareRow({ slug, title, postId }: { slug: string; title: string; postId
         entityType="blog_post"
         entityId={postId}
         trigger={
-          <Button variant="ghost" size="sm" className="rounded-full gap-1.5 text-ink-muted hover:text-ink">
+          <Button variant="ghost" size="sm" className="rounded-md gap-1.5 text-ink-muted hover:text-ink">
             <Flag className="h-4 w-4" /> Report
           </Button>
         }

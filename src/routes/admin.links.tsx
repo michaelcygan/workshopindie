@@ -86,7 +86,7 @@ function AdminLinks() {
 
 
       {/* Builder */}
-      <section className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-soft">
         <h2 className="font-display text-xl text-ink">New Workshop link</h2>
         <p className="mt-1 text-sm text-ink-muted">
           Tap-to-join link for ads. Visitors land in a live Workshop spawned from this template; multiple instances can run in parallel.
@@ -119,7 +119,7 @@ function AdminLinks() {
                 <Input id="wl-cap" type="number" min={2} max={12} value={cap} onChange={(e) => setCap(Math.max(2, Math.min(12, Number(e.target.value) || 5)))} />
               </div>
             </div>
-            <Button type="submit" disabled={creating} className="rounded-full gap-2">
+            <Button type="submit" disabled={creating} className="rounded-md gap-2">
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
               Create link
             </Button>
@@ -132,7 +132,7 @@ function AdminLinks() {
       </section>
 
       {/* List */}
-      <section className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
+      <section className="rounded-xl border border-border bg-surface p-6 shadow-soft">
         <h2 className="font-display text-xl text-ink">Your links</h2>
         {isLoading ? (
           <div className="py-10 text-center text-ink-muted">
@@ -167,10 +167,10 @@ function AdminLinks() {
                       }}
                     />
                   </div>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => copy(l.token)}>
+                  <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => copy(l.token)}>
                     <Copy className="h-3.5 w-3.5" /> Copy
                   </Button>
-                  <Button size="sm" variant="outline" className="rounded-full gap-1" asChild>
+                  <Button size="sm" variant="outline" className="rounded-md gap-1" asChild>
                     <a href={buildUrl(l.token)} target="_blank" rel="noreferrer">
                       <ExternalLink className="h-3.5 w-3.5" /> Open
                     </a>
@@ -178,7 +178,7 @@ function AdminLinks() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="rounded-full text-rose-600 hover:bg-rose-50"
+                    className="rounded-md text-rose-600 hover:bg-rose-50"
                     onClick={async () => {
                       if (!confirm("Delete this link? Live Workshops already spawned will continue.")) return;
                       try {

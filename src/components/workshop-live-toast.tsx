@@ -108,8 +108,8 @@ export function WorkshopLiveToast() {
             <span className="relative mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ink text-background">
               <Radio className="h-4 w-4" />
               <span className="absolute -right-0.5 -top-0.5 inline-flex h-2.5 w-2.5">
-                <span className="absolute inset-0 animate-ping rounded-full bg-coral opacity-75" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-coral" />
+                <span className="absolute inset-0 animate-ping rounded-full bg-destructive opacity-75" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-destructive" />
               </span>
             </span>
             <div className="min-w-0 flex-1">

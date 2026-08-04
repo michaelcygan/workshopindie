@@ -111,7 +111,7 @@ export function EmbedPlayer({
     return (
       <div
         className={cn(
-          "overflow-hidden rounded-3xl border border-border bg-surface-2",
+          "overflow-hidden rounded-xl border border-border bg-surface-2",
           className,
         )}
       >
@@ -125,7 +125,7 @@ export function EmbedPlayer({
   return (
     <div
       className={cn(
-        "overflow-hidden rounded-3xl border border-border bg-surface-2",
+        "overflow-hidden rounded-xl border border-border bg-surface-2",
         className,
       )}
     >

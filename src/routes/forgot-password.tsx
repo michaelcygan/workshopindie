@@ -28,7 +28,7 @@ function ForgotPassword() {
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-surface p-8 shadow-soft">
         <h1 className="font-display text-3xl text-ink">Reset your password</h1>
         <p className="mt-1 text-sm text-ink-muted">We'll email you a link to set a new one.</p>
         {sent ? (
@@ -39,13 +39,13 @@ function ForgotPassword() {
               <Label htmlFor="email">Email</Label>
               <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
-            <Button type="submit" className="w-full rounded-full" disabled={loading}>
+            <Button type="submit" className="w-full rounded-md" disabled={loading}>
               {loading ? "Sending…" : "Send reset link"}
             </Button>
           </form>
         )}
         <p className="mt-6 text-center text-sm text-ink-muted">
-          <Link to="/login" className="text-gradient-motion hover:underline">Back to sign in</Link>
+          <Link to="/login" className="text-signal hover:underline">Back to sign in</Link>
         </p>
       </motion.div>
     </div>

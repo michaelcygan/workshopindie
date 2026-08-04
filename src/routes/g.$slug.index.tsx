@@ -110,7 +110,7 @@ export const Route = createFileRoute("/g/$slug/")({
         <h1 className="font-display text-3xl text-ink">Couldn't load this Group.</h1>
         <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
         <Button
-          className="mt-6 rounded-full"
+          className="mt-6 rounded-md"
           onClick={() => {
             reset();
             router.invalidate();
@@ -638,7 +638,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
   const Inner = (
     <>
       <div
-        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
+        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "bg-secondary")}
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
       >
         <div className="absolute left-3 top-3 rounded-xl bg-background/90 px-2 py-1 text-center shadow-soft">
@@ -683,7 +683,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
         href={ev.external_url!}
         target="_blank"
         rel="noopener noreferrer"
-        className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+        className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
       >
         {Inner}
       </a>
@@ -694,7 +694,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
     <Link
       to="/g/$slug/e/$eventSlug"
       params={{ slug: groupSlug, eventSlug: ev.slug }}
-      className="group flex flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
+      className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
     >
       {Inner}
     </Link>
@@ -974,7 +974,7 @@ function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
   if (!canEdit) return null;
 
   return (
-    <section className="max-w-3xl rounded-3xl border border-border bg-surface p-4">
+    <section className="max-w-3xl rounded-xl border border-border bg-surface p-4">
       <h3 className="font-display text-base text-ink">News feed</h3>
       <p className="mt-1 text-xs text-ink-muted">
         Paste a Google News RSS URL (news.google.com/rss/search?q=…) — text
@@ -1143,7 +1143,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
           title="No Work in this Group yet."
           hint="Tag a piece from your portfolio so it shows up here."
           action={
-            <Button asChild size="sm" className="rounded-full">
+            <Button asChild size="sm" className="rounded-md">
               <Link to="/works/new" search={{ group: group.slug }}>
                 <Plus className="h-4 w-4" /> Add a piece
               </Link>
@@ -1339,7 +1339,7 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
           title="No Collabs yet."
           hint="Post the first one — it shows up across Workshop."
           action={
-            <Button asChild size="sm" className="rounded-full">
+            <Button asChild size="sm" className="rounded-md">
               <Link to="/collab/new" search={{ group: group.slug }}>
                 <Plus className="h-4 w-4" /> Post a Collab
               </Link>
@@ -1518,7 +1518,7 @@ function EmptyState({
   toParams?: any;
 }) {
   return (
-    <div className="mt-6 rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+    <div className="mt-6 rounded-xl border border-dashed border-border bg-surface p-10 text-center">
       <p className="text-sm text-ink-muted">{label}</p>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <Link to={to as any} params={toParams} className="mt-3 inline-block text-sm text-primary underline">

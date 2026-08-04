@@ -78,7 +78,7 @@ export function EventShareSheet({ shortCode, eventTitle, startsAt, canonicalUrl 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="rounded-full">
+        <Button variant="ghost" size="sm" className="rounded-md">
           <Share2 className="mr-1 h-4 w-4" /> Share
         </Button>
       </DialogTrigger>
@@ -105,14 +105,14 @@ export function EventShareSheet({ shortCode, eventTitle, startsAt, canonicalUrl 
         </div>
 
         <div className="grid grid-cols-3 gap-2">
-          <Button onClick={copy} variant="outline" size="sm" className="rounded-full">
+          <Button onClick={copy} variant="outline" size="sm" className="rounded-md">
             {copied ? <Check className="mr-1 h-3.5 w-3.5" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
             {copied ? "Copied" : "Copy"}
           </Button>
-          <Button onClick={downloadQr} variant="outline" size="sm" className="rounded-full" disabled={!qrUrl}>
+          <Button onClick={downloadQr} variant="outline" size="sm" className="rounded-md" disabled={!qrUrl}>
             <Download className="mr-1 h-3.5 w-3.5" /> QR
           </Button>
-          <Button onClick={nativeShare} size="sm" className="rounded-full">
+          <Button onClick={nativeShare} size="sm" className="rounded-md">
             <Share2 className="mr-1 h-3.5 w-3.5" /> Share
           </Button>
         </div>

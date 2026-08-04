@@ -204,13 +204,13 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
                 maxLength={1000}
               />
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" size="sm" className="rounded-full" onClick={() => setReplyOpenFor(null)}>
+                <Button type="button" variant="ghost" size="sm" className="rounded-md" onClick={() => setReplyOpenFor(null)}>
                   Cancel
                 </Button>
                 <Button
                   type="button"
                   size="sm"
-                  className="rounded-full"
+                  className="rounded-md"
                   disabled={replyPosting || !replyBody.trim()}
                   onClick={() => submitReply(c.id)}
                 >
@@ -258,7 +258,7 @@ export function CommentThread({ workId, ownerId }: { workId: string; ownerId?: s
           </p>
         )}
         <div className="flex justify-end">
-          <Button type="submit" disabled={posting || !body.trim()} className="rounded-full">
+          <Button type="submit" disabled={posting || !body.trim()} className="rounded-md">
             {user ? (posting ? "Posting…" : "Post comment") : "Sign in to comment"}
           </Button>
         </div>

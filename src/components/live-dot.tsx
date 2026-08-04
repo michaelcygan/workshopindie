@@ -12,13 +12,13 @@ export function LiveDot({ live, className, size = "sm" }: Props) {
   return (
     <span className={cn("relative inline-flex", px, className)}>
       {live && (
-        <span className="gradient-motion absolute inset-0 animate-ping rounded-full opacity-70" />
+        <span className="bg-destructive absolute inset-0 animate-ping rounded-full opacity-70" />
       )}
       <span
         className={cn(
           "relative inline-flex rounded-full",
           px,
-          live ? "gradient-motion" : "border border-ink/20",
+          live ? "bg-destructive" : "border border-ink/20",
         )}
       />
     </span>

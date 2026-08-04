@@ -39,7 +39,7 @@ export function BlockButton({ targetUserId }: { targetUserId: string }) {
 
   return (
     <Button variant="ghost" size="sm" onClick={toggle} disabled={busy}
-      className="rounded-full gap-1.5 text-ink-muted hover:text-ink">
+      className="rounded-md gap-1.5 text-ink-muted hover:text-ink">
       <Ban className="h-3.5 w-3.5" /> {blocked ? "Unblock" : "Block"}
     </Button>
   );

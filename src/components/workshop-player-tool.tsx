@@ -121,7 +121,7 @@ export function WorkshopPlayerTool({
           maxLength={500}
           placeholder="Paste a link — YouTube, Vimeo, SoundCloud, Spotify, Apple Music, Bandcamp, TikTok…"
         />
-        <Button type="submit" size="sm" className="rounded-full" disabled={submitting}>
+        <Button type="submit" size="sm" className="rounded-md" disabled={submitting}>
           <Plus className="h-3.5 w-3.5" /> Add
         </Button>
       </form>

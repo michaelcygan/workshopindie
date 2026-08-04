@@ -149,7 +149,7 @@ function AdminGroups() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="rounded-full"
+                      className="rounded-md"
                       onClick={() => {
                         if (confirm(`Archive "${g.name}"?`)) del.mutate(g.id);
                       }}
@@ -206,7 +206,7 @@ function CreateGroupDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-full">Create Group</Button>
+        <Button className="rounded-md">Create Group</Button>
       </DialogTrigger>
       <DialogContent className="max-w-lg">
         <DialogHeader>

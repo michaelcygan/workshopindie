@@ -203,10 +203,10 @@ export function GuestApplyDialog(props: Props) {
               </details>
 
               <DialogFooter className="mt-3 gap-2">
-                <Button type="button" variant="ghost" className="rounded-full" onClick={() => props.onOpenChange(false)}>
+                <Button type="button" variant="ghost" className="rounded-md" onClick={() => props.onOpenChange(false)}>
                   Cancel
                 </Button>
-                <Button type="submit" className="rounded-full" disabled={submitting}>
+                <Button type="submit" className="rounded-md" disabled={submitting}>
                   {submitting ? "Sending…" : "Send application"}
                 </Button>
               </DialogFooter>
@@ -231,7 +231,7 @@ export function GuestApplyDialog(props: Props) {
               <p className="mt-1.5 text-sm text-ink-muted">
                 Claim your application to unlock direct messaging with {props.hostFirstName || "the host"} — and get a profile, a face, and a few past works in front of them. Takes 30 seconds.
               </p>
-              <Button onClick={goToSignup} className="mt-4 w-full rounded-full gap-2">
+              <Button onClick={goToSignup} className="mt-4 w-full rounded-md gap-2">
                 <Sparkles className="h-4 w-4" /> Sign up to claim & DM
               </Button>
               <button
@@ -248,7 +248,7 @@ export function GuestApplyDialog(props: Props) {
                 <p className="text-[11px] uppercase tracking-wide text-ink-muted">Save your claim link</p>
                 <div className="mt-1 flex min-w-0 items-center gap-2">
                   <code className="min-w-0 flex-1 truncate rounded-lg bg-surface-2 px-2 py-1 text-[11px] text-ink-soft">{claimUrl}</code>
-                  <Button type="button" size="sm" variant="outline" className="shrink-0 rounded-full gap-1" onClick={copyClaim}>
+                  <Button type="button" size="sm" variant="outline" className="shrink-0 rounded-md gap-1" onClick={copyClaim}>
                     {copied ? <><Check className="h-3 w-3" /> Copied</> : <><Copy className="h-3 w-3" /> Copy</>}
                   </Button>
                 </div>

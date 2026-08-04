@@ -134,7 +134,7 @@ function EditCollab() {
     );
   }, [post, title, description, compensationType, rights, locationMode, city]);
 
-  if (isLoading) return <main className="mx-auto max-w-2xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
+  if (isLoading) return <main className="mx-auto max-w-2xl p-10"><div className="h-64 animate-pulse rounded-xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-2xl p-10 text-center text-ink-muted">Not found.</main>;
   if (user && post.user_id !== user.id) return <main className="mx-auto max-w-2xl p-10 text-center text-ink-muted">Only the owner can edit this Collab.</main>;
 
@@ -227,8 +227,8 @@ function EditCollab() {
         )}
 
         <div className="flex justify-end gap-2">
-          <Button type="button" variant="ghost" className="rounded-full" onClick={() => navigate({ to: "/collab/$slug", params: { slug: post.slug } })}>Cancel</Button>
-          <Button type="submit" className="rounded-full" disabled={save.isPending || !title.trim()}>
+          <Button type="button" variant="ghost" className="rounded-md" onClick={() => navigate({ to: "/collab/$slug", params: { slug: post.slug } })}>Cancel</Button>
+          <Button type="submit" className="rounded-md" disabled={save.isPending || !title.trim()}>
             {save.isPending ? "Saving…" : "Save changes"}
           </Button>
         </div>

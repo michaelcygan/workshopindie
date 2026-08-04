@@ -243,7 +243,7 @@ function MemberBlogEditorPage() {
           )}
           <Button
             variant="outline"
-            className="h-11 shrink-0 rounded-full px-4"
+            className="h-11 shrink-0 rounded-md px-4"
             disabled={!dirty || saveMut.isPending || readOnly}
             onClick={() => saveMut.mutate(undefined)}
           >
@@ -251,7 +251,7 @@ function MemberBlogEditorPage() {
           </Button>
           {!isPublished && (
             <Button
-              className="h-11 shrink-0 rounded-full px-5 gradient-motion text-primary-foreground"
+              className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
               disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
               onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
             >
@@ -384,7 +384,7 @@ function MemberBlogEditorPage() {
               <img
                 src={cover}
                 alt={coverAlt || title}
-                className="mb-6 w-full rounded-3xl border border-border object-cover"
+                className="mb-6 w-full rounded-xl border border-border object-cover"
               />
             )}
             <h1 className="font-display text-4xl text-ink">{title || "Untitled"}</h1>

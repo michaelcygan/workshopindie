@@ -149,7 +149,7 @@ export function NewMessageDialog({
                   >
                     <Avatar className="h-10 w-10 ring-1 ring-border">
                       {p.avatar_url ? <AvatarImage src={p.avatar_url} alt="" /> : null}
-                      <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+                      <AvatarFallback className="bg-gradient-to-br from-primary/15 to-destructive/15 font-display text-sm text-ink">
                         {initials(p)}
                       </AvatarFallback>
                     </Avatar>
@@ -174,7 +174,7 @@ export function NewMessageDialog({
         </div>
 
         <div className="mt-2 flex justify-end">
-          <Button variant="ghost" className="rounded-full" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" className="rounded-md" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
         </div>

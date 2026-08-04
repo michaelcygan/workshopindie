@@ -465,7 +465,7 @@ function ProfilePage() {
   if (isLoading) {
     return (
       <main className="mx-auto max-w-5xl px-4 py-10">
-        <div className="h-48 animate-pulse rounded-3xl bg-surface-2" />
+        <div className="h-48 animate-pulse rounded-xl bg-surface-2" />
       </main>
     );
   }
@@ -475,7 +475,7 @@ function ProfilePage() {
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-4xl text-ink">Profile not found</h1>
         <p className="mt-2 text-ink-muted">No creator with the handle <span className="font-mono">@{username}</span>.</p>
-        <Link to="/" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to gallery</Button></Link>
+        <Link to="/" className="mt-6 inline-block"><Button variant="outline" className="rounded-md">Back to gallery</Button></Link>
       </main>
     );
   }
@@ -495,7 +495,7 @@ function ProfilePage() {
             subtitle: profile.headline ?? undefined,
           }}
         />
-        <Button variant="outline" className="rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+        <Button variant="outline" className="rounded-md gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
           <Pencil className="h-4 w-4" /> Edit profile
         </Button>
       </div>
@@ -597,7 +597,7 @@ function ProfilePage() {
           <div className="absolute inset-0 flex items-center justify-center">
             <Button
               variant="outline"
-              className="rounded-full gap-1.5 bg-background/80 backdrop-blur"
+              className="rounded-md gap-1.5 bg-background/80 backdrop-blur"
               onClick={() => navigate({ to: "/me/edit" })}
             >
               <ImagePlus className="h-4 w-4" /> Add cover photo
@@ -674,7 +674,7 @@ function ProfilePage() {
                   <div className="flex w-[9.5rem] shrink-0 flex-col items-stretch gap-1.5 md:hidden">
                     {isOwn ? (
                       <>
-                        <Button variant="outline" size="sm" className="w-full rounded-full gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
+                        <Button variant="outline" size="sm" className="w-full rounded-md gap-1.5" onClick={() => navigate({ to: "/me/edit" })}>
                           <Pencil className="h-4 w-4" /> Edit profile
                         </Button>
                         <div className="flex justify-end">
@@ -814,7 +814,7 @@ function ProfilePage() {
               <p className="font-medium text-ink">{closedNudges.length} collab{closedNudges.length === 1 ? "" : "s"} to wrap up</p>
               <p className="text-xs text-ink-muted">Post the piece that came out of them.</p>
             </div>
-            <Link to="/me/collabs"><Button size="sm" className="rounded-full">Wrap up</Button></Link>
+            <Link to="/me/collabs"><Button size="sm" className="rounded-md">Wrap up</Button></Link>
           </div>
         )}
 
@@ -1124,12 +1124,12 @@ function WorksTab({
 
   if (merged.length === 0 && pinnedWorks.length === 0 && pinnedCollabs.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "Your portfolio is empty. Publish your first Work, or post a Collab to start one with others." : `${ownerName} hasn't published a Work yet.`}</p>
         {isOwn && (
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
-            <Link to="/collab/new"><Button variant="outline" className="rounded-full">Post a Collab</Button></Link>
+            <Link to="/works/new"><Button className="rounded-md">Post to Gallery</Button></Link>
+            <Link to="/collab/new"><Button variant="outline" className="rounded-md">Post a Collab</Button></Link>
           </div>
         )}
       </div>
@@ -1508,9 +1508,9 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
   if (isLoading) return <div className="h-24 animate-pulse rounded-2xl bg-surface-2" />;
   if (items.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "No open Collabs. Post one to find collaborators." : `${ownerName} has no open Collabs.`}</p>
-        {isOwn && <Link to="/collab/new" className="mt-4 inline-block"><Button className="rounded-full">Post a Collab</Button></Link>}
+        {isOwn && <Link to="/collab/new" className="mt-4 inline-block"><Button className="rounded-md">Post a Collab</Button></Link>}
       </div>
     );
   }
@@ -1650,7 +1650,7 @@ function AboutTab({ profile }: { profile: Profile }) {
           <ul className="mt-2 space-y-1.5 text-sm">
             {profile.external_links!.map((l, i) => (
               <li key={i}>
-                <a href={l.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-gradient-motion hover:underline">
+                <a href={l.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-signal hover:underline">
                   {l.label || l.url} <ExternalLink className="h-3 w-3" />
                 </a>
               </li>
@@ -1753,12 +1753,12 @@ function ActivityTab({
   const empty = drafts.length === 0 && workshops.length === 0 && applied.length === 0 && participating.length === 0;
   if (empty) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">Nothing in flight. Start a draft, join a Group, or apply to a Collab.</p>
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
-          <Link to="/groups"><Button variant="outline" className="rounded-full">Find a Group</Button></Link>
-          <Link to="/collab"><Button variant="ghost" className="rounded-full">Browse Collabs</Button></Link>
+          <Link to="/works/new"><Button className="rounded-md">Post to Gallery</Button></Link>
+          <Link to="/groups"><Button variant="outline" className="rounded-md">Find a Group</Button></Link>
+          <Link to="/collab"><Button variant="ghost" className="rounded-md">Browse Collabs</Button></Link>
         </div>
       </div>
     );

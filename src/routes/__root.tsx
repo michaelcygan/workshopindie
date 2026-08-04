@@ -31,7 +31,7 @@ function NotFoundComponent() {
         <h2 className="mt-4 text-xl text-ink">Lost in the studio</h2>
         <p className="mt-2 text-sm text-ink-muted">This page doesn't exist (yet).</p>
         <div className="mt-6">
-          <Link to="/" className="gradient-motion inline-flex items-center justify-center rounded-full px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+          <Link to="/" className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
             Back to Gallery
           </Link>
         </div>
@@ -51,7 +51,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mt-6 flex justify-center gap-2">
           <button
             onClick={() => { router.invalidate(); reset(); }}
-            className="gradient-motion rounded-full px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
           >
             Try again
           </button>

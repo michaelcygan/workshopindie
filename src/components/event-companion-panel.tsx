@@ -32,7 +32,7 @@ type Props = {
  */
 export function EventCompanionPanel({ eventId, eventTitle, canBring, attending }: Props) {
   return (
-    <section className="mt-6 space-y-5 rounded-3xl border border-primary/30 bg-primary/[0.04] p-5">
+    <section className="mt-6 space-y-5 rounded-xl border border-primary/30 bg-primary/[0.04] p-5">
       <header className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="relative inline-flex h-2 w-2">

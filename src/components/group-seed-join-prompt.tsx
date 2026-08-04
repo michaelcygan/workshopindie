@@ -29,7 +29,7 @@ export function GroupSeedJoinPrompt({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <Button asChild size="sm" variant="ghost" className="rounded-full">
+          <Button asChild size="sm" variant="ghost" className="rounded-md">
             <Link
               to="/login"
               search={{ join: token, group: groupSlug } as never}
@@ -37,7 +37,7 @@ export function GroupSeedJoinPrompt({
               Sign in
             </Link>
           </Button>
-          <Button asChild size="sm" className="rounded-full">
+          <Button asChild size="sm" className="rounded-md">
             <Link
               to="/signup"
               search={{ join: token, group: groupSlug } as never}

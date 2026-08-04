@@ -52,13 +52,13 @@ export function ParentGroupPrompt({
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-full">
+          <Button variant="ghost" onClick={() => onOpenChange(false)} className="rounded-md">
             Not now
           </Button>
           <Button
             onClick={() => join.mutate()}
             disabled={join.isPending}
-            className="rounded-full"
+            className="rounded-md"
             autoFocus
           >
             {join.isPending ? "Joining…" : `Join ${parent.name}`}

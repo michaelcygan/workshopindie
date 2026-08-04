@@ -90,7 +90,7 @@ export function ProfileBlogTab({
 
   if (posts.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
         <p className="text-ink-muted">{isOwn ? "You haven't been attributed on any published posts yet." : `${ownerName} hasn't been attributed on any published posts.`}</p>
       </div>
     );
@@ -131,7 +131,7 @@ export function ProfileBlogTab({
                   decoding="async"
                 />
               ) : (
-                <div className="aspect-[16/10] w-full gradient-motion" />
+                <div className="aspect-[16/10] w-full bg-secondary" />
               )}
               <div className="p-3 md:p-4">
                 <div className="text-[10px] uppercase tracking-wider text-ink-muted">
@@ -160,7 +160,7 @@ export function ProfileBlogTab({
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="rounded-md"
             onClick={() => q.fetchNextPage()}
             disabled={q.isFetchingNextPage}
           >

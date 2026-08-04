@@ -33,7 +33,7 @@ export function EventShowcaseStrip({ eventId, eventTitle, canBring }: Props) {
   if (items.length === 0 && !canBring) return null;
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
+    <section className="mt-6 rounded-xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-3 flex items-center justify-between">
         <div>
           <h3 className="font-display text-lg text-ink">What people are bringing</h3>
@@ -204,7 +204,7 @@ function BringDialog({ eventId }: { eventId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="rounded-full">
+        <Button size="sm" className="rounded-md">
           <Plus className="mr-1 h-4 w-4" /> Bring something
         </Button>
       </DialogTrigger>

@@ -165,7 +165,7 @@ export function CollabWorkspace({
   const meetingUrl = settingsQ.data?.meeting_url ?? null;
 
   return (
-    <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-surface">
+    <section className="mt-6 overflow-hidden rounded-xl border border-border bg-surface">
       {/* Compact header */}
       <div className="flex flex-col gap-3 border-b border-border bg-muted/30 p-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex items-center gap-2 min-w-0">
@@ -308,7 +308,7 @@ export function CollabWorkspace({
                 }
               }}
             />
-            <Button type="submit" size="sm" className="min-h-[44px] rounded-full gap-1" disabled={!body.trim() || send.isPending}>
+            <Button type="submit" size="sm" className="min-h-[44px] rounded-md gap-1" disabled={!body.trim() || send.isPending}>
               <Send className="h-4 w-4" /> Send
             </Button>
           </form>
@@ -356,7 +356,7 @@ function MeetingControl({
   if (meetingUrl && !editing) {
     return (
       <div className="flex items-center gap-1">
-        <Button asChild size="sm" className="rounded-full gap-1.5">
+        <Button asChild size="sm" className="rounded-md gap-1.5">
           <a href={meetingUrl} target="_blank" rel="noopener noreferrer">
             <Video className="h-4 w-4" /> {meetingCta(meetingUrl)}
           </a>
@@ -381,7 +381,7 @@ function MeetingControl({
           placeholder="https://zoom.us/j/…"
           className="h-9 flex-1 sm:w-64"
         />
-        <Button size="sm" className="rounded-full" disabled={saving} onClick={() => commit(value.trim() ? value.trim() : null)}>
+        <Button size="sm" className="rounded-md" disabled={saving} onClick={() => commit(value.trim() ? value.trim() : null)}>
           Save
         </Button>
         {meetingUrl && (
@@ -394,7 +394,7 @@ function MeetingControl({
         </Button>
       </div>
     ) : (
-      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setEditing(true)}>
+      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setEditing(true)}>
         <ExternalLink className="h-4 w-4" /> Add meeting link
       </Button>
     );

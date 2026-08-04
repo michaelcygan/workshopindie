@@ -514,7 +514,7 @@ function GroupsIndex() {
 
         {/* Suggest a group footer */}
         {showSuggestFooter && (
-          <div className="mt-10 rounded-3xl border border-dashed border-border bg-surface p-6 text-center md:p-8">
+          <div className="mt-10 rounded-xl border border-dashed border-border bg-surface p-6 text-center md:p-8">
             <h3 className="font-display text-lg text-ink md:text-xl">Missing a community?</h3>
             <p className="mx-auto mt-1 max-w-md text-sm text-ink-muted">
               Suggest a Group and tell us where your work belongs.
@@ -546,7 +546,7 @@ function EmptyState({
   secondary?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center md:p-12">
+    <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center md:p-12">
       <h3 className="font-display text-xl text-ink md:text-2xl">{title}</h3>
       {body && <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">{body}</p>}
       {(primary || secondary) && (

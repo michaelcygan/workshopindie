@@ -18,7 +18,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
     >
       <div className="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] md:gap-12">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-coral">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-destructive">
             Open calls
           </p>
           <h2 id="open-calls" className="mt-1 font-display text-[26px] text-ink md:text-[32px]">
@@ -49,7 +49,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
                 />
                 <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
-                  <span className="text-coral">Open</span>
+                  <span className="text-destructive">Open</span>
                   <span aria-hidden>·</span>
                   <span>{CATEGORY_LABELS[c.category as Category] ?? c.category}</span>
                   <span aria-hidden>·</span>

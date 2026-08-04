@@ -239,10 +239,10 @@ function DmsIndex() {
           <p className="mt-1 text-sm text-ink-muted">
             <span className={`mr-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
               counts.unread > 0
-                ? "bg-coral/15 text-coral"
+                ? "bg-destructive/15 text-destructive"
                 : "bg-primary/10 text-primary"
             }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${counts.unread > 0 ? "bg-coral" : "bg-primary"} ${counts.unread > 0 ? "animate-pulse" : ""}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${counts.unread > 0 ? "bg-destructive" : "bg-primary"} ${counts.unread > 0 ? "animate-pulse" : ""}`} />
               Inbox
             </span>
             {counts.all > 0
@@ -253,7 +253,7 @@ function DmsIndex() {
         <Button
           type="button"
           onClick={() => setComposeOpen(true)}
-          className="shrink-0 rounded-full gap-1.5"
+          className="shrink-0 rounded-md gap-1.5"
         >
           <Pencil className="h-4 w-4" />
           <span className="hidden sm:inline">New message</span>
@@ -329,12 +329,12 @@ function DmsIndex() {
                   unread > 0 ? ` — ${unread} unread` : ""
                 }${conv.last_message_preview ? ` — last message: ${conv.last_message_preview}` : ""}`}
                 className={`group flex w-full items-center gap-3 rounded-2xl border bg-surface px-3.5 py-3 text-left transition hover:bg-muted/40 hover:shadow-soft ${
-                  unread > 0 ? "border-coral/40" : "border-border"
+                  unread > 0 ? "border-destructive/40" : "border-border"
                 }`}
               >
                 <Avatar className="h-12 w-12 shrink-0 ring-1 ring-border">
                   {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
-                  <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+                  <AvatarFallback className="bg-gradient-to-br from-primary/15 to-destructive/15 font-display text-sm text-ink">
                     {avatarInitials(other)}
                   </AvatarFallback>
                 </Avatar>
@@ -352,7 +352,7 @@ function DmsIndex() {
                   </div>
                   {(collab || workshop) && (
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
-                      collab ? "bg-primary/10 text-primary" : "bg-violet/10 text-violet"
+                      collab ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
                     }`}>
                       Re: {collab?.title ?? workshop?.title ?? "Audio room"}
                     </span>
@@ -365,7 +365,7 @@ function DmsIndex() {
                   </p>
                 </div>
                 {unread > 0 && (
-                  <span className="ml-2 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-coral shadow-[0_0_0_3px_color-mix(in_oklab,var(--coral)_25%,transparent)]" aria-hidden />
+                  <span className="ml-2 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-destructive shadow-[0_0_0_3px_color-mix(in_oklab,var(--coral)_25%,transparent)]" aria-hidden />
                 )}
               </button>
             </li>
@@ -380,7 +380,7 @@ function DmsIndex() {
 
 function EmptyInbox({ onNew }: { onNew: () => void }) {
   return (
-    <div className="relative mt-6 overflow-hidden rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+    <div className="relative mt-6 overflow-hidden rounded-xl border border-dashed border-border bg-surface p-10 text-center">
       <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:radial-gradient(circle,var(--ink)_1px,transparent_1px)] [background-size:18px_18px]" />
       <div className="relative">
         <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -391,14 +391,14 @@ function EmptyInbox({ onNew }: { onNew: () => void }) {
           DM your mutuals, or anyone you're connected to through a collab or Group audio.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Button onClick={onNew} className="rounded-full gap-1.5">
+          <Button onClick={onNew} className="rounded-md gap-1.5">
             <Plus className="h-4 w-4" /> New message
           </Button>
           <Link to="/collab">
             <Button variant="outline" className="rounded-full">Browse the Collab Board</Button>
           </Link>
           <Link to="/groups">
-            <Button variant="outline" className="rounded-full">Find your groups</Button>
+            <Button variant="outline" className="rounded-md">Find your groups</Button>
           </Link>
         </div>
       </div>

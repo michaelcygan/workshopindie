@@ -38,7 +38,7 @@ function ResetPassword() {
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border bg-surface p-8 shadow-soft">
         <h1 className="font-display text-3xl text-ink">Set a new password</h1>
         <p className="mt-1 text-sm text-ink-muted">
           {ready ? "Choose something you'll remember." : "Verifying your recovery link…"}
@@ -48,7 +48,7 @@ function ResetPassword() {
             <Label htmlFor="password">New password</Label>
             <Input id="password" type="password" required minLength={8} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={!ready} />
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={loading || !ready}>
+          <Button type="submit" className="w-full rounded-md" disabled={loading || !ready}>
             {loading ? "Updating…" : "Update password"}
           </Button>
         </form>

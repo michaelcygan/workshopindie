@@ -519,7 +519,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
             placeholder={preset.urlPlaceholder ?? "https://…"} />
         )}
         <div className="flex justify-end">
-          <Button type="submit" size="sm" className="rounded-full" disabled={submitting}>Add</Button>
+          <Button type="submit" size="sm" className="rounded-md" disabled={submitting}>Add</Button>
         </div>
       </form>
 
@@ -566,7 +566,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
                     {it.body && <p className="mt-1 whitespace-pre-wrap text-sm text-ink-soft">{it.body}</p>}
                     {it.url && (
                       <a href={it.url} target="_blank" rel="noreferrer noopener"
-                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-gradient-motion hover:underline">
+                        className="mt-1.5 inline-flex items-center gap-1 text-xs text-signal hover:underline">
                         {it.url.replace(/^https?:\/\//, "").slice(0, 40)} <ExternalLink className="h-3 w-3" />
                       </a>
                     )}
