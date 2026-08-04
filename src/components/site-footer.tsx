@@ -61,7 +61,10 @@ export function SiteFooter() {
     }
   }
 
+  if (shouldHide(pathname)) return null;
+
   return (
+
     <footer className="mt-16 border-t border-border/70 bg-surface-2/40">
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
         <div className="grid gap-10 md:grid-cols-3">
