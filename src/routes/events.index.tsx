@@ -35,33 +35,16 @@ const searchSchema = z.object({
 });
 
 
-async function fetchPublicEvents(when: When, format: Format, cityId?: string) {
-  const now = new Date().toISOString();
-  let q = supabase
-    .from("group_events")
-    .select(
-      "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,venue_city_id,going_count,capacity,featured_at,group:groups!inner(slug,name,avatar_url,visibility,deleted_at)",
-    )
-    .is("deleted_at", null)
-    .eq("visibility", "public")
-    .in("status", ["scheduled", "live", "completed"]);
-
-  q = when === "upcoming"
-    ? q.gte("starts_at", now).order("starts_at", { ascending: true })
-    : q.lt("starts_at", now).order("starts_at", { ascending: false });
-
-  if (format === "in_person") q = q.in("format", ["in_person", "hybrid"]);
-  if (format === "online") q = q.in("format", ["online", "hybrid"]);
-
-  if (cityId && format !== "online") q = q.eq("venue_city_id", cityId);
-
-  const { data, error } = await q.limit(60);
-  if (error) throw error;
-  return (data ?? []).filter((e) => {
-    const g = (e as unknown as { group: { deleted_at: string | null } | null }).group;
-    return g && !g.deleted_at;
-  }) as unknown as EventCardData[];
+async function fetchPublicEvents(
+  fn: (opts: { data: { when: When; format: Format; cityId?: string | null } }) => Promise<unknown>,
+  when: When,
+  format: Format,
+  cityId?: string,
+) {
+  const rows = await fn({ data: { when, format, cityId: cityId ?? null } });
+  return rows as unknown as EventCardData[];
 }
+
 
 export const Route = createFileRoute("/events/")({
   validateSearch: zodValidator(searchSchema),
