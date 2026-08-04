@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 /**
  * Shared suggestion hooks for the `@` typeahead popover used across chat
@@ -58,7 +59,11 @@ export function useUserSuggestions(query: string, enabled: boolean) {
  * The signed-in user's open Collabs, filtered by title. Mirrors the collab
  * source used on the Today board.
  */
-export function useMyCollabSuggestions(userId: string | undefined, query: string, enabled: boolean) {
+export function useMyCollabSuggestions(
+  userId: string | undefined,
+  query: string,
+  enabled: boolean,
+) {
   const q = query.trim().toLowerCase();
   return useQuery({
     queryKey: ["mention-my-collabs", userId ?? "anon", q],
@@ -180,6 +185,8 @@ export function useEventSuggestions(userId: string | undefined, query: string, e
         )
         .gte("starts_at", nowIso)
         .is("deleted_at", null)
+        .eq("visibility", "public")
+        .in("status", DISCOVERABLE_STATUSES as unknown as never)
         .order("starts_at", { ascending: true })
         .limit(LIMIT * 2);
       if (q) req = req.ilike("title", `%${q}%`);

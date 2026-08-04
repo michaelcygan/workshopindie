@@ -11,6 +11,7 @@
  */
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import type {
   HomeBlogCard,
   HomeCircleStory,
@@ -39,7 +40,6 @@ const MAX_STORIES_PER_WORK = 3;
 /** Admins may feature at most this many Blog posts at once. */
 export const FEATURED_POST_CAP = 5;
 const MAX_MINE_ITEMS = 6;
-
 
 type PostRow = {
   id: string;
@@ -509,24 +509,28 @@ export async function upcomingEventsServer(
     .in("status", ["going", "maybe"]);
   const rsvpIds = ((rsvps ?? []) as Array<{ event_id: string }>).map((r) => r.event_id);
 
+  const groupIds = groups.map((g) => g.id);
+
   async function fetchEvents(
     apply: (q: ReturnType<typeof baseQuery>) => ReturnType<typeof baseQuery>,
+    // `group_only` rows may only be surfaced for groups the viewer belongs to.
+    allowGroupOnly = false,
   ) {
-    const { data } = await apply(baseQuery());
+    const { data } = await apply(baseQuery(allowGroupOnly));
     return (data ?? []) as unknown as Row[];
   }
-  function baseQuery() {
+  function baseQuery(allowGroupOnly: boolean) {
     return supabaseAdmin
       .from("group_events")
       .select(EVENT_SELECT)
       .gt("starts_at", nowIso)
       .is("deleted_at", null)
-      .in("visibility", ["public", "group_only"])
+      .in("status", DISCOVERABLE_STATUSES as unknown as never)
+      .in("visibility", allowGroupOnly ? ["public", "group_only"] : ["public"])
       .order("starts_at", { ascending: true })
       .limit(5);
   }
 
-  const groupIds = groups.map((g) => g.id);
   const candidates: Array<{ row: Row; reason: HomeEvent["reason"]; rsvped: boolean }> = [];
   const seen = new Set<string>();
   const push = (row: Row, reason: HomeEvent["reason"], rsvped: boolean) => {
@@ -536,10 +540,11 @@ export async function upcomingEventsServer(
   };
 
   if (rsvpIds.length) {
-    for (const row of await fetchEvents((q) => q.in("id", rsvpIds))) push(row, "rsvp", true);
+    // The viewer already RSVPed, so a group_only row is one they could see.
+    for (const row of await fetchEvents((q) => q.in("id", rsvpIds), true)) push(row, "rsvp", true);
   }
   if (candidates.length < max && groupIds.length) {
-    for (const row of await fetchEvents((q) => q.in("group_id", groupIds))) {
+    for (const row of await fetchEvents((q) => q.in("group_id", groupIds), true)) {
       push(row, "group", false);
     }
   }
@@ -553,6 +558,7 @@ export async function upcomingEventsServer(
       push(row, "online", false);
     }
   }
+
   if (!candidates.length) return [];
 
   const picks = candidates.slice(0, max);
@@ -642,11 +648,13 @@ export async function continueActionsServer(
       .maybeSingle(),
   ]);
 
-  const draft = ((draftsRes.data ?? []) as Array<{
-    id: string;
-    title: string;
-    cover_image_url: string | null;
-  }>)[0];
+  const draft = (
+    (draftsRes.data ?? []) as Array<{
+      id: string;
+      title: string;
+      cover_image_url: string | null;
+    }>
+  )[0];
   if (draft) {
     actions.push({
       kind: "blog_draft",
@@ -658,7 +666,6 @@ export async function continueActionsServer(
       coverUrl: draft.cover_image_url,
     });
   }
-
 
   const collabs = (collabsRes.data ?? []) as Array<{ id: string; slug: string; title: string }>;
   if (collabs.length) {
@@ -916,7 +923,9 @@ export async function circleStoriesServer(
           .in("group_id", groupIds)
           .gt("starts_at", nowIso)
           .is("deleted_at", null)
+          .in("status", DISCOVERABLE_STATUSES as unknown as never)
           .in("visibility", ["public", "group_only"])
+
           .order("starts_at", { ascending: true })
           .limit(6)
       : Promise.resolve({ data: [] }),
@@ -1454,7 +1463,11 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
       .eq("status", "published")
       .order("published_at", { ascending: false })
       .limit(8),
-    supabaseAdmin.from("blog_post_authors").select("blog_post_id").eq("profile_id", userId).limit(30),
+    supabaseAdmin
+      .from("blog_post_authors")
+      .select("blog_post_id")
+      .eq("profile_id", userId)
+      .limit(30),
     supabaseAdmin
       .from("collab_posts")
       .select("id,slug,title,description,created_at")
@@ -1598,7 +1611,6 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
   }
   return out;
 }
-
 
 /* ─────────────────────── Public (logged-out) home ─────────────────────── */
 
@@ -1810,7 +1822,10 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
         category: w.category,
         coverUrl: w.cover_url as string,
         creditName:
-          credit?.profiles?.display_name || credit?.display_name || credit?.profiles?.username || null,
+          credit?.profiles?.display_name ||
+          credit?.display_name ||
+          credit?.profiles?.username ||
+          null,
       };
     });
   const recentWorks = allWorkTiles.slice(0, 8);
