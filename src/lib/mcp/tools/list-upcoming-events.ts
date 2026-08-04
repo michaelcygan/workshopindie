@@ -29,6 +29,8 @@ export default defineTool({
       .select("id, slug, title, tagline, starts_at, ends_at, timezone, format, kind, group_id, venue_name, going_count")
       .gte("starts_at", new Date().toISOString())
       .is("deleted_at", null)
+      .eq("visibility", "public")
+      .in("status", ["scheduled", "live", "completed"])
       .order("starts_at", { ascending: true })
       .limit(limit ?? 20);
     if (groupId) q = q.eq("group_id", groupId);

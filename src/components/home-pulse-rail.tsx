@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, Hammer, Megaphone, Users, Sparkles, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { DISCOVERABLE_STATUSES, dropDeletedGroups } from "@/lib/events/filters";
 
 type Pulse =
   | {
@@ -355,7 +356,7 @@ async function fetchPulse(): Promise<Pulse[]> {
       .select(
         "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)",
       )
-      .in("status", ["scheduled", "live"] as never)
+      .in("status", DISCOVERABLE_STATUSES as unknown as never)
       .eq("visibility", "public")
       .is("deleted_at", null)
       .gte("starts_at", today)

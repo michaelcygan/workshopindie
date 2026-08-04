@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import type { BlogEntityKind, BlogEntityTag } from "@/lib/blog-entity-tags";
 import { kindLabel, tagKey } from "@/lib/blog-entity-tags";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 const KIND_ICONS: Record<BlogEntityKind, typeof Briefcase> = {
   work: Briefcase,
@@ -148,6 +149,7 @@ export function BlogEntityTagPicker({
         .select("id,slug,title,tagline,cover_url,starts_at,group:groups!group_events_group_id_fkey(slug,name)")
         .is("deleted_at", null)
         .eq("visibility", "public")
+        .in("status", DISCOVERABLE_STATUSES as unknown as never)
         .order("starts_at", { ascending: false })
         .limit(12);
       if (query) req = req.ilike("title", `%${query}%`);

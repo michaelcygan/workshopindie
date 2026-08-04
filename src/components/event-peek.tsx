@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 type PeekEvent = {
   id: string;
@@ -35,6 +36,8 @@ async function fetchEvent(groupSlug: string, eventSlug: string): Promise<PeekEve
     )
     .eq("group_id", group.id)
     .eq("slug", eventSlug)
+    .is("deleted_at", null)
+    .in("status", DISCOVERABLE_STATUSES as unknown as never)
     .maybeSingle();
   if (!data) return null;
   return {
