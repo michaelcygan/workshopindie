@@ -1,0 +1,1 @@
+ALTER FUNCTION public.moderation_normalize_text(_text text) SET search_path = public;

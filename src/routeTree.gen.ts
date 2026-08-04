@@ -9,194 +9,109 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorkshopsRouteImport } from './routes/workshops'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SignupRouteImport } from './routes/signup'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as ReferRouteImport } from './routes/refer'
-import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as LoungeRouteImport } from './routes/lounge'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as GroupsRouteImport } from './routes/groups'
-import { Route as GoodbyeRouteImport } from './routes/goodbye'
-import { Route as GalleryRouteImport } from './routes/gallery'
-import { Route as GRouteImport } from './routes/g'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as CollabRouteImport } from './routes/collab'
-import { Route as CitiesRouteImport } from './routes/cities'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
-import { Route as MeIndexRouteImport } from './routes/me.index'
-import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
-import { Route as GroupsIndexRouteImport } from './routes/groups.index'
-import { Route as EventsIndexRouteImport } from './routes/events.index'
-import { Route as DmsIndexRouteImport } from './routes/dms.index'
-import { Route as CollabIndexRouteImport } from './routes/collab.index'
-import { Route as CitiesIndexRouteImport } from './routes/cities.index'
-import { Route as BlogIndexRouteImport } from './routes/blog.index'
-import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
-import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
-import { Route as WorksNewRouteImport } from './routes/works.new'
-import { Route as WorksSlugRouteImport } from './routes/works.$slug'
-import { Route as WTokenRouteImport } from './routes/w.$token'
-import { Route as UUsernameRouteImport } from './routes/u.$username'
-import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
-import { Route as MeTicketsRouteImport } from './routes/me.tickets'
-import { Route as MeNetworkRouteImport } from './routes/me.network'
-import { Route as MeFriendsRouteImport } from './routes/me.friends'
-import { Route as MeEditRouteImport } from './routes/me.edit'
-import { Route as MeCollabsRouteImport } from './routes/me.collabs'
-import { Route as MeBlockedRouteImport } from './routes/me.blocked'
-import { Route as LoungeIdRouteImport } from './routes/lounge.$id'
-import { Route as ECodeRouteImport } from './routes/e.$code'
-import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
-import { Route as CollabNewRouteImport } from './routes/collab.new'
-import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
-import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
-import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
-import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
-import { Route as BlogRssDotxmlRouteImport } from './routes/blog.rss[.]xml'
-import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
-import { Route as AdminReportsRouteImport } from './routes/admin.reports'
-import { Route as AdminPlusRouteImport } from './routes/admin.plus'
-import { Route as AdminOpsRouteImport } from './routes/admin.ops'
-import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
-import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
-import { Route as AdminLinksRouteImport } from './routes/admin.links'
-import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
-import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
-import { Route as AdminGeoRouteImport } from './routes/admin.geo'
-import { Route as AdminEventsRouteImport } from './routes/admin.events'
-import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
-import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
-import { Route as AdminAuditRouteImport } from './routes/admin.audit'
-import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CitiesRouteImport } from './routes/cities'
+import { Route as CollabRouteImport } from './routes/collab'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as GRouteImport } from './routes/g'
+import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as GoodbyeRouteImport } from './routes/goodbye'
+import { Route as GroupsRouteImport } from './routes/groups'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as LoungeRouteImport } from './routes/lounge'
+import { Route as McpRouteImport } from './routes/mcp'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as ReferRouteImport } from './routes/refer'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as WorkshopsRouteImport } from './routes/workshops'
 import { Route as Char91DotmcpChar93ListToolsRouteImport } from './routes/[.mcp]/list-tools'
-import { Route as MeBlogIndexRouteImport } from './routes/me.blog.index'
-import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
-import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
-import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
-import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
-import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
-import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
-import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
-import { Route as MeBlogIdRouteImport } from './routes/me.blog.$id'
-import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
-import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
-import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
-import { Route as ApiPublicOgRouteImport } from './routes/api/public/og'
-import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
-import { Route as AdminBlogSubscribersRouteImport } from './routes/admin.blog.subscribers'
-import { Route as AdminBlogNewRouteImport } from './routes/admin.blog.new'
-import { Route as AdminBlogIdRouteImport } from './routes/admin.blog.$id'
-import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as Char91DotwellKnownChar93OauthProtectedResourceRouteImport } from './routes/[.well-known]/oauth-protected-resource'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminBadgesRouteImport } from './routes/admin.badges'
+import { Route as AdminEngagementRouteImport } from './routes/admin.engagement'
+import { Route as AdminEventsRouteImport } from './routes/admin.events'
+import { Route as AdminGeoRouteImport } from './routes/admin.geo'
+import { Route as AdminGroupsRouteImport } from './routes/admin.groups'
+import { Route as AdminGrowthRouteImport } from './routes/admin.growth'
+import { Route as AdminLinksRouteImport } from './routes/admin.links'
+import { Route as AdminMarketplaceRouteImport } from './routes/admin.marketplace'
+import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminOpsRouteImport } from './routes/admin.ops'
+import { Route as AdminPlusRouteImport } from './routes/admin.plus'
+import { Route as AdminReportsRouteImport } from './routes/admin.reports'
+import { Route as AdminRevenueRouteImport } from './routes/admin.revenue'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
+import { Route as BlogRssDotxmlRouteImport } from './routes/blog.rss[.]xml'
+import { Route as CheckoutReturnRouteImport } from './routes/checkout.return'
+import { Route as CitiesIndexRouteImport } from './routes/cities.index'
+import { Route as CitiesSlugRouteImport } from './routes/cities.$slug'
+import { Route as ClaimTokenRouteImport } from './routes/claim.$token'
+import { Route as CollabIndexRouteImport } from './routes/collab.index'
+import { Route as CollabSlugRouteImport } from './routes/collab.$slug'
+import { Route as CollabNewRouteImport } from './routes/collab.new'
+import { Route as DmsIndexRouteImport } from './routes/dms.index'
+import { Route as DmsConversationIdRouteImport } from './routes/dms.$conversationId'
+import { Route as ECodeRouteImport } from './routes/e.$code'
+import { Route as EventsIndexRouteImport } from './routes/events.index'
+import { Route as GroupsIndexRouteImport } from './routes/groups.index'
+import { Route as LoungeIndexRouteImport } from './routes/lounge.index'
+import { Route as LoungeIdRouteImport } from './routes/lounge.$id'
+import { Route as MeIndexRouteImport } from './routes/me.index'
+import { Route as MeBlockedRouteImport } from './routes/me.blocked'
+import { Route as MeCollabsRouteImport } from './routes/me.collabs'
+import { Route as MeEditRouteImport } from './routes/me.edit'
+import { Route as MeFriendsRouteImport } from './routes/me.friends'
+import { Route as MeNetworkRouteImport } from './routes/me.network'
+import { Route as MeTicketsRouteImport } from './routes/me.tickets'
+import { Route as RedeemCodeRouteImport } from './routes/redeem.$code'
+import { Route as UUsernameRouteImport } from './routes/u.$username'
+import { Route as WTokenRouteImport } from './routes/w.$token'
+import { Route as WorksSlugRouteImport } from './routes/works.$slug'
+import { Route as WorksNewRouteImport } from './routes/works.new'
+import { Route as WorkshopsIndexRouteImport } from './routes/workshops.index'
+import { Route as WorkshopsSlugRouteImport } from './routes/workshops.$slug'
+import { Route as WorkshopsNewRouteImport } from './routes/workshops.new'
 import { Route as DotlovableOauthConsentRouteImport } from './routes/[.]lovable.oauth.consent'
-import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
-import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
-import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
-import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
-import { Route as ApiPublicLoungeSweepRouteImport } from './routes/api/public/lounge.sweep'
-import { Route as ApiPublicGroupNewsSlugRouteImport } from './routes/api/public/group-news.$slug'
-import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
-import { Route as ApiPublicEventsReportSweepRouteImport } from './routes/api/public/events.report-sweep'
+import { Route as Char91DotmcpChar93InvokeToolToolRouteImport } from './routes/[.mcp]/invoke-tool/$tool'
+import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
+import { Route as AdminBlogIdRouteImport } from './routes/admin.blog.$id'
+import { Route as AdminBlogNewRouteImport } from './routes/admin.blog.new'
+import { Route as AdminBlogSubscribersRouteImport } from './routes/admin.blog.subscribers'
+import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
+import { Route as ApiPublicOgRouteImport } from './routes/api/public/og'
+import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
+import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
+import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
+import { Route as GSlugIndexRouteImport } from './routes/g.$slug.index'
+import { Route as MeBlogIndexRouteImport } from './routes/me.blog.index'
+import { Route as MeBlogIdRouteImport } from './routes/me.blog.$id'
+import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
+import { Route as WorksCollabNewRouteImport } from './routes/works.collab.new'
+import { Route as WorksInviteTokenRouteImport } from './routes/works.invite.$token'
+import { Route as WorkshopsSlugArchiveRouteImport } from './routes/workshops.$slug.archive'
+import { Route as WorkshopsSlugToolsRouteImport } from './routes/workshops.$slug.tools'
 import { Route as ApiPublicEventsMaterializeRouteImport } from './routes/api/public/events.materialize'
+import { Route as ApiPublicEventsReportSweepRouteImport } from './routes/api/public/events.report-sweep'
+import { Route as ApiPublicEventsSweepRouteImport } from './routes/api/public/events.sweep'
+import { Route as ApiPublicGroupNewsSlugRouteImport } from './routes/api/public/group-news.$slug'
+import { Route as ApiPublicLoungeSweepRouteImport } from './routes/api/public/lounge.sweep'
+import { Route as ApiPublicPaymentsWebhookRouteImport } from './routes/api/public/payments/webhook'
+import { Route as ApiPublicWorkshopsSweepRouteImport } from './routes/api/public/workshops.sweep'
+import { Route as GSlugEEventSlugRouteImport } from './routes/g.$slug.e.$eventSlug'
+import { Route as WorkshopsSlugToolsToolRouteImport } from './routes/workshops.$slug.tools.$tool'
 import { Route as ApiPublicEventsIdIcsRouteImport } from './routes/api/public/events.$id.ics'
 
-const WorkshopsRoute = WorkshopsRouteImport.update({
-  id: '/workshops',
-  path: '/workshops',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SignupRoute = SignupRouteImport.update({
-  id: '/signup',
-  path: '/signup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ReferRoute = ReferRouteImport.update({
-  id: '/refer',
-  path: '/refer',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PricingRoute = PricingRouteImport.update({
-  id: '/pricing',
-  path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoungeRoute = LoungeRouteImport.update({
-  id: '/lounge',
-  path: '/lounge',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GroupsRoute = GroupsRouteImport.update({
-  id: '/groups',
-  path: '/groups',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GoodbyeRoute = GoodbyeRouteImport.update({
-  id: '/goodbye',
-  path: '/goodbye',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GalleryRoute = GalleryRouteImport.update({
-  id: '/gallery',
-  path: '/gallery',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GRoute = GRouteImport.update({
-  id: '/g',
-  path: '/g',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CollabRoute = CollabRouteImport.update({
-  id: '/collab',
-  path: '/collab',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CitiesRoute = CitiesRouteImport.update({
-  id: '/cities',
-  path: '/cities',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -204,244 +119,111 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CitiesRoute = CitiesRouteImport.update({
+  id: '/cities',
+  path: '/cities',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => WorkshopsRoute,
-} as any)
-const MeIndexRoute = MeIndexRouteImport.update({
-  id: '/me/',
-  path: '/me/',
+const CollabRoute = CollabRouteImport.update({
+  id: '/collab',
+  path: '/collab',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoungeIndexRoute = LoungeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => LoungeRoute,
-} as any)
-const GroupsIndexRoute = GroupsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => GroupsRoute,
-} as any)
-const EventsIndexRoute = EventsIndexRouteImport.update({
-  id: '/events/',
-  path: '/events/',
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DmsIndexRoute = DmsIndexRouteImport.update({
-  id: '/dms/',
-  path: '/dms/',
+const GRoute = GRouteImport.update({
+  id: '/g',
+  path: '/g',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CollabIndexRoute = CollabIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CollabRoute,
-} as any)
-const CitiesIndexRoute = CitiesIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CitiesRoute,
-} as any)
-const BlogIndexRoute = BlogIndexRouteImport.update({
-  id: '/blog/',
-  path: '/blog/',
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GoodbyeRoute = GoodbyeRouteImport.update({
+  id: '/goodbye',
+  path: '/goodbye',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsRoute = GroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoungeRoute = LoungeRouteImport.update({
+  id: '/lounge',
+  path: '/lounge',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReferRoute = ReferRouteImport.update({
+  id: '/refer',
+  path: '/refer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopsRoute = WorkshopsRouteImport.update({
+  id: '/workshops',
+  path: '/workshops',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char91DotmcpChar93ListToolsRoute =
+  Char91DotmcpChar93ListToolsRouteImport.update({
+    id: '/.mcp/list-tools',
+    path: '/.mcp/list-tools',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const Char91DotwellKnownChar93OauthProtectedResourceRoute =
+  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
+    id: '/.well-known/oauth-protected-resource',
+    path: '/.well-known/oauth-protected-resource',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => WorkshopsRoute,
-} as any)
-const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => WorkshopsRoute,
-} as any)
-const WorksNewRoute = WorksNewRouteImport.update({
-  id: '/works/new',
-  path: '/works/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WorksSlugRoute = WorksSlugRouteImport.update({
-  id: '/works/$slug',
-  path: '/works/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const WTokenRoute = WTokenRouteImport.update({
-  id: '/w/$token',
-  path: '/w/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const UUsernameRoute = UUsernameRouteImport.update({
-  id: '/u/$username',
-  path: '/u/$username',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RedeemCodeRoute = RedeemCodeRouteImport.update({
-  id: '/redeem/$code',
-  path: '/redeem/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeTicketsRoute = MeTicketsRouteImport.update({
-  id: '/me/tickets',
-  path: '/me/tickets',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeNetworkRoute = MeNetworkRouteImport.update({
-  id: '/me/network',
-  path: '/me/network',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeFriendsRoute = MeFriendsRouteImport.update({
-  id: '/me/friends',
-  path: '/me/friends',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeEditRoute = MeEditRouteImport.update({
-  id: '/me/edit',
-  path: '/me/edit',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeCollabsRoute = MeCollabsRouteImport.update({
-  id: '/me/collabs',
-  path: '/me/collabs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MeBlockedRoute = MeBlockedRouteImport.update({
-  id: '/me/blocked',
-  path: '/me/blocked',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoungeIdRoute = LoungeIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => LoungeRoute,
-} as any)
-const ECodeRoute = ECodeRouteImport.update({
-  id: '/e/$code',
-  path: '/e/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
-  id: '/dms/$conversationId',
-  path: '/dms/$conversationId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CollabNewRoute = CollabNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => CollabRoute,
-} as any)
-const CollabSlugRoute = CollabSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => CollabRoute,
-} as any)
-const ClaimTokenRoute = ClaimTokenRouteImport.update({
-  id: '/claim/$token',
-  path: '/claim/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CitiesSlugRoute = CitiesSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => CitiesRoute,
-} as any)
-const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
-  id: '/checkout/return',
-  path: '/checkout/return',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogRssDotxmlRoute = BlogRssDotxmlRouteImport.update({
-  id: '/blog/rss.xml',
-  path: '/blog/rss.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSlugRoute = BlogSlugRouteImport.update({
-  id: '/blog/$slug',
-  path: '/blog/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminRevenueRoute = AdminRevenueRouteImport.update({
-  id: '/revenue',
-  path: '/revenue',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminReportsRoute = AdminReportsRouteImport.update({
-  id: '/reports',
-  path: '/reports',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPlusRoute = AdminPlusRouteImport.update({
-  id: '/plus',
-  path: '/plus',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminOpsRoute = AdminOpsRouteImport.update({
-  id: '/ops',
-  path: '/ops',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminModerationRoute = AdminModerationRouteImport.update({
-  id: '/moderation',
-  path: '/moderation',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
-  id: '/marketplace',
-  path: '/marketplace',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLinksRoute = AdminLinksRouteImport.update({
-  id: '/links',
-  path: '/links',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGrowthRoute = AdminGrowthRouteImport.update({
-  id: '/growth',
-  path: '/growth',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGroupsRoute = AdminGroupsRouteImport.update({
-  id: '/groups',
-  path: '/groups',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminGeoRoute = AdminGeoRouteImport.update({
-  id: '/geo',
-  path: '/geo',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEventsRoute = AdminEventsRouteImport.update({
-  id: '/events',
-  path: '/events',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEngagementRoute = AdminEngagementRouteImport.update({
-  id: '/engagement',
-  path: '/engagement',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminBadgesRoute = AdminBadgesRouteImport.update({
-  id: '/badges',
-  path: '/badges',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -449,102 +231,240 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
-const Char91DotwellKnownChar93OauthProtectedResourceRoute =
-  Char91DotwellKnownChar93OauthProtectedResourceRouteImport.update({
-    id: '/.well-known/oauth-protected-resource',
-    path: '/.well-known/oauth-protected-resource',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const Char91DotmcpChar93ListToolsRoute =
-  Char91DotmcpChar93ListToolsRouteImport.update({
-    id: '/.mcp/list-tools',
-    path: '/.mcp/list-tools',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const MeBlogIndexRoute = MeBlogIndexRouteImport.update({
-  id: '/me/blog/',
-  path: '/me/blog/',
-  getParentRoute: () => rootRouteImport,
+const AdminBadgesRoute = AdminBadgesRouteImport.update({
+  id: '/badges',
+  path: '/badges',
+  getParentRoute: () => AdminRoute,
 } as any)
-const GSlugIndexRoute = GSlugIndexRouteImport.update({
-  id: '/$slug/',
-  path: '/$slug/',
-  getParentRoute: () => GRoute,
+const AdminEngagementRoute = AdminEngagementRouteImport.update({
+  id: '/engagement',
+  path: '/engagement',
+  getParentRoute: () => AdminRoute,
 } as any)
-const AdminBlogIndexRoute = AdminBlogIndexRouteImport.update({
+const AdminEventsRoute = AdminEventsRouteImport.update({
+  id: '/events',
+  path: '/events',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGeoRoute = AdminGeoRouteImport.update({
+  id: '/geo',
+  path: '/geo',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGroupsRoute = AdminGroupsRouteImport.update({
+  id: '/groups',
+  path: '/groups',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminGrowthRoute = AdminGrowthRouteImport.update({
+  id: '/growth',
+  path: '/growth',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLinksRoute = AdminLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminMarketplaceRoute = AdminMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminModerationRoute = AdminModerationRouteImport.update({
+  id: '/moderation',
+  path: '/moderation',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOpsRoute = AdminOpsRouteImport.update({
+  id: '/ops',
+  path: '/ops',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPlusRoute = AdminPlusRouteImport.update({
+  id: '/plus',
+  path: '/plus',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRoute = AdminReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminRevenueRoute = AdminRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
   id: '/blog/',
   path: '/blog/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
-  id: '/tools',
-  path: '/tools',
-  getParentRoute: () => WorkshopsSlugRoute,
-} as any)
-const WorkshopsSlugArchiveRoute = WorkshopsSlugArchiveRouteImport.update({
-  id: '/archive',
-  path: '/archive',
-  getParentRoute: () => WorkshopsSlugRoute,
-} as any)
-const WorksInviteTokenRoute = WorksInviteTokenRouteImport.update({
-  id: '/works/invite/$token',
-  path: '/works/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorksCollabNewRoute = WorksCollabNewRouteImport.update({
-  id: '/works/collab/new',
-  path: '/works/collab/new',
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorksSlugEditRoute = WorksSlugEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => WorksSlugRoute,
-} as any)
-const MeBlogIdRoute = MeBlogIdRouteImport.update({
-  id: '/me/blog/$id',
-  path: '/me/blog/$id',
+const BlogRssDotxmlRoute = BlogRssDotxmlRouteImport.update({
+  id: '/blog/rss.xml',
+  path: '/blog/rss.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
+const CheckoutReturnRoute = CheckoutReturnRouteImport.update({
+  id: '/checkout/return',
+  path: '/checkout/return',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CitiesIndexRoute = CitiesIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CitiesRoute,
+} as any)
+const CitiesSlugRoute = CitiesSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CitiesRoute,
+} as any)
+const ClaimTokenRoute = ClaimTokenRouteImport.update({
   id: '/claim/$token',
   path: '/claim/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CollabIndexRoute = CollabIndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => CollabRoute,
 } as any)
-const CollabSlugEditRoute = CollabSlugEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => CollabSlugRoute,
+const CollabSlugRoute = CollabSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => CollabRoute,
 } as any)
-const BlogCCategoryRoute = BlogCCategoryRouteImport.update({
-  id: '/blog/c/$category',
-  path: '/blog/c/$category',
+const CollabNewRoute = CollabNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => CollabRoute,
+} as any)
+const DmsIndexRoute = DmsIndexRouteImport.update({
+  id: '/dms/',
+  path: '/dms/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicOgRoute = ApiPublicOgRouteImport.update({
-  id: '/api/public/og',
-  path: '/api/public/og',
+const DmsConversationIdRoute = DmsConversationIdRouteImport.update({
+  id: '/dms/$conversationId',
+  path: '/dms/$conversationId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+const ECodeRoute = ECodeRouteImport.update({
+  id: '/e/$code',
+  path: '/e/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EventsIndexRoute = EventsIndexRouteImport.update({
+  id: '/events/',
+  path: '/events/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsIndexRoute = GroupsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => GroupsRoute,
+} as any)
+const LoungeIndexRoute = LoungeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LoungeRoute,
+} as any)
+const LoungeIdRoute = LoungeIdRouteImport.update({
   id: '/$id',
   path: '/$id',
-  getParentRoute: () => AdminUsersRoute,
+  getParentRoute: () => LoungeRoute,
 } as any)
-const AdminBlogSubscribersRoute = AdminBlogSubscribersRouteImport.update({
-  id: '/blog/subscribers',
-  path: '/blog/subscribers',
-  getParentRoute: () => AdminRoute,
+const MeIndexRoute = MeIndexRouteImport.update({
+  id: '/me/',
+  path: '/me/',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminBlogNewRoute = AdminBlogNewRouteImport.update({
-  id: '/blog/new',
-  path: '/blog/new',
-  getParentRoute: () => AdminRoute,
+const MeBlockedRoute = MeBlockedRouteImport.update({
+  id: '/me/blocked',
+  path: '/me/blocked',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminBlogIdRoute = AdminBlogIdRouteImport.update({
-  id: '/blog/$id',
-  path: '/blog/$id',
-  getParentRoute: () => AdminRoute,
+const MeCollabsRoute = MeCollabsRouteImport.update({
+  id: '/me/collabs',
+  path: '/me/collabs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeEditRoute = MeEditRouteImport.update({
+  id: '/me/edit',
+  path: '/me/edit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeFriendsRoute = MeFriendsRouteImport.update({
+  id: '/me/friends',
+  path: '/me/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeNetworkRoute = MeNetworkRouteImport.update({
+  id: '/me/network',
+  path: '/me/network',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeTicketsRoute = MeTicketsRouteImport.update({
+  id: '/me/tickets',
+  path: '/me/tickets',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedeemCodeRoute = RedeemCodeRouteImport.update({
+  id: '/redeem/$code',
+  path: '/redeem/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UUsernameRoute = UUsernameRouteImport.update({
+  id: '/u/$username',
+  path: '/u/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WTokenRoute = WTokenRouteImport.update({
+  id: '/w/$token',
+  path: '/w/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorksSlugRoute = WorksSlugRouteImport.update({
+  id: '/works/$slug',
+  path: '/works/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorksNewRoute = WorksNewRouteImport.update({
+  id: '/works/new',
+  path: '/works/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopsIndexRoute = WorkshopsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
+const WorkshopsSlugRoute = WorkshopsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
+const WorkshopsNewRoute = WorkshopsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => WorkshopsRoute,
+} as any)
+const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
+  id: '/.lovable/oauth/consent',
+  path: '/.lovable/oauth/consent',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const Char91DotmcpChar93InvokeToolToolRoute =
   Char91DotmcpChar93InvokeToolToolRouteImport.update({
@@ -552,24 +472,116 @@ const Char91DotmcpChar93InvokeToolToolRoute =
     path: '/.mcp/invoke-tool/$tool',
     getParentRoute: () => rootRouteImport,
   } as any)
-const DotlovableOauthConsentRoute = DotlovableOauthConsentRouteImport.update({
-  id: '/.lovable/oauth/consent',
-  path: '/.lovable/oauth/consent',
+const AdminBlogIndexRoute = AdminBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogIdRoute = AdminBlogIdRouteImport.update({
+  id: '/blog/$id',
+  path: '/blog/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogNewRoute = AdminBlogNewRouteImport.update({
+  id: '/blog/new',
+  path: '/blog/new',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogSubscribersRoute = AdminBlogSubscribersRouteImport.update({
+  id: '/blog/subscribers',
+  path: '/blog/subscribers',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersIdRoute = AdminUsersIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminUsersRoute,
+} as any)
+const ApiPublicOgRoute = ApiPublicOgRouteImport.update({
+  id: '/api/public/og',
+  path: '/api/public/og',
   getParentRoute: () => rootRouteImport,
 } as any)
-const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
-  id: '/$tool',
-  path: '/$tool',
-  getParentRoute: () => WorkshopsSlugToolsRoute,
+const BlogCCategoryRoute = BlogCCategoryRouteImport.update({
+  id: '/blog/c/$category',
+  path: '/blog/c/$category',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const GSlugEEventSlugRoute = GSlugEEventSlugRouteImport.update({
-  id: '/$slug/e/$eventSlug',
-  path: '/$slug/e/$eventSlug',
+const CollabSlugEditRoute = CollabSlugEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => CollabSlugRoute,
+} as any)
+const CollabClaimTokenRoute = CollabClaimTokenRouteImport.update({
+  id: '/claim/$token',
+  path: '/claim/$token',
+  getParentRoute: () => CollabRoute,
+} as any)
+const GSlugIndexRoute = GSlugIndexRouteImport.update({
+  id: '/$slug/',
+  path: '/$slug/',
   getParentRoute: () => GRoute,
 } as any)
-const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
-  id: '/api/public/workshops/sweep',
-  path: '/api/public/workshops/sweep',
+const MeBlogIndexRoute = MeBlogIndexRouteImport.update({
+  id: '/me/blog/',
+  path: '/me/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MeBlogIdRoute = MeBlogIdRouteImport.update({
+  id: '/me/blog/$id',
+  path: '/me/blog/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorksSlugEditRoute = WorksSlugEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => WorksSlugRoute,
+} as any)
+const WorksCollabNewRoute = WorksCollabNewRouteImport.update({
+  id: '/works/collab/new',
+  path: '/works/collab/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorksInviteTokenRoute = WorksInviteTokenRouteImport.update({
+  id: '/works/invite/$token',
+  path: '/works/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WorkshopsSlugArchiveRoute = WorkshopsSlugArchiveRouteImport.update({
+  id: '/archive',
+  path: '/archive',
+  getParentRoute: () => WorkshopsSlugRoute,
+} as any)
+const WorkshopsSlugToolsRoute = WorkshopsSlugToolsRouteImport.update({
+  id: '/tools',
+  path: '/tools',
+  getParentRoute: () => WorkshopsSlugRoute,
+} as any)
+const ApiPublicEventsMaterializeRoute =
+  ApiPublicEventsMaterializeRouteImport.update({
+    id: '/api/public/events/materialize',
+    path: '/api/public/events/materialize',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicEventsReportSweepRoute =
+  ApiPublicEventsReportSweepRouteImport.update({
+    id: '/api/public/events/report-sweep',
+    path: '/api/public/events/report-sweep',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicEventsSweepRoute = ApiPublicEventsSweepRouteImport.update({
+  id: '/api/public/events/sweep',
+  path: '/api/public/events/sweep',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicGroupNewsSlugRoute = ApiPublicGroupNewsSlugRouteImport.update({
+  id: '/api/public/group-news/$slug',
+  path: '/api/public/group-news/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicLoungeSweepRoute = ApiPublicLoungeSweepRouteImport.update({
+  id: '/api/public/lounge/sweep',
+  path: '/api/public/lounge/sweep',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicPaymentsWebhookRoute =
@@ -578,33 +590,21 @@ const ApiPublicPaymentsWebhookRoute =
     path: '/api/public/payments/webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicLoungeSweepRoute = ApiPublicLoungeSweepRouteImport.update({
-  id: '/api/public/lounge/sweep',
-  path: '/api/public/lounge/sweep',
+const ApiPublicWorkshopsSweepRoute = ApiPublicWorkshopsSweepRouteImport.update({
+  id: '/api/public/workshops/sweep',
+  path: '/api/public/workshops/sweep',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicGroupNewsSlugRoute = ApiPublicGroupNewsSlugRouteImport.update({
-  id: '/api/public/group-news/$slug',
-  path: '/api/public/group-news/$slug',
-  getParentRoute: () => rootRouteImport,
+const GSlugEEventSlugRoute = GSlugEEventSlugRouteImport.update({
+  id: '/$slug/e/$eventSlug',
+  path: '/$slug/e/$eventSlug',
+  getParentRoute: () => GRoute,
 } as any)
-const ApiPublicEventsSweepRoute = ApiPublicEventsSweepRouteImport.update({
-  id: '/api/public/events/sweep',
-  path: '/api/public/events/sweep',
-  getParentRoute: () => rootRouteImport,
+const WorkshopsSlugToolsToolRoute = WorkshopsSlugToolsToolRouteImport.update({
+  id: '/$tool',
+  path: '/$tool',
+  getParentRoute: () => WorkshopsSlugToolsRoute,
 } as any)
-const ApiPublicEventsReportSweepRoute =
-  ApiPublicEventsReportSweepRouteImport.update({
-    id: '/api/public/events/report-sweep',
-    path: '/api/public/events/report-sweep',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicEventsMaterializeRoute =
-  ApiPublicEventsMaterializeRouteImport.update({
-    id: '/api/public/events/materialize',
-    path: '/api/public/events/materialize',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiPublicEventsIdIcsRoute = ApiPublicEventsIdIcsRouteImport.update({
   id: '/api/public/events/$id/ics',
   path: '/api/public/events/$id/ics',
@@ -1273,130 +1273,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/workshops': {
-      id: '/workshops'
-      path: '/workshops'
-      fullPath: '/workshops'
-      preLoaderRoute: typeof WorkshopsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/signup': {
-      id: '/signup'
-      path: '/signup'
-      fullPath: '/signup'
-      preLoaderRoute: typeof SignupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/refer': {
-      id: '/refer'
-      path: '/refer'
-      fullPath: '/refer'
-      preLoaderRoute: typeof ReferRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/pricing': {
-      id: '/pricing'
-      path: '/pricing'
-      fullPath: '/pricing'
-      preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lounge': {
-      id: '/lounge'
-      path: '/lounge'
-      fullPath: '/lounge'
-      preLoaderRoute: typeof LoungeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/groups': {
-      id: '/groups'
-      path: '/groups'
-      fullPath: '/groups'
-      preLoaderRoute: typeof GroupsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/goodbye': {
-      id: '/goodbye'
-      path: '/goodbye'
-      fullPath: '/goodbye'
-      preLoaderRoute: typeof GoodbyeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gallery': {
-      id: '/gallery'
-      path: '/gallery'
-      fullPath: '/gallery'
-      preLoaderRoute: typeof GalleryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/g': {
-      id: '/g'
-      path: '/g'
-      fullPath: '/g'
-      preLoaderRoute: typeof GRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/collab': {
-      id: '/collab'
-      path: '/collab'
-      fullPath: '/collab'
-      preLoaderRoute: typeof CollabRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cities': {
-      id: '/cities'
-      path: '/cities'
-      fullPath: '/cities'
-      preLoaderRoute: typeof CitiesRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1406,354 +1287,130 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/cities': {
+      id: '/cities'
+      path: '/cities'
+      fullPath: '/cities'
+      preLoaderRoute: typeof CitiesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workshops/': {
-      id: '/workshops/'
-      path: '/'
-      fullPath: '/workshops/'
-      preLoaderRoute: typeof WorkshopsIndexRouteImport
-      parentRoute: typeof WorkshopsRoute
-    }
-    '/me/': {
-      id: '/me/'
-      path: '/me'
-      fullPath: '/me/'
-      preLoaderRoute: typeof MeIndexRouteImport
+    '/collab': {
+      id: '/collab'
+      path: '/collab'
+      fullPath: '/collab'
+      preLoaderRoute: typeof CollabRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/lounge/': {
-      id: '/lounge/'
-      path: '/'
-      fullPath: '/lounge/'
-      preLoaderRoute: typeof LoungeIndexRouteImport
-      parentRoute: typeof LoungeRoute
-    }
-    '/groups/': {
-      id: '/groups/'
-      path: '/'
-      fullPath: '/groups/'
-      preLoaderRoute: typeof GroupsIndexRouteImport
-      parentRoute: typeof GroupsRoute
-    }
-    '/events/': {
-      id: '/events/'
-      path: '/events'
-      fullPath: '/events/'
-      preLoaderRoute: typeof EventsIndexRouteImport
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dms/': {
-      id: '/dms/'
-      path: '/dms'
-      fullPath: '/dms/'
-      preLoaderRoute: typeof DmsIndexRouteImport
+    '/g': {
+      id: '/g'
+      path: '/g'
+      fullPath: '/g'
+      preLoaderRoute: typeof GRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/collab/': {
-      id: '/collab/'
-      path: '/'
-      fullPath: '/collab/'
-      preLoaderRoute: typeof CollabIndexRouteImport
-      parentRoute: typeof CollabRoute
-    }
-    '/cities/': {
-      id: '/cities/'
-      path: '/'
-      fullPath: '/cities/'
-      preLoaderRoute: typeof CitiesIndexRouteImport
-      parentRoute: typeof CitiesRoute
-    }
-    '/blog/': {
-      id: '/blog/'
-      path: '/blog'
-      fullPath: '/blog/'
-      preLoaderRoute: typeof BlogIndexRouteImport
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/': {
-      id: '/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/workshops/new': {
-      id: '/workshops/new'
-      path: '/new'
-      fullPath: '/workshops/new'
-      preLoaderRoute: typeof WorkshopsNewRouteImport
-      parentRoute: typeof WorkshopsRoute
-    }
-    '/workshops/$slug': {
-      id: '/workshops/$slug'
-      path: '/$slug'
-      fullPath: '/workshops/$slug'
-      preLoaderRoute: typeof WorkshopsSlugRouteImport
-      parentRoute: typeof WorkshopsRoute
-    }
-    '/works/new': {
-      id: '/works/new'
-      path: '/works/new'
-      fullPath: '/works/new'
-      preLoaderRoute: typeof WorksNewRouteImport
+    '/goodbye': {
+      id: '/goodbye'
+      path: '/goodbye'
+      fullPath: '/goodbye'
+      preLoaderRoute: typeof GoodbyeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/works/$slug': {
-      id: '/works/$slug'
-      path: '/works/$slug'
-      fullPath: '/works/$slug'
-      preLoaderRoute: typeof WorksSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/w/$token': {
-      id: '/w/$token'
-      path: '/w/$token'
-      fullPath: '/w/$token'
-      preLoaderRoute: typeof WTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/u/$username': {
-      id: '/u/$username'
-      path: '/u/$username'
-      fullPath: '/u/$username'
-      preLoaderRoute: typeof UUsernameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/redeem/$code': {
-      id: '/redeem/$code'
-      path: '/redeem/$code'
-      fullPath: '/redeem/$code'
-      preLoaderRoute: typeof RedeemCodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/tickets': {
-      id: '/me/tickets'
-      path: '/me/tickets'
-      fullPath: '/me/tickets'
-      preLoaderRoute: typeof MeTicketsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/network': {
-      id: '/me/network'
-      path: '/me/network'
-      fullPath: '/me/network'
-      preLoaderRoute: typeof MeNetworkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/friends': {
-      id: '/me/friends'
-      path: '/me/friends'
-      fullPath: '/me/friends'
-      preLoaderRoute: typeof MeFriendsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/edit': {
-      id: '/me/edit'
-      path: '/me/edit'
-      fullPath: '/me/edit'
-      preLoaderRoute: typeof MeEditRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/collabs': {
-      id: '/me/collabs'
-      path: '/me/collabs'
-      fullPath: '/me/collabs'
-      preLoaderRoute: typeof MeCollabsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/me/blocked': {
-      id: '/me/blocked'
-      path: '/me/blocked'
-      fullPath: '/me/blocked'
-      preLoaderRoute: typeof MeBlockedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lounge/$id': {
-      id: '/lounge/$id'
-      path: '/$id'
-      fullPath: '/lounge/$id'
-      preLoaderRoute: typeof LoungeIdRouteImport
-      parentRoute: typeof LoungeRoute
-    }
-    '/e/$code': {
-      id: '/e/$code'
-      path: '/e/$code'
-      fullPath: '/e/$code'
-      preLoaderRoute: typeof ECodeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dms/$conversationId': {
-      id: '/dms/$conversationId'
-      path: '/dms/$conversationId'
-      fullPath: '/dms/$conversationId'
-      preLoaderRoute: typeof DmsConversationIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/collab/new': {
-      id: '/collab/new'
-      path: '/new'
-      fullPath: '/collab/new'
-      preLoaderRoute: typeof CollabNewRouteImport
-      parentRoute: typeof CollabRoute
-    }
-    '/collab/$slug': {
-      id: '/collab/$slug'
-      path: '/$slug'
-      fullPath: '/collab/$slug'
-      preLoaderRoute: typeof CollabSlugRouteImport
-      parentRoute: typeof CollabRoute
-    }
-    '/claim/$token': {
-      id: '/claim/$token'
-      path: '/claim/$token'
-      fullPath: '/claim/$token'
-      preLoaderRoute: typeof ClaimTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cities/$slug': {
-      id: '/cities/$slug'
-      path: '/$slug'
-      fullPath: '/cities/$slug'
-      preLoaderRoute: typeof CitiesSlugRouteImport
-      parentRoute: typeof CitiesRoute
-    }
-    '/checkout/return': {
-      id: '/checkout/return'
-      path: '/checkout/return'
-      fullPath: '/checkout/return'
-      preLoaderRoute: typeof CheckoutReturnRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/rss.xml': {
-      id: '/blog/rss.xml'
-      path: '/blog/rss.xml'
-      fullPath: '/blog/rss.xml'
-      preLoaderRoute: typeof BlogRssDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/$slug': {
-      id: '/blog/$slug'
-      path: '/blog/$slug'
-      fullPath: '/blog/$slug'
-      preLoaderRoute: typeof BlogSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/revenue': {
-      id: '/admin/revenue'
-      path: '/revenue'
-      fullPath: '/admin/revenue'
-      preLoaderRoute: typeof AdminRevenueRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/reports': {
-      id: '/admin/reports'
-      path: '/reports'
-      fullPath: '/admin/reports'
-      preLoaderRoute: typeof AdminReportsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/plus': {
-      id: '/admin/plus'
-      path: '/plus'
-      fullPath: '/admin/plus'
-      preLoaderRoute: typeof AdminPlusRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/ops': {
-      id: '/admin/ops'
-      path: '/ops'
-      fullPath: '/admin/ops'
-      preLoaderRoute: typeof AdminOpsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/moderation': {
-      id: '/admin/moderation'
-      path: '/moderation'
-      fullPath: '/admin/moderation'
-      preLoaderRoute: typeof AdminModerationRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/marketplace': {
-      id: '/admin/marketplace'
-      path: '/marketplace'
-      fullPath: '/admin/marketplace'
-      preLoaderRoute: typeof AdminMarketplaceRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/links': {
-      id: '/admin/links'
-      path: '/links'
-      fullPath: '/admin/links'
-      preLoaderRoute: typeof AdminLinksRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/growth': {
-      id: '/admin/growth'
-      path: '/growth'
-      fullPath: '/admin/growth'
-      preLoaderRoute: typeof AdminGrowthRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/groups': {
-      id: '/admin/groups'
+    '/groups': {
+      id: '/groups'
       path: '/groups'
-      fullPath: '/admin/groups'
-      preLoaderRoute: typeof AdminGroupsRouteImport
-      parentRoute: typeof AdminRoute
+      fullPath: '/groups'
+      preLoaderRoute: typeof GroupsRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/geo': {
-      id: '/admin/geo'
-      path: '/geo'
-      fullPath: '/admin/geo'
-      preLoaderRoute: typeof AdminGeoRouteImport
-      parentRoute: typeof AdminRoute
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/events': {
-      id: '/admin/events'
-      path: '/events'
-      fullPath: '/admin/events'
-      preLoaderRoute: typeof AdminEventsRouteImport
-      parentRoute: typeof AdminRoute
+    '/lounge': {
+      id: '/lounge'
+      path: '/lounge'
+      fullPath: '/lounge'
+      preLoaderRoute: typeof LoungeRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/engagement': {
-      id: '/admin/engagement'
-      path: '/engagement'
-      fullPath: '/admin/engagement'
-      preLoaderRoute: typeof AdminEngagementRouteImport
-      parentRoute: typeof AdminRoute
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/badges': {
-      id: '/admin/badges'
-      path: '/badges'
-      fullPath: '/admin/badges'
-      preLoaderRoute: typeof AdminBadgesRouteImport
-      parentRoute: typeof AdminRoute
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/audit': {
-      id: '/admin/audit'
-      path: '/audit'
-      fullPath: '/admin/audit'
-      preLoaderRoute: typeof AdminAuditRouteImport
-      parentRoute: typeof AdminRoute
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/.well-known/oauth-protected-resource': {
-      id: '/.well-known/oauth-protected-resource'
-      path: '/.well-known/oauth-protected-resource'
-      fullPath: '/.well-known/oauth-protected-resource'
-      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
+    '/refer': {
+      id: '/refer'
+      path: '/refer'
+      fullPath: '/refer'
+      preLoaderRoute: typeof ReferRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workshops': {
+      id: '/workshops'
+      path: '/workshops'
+      fullPath: '/workshops'
+      preLoaderRoute: typeof WorkshopsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.mcp/list-tools': {
@@ -1763,116 +1420,368 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof Char91DotmcpChar93ListToolsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/me/blog/': {
-      id: '/me/blog/'
-      path: '/me/blog'
-      fullPath: '/me/blog/'
-      preLoaderRoute: typeof MeBlogIndexRouteImport
+    '/.well-known/oauth-protected-resource': {
+      id: '/.well-known/oauth-protected-resource'
+      path: '/.well-known/oauth-protected-resource'
+      fullPath: '/.well-known/oauth-protected-resource'
+      preLoaderRoute: typeof Char91DotwellKnownChar93OauthProtectedResourceRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/g/$slug/': {
-      id: '/g/$slug/'
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/audit': {
+      id: '/admin/audit'
+      path: '/audit'
+      fullPath: '/admin/audit'
+      preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/badges': {
+      id: '/admin/badges'
+      path: '/badges'
+      fullPath: '/admin/badges'
+      preLoaderRoute: typeof AdminBadgesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/engagement': {
+      id: '/admin/engagement'
+      path: '/engagement'
+      fullPath: '/admin/engagement'
+      preLoaderRoute: typeof AdminEngagementRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/events': {
+      id: '/admin/events'
+      path: '/events'
+      fullPath: '/admin/events'
+      preLoaderRoute: typeof AdminEventsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/geo': {
+      id: '/admin/geo'
+      path: '/geo'
+      fullPath: '/admin/geo'
+      preLoaderRoute: typeof AdminGeoRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/groups': {
+      id: '/admin/groups'
+      path: '/groups'
+      fullPath: '/admin/groups'
+      preLoaderRoute: typeof AdminGroupsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/growth': {
+      id: '/admin/growth'
+      path: '/growth'
+      fullPath: '/admin/growth'
+      preLoaderRoute: typeof AdminGrowthRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/links': {
+      id: '/admin/links'
+      path: '/links'
+      fullPath: '/admin/links'
+      preLoaderRoute: typeof AdminLinksRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/marketplace': {
+      id: '/admin/marketplace'
+      path: '/marketplace'
+      fullPath: '/admin/marketplace'
+      preLoaderRoute: typeof AdminMarketplaceRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/moderation': {
+      id: '/admin/moderation'
+      path: '/moderation'
+      fullPath: '/admin/moderation'
+      preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/ops': {
+      id: '/admin/ops'
+      path: '/ops'
+      fullPath: '/admin/ops'
+      preLoaderRoute: typeof AdminOpsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/plus': {
+      id: '/admin/plus'
+      path: '/plus'
+      fullPath: '/admin/plus'
+      preLoaderRoute: typeof AdminPlusRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/reports': {
+      id: '/admin/reports'
+      path: '/reports'
+      fullPath: '/admin/reports'
+      preLoaderRoute: typeof AdminReportsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/revenue': {
+      id: '/admin/revenue'
+      path: '/revenue'
+      fullPath: '/admin/revenue'
+      preLoaderRoute: typeof AdminRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$slug': {
+      id: '/blog/$slug'
+      path: '/blog/$slug'
+      fullPath: '/blog/$slug'
+      preLoaderRoute: typeof BlogSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/rss.xml': {
+      id: '/blog/rss.xml'
+      path: '/blog/rss.xml'
+      fullPath: '/blog/rss.xml'
+      preLoaderRoute: typeof BlogRssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/return': {
+      id: '/checkout/return'
+      path: '/checkout/return'
+      fullPath: '/checkout/return'
+      preLoaderRoute: typeof CheckoutReturnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cities/': {
+      id: '/cities/'
+      path: '/'
+      fullPath: '/cities/'
+      preLoaderRoute: typeof CitiesIndexRouteImport
+      parentRoute: typeof CitiesRoute
+    }
+    '/cities/$slug': {
+      id: '/cities/$slug'
       path: '/$slug'
-      fullPath: '/g/$slug/'
-      preLoaderRoute: typeof GSlugIndexRouteImport
-      parentRoute: typeof GRoute
+      fullPath: '/cities/$slug'
+      preLoaderRoute: typeof CitiesSlugRouteImport
+      parentRoute: typeof CitiesRoute
+    }
+    '/claim/$token': {
+      id: '/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/claim/$token'
+      preLoaderRoute: typeof ClaimTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/collab/': {
+      id: '/collab/'
+      path: '/'
+      fullPath: '/collab/'
+      preLoaderRoute: typeof CollabIndexRouteImport
+      parentRoute: typeof CollabRoute
+    }
+    '/collab/$slug': {
+      id: '/collab/$slug'
+      path: '/$slug'
+      fullPath: '/collab/$slug'
+      preLoaderRoute: typeof CollabSlugRouteImport
+      parentRoute: typeof CollabRoute
+    }
+    '/collab/new': {
+      id: '/collab/new'
+      path: '/new'
+      fullPath: '/collab/new'
+      preLoaderRoute: typeof CollabNewRouteImport
+      parentRoute: typeof CollabRoute
+    }
+    '/dms/': {
+      id: '/dms/'
+      path: '/dms'
+      fullPath: '/dms/'
+      preLoaderRoute: typeof DmsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dms/$conversationId': {
+      id: '/dms/$conversationId'
+      path: '/dms/$conversationId'
+      fullPath: '/dms/$conversationId'
+      preLoaderRoute: typeof DmsConversationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/e/$code': {
+      id: '/e/$code'
+      path: '/e/$code'
+      fullPath: '/e/$code'
+      preLoaderRoute: typeof ECodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/events/': {
+      id: '/events/'
+      path: '/events'
+      fullPath: '/events/'
+      preLoaderRoute: typeof EventsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/groups/': {
+      id: '/groups/'
+      path: '/'
+      fullPath: '/groups/'
+      preLoaderRoute: typeof GroupsIndexRouteImport
+      parentRoute: typeof GroupsRoute
+    }
+    '/lounge/': {
+      id: '/lounge/'
+      path: '/'
+      fullPath: '/lounge/'
+      preLoaderRoute: typeof LoungeIndexRouteImport
+      parentRoute: typeof LoungeRoute
+    }
+    '/lounge/$id': {
+      id: '/lounge/$id'
+      path: '/$id'
+      fullPath: '/lounge/$id'
+      preLoaderRoute: typeof LoungeIdRouteImport
+      parentRoute: typeof LoungeRoute
+    }
+    '/me/': {
+      id: '/me/'
+      path: '/me'
+      fullPath: '/me/'
+      preLoaderRoute: typeof MeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/blocked': {
+      id: '/me/blocked'
+      path: '/me/blocked'
+      fullPath: '/me/blocked'
+      preLoaderRoute: typeof MeBlockedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/collabs': {
+      id: '/me/collabs'
+      path: '/me/collabs'
+      fullPath: '/me/collabs'
+      preLoaderRoute: typeof MeCollabsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/edit': {
+      id: '/me/edit'
+      path: '/me/edit'
+      fullPath: '/me/edit'
+      preLoaderRoute: typeof MeEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/friends': {
+      id: '/me/friends'
+      path: '/me/friends'
+      fullPath: '/me/friends'
+      preLoaderRoute: typeof MeFriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/network': {
+      id: '/me/network'
+      path: '/me/network'
+      fullPath: '/me/network'
+      preLoaderRoute: typeof MeNetworkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/me/tickets': {
+      id: '/me/tickets'
+      path: '/me/tickets'
+      fullPath: '/me/tickets'
+      preLoaderRoute: typeof MeTicketsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redeem/$code': {
+      id: '/redeem/$code'
+      path: '/redeem/$code'
+      fullPath: '/redeem/$code'
+      preLoaderRoute: typeof RedeemCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/u/$username': {
+      id: '/u/$username'
+      path: '/u/$username'
+      fullPath: '/u/$username'
+      preLoaderRoute: typeof UUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/w/$token': {
+      id: '/w/$token'
+      path: '/w/$token'
+      fullPath: '/w/$token'
+      preLoaderRoute: typeof WTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/works/$slug': {
+      id: '/works/$slug'
+      path: '/works/$slug'
+      fullPath: '/works/$slug'
+      preLoaderRoute: typeof WorksSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/works/new': {
+      id: '/works/new'
+      path: '/works/new'
+      fullPath: '/works/new'
+      preLoaderRoute: typeof WorksNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/workshops/': {
+      id: '/workshops/'
+      path: '/'
+      fullPath: '/workshops/'
+      preLoaderRoute: typeof WorkshopsIndexRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
+    '/workshops/$slug': {
+      id: '/workshops/$slug'
+      path: '/$slug'
+      fullPath: '/workshops/$slug'
+      preLoaderRoute: typeof WorkshopsSlugRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
+    '/workshops/new': {
+      id: '/workshops/new'
+      path: '/new'
+      fullPath: '/workshops/new'
+      preLoaderRoute: typeof WorkshopsNewRouteImport
+      parentRoute: typeof WorkshopsRoute
+    }
+    '/.lovable/oauth/consent': {
+      id: '/.lovable/oauth/consent'
+      path: '/.lovable/oauth/consent'
+      fullPath: '/.lovable/oauth/consent'
+      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.mcp/invoke-tool/$tool': {
+      id: '/.mcp/invoke-tool/$tool'
+      path: '/.mcp/invoke-tool/$tool'
+      fullPath: '/.mcp/invoke-tool/$tool'
+      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/blog/': {
       id: '/admin/blog/'
       path: '/blog'
       fullPath: '/admin/blog/'
       preLoaderRoute: typeof AdminBlogIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/workshops/$slug/tools': {
-      id: '/workshops/$slug/tools'
-      path: '/tools'
-      fullPath: '/workshops/$slug/tools'
-      preLoaderRoute: typeof WorkshopsSlugToolsRouteImport
-      parentRoute: typeof WorkshopsSlugRoute
-    }
-    '/workshops/$slug/archive': {
-      id: '/workshops/$slug/archive'
-      path: '/archive'
-      fullPath: '/workshops/$slug/archive'
-      preLoaderRoute: typeof WorkshopsSlugArchiveRouteImport
-      parentRoute: typeof WorkshopsSlugRoute
-    }
-    '/works/invite/$token': {
-      id: '/works/invite/$token'
-      path: '/works/invite/$token'
-      fullPath: '/works/invite/$token'
-      preLoaderRoute: typeof WorksInviteTokenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/works/collab/new': {
-      id: '/works/collab/new'
-      path: '/works/collab/new'
-      fullPath: '/works/collab/new'
-      preLoaderRoute: typeof WorksCollabNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/works/$slug/edit': {
-      id: '/works/$slug/edit'
-      path: '/edit'
-      fullPath: '/works/$slug/edit'
-      preLoaderRoute: typeof WorksSlugEditRouteImport
-      parentRoute: typeof WorksSlugRoute
-    }
-    '/me/blog/$id': {
-      id: '/me/blog/$id'
-      path: '/me/blog/$id'
-      fullPath: '/me/blog/$id'
-      preLoaderRoute: typeof MeBlogIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/collab/claim/$token': {
-      id: '/collab/claim/$token'
-      path: '/claim/$token'
-      fullPath: '/collab/claim/$token'
-      preLoaderRoute: typeof CollabClaimTokenRouteImport
-      parentRoute: typeof CollabRoute
-    }
-    '/collab/$slug/edit': {
-      id: '/collab/$slug/edit'
-      path: '/edit'
-      fullPath: '/collab/$slug/edit'
-      preLoaderRoute: typeof CollabSlugEditRouteImport
-      parentRoute: typeof CollabSlugRoute
-    }
-    '/blog/c/$category': {
-      id: '/blog/c/$category'
-      path: '/blog/c/$category'
-      fullPath: '/blog/c/$category'
-      preLoaderRoute: typeof BlogCCategoryRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/og': {
-      id: '/api/public/og'
-      path: '/api/public/og'
-      fullPath: '/api/public/og'
-      preLoaderRoute: typeof ApiPublicOgRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users/$id': {
-      id: '/admin/users/$id'
-      path: '/$id'
-      fullPath: '/admin/users/$id'
-      preLoaderRoute: typeof AdminUsersIdRouteImport
-      parentRoute: typeof AdminUsersRoute
-    }
-    '/admin/blog/subscribers': {
-      id: '/admin/blog/subscribers'
-      path: '/blog/subscribers'
-      fullPath: '/admin/blog/subscribers'
-      preLoaderRoute: typeof AdminBlogSubscribersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/blog/new': {
-      id: '/admin/blog/new'
-      path: '/blog/new'
-      fullPath: '/admin/blog/new'
-      preLoaderRoute: typeof AdminBlogNewRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/blog/$id': {
@@ -1882,67 +1791,116 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBlogIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/.mcp/invoke-tool/$tool': {
-      id: '/.mcp/invoke-tool/$tool'
-      path: '/.mcp/invoke-tool/$tool'
-      fullPath: '/.mcp/invoke-tool/$tool'
-      preLoaderRoute: typeof Char91DotmcpChar93InvokeToolToolRouteImport
+    '/admin/blog/new': {
+      id: '/admin/blog/new'
+      path: '/blog/new'
+      fullPath: '/admin/blog/new'
+      preLoaderRoute: typeof AdminBlogNewRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/blog/subscribers': {
+      id: '/admin/blog/subscribers'
+      path: '/blog/subscribers'
+      fullPath: '/admin/blog/subscribers'
+      preLoaderRoute: typeof AdminBlogSubscribersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users/$id': {
+      id: '/admin/users/$id'
+      path: '/$id'
+      fullPath: '/admin/users/$id'
+      preLoaderRoute: typeof AdminUsersIdRouteImport
+      parentRoute: typeof AdminUsersRoute
+    }
+    '/api/public/og': {
+      id: '/api/public/og'
+      path: '/api/public/og'
+      fullPath: '/api/public/og'
+      preLoaderRoute: typeof ApiPublicOgRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/.lovable/oauth/consent': {
-      id: '/.lovable/oauth/consent'
-      path: '/.lovable/oauth/consent'
-      fullPath: '/.lovable/oauth/consent'
-      preLoaderRoute: typeof DotlovableOauthConsentRouteImport
+    '/blog/c/$category': {
+      id: '/blog/c/$category'
+      path: '/blog/c/$category'
+      fullPath: '/blog/c/$category'
+      preLoaderRoute: typeof BlogCCategoryRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/workshops/$slug/tools/$tool': {
-      id: '/workshops/$slug/tools/$tool'
-      path: '/$tool'
-      fullPath: '/workshops/$slug/tools/$tool'
-      preLoaderRoute: typeof WorkshopsSlugToolsToolRouteImport
-      parentRoute: typeof WorkshopsSlugToolsRoute
+    '/collab/$slug/edit': {
+      id: '/collab/$slug/edit'
+      path: '/edit'
+      fullPath: '/collab/$slug/edit'
+      preLoaderRoute: typeof CollabSlugEditRouteImport
+      parentRoute: typeof CollabSlugRoute
     }
-    '/g/$slug/e/$eventSlug': {
-      id: '/g/$slug/e/$eventSlug'
-      path: '/$slug/e/$eventSlug'
-      fullPath: '/g/$slug/e/$eventSlug'
-      preLoaderRoute: typeof GSlugEEventSlugRouteImport
+    '/collab/claim/$token': {
+      id: '/collab/claim/$token'
+      path: '/claim/$token'
+      fullPath: '/collab/claim/$token'
+      preLoaderRoute: typeof CollabClaimTokenRouteImport
+      parentRoute: typeof CollabRoute
+    }
+    '/g/$slug/': {
+      id: '/g/$slug/'
+      path: '/$slug'
+      fullPath: '/g/$slug/'
+      preLoaderRoute: typeof GSlugIndexRouteImport
       parentRoute: typeof GRoute
     }
-    '/api/public/workshops/sweep': {
-      id: '/api/public/workshops/sweep'
-      path: '/api/public/workshops/sweep'
-      fullPath: '/api/public/workshops/sweep'
-      preLoaderRoute: typeof ApiPublicWorkshopsSweepRouteImport
+    '/me/blog/': {
+      id: '/me/blog/'
+      path: '/me/blog'
+      fullPath: '/me/blog/'
+      preLoaderRoute: typeof MeBlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/payments/webhook': {
-      id: '/api/public/payments/webhook'
-      path: '/api/public/payments/webhook'
-      fullPath: '/api/public/payments/webhook'
-      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+    '/me/blog/$id': {
+      id: '/me/blog/$id'
+      path: '/me/blog/$id'
+      fullPath: '/me/blog/$id'
+      preLoaderRoute: typeof MeBlogIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/lounge/sweep': {
-      id: '/api/public/lounge/sweep'
-      path: '/api/public/lounge/sweep'
-      fullPath: '/api/public/lounge/sweep'
-      preLoaderRoute: typeof ApiPublicLoungeSweepRouteImport
+    '/works/$slug/edit': {
+      id: '/works/$slug/edit'
+      path: '/edit'
+      fullPath: '/works/$slug/edit'
+      preLoaderRoute: typeof WorksSlugEditRouteImport
+      parentRoute: typeof WorksSlugRoute
+    }
+    '/works/collab/new': {
+      id: '/works/collab/new'
+      path: '/works/collab/new'
+      fullPath: '/works/collab/new'
+      preLoaderRoute: typeof WorksCollabNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/group-news/$slug': {
-      id: '/api/public/group-news/$slug'
-      path: '/api/public/group-news/$slug'
-      fullPath: '/api/public/group-news/$slug'
-      preLoaderRoute: typeof ApiPublicGroupNewsSlugRouteImport
+    '/works/invite/$token': {
+      id: '/works/invite/$token'
+      path: '/works/invite/$token'
+      fullPath: '/works/invite/$token'
+      preLoaderRoute: typeof WorksInviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/events/sweep': {
-      id: '/api/public/events/sweep'
-      path: '/api/public/events/sweep'
-      fullPath: '/api/public/events/sweep'
-      preLoaderRoute: typeof ApiPublicEventsSweepRouteImport
+    '/workshops/$slug/archive': {
+      id: '/workshops/$slug/archive'
+      path: '/archive'
+      fullPath: '/workshops/$slug/archive'
+      preLoaderRoute: typeof WorkshopsSlugArchiveRouteImport
+      parentRoute: typeof WorkshopsSlugRoute
+    }
+    '/workshops/$slug/tools': {
+      id: '/workshops/$slug/tools'
+      path: '/tools'
+      fullPath: '/workshops/$slug/tools'
+      preLoaderRoute: typeof WorkshopsSlugToolsRouteImport
+      parentRoute: typeof WorkshopsSlugRoute
+    }
+    '/api/public/events/materialize': {
+      id: '/api/public/events/materialize'
+      path: '/api/public/events/materialize'
+      fullPath: '/api/public/events/materialize'
+      preLoaderRoute: typeof ApiPublicEventsMaterializeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/events/report-sweep': {
@@ -1952,12 +1910,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicEventsReportSweepRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/events/materialize': {
-      id: '/api/public/events/materialize'
-      path: '/api/public/events/materialize'
-      fullPath: '/api/public/events/materialize'
-      preLoaderRoute: typeof ApiPublicEventsMaterializeRouteImport
+    '/api/public/events/sweep': {
+      id: '/api/public/events/sweep'
+      path: '/api/public/events/sweep'
+      fullPath: '/api/public/events/sweep'
+      preLoaderRoute: typeof ApiPublicEventsSweepRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/public/group-news/$slug': {
+      id: '/api/public/group-news/$slug'
+      path: '/api/public/group-news/$slug'
+      fullPath: '/api/public/group-news/$slug'
+      preLoaderRoute: typeof ApiPublicGroupNewsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/lounge/sweep': {
+      id: '/api/public/lounge/sweep'
+      path: '/api/public/lounge/sweep'
+      fullPath: '/api/public/lounge/sweep'
+      preLoaderRoute: typeof ApiPublicLoungeSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/payments/webhook': {
+      id: '/api/public/payments/webhook'
+      path: '/api/public/payments/webhook'
+      fullPath: '/api/public/payments/webhook'
+      preLoaderRoute: typeof ApiPublicPaymentsWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/workshops/sweep': {
+      id: '/api/public/workshops/sweep'
+      path: '/api/public/workshops/sweep'
+      fullPath: '/api/public/workshops/sweep'
+      preLoaderRoute: typeof ApiPublicWorkshopsSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/g/$slug/e/$eventSlug': {
+      id: '/g/$slug/e/$eventSlug'
+      path: '/$slug/e/$eventSlug'
+      fullPath: '/g/$slug/e/$eventSlug'
+      preLoaderRoute: typeof GSlugEEventSlugRouteImport
+      parentRoute: typeof GRoute
+    }
+    '/workshops/$slug/tools/$tool': {
+      id: '/workshops/$slug/tools/$tool'
+      path: '/$tool'
+      fullPath: '/workshops/$slug/tools/$tool'
+      preLoaderRoute: typeof WorkshopsSlugToolsToolRouteImport
+      parentRoute: typeof WorkshopsSlugToolsRoute
     }
     '/api/public/events/$id/ics': {
       id: '/api/public/events/$id/ics'
