@@ -1,11 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { listPublishedPosts } from "@/lib/blog.functions";
+import type { BlogListItem } from "@/components/blog-featured-carousel";
+import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import {
-  BlogFeaturedCarousel,
-  Byline,
-  FeaturedHero,
-  type BlogListItem,
-} from "@/components/blog-featured-carousel";
+  BlogArchive,
+  BlogLatestStories,
+  BlogMoreStories,
+  toBlogCard,
+} from "@/components/blog/blog-editorial-sections";
 
 const SITE = "https://workshopindie.com";
 const TITLE = "Workshop Blog — Creative Collaboration, Independent Art & Artist Portfolios";
@@ -55,109 +57,58 @@ export const Route = createFileRoute("/blog/")({
 });
 
 
-/** Mobile: dense horizontal row. Desktop: the row is hidden in favor of PostCard. */
-function PostRow({ post }: { post: BlogListItem }) {
+function Masthead() {
   return (
-    <Link
-      to="/blog/$slug"
-      params={{ slug: post.slug }}
-      className="flex min-h-[88px] items-center gap-3 rounded-2xl border border-border bg-surface p-3 active:bg-muted"
-    >
-      {post.cover_image_url ? (
-        <img
-          src={post.cover_image_url}
-          alt={post.cover_image_alt ?? post.title}
-          className="h-20 w-20 shrink-0 rounded-xl object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="h-20 w-20 shrink-0 rounded-xl bg-secondary" aria-hidden />
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="font-display text-[17px] leading-snug text-ink line-clamp-2">{post.title}</div>
-        {post.excerpt && (
-          <p className="mt-1 line-clamp-2 text-[13px] leading-snug text-ink-muted">{post.excerpt}</p>
-        )}
-        <Byline post={post} className="mt-1.5" />
+    <section className="border-b border-border">
+      <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-7">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
+          Blog
+        </p>
+        <h1 className="mt-1.5 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
+          Notes from Workshop
+        </h1>
+        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
+          Ideas, guides, and stories about finding collaborators, making independent creative
+          work, and building a portfolio that shows how the work happened.
+        </p>
       </div>
-    </Link>
-  );
-}
-
-function PostCard({ post }: { post: BlogListItem }) {
-  return (
-    <Link
-      to="/blog/$slug"
-      params={{ slug: post.slug }}
-      className="group block overflow-hidden rounded-2xl border border-border bg-surface hover:bg-muted"
-    >
-      {post.cover_image_url ? (
-        <img
-          src={post.cover_image_url}
-          alt={post.cover_image_alt ?? post.title}
-          className="aspect-[16/10] w-full object-cover"
-          loading="lazy"
-        />
-      ) : (
-        <div className="aspect-[16/10] w-full bg-secondary" aria-hidden />
-      )}
-      <div className="p-5">
-        <div className="font-display text-xl leading-snug text-ink group-hover:underline">
-          {post.title}
-        </div>
-        {post.excerpt && <p className="mt-2 line-clamp-3 text-sm text-ink-muted">{post.excerpt}</p>}
-        <Byline post={post} className="mt-3" />
-      </div>
-    </Link>
+    </section>
   );
 }
 
 function BlogIndexPage() {
   const { posts } = Route.useLoaderData() as { posts: BlogListItem[] };
+
+  // Featured leads, topped up from the newest posts — same rule as the homepage.
   const featured = posts.filter((p) => p.featured);
   const featuredIds = new Set(featured.map((p) => p.id));
-  const rest = featured.length ? posts.filter((p) => !featuredIds.has(p.id)) : posts;
+  const ordered = [...featured, ...posts.filter((p) => !featuredIds.has(p.id))];
 
+  const cards = ordered.map(toBlogCard);
+  const headerPosts = cards.slice(0, 3);
+  const latestPosts = cards.slice(3, 9);
+  const morePosts = cards.slice(9, 15);
+  const archivePosts = cards.slice(15);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-6 md:py-14 md:pb-16">
-      <div className="text-[10px] uppercase tracking-widest text-ink-muted md:text-xs">Blog</div>
-      <h1 className="mt-1 font-display text-3xl leading-tight text-ink md:mt-2 md:text-5xl">
-        Notes from Workshop
-      </h1>
-      <p className="mt-2 line-clamp-2 max-w-2xl text-sm text-ink-soft sm:line-clamp-none md:mt-4 md:text-lg">
-        Ideas, guides, and stories about finding collaborators, making independent creative work,
-        and building a portfolio that shows how the work happened.
-      </p>
+    <div className="pb-28 md:pb-16">
+      <Masthead />
 
       {posts.length === 0 ? (
-        <div className="mt-10 rounded-xl border border-dashed border-border bg-surface-2/40 p-8 text-center md:mt-14 md:p-10">
-          <div className="font-display text-xl text-ink">Nothing published yet.</div>
-          <p className="mt-2 text-ink-muted">The first notes are being written. Come back soon.</p>
+        <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
+          <div className="rounded-xl border border-dashed border-border bg-surface-2/40 p-8 text-center md:p-10">
+            <div className="font-display text-xl text-ink">Nothing published yet.</div>
+            <p className="mt-2 text-ink-muted">
+              The first notes are being written. Come back soon.
+            </p>
+          </div>
         </div>
       ) : (
         <>
-          {featured.length === 1 && <FeaturedHero post={featured[0]!} />}
-          {featured.length > 1 && <BlogFeaturedCarousel posts={featured} />}
-
-
-          {rest.length > 0 && (
-            <>
-              {/* Mobile: dense rows */}
-              <div className="mt-5 space-y-3 md:hidden">
-                {rest.map((p) => (
-                  <PostRow key={p.id} post={p} />
-                ))}
-              </div>
-
-              {/* Desktop: card grid */}
-              <div className="mt-10 hidden gap-6 md:grid md:grid-cols-2 lg:grid-cols-3">
-                {rest.map((p) => (
-                  <PostCard key={p.id} post={p} />
-                ))}
-              </div>
-            </>
-          )}
+          <PublicFeaturedStories posts={headerPosts} />
+          <BlogLatestStories posts={latestPosts} />
+          <BlogMoreStories posts={morePosts} />
+          <BlogArchive posts={archivePosts} />
         </>
       )}
     </div>
