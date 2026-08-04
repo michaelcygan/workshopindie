@@ -292,7 +292,6 @@ export const listApplicants = createServerFn({ method: "POST" })
     return { members, guests };
   });
 
-const reviewStatusEnum = z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]);
 
 
 /** Owner-only review vocabulary for member applications (collab_contact_events). */
@@ -303,7 +302,7 @@ export const setApplicationReviewStatus = createServerFn({ method: "POST" })
       .object({
         collabPostId: z.string().uuid(),
         contactEventId: z.string().uuid(),
-        reviewStatus: reviewStatusEnum,
+        reviewStatus: z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]),
       })
       .parse(input),
   )
@@ -334,7 +333,7 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         status: z.enum(["new", "contacted", "spam", "hidden"]).optional(),
-        reviewStatus: reviewStatusEnum.optional(),
+        reviewStatus: z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]).optional(),
       })
       .parse(input),
   )
