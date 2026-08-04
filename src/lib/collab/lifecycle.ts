@@ -171,3 +171,12 @@ export function applicationRejectionReason(
   }
   return null;
 }
+
+/**
+ * Does this Collab count against the Free-tier concurrent Collab cap?
+ * Mirrors the `enforce_collabs_quota` trigger exactly: only Collabs that are
+ * in progress AND still accepting collaborators are counted.
+ */
+export function countsTowardCollabQuota(post: CollabLifecycleRecord): boolean {
+  return collabLifecycleState(post) === "in_progress" && post.applications_open === true;
+}
