@@ -1,37 +1,23 @@
 /**
  * Rolling materializer for recurring event series.
  *
- * Public route under /api/public/* — bypasses auth on published sites.
- * Secured with the project's anon/publishable key in the `apikey` header
- * (matches the pg_cron pattern used across this project).
+ * Public route under /api/public/* — bypasses site auth on published sites,
+ * so it is secured with the shared cron secret (`x-cron-secret`). A Supabase
+ * publishable key is NOT a cron secret and is no longer accepted.
  */
 import { createFileRoute } from "@tanstack/react-router";
-import { createClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
-import { materializeAllDueSeries } from "@/lib/event-series.server";
+import { requireCronSecret } from "@/lib/cron-auth";
 
 async function handler(request: Request) {
-  const apiKey = request.headers.get("apikey");
-  const expected = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.SUPABASE_ANON_KEY ?? "";
-  if (!apiKey || !expected || apiKey !== expected) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-  const url = process.env.SUPABASE_URL ?? "";
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-  if (!url || !serviceKey) {
-    return new Response("Server misconfigured", { status: 500 });
-  }
-  const admin = createClient<Database>(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
+  const denied = requireCronSecret(request);
+  if (denied) return denied;
   try {
-    const result = await materializeAllDueSeries(admin);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { materializeAllDueSeries } = await import("@/lib/event-series.server");
+    const result = await materializeAllDueSeries(supabaseAdmin);
     return Response.json({ ok: true, ...result });
   } catch (e) {
-    return Response.json(
-      { ok: false, error: (e as Error).message },
-      { status: 500 },
-    );
+    return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
   }
 }
 
