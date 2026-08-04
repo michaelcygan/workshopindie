@@ -1460,9 +1460,12 @@ export type Database = {
           day_of_month: number | null
           duration_minutes: number
           ends_on: string | null
+          extra_group_ids: string[]
           group_id: string
           horizon_weeks: number
           id: string
+          last_error: string | null
+          last_materialized_at: string | null
           next_occurrence_at: string
           recurrence_rule: string
           series_key: string
@@ -1479,9 +1482,12 @@ export type Database = {
           day_of_month?: number | null
           duration_minutes: number
           ends_on?: string | null
+          extra_group_ids?: string[]
           group_id: string
           horizon_weeks?: number
           id?: string
+          last_error?: string | null
+          last_materialized_at?: string | null
           next_occurrence_at: string
           recurrence_rule: string
           series_key: string
@@ -1498,9 +1504,12 @@ export type Database = {
           day_of_month?: number | null
           duration_minutes?: number
           ends_on?: string | null
+          extra_group_ids?: string[]
           group_id?: string
           horizon_weeks?: number
           id?: string
+          last_error?: string | null
+          last_materialized_at?: string | null
           next_occurrence_at?: string
           recurrence_rule?: string
           series_key?: string
@@ -1887,6 +1896,7 @@ export type Database = {
           lineup_capacity: number | null
           lineup_reminder_sent_at: string | null
           maybe_count: number
+          needs_review: boolean
           notified_24h_at: string | null
           notified_2h_at: string | null
           notified_recap_at: string | null
@@ -1936,6 +1946,7 @@ export type Database = {
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
           maybe_count?: number
+          needs_review?: boolean
           notified_24h_at?: string | null
           notified_2h_at?: string | null
           notified_recap_at?: string | null
@@ -1985,6 +1996,7 @@ export type Database = {
           lineup_capacity?: number | null
           lineup_reminder_sent_at?: string | null
           maybe_count?: number
+          needs_review?: boolean
           notified_24h_at?: string | null
           notified_2h_at?: string | null
           notified_recap_at?: string | null

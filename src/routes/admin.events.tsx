@@ -137,6 +137,8 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
+    venue_lat: number | null; venue_lng: number | null;
+    venue_city_id: string | null; city_label: string | null;
     capacity: string; featured: boolean;
     lineup_capacity: string;
     // v2
@@ -160,6 +162,10 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     ends_at: "",
     venue_name: "",
     venue_address: "",
+    venue_lat: null,
+    venue_lng: null,
+    venue_city_id: null,
+    city_label: null,
     online_url: "",
     capacity: "",
     
@@ -199,6 +205,9 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         venue_name: form.venue_name || null,
         venue_address: form.venue_address || null,
+        venue_lat: form.venue_lat,
+        venue_lng: form.venue_lng,
+        venue_city_id: form.venue_city_id,
         online_url: form.online_url || null,
         capacity: form.capacity ? Number(form.capacity) : null,
 
@@ -386,8 +395,17 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
             <VenueAutocomplete
               venueName={form.venue_name}
               venueAddress={form.venue_address}
-              onChange={({ venue_name, venue_address }) =>
-                setForm({ ...form, venue_name, venue_address })
+              cityLabel={form.city_label}
+              onChange={(next) =>
+                setForm((prev) => ({
+                  ...prev,
+                  venue_name: next.venue_name,
+                  venue_address: next.venue_address,
+                  venue_lat: next.venue_lat ?? prev.venue_lat,
+                  venue_lng: next.venue_lng ?? prev.venue_lng,
+                  venue_city_id: next.venue_city_id ?? prev.venue_city_id,
+                  city_label: next.city_label ?? prev.city_label,
+                }))
               }
             />
           )}

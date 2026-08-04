@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { resolveVenueAndCity } from "@/lib/venues.functions";
 
 type NominatimResult = {
   place_id: number;
@@ -12,6 +14,16 @@ type NominatimResult = {
   name?: string;
   namedetails?: { name?: string };
   address?: Record<string, string>;
+};
+
+/** Everything the event form needs to persist about a chosen venue. */
+export type VenueSelection = {
+  venue_name: string;
+  venue_address: string;
+  venue_lat?: number | null;
+  venue_lng?: number | null;
+  venue_city_id?: string | null;
+  city_label?: string | null;
 };
 
 function formatAddress(addr?: Record<string, string>): string {
@@ -35,18 +47,23 @@ function shortName(r: NominatimResult): string {
 export function VenueAutocomplete({
   venueName,
   venueAddress,
+  cityLabel,
   onChange,
 }: {
   venueName: string;
   venueAddress: string;
-  onChange: (next: { venue_name: string; venue_address: string }) => void;
+  cityLabel?: string | null;
+  onChange: (next: VenueSelection) => void;
 }) {
+  const resolveCityFn = useServerFn(resolveVenueAndCity);
   const [query, setQuery] = useState(venueName);
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const skipSearchRef = useRef(false);
+
 
   useEffect(() => {
     // Sync when parent resets (e.g. dialog reopens)
@@ -92,14 +109,54 @@ export function VenueAutocomplete({
     return () => clearTimeout(handle);
   }, [query]);
 
-  function pick(r: NominatimResult) {
+  async function pick(r: NominatimResult) {
     const name = shortName(r);
     const address = formatAddress(r.address) || r.display_name;
+    const lat = Number(r.lat);
+    const lng = Number(r.lon);
     skipSearchRef.current = true;
     setQuery(name);
     setResults([]);
     setOpen(false);
-    onChange({ venue_name: name, venue_address: address });
+    onChange({ venue_name: name, venue_address: address, venue_lat: lat, venue_lng: lng });
+
+    // Resolve (or create) the Workshop city for this venue so the event is
+    // discoverable in city filters. Never blocks the form on failure.
+    const addr = r.address ?? {};
+    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+    if (!cityName) return;
+    setResolving(true);
+    try {
+      const res = await resolveCityFn({
+        data: {
+          name,
+          address,
+          lat,
+          lng,
+          osm_ref: r.place_id ? `osm:${r.place_id}` : null,
+          city: {
+            name: cityName,
+            state_region: addr.state ?? null,
+            country: addr.country || "Unknown",
+            country_code: addr.country_code ? addr.country_code.toUpperCase() : null,
+            lat,
+            lng,
+          },
+        },
+      });
+      onChange({
+        venue_name: name,
+        venue_address: address,
+        venue_lat: lat,
+        venue_lng: lng,
+        venue_city_id: res.city_id ?? null,
+        city_label: [cityName, addr.state].filter(Boolean).join(", "),
+      });
+    } catch {
+      // City resolution is best-effort; publishing validation catches the gap.
+    } finally {
+      setResolving(false);
+    }
   }
 
   return (
@@ -163,6 +220,13 @@ export function VenueAutocomplete({
           placeholder="Street, city, state"
           className="rounded-xl"
         />
+        <p className="mt-1 text-[11px] text-ink-muted">
+          {resolving
+            ? "Resolving city…"
+            : cityLabel
+              ? `City: ${cityLabel}`
+              : "Pick a venue from the list so we can resolve its city."}
+        </p>
       </div>
     </div>
   );
