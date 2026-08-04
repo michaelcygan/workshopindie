@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -28,14 +28,11 @@ import {
   Coffee,
   Ticket,
   Briefcase,
-  LayoutGrid,
   Calendar,
   BookOpen,
-  ChevronDown,
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
-import { GroupsNavItem } from "@/components/groups-nav-item";
 
 const navLinkBase = "rounded-md px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition-colors";
 const navLinkActive = "rounded-md px-3 py-1.5 text-sm text-ink bg-muted";
@@ -61,31 +58,29 @@ export function TopNav() {
 
         {/* Center: primary nav */}
         <nav className="flex flex-1 items-center justify-center gap-1">
-          {loading ? null : user ? (
-            <>
-              <GroupsNavItem />
-              <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Collabs
-              </Link>
-              <MoreNavMenu />
-            </>
-          ) : (
+          {loading ? null : (
             <>
               <Link to="/blog" className={navLinkBase} activeProps={{ className: navLinkActive }}>
                 Blog
               </Link>
-              <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Gallery
+              <Link to="/groups" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Groups
               </Link>
               <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
                 Collabs
               </Link>
-              <Link to="/groups" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Groups
+              <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Gallery
               </Link>
+              {user ? (
+                <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                  Events
+                </Link>
+              ) : null}
             </>
           )}
         </nav>
+
 
         <div className="flex flex-1 items-center justify-end gap-2">
           {loading ? null : user ? (
@@ -223,43 +218,5 @@ export function TopNav() {
         </div>
       </div>
     </header>
-  );
-}
-
-function MoreNavMenu() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isActive =
-    pathname.startsWith("/events") ||
-    pathname.startsWith("/gallery") ||
-    pathname.startsWith("/blog");
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={`${isActive ? navLinkActive : navLinkBase} inline-flex items-center gap-1`}
-        >
-          More
-          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-44">
-        <DropdownMenuItem asChild>
-          <Link to="/events">
-            <Calendar className="mr-2 h-4 w-4" /> Events
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/gallery">
-            <LayoutGrid className="mr-2 h-4 w-4" /> Gallery
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/blog">
-            <BookOpen className="mr-2 h-4 w-4" /> Blog
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
