@@ -9,7 +9,7 @@ export function PublicWorkStrip({ works }: { works: PublicWorkTile[] }) {
 
   return (
     <section
-      aria-labelledby="recent-work"
+      aria-labelledby="more-work"
       className="mx-auto max-w-7xl border-b border-border px-4 py-10 md:px-6 md:py-14"
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -17,8 +17,8 @@ export function PublicWorkStrip({ works }: { works: PublicWorkTile[] }) {
           <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
             Made on Workshop
           </p>
-          <h2 id="recent-work" className="mt-1 font-display text-[24px] text-ink md:text-[30px]">
-            Recent Work
+          <h2 id="more-work" className="mt-1 font-display text-[24px] text-ink md:text-[30px]">
+            More Work
           </h2>
         </div>
         <Link
@@ -35,6 +35,7 @@ export function PublicWorkStrip({ works }: { works: PublicWorkTile[] }) {
             key={w.id}
             to="/works/$slug"
             params={{ slug: w.slug }}
+            search={{ story: undefined }}
             className="group block"
           >
             <div className="aspect-[16/10] w-full overflow-hidden rounded-lg bg-muted">

@@ -285,5 +285,7 @@ export type PublicHomePayload = {
   workStories: HomeWorkStory[];
   openCollabs: PublicCollabCall[];
   featuredGroups: PublicGroupScene[];
+  /** Recent published Works for the public homepage carousel. */
+  recentWorks: PublicWorkTile[];
   visualWorks: PublicWorkTile[];
 };
