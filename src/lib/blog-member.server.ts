@@ -1,3 +1,4 @@
+import { BLOG_SEED_PROMPTS, type BlogSeedPromptId } from "./blog-seed-prompts";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { Database } from "@/integrations/supabase/types";
@@ -184,6 +185,7 @@ async function seedDraftTag(
 export async function createMyBlogDraftServer(
   context: AuthContext,
   seedTag?: { kind: "work" | "collab" | "group" | "event" | "profile"; id: string },
+  seedPromptId?: BlogSeedPromptId,
 ) {
   const access = await resolveBlogAccess(context.userId);
   if (!access.canCreateDraft) throw new Error(access.reason ?? "Publishing is a Plus feature.");
@@ -215,6 +217,17 @@ export async function createMyBlogDraftServer(
   if (error) throw new Error(error.message);
   await audit("blog.member.draft_create", data as string, context.userId);
   const seeded = seedTag ? await seedDraftTag(data as string, context.userId, seedTag) : true;
+  // Starter copy only ever lands on a brand-new draft — a reused draft above is
+  // returned untouched so we can never overwrite someone's writing.
+  if (seedPromptId && BLOG_SEED_PROMPTS[seedPromptId]) {
+    const seed = BLOG_SEED_PROMPTS[seedPromptId];
+    await supabaseAdmin
+      .from("blog_posts")
+      .update({ title: seed.title, body_markdown: seed.body })
+      .eq("id", data as string)
+      .eq("created_by", context.userId)
+      .eq("status", "draft");
+  }
   return { id: data as string, reused: false, seedTagFailed: !seeded };
 }
 

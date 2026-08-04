@@ -11,6 +11,7 @@ import {
   unpublishMyBlogPostServer,
   deleteMyBlogDraftServer,
 } from "@/lib/blog-member.server";
+import { BLOG_SEED_PROMPT_IDS } from "@/lib/blog-seed-prompts";
 
 const cursorSchema = z
   .object({ updated_at: z.string(), id: z.string().uuid() })
