@@ -92,14 +92,54 @@ export function VenueAutocomplete({
     return () => clearTimeout(handle);
   }, [query]);
 
-  function pick(r: NominatimResult) {
+  async function pick(r: NominatimResult) {
     const name = shortName(r);
     const address = formatAddress(r.address) || r.display_name;
+    const lat = Number(r.lat);
+    const lng = Number(r.lon);
     skipSearchRef.current = true;
     setQuery(name);
     setResults([]);
     setOpen(false);
-    onChange({ venue_name: name, venue_address: address });
+    onChange({ venue_name: name, venue_address: address, venue_lat: lat, venue_lng: lng });
+
+    // Resolve (or create) the Workshop city for this venue so the event is
+    // discoverable in city filters. Never blocks the form on failure.
+    const addr = r.address ?? {};
+    const cityName = addr.city || addr.town || addr.village || addr.municipality || addr.county;
+    if (!cityName) return;
+    setResolving(true);
+    try {
+      const res = await resolveCityFn({
+        data: {
+          name,
+          address,
+          lat,
+          lng,
+          osm_ref: r.place_id ? `osm:${r.place_id}` : null,
+          city: {
+            name: cityName,
+            state_region: addr.state ?? null,
+            country: addr.country || "Unknown",
+            country_code: addr.country_code ? addr.country_code.toUpperCase() : null,
+            lat,
+            lng,
+          },
+        },
+      });
+      onChange({
+        venue_name: name,
+        venue_address: address,
+        venue_lat: lat,
+        venue_lng: lng,
+        venue_city_id: res.city_id ?? null,
+        city_label: [cityName, addr.state].filter(Boolean).join(", "),
+      });
+    } catch {
+      // City resolution is best-effort; publishing validation catches the gap.
+    } finally {
+      setResolving(false);
+    }
   }
 
   return (
