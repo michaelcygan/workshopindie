@@ -1,6 +1,6 @@
 import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
@@ -124,6 +124,7 @@ export function CollabComposer({
   embed = false,
   groupPreselectId = null,
   fromLounge = null,
+  promptId = null,
   onCancel,
   onPosted,
   onDraftSaved,
@@ -171,6 +172,19 @@ export function CollabComposer({
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [saveAsDraft, setSaveAsDraft] = useState(false);
+
+  // Starter prompt: fills empty fields once, on first mount. Never overwrites
+  // anything the member has already typed, and never submits on its own.
+  const promptSeeded = useRef(false);
+  useEffect(() => {
+    if (promptSeeded.current || !promptId) return;
+    const seed = COLLAB_PROMPTS[promptId];
+    if (!seed) return;
+    promptSeeded.current = true;
+    setTitle((t) => (t.trim() ? t : seed.title));
+    setDescription((d) => (d.trim() ? d : seed.description));
+    setCategory((c) => (c === "visual" ? seed.category : c));
+  }, [promptId]);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
 
