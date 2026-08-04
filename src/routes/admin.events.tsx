@@ -205,6 +205,9 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         venue_name: form.venue_name || null,
         venue_address: form.venue_address || null,
+        venue_lat: form.venue_lat,
+        venue_lng: form.venue_lng,
+        venue_city_id: form.venue_city_id,
         online_url: form.online_url || null,
         capacity: form.capacity ? Number(form.capacity) : null,
 
