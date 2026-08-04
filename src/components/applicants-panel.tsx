@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -8,24 +8,48 @@ import {
   ExternalLink,
   Instagram,
   Check,
-  Trash2,
+  Undo2,
   Inbox,
   UserCircle2,
   MessageCircle,
   Send,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { acceptCollabApplicant, listApplicants, updateGuestApplicationStatus } from "@/lib/collab.functions";
+import {
+  acceptCollabApplicant,
+  listApplicants,
+  setApplicationReviewStatus,
+  updateGuestApplicationStatus,
+} from "@/lib/collab.functions";
+import type { CollabReviewStatus } from "@/lib/collab/lifecycle";
 import { toast } from "sonner";
 
-
 type Props = { postId: string };
+
+type Tab = "team" | "applicants" | "pitches" | "declined";
+
+const TABS: { key: Tab; label: string }[] = [
+  { key: "team", label: "Team" },
+  { key: "applicants", label: "Applicants" },
+  { key: "pitches", label: "Pitches" },
+  { key: "declined", label: "Declined" },
+];
+
+const isDeclined = (s: CollabReviewStatus) => s === "declined" || s === "spam" || s === "withdrawn";
 
 export function ApplicantsPanel({ postId }: Props) {
   const fetchApplicants = useServerFn(listApplicants);
   const updateStatus = useServerFn(updateGuestApplicationStatus);
+  const reviewFn = useServerFn(setApplicationReviewStatus);
   const acceptFn = useServerFn(acceptCollabApplicant);
   const qc = useQueryClient();
+  const [tab, setTab] = useState<Tab>("applicants");
+
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
+    qc.invalidateQueries({ queryKey: ["collab-members", postId] });
+  };
 
   const accept = useMutation({
     mutationFn: (vars: { applicantUserId: string; contactEventId: string | null }) =>
@@ -37,30 +61,77 @@ export function ApplicantsPanel({ postId }: Props) {
         },
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["collab-applicants", postId] });
-      qc.invalidateQueries({ queryKey: ["collab-members", postId] });
+      invalidate();
       toast.success("Accepted — they can now join the workspace.");
     },
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const reviewMember = useMutation({
+    mutationFn: (vars: { contactEventId: string; reviewStatus: CollabReviewStatus }) =>
+      reviewFn({ data: { collabPostId: postId, ...vars } }),
+    onSuccess: () => invalidate(),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const reviewGuest = useMutation({
+    mutationFn: (vars: { id: string; reviewStatus: CollabReviewStatus }) =>
+      updateStatus({ data: vars }),
+    onSuccess: () => invalidate(),
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["collab-applicants", postId],
     queryFn: () => fetchApplicants({ data: { collabPostId: postId } }),
   });
 
-  const setStatus = useMutation({
-    mutationFn: (vars: { id: string; status: "new" | "contacted" | "spam" | "hidden" }) =>
-      updateStatus({ data: vars }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["collab-applicants", postId] }),
-    onError: (e: Error) => toast.error(e.message),
-  });
+  const members = useMemo(() => data?.members ?? [], [data]);
+  const guests = useMemo(() => data?.guests ?? [], [data]);
+
+  const buckets = useMemo(() => {
+    const team = members.filter((m) => m.accepted);
+    const activeMembers = members.filter((m) => !m.accepted && !isDeclined(m.review_status));
+    const activeGuests = guests.filter((g) => !isDeclined(g.review_status));
+    return {
+      team,
+      applicants: {
+        members: activeMembers.filter((m) => m.application_kind === "role"),
+        guests: activeGuests.filter((g) => g.application_kind === "role"),
+      },
+      pitches: {
+        members: activeMembers.filter((m) => m.application_kind !== "role"),
+        guests: activeGuests.filter((g) => g.application_kind !== "role"),
+      },
+      declined: {
+        members: members.filter((m) => !m.accepted && isDeclined(m.review_status)),
+        guests: guests.filter((g) => isDeclined(g.review_status)),
+      },
+    };
+  }, [members, guests]);
+
+  const counts: Record<Tab, number> = {
+    team: buckets.team.length,
+    applicants: buckets.applicants.members.length + buckets.applicants.guests.length,
+    pitches: buckets.pitches.members.length + buckets.pitches.guests.length,
+    declined: buckets.declined.members.length + buckets.declined.guests.length,
+  };
+
+  const total = members.length + guests.length;
+  const waiting =
+    members.filter((m) => !m.accepted && m.review_status === "new").length +
+    guests.filter((g) => g.review_status === "new").length;
+  const hasStale = guests.some(
+    (g) =>
+      g.review_status === "new" &&
+      g.created_at &&
+      Date.now() - new Date(g.created_at).getTime() > 48 * 3600_000,
+  );
 
   if (isLoading) {
     return (
       <section className="mt-12">
-        <h2 className="font-display text-2xl text-ink">Applicants</h2>
+        <h2 className="font-display text-2xl text-ink">Collaborators</h2>
         <div className="mt-3 h-24 animate-pulse rounded-2xl bg-surface-2" />
       </section>
     );
@@ -69,28 +140,33 @@ export function ApplicantsPanel({ postId }: Props) {
   if (error) {
     return (
       <section className="mt-12">
-        <h2 className="font-display text-2xl text-ink">Applicants</h2>
-        <p className="mt-2 text-sm text-ink-muted">Couldn't load applicants.</p>
+        <h2 className="font-display text-2xl text-ink">Collaborators</h2>
+        <p className="mt-2 text-sm text-ink-muted">Couldn't load collaborators.</p>
       </section>
     );
   }
 
-  const members = data?.members ?? [];
-  const guests = data?.guests ?? [];
-  const total = members.length + guests.length;
-  const waitingGuests = guests.filter((g) => g.status === "new").length;
-  // Members are "waiting" if there's a conversation we presumably haven't replied to.
-  // We don't have a "replied" flag on the server payload, so we use the member count as a soft proxy.
-  const waiting = waitingGuests + members.length;
-  const hasStale = guests.some(
-    (g) => g.status === "new" && g.created_at && (Date.now() - new Date(g.created_at).getTime()) > 48 * 3600_000,
-  );
+  const visible =
+    tab === "team"
+      ? { members: buckets.team, guests: [] as typeof guests }
+      : tab === "applicants"
+        ? buckets.applicants
+        : tab === "pitches"
+          ? buckets.pitches
+          : buckets.declined;
+
+  const emptyCopy: Record<Tab, string> = {
+    team: "No one has been accepted yet. Accept an applicant to build your team.",
+    applicants: "No one has applied to a role yet. Share your post — the link is one tap from the top.",
+    pitches: "No open pitches yet. People who suggest their own way in show up here.",
+    declined: "Nothing declined.",
+  };
 
   return (
     <section id="applicants" className="mt-12 scroll-mt-24">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <h2 className="font-display text-2xl text-ink">
-          Applicants <span className="text-ink-muted text-base">({total})</span>
+          Collaborators <span className="text-ink-muted text-base">({total})</span>
         </h2>
         {waiting > 0 && (
           <span
@@ -112,41 +188,77 @@ export function ApplicantsPanel({ postId }: Props) {
         )}
       </div>
 
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {TABS.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={
+              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors " +
+              (tab === t.key
+                ? "border-ink bg-ink text-surface"
+                : "border-border bg-surface text-ink-muted hover:text-ink")
+            }
+          >
+            {t.label} <span className="tabular-nums opacity-70">{counts[t.key]}</span>
+          </button>
+        ))}
+      </div>
 
-      {total === 0 ? (
-        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-border bg-surface p-6 text-ink-muted">
-          <Inbox className="h-5 w-5" /> Nothing yet. Share your post — link is one tap from the top.
+      {visible.members.length + visible.guests.length === 0 ? (
+        <div className="mt-3 flex items-center gap-3 rounded-2xl border border-dashed border-border bg-surface p-6 text-sm text-ink-muted">
+          <Inbox className="h-5 w-5 shrink-0" /> {emptyCopy[tab]}
         </div>
       ) : (
         <div className="mt-3 space-y-3">
-          {/* Member applicants — link to profile */}
-          {members.map((m) => {
+          {/* Member applications — link to profile */}
+          {visible.members.map((m) => {
             const sender = m.sender;
+            const declined = isDeclined(m.review_status);
             return (
-              <div key={m.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 md:flex-row md:items-start">
+              <div
+                key={m.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 md:flex-row md:items-start"
+              >
                 <div className="flex items-start gap-3 md:flex-1">
                   <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-muted">
-                    {sender?.avatar_url ? <img src={sender.avatar_url} alt="" className="h-full w-full object-cover" /> : <UserCircle2 className="h-full w-full text-ink-muted" />}
+                    {sender?.avatar_url ? (
+                      <img src={sender.avatar_url} alt="" className="h-full w-full object-cover" />
+                    ) : (
+                      <UserCircle2 className="h-full w-full text-ink-muted" />
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       {sender?.username ? (
-                        <Link to="/u/$username" params={{ username: sender.username }} className="font-medium text-ink hover:underline">
+                        <Link
+                          to="/u/$username"
+                          params={{ username: sender.username }}
+                          className="font-medium text-ink hover:underline"
+                        >
                           {sender.display_name || sender.username}
                         </Link>
                       ) : (
-                      <span className="font-medium text-ink">{sender?.display_name ?? "Member"}</span>
+                        <span className="font-medium text-ink">{sender?.display_name ?? "Member"}</span>
                       )}
-                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-500">Workshop member</span>
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] text-emerald-500">
+                        Workshop member
+                      </span>
                       {m.application_kind === "role" && m.role_name ? (
                         <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                           Role · {m.role_name}
                         </span>
                       ) : m.application_kind === "suggestion" ? (
                         <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">
-                          Suggestion
+                          Pitch
                         </span>
                       ) : null}
+                      {declined && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-muted">
+                          {m.review_status === "spam" ? "Spam" : m.review_status === "withdrawn" ? "Withdrawn" : "Declined"}
+                        </span>
+                      )}
                     </div>
                     {sender?.headline && <div className="text-xs text-ink-muted">{sender.headline}</div>}
                     {m.message_preview && <p className="mt-2 text-sm text-ink-soft">{m.message_preview}</p>}
@@ -155,20 +267,48 @@ export function ApplicantsPanel({ postId }: Props) {
                 <div className="flex shrink-0 flex-col items-stretch gap-1.5 md:items-end">
                   {m.accepted ? (
                     <span className="inline-flex items-center gap-1 self-start rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-600 ring-1 ring-emerald-500/20 md:self-end">
-                      <Check className="h-3 w-3" /> Accepted
+                      <Check className="h-3 w-3" /> On the team
                     </span>
-                  ) : (
+                  ) : declined ? (
                     <Button
                       size="sm"
+                      variant="outline"
                       className="rounded-md gap-1"
-                      disabled={accept.isPending}
-                      onClick={() => accept.mutate({ applicantUserId: m.sender_user_id, contactEventId: m.id })}
+                      disabled={reviewMember.isPending}
+                      onClick={() => reviewMember.mutate({ contactEventId: m.id, reviewStatus: "new" })}
                     >
-                      <Check className="h-3.5 w-3.5" /> Accept
+                      <Undo2 className="h-3.5 w-3.5" /> Reopen
                     </Button>
+                  ) : (
+                    <>
+                      <Button
+                        size="sm"
+                        className="rounded-md gap-1"
+                        disabled={accept.isPending}
+                        onClick={() =>
+                          accept.mutate({ applicantUserId: m.sender_user_id, contactEventId: m.id })
+                        }
+                      >
+                        <Check className="h-3.5 w-3.5" /> Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="rounded-md gap-1 text-ink-muted hover:text-destructive"
+                        disabled={reviewMember.isPending}
+                        onClick={() => reviewMember.mutate({ contactEventId: m.id, reviewStatus: "declined" })}
+                      >
+                        <X className="h-3.5 w-3.5" /> Decline
+                      </Button>
+                    </>
                   )}
                   {m.conversation_id && (
-                    <Button asChild size="sm" variant={m.accepted ? "secondary" : "outline"} className="rounded-md gap-1">
+                    <Button
+                      asChild
+                      size="sm"
+                      variant={m.accepted ? "secondary" : "outline"}
+                      className="rounded-md gap-1"
+                    >
                       <Link to="/dms/$conversationId" params={{ conversationId: m.conversation_id }}>
                         <Send className="h-3.5 w-3.5" /> {m.accepted ? "Message" : "Reply"}
                       </Link>
@@ -189,78 +329,132 @@ export function ApplicantsPanel({ postId }: Props) {
             );
           })}
 
+          {/* Guest applications — show full contact, review actions */}
+          {visible.guests.map((g) => {
+            const declined = isDeclined(g.review_status);
+            return (
+              <div key={g.id} className="rounded-2xl border border-border bg-surface p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium text-ink">{g.name}</span>
+                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-500">
+                        Guest
+                      </span>
+                      {g.application_kind === "role" && g.role_name ? (
+                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
+                          Role · {g.role_name}
+                        </span>
+                      ) : g.application_kind === "suggestion" ? (
+                        <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">
+                          Pitch
+                        </span>
+                      ) : null}
+                      {g.review_status === "reviewing" && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-muted">
+                          In review
+                        </span>
+                      )}
+                      {declined && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-muted">
+                          {g.review_status === "spam" ? "Spam" : g.review_status === "withdrawn" ? "Withdrawn" : "Declined"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{g.message}</p>
 
-          {/* Guest applicants — show full contact, status toggles */}
-          {guests.map((g) => (
-            <div key={g.id} className="rounded-2xl border border-border bg-surface p-4">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-medium text-ink">{g.name}</span>
-                    <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-500">Guest</span>
-                    {g.application_kind === "role" && g.role_name ? (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
-                        Role · {g.role_name}
-                      </span>
-                    ) : g.application_kind === "suggestion" ? (
-                      <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] text-amber-600">
-                        Suggestion
-                      </span>
-                    ) : null}
-                    {g.status === "contacted" && <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-muted">Contacted</span>}
-                    {g.status === "spam" && <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[11px] text-destructive">Spam</span>}
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                      <a
+                        href={`mailto:${g.email}`}
+                        className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted"
+                      >
+                        <Mail className="h-3.5 w-3.5" /> {g.email}
+                      </a>
+                      {g.phone && (
+                        <a
+                          href={`tel:${g.phone}`}
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted"
+                        >
+                          <Phone className="h-3.5 w-3.5" /> {g.phone}
+                        </a>
+                      )}
+                      {g.instagram_handle && (
+                        <a
+                          href={`https://instagram.com/${g.instagram_handle}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted"
+                        >
+                          <Instagram className="h-3.5 w-3.5" /> @{g.instagram_handle}
+                        </a>
+                      )}
+                      {g.reel_url && (
+                        <a
+                          href={g.reel_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" /> Reel
+                        </a>
+                      )}
+                      {g.portfolio_url && (
+                        <a
+                          href={g.portfolio_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" /> Portfolio
+                        </a>
+                      )}
+                    </div>
                   </div>
-                  <p className="mt-2 whitespace-pre-wrap text-sm text-ink-soft">{g.message}</p>
 
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <a href={`mailto:${g.email}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted">
-                      <Mail className="h-3.5 w-3.5" /> {g.email}
-                    </a>
-                    {g.phone && (
-                      <a href={`tel:${g.phone}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted">
-                        <Phone className="h-3.5 w-3.5" /> {g.phone}
-                      </a>
-                    )}
-                    {g.instagram_handle && (
-                      <a href={`https://instagram.com/${g.instagram_handle}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted">
-                        <Instagram className="h-3.5 w-3.5" /> @{g.instagram_handle}
-                      </a>
-                    )}
-                    {g.reel_url && (
-                      <a href={g.reel_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted">
-                        <ExternalLink className="h-3.5 w-3.5" /> Reel
-                      </a>
-                    )}
-                    {g.portfolio_url && (
-                      <a href={g.portfolio_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-border bg-surface-2 px-3 py-1.5 text-ink hover:bg-muted">
-                        <ExternalLink className="h-3.5 w-3.5" /> Portfolio
-                      </a>
+                  <div className="flex shrink-0 flex-col gap-1">
+                    {declined ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="rounded-md gap-1"
+                        disabled={reviewGuest.isPending}
+                        onClick={() => reviewGuest.mutate({ id: g.id, reviewStatus: "new" })}
+                      >
+                        <Undo2 className="h-3.5 w-3.5" /> Reopen
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant={g.review_status === "reviewing" ? "secondary" : "outline"}
+                          className="rounded-md gap-1"
+                          disabled={reviewGuest.isPending}
+                          onClick={() =>
+                            reviewGuest.mutate({
+                              id: g.id,
+                              reviewStatus: g.review_status === "reviewing" ? "new" : "reviewing",
+                            })
+                          }
+                        >
+                          <Check className="h-3.5 w-3.5" />{" "}
+                          {g.review_status === "reviewing" ? "In review" : "Mark in review"}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="rounded-md gap-1 text-ink-muted hover:text-destructive"
+                          disabled={reviewGuest.isPending}
+                          onClick={() => reviewGuest.mutate({ id: g.id, reviewStatus: "declined" })}
+                        >
+                          <X className="h-3.5 w-3.5" /> Decline
+                        </Button>
+                      </>
                     )}
                   </div>
                 </div>
-
-                <div className="flex shrink-0 flex-col gap-1">
-                  <Button
-                    size="sm"
-                    variant={g.status === "contacted" ? "secondary" : "outline"}
-                    className="rounded-md gap-1"
-                    onClick={() => setStatus.mutate({ id: g.id, status: g.status === "contacted" ? "new" : "contacted" })}
-                  >
-                    <Check className="h-3.5 w-3.5" /> {g.status === "contacted" ? "Done" : "Mark contacted"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-md gap-1 text-ink-muted hover:text-destructive"
-                    onClick={() => setStatus.mutate({ id: g.id, status: g.status === "spam" ? "new" : "spam" })}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" /> {g.status === "spam" ? "Unspam" : "Spam"}
-                  </Button>
-                </div>
-
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

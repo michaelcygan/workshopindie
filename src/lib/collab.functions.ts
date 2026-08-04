@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { applicationRejectionReason } from "@/lib/collab/lifecycle";
+import { applicationRejectionReason, type CollabReviewStatus } from "@/lib/collab/lifecycle";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
@@ -202,7 +202,7 @@ export const listApplicants = createServerFn({ method: "POST" })
     const [eventsRes, guestsRes] = await Promise.all([
       supabase
         .from("collab_contact_events")
-        .select("id,sent_at,message_preview,collab_role_id,sender_user_id")
+        .select("id,sent_at,message_preview,collab_role_id,sender_user_id,review_status,is_application")
         .eq("collab_post_id", data.collabPostId)
         .order("sent_at", { ascending: false }),
       supabase
@@ -210,14 +210,16 @@ export const listApplicants = createServerFn({ method: "POST" })
         .select(
           // claim_token is deliberately excluded: it must never be visible to the post
           // owner, only to the guest who submitted the application.
-          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id",
+          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,review_status,collab_role_id,matched_user_id",
         )
         .eq("collab_post_id", data.collabPostId)
         .order("created_at", { ascending: false }),
     ]);
 
-    const events = eventsRes.data ?? [];
+    // Legacy rows predate `is_application` (null) — treat those as applications.
+    const events = (eventsRes.data ?? []).filter((e) => e.is_application !== false);
     const guestRows = (guestsRes.data ?? []).filter((g) => !g.matched_user_id);
+
 
     // Hydrate sender profiles in one batched query.
     const senderIds = Array.from(new Set(events.map((e) => e.sender_user_id).filter(Boolean)));
@@ -277,14 +279,52 @@ export const listApplicants = createServerFn({ method: "POST" })
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
       accepted: acceptedSet.has(e.sender_user_id),
+      review_status: (e.review_status ?? "new") as CollabReviewStatus,
       ...roleInfo(e.collab_role_id),
     }));
 
-    const guests = guestRows.map((g) => ({ ...g, ...roleInfo(g.collab_role_id) }));
+    const guests = guestRows.map((g) => ({
+      ...g,
+      review_status: (g.review_status ?? (g.status === "spam" ? "spam" : "new")) as CollabReviewStatus,
+      ...roleInfo(g.collab_role_id),
+    }));
 
     return { members, guests };
   });
 
+
+
+/** Owner-only review vocabulary for member applications (collab_contact_events). */
+export const setApplicationReviewStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        collabPostId: z.string().uuid(),
+        contactEventId: z.string().uuid(),
+        reviewStatus: z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post || post.user_id !== userId) throw new Error("Only the post owner can review applications.");
+
+    // No owner-side UPDATE policy exists on collab_contact_events, so write with
+    // the admin client after verifying ownership above.
+    const { error } = await supabaseAdmin
+      .from("collab_contact_events")
+      .update({ review_status: data.reviewStatus, reviewed_at: new Date().toISOString() })
+      .eq("id", data.contactEventId)
+      .eq("collab_post_id", data.collabPostId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
 
 export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -292,22 +332,38 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["new", "contacted", "spam", "hidden"]),
+        status: z.enum(["new", "contacted", "spam", "hidden"]).optional(),
+        reviewStatus: z.enum(["new", "reviewing", "accepted", "declined", "withdrawn", "spam"]).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const patch: {
+      status?: string;
+      contacted_at?: string | null;
+      review_status?: CollabReviewStatus;
+    } = {};
+    if (data.status) {
+      patch.status = data.status;
+      patch.contacted_at = data.status === "contacted" ? new Date().toISOString() : null;
+    }
+    if (data.reviewStatus) {
+      patch.review_status = data.reviewStatus;
+      if (!data.status) {
+        // Keep the legacy text column roughly in sync for older surfaces.
+        patch.status = data.reviewStatus === "spam" ? "spam" : data.reviewStatus === "reviewing" ? "contacted" : "new";
+      }
+    }
+    if (Object.keys(patch).length === 0) return { ok: true as const };
     // RLS already restricts updates to the post owner.
     const { error } = await context.supabase
       .from("collab_guest_applications")
-      .update({
-        status: data.status,
-        contacted_at: data.status === "contacted" ? new Date().toISOString() : null,
-      })
+      .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
 
 // Helper: ensure allowance row exists, create+seed conversation if new, insert opening message.
 // Uses supabaseAdmin where RLS would otherwise reject (allowance row, notifications).

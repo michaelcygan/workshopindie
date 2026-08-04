@@ -209,7 +209,7 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="font-display text-2xl">Post to Galleryshop in {city.name}</DialogTitle>
+          <DialogTitle className="font-display text-2xl">Post a Workshop in {city.name}</DialogTitle>
           <DialogDescription>
             Only people in {city.name} will see it. Go live right now or schedule for later.
           </DialogDescription>

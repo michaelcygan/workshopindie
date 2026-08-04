@@ -239,7 +239,7 @@ export function PublishFromCollabSheet({ open, onOpenChange, postId, postTitle, 
             </Button>
           ) : (
             <Button className="rounded-full gap-1" disabled={publish.isPending} onClick={() => publish.mutate()}>
-              <Sparkles className="h-4 w-4" /> {publish.isPending ? "Publishing…" : "Post to Gallery"}
+              <Sparkles className="h-4 w-4" /> {publish.isPending ? "Publishing…" : "Publish Work"}
             </Button>
           )}
         </DialogFooter>

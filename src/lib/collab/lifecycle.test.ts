@@ -12,6 +12,7 @@ import {
   applicationCountLabel,
   normalizeGuestReviewStatus,
   applicationRejectionReason,
+  countsTowardCollabQuota,
 } from "./lifecycle";
 
 const TODAY = "2026-08-04";
@@ -123,5 +124,20 @@ describe("applicationRejectionReason", () => {
     expect(applicationRejectionReason({ ...base, resulting_work_id: "w1" }, TODAY)).toMatch(/published/i);
     expect(applicationRejectionReason({ ...base, ends_on: "2026-01-01" }, TODAY)).toMatch(/deadline/i);
     expect(applicationRejectionReason({ ...base, applications_open: false }, TODAY)).toMatch(/not accepting/i);
+  });
+});
+
+describe("free-tier quota counting", () => {
+  it("counts an in-progress collab that is accepting collaborators", () => {
+    expect(countsTowardCollabQuota({ ...base })).toBe(true);
+  });
+  it("does not count a paused collab", () => {
+    expect(countsTowardCollabQuota({ ...base, applications_open: false })).toBe(false);
+  });
+  it("does not count a published collab", () => {
+    expect(countsTowardCollabQuota({ ...base, resulting_work_id: "w1" })).toBe(false);
+  });
+  it("does not count an archived collab", () => {
+    expect(countsTowardCollabQuota({ ...base, archived_at: "2026-01-01" })).toBe(false);
   });
 });
