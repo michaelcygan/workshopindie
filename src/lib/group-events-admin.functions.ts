@@ -94,6 +94,37 @@ const baseSchema = z.object({
   pinned: z.boolean().optional(),
 });
 
+/**
+ * An in-person / hybrid event needs a resolved city before it can be publicly
+ * scheduled. If the host Group is an official city Group we inherit its city
+ * (never overriding an explicitly chosen venue city). Drafts may stay
+ * incomplete.
+ */
+async function resolveEventCity(
+  supabase: { from: (t: string) => any },
+  input: {
+    group_id: string;
+    format: "in_person" | "online" | "hybrid";
+    venue_city_id?: string | null;
+    status: string;
+  },
+): Promise<string | null> {
+  if (input.format === "online") return input.venue_city_id ?? null;
+  if (input.venue_city_id) return input.venue_city_id;
+  const { data: group } = await supabase
+    .from("groups")
+    .select("kind,city_id")
+    .eq("id", input.group_id)
+    .maybeSingle();
+  const inherited = group?.kind === "city" ? (group?.city_id as string | null) ?? null : null;
+  if (!inherited && input.status !== "draft") {
+    throw new Error(
+      "Pick a venue so we can resolve the city — in-person events need a city before they can be published. Save it as a draft to finish later.",
+    );
+  }
+  return inherited;
+}
+
 export const createEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => baseSchema.parse(i))
@@ -102,15 +133,23 @@ export const createEvent = createServerFn({ method: "POST" })
     await assertAdmin(supabase, userId);
     const { featured, status, cover_url, pinned, extra_group_ids, ...rest } = data;
     const rehostedCover = await rehostCoverIfExternal(cover_url, `g_${data.group_id}`);
+    const effectiveStatus = (status ?? "scheduled") as "draft" | "scheduled";
+    const venueCityId = await resolveEventCity(supabase as never, {
+      group_id: data.group_id,
+      format: data.format,
+      venue_city_id: data.venue_city_id ?? null,
+      status: effectiveStatus,
+    });
     const insertRow = {
       ...rest,
+      venue_city_id: venueCityId,
       cover_url: rehostedCover,
       slug: "",
       created_by: userId,
       featured_at: featured ? new Date().toISOString() : null,
       pinned_at: pinned ? new Date().toISOString() : null,
-      status: (status ?? "scheduled") as "draft" | "scheduled",
-      is_official: data.is_official ?? true,
+      status: effectiveStatus,
+      is_official: data.source === "external" ? false : data.is_official ?? true,
     };
     const { data: row, error } = await supabase
       .from("group_events")
