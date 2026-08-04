@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { PublicCollabCall } from "@/lib/home-types";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 /**
  * An arts-publication "open calls" board — typography and rules only.
