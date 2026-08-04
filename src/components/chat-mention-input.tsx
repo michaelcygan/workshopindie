@@ -347,7 +347,7 @@ export function MessageBody({
               <Link
                 to="/g/$slug"
                 params={{ slug: p.slug }}
-                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+                className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
               >
                 <Users className="h-3 w-3" />
                 {p.label}

@@ -77,7 +77,7 @@ export function LoungeInviteDialog({ open, onOpenChange, invitee }: Props) {
                     active ? "border-primary bg-primary/5" : "border-border hover:bg-muted"
                   }`}
                 >
-                  <Radio className="mt-0.5 h-4 w-4 shrink-0 text-violet" />
+                  <Radio className="mt-0.5 h-4 w-4 shrink-0 text-signal" />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-medium text-ink">
                       {formatRoomTitle(r.title, r.medium)}

@@ -240,7 +240,7 @@ function SuggestionIcon({ suggestion: s }: { suggestion: MentionSuggestion }) {
     return s.avatar ? (
       <img src={s.avatar} alt="" className="h-6 w-6 shrink-0 rounded-full object-cover" />
     ) : (
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet/15 text-violet">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-signal/15 text-signal">
         <Users className="h-3.5 w-3.5" />
       </span>
     );

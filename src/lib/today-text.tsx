@@ -162,7 +162,7 @@ export function renderTodayBody(body: string): ReactNode {
           <Link
             to="/g/$slug"
             params={{ slug: s.slug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
           >
             <Users className="h-3 w-3" />
             {s.label}
@@ -293,7 +293,7 @@ function PostPill({ label, slug }: { label: string; slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-violet/30 bg-violet/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-violet hover:bg-violet/10"
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-signal/30 bg-signal/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-signal hover:bg-signal/10"
       >
         <BookOpen className="h-3 w-3" />
         {label}

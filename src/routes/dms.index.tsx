@@ -352,7 +352,7 @@ function DmsIndex() {
                   </div>
                   {(collab || workshop) && (
                     <span className={`mt-0.5 inline-block max-w-full truncate rounded-full px-2 py-0.5 text-[10px] ${
-                      collab ? "bg-primary/10 text-primary" : "bg-violet/10 text-violet"
+                      collab ? "bg-primary/10 text-primary" : "bg-signal/10 text-signal"
                     }`}>
                       Re: {collab?.title ?? workshop?.title ?? "Audio room"}
                     </span>

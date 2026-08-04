@@ -254,12 +254,12 @@
     background-image: radial-gradient(oklch(0 0 0 / 0.03) 1px, transparent 1px);
     background-size: 3px 3px;
   }
+  /* Neutral paper fallbacks — used where no image exists. */
   .gradient-warm {
-    background-image: linear-gradient(135deg, oklch(0.76 0.15 55) 0%, oklch(0.68 0.17 32) 52%, oklch(0.60 0.16 24) 100%);
+    background-image: linear-gradient(135deg, oklch(0.93 0.012 80) 0%, oklch(0.87 0.010 80) 55%, oklch(0.80 0.008 80) 100%);
   }
   .gradient-soft {
-    background-image: radial-gradient(60% 80% at 20% 0%, oklch(0.62 0.22 350 / 0.10), transparent 60%),
-                      radial-gradient(50% 60% at 90% 10%, oklch(0.62 0.24 295 / 0.10), transparent 60%);
+    background-image: linear-gradient(160deg, oklch(0.97 0.008 80) 0%, oklch(0.93 0.006 80) 100%);
   }
   .speaking-halo {
     background: conic-gradient(from 0deg,

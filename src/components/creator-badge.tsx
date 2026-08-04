@@ -7,7 +7,7 @@ const META: Record<string, { label: string; icon: any; className: string }> = {
   founding_creator: {
     label: "Founding",
     icon: Sparkles,
-    className: "bg-gradient-to-r from-violet/15 to-coral/15 text-violet ring-1 ring-violet/30",
+    className: "bg-gradient-to-r from-signal/15 to-coral/15 text-signal ring-1 ring-signal/30",
   },
   city_host: {
     label: "City Host",

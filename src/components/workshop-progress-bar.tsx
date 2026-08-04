@@ -83,9 +83,9 @@ export function WorkshopProgressBar({
           const Icon = s.icon;
           const content = (
             <div className={"flex items-center gap-2 rounded-full px-3 py-1.5 text-sm transition " +
-              (s.done ? "bg-violet/10 text-violet" : "text-ink-muted hover:text-ink")}>
+              (s.done ? "bg-signal/10 text-signal" : "text-ink-muted hover:text-ink")}>
               <span className={"inline-flex h-5 w-5 items-center justify-center rounded-full " +
-                (s.done ? "bg-violet text-white" : "border border-border bg-surface-2")}>
+                (s.done ? "bg-signal text-white" : "border border-border bg-surface-2")}>
                 {s.done ? <Check className="h-3 w-3" /> : <Icon className="h-3 w-3" />}
               </span>
               <span className="font-medium">{s.label}</span>
