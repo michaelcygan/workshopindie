@@ -279,14 +279,53 @@ export const listApplicants = createServerFn({ method: "POST" })
       sender: profileMap[e.sender_user_id] ?? null,
       conversation_id: convoMap[e.sender_user_id] ?? null,
       accepted: acceptedSet.has(e.sender_user_id),
+      review_status: (e.review_status ?? "new") as CollabReviewStatus,
       ...roleInfo(e.collab_role_id),
     }));
 
-    const guests = guestRows.map((g) => ({ ...g, ...roleInfo(g.collab_role_id) }));
+    const guests = guestRows.map((g) => ({
+      ...g,
+      review_status: (g.review_status ?? (g.status === "spam" ? "spam" : "new")) as CollabReviewStatus,
+      ...roleInfo(g.collab_role_id),
+    }));
 
     return { members, guests };
   });
 
+const REVIEW_STATUSES = ["new", "reviewing", "accepted", "declined", "withdrawn", "spam"] as const;
+export type CollabReviewStatus = (typeof REVIEW_STATUSES)[number];
+
+/** Owner-only review vocabulary for member applications (collab_contact_events). */
+export const setApplicationReviewStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z
+      .object({
+        collabPostId: z.string().uuid(),
+        contactEventId: z.string().uuid(),
+        reviewStatus: z.enum(REVIEW_STATUSES),
+      })
+      .parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: post } = await supabase
+      .from("collab_posts")
+      .select("id,user_id")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (!post || post.user_id !== userId) throw new Error("Only the post owner can review applications.");
+
+    // No owner-side UPDATE policy exists on collab_contact_events, so write with
+    // the admin client after verifying ownership above.
+    const { error } = await supabaseAdmin
+      .from("collab_contact_events")
+      .update({ review_status: data.reviewStatus, reviewed_at: new Date().toISOString() })
+      .eq("id", data.contactEventId)
+      .eq("collab_post_id", data.collabPostId);
+    if (error) throw new Error(error.message);
+    return { ok: true as const };
+  });
 
 export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -294,22 +333,34 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
     z
       .object({
         id: z.string().uuid(),
-        status: z.enum(["new", "contacted", "spam", "hidden"]),
+        status: z.enum(["new", "contacted", "spam", "hidden"]).optional(),
+        reviewStatus: z.enum(REVIEW_STATUSES).optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
+    const patch: Record<string, unknown> = {};
+    if (data.status) {
+      patch['status'] = data.status;
+      patch['contacted_at'] = data.status === "contacted" ? new Date().toISOString() : null;
+    }
+    if (data.reviewStatus) {
+      patch['review_status'] = data.reviewStatus;
+      if (!data.status) {
+        // Keep the legacy text column roughly in sync for older surfaces.
+        patch['status'] = data.reviewStatus === "spam" ? "spam" : data.reviewStatus === "reviewing" ? "contacted" : "new";
+      }
+    }
+    if (Object.keys(patch).length === 0) return { ok: true as const };
     // RLS already restricts updates to the post owner.
     const { error } = await context.supabase
       .from("collab_guest_applications")
-      .update({
-        status: data.status,
-        contacted_at: data.status === "contacted" ? new Date().toISOString() : null,
-      })
+      .update(patch)
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
+
 
 // Helper: ensure allowance row exists, create+seed conversation if new, insert opening message.
 // Uses supabaseAdmin where RLS would otherwise reject (allowance row, notifications).
