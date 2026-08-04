@@ -35,7 +35,6 @@ import {
 } from "lucide-react";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
-import { GroupsNavItem } from "@/components/groups-nav-item";
 
 const navLinkBase = "rounded-md px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition-colors";
 const navLinkActive = "rounded-md px-3 py-1.5 text-sm text-ink bg-muted";
@@ -221,43 +220,5 @@ export function TopNav() {
         </div>
       </div>
     </header>
-  );
-}
-
-function MoreNavMenu() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const isActive =
-    pathname.startsWith("/events") ||
-    pathname.startsWith("/gallery") ||
-    pathname.startsWith("/blog");
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={`${isActive ? navLinkActive : navLinkBase} inline-flex items-center gap-1`}
-        >
-          More
-          <ChevronDown className="h-3.5 w-3.5" aria-hidden />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="center" className="w-44">
-        <DropdownMenuItem asChild>
-          <Link to="/events">
-            <Calendar className="mr-2 h-4 w-4" /> Events
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/gallery">
-            <LayoutGrid className="mr-2 h-4 w-4" /> Gallery
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/blog">
-            <BookOpen className="mr-2 h-4 w-4" /> Blog
-          </Link>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   );
 }
