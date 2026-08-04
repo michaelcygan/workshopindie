@@ -215,7 +215,6 @@ export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
       .limit(12);
     if (error) throw new Error(error.message);
     return sanitizeDiscoveryRows(data) as unknown as NonNullable<typeof data>;
-    return data ?? [];
   });
 
 const rsvpSchema = z.object({
