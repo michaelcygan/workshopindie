@@ -330,7 +330,12 @@ function ProfilePage() {
   const [seenCollabKey, setSeenCollabKey] = useState<string | null>(null);
 
 
-  const { data: profile, isLoading } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username) });
+  const {
+    data: profile,
+    isLoading,
+    isError: profileError,
+    refetch: refetchProfile,
+  } = useQuery({ queryKey: ["profile", username], queryFn: () => fetchProfile(username), retry: 1 });
   const { data: ownedWorks } = useQuery({
     queryKey: ["profile-owned", profile?.id],
     queryFn: () => fetchOwnedWorks(profile!.id),
