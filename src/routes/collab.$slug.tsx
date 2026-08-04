@@ -211,7 +211,7 @@ function CollabDetail() {
   const { data: activity } = useQuery({
     queryKey: ["collab-activity", post?.id],
     queryFn: () => fetchActivity({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !!isOwnerEarly && post?.status === "open",
+    enabled: !!post && !!isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 30_000,
   });
 
@@ -219,7 +219,7 @@ function CollabDetail() {
   const { data: publicCounts } = useQuery({
     queryKey: ["collab-public-counts", post?.id],
     queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !isOwnerEarly && post?.status === "open",
+    enabled: !!post && !isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 60_000,
   });
 
@@ -340,6 +340,8 @@ function CollabDetail() {
   const isArchived = lifecycle === "archived";
   const isShipped = lifecycle === "published";
   const acceptingNow = effectiveApplicationsOpen(post);
+  // Permanent delete is only offered when nothing of value would be lost.
+  const canDelete = !post.resulting_work_id && applicantCount === 0;
 
   // Archived posts and legacy private drafts are owner-only.
   if (!isPubliclyVisible(post) && !isOwner) {
@@ -400,14 +402,14 @@ function CollabDetail() {
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <CategoryChip category={post.category as Category} />
             {stateBadge}
-            {post.status === "open" && (
+            {!isArchived && !isShipped && (
               <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-                {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
+                {openedDays === 0 ? "Started today" : `Started ${openedDays}d ago`}
               </span>
             )}
-            {post.status === "open" && closingSoon && daysToDeadline !== null && (
+            {deadlineSoon && daysToDeadline !== null && (
               <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
+                Deadline in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
               </span>
             )}
           </div>
@@ -429,34 +431,66 @@ function CollabDetail() {
                 <div className="hidden sm:flex sm:items-center sm:gap-2">
                   {isDraft && (
                     <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
-                      <Eye className="h-3.5 w-3.5" /> Publish
+                      <Eye className="h-3.5 w-3.5" /> Share publicly
                     </Button>
                   )}
-                  {(post.status === "open" || isDraft) && (
+                  {!isArchived && (
                     <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Link>
                     </Button>
                   )}
-                  {!isDraft && <PinCollabButton collabId={post.id} />}
-                  {post.status === "open" && (
-                    <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
+                  {!isDraft && !isArchived && <PinCollabButton collabId={post.id} />}
+                  {!isArchived && !isShipped && (
+                    <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
+                      <Sparkles className="h-3.5 w-3.5" /> Publish Work
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="outline" className="rounded-full h-9 w-9" aria-label="More actions">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {!isArchived && !isShipped && (
+                        <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                        </DropdownMenuItem>
+                      )}
+                      {isArchived ? (
+                        <DropdownMenuItem onClick={() => archiveMut.mutate(false)}>
+                          <Archive className="h-4 w-4 mr-2" /> Restore
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => { if (confirm("Archive this Collab? It stays yours, but nobody else can see it.")) archiveMut.mutate(true); }}>
+                          <Archive className="h-4 w-4 mr-2" /> Archive
+                        </DropdownMenuItem>
+                      )}
+                      {canDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Mobile: one inline primary + kebab for the rest */}
                 <div className="flex items-center gap-2 sm:hidden">
                   {isDraft ? (
                     <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
-                      <Eye className="h-3.5 w-3.5" /> Publish
+                      <Eye className="h-3.5 w-3.5" /> Share
                     </Button>
-                  ) : post.status === "open" ? (
+                  ) : !isArchived ? (
                     <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
@@ -472,26 +506,45 @@ function CollabDetail() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      {!isDraft && post.status === "open" && (
+                      {!isDraft && !isArchived && (
                         <DropdownMenuItem asChild>
                           <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit
                           </Link>
                         </DropdownMenuItem>
                       )}
-                      {!isDraft && <PinCollabMenuItem collabId={post.id} />}
-                      {post.status === "open" && (
-                        <DropdownMenuItem onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" /> Pause submissions
+                      {!isDraft && !isArchived && <PinCollabMenuItem collabId={post.id} />}
+                      {!isArchived && !isShipped && (
+                        <>
+                          <DropdownMenuItem onClick={() => setPublishOpen(true)}>
+                            <Sparkles className="h-4 w-4 mr-2" /> Publish Work
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {isArchived ? (
+                        <DropdownMenuItem onClick={() => archiveMut.mutate(false)}>
+                          <Archive className="h-4 w-4 mr-2" /> Restore
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => { if (confirm("Archive this Collab? It stays yours, but nobody else can see it.")) archiveMut.mutate(true); }}>
+                          <Archive className="h-4 w-4 mr-2" /> Archive
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
+                      {canDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -515,8 +568,8 @@ function CollabDetail() {
           <div className="mb-3 flex items-start gap-2 rounded-2xl border border-dashed border-border bg-muted/40 p-3 text-sm">
             <Pencil className="mt-0.5 h-4 w-4 text-ink-muted" />
             <div className="flex-1">
-              <p className="font-medium text-ink">This is a draft.</p>
-              <p className="text-ink-muted">Only you can see it. Flesh it out and hit Publish when you're ready.</p>
+              <p className="font-medium text-ink">This Collab is private.</p>
+              <p className="text-ink-muted">Only you can see it. Share it publicly when you're ready for collaborators.</p>
             </div>
           </div>
         )}
@@ -548,7 +601,7 @@ function CollabDetail() {
 
 
         {/* Owner activity meter (open state) */}
-        {isOwner && post.status === "open" && activity && (activity.applicants > 0 || activity.shares > 0) && (
+        {isOwner && !isArchived && !isShipped && activity && (activity.applicants > 0 || activity.shares > 0) && (
           <p className="mb-3 text-xs text-ink-muted">
             {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
             {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
@@ -558,19 +611,19 @@ function CollabDetail() {
         )}
 
         {/* Visitor signal (open state, non-owner) */}
-        {!isOwner && post.status === "open" && (
+        {!isOwner && !isArchived && !isShipped && (
           <p className="mb-3 text-xs text-ink-muted">
             {publicCounts && publicCounts.applicants > 0
-              ? <>Cast so far: <span className="text-ink">{publicCounts.applicants}</span> · </>
-              : <>Open to applications · </>}
-            posted {openedDays === 0 ? "today" : `${openedDays}d ago`}
+              ? <>{publicCounts.applicants} on board so far · </>
+              : acceptingNow ? <>Accepting collaborators · </> : <>Submissions paused · </>}
+            started {openedDays === 0 ? "today" : `${openedDays}d ago`}
           </p>
         )}
 
 
 
         {/* Owner: single next-best-action strip */}
-        {isOwner && post.status === "open" && !deadlinePassed && (
+        {isOwner && !isArchived && !isShipped && !deadlinePassed && (
           (() => {
             const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
             if (applicantCount > 0) {
@@ -624,7 +677,7 @@ function CollabDetail() {
               <p className="font-medium text-ink">
                 Your deadline passed {daysPast === 0 ? "today" : `${daysPast} day${daysPast === 1 ? "" : "s"} ago`}.
               </p>
-              <p className="text-xs text-ink-muted">It's hidden from the public board but still live for you. What's next?</p>
+              <p className="text-xs text-ink-muted">It's off the public board, but the project is still in progress. What's next?</p>
             </div>
             <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => {
               const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
@@ -632,11 +685,8 @@ function CollabDetail() {
             }}>
               <Clock className="h-3.5 w-3.5" /> Extend
             </Button>
-            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Pause submissions on this Collab? It stays In Progress.")) closeMut.mutate(); }}>
-              <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
-            </Button>
             <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
-              <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
             </Button>
           </div>
         )}
@@ -646,14 +696,21 @@ function CollabDetail() {
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-2/60 p-4">
             <Archive className="h-5 w-5 text-ink-soft" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-ink">Archived{post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.</p>
-              <p className="text-xs text-ink-muted">Only you can see this page. Post to Gallery to make it public, or delete it.</p>
+              <p className="font-medium text-ink">
+                Archived{post.archived_at ? ` on ${new Date(post.archived_at).toLocaleDateString()}` : post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.
+              </p>
+              <p className="text-xs text-ink-muted">Only you can see this page. Restore it to bring it back, or publish the Work that came out of it.</p>
             </div>
-            <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this post permanently?")) deletePost.mutate(); }}>
-              <Trash2 className="h-3.5 w-3.5" /> Delete
+            {canDelete && (
+              <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}>
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            )}
+            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => archiveMut.mutate(false)}>
+              <Archive className="h-3.5 w-3.5" /> Restore
             </Button>
             <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
-              <Sparkles className="h-3.5 w-3.5" /> Post to Gallery from this
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
             </Button>
           </div>
         )}
