@@ -127,7 +127,7 @@ export function MemberHome() {
       />
 
       {/* Now — departures board on desktop, compact module on small screens. */}
-      <div className="hidden px-4 pt-6 lg:block">
+      <div className="mx-auto hidden max-w-7xl px-4 pt-6 md:px-6 lg:block">
         <NowBoardDesktop data={data} />
       </div>
       <div className="lg:hidden">

@@ -54,19 +54,19 @@ function LaneRow({ item }: { item: HomeNowItem }) {
     <div className="flex flex-col gap-1">
       <div className="flex items-center gap-2">
         {item.isLive ? (
-          <span className="inline-block size-1.5 rounded-full bg-[hsl(var(--signal,221_75%_54%))]" />
+          <span className="inline-block size-1.5 rounded-full bg-signal" />
         ) : null}
         <span
           className={cn(
             "font-display text-[10px] uppercase tracking-[0.12em]",
-            item.isLive ? "text-[hsl(var(--signal,221_75%_54%))]" : "text-white/45",
+            item.isLive ? "text-signal" : "text-ink-muted",
           )}
         >
           {item.status}
         </span>
       </div>
-      <p className="font-display line-clamp-1 text-[15px] leading-snug text-white">{item.title}</p>
-      <p className="line-clamp-1 text-xs text-white/50">{item.detail ?? "\u00a0"}</p>
+      <p className="font-display line-clamp-1 text-[15px] leading-snug text-ink">{item.title}</p>
+      <p className="line-clamp-1 text-xs text-ink-muted">{item.detail ?? "\u00a0"}</p>
     </div>
   );
 }
@@ -181,14 +181,14 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
   return (
     <section
       aria-label="Now on Workshop"
-      className="hidden overflow-hidden rounded-[10px] border border-white/10 bg-[#0b0b0c] lg:block"
+      className="hidden overflow-hidden rounded-[10px] border border-border bg-card lg:block"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setHovered(true)}
       onBlur={() => setHovered(false)}
     >
-      <header className="flex items-center justify-between border-b border-white/10 px-5 py-2.5">
-        <p className="font-display text-[11px] uppercase tracking-[0.12em] text-white/50">
+      <header className="flex items-center justify-between border-b border-border px-5 py-2.5">
+        <p className="font-display text-[11px] uppercase tracking-[0.12em] text-ink-muted">
           Now
           {data.homeCity ? ` · ${data.homeCity.name}` : ""}
           {updatedAt ? ` · Updated ${updatedAt}` : ""}
@@ -199,7 +199,7 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
             type="button"
             aria-label="Previous suggestions"
             onClick={() => stepAll(-1)}
-            className="rounded-[6px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-[6px] p-1 text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <ChevronLeft className="size-3.5" />
           </button>
@@ -208,7 +208,7 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
             aria-label={paused ? "Resume rotation" : "Pause rotation"}
             aria-pressed={paused}
             onClick={() => setPaused((p) => !p)}
-            className="rounded-[6px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-[6px] p-1 text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
           </button>
@@ -216,20 +216,20 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
             type="button"
             aria-label="Next suggestions"
             onClick={() => stepAll(1)}
-            className="rounded-[6px] p-1 text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+            className="rounded-[6px] p-1 text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
           >
             <ChevronRight className="size-3.5" />
           </button>
         </div>
       </header>
 
-      <div className="grid h-[136px] grid-cols-3 divide-x divide-white/10">
+      <div className="grid h-[136px] grid-cols-3 divide-x divide-border">
         {HOME_NOW_LANES.map(({ lane, label }) => {
           const items = board[lane];
           const item = items[indices[lane] % Math.max(1, items.length)];
           return (
             <div key={lane} className="flex flex-col gap-3 px-5 py-4">
-              <p className="font-display text-[10px] uppercase tracking-[0.12em] text-white/35">
+              <p className="font-display text-[10px] uppercase tracking-[0.12em] text-ink-muted">
                 {lane === "live" && !anyLive ? "Right now" : label}
               </p>
               <div className="relative flex-1" style={{ perspective: 600 }}>
@@ -248,7 +248,7 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
                           type="button"
                           onClick={() => void runAction(item)}
                           disabled={pending === item.id}
-                          className="block w-full rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal,221_75%_54%))] disabled:opacity-60"
+                          className="block w-full rounded-[6px] text-left outline-none focus-visible:ring-2 focus-visible:ring-signal disabled:opacity-60"
                         >
                           <LaneRow item={item} />
                         </button>
@@ -257,7 +257,7 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
                           to={item.to}
                           params={item.params}
                           search={item.search}
-                          className="block rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--signal,221_75%_54%))]"
+                          className="block rounded-[6px] outline-none focus-visible:ring-2 focus-visible:ring-signal"
                         >
                           <LaneRow item={item} />
                         </BoardLink>
@@ -278,6 +278,6 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
 
 export function NowBoardDesktopSkeleton() {
   return (
-    <div className="hidden h-[186px] animate-pulse rounded-[10px] border border-white/10 bg-[#0b0b0c] lg:block" />
+    <div className="hidden h-[178px] animate-pulse rounded-[10px] border border-border bg-card lg:block" />
   );
 }
