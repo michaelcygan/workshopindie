@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { BookOpen, Calendar, Compass, PenLine, Radio, Sparkles, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { HomeSection } from "@/components/home-section";
 import { WorkStoriesCarousel } from "@/components/home/work-stories-carousel";
 import { HomeFeaturedBlog } from "@/components/home/home-featured-blog";
 import { NowModule } from "@/components/home/now-module";
+import { NowBoardDesktop } from "@/components/home/now-board-desktop";
 import { YourWorkshop } from "@/components/home/your-workshop";
 import { BlogRail } from "@/components/home/blog-rail";
 import { getMemberHome } from "@/lib/home.functions";
@@ -79,11 +80,38 @@ function HomeSkeleton() {
 
 export function MemberHome() {
   const fetchHome = useServerFn(getMemberHome);
+  const qc = useQueryClient();
   const q = useQuery({
     queryKey: ["member-home"],
     queryFn: () => fetchHome(),
-    staleTime: 60_000,
+    staleTime: 45_000,
+    // The board claims to be live, so it has to actually refresh — but only
+    // while the tab is in front of the member.
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   });
+
+  // Realtime nudge, heavily debounced: bursts of Today posts collapse into one
+  // refetch rather than one per row.
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => {
+      if (timer) return;
+      timer = setTimeout(() => {
+        timer = null;
+        if (!document.hidden) qc.invalidateQueries({ queryKey: ["member-home"] });
+      }, 8_000);
+    };
+    const channel = supabase
+      .channel("member-home-live")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "group_today_posts" }, bump)
+      .subscribe();
+    return () => {
+      if (timer) clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [qc]);
 
   if (q.isLoading || !q.data) return <HomeSkeleton />;
   const data = q.data as MemberHomePayload;
@@ -96,15 +124,20 @@ export function MemberHome() {
         isFallback={data.featuredIsFallback}
       />
 
-      {/* Now — one compact module; empty states no longer get card weight. */}
-      <HomeSection title="Now" divider={false} tone="quiet" density="compact">
-        <NowModule
-          today={data.today}
-          lounges={data.lounges}
-          fallbackGroup={data.loungeFallbackGroup}
-          nextEvent={data.nextEvent}
-        />
-      </HomeSection>
+      {/* Now — departures board on desktop, compact module on small screens. */}
+      <div className="hidden px-4 pt-6 lg:block">
+        <NowBoardDesktop data={data} />
+      </div>
+      <div className="lg:hidden">
+        <HomeSection title="Now" divider={false} tone="quiet" density="compact">
+          <NowModule
+            today={data.today}
+            lounges={data.lounges}
+            fallbackGroup={data.loungeFallbackGroup}
+            nextEvent={data.nextEvent}
+          />
+        </HomeSection>
+      </div>
 
       <HomeSection
         eyebrow="Yours"
