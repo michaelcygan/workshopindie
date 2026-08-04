@@ -132,12 +132,7 @@ export function MemberHome() {
       </div>
       <div className="lg:hidden">
         <HomeSection title="Now" divider={false} tone="quiet" density="compact">
-          <NowModule
-            today={data.today}
-            lounges={data.lounges}
-            fallbackGroup={data.loungeFallbackGroup}
-            nextEvent={data.nextEvent}
-          />
+          <NowBoardMobile data={data} />
         </HomeSection>
       </div>
 
