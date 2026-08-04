@@ -23,9 +23,10 @@ export function MobileIslandTab({ tab, active, avatar, layoutIdGroup }: Props) {
       preload="intent"
       onClick={() => hapticTap(6)}
       aria-label={tab.label}
+      title={tab.label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 outline-none",
+        "relative inline-flex h-11 min-w-10 items-center justify-center rounded-lg px-2 outline-none [@media(min-width:360px)]:px-2.5",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         active ? "text-ink" : "text-ink-muted hover:text-ink",
         "transition-colors",
@@ -42,37 +43,28 @@ export function MobileIslandTab({ tab, active, avatar, layoutIdGroup }: Props) {
           }
         />
       )}
-      <span className="relative z-10 inline-flex items-center gap-1.5">
+      <span className="relative z-10 inline-flex flex-col items-center justify-center gap-[3px]">
         {Icon ? (
           <Icon
-            className="h-[18px] w-[18px]"
-            strokeWidth={active ? 2.4 : 2}
+            className="h-[19px] w-[19px]"
+            strokeWidth={active ? 2.5 : 1.9}
             aria-hidden="true"
           />
         ) : (
-          <Avatar className="h-[18px] w-[18px]">
+          <Avatar className={cn("h-[19px] w-[19px]", active && "ring-1 ring-primary/40")}>
             {avatar?.url ? <AvatarImage src={avatar.url} /> : null}
             <AvatarFallback className="text-[9px]">
               {avatar?.initial ?? "·"}
             </AvatarFallback>
           </Avatar>
         )}
-        <motion.span
-          initial={false}
-          animate={
-            active
-              ? { width: "auto", opacity: 1, marginLeft: 2 }
-              : { width: 0, opacity: 0, marginLeft: 0 }
-          }
-          transition={
-            reduced
-              ? { duration: 0 }
-              : { type: "spring", stiffness: 420, damping: 32 }
-          }
-          className="overflow-hidden whitespace-nowrap text-[12px] font-semibold leading-none"
-        >
-          {tab.label}
-        </motion.span>
+        <span
+          aria-hidden="true"
+          className={cn(
+            "h-[3px] w-[3px] rounded-full transition-opacity",
+            active ? "bg-ink opacity-100" : "bg-transparent opacity-0",
+          )}
+        />
       </span>
     </Link>
   );

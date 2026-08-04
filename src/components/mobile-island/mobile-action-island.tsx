@@ -92,7 +92,7 @@ export function MobileActionIsland() {
       >
         <div
           className={cn(
-            "flex w-full max-w-md items-center rounded-2xl border border-border/70 bg-background/90 px-2 py-1.5 shadow-lift backdrop-blur-md",
+            "flex w-full max-w-md items-center rounded-2xl border border-border/70 bg-background/90 px-1.5 py-1.5 shadow-lift backdrop-blur-md",
             composerVisible
               ? "grid grid-cols-[1fr_auto_1fr] gap-1"
               : "flex justify-around gap-1",

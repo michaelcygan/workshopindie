@@ -1,9 +1,18 @@
-import { Users, Sparkles, Briefcase, Megaphone, BookOpen, type LucideIcon } from "lucide-react";
+import {
+  Users,
+  Sparkles,
+  Briefcase,
+  Megaphone,
+  BookOpen,
+  LayoutGrid,
+  Calendar,
+  type LucideIcon,
+} from "lucide-react";
 
 export type MobileTabSide = "left" | "right";
 
 export type MobileTab = {
-  id: "gallery" | "collabs" | "groups" | "you";
+  id: "gallery" | "collabs" | "groups" | "events" | "blog" | "you";
   label: string;
   to: string;
   icon: LucideIcon | null; // null for "you" → renders avatar
@@ -11,14 +20,16 @@ export type MobileTab = {
 };
 
 /**
- * Groups own the live layer now, so the island leads with Groups instead of a
- * standalone Lounge tab. Gallery takes the freed right-hand slot; the four-slot
- * layout (two per side, composer in the middle) is unchanged.
+ * Six icon-only slots (three per side) with the composer in the middle, so
+ * every main flow — Groups, Collabs, Gallery, Events, Blog, You — is one tap
+ * away from anywhere on mobile.
  */
 export const mobileTabs: readonly MobileTab[] = [
   { id: "groups", label: "Groups", to: "/groups", icon: Sparkles, side: "left" },
   { id: "collabs", label: "Collabs", to: "/collab", icon: Users, side: "left" },
-  { id: "gallery", label: "Gallery", to: "/gallery", icon: Briefcase, side: "right" },
+  { id: "gallery", label: "Gallery", to: "/gallery", icon: LayoutGrid, side: "left" },
+  { id: "events", label: "Events", to: "/events", icon: Calendar, side: "right" },
+  { id: "blog", label: "Blog", to: "/blog", icon: BookOpen, side: "right" },
   { id: "you", label: "You", to: "/me", icon: null, side: "right" },
 ] as const;
 
