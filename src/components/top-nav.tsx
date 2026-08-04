@@ -72,11 +72,10 @@ export function TopNav() {
               <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
                 Gallery
               </Link>
-              {user ? (
-                <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                  Events
-                </Link>
-              ) : null}
+              <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Events
+              </Link>
+
             </>
           )}
         </nav>
