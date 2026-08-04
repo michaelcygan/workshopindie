@@ -57,7 +57,7 @@ function Masthead() {
           Workshop
         </p>
         <h1 className="mt-2 max-w-3xl font-display text-[32px] leading-[1.08] tracking-tight text-ink md:text-[52px]">
-          Independent culture, made together.
+          Independent culture, happening now.
         </h1>
         <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-soft">
           Read stories from independent creators, discover the Work behind them, find open

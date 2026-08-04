@@ -4,7 +4,7 @@ import { PublicHome } from "@/components/home/public-home";
 import { MemberHome } from "@/components/home/member-home";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const TITLE = "Workshop — Independent culture, made together";
+const TITLE = "Workshop — Independent culture, happening now.";
 const DESCRIPTION =
   "Read stories from independent creators, discover the Work behind them, find open Collabs, and join Groups where creative communities gather.";
 const URL = "https://workshopindie.com/";
