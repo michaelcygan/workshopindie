@@ -1078,6 +1078,7 @@ function ProfileStats({
           params={{ username }}
           search={{ tab: item.tab }}
           replace
+          resetScroll={false}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
         >
           <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-muted px-1.5 py-0 text-[11px] font-display text-ink">
