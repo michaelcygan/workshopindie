@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -182,7 +183,7 @@ async function fetchPromos(): Promise<GlobePromo[]> {
     supabase
       .from("collab_posts")
       .select("slug,title,cities(name)")
-      .eq("status", "open")
+      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
       .order("created_at", { ascending: false })
       .limit(10),
     supabase

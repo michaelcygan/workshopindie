@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 /**
  * Server-only helpers for the homepage.
  *
@@ -639,7 +640,7 @@ export async function continueActionsServer(
       .from("collab_posts")
       .select("id,slug,title")
       .eq("user_id", userId)
-      .eq("status", "open")
+      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
       .limit(10),
     supabaseAdmin
       .from("profiles")
@@ -912,7 +913,7 @@ export async function circleStoriesServer(
           .from("collab_posts")
           .select("id,slug,title,description,category,user_id,created_at")
           .in("user_id", peopleIds)
-          .eq("status", "open")
+          .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
           .order("created_at", { ascending: false })
           .limit(12)
       : Promise.resolve({ data: [] }),
@@ -1472,7 +1473,7 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
       .from("collab_posts")
       .select("id,slug,title,description,created_at")
       .eq("user_id", userId)
-      .eq("status", "open")
+      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
       .order("created_at", { ascending: false })
       .limit(6),
   ]);
@@ -1673,7 +1674,7 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
-    .eq("status", "open")
+    .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
     .or(`ends_on.is.null,ends_on.gte.${today}`)
     .order("created_at", { ascending: false })
     .limit(6);

@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES } from "@/lib/collab/query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -283,7 +284,8 @@ async function fetchPinnedCollabs(userId: string): Promise<PinnedCollab[]> {
     .select("id,title,slug,category,pinned_at,status")
     .eq("user_id", userId)
     .not("pinned_at", "is", null)
-    .neq("status", "draft")
+    .is("archived_at", null)
+    .not("status", "in", NON_PUBLIC_STATUSES)
     .order("pinned_at", { ascending: false })
     .limit(6);
   if (error) throw error;
@@ -297,7 +299,8 @@ async function fetchOpenCollabs(userId: string): Promise<CollabRow[]> {
     .from("collab_posts")
     .select("id,title,slug,category,description,created_at")
     .eq("user_id", userId)
-    .eq("status", "open")
+    .is("archived_at", null)
+    .not("status", "in", NON_PUBLIC_STATUSES)
     .order("created_at", { ascending: false });
   return (data ?? []) as CollabRow[];
 }
@@ -1560,7 +1563,7 @@ function CollabsTab({ items, isOwn, ownerName, isLoading }: { items: CollabRow[]
             <div className="flex h-full items-center justify-center">
               <div className="text-center text-primary-foreground">
                 <div className="text-[10px] font-semibold uppercase tracking-[0.2em] opacity-80">
-                  Open Collab
+                  Collab
                 </div>
                 <div className="mt-1 font-display text-2xl leading-tight">
                   {CATEGORY_LABELS[c.category] ?? c.category}

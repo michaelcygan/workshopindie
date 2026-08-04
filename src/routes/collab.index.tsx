@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -78,7 +79,7 @@ async function fetchPosts({ cat, city, online, blockedIds }: Filters & { blocked
         "city:cities!collab_posts_city_id_fkey(name)," +
         "roles:collab_roles(id,role_name,sort_order)",
     )
-    .eq("status", "open")
+    .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
     .or(`ends_on.is.null,ends_on.gte.${new Date().toISOString().slice(0, 10)}`)
     .order("created_at", { ascending: false })
     .limit(60);

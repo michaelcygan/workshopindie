@@ -19,7 +19,17 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { CollabWorkspace } from "@/components/collab/collab-workspace";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { setCollabApplicationsOpen, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import { setCollabApplicationsOpen, setCollabArchived, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import {
+  collabLifecycleState,
+  recruitmentState,
+  recruitmentLabel,
+  isLegacyPrivateDraft,
+  isPubliclyVisible,
+  isDiscoverableOpportunity,
+  effectiveApplicationsOpen,
+  teamLabel,
+} from "@/lib/collab/lifecycle";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
@@ -47,11 +57,11 @@ export const Route = createFileRoute("/collab/$slug")({
   head: ({ params, loaderData }) => {
     const url = `https://workshopindie.com/collab/${params.slug}`;
     const s = loaderData?.seo;
-    const title = s?.title ? `${s.title} — Open Collab on Workshop` : `Open Collab Call — Workshop`;
+    const title = s?.title ? `${s.title} — Collab on Workshop` : `Collab on Workshop`;
     const description = s?.description?.slice(0, 160)
-      ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
-    // Archived (closed + no Work) collabs are owner-only — keep them out of search.
-    const isArchived = s?.status === "closed" && !s?.resulting_work_id;
+      ?? "A Collab in progress on Workshop. Apply in one tap — no account needed.";
+    // Archived and legacy private drafts are owner-only — keep them out of search.
+    const indexable = s ? isPubliclyVisible(s) : true;
     const ogImage = `https://workshopindie.com/api/public/og?type=collab&id=${params.slug}`;
     const meta = [
       { title },
@@ -66,11 +76,11 @@ export const Route = createFileRoute("/collab/$slug")({
       { name: "twitter:description", content: description },
       { name: "twitter:image", content: ogImage },
     ];
-    if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
+    if (!indexable) meta.push({ name: "robots", content: "noindex,nofollow" });
 
-    // JSON-LD JobPosting for open Collabs — surfaces in Google Jobs and rich results.
+    // JSON-LD JobPosting only while the Collab is actually recruiting.
     const scripts: { type: string; children: string }[] = [];
-    if (s && s.status === "open" && !isArchived) {
+    if (s && isDiscoverableOpportunity(s)) {
       const roleNames = (s.roles ?? [])
         .slice()
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -96,8 +106,8 @@ export const Route = createFileRoute("/collab/$slug")({
       const ld: Record<string, unknown> = {
         "@context": "https://schema.org/",
         "@type": "JobPosting",
-        title: s.title ?? "Open Collab",
-        description: (s.description ?? "").slice(0, 5000) || `Open Collab call: ${s.title ?? ""}`,
+        title: s.title ?? "Collab",
+        description: (s.description ?? "").slice(0, 5000) || `Collab call: ${s.title ?? ""}`,
         datePosted: s.created_at ? new Date(s.created_at).toISOString() : new Date().toISOString(),
         validThrough,
         employmentType: s.compensation_type === "paid" ? "CONTRACTOR" : "VOLUNTEER",
@@ -149,7 +159,8 @@ function CollabDetail() {
   const router = useRouter();
 
   const qc = useQueryClient();
-  const closeFn = useServerFn(setCollabApplicationsOpen);
+  const setApplicationsOpenFn = useServerFn(setCollabApplicationsOpen);
+  const archiveFn = useServerFn(setCollabArchived);
   const extendFn = useServerFn(extendCollabDeadline);
 
   const [contactOpen, setContactOpen] = useState(false);
@@ -165,7 +176,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,applications_open,archived_at,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -200,7 +211,7 @@ function CollabDetail() {
   const { data: activity } = useQuery({
     queryKey: ["collab-activity", post?.id],
     queryFn: () => fetchActivity({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !!isOwnerEarly && post?.status === "open",
+    enabled: !!post && !!isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 30_000,
   });
 
@@ -208,7 +219,7 @@ function CollabDetail() {
   const { data: publicCounts } = useQuery({
     queryKey: ["collab-public-counts", post?.id],
     queryFn: () => fetchPublicCounts({ data: { collabPostId: post!.id } }),
-    enabled: !!post && !isOwnerEarly && post?.status === "open",
+    enabled: !!post && !isOwnerEarly && !post?.archived_at && !post?.resulting_work_id,
     staleTime: 60_000,
   });
 
@@ -261,9 +272,20 @@ function CollabDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const closeMut = useMutation({
-    mutationFn: () => closeFn({ data: { collabPostId: post!.id, open: false } }),
-    onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+  const applicationsMut = useMutation({
+    mutationFn: (open: boolean) => setApplicationsOpenFn({ data: { collabPostId: post!.id, open } }),
+    onSuccess: (_d, open) => {
+      toast.success(open ? "Accepting collaborators again" : "Submissions paused");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const archiveMut = useMutation({
+    mutationFn: (archived: boolean) => archiveFn({ data: { collabPostId: post!.id, archived } }),
+    onSuccess: (_d, archived) => {
+      toast.success(archived ? "Archived — only you can see it now" : "Restored");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
@@ -296,7 +318,7 @@ function CollabDetail() {
   const publishMut = useMutation({
     mutationFn: () => updateFn({ data: { collabPostId: post!.id, patch: { status: "open" } } }),
     onSuccess: () => {
-      toast.success("Draft published — it's now live.");
+      toast.success("Shared — this Collab is now public.");
       qc.invalidateQueries({ queryKey: ["collab", slug] });
     },
     onError: (e: Error) => {
@@ -312,12 +334,17 @@ function CollabDetail() {
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
-  const isDraft = post.status === "draft";
-  const isArchived = post.status === "closed" && !post.resulting_work_id;
-  const isShipped = post.status === "closed" && !!post.resulting_work_id;
+  const lifecycle = collabLifecycleState(post);
+  const recruit = recruitmentState(post);
+  const isDraft = isLegacyPrivateDraft(post);
+  const isArchived = lifecycle === "archived";
+  const isShipped = lifecycle === "published";
+  const acceptingNow = effectiveApplicationsOpen(post);
+  // Permanent delete is only offered when nothing of value would be lost.
+  const canDelete = !post.resulting_work_id && applicantCount === 0;
 
-  // Drafts and archived posts are owner-only. Anyone else gets the standard not-found surface.
-  if ((isArchived || isDraft) && !isOwner) {
+  // Archived posts and legacy private drafts are owner-only.
+  if (!isPubliclyVisible(post) && !isOwner) {
     return (
       <main className="mx-auto max-w-2xl p-10 text-center">
         <h1 className="font-display text-3xl">Not found</h1>
@@ -331,19 +358,21 @@ function CollabDetail() {
   const hostUser = post.user;
   const cityName = post.city?.name;
   const today = new Date().toISOString().slice(0, 10);
-  const deadlinePassed = !!post.ends_on && post.ends_on < today && post.status === "open";
+  const deadlinePassed = recruit === "deadline_passed";
   const openedDays = Math.max(0, Math.floor((Date.now() - new Date(post.created_at).getTime()) / 86400000));
   const daysToDeadline = post.ends_on
     ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
     : null;
-  const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
-  const stateBadge = isDraft
-    ? <StateBadge tone="closed" label="Draft" sublabel="Only you can see this" />
-    : post.status === "open"
-      ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
-      : isShipped
-        ? <StateBadge tone="closed" label="Closed" sublabel="Published" />
-        : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
+  const deadlineSoon = acceptingNow && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
+  const stateBadge = isArchived
+    ? <StateBadge tone="closed" label="Archived" sublabel="Only you can see this" />
+    : isShipped
+      ? <StateBadge tone="closed" label="Published" />
+      : <StateBadge
+          tone={acceptingNow ? "open" : "closed"}
+          label="In Progress"
+          sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
+        />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
@@ -373,14 +402,14 @@ function CollabDetail() {
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <CategoryChip category={post.category as Category} />
             {stateBadge}
-            {post.status === "open" && (
+            {!isArchived && !isShipped && (
               <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-ink-soft">
-                {openedDays === 0 ? "Posted today" : `Open ${openedDays}d`}
+                {openedDays === 0 ? "Started today" : `Started ${openedDays}d ago`}
               </span>
             )}
-            {post.status === "open" && closingSoon && daysToDeadline !== null && (
+            {deadlineSoon && daysToDeadline !== null && (
               <span className="rounded-full bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 text-[11px] font-medium text-amber-700">
-                Closes in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
+                Deadline in {daysToDeadline === 0 ? "today" : `${daysToDeadline}d`}
               </span>
             )}
           </div>
@@ -402,34 +431,66 @@ function CollabDetail() {
                 <div className="hidden sm:flex sm:items-center sm:gap-2">
                   {isDraft && (
                     <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
-                      <Eye className="h-3.5 w-3.5" /> Publish
+                      <Eye className="h-3.5 w-3.5" /> Share publicly
                     </Button>
                   )}
-                  {(post.status === "open" || isDraft) && (
+                  {!isArchived && (
                     <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Link>
                     </Button>
                   )}
-                  {!isDraft && <PinCollabButton collabId={post.id} />}
-                  {post.status === "open" && (
-                    <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
+                  {!isDraft && !isArchived && <PinCollabButton collabId={post.id} />}
+                  {!isArchived && !isShipped && (
+                    <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
+                      <Sparkles className="h-3.5 w-3.5" /> Publish Work
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
-                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button size="icon" variant="outline" className="rounded-full h-9 w-9" aria-label="More actions">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {!isArchived && !isShipped && (
+                        <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                        </DropdownMenuItem>
+                      )}
+                      {isArchived ? (
+                        <DropdownMenuItem onClick={() => archiveMut.mutate(false)}>
+                          <Archive className="h-4 w-4 mr-2" /> Restore
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => { if (confirm("Archive this Collab? It stays yours, but nobody else can see it.")) archiveMut.mutate(true); }}>
+                          <Archive className="h-4 w-4 mr-2" /> Archive
+                        </DropdownMenuItem>
+                      )}
+                      {canDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 {/* Mobile: one inline primary + kebab for the rest */}
                 <div className="flex items-center gap-2 sm:hidden">
                   {isDraft ? (
                     <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
-                      <Eye className="h-3.5 w-3.5" /> Publish
+                      <Eye className="h-3.5 w-3.5" /> Share
                     </Button>
-                  ) : post.status === "open" ? (
+                  ) : !isArchived ? (
                     <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
@@ -445,26 +506,45 @@ function CollabDetail() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      {!isDraft && post.status === "open" && (
+                      {!isDraft && !isArchived && (
                         <DropdownMenuItem asChild>
                           <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                             <Pencil className="h-4 w-4 mr-2" /> Edit
                           </Link>
                         </DropdownMenuItem>
                       )}
-                      {!isDraft && <PinCollabMenuItem collabId={post.id} />}
-                      {post.status === "open" && (
-                        <DropdownMenuItem onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" /> Pause submissions
+                      {!isDraft && !isArchived && <PinCollabMenuItem collabId={post.id} />}
+                      {!isArchived && !isShipped && (
+                        <>
+                          <DropdownMenuItem onClick={() => setPublishOpen(true)}>
+                            <Sparkles className="h-4 w-4 mr-2" /> Publish Work
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => applicationsMut.mutate(!acceptingNow)}>
+                            <CheckCircle2 className="h-4 w-4 mr-2" />
+                            {acceptingNow ? "Pause submissions" : "Accept collaborators"}
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {isArchived ? (
+                        <DropdownMenuItem onClick={() => archiveMut.mutate(false)}>
+                          <Archive className="h-4 w-4 mr-2" /> Restore
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem onClick={() => { if (confirm("Archive this Collab? It stays yours, but nobody else can see it.")) archiveMut.mutate(true); }}>
+                          <Archive className="h-4 w-4 mr-2" /> Archive
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
+                      {canDelete && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -488,8 +568,8 @@ function CollabDetail() {
           <div className="mb-3 flex items-start gap-2 rounded-2xl border border-dashed border-border bg-muted/40 p-3 text-sm">
             <Pencil className="mt-0.5 h-4 w-4 text-ink-muted" />
             <div className="flex-1">
-              <p className="font-medium text-ink">This is a draft.</p>
-              <p className="text-ink-muted">Only you can see it. Flesh it out and hit Publish when you're ready.</p>
+              <p className="font-medium text-ink">This Collab is private.</p>
+              <p className="text-ink-muted">Only you can see it. Share it publicly when you're ready for collaborators.</p>
             </div>
           </div>
         )}
@@ -521,7 +601,7 @@ function CollabDetail() {
 
 
         {/* Owner activity meter (open state) */}
-        {isOwner && post.status === "open" && activity && (activity.applicants > 0 || activity.shares > 0) && (
+        {isOwner && !isArchived && !isShipped && activity && (activity.applicants > 0 || activity.shares > 0) && (
           <p className="mb-3 text-xs text-ink-muted">
             {activity.applicants} {activity.applicants === 1 ? "applicant" : "applicants"}
             {activity.shares > 0 && <> · {activity.shares} {activity.shares === 1 ? "share" : "shares"}</>}
@@ -531,19 +611,19 @@ function CollabDetail() {
         )}
 
         {/* Visitor signal (open state, non-owner) */}
-        {!isOwner && post.status === "open" && (
+        {!isOwner && !isArchived && !isShipped && (
           <p className="mb-3 text-xs text-ink-muted">
             {publicCounts && publicCounts.applicants > 0
-              ? <>Cast so far: <span className="text-ink">{publicCounts.applicants}</span> · </>
-              : <>Open to applications · </>}
-            posted {openedDays === 0 ? "today" : `${openedDays}d ago`}
+              ? <>{publicCounts.applicants} on board so far · </>
+              : acceptingNow ? <>Accepting collaborators · </> : <>Submissions paused · </>}
+            started {openedDays === 0 ? "today" : `${openedDays}d ago`}
           </p>
         )}
 
 
 
         {/* Owner: single next-best-action strip */}
-        {isOwner && post.status === "open" && !deadlinePassed && (
+        {isOwner && !isArchived && !isShipped && !deadlinePassed && (
           (() => {
             const ageHours = (Date.now() - new Date(post.created_at).getTime()) / 3600_000;
             if (applicantCount > 0) {
@@ -597,7 +677,7 @@ function CollabDetail() {
               <p className="font-medium text-ink">
                 Your deadline passed {daysPast === 0 ? "today" : `${daysPast} day${daysPast === 1 ? "" : "s"} ago`}.
               </p>
-              <p className="text-xs text-ink-muted">It's hidden from the public board but still live for you. What's next?</p>
+              <p className="text-xs text-ink-muted">It's off the public board, but the project is still in progress. What's next?</p>
             </div>
             <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => {
               const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
@@ -605,11 +685,8 @@ function CollabDetail() {
             }}>
               <Clock className="h-3.5 w-3.5" /> Extend
             </Button>
-            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Pause submissions on this Collab? It stays In Progress.")) closeMut.mutate(); }}>
-              <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
-            </Button>
             <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
-              <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
             </Button>
           </div>
         )}
@@ -619,14 +696,21 @@ function CollabDetail() {
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-surface-2/60 p-4">
             <Archive className="h-5 w-5 text-ink-soft" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-ink">Archived{post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.</p>
-              <p className="text-xs text-ink-muted">Only you can see this page. Post to Gallery to make it public, or delete it.</p>
+              <p className="font-medium text-ink">
+                Archived{post.archived_at ? ` on ${new Date(post.archived_at).toLocaleDateString()}` : post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.
+              </p>
+              <p className="text-xs text-ink-muted">Only you can see this page. Restore it to bring it back, or publish the Work that came out of it.</p>
             </div>
-            <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this post permanently?")) deletePost.mutate(); }}>
-              <Trash2 className="h-3.5 w-3.5" /> Delete
+            {canDelete && (
+              <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this Collab permanently?")) deletePost.mutate(); }}>
+                <Trash2 className="h-3.5 w-3.5" /> Delete
+              </Button>
+            )}
+            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => archiveMut.mutate(false)}>
+              <Archive className="h-3.5 w-3.5" /> Restore
             </Button>
             <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
-              <Sparkles className="h-3.5 w-3.5" /> Post to Gallery from this
+              <Sparkles className="h-3.5 w-3.5" /> Publish Work
             </Button>
           </div>
         )}
@@ -715,7 +799,7 @@ function CollabDetail() {
                             </div>
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
-                          {!isOwner && post.status === "open" && (
+                          {!isOwner && acceptingNow && (
                             <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
@@ -728,7 +812,7 @@ function CollabDetail() {
               </>
             )}
 
-            {!isOwner && post.status === "open" && post.accepts_suggestions && !isShipped && (
+            {!isOwner && acceptingNow && (
               <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                 <h3 className="font-medium text-ink">Suggest how you can help</h3>
                 <p className="mt-1 text-sm text-ink-muted">

@@ -90,13 +90,13 @@ export const getCollabSeo = createServerFn({ method: "GET" })
     const { data: row } = await supabaseAdmin
       .from("collab_posts")
       .select(
-        "id,title,description,category,status,resulting_work_id,created_at,ends_on,compensation_type,location_mode,city:cities!collab_posts_city_id_fkey(name,country),user:profiles!collab_posts_user_id_fkey(display_name,username),roles:collab_roles(role_name,sort_order)",
+        "id,title,description,category,status,applications_open,archived_at,resulting_work_id,created_at,ends_on,compensation_type,location_mode,city:cities!collab_posts_city_id_fkey(name,country),user:profiles!collab_posts_user_id_fkey(display_name,username),roles:collab_roles(role_name,sort_order)",
       )
       .eq("slug", data.slug)
       .maybeSingle();
     if (!row) return null;
     let workCover: string | null = null;
-    if (row.status === "closed" && row.resulting_work_id) {
+    if (row.resulting_work_id) {
       const { data: w } = await supabaseAdmin
         .from("works")
         .select("cover_url")

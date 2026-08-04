@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, Hammer, Megaphone, Users, Sparkles, BookOpen } from "lucide-react";
@@ -374,7 +375,7 @@ async function fetchPulse(): Promise<Pulse[]> {
       .select(
         "id, title, slug, created_at, user:profiles!collab_posts_user_id_fkey(display_name,username)",
       )
-      .eq("status", "open")
+      .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
       .order("created_at", { ascending: false })
       .limit(4),
     supabase
