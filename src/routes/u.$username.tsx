@@ -984,6 +984,7 @@ function ProfilePage() {
                 params: { username },
                 search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
                 replace: true,
+                resetScroll: false,
               })
             }
             onOpenChange={(v: boolean) => {
