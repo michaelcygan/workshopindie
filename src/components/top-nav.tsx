@@ -6,6 +6,7 @@ import { useUserRoles } from "@/hooks/use-user-role";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { WorkshopBrandLink } from "@/components/workshop-brand-link";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
