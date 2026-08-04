@@ -3,7 +3,7 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Megaphone, Clock, Sparkles, ExternalLink, MapPin, Radio, X, Inbox, Trash2, Archive, FileEdit, Pencil } from "lucide-react";
+import { Megaphone, Clock, Sparkles, ExternalLink, MapPin, Radio, Inbox, Trash2, Archive, ArchiveRestore, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -12,9 +12,15 @@ import { StateBadge } from "@/components/state-badge";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import {
   setCollabApplicationsOpen,
+  setCollabArchived,
   extendCollabDeadline,
-  dismissPublishNudge,
 } from "@/lib/collab-publish.functions";
+import {
+  collabLifecycleState,
+  recruitmentState,
+  recruitmentLabel,
+  isLegacyPrivateDraft,
+} from "@/lib/collab/lifecycle";
 import type { Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -30,7 +36,7 @@ export const Route = createFileRoute("/me/collabs")({
   }),
 });
 
-type Tab = "hosting" | "drafts" | "published" | "applied";
+type Tab = "in_progress" | "published" | "applied" | "archived";
 
 type HostingRow = {
   id: string;
@@ -39,6 +45,8 @@ type HostingRow = {
   description: string | null;
   category: Category;
   status: string;
+  applications_open: boolean | null;
+  archived_at: string | null;
   ends_on: string | null;
   closed_at: string | null;
   resulting_work_id: string | null;
@@ -47,7 +55,6 @@ type HostingRow = {
   city: { name: string } | null;
   applicant_count: number;
 };
-
 
 type PublishedRow = {
   id: string;
@@ -66,6 +73,8 @@ type AppliedRow = {
     slug: string;
     category: Category;
     status: string;
+    applications_open: boolean | null;
+    archived_at: string | null;
     resulting_work_id: string | null;
   } | null;
 };
@@ -74,7 +83,7 @@ function MyCollabsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const [tab, setTab] = useState<Tab>("hosting");
+  const [tab, setTab] = useState<Tab>("in_progress");
   const [publishTarget, setPublishTarget] =
     useState<{ id: string; title: string; description: string | null } | null>(null);
 
@@ -82,30 +91,27 @@ function MyCollabsPage() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [user, loading, navigate]);
 
-  const closeFn = useServerFn(setCollabApplicationsOpen);
-  
+  const pauseFn = useServerFn(setCollabApplicationsOpen);
+  const archiveFn = useServerFn(setCollabArchived);
   const extendFn = useServerFn(extendCollabDeadline);
-  const dismissFn = useServerFn(dismissPublishNudge);
 
   const today = new Date().toISOString().slice(0, 10);
 
-  // Hosting includes everything the user owns that hasn't shipped a Work yet:
-  // open posts AND archived (closed-no-Work) posts — archived shows inline with a muted badge.
+  // Everything the owner still holds: In Progress and Archived both live here,
+  // and are split into tabs by derived lifecycle state.
   const { data: hosting = [] } = useQuery({
     queryKey: ["my-collabs-hosting", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<HostingRow[]> => {
       const { data } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,description,category,status,ends_on,closed_at,resulting_work_id,created_at,live_workshop_id,city:cities!collab_posts_city_id_fkey(name)")
+        .select("id,title,slug,description,category,status,applications_open,archived_at,ends_on,closed_at,resulting_work_id,created_at,live_workshop_id,city:cities!collab_posts_city_id_fkey(name)")
         .eq("user_id", user!.id)
         .is("resulting_work_id", null)
-        .in("status", ["draft", "open", "closed"])
         .order("created_at", { ascending: false });
       const rows = (data ?? []) as unknown as Omit<HostingRow, "applicant_count">[];
-      // Applicant counts — small N, one query per post is fine here. Skip drafts.
       const counts = await Promise.all(rows.map(async (r) => {
-        if (r.status === "draft") return 0;
+        if (isLegacyPrivateDraft(r)) return 0;
         const [{ count: members }, { count: guests }] = await Promise.all([
           supabase.from("collab_contact_events").select("id", { count: "exact", head: true }).eq("collab_post_id", r.id),
           supabase.from("collab_guest_applications").select("id", { count: "exact", head: true }).eq("collab_post_id", r.id).is("matched_user_id", null),
@@ -115,7 +121,6 @@ function MyCollabsPage() {
       return rows.map((r, i) => ({ ...r, applicant_count: counts[i] }));
     },
   });
-
 
   const { data: published = [] } = useQuery({
     queryKey: ["my-collabs-published", user?.id],
@@ -149,11 +154,10 @@ function MyCollabsPage() {
     queryFn: async (): Promise<AppliedRow[]> => {
       const { data } = await supabase
         .from("collab_contact_events")
-        .select("id,sent_at,collab_post_id,post:collab_posts!collab_contact_events_collab_post_id_fkey(id,title,slug,category,status,resulting_work_id)")
+        .select("id,sent_at,collab_post_id,post:collab_posts!collab_contact_events_collab_post_id_fkey(id,title,slug,category,status,applications_open,archived_at,resulting_work_id)")
         .eq("sender_user_id", user!.id)
         .order("sent_at", { ascending: false })
         .limit(60);
-      // Dedupe by post id (you may apply to multiple roles on the same post).
       const seen = new Set<string>();
       const rows: AppliedRow[] = [];
       for (const r of (data ?? []) as unknown as AppliedRow[]) {
@@ -166,38 +170,38 @@ function MyCollabsPage() {
     },
   });
 
+  const inProgress = useMemo(
+    () => hosting.filter((r) => collabLifecycleState(r) === "in_progress"),
+    [hosting],
+  );
+  const archived = useMemo(
+    () => hosting.filter((r) => collabLifecycleState(r) === "archived"),
+    [hosting],
+  );
   const deadlinePassedCount = useMemo(
-    () => hosting.filter((r) => r.status === "open" && r.ends_on && r.ends_on < today).length,
-    [hosting, today],
+    () => inProgress.filter((r) => recruitmentState(r, today) === "deadline_passed").length,
+    [inProgress, today],
   );
-  const archivedCount = useMemo(
-    () => hosting.filter((r) => r.status === "closed").length,
-    [hosting],
-  );
-  const draftCount = useMemo(
-    () => hosting.filter((r) => r.status === "draft").length,
-    [hosting],
-  );
-  const attentionCount = deadlinePassedCount;
 
   function invalidateAll() {
     qc.invalidateQueries({ queryKey: ["my-collabs-hosting"] });
     qc.invalidateQueries({ queryKey: ["my-collabs-published"] });
   }
 
-  const closeMut = useMutation({
-    mutationFn: (id: string) => closeFn({ data: { collabPostId: id, open: false } }),
-    onSuccess: () => { toast.success("Submissions paused"); invalidateAll(); },
+  const pauseMut = useMutation({
+    mutationFn: (v: { id: string; open: boolean }) => pauseFn({ data: { collabPostId: v.id, open: v.open } }),
+    onSuccess: (_d, v) => { toast.success(v.open ? "Accepting collaborators again" : "Submissions paused"); invalidateAll(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const archiveMut = useMutation({
+    mutationFn: (v: { id: string; archived: boolean }) => archiveFn({ data: { collabPostId: v.id, archived: v.archived } }),
+    onSuccess: (_d, v) => { toast.success(v.archived ? "Archived" : "Restored"); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
     mutationFn: (v: { id: string; endsOn: string }) => extendFn({ data: { collabPostId: v.id, endsOn: v.endsOn } }),
     onSuccess: () => { toast.success("Deadline extended"); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
-  });
-  const dismissMut = useMutation({
-    mutationFn: (id: string) => dismissFn({ data: { collabPostId: id } }),
-    onSuccess: () => invalidateAll(),
   });
   const deleteMut = useMutation({
     mutationFn: async (id: string) => {
@@ -212,16 +216,12 @@ function MyCollabsPage() {
     return <main className="mx-auto max-w-3xl px-4 py-20 text-center text-ink-muted">Loading…</main>;
   }
 
-  const nonDraftHosting = useMemo(() => hosting.filter((r) => r.status !== "draft"), [hosting]);
-  const drafts = useMemo(() => hosting.filter((r) => r.status === "draft"), [hosting]);
-
   const tabs: { id: Tab; label: string; count?: number; emphasize?: boolean }[] = [
-    { id: "hosting", label: "Hosting", count: nonDraftHosting.length, emphasize: deadlinePassedCount > 0 },
+    { id: "in_progress", label: "In Progress", count: inProgress.length, emphasize: deadlinePassedCount > 0 },
     { id: "applied", label: "Applied", count: applied.length },
     { id: "published", label: "Published", count: published.length },
-    { id: "drafts", label: "Drafts", count: drafts.length },
+    { id: "archived", label: "Archived", count: archived.length },
   ];
-
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-10 md:px-6 md:py-14">
@@ -229,11 +229,9 @@ function MyCollabsPage() {
         <div>
           <h1 className="font-display text-4xl text-ink md:text-5xl">My Collabs</h1>
           <p className="mt-1 text-ink-muted">
-            {attentionCount > 0
-              ? `${attentionCount} need${attentionCount === 1 ? "s" : ""} your attention.`
-              : draftCount > 0
-                ? `${draftCount} draft${draftCount === 1 ? "" : "s"} in progress.`
-                : "Everything you're hosting or applied to."}
+            {deadlinePassedCount > 0
+              ? `${deadlinePassedCount} past its deadline.`
+              : "Everything you're making or applied to."}
           </p>
         </div>
         <Link to="/collab/new">
@@ -268,129 +266,107 @@ function MyCollabsPage() {
       </div>
 
       <div className="mt-6 space-y-3">
-        {tab === "hosting" && (
-          nonDraftHosting.length === 0 ? (
+        {tab === "in_progress" && (
+          inProgress.length === 0 ? (
             <EmptyState
-              title="No Collabs yet."
-              body="Post one to find collaborators. Roles, deadline, comp — it takes a minute."
+              title="Nothing in progress."
+              body="Start a Collab to find collaborators. A title is enough to begin."
               cta={<Link to="/collab/new"><Button className="rounded-md">Post a Collab</Button></Link>}
             />
           ) : (
-            <>
-              {archivedCount > 0 && (
-                <p className="px-1 text-[11px] text-ink-muted">
-                  {archivedCount} archived — only visible to you.
-                </p>
-              )}
-              {nonDraftHosting.map((r) => {
-                const isArchived = r.status === "closed";
-                const passed = !isArchived && !!r.ends_on && r.ends_on < today;
-                return (
-                  <div key={r.id} className={cn(
-                    "flex flex-wrap items-center gap-3 rounded-2xl border p-4",
-                    isArchived ? "border-dashed border-border bg-surface-2/40"
-                      : passed ? "border-amber-500/30 bg-surface"
-                      : "border-border bg-surface",
-                  )}>
-                    <CategoryChip category={r.category} />
-                    {isArchived
-                      ? <StateBadge tone="closed" label="Closed" sublabel="Archived" />
-                      : passed
-                        ? <StateBadge tone="open" label="Open" sublabel="Past deadline" />
-                        : <StateBadge tone="open" label="Open" sublabel="Casting" />}
-                    <div className={cn("min-w-0 flex-1", isArchived && "opacity-70")}>
-                      <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                        {r.title}
-                      </Link>
-                      <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                        {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
-                        {isArchived && r.closed_at && (
-                          <span className="inline-flex items-center gap-1"><Archive className="h-3 w-3" /> Archived {new Date(r.closed_at).toLocaleDateString()}</span>
-                        )}
-                        {!isArchived && r.ends_on && (
-                          <span className={cn("inline-flex items-center gap-1", passed && "text-amber-700")}>
-                            <Clock className="h-3 w-3" /> {passed ? "Deadline passed" : `Until ${r.ends_on}`}
-                          </span>
-                        )}
-                        {r.applicant_count > 0 && (
-                          <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
-                        )}
-                        {!isArchived && r.live_workshop_id && (
-                          <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Workshop open</span>
-                        )}
-                      </div>
+            inProgress.map((r) => {
+              const recruit = recruitmentState(r, today);
+              const expired = recruit === "deadline_passed";
+              const privateDraft = isLegacyPrivateDraft(r);
+              return (
+                <div key={r.id} className={cn(
+                  "flex flex-wrap items-center gap-3 rounded-2xl border p-4",
+                  expired ? "border-amber-500/30 bg-surface" : "border-border bg-surface",
+                )}>
+                  <CategoryChip category={r.category} />
+                  <StateBadge
+                    tone={recruit === "accepting" ? "open" : "closed"}
+                    label="In Progress"
+                    sublabel={privateDraft ? "Private — only you" : recruitmentLabel(recruit)}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                      {r.title || "Untitled"}
+                    </Link>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                      {r.city?.name && <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" />{r.city.name}</span>}
+                      {r.ends_on && (
+                        <span className={cn("inline-flex items-center gap-1", expired && "text-amber-700")}>
+                          <Clock className="h-3 w-3" /> {expired ? "Deadline passed" : `Until ${r.ends_on}`}
+                        </span>
+                      )}
+                      {r.applicant_count > 0 && (
+                        <span className="inline-flex items-center gap-1"><Inbox className="h-3 w-3" />{r.applicant_count} applicant{r.applicant_count === 1 ? "" : "s"}</span>
+                      )}
+                      {r.live_workshop_id && (
+                        <span className="inline-flex items-center gap-1 text-primary"><Radio className="h-3 w-3" /> Live audio open</span>
+                      )}
                     </div>
-                    {isArchived ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
-                          <X className="h-3.5 w-3.5" /> Dismiss
-                        </Button>
-                        <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this archived collab permanently?")) deleteMut.mutate(r.id); }}>
-                          <Trash2 className="h-3.5 w-3.5" /> Delete
-                        </Button>
-                        <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
-                          <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
-                        </Button>
-                      </div>
-                    ) : passed ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" variant="ghost" className="rounded-md" onClick={() => {
-                          const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
-                          if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
-                        }}>Extend</Button>
-                        <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Pause submissions on this Collab?")) closeMut.mutate(r.id); }}>Pause</Button>
-                        <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
-                          <Sparkles className="h-3.5 w-3.5" /> Publish
-                        </Button>
-                      </div>
-                    ) : (
-                      <Link to="/collab/$slug" params={{ slug: r.slug }}>
-                        <Button size="sm" variant="outline" className="rounded-md">Manage</Button>
-                      </Link>
-                    )}
                   </div>
-                );
-              })}
-            </>
+                  <div className="flex flex-wrap gap-1.5">
+                    {expired && (
+                      <Button size="sm" variant="ghost" className="rounded-md" onClick={() => {
+                        const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
+                        if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
+                      }}>Extend</Button>
+                    )}
+                    {recruit === "accepting" ? (
+                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => pauseMut.mutate({ id: r.id, open: false })}>
+                        Pause submissions
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" className="rounded-md" onClick={() => pauseMut.mutate({ id: r.id, open: true })}>
+                        Accept collaborators
+                      </Button>
+                    )}
+                    <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
+                      <Sparkles className="h-3.5 w-3.5" /> Publish Work
+                    </Button>
+                    <Link to="/collab/$slug" params={{ slug: r.slug }}>
+                      <Button size="sm" variant="ghost" className="rounded-md gap-1"><Pencil className="h-3.5 w-3.5" /> Manage</Button>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })
           )
         )}
 
-        {tab === "drafts" && (
-          drafts.length === 0 ? (
-            <EmptyState
-              title="No drafts."
-              body="Start a Collab and save it as a draft — it'll wait for you here."
-              cta={<Link to="/collab/new"><Button className="rounded-md">Post a Collab</Button></Link>}
-            />
+        {tab === "archived" && (
+          archived.length === 0 ? (
+            <EmptyState title="Nothing archived." body="Archived Collabs stay private to you. You can restore them any time." />
           ) : (
-            drafts.map((r) => (
-              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-primary/30 bg-primary/5 p-4">
+            archived.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-dashed border-border bg-surface-2/40 p-4">
                 <CategoryChip category={r.category} />
-                <StateBadge tone="closed" label="Draft" sublabel="Not posted" />
-                <div className="min-w-0 flex-1">
-                  <Link to="/collab/$slug/edit" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
-                    {r.title || "Untitled draft"}
+                <StateBadge tone="closed" label="Archived" sublabel="Only you can see this" />
+                <div className="min-w-0 flex-1 opacity-70">
+                  <Link to="/collab/$slug" params={{ slug: r.slug }} className="block truncate font-medium text-ink hover:underline">
+                    {r.title || "Untitled"}
                   </Link>
-                  <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                    <span className="inline-flex items-center gap-1"><FileEdit className="h-3 w-3" /> Saved {new Date(r.created_at).toLocaleDateString()}</span>
-                  </div>
+                  {r.archived_at && (
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                      <span className="inline-flex items-center gap-1"><Archive className="h-3 w-3" /> Archived {new Date(r.archived_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
+                  <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this Collab permanently?")) deleteMut.mutate(r.id); }}>
                     <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
-                  <Link to="/collab/$slug/edit" params={{ slug: r.slug }}>
-                    <Button size="sm" className="rounded-md gap-1">
-                      <Pencil className="h-3.5 w-3.5" /> Resume editing
-                    </Button>
-                  </Link>
+                  <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => archiveMut.mutate({ id: r.id, archived: false })}>
+                    <ArchiveRestore className="h-3.5 w-3.5" /> Restore
+                  </Button>
                 </div>
               </div>
             ))
           )
         )}
-
-
 
         {tab === "published" && (
           published.length === 0 ? (
@@ -434,8 +410,8 @@ function MyCollabsPage() {
                   <p className="truncate font-medium text-ink">{r.post.title}</p>
                   <p className="text-xs text-ink-muted">Applied {new Date(r.sent_at).toLocaleDateString()}</p>
                 </div>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium capitalize text-ink-soft">
-                  {r.post.resulting_work_id ? "Published" : r.post.status}
+                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-soft">
+                  {recruitmentLabel(recruitmentState(r.post, today))}
                 </span>
               </Link>
             ))
