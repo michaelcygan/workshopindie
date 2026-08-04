@@ -93,8 +93,13 @@ function DmsThread() {
 
   const send = useServerFn(sendMessage);
   const markRead = useServerFn(markConversationRead);
-  const markReadRef = useRef(markRead);
-  markReadRef.current = markRead;
+  const markReadRef = useRef<(args: { data: { conversationId: string } }) => Promise<unknown>>(markRead);
+  // Notify the inbox badge as soon as anything is actually marked read.
+  markReadRef.current = async (args) => {
+    const res = (await markRead(args)) as { marked?: number } | undefined;
+    if (res?.marked) window.dispatchEvent(new CustomEvent("dm:read"));
+    return res;
+  };
 
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);

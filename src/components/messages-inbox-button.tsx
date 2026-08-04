@@ -109,6 +109,7 @@ export function MessagesInboxButton() {
     function onFocus() { scheduleReload(); }
     document.addEventListener("visibilitychange", onFocus);
     window.addEventListener("focus", onFocus);
+    window.addEventListener("dm:read", onFocus);
 
     return () => {
       cancelled = true;
@@ -116,6 +117,7 @@ export function MessagesInboxButton() {
       if (channel) supabase.removeChannel(channel);
       document.removeEventListener("visibilitychange", onFocus);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("dm:read", onFocus);
     };
   }, [user?.id]);
 

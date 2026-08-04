@@ -107,11 +107,15 @@ export const markConversationRead = createServerFn({ method: "POST" })
   .inputValidator((d: { conversationId: string }) => ({ conversationId: uuidSchema.parse(d.conversationId) }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    await supabase
+    const { data: rows, error } = await supabase
       .from("messages")
       .update({ read_at: new Date().toISOString() })
       .eq("conversation_id", data.conversationId)
       .neq("sender_id", userId)
-      .is("read_at", null);
-    return { ok: true };
+      .is("read_at", null)
+      .select("id");
+    // Surface permission/policy failures instead of silently no-op'ing, which
+    // previously left the inbox badge permanently stuck on an old thread.
+    if (error) throw new Error(error.message);
+    return { ok: true, marked: rows?.length ?? 0 };
   });
