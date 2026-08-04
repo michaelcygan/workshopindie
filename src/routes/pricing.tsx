@@ -105,8 +105,8 @@ function PlanCard({
         <h2 className="font-display text-2xl text-ink">{name}</h2>
         {highlight && (
           <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-            <Sparkles className="h-3 w-3 text-gradient-motion" />
-            <span className="text-gradient-motion">Recommended</span>
+            <Sparkles className="h-3 w-3 text-signal" />
+            <span className="text-signal">Recommended</span>
           </span>
         )}
       </div>
@@ -118,7 +118,7 @@ function PlanCard({
       <ul className="mt-6 space-y-2.5">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2 text-sm text-ink">
-            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-gradient-motion" />
+            <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-signal" />
             <span>{f}</span>
           </li>
         ))}

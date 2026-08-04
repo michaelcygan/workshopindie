@@ -489,7 +489,7 @@ function PlusSection() {
     return (
       <div className="rounded-2xl border border-border bg-surface p-5">
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 icon-gradient-motion" />
+          <Sparkles className="h-4 w-4 text-signal" />
           <span className="font-medium text-ink">You're on the free plan.</span>
         </div>
         <ul className="mt-2 space-y-1">
@@ -526,8 +526,8 @@ function PlusSection() {
     <div className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-center gap-2">
         <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
-          <Sparkles className="h-3 w-3 icon-gradient-motion" />
-          <span className="text-gradient-motion">Plus</span>
+          <Sparkles className="h-3 w-3 text-signal" />
+          <span className="text-signal">Plus</span>
         </span>
         <span className="text-sm text-ink-muted">
           {subscription?.status === "trialing" ? "Free trial" : "Active"}

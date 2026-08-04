@@ -42,7 +42,7 @@ function RedeemPage() {
   return (
     <main className="mx-auto max-w-md px-4 py-16">
       <div className="rounded-3xl border border-border bg-surface p-8 text-center shadow-soft">
-        <Sparkles className="mx-auto h-8 w-8 text-gradient-motion" />
+        <Sparkles className="mx-auto h-8 w-8 text-signal" />
         <h1 className="mt-3 font-display text-2xl text-ink">You have an invite</h1>
         <p className="mt-1 text-sm text-ink-muted">Redeem this code for a complimentary Workshop Plus membership.</p>
         <p className="mt-4 inline-block rounded-full bg-muted px-3 py-1 font-mono text-xs uppercase tracking-wider text-ink">{code}</p>

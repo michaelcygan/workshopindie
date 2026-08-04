@@ -373,7 +373,7 @@ export function WorkshopCollabsPanel({
       ) : collabs.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-surface p-6 text-center text-sm text-ink-muted">
           No open Collabs from people here yet.{" "}
-          <Link to="/collab/new" className="text-gradient-motion underline">Post one</Link>.
+          <Link to="/collab/new" className="text-signal underline">Post one</Link>.
         </div>
       ) : (
         <ul className="space-y-2">

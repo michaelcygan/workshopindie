@@ -106,7 +106,7 @@ function Login() {
           <Link
             to="/signup"
             search={search.redirect ? { redirect: search.redirect } : undefined}
-            className="text-gradient-motion hover:underline"
+            className="text-signal hover:underline"
           >
             Create an account
           </Link>

@@ -81,13 +81,13 @@ function ReferPage() {
       {/* Hero */}
       <div className="text-center">
         <div className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-          <Gift className="h-6 w-6 icon-gradient-motion" />
+          <Gift className="h-6 w-6 text-signal" />
         </div>
         <h1 className="font-display text-3xl md:text-4xl tracking-tight text-ink">
           Give a month, get a month
         </h1>
         <p className="mx-auto mt-3 max-w-md text-ink-muted">
-          Earn <span className="text-gradient-motion font-medium">1 free month of Plus</span> for
+          Earn <span className="text-signal font-medium">1 free month of Plus</span> for
           every person you refer who upgrades. Stack as many as you can.
         </p>
       </div>
@@ -155,7 +155,7 @@ function ReferPage() {
 
       <div className="mt-10 flex justify-center">
         <Link to="/pricing" className="inline-flex items-center gap-1.5 text-sm text-ink-muted hover:text-ink">
-          <Sparkles className="h-4 w-4 icon-gradient-motion" />
+          <Sparkles className="h-4 w-4 text-signal" />
           Learn about Plus
         </Link>
       </div>
@@ -166,7 +166,7 @@ function ReferPage() {
 function Stat({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <div className="rounded-xl border border-border bg-card px-3 py-4 text-center">
-      <div className={accent ? "text-2xl font-display text-gradient-motion" : "text-2xl font-display text-ink"}>
+      <div className={accent ? "text-2xl font-display text-signal" : "text-2xl font-display text-ink"}>
         {value}
       </div>
       <div className="mt-1 text-[11px] uppercase tracking-wide text-ink-muted">{label}</div>

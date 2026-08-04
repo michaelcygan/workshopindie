@@ -68,7 +68,7 @@ export function UserPlusPanel({ userId }: { userId: string }) {
   return (
     <div className="rounded-2xl border border-border bg-surface p-5">
       <div className="flex items-center gap-2">
-        <Sparkles className="h-4 w-4 text-gradient-motion" />
+        <Sparkles className="h-4 w-4 text-signal" />
         <h3 className="font-display text-lg text-ink">Workshop Plus</h3>
       </div>
 

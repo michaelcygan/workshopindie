@@ -1650,7 +1650,7 @@ function AboutTab({ profile }: { profile: Profile }) {
           <ul className="mt-2 space-y-1.5 text-sm">
             {profile.external_links!.map((l, i) => (
               <li key={i}>
-                <a href={l.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-gradient-motion hover:underline">
+                <a href={l.url} target="_blank" rel="noreferrer noopener" className="inline-flex items-center gap-1 text-signal hover:underline">
                   {l.label || l.url} <ExternalLink className="h-3 w-3" />
                 </a>
               </li>

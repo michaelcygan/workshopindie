@@ -45,7 +45,7 @@ function ForgotPassword() {
           </form>
         )}
         <p className="mt-6 text-center text-sm text-ink-muted">
-          <Link to="/login" className="text-gradient-motion hover:underline">Back to sign in</Link>
+          <Link to="/login" className="text-signal hover:underline">Back to sign in</Link>
         </p>
       </motion.div>
     </div>
