@@ -41,7 +41,7 @@ export function PublicRecentWorkCarousel({ works }: { works: PublicWorkTile[] })
       </div>
 
       <div className="relative mt-5 -mx-4 md:-mx-6">
-        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-5 pb-2 md:px-8">
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-10 pb-2 md:px-14">
           {works.map((w) => (
             <Link
               key={w.id}
