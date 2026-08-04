@@ -6,6 +6,7 @@ import { useUserRoles } from "@/hooks/use-user-role";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { WorkshopBrandLink } from "@/components/workshop-brand-link";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -55,16 +56,7 @@ export function TopNav() {
       <div className="mx-auto flex h-14 max-w-7xl items-center px-4 md:px-6">
         {/* Left: brand wordmark → home */}
         <div className="flex flex-1 items-center justify-start">
-          <Link
-            to="/"
-            aria-label="Home"
-            className="group inline-flex items-center gap-2 rounded-full px-2 py-1.5 transition hover:bg-muted"
-          >
-            <span className="inline-block h-2.5 w-2.5 rounded-full gradient-motion" />
-            <span className="font-display text-lg leading-none tracking-tight text-ink">
-              Workshop
-            </span>
-          </Link>
+          <WorkshopBrandLink />
         </div>
 
         {/* Center: primary nav */}

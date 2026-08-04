@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 1000 1000"
+  role="img"
+  aria-labelledby="workshop-mark-title"
+>
+  <title id="workshop-mark-title">Workshop</title>
+  <circle
+    cx="500"
+    cy="500"
+    r="420"
+    fill="none"
+    stroke="#111111"
+    stroke-width="56"
+  />
+  <path
+    fill="#111111"
+    d="M217 347h99l47 170 38-170h92l42 170 40-170h92L569 656h-80l-42-167-50 167h-82L217 347Z"
+  />
+  <path
+    fill="#111111"
+    d="M738 347h78L640 806h-78l176-459Z"
+  />
+</svg>
