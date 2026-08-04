@@ -133,7 +133,7 @@ function activityItems(data: MemberHomePayload): HomeNowItem[] {
       status: "TODAY",
       title: t.groupName,
       detail: t.latestBody
-        ? `${t.latestBody.slice(0, 90)} · ${relativeTime(t.latestAt)}`
+        ? `${t.latestBody.slice(0, 90)}${t.latestAt ? ` · ${relativeTime(t.latestAt)}` : ""}`
         : `${t.postCount} posts today`,
       to: "/g/$slug",
       params: { slug: t.groupSlug },
@@ -169,9 +169,8 @@ function continueItems(data: MemberHomePayload): HomeNowItem[] {
     status: a.actionLabel.toUpperCase().slice(0, 18),
     title: a.title,
     detail: a.detail ?? null,
-    to: a.to,
-    params: a.params as Record<string, string> | undefined,
-    search: a.search as Record<string, string | number | boolean> | undefined,
+    to: a.to ?? undefined,
+    params: a.params,
     weight: 70 - i,
   }));
 }
