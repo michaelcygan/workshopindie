@@ -26,12 +26,15 @@ import { logShareEvent } from "@/lib/collab.functions";
 import { GroupPicker, usePreselectGroup, type PickerGroup } from "@/components/group-picker";
 import { tagCollabInGroup } from "@/lib/groups.functions";
 import { pinCollab } from "@/lib/room-pins.functions";
+import { COLLAB_PROMPT_IDS, COLLAB_PROMPTS, type CollabPromptId } from "@/lib/collab-prompts";
 
 export const Route = createFileRoute("/collab/new")({
   component: NewCollabRoute,
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
+    /** Allowlisted starter prompt from the desktop Now board. */
+    prompt: z.enum(COLLAB_PROMPT_IDS).optional(),
   }),
 });
 
@@ -42,6 +45,7 @@ function NewCollabRoute() {
     <CollabComposer
       groupPreselectId={search.group ?? null}
       fromLounge={search.fromLounge ?? null}
+      promptId={search.prompt ?? null}
       onCancel={() => navigate({ to: "/collab" })}
       onPosted={(slug) => navigate({ to: "/collab/$slug", params: { slug } })}
       onDraftSaved={() => navigate({ to: "/me/collabs" })}
@@ -57,6 +61,8 @@ export type CollabComposerProps = {
   embed?: boolean;
   /** Group id to preselect on mount (from ?group=). */
   groupPreselectId?: string | null;
+  /** Allowlisted starter prompt id; prefills empty fields on first mount only. */
+  promptId?: CollabPromptId | null;
   /** Lounge id to auto-pin the resulting Collab to. */
   fromLounge?: string | null;
   onCancel?: () => void;
