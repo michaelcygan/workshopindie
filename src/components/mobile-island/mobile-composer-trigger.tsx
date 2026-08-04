@@ -30,7 +30,7 @@ export const MobileComposerTrigger = forwardRef<HTMLButtonElement, Props>(
         aria-controls={ariaControlsId}
         whileTap={reduced ? undefined : { scale: 0.92 }}
         className={cn(
-          "gradient-motion relative -mt-6 grid h-12 w-12 place-items-center rounded-full",
+          "bg-primary text-primary-foreground relative -mt-6 grid h-12 w-12 place-items-center rounded-full",
           "text-primary-foreground shadow-lift ring-4 ring-background",
           "outline-none focus-visible:ring-4 focus-visible:ring-primary/40",
           "disabled:opacity-60",

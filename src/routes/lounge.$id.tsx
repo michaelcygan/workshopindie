@@ -285,7 +285,7 @@ function LiveRoomPage() {
               const hasTitle = !!room?.title && title !== FALLBACK_TITLE;
               return (
                 <h1 className="mt-0.5 flex min-w-0 items-center gap-2 font-display text-xl text-ink md:text-2xl">
-                  <span className="gradient-motion inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
+                  <span className="bg-primary inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-primary-foreground">
                     <MediumIcon className="h-3.5 w-3.5" />
                   </span>
                   <span className="truncate">{hasTitle ? title : FALLBACK_TITLE}</span>
