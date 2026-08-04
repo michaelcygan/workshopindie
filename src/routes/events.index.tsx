@@ -16,7 +16,7 @@ import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
-import { listMyUpcomingRsvps, listMyPastRsvps } from "@/lib/group-events.functions";
+import { listMyUpcomingRsvps, listMyPastRsvps, listPublicEvents } from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
 
 
@@ -108,12 +108,13 @@ function EventsIndexPage() {
 
   const mineUpcomingFn = useServerFn(listMyUpcomingRsvps);
   const minePastFn = useServerFn(listMyPastRsvps);
+  const publicEventsFn = useServerFn(listPublicEvents);
 
   const mineActive = mine && !!user;
 
   const { data: publicData, isLoading: publicLoading } = useQuery({
     queryKey: ["public-events", when, format, cityId ?? null],
-    queryFn: () => fetchPublicEvents(when, format, cityId),
+    queryFn: () => fetchPublicEvents(publicEventsFn, when, format, cityId),
     staleTime: 60_000,
     enabled: !mineActive,
   });
