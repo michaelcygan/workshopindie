@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { WorkshopBrandLink } from "@/components/workshop-brand-link";
 import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { SettingsMenuButton } from "@/components/settings-menu-button";
