@@ -11,6 +11,7 @@ import {
   unpublishMyBlogPostServer,
   deleteMyBlogDraftServer,
 } from "@/lib/blog-member.server";
+import { BLOG_SEED_PROMPT_IDS } from "@/lib/blog-seed-prompts";
 
 const cursorSchema = z
   .object({ updated_at: z.string(), id: z.string().uuid() })
@@ -38,11 +39,14 @@ export const createMyBlogDraft = createServerFn({ method: "POST" })
             id: z.string().uuid(),
           })
           .optional(),
+        seedPromptId: z.enum(BLOG_SEED_PROMPT_IDS).optional(),
       })
       .optional()
       .parse(input ?? {}),
   )
-  .handler(({ context, data }) => createMyBlogDraftServer(context, data?.seedTag));
+  .handler(({ context, data }) =>
+    createMyBlogDraftServer(context, data?.seedTag, data?.seedPromptId),
+  );
 
 export const getMyBlogPost = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
