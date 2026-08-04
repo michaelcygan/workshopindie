@@ -71,7 +71,7 @@ export function SiteFooter() {
           {/* Conversion */}
           <div className="md:col-span-2">
             <h2 className="font-display text-3xl leading-tight text-ink md:text-4xl">
-              Make something with people.
+              Make something.
             </h2>
             <p className="mt-3 max-w-xl text-ink-soft">
               Create a free portfolio, find collaborators, and join creative communities.
