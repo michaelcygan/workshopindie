@@ -1301,6 +1301,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
   ]);
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
+  const upcomingEvents = eventsR.status === "fulfilled" ? eventsR.value : [];
   const cont =
     continueR.status === "fulfilled" ? continueR.value : { actions: [], hasEligibleWork: false };
   const featured =
