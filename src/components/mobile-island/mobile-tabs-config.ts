@@ -32,11 +32,11 @@ export type MobileCreateAction = {
 
 export const mobileCreateActions: readonly MobileCreateAction[] = [
   {
-    id: "work",
-    label: "Post to Gallery",
-    description: "Add a Work to your portfolio",
-    to: "/works/new",
-    icon: Briefcase,
+    id: "blog",
+    label: "Write a blog post",
+    description: "Share process, notes, or essays",
+    to: "/me/blog",
+    icon: BookOpen,
   },
   {
     id: "collab",
@@ -46,10 +46,10 @@ export const mobileCreateActions: readonly MobileCreateAction[] = [
     icon: Megaphone,
   },
   {
-    id: "blog",
-    label: "Write a blog post",
-    description: "Share process, notes, or essays",
-    to: "/me/blog",
-    icon: BookOpen,
+    id: "work",
+    label: "Post to Gallery",
+    description: "Add a Work to your portfolio",
+    to: "/works/new",
+    icon: Briefcase,
   },
 ] as const;
