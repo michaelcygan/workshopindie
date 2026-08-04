@@ -354,7 +354,7 @@ async function fetchPulse(): Promise<Pulse[]> {
     supabase
       .from("group_events")
       .select(
-        "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)",
+        "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug,deleted_at)",
       )
       .in("status", DISCOVERABLE_STATUSES as unknown as never)
       .eq("visibility", "public")
@@ -395,14 +395,16 @@ async function fetchPulse(): Promise<Pulse[]> {
   const items: Pulse[] = [];
 
   if (eventsRes.status === "fulfilled" && eventsRes.value.data) {
-    for (const r of eventsRes.value.data as Array<{
-      id: string;
-      slug: string;
-      title: string;
-      starts_at: string;
-      cover_url: string | null;
-      group: { slug: string } | null;
-    }>) {
+    for (const r of dropDeletedGroups(
+      eventsRes.value.data as unknown as Array<{
+        id: string;
+        slug: string;
+        title: string;
+        starts_at: string;
+        cover_url: string | null;
+        group: { slug: string; deleted_at: string | null } | null;
+      }>,
+    )) {
       if (!r.group?.slug) continue;
       items.push({
         kind: "event",
