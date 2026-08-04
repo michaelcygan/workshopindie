@@ -19,7 +19,7 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { CollabWorkspace } from "@/components/collab/collab-workspace";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { closeCollab, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import { setCollabApplicationsOpen, extendCollabDeadline } from "@/lib/collab-publish.functions";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
@@ -149,7 +149,7 @@ function CollabDetail() {
   const router = useRouter();
 
   const qc = useQueryClient();
-  const closeFn = useServerFn(closeCollab);
+  const closeFn = useServerFn(setCollabApplicationsOpen);
   const extendFn = useServerFn(extendCollabDeadline);
 
   const [contactOpen, setContactOpen] = useState(false);
@@ -262,7 +262,7 @@ function CollabDetail() {
   });
 
   const closeMut = useMutation({
-    mutationFn: () => closeFn({ data: { collabPostId: post!.id } }),
+    mutationFn: () => closeFn({ data: { collabPostId: post!.id, open: false } }),
     onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -415,7 +415,7 @@ function CollabDetail() {
                   {!isDraft && <PinCollabButton collabId={post.id} />}
                   {post.status === "open" && (
                     <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Close
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
                     </Button>
                   )}
                   <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
@@ -455,7 +455,7 @@ function CollabDetail() {
                       {!isDraft && <PinCollabMenuItem collabId={post.id} />}
                       {post.status === "open" && (
                         <DropdownMenuItem onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
-                          <CheckCircle2 className="h-4 w-4 mr-2" /> Close
+                          <CheckCircle2 className="h-4 w-4 mr-2" /> Pause submissions
                         </DropdownMenuItem>
                       )}
                       <DropdownMenuSeparator />
@@ -605,8 +605,8 @@ function CollabDetail() {
             }}>
               <Clock className="h-3.5 w-3.5" /> Extend
             </Button>
-            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Close this collab without publishing?")) closeMut.mutate(); }}>
-              <CheckCircle2 className="h-3.5 w-3.5" /> Close
+            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Pause submissions on this Collab? It stays In Progress.")) closeMut.mutate(); }}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> Pause submissions
             </Button>
             <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
               <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
