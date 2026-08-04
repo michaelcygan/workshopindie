@@ -154,7 +154,7 @@ export async function listDiscoveryEvents(
     .select(select)
     .is("deleted_at", null)
     .eq("visibility", "public")
-    .in("status", DISCOVERABLE_STATUSES as unknown as string[]);
+    .in("status", DISCOVERABLE_STATUSES as never);
 
   if (when === "upcoming") {
     q = q.gte("starts_at", after ?? nowIso).order("starts_at", { ascending: true });
