@@ -162,6 +162,10 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     ends_at: "",
     venue_name: "",
     venue_address: "",
+    venue_lat: null,
+    venue_lng: null,
+    venue_city_id: null,
+    city_label: null,
     online_url: "",
     capacity: "",
     
