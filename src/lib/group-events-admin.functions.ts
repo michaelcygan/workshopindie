@@ -374,14 +374,14 @@ export const createEventSeries = createServerFn({ method: "POST" })
       featured,
       status,
       cover_url,
-      pinned: _pinned,
-      extra_group_ids: _extra,
+      pinned,
+      extra_group_ids,
       starts_at,
       ends_at,
       group_id,
       ...rest
     } = data;
-    void _occ; void _pinned; void _extra;
+    void _occ;
     const baseStart = new Date(starts_at);
     const baseEnd = new Date(ends_at);
     if (Number.isNaN(baseStart.getTime()) || Number.isNaN(baseEnd.getTime())) {
@@ -393,17 +393,32 @@ export const createEventSeries = createServerFn({ method: "POST" })
     }
     const seriesKey = `s_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
     const sharedCover = await rehostCoverIfExternal(cover_url, `series_${seriesKey}`);
+    const effectiveStatus = (status ?? "scheduled") as "draft" | "scheduled";
+    const tz = rest.timezone || "UTC";
+    const venueCityId = await resolveEventCity(supabase as never, {
+      group_id,
+      format: rest.format,
+      venue_city_id: rest.venue_city_id ?? null,
+      status: effectiveStatus,
+    });
+
+    const { toZonedParts } = await import("@/lib/event-series.server");
+    const localAnchor = toZonedParts(baseStart, tz);
+    const pad = (n: number) => String(n).padStart(2, "0");
 
     // Template is copied into every future occurrence by the materializer.
     // We omit fields the materializer sets itself: group_id, starts_at, ends_at, slug, created_by, series_key.
     const template: Record<string, unknown> = {
       ...rest,
+      venue_city_id: venueCityId,
+      timezone: tz,
       cover_url: sharedCover,
-      featured_at: null,
-      pinned_at: null,
-      status: (status ?? "scheduled") as "draft" | "scheduled",
-      is_official: rest.is_official ?? true,
+      status: effectiveStatus,
+      is_official: rest.source === "external" ? false : rest.is_official ?? true,
       is_recurring: true,
+      // Pin intent belongs to the series; only its nearest future occurrence
+      // ever carries `pinned_at`.
+      __pin: pinned === true,
     };
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -414,19 +429,21 @@ export const createEventSeries = createServerFn({ method: "POST" })
         group_id,
         series_key: seriesKey,
         recurrence_rule,
-        weekday: baseStart.getUTCDay(),
-        day_of_month:
-          recurrence_rule === "MONTHLY" ? baseStart.getUTCDate() : null,
-        start_time_local: baseStart.toISOString().slice(11, 19),
+        weekday: new Date(Date.UTC(localAnchor.year, localAnchor.month - 1, localAnchor.day)).getUTCDay(),
+        day_of_month: recurrence_rule === "MONTHLY" ? localAnchor.day : null,
+        start_time_local: `${pad(localAnchor.hour)}:${pad(localAnchor.minute)}:${pad(localAnchor.second)}`,
         duration_minutes: Math.round(durationMs / 60000),
-        timezone: rest.timezone ?? "UTC",
+        timezone: tz,
         template,
         horizon_weeks: 8,
         next_occurrence_at: baseStart.toISOString(),
         ends_on: ends_on ?? null,
+        extra_group_ids: (extra_group_ids ?? []).filter((id) => id !== group_id),
         created_by: userId,
       } as never)
-      .select("id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on")
+      .select(
+        "id,series_key,group_id,recurrence_rule,duration_minutes,template,horizon_weeks,next_occurrence_at,ends_on,timezone,start_time_local,extra_group_ids",
+      )
       .single();
     if (seriesErr || !seriesRow) throw new Error(seriesErr?.message ?? "Failed to create series");
 
