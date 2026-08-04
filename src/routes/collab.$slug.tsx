@@ -19,7 +19,17 @@ import { GuestApplyDialog } from "@/components/guest-apply-dialog";
 import { ApplicantsPanel } from "@/components/applicants-panel";
 import { CollabWorkspace } from "@/components/collab/collab-workspace";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
-import { setCollabApplicationsOpen, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import { setCollabApplicationsOpen, setCollabArchived, extendCollabDeadline } from "@/lib/collab-publish.functions";
+import {
+  collabLifecycleState,
+  recruitmentState,
+  recruitmentLabel,
+  isLegacyPrivateDraft,
+  isPubliclyVisible,
+  isDiscoverableOpportunity,
+  effectiveApplicationsOpen,
+  teamLabel,
+} from "@/lib/collab/lifecycle";
 import { applyToCollab, listApplicants, getCollabActivity, getCollabPublicCounts, leaveCollab, acceptCollabChanges, getMyCollabMembership, updateCollab, togglePinCollab, getMyPinForCollab } from "@/lib/collab.functions";
 import { MessageButton } from "@/components/message-button";
 // Vouch + Boost retired in v1 distillation pass.
@@ -47,11 +57,11 @@ export const Route = createFileRoute("/collab/$slug")({
   head: ({ params, loaderData }) => {
     const url = `https://workshopindie.com/collab/${params.slug}`;
     const s = loaderData?.seo;
-    const title = s?.title ? `${s.title} — Open Collab on Workshop` : `Open Collab Call — Workshop`;
+    const title = s?.title ? `${s.title} — Collab on Workshop` : `Collab on Workshop`;
     const description = s?.description?.slice(0, 160)
-      ?? "An open call for collaborators on Workshop. Apply in one tap — no account needed.";
-    // Archived (closed + no Work) collabs are owner-only — keep them out of search.
-    const isArchived = s?.status === "closed" && !s?.resulting_work_id;
+      ?? "A Collab in progress on Workshop. Apply in one tap — no account needed.";
+    // Archived and legacy private drafts are owner-only — keep them out of search.
+    const indexable = s ? isPubliclyVisible(s) : true;
     const ogImage = `https://workshopindie.com/api/public/og?type=collab&id=${params.slug}`;
     const meta = [
       { title },
@@ -66,11 +76,11 @@ export const Route = createFileRoute("/collab/$slug")({
       { name: "twitter:description", content: description },
       { name: "twitter:image", content: ogImage },
     ];
-    if (isArchived) meta.push({ name: "robots", content: "noindex,nofollow" });
+    if (!indexable) meta.push({ name: "robots", content: "noindex,nofollow" });
 
-    // JSON-LD JobPosting for open Collabs — surfaces in Google Jobs and rich results.
+    // JSON-LD JobPosting only while the Collab is actually recruiting.
     const scripts: { type: string; children: string }[] = [];
-    if (s && s.status === "open" && !isArchived) {
+    if (s && isDiscoverableOpportunity(s)) {
       const roleNames = (s.roles ?? [])
         .slice()
         .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
@@ -96,8 +106,8 @@ export const Route = createFileRoute("/collab/$slug")({
       const ld: Record<string, unknown> = {
         "@context": "https://schema.org/",
         "@type": "JobPosting",
-        title: s.title ?? "Open Collab",
-        description: (s.description ?? "").slice(0, 5000) || `Open Collab call: ${s.title ?? ""}`,
+        title: s.title ?? "Collab",
+        description: (s.description ?? "").slice(0, 5000) || `Collab call: ${s.title ?? ""}`,
         datePosted: s.created_at ? new Date(s.created_at).toISOString() : new Date().toISOString(),
         validThrough,
         employmentType: s.compensation_type === "paid" ? "CONTRACTOR" : "VOLUNTEER",
@@ -149,7 +159,8 @@ function CollabDetail() {
   const router = useRouter();
 
   const qc = useQueryClient();
-  const closeFn = useServerFn(setCollabApplicationsOpen);
+  const setApplicationsOpenFn = useServerFn(setCollabApplicationsOpen);
+  const archiveFn = useServerFn(setCollabArchived);
   const extendFn = useServerFn(extendCollabDeadline);
 
   const [contactOpen, setContactOpen] = useState(false);
@@ -165,7 +176,7 @@ function CollabDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("collab_posts")
-        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
+        .select("id,title,slug,category,categories,description,timeline_text,location_mode,compensation_type,contact_mode,external_contact_url,status,applications_open,archived_at,created_at,closed_at,ends_on,resulting_work_id,user_id,live_workshop_id,rights_arrangement,accepts_suggestions,user:profiles!collab_posts_user_id_fkey(id,display_name,username,avatar_url,headline,first_name),city:cities!collab_posts_city_id_fkey(name),roles:collab_roles(id,role_name,quantity,description,sort_order)")
         .eq("slug", slug)
         .maybeSingle();
       if (error) throw error;
@@ -261,9 +272,20 @@ function CollabDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const closeMut = useMutation({
-    mutationFn: () => closeFn({ data: { collabPostId: post!.id, open: false } }),
-    onSuccess: () => { toast.success("Collab closed"); qc.invalidateQueries({ queryKey: ["collab", slug] }); },
+  const applicationsMut = useMutation({
+    mutationFn: (open: boolean) => setApplicationsOpenFn({ data: { collabPostId: post!.id, open } }),
+    onSuccess: (_d, open) => {
+      toast.success(open ? "Accepting collaborators again" : "Submissions paused");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  const archiveMut = useMutation({
+    mutationFn: (archived: boolean) => archiveFn({ data: { collabPostId: post!.id, archived } }),
+    onSuccess: (_d, archived) => {
+      toast.success(archived ? "Archived — only you can see it now" : "Restored");
+      qc.invalidateQueries({ queryKey: ["collab", slug] });
+    },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
@@ -296,7 +318,7 @@ function CollabDetail() {
   const publishMut = useMutation({
     mutationFn: () => updateFn({ data: { collabPostId: post!.id, patch: { status: "open" } } }),
     onSuccess: () => {
-      toast.success("Draft published — it's now live.");
+      toast.success("Shared — this Collab is now public.");
       qc.invalidateQueries({ queryKey: ["collab", slug] });
     },
     onError: (e: Error) => {
@@ -312,12 +334,15 @@ function CollabDetail() {
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
-  const isDraft = post.status === "draft";
-  const isArchived = post.status === "closed" && !post.resulting_work_id;
-  const isShipped = post.status === "closed" && !!post.resulting_work_id;
+  const lifecycle = collabLifecycleState(post);
+  const recruit = recruitmentState(post);
+  const isDraft = isLegacyPrivateDraft(post);
+  const isArchived = lifecycle === "archived";
+  const isShipped = lifecycle === "published";
+  const acceptingNow = effectiveApplicationsOpen(post);
 
-  // Drafts and archived posts are owner-only. Anyone else gets the standard not-found surface.
-  if ((isArchived || isDraft) && !isOwner) {
+  // Archived posts and legacy private drafts are owner-only.
+  if (!isPubliclyVisible(post) && !isOwner) {
     return (
       <main className="mx-auto max-w-2xl p-10 text-center">
         <h1 className="font-display text-3xl">Not found</h1>
@@ -331,19 +356,21 @@ function CollabDetail() {
   const hostUser = post.user;
   const cityName = post.city?.name;
   const today = new Date().toISOString().slice(0, 10);
-  const deadlinePassed = !!post.ends_on && post.ends_on < today && post.status === "open";
+  const deadlinePassed = recruit === "deadline_passed";
   const openedDays = Math.max(0, Math.floor((Date.now() - new Date(post.created_at).getTime()) / 86400000));
   const daysToDeadline = post.ends_on
     ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
     : null;
-  const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
-  const stateBadge = isDraft
-    ? <StateBadge tone="closed" label="Draft" sublabel="Only you can see this" />
-    : post.status === "open"
-      ? <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
-      : isShipped
-        ? <StateBadge tone="closed" label="Closed" sublabel="Published" />
-        : <StateBadge tone="closed" label="Closed" sublabel="Archived" />;
+  const deadlineSoon = acceptingNow && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
+  const stateBadge = isArchived
+    ? <StateBadge tone="closed" label="Archived" sublabel="Only you can see this" />
+    : isShipped
+      ? <StateBadge tone="closed" label="Published" />
+      : <StateBadge
+          tone={acceptingNow ? "open" : "closed"}
+          label="In Progress"
+          sublabel={isDraft ? "Private — only you" : deadlineSoon ? "Deadline soon" : recruitmentLabel(recruit)}
+        />;
 
   const daysPast = post.ends_on ? Math.floor((Date.now() - new Date(post.ends_on).getTime()) / 86400000) : 0;
 
