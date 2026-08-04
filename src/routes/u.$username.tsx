@@ -475,15 +475,32 @@ function ProfilePage() {
     );
   }
 
+  if (profileError) {
+    return (
+      <main className="mx-auto max-w-3xl px-4 py-20 text-center">
+        <h1 className="font-display text-4xl text-ink">Couldn't load this profile</h1>
+        <p className="mt-2 text-ink-muted">Something went wrong loading @{username}. Try again in a moment.</p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button className="rounded-md" onClick={() => refetchProfile()}>Try again</Button>
+          <Button variant="outline" className="rounded-md" onClick={() => window.history.back()}>Go back</Button>
+        </div>
+      </main>
+    );
+  }
+
   if (!profile) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-4xl text-ink">Profile not found</h1>
         <p className="mt-2 text-ink-muted">No creator with the handle <span className="font-mono">@{username}</span>.</p>
-        <Link to="/" className="mt-6 inline-block"><Button variant="outline" className="rounded-md">Back to gallery</Button></Link>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <Button variant="outline" className="rounded-md" onClick={() => window.history.back()}>Go back</Button>
+          <Link to="/gallery"><Button variant="outline" className="rounded-md">Browse Gallery</Button></Link>
+        </div>
       </main>
     );
   }
+
 
   const isOwn = user?.id === profile.id;
   const name = profile.display_name || profile.username || "Creator";
