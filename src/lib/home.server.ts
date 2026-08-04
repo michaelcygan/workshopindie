@@ -1618,7 +1618,7 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
     .eq("visibility", "public")
     .not("cover_url", "is", null)
     .order("published_at", { ascending: false, nullsFirst: false })
-    .limit(8);
+    .limit(16);
 
   const [postsRes, storiesRes, collabsRes, groupsRes, worksRes] = await Promise.all([
     postsPromise,
@@ -1729,9 +1729,8 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
       profiles: { display_name: string | null; username: string | null } | null;
     }[];
   };
-  const visualWorks: PublicWorkTile[] = ((worksRes.data ?? []) as unknown as WorkRow[])
+  const allWorkTiles = ((worksRes.data ?? []) as unknown as WorkRow[])
     .filter((w) => !!w.cover_url)
-    .slice(0, 3)
     .map((w) => {
       const credit = (w.work_credits ?? [])
         .slice()
@@ -1746,6 +1745,8 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
           credit?.profiles?.display_name || credit?.display_name || credit?.profiles?.username || null,
       };
     });
+  const recentWorks = allWorkTiles.slice(0, 8);
+  const visualWorks = allWorkTiles.slice(8, 11);
 
   return {
     featuredPosts,
@@ -1755,6 +1756,7 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
     workStories: (storiesRes as HomeWorkStory[]).slice(0, 3),
     openCollabs,
     featuredGroups,
+    recentWorks,
     visualWorks,
   };
 }

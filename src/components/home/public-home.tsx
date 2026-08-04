@@ -11,6 +11,7 @@ import { PublicOpenCollabs } from "@/components/home/public-open-collabs";
 import { PublicWorkStories } from "@/components/home/public-work-stories";
 import { PublicGroupScenes } from "@/components/home/public-group-scenes";
 import { PublicWorkStrip } from "@/components/home/public-work-strip";
+import { PublicRecentWorkCarousel } from "@/components/home/public-recent-work-carousel";
 
 /**
  * The logged-out front door: an independent editorial publication that
@@ -36,6 +37,7 @@ export function PublicHome() {
         <>
           <PublicFeaturedStories posts={data.featuredPosts} />
           <PublicLatestStories posts={data.latestPosts} />
+          <PublicRecentWorkCarousel works={data.recentWorks} />
           <PublicOpenCollabs collabs={data.openCollabs} />
           <PublicWorkStories stories={data.workStories} />
           <PublicGroupScenes groups={data.featuredGroups} />
