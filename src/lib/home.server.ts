@@ -11,6 +11,7 @@
  */
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import type {
   HomeBlogCard,
   HomeCircleStory,
@@ -525,7 +526,7 @@ export async function upcomingEventsServer(
       .select(EVENT_SELECT)
       .gt("starts_at", nowIso)
       .is("deleted_at", null)
-      .in("status", DISCOVERABLE_STATUSES as unknown as string[])
+      .in("status", DISCOVERABLE_STATUSES as unknown as never)
       .in("visibility", allowGroupOnly ? ["public", "group_only"] : ["public"])
       .order("starts_at", { ascending: true })
       .limit(5);
