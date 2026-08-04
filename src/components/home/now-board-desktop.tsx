@@ -137,7 +137,6 @@ export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
       <div className="grid h-[136px] grid-cols-3 divide-x divide-border">
         {HOME_NOW_LANES.map(({ lane, label }) => {
           const item = current(lane);
-          void board;
           return (
             <div key={lane} className="flex flex-col gap-3 px-5 py-4">
               <p className="font-display text-[10px] uppercase tracking-[0.12em] text-ink-muted">
