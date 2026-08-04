@@ -480,12 +480,13 @@ export async function myGroupLoungesServer(groups: MyGroup[]): Promise<HomeLoung
 const EVENT_SELECT =
   "id,group_id,slug,title,starts_at,format,cover_url,venue_name,venue_city_id,online_url,visibility,deleted_at";
 
-/** One upcoming Event: RSVPed > joined Group > home city > online. */
-export async function nextEventServer(
+/** Upcoming Events, ranked: RSVPed > joined Group > home city > online. */
+export async function upcomingEventsServer(
   userId: string,
   groups: MyGroup[],
   homeCityId: string | null,
-): Promise<HomeEvent | null> {
+  max = 4,
+): Promise<HomeEvent[]> {
   const nowIso = new Date().toISOString();
 
   type Row = {
@@ -527,53 +528,81 @@ export async function nextEventServer(
 
   const groupIds = groups.map((g) => g.id);
   const candidates: Array<{ row: Row; reason: HomeEvent["reason"]; rsvped: boolean }> = [];
+  const seen = new Set<string>();
+  const push = (row: Row, reason: HomeEvent["reason"], rsvped: boolean) => {
+    if (seen.has(row.id)) return;
+    seen.add(row.id);
+    candidates.push({ row, reason, rsvped });
+  };
 
   if (rsvpIds.length) {
-    for (const row of await fetchEvents((q) => q.in("id", rsvpIds))) {
-      candidates.push({ row, reason: "rsvp", rsvped: true });
-    }
+    for (const row of await fetchEvents((q) => q.in("id", rsvpIds))) push(row, "rsvp", true);
   }
-  if (!candidates.length && groupIds.length) {
+  if (candidates.length < max && groupIds.length) {
     for (const row of await fetchEvents((q) => q.in("group_id", groupIds))) {
-      candidates.push({ row, reason: "group", rsvped: false });
+      push(row, "group", false);
     }
   }
-  if (!candidates.length && homeCityId) {
+  if (candidates.length < max && homeCityId) {
     for (const row of await fetchEvents((q) => q.eq("venue_city_id", homeCityId))) {
-      candidates.push({ row, reason: "city", rsvped: false });
+      push(row, "city", false);
     }
   }
-  if (!candidates.length) {
+  if (candidates.length < max) {
     for (const row of await fetchEvents((q) => q.eq("format", "online"))) {
-      candidates.push({ row, reason: "online", rsvped: false });
+      push(row, "online", false);
     }
   }
-  if (!candidates.length) return null;
+  if (!candidates.length) return [];
 
-  const pick = candidates[0];
-  const [{ data: group }, { data: city }] = await Promise.all([
-    supabaseAdmin.from("groups").select("slug,name").eq("id", pick.row.group_id).maybeSingle(),
-    pick.row.venue_city_id
-      ? supabaseAdmin.from("cities").select("name").eq("id", pick.row.venue_city_id).maybeSingle()
-      : Promise.resolve({ data: null }),
+  const picks = candidates.slice(0, max);
+  const groupIdsNeeded = Array.from(new Set(picks.map((p) => p.row.group_id)));
+  const cityIdsNeeded = Array.from(
+    new Set(picks.map((p) => p.row.venue_city_id).filter((c): c is string => !!c)),
+  );
+  const [{ data: groupRows }, { data: cityRows }] = await Promise.all([
+    supabaseAdmin.from("groups").select("id,slug,name").in("id", groupIdsNeeded),
+    cityIdsNeeded.length
+      ? supabaseAdmin.from("cities").select("id,name").in("id", cityIdsNeeded)
+      : Promise.resolve({ data: [] }),
   ]);
-  const g = group as { slug: string; name: string } | null;
-  if (!g) return null;
+  const groupById = new Map(
+    ((groupRows ?? []) as Array<{ id: string; slug: string; name: string }>).map((g) => [g.id, g]),
+  );
+  const cityById = new Map(
+    ((cityRows ?? []) as Array<{ id: string; name: string }>).map((c) => [c.id, c.name]),
+  );
 
-  return {
-    id: pick.row.id,
-    slug: pick.row.slug,
-    title: pick.row.title,
-    startsAt: pick.row.starts_at,
-    locationMode: pick.row.format,
-    venueName: pick.row.venue_name,
-    cityName: (city as { name: string } | null)?.name ?? null,
-    coverUrl: pick.row.cover_url,
-    groupSlug: g.slug,
-    groupName: g.name,
-    rsvped: pick.rsvped,
-    reason: pick.reason,
-  };
+  return picks.flatMap<HomeEvent>((pick) => {
+    const g = groupById.get(pick.row.group_id);
+    if (!g) return [];
+    return [
+      {
+        id: pick.row.id,
+        slug: pick.row.slug,
+        title: pick.row.title,
+        startsAt: pick.row.starts_at,
+        locationMode: pick.row.format,
+        venueName: pick.row.venue_name,
+        cityName: pick.row.venue_city_id ? (cityById.get(pick.row.venue_city_id) ?? null) : null,
+        coverUrl: pick.row.cover_url,
+        groupSlug: g.slug,
+        groupName: g.name,
+        rsvped: pick.rsvped,
+        reason: pick.reason,
+      },
+    ];
+  });
+}
+
+/** One upcoming Event (mobile Now module keeps the first result). */
+export async function nextEventServer(
+  userId: string,
+  groups: MyGroup[],
+  homeCityId: string | null,
+): Promise<HomeEvent | null> {
+  const list = await upcomingEventsServer(userId, groups, homeCityId, 1);
+  return list[0] ?? null;
 }
 
 /** Deterministic "Continue making" resolver — at most three actions. */
