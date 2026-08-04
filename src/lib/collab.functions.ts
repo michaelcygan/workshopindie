@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { applicationRejectionReason } from "@/lib/collab/lifecycle";
+import { applicationRejectionReason, type CollabReviewStatus } from "@/lib/collab/lifecycle";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
@@ -303,7 +303,7 @@ export const setApplicationReviewStatus = createServerFn({ method: "POST" })
       .object({
         collabPostId: z.string().uuid(),
         contactEventId: z.string().uuid(),
-        reviewStatus: z.enum(REVIEW_STATUSES),
+        reviewStatus: reviewStatusEnum,
       })
       .parse(input),
   )
@@ -334,21 +334,25 @@ export const updateGuestApplicationStatus = createServerFn({ method: "POST" })
       .object({
         id: z.string().uuid(),
         status: z.enum(["new", "contacted", "spam", "hidden"]).optional(),
-        reviewStatus: z.enum(REVIEW_STATUSES).optional(),
+        reviewStatus: reviewStatusEnum.optional(),
       })
       .parse(input),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: {
+      status?: string;
+      contacted_at?: string | null;
+      review_status?: CollabReviewStatus;
+    } = {};
     if (data.status) {
-      patch['status'] = data.status;
-      patch['contacted_at'] = data.status === "contacted" ? new Date().toISOString() : null;
+      patch.status = data.status;
+      patch.contacted_at = data.status === "contacted" ? new Date().toISOString() : null;
     }
     if (data.reviewStatus) {
-      patch['review_status'] = data.reviewStatus;
+      patch.review_status = data.reviewStatus;
       if (!data.status) {
         // Keep the legacy text column roughly in sync for older surfaces.
-        patch['status'] = data.reviewStatus === "spam" ? "spam" : data.reviewStatus === "reviewing" ? "contacted" : "new";
+        patch.status = data.reviewStatus === "spam" ? "spam" : data.reviewStatus === "reviewing" ? "contacted" : "new";
       }
     }
     if (Object.keys(patch).length === 0) return { ok: true as const };
