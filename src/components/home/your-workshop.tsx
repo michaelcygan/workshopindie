@@ -161,7 +161,7 @@ export function YourWorkshop({
 
       {actions.length > 0 && (
         <div>
-          <div className="mb-1.5 text-[10px] uppercase tracking-[0.16em] text-ink-muted">
+          <div className="mb-1.5 text-[10px] uppercase tracking-[0.12em] text-ink-muted">
             Keep going
           </div>
           <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">

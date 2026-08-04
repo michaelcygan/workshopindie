@@ -38,7 +38,7 @@ export function WorkshopBrandLink({
       />
       <span
         className={cn(
-          "font-display leading-none tracking-tight text-ink",
+          "font-display font-semibold leading-none tracking-[-0.03em] text-ink",
           compact ? "text-base" : "text-lg",
         )}
       >

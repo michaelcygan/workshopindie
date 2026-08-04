@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
 import { subscribeToNewsletter } from "@/lib/newsletter.functions";
+import { WorkshopBrandLink } from "@/components/workshop-brand-link";
 
 // Route pathname prefixes that should NOT show the shared footer.
 const HIDE_PREFIXES = [
@@ -188,8 +189,7 @@ export function SiteFooter() {
 
         <div className="mt-12 flex flex-col gap-2 border-t border-border/70 pt-6 text-xs text-ink-muted md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full gradient-motion" />
-            <span className="font-display text-sm text-ink">Workshop</span>
+            <WorkshopBrandLink size="compact" className="-ml-2" />
             <span>© {new Date().getFullYear()}</span>
           </div>
           <div className="text-ink-muted">Independent creative collaboration.</div>

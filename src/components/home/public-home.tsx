@@ -53,7 +53,7 @@ function Masthead() {
   return (
     <section className="border-b border-border">
       <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
-        <p className="text-[11px] font-medium uppercase tracking-[0.24em] text-ink-muted">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Workshop
         </p>
         <h1 className="mt-2 max-w-3xl font-display text-[32px] leading-[1.08] tracking-tight text-ink md:text-[52px]">

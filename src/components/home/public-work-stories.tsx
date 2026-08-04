@@ -15,7 +15,7 @@ export function PublicWorkStories({ stories }: { stories: HomeWorkStory[] }) {
       aria-labelledby="behind-the-work"
       className="mx-auto max-w-7xl border-b border-border px-4 py-10 md:px-6 md:py-14"
     >
-      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
         Behind the Work
       </p>
       <h2 id="behind-the-work" className="mt-1 font-display text-[26px] text-ink md:text-[32px]">

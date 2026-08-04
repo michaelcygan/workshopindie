@@ -22,7 +22,7 @@ export function PublicRecentWorkCarousel({ works }: { works: PublicWorkTile[] })
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Made on Workshop
           </p>
           <h2

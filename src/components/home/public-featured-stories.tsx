@@ -68,7 +68,7 @@ export function PublicFeaturedStories({ posts }: { posts: PublicBlogCard[] }) {
           aria-atomic="true"
           className="mb-4 flex items-center justify-between gap-4"
         >
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             Featured story
             {count > 1 ? (
               <span className="ml-2 tabular-nums text-ink-soft">

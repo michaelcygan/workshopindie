@@ -18,7 +18,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
     >
       <div className="grid gap-8 md:grid-cols-[minmax(0,0.8fr)_minmax(0,1.6fr)] md:gap-12">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-coral">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-coral">
             Open calls
           </p>
           <h2 id="open-calls" className="mt-1 font-display text-[26px] text-ink md:text-[32px]">
