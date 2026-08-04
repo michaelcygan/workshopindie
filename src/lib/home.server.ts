@@ -1330,7 +1330,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     loungeFallbackGroup: fallbackGroup
       ? { slug: fallbackGroup.slug, name: fallbackGroup.name }
       : null,
-    nextEvent: eventR.status === "fulfilled" ? eventR.value : null,
+    nextEvent: upcomingEvents[0] ?? null,
     continueActions: cont.actions,
     groupSuggestions: suggestR.status === "fulfilled" ? suggestR.value : [],
     circle: circleR.status === "fulfilled" ? circleR.value : [],
@@ -1341,6 +1341,17 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     featuredIsFallback: featured.isFallback,
     mine,
     blogRail,
+    homeCity:
+      cityR.status === "fulfilled" && cityR.value.data
+        ? (cityR.value.data as { id: string; name: string; slug: string | null })
+        : null,
+    homeCityGroup:
+      cityGroupR.status === "fulfilled" && cityGroupR.value.data
+        ? (cityGroupR.value.data as { id: string; name: string; slug: string })
+        : null,
+    nowGroups: groups.map((g) => ({ id: g.id, name: g.name, slug: g.slug })),
+    mediums,
+    upcomingEvents,
   };
 }
 
