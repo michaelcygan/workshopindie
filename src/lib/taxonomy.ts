@@ -88,6 +88,7 @@ const LEGACY_TO_CANONICAL: Record<string, CanonicalCategory> = {
   scene_life: "scene_life",
   city: "city",
   language: "language",
+  other: "other",
 };
 
 /**
@@ -106,6 +107,7 @@ const CANONICAL_TO_STORAGE: Partial<Record<CanonicalCategory, string[]>> = {
   scene_life: ["scene_life"],
   city: ["city"],
   language: ["language"],
+  other: ["other"],
 };
 
 /**
@@ -180,6 +182,7 @@ export const CATEGORY_ENUM_VALUES = new Set<string>([
   "writing_book",
   "build",
   "visual",
+  "other",
   ...TOPICS.map((t) => t.id),
 ]);
 

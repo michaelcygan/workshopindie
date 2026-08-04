@@ -17,6 +17,7 @@ export const TOPIC_DESCRIPTIONS: Record<Category, string> = {
   open_mic: "Take turns performing — comedy, music, poetry.",
   jam: "No goal, just make something with whoever shows up.",
   standup: "Quick check-in: what you're on, what's blocking you.",
+  other: "Anything that doesn't fit a single medium yet.",
 };
 
 /** Sub-mediums shown when picking under Critique / Co-working. */

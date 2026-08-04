@@ -45,17 +45,6 @@ export const publishWorkFromCollab = createServerFn({ method: "POST" })
     });
     if (ok === false) throw new Error("You're publishing too fast. Try again later.");
 
-    // 1) Load the collab + verify ownership.
-    const { data: post, error: postErr } = await supabase
-      .from("collab_posts")
-      .select("id,user_id,category,description,title,resulting_work_id")
-      .eq("id", data.collabPostId)
-      .maybeSingle();
-    if (postErr) throw new Error(postErr.message);
-    if (!post) throw new Error("Collab not found.");
-    if (post.user_id !== userId) throw new Error("Only the host can publish a Work from this collab.");
-    if (post.resulting_work_id) throw new Error("A Work has already been published from this collab.");
-
     // Quota check: Free users are capped at FREE_PUBLISHED_WORK_CAP published Works.
     const { count: publishedCount } = await supabase
       .from("works")
@@ -66,107 +55,70 @@ export const publishWorkFromCollab = createServerFn({ method: "POST" })
       throw new Error("Free tier work limit reached");
     }
 
-    // 2) Insert the Work. Trigger generates the slug + published_at stamp.
-    const { data: work, error: workErr } = await supabase
-      .from("works")
-      .insert({
-        title: data.title.trim(),
-        slug: "",
-        category: post.category,
-        description: (data.description?.trim() || post.description) ?? null,
-        cover_url: data.coverUrl || null,
-        primary_url: data.primaryUrl || null,
-        source_type: "collab_board",
-        source_collab_post_id: post.id,
-        status: "published",
-        visibility: "public",
-        license_type: "cc_by",
-        created_by: userId,
-      })
-      .select("id,slug")
-      .single();
-    if (workErr || !work) throw new Error(workErr?.message ?? "Could not publish Work.");
-
-    // 3) Build the credits ledger. Host first as Creator, then each
-    //    selected member with the role they applied to (best-effort lookup),
-    //    then any free-text non-member credits.
-    const creditedIds = Array.from(new Set(data.creditedUserIds.filter((id) => id !== userId)));
-
-    let roleByUser: Record<string, string> = {};
-    if (creditedIds.length > 0) {
-      const { data: events } = await supabase
-        .from("collab_contact_events")
-        .select("sender_user_id, collab_role_id, sent_at, role:collab_roles!collab_contact_events_collab_role_id_fkey(role_name)")
-        .eq("collab_post_id", post.id)
-        .in("sender_user_id", creditedIds)
-        .order("sent_at", { ascending: true });
-      for (const ev of (events ?? []) as { sender_user_id: string; role: { role_name: string } | null }[]) {
-        if (ev.role?.role_name && !roleByUser[ev.sender_user_id]) {
-          roleByUser[ev.sender_user_id] = ev.role.role_name;
-        }
-      }
-    }
-
-    const creditRows: { work_id: string; user_id: string; role_label: string; sort_order: number }[] = [];
-    creditRows.push({ work_id: work.id, user_id: userId, role_label: "Creator", sort_order: 0 });
-    creditedIds.forEach((uid, idx) => {
-      creditRows.push({
-        work_id: work.id,
-        user_id: uid,
-        role_label: roleByUser[uid] ?? "Collaborator",
-        sort_order: idx + 1,
-      });
+    // One atomic transaction: create the Work, credit the team, notify
+    // collaborators and flip the Collab to Published. Either all of it
+    // lands or none of it does — no half-published Collabs.
+    const { data: result, error } = await supabase.rpc("publish_work_from_collab", {
+      _collab: data.collabPostId,
+      _title: data.title.trim(),
+      _description: data.description?.trim() || null,
+      _cover_url: data.coverUrl || null,
+      _primary_url: data.primaryUrl || null,
+      _category: null,
+      _credited_user_ids: Array.from(new Set(data.creditedUserIds.filter((id) => id !== userId))),
+      _extra_credits: data.extraCredits,
     });
+    if (error) throw new Error(error.message);
 
-    if (creditRows.length > 0) {
-      const { error: credErr } = await supabase.from("work_credits").insert(creditRows);
-      if (credErr) throw new Error(credErr.message);
-    }
-
-    // 4) Close the collab and link the Work back.
-    const { error: closeErr } = await supabase
-      .from("collab_posts")
-      .update({
-        status: "closed",
-        closed_at: new Date().toISOString(),
-        resulting_work_id: work.id,
-      })
-      .eq("id", post.id);
-    if (closeErr) throw new Error(closeErr.message);
-
-    return { ok: true as const, workSlug: work.slug, workId: work.id };
+    const payload = (result ?? {}) as { work_id?: string; work_slug?: string };
+    if (!payload.work_id || !payload.work_slug) throw new Error("Could not publish Work.");
+    return { ok: true as const, workSlug: payload.work_slug, workId: payload.work_id };
   });
 
 const closeSchema = z.object({ collabPostId: z.string().uuid() });
 
-export const closeCollab = createServerFn({ method: "POST" })
+/**
+ * Pause or resume submissions. Recruiting is independent of lifecycle state —
+ * pausing never moves a Collab out of In Progress.
+ */
+export const setCollabApplicationsOpen = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => closeSchema.parse(input))
+  .inputValidator((input) => closeSchema.extend({ open: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
+    const { data: post } = await context.supabase
+      .from("collab_posts")
+      .select("resulting_work_id,archived_at")
+      .eq("id", data.collabPostId)
+      .maybeSingle();
+    if (data.open && post?.resulting_work_id) {
+      throw new Error("This Collab already published its Work.");
+    }
+    if (data.open && post?.archived_at) {
+      throw new Error("Unarchive this Collab before reopening submissions.");
+    }
     const { error } = await context.supabase
       .from("collab_posts")
-      .update({ status: "closed", closed_at: new Date().toISOString() })
+      .update({
+        applications_open: data.open,
+        closed_at: data.open ? null : new Date().toISOString(),
+      })
       .eq("id", data.collabPostId)
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });
 
-export const reopenCollab = createServerFn({ method: "POST" })
+/** Archive / unarchive — an owner management state, not a creative phase. */
+export const setCollabArchived = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) => closeSchema.parse(input))
+  .inputValidator((input) => closeSchema.extend({ archived: z.boolean() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: post } = await context.supabase
-      .from("collab_posts")
-      .select("resulting_work_id")
-      .eq("id", data.collabPostId)
-      .maybeSingle();
-    if (post?.resulting_work_id) {
-      throw new Error("This collab already produced a Work — reopening would break the link.");
-    }
     const { error } = await context.supabase
       .from("collab_posts")
-      .update({ status: "open", closed_at: null })
+      .update({
+        archived_at: data.archived ? new Date().toISOString() : null,
+        ...(data.archived ? { applications_open: false } : {}),
+      })
       .eq("id", data.collabPostId)
       .eq("user_id", context.userId);
     if (error) throw new Error(error.message);
@@ -206,7 +158,8 @@ export const extendCollabDeadline = createServerFn({ method: "POST" })
       .update({ ends_on: data.endsOn })
       .eq("id", data.collabPostId)
       .eq("user_id", context.userId)
-      .eq("status", "open");
+      .is("archived_at", null)
+      .is("resulting_work_id", null);
     if (error) throw new Error(error.message);
     return { ok: true as const };
   });

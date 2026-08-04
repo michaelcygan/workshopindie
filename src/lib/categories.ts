@@ -31,6 +31,7 @@ export type Category =
   | "writing_book"
   | "build"
   | "visual"
+  | "other"
   | "critique"
   | "business"
   | "coworking"
@@ -45,6 +46,12 @@ export type Category =
 /** Stored category values that can be published as a Work (excludes topics). */
 export const WORK_CATEGORY_IDS = ["film", "music", "writing", "writing_book", "build", "visual"] as const;
 export type WorkCategory = (typeof WORK_CATEGORY_IDS)[number];
+
+/** Collabs may start uncategorised — "Other" is a valid stored primary there. */
+export const COLLAB_CATEGORY_IDS = [...WORK_CATEGORY_IDS, "other"] as const;
+export type CollabCategory = (typeof COLLAB_CATEGORY_IDS)[number];
+export const COLLAB_CATEGORIES: { id: CollabCategory; label: string }[] =
+  COLLAB_CATEGORY_IDS.map((id) => ({ id, label: categoryLabel(id) }));
 
 /** Canonical work categories, for filter tabs and pickers that want one entry per concept. */
 export const CANONICAL_WORK_CATEGORIES = WORK_CANONICAL_IDS.map((id) => ({

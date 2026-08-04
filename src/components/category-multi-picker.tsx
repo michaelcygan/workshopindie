@@ -1,6 +1,6 @@
 import { Star } from "lucide-react";
 import { toast } from "sonner";
-import { WORK_CATEGORIES, categoryClass, type WorkCategory } from "@/lib/categories";
+import { WORK_CATEGORIES, categoryClass, type Category, type WorkCategory } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
  * (3 total). The primary drives cover color and share card; extras are shown
  * as neutral chips on cards and detail views.
  */
-export function CategoryMultiPicker({
+export function CategoryMultiPicker<T extends Category = WorkCategory>({
   label = "Categories",
   primary,
   onPrimaryChange,
@@ -18,21 +18,23 @@ export function CategoryMultiPicker({
   onExtrasChange,
   onPrimaryReset,
   hint = "Tap to add up to 3. Star an extra to make it the primary — cover color and share card follow the primary.",
+  options = WORK_CATEGORIES as unknown as readonly { id: T; label: string }[],
   max = 3,
 }: {
   label?: string;
-  primary: WorkCategory;
-  onPrimaryChange: (next: WorkCategory) => void;
-  extras: WorkCategory[];
-  onExtrasChange: (next: WorkCategory[]) => void;
+  primary: T;
+  onPrimaryChange: (next: T) => void;
+  extras: T[];
+  onExtrasChange: (next: T[]) => void;
   /** Called when the primary changes so parents can clear a subtype tied to it. */
   onPrimaryReset?: () => void;
   hint?: string;
+  options?: readonly { id: T; label: string }[];
   max?: number;
 }) {
   const extrasCap = Math.max(0, max - 1);
 
-  function toggle(id: WorkCategory) {
+  function toggle(id: T) {
     if (id === primary) {
       if (extras.length === 0) return;
       const [nextPrimary, ...rest] = extras;
@@ -52,7 +54,7 @@ export function CategoryMultiPicker({
     onExtrasChange([...extras, id]);
   }
 
-  function promote(id: WorkCategory) {
+  function promote(id: T) {
     if (id === primary) return;
     const nextExtras = [primary, ...extras.filter((x) => x !== id)].slice(0, extrasCap);
     onPrimaryChange(id);
@@ -69,8 +71,8 @@ export function CategoryMultiPicker({
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        {WORK_CATEGORIES.map((c) => {
-          const id = c.id as WorkCategory;
+        {options.map((c) => {
+          const id = c.id as T;
           const isPrimary = primary === id;
           const isExtra = extras.includes(id);
           return (
