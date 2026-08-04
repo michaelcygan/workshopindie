@@ -67,7 +67,9 @@ export const publishWorkFromCollab = createServerFn({ method: "POST" })
       _category: null,
       _credited_user_ids: Array.from(new Set(data.creditedUserIds.filter((id) => id !== userId))),
       _extra_credits: data.extraCredits,
-    });
+      // The RPC accepts NULLs and falls back to the Collab's own values;
+      // generated types mark these params as required non-null.
+    } as unknown as { _collab: string });
     if (error) throw new Error(error.message);
 
     const payload = (result ?? {}) as { work_id?: string; work_slug?: string };
