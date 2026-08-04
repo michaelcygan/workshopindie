@@ -17,6 +17,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { DISCOVERABLE_STATUSES as STATUSES } from "@/lib/events/filters";
 
 /** Full column list for an event detail read. */
 export const EVENT_FIELDS =
@@ -76,9 +77,7 @@ export type DiscoveryEvent = {
  * The one canonical destination for an event anywhere in Workshop.
  * External links are never used as a card's primary target.
  */
-export function canonicalEventPath(groupSlug: string, eventSlug: string): string {
-  return `/g/${groupSlug}/e/${eventSlug}`;
-}
+export { canonicalEventPath } from "@/lib/events/filters";
 
 export function publicEventsClient(): SupabaseClient<Database> {
   const url = process.env.SUPABASE_URL ?? "";
@@ -117,7 +116,7 @@ export type DiscoveryFilters = {
 };
 
 /** Statuses that may appear in discovery — `canceled` and `draft` never do. */
-export const DISCOVERABLE_STATUSES = ["scheduled", "live", "completed"] as const;
+export { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 /**
  * Build + run the canonical discovery query. Returns [] on error rather than
@@ -154,7 +153,7 @@ export async function listDiscoveryEvents(
     .select(select)
     .is("deleted_at", null)
     .eq("visibility", "public")
-    .in("status", DISCOVERABLE_STATUSES as never);
+    .in("status", STATUSES as never);
 
   if (when === "upcoming") {
     q = q.gte("starts_at", after ?? nowIso).order("starts_at", { ascending: true });
