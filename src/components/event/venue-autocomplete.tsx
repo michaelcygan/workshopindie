@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2, MapPin, Search } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { resolveVenueAndCity } from "@/lib/venues.functions";
 
 type NominatimResult = {
   place_id: number;
@@ -12,6 +14,16 @@ type NominatimResult = {
   name?: string;
   namedetails?: { name?: string };
   address?: Record<string, string>;
+};
+
+/** Everything the event form needs to persist about a chosen venue. */
+export type VenueSelection = {
+  venue_name: string;
+  venue_address: string;
+  venue_lat?: number | null;
+  venue_lng?: number | null;
+  venue_city_id?: string | null;
+  city_label?: string | null;
 };
 
 function formatAddress(addr?: Record<string, string>): string {
@@ -35,18 +47,23 @@ function shortName(r: NominatimResult): string {
 export function VenueAutocomplete({
   venueName,
   venueAddress,
+  cityLabel,
   onChange,
 }: {
   venueName: string;
   venueAddress: string;
-  onChange: (next: { venue_name: string; venue_address: string }) => void;
+  cityLabel?: string | null;
+  onChange: (next: VenueSelection) => void;
 }) {
+  const resolveCityFn = useServerFn(resolveVenueAndCity);
   const [query, setQuery] = useState(venueName);
   const [results, setResults] = useState<NominatimResult[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resolving, setResolving] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const skipSearchRef = useRef(false);
+
 
   useEffect(() => {
     // Sync when parent resets (e.g. dialog reopens)
