@@ -998,6 +998,7 @@ function ProfilePage() {
                   return next;
                 },
                 replace: true,
+                resetScroll: false,
               });
             }}
           />
