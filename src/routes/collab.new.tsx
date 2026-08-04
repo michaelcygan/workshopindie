@@ -33,8 +33,6 @@ export const Route = createFileRoute("/collab/new")({
   validateSearch: z.object({
     group: z.string().optional(),
     fromLounge: z.string().uuid().optional(),
-    /** Allowlisted starter prompt from the desktop Now board. */
-    prompt: z.enum(COLLAB_PROMPT_IDS).optional(),
   }),
 });
 
