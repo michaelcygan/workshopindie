@@ -220,6 +220,13 @@ export function VenueAutocomplete({
           placeholder="Street, city, state"
           className="rounded-xl"
         />
+        <p className="mt-1 text-[11px] text-ink-muted">
+          {resolving
+            ? "Resolving city…"
+            : cityLabel
+              ? `City: ${cityLabel}`
+              : "Pick a venue from the list so we can resolve its city."}
+        </p>
       </div>
     </div>
   );
