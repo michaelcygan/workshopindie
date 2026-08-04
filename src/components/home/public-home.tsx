@@ -28,6 +28,21 @@ export function PublicHome() {
     staleTime: 3 * 60_000,
   });
 
+  // Three stories lead the page: featured first, topped up from the newest
+  // posts when fewer than three are admin-featured.
+  const headerPosts = data
+    ? [
+        ...data.featuredPosts,
+        ...data.latestPosts.filter(
+          (p) => !data.featuredPosts.some((f) => f.id === p.id),
+        ),
+      ].slice(0, 3)
+    : [];
+  const headerIds = new Set(headerPosts.map((p) => p.id));
+  const latestPosts = data
+    ? data.latestPosts.filter((p) => !headerIds.has(p.id))
+    : [];
+
   return (
     <>
       <Masthead />
@@ -35,8 +50,8 @@ export function PublicHome() {
         <HomeSkeleton />
       ) : data ? (
         <>
-          <PublicFeaturedStories posts={data.featuredPosts} />
-          <PublicLatestStories posts={data.latestPosts} />
+          <PublicFeaturedStories posts={headerPosts} />
+          <PublicLatestStories posts={latestPosts} />
           <PublicRecentWorkCarousel works={data.recentWorks} />
           <PublicOpenCollabs collabs={data.openCollabs} />
           <PublicWorkStories stories={data.workStories} />
@@ -52,14 +67,14 @@ export function PublicHome() {
 function Masthead() {
   return (
     <section className="border-b border-border">
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
+      <div className="mx-auto max-w-7xl px-4 py-5 md:px-6 md:py-7">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
           Workshop
         </p>
-        <h1 className="mt-2 max-w-3xl font-display text-[32px] leading-[1.08] tracking-tight text-ink md:text-[52px]">
+        <h1 className="mt-1.5 max-w-3xl font-display text-[28px] leading-[1.06] tracking-tight text-ink md:text-[42px]">
           Independent culture, happening now.
         </h1>
-        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-ink-soft">
+        <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-ink-soft md:text-[15px]">
           Read stories from independent creators, discover the Work behind them, find open
           Collabs, and join Groups where creative communities gather.
         </p>
