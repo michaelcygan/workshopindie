@@ -176,7 +176,7 @@ export function renderTodayBody(body: string): ReactNode {
           <Link
             to="/g/$slug/e/$eventSlug"
             params={{ slug: s.groupSlug, eventSlug: s.eventSlug }}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+            className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
           >
             <Calendar className="h-3 w-3" />
             {s.label}
@@ -276,7 +276,7 @@ function WorkPill({ label, slug }: { label: string; slug: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-coral/30 bg-coral/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-coral hover:bg-coral/10"
+        className="mx-0.5 inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/5 px-2 py-0.5 align-baseline text-[12px] font-medium text-destructive hover:bg-destructive/10"
       >
         <ImageIcon className="h-3 w-3" />
         {label}

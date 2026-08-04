@@ -158,7 +158,7 @@ export function EditorialChip({
     tone === "primary"
       ? "bg-primary/10 text-primary"
       : tone === "coral"
-        ? "bg-coral/15 text-coral"
+        ? "bg-destructive/15 text-destructive"
         : "bg-muted text-ink-soft";
   return (
     <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", cls)}>

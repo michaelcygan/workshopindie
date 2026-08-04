@@ -7,12 +7,12 @@ const META: Record<string, { label: string; icon: any; className: string }> = {
   founding_creator: {
     label: "Founding",
     icon: Sparkles,
-    className: "bg-gradient-to-r from-signal/15 to-coral/15 text-signal ring-1 ring-signal/30",
+    className: "bg-gradient-to-r from-signal/15 to-destructive/15 text-signal ring-1 ring-signal/30",
   },
   city_host: {
     label: "City Host",
     icon: MapPin,
-    className: "bg-coral/10 text-coral ring-1 ring-coral/30",
+    className: "bg-destructive/10 text-destructive ring-1 ring-destructive/30",
   },
   verified_creator: {
     label: "Verified",

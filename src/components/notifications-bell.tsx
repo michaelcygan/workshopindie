@@ -272,7 +272,7 @@ export function NotificationsBell() {
           <Bell className="h-4 w-4" />
           {unread > 0 && (
             <span
-              className={`absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-coral px-1 text-[10px] font-semibold text-background ${
+              className={`absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-background ${
                 pulse ? "animate-in zoom-in-50 duration-200" : ""
               }`}
             >

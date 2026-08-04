@@ -239,10 +239,10 @@ function DmsIndex() {
           <p className="mt-1 text-sm text-ink-muted">
             <span className={`mr-2 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
               counts.unread > 0
-                ? "bg-coral/15 text-coral"
+                ? "bg-destructive/15 text-destructive"
                 : "bg-primary/10 text-primary"
             }`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${counts.unread > 0 ? "bg-coral" : "bg-primary"} ${counts.unread > 0 ? "animate-pulse" : ""}`} />
+              <span className={`h-1.5 w-1.5 rounded-full ${counts.unread > 0 ? "bg-destructive" : "bg-primary"} ${counts.unread > 0 ? "animate-pulse" : ""}`} />
               Inbox
             </span>
             {counts.all > 0
@@ -329,12 +329,12 @@ function DmsIndex() {
                   unread > 0 ? ` — ${unread} unread` : ""
                 }${conv.last_message_preview ? ` — last message: ${conv.last_message_preview}` : ""}`}
                 className={`group flex w-full items-center gap-3 rounded-2xl border bg-surface px-3.5 py-3 text-left transition hover:bg-muted/40 hover:shadow-soft ${
-                  unread > 0 ? "border-coral/40" : "border-border"
+                  unread > 0 ? "border-destructive/40" : "border-border"
                 }`}
               >
                 <Avatar className="h-12 w-12 shrink-0 ring-1 ring-border">
                   {other?.avatar_url ? <AvatarImage src={other.avatar_url} alt="" /> : null}
-                  <AvatarFallback className="bg-gradient-to-br from-primary/15 to-coral/15 font-display text-sm text-ink">
+                  <AvatarFallback className="bg-gradient-to-br from-primary/15 to-destructive/15 font-display text-sm text-ink">
                     {avatarInitials(other)}
                   </AvatarFallback>
                 </Avatar>
@@ -365,7 +365,7 @@ function DmsIndex() {
                   </p>
                 </div>
                 {unread > 0 && (
-                  <span className="ml-2 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-coral shadow-[0_0_0_3px_color-mix(in_oklab,var(--coral)_25%,transparent)]" aria-hidden />
+                  <span className="ml-2 inline-flex h-2.5 w-2.5 shrink-0 rounded-full bg-destructive shadow-[0_0_0_3px_color-mix(in_oklab,var(--coral)_25%,transparent)]" aria-hidden />
                 )}
               </button>
             </li>

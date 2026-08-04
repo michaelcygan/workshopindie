@@ -118,7 +118,7 @@ function ReportsQueue() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="outline" className="rounded-full">{r.entity_type}</Badge>
-                    <Badge className="rounded-full bg-coral/10 text-coral hover:bg-coral/10">{r.reason}</Badge>
+                    <Badge className="rounded-full bg-destructive/10 text-destructive hover:bg-destructive/10">{r.reason}</Badge>
                     <span className="text-xs text-ink-muted">{new Date(r.created_at).toLocaleString()}</span>
                   </div>
                   {r.description && (
