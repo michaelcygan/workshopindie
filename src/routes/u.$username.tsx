@@ -562,7 +562,13 @@ function ProfilePage() {
 
   const setTab = (t: ProfileTab) => {
     if (t === "collabs") markCollabsSeen();
-    navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
+    navigate({
+      to: "/u/$username",
+      params: { username },
+      search: { tab: t },
+      replace: true,
+      resetScroll: false,
+    });
   };
 
 
@@ -952,6 +958,7 @@ function ProfilePage() {
                   params: { username },
                   search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
                   replace: true,
+                  resetScroll: false,
                 })
               }
             />
@@ -977,6 +984,7 @@ function ProfilePage() {
                 params: { username },
                 search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
                 replace: true,
+                resetScroll: false,
               })
             }
             onOpenChange={(v: boolean) => {
@@ -990,6 +998,7 @@ function ProfilePage() {
                   return next;
                 },
                 replace: true,
+                resetScroll: false,
               });
             }}
           />
@@ -1069,6 +1078,7 @@ function ProfileStats({
           params={{ username }}
           search={{ tab: item.tab }}
           replace
+          resetScroll={false}
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
         >
           <span className="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-muted px-1.5 py-0 text-[11px] font-display text-ink">
