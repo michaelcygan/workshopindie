@@ -130,6 +130,31 @@ export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(asyn
 
 
 
+/**
+ * Public: the /events feed. Filters run through the shared discovery layer so
+ * the feed can never disagree with group tabs, city pages, or the Now board.
+ */
+export const listPublicEvents = createServerFn({ method: "GET" })
+  .inputValidator((i) =>
+    z
+      .object({
+        when: z.enum(["upcoming", "past"]).default("upcoming"),
+        format: z.enum(["all", "in_person", "online"]).default("all"),
+        cityId: z.string().uuid().nullish(),
+        limit: z.number().int().min(1).max(100).default(60),
+      })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
+    return listDiscoveryEvents({
+      when: data.when,
+      format: data.format,
+      cityId: data.cityId ?? null,
+      limit: data.limit,
+    });
+  });
+
 export const listGroupEvents = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupId: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
@@ -142,10 +167,12 @@ export const listGroupEvents = createServerFn({ method: "GET" })
     if (linkErr) throw new Error(linkErr.message);
     const eventIds = (links ?? []).map((l) => l.event_id as string);
     if (eventIds.length === 0) return [];
+    const { DISCOVERABLE_STATUSES } = await import("@/lib/events/discovery.server");
     const { data: rows, error } = await supabase
       .from("group_events")
       .select(EVENT_FIELDS)
       .in("id", eventIds)
+      .in("status", DISCOVERABLE_STATUSES as never)
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })
       .limit(50);
@@ -174,16 +201,20 @@ export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
     const { data: mem } = await supabase.from("group_members").select("group_id").eq("user_id", userId);
     const ids = (mem ?? []).map((r) => r.group_id);
     if (ids.length === 0) return [];
+    const { DISCOVERABLE_STATUSES, sanitizeDiscoveryRows } = await import(
+      "@/lib/events/discovery.server"
+    );
     const { data, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`)
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url,deleted_at)`)
       .in("group_id", ids)
+      .in("status", DISCOVERABLE_STATUSES as never)
       .gt("starts_at", new Date().toISOString())
       .is("deleted_at", null)
       .order("starts_at", { ascending: true })
       .limit(12);
     if (error) throw new Error(error.message);
-    return data ?? [];
+    return sanitizeDiscoveryRows(data) as unknown as NonNullable<typeof data>;
   });
 
 const rsvpSchema = z.object({

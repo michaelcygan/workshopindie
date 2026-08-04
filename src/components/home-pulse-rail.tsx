@@ -355,8 +355,9 @@ async function fetchPulse(): Promise<Pulse[]> {
       .select(
         "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug)",
       )
-      .eq("status", "scheduled")
+      .in("status", ["scheduled", "live"] as never)
       .eq("visibility", "public")
+      .is("deleted_at", null)
       .gte("starts_at", today)
       .order("starts_at", { ascending: true })
       .limit(4),

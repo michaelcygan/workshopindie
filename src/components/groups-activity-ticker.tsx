@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { CalendarDays, MessageSquare, Sparkles, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 type ActivityItem = {
   id: string;
@@ -31,6 +32,8 @@ async function fetchGroupsActivity(): Promise<ActivityItem[]> {
       .select(
         "id,title,created_at,group:groups!group_events_group_id_fkey!inner(slug,name,accent_color,visibility,deleted_at)",
       )
+      .in("status", DISCOVERABLE_STATUSES as never)
+      .is("deleted_at", null)
       .gte("created_at", sinceIso)
       .order("created_at", { ascending: false })
       .limit(12),

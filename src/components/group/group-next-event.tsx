@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 
 interface Props {
   group: { id: string; slug: string };
@@ -48,6 +49,7 @@ export function GroupNextEvent({ group }: Props) {
         .from("group_events")
         .select("id,slug,title,starts_at,venue_name,going_count,cover_url")
         .eq("group_id", group.id)
+        .in("status", DISCOVERABLE_STATUSES as never)
         .is("deleted_at", null)
         .gte("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true })

@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Input } from "@/components/ui/input";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
+import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
@@ -257,6 +258,7 @@ function GroupPage() {
         .from("group_events")
         .select("slug,title,starts_at")
         .eq("group_id", group.id)
+        .in("status", DISCOVERABLE_STATUSES as never)
         .is("deleted_at", null)
         .gt("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true })
@@ -416,6 +418,7 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
         .from("group_events")
         .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url")
         .eq("group_id", group.id)
+        .in("status", DISCOVERABLE_STATUSES as never)
         .is("deleted_at", null)
         .order("starts_at", { ascending: true });
       if (error) throw error;
@@ -677,19 +680,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
     </>
   );
 
-  if (isExternal) {
-    return (
-      <a
-        href={ev.external_url!}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-      >
-        {Inner}
-      </a>
-    );
-  }
-
+  // Canonical destination only — outbound links live on the event page.
   return (
     <Link
       to="/g/$slug/e/$eventSlug"
