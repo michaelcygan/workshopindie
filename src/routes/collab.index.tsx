@@ -415,7 +415,7 @@ function CollabPage() {
 
       <div className="mt-10">
         <div className="mb-3 flex items-center gap-3 px-1">
-          <h2 className="font-display text-lg text-ink">Open Collabs</h2>
+          <h2 className="font-display text-lg text-ink">Collabs looking for people</h2>
           <span className="h-px flex-1 bg-border" />
         </div>
         {isLoading ? (

@@ -52,12 +52,16 @@ export const getUsageSummary = createServerFn({ method: "GET" })
       .eq("created_by", context.userId)
       .eq("status", "published");
 
-    // Active open collabs count.
+    // Collabs actively recruiting: in progress, not archived, no published Work,
+    // still accepting collaborators. Mirrors the enforce_collabs_quota trigger.
     const { count: openCollabsCount } = await context.supabase
       .from("collab_posts")
       .select("id", { count: "exact", head: true })
       .eq("user_id", context.userId)
-      .eq("status", "open");
+      .is("archived_at", null)
+      .is("resulting_work_id", null)
+      .eq("applications_open", true)
+      .not("status", "in", "(draft,removed,archived)");
 
     return {
       tier: entitlements.tier,
