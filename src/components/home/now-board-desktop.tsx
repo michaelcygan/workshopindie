@@ -66,7 +66,6 @@ function LaneRow({ item }: { item: HomeNowItem }) {
 
 export function NowBoardDesktop({ data }: { data: MemberHomePayload }) {
   const {
-    board,
     current,
     stepAll,
     paused,
