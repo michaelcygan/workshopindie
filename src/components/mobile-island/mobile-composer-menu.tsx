@@ -108,7 +108,7 @@ export function MobileComposerMenu({ open, onClose, menuId, isAuthed }: Props) {
                     "active:scale-[0.99]",
                   )}
                 >
-                  <span className="gradient-warm grid h-10 w-10 shrink-0 place-items-center rounded-xl text-primary-foreground shadow-sm">
+                  <span className="bg-primary grid h-10 w-10 shrink-0 place-items-center rounded-lg text-primary-foreground shadow-sm">
                     <Icon className="h-4.5 w-4.5" aria-hidden="true" />
                   </span>
                   <span className="min-w-0 flex-1">

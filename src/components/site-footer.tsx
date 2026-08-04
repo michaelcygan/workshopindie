@@ -80,7 +80,7 @@ export function SiteFooter() {
               {user ? (
                 <Link
                   to="/me"
-                  className="inline-flex items-center rounded-full border border-border bg-surface px-5 py-2 text-sm font-medium text-ink hover:bg-muted"
+                  className="inline-flex items-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-medium text-ink hover:bg-muted"
                 >
                   Go to your profile
                 </Link>
@@ -110,7 +110,7 @@ export function SiteFooter() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="your@email.com"
-                  className="min-w-0 flex-1 rounded-full border border-border bg-surface px-4 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-surface px-4 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none"
                   autoComplete="email"
                 />
                 {/* Honeypot — hidden from users, tempting to bots */}

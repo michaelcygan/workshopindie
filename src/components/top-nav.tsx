@@ -37,8 +37,8 @@ import { NotificationsBell } from "@/components/notifications-bell";
 import { MessagesInboxButton } from "@/components/messages-inbox-button";
 import { GroupsNavItem } from "@/components/groups-nav-item";
 
-const navLinkBase = "rounded-full px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition";
-const navLinkActive = "rounded-full px-3 py-1.5 text-sm text-ink bg-muted";
+const navLinkBase = "rounded-md px-3 py-1.5 text-sm text-ink-soft hover:bg-muted transition-colors";
+const navLinkActive = "rounded-md px-3 py-1.5 text-sm text-ink bg-muted";
 
 export function TopNav() {
   const { user, loading } = useAuth();
@@ -95,7 +95,7 @@ export function TopNav() {
               <Button
                 data-firstrun="collab"
                 size="sm"
-                className="hidden md:inline-flex rounded-full gap-1.5"
+                className="hidden md:inline-flex gap-1.5"
               >
                 <Plus className="h-4 w-4" /> Create
               </Button>
@@ -209,12 +209,12 @@ export function TopNav() {
           ) : (
             <>
               <Link to="/login" className="hidden md:block">
-                <Button size="sm" variant="ghost" className="rounded-full">
+                <Button size="sm" variant="ghost">
                   Sign in
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" className="rounded-full">
+                <Button size="sm">
                   Join
                 </Button>
               </Link>

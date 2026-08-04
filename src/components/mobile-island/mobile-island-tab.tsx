@@ -25,7 +25,7 @@ export function MobileIslandTab({ tab, active, avatar, layoutIdGroup }: Props) {
       aria-label={tab.label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative inline-flex min-h-11 items-center justify-center rounded-full px-3 py-2 outline-none",
+        "relative inline-flex min-h-11 items-center justify-center rounded-lg px-3 py-2 outline-none",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
         active ? "text-ink" : "text-ink-muted hover:text-ink",
         "transition-colors",
@@ -34,7 +34,7 @@ export function MobileIslandTab({ tab, active, avatar, layoutIdGroup }: Props) {
       {active && (
         <motion.span
           layoutId={layoutIdGroup}
-          className="absolute inset-0 -z-0 rounded-full bg-primary/12 ring-1 ring-primary/15"
+          className="absolute inset-0 -z-0 rounded-lg bg-primary/10 ring-1 ring-primary/15"
           transition={
             reduced
               ? { duration: 0 }

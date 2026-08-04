@@ -23,12 +23,12 @@ export function MobileBrandHeader() {
           ) : (
             <>
               <Link to="/login">
-                <Button size="sm" variant="ghost" className="h-8 rounded-full px-3 text-xs">
+                <Button size="sm" variant="ghost" className="h-8 px-3 text-xs">
                   Sign in
                 </Button>
               </Link>
               <Link to="/signup">
-                <Button size="sm" className="h-8 rounded-full px-3 text-xs">
+                <Button size="sm" className="h-8 px-3 text-xs">
                   Join
                 </Button>
               </Link>
