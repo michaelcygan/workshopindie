@@ -562,7 +562,13 @@ function ProfilePage() {
 
   const setTab = (t: ProfileTab) => {
     if (t === "collabs") markCollabsSeen();
-    navigate({ to: "/u/$username", params: { username }, search: { tab: t }, replace: true });
+    navigate({
+      to: "/u/$username",
+      params: { username },
+      search: { tab: t },
+      replace: true,
+      resetScroll: false,
+    });
   };
 
 
