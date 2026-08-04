@@ -1,9 +1,9 @@
-import { CATEGORY_LABELS, categoryClass, type Category } from "@/lib/categories";
+import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { cn } from "@/lib/utils";
 
 /**
  * Typographic stand-in for entities with no cover image.
- * Sets the category label in the brand display face on the category's tint.
+ * Monochrome by design — the category label carries the meaning, not a tint.
  */
 export function CategoryPlaceholder({
   category,
@@ -17,8 +17,7 @@ export function CategoryPlaceholder({
     <div
       aria-hidden
       className={cn(
-        "flex items-center justify-center overflow-hidden rounded-md border border-border/70 px-1 text-center",
-        categoryClass(category),
+        "flex items-center justify-center overflow-hidden rounded-md border border-border/70 bg-surface-2 px-1 text-center text-ink-muted",
         className,
       )}
     >
@@ -28,3 +27,4 @@ export function CategoryPlaceholder({
     </div>
   );
 }
+
