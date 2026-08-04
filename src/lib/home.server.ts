@@ -392,7 +392,14 @@ export async function todaySummariesServer(
       latestAt: latest.created_at,
     });
   }
-  return out.sort((a, b) => b.postCount - a.postCount).slice(0, 4);
+  // Recency and volume together: a Group talking right now should beat one
+  // that merely accumulated more posts earlier in the day.
+  const nowMs = Date.now();
+  const score = (s: HomeTodaySummary) => {
+    const ageH = s.latestAt ? (nowMs - new Date(s.latestAt).getTime()) / 3_600_000 : 24;
+    return Math.log2(s.postCount + 1) + 3 / (1 + Math.max(0, ageH));
+  };
+  return out.sort((a, b) => score(b) - score(a)).slice(0, 4);
 }
 
 /** Active Lounges (instant_rooms) inside the viewer's Groups, with presence. */
