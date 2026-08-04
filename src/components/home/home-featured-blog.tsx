@@ -162,7 +162,7 @@ export function HomeFeaturedBlog({
 
       <div className="mt-2 rounded-3xl border border-border bg-surface p-3 md:p-4">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">
             {isFallback ? "Latest from the Blog" : "Featured from the Blog"}
           </span>
           {multi && (

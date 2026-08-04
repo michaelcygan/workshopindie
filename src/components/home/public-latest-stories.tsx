@@ -48,7 +48,7 @@ export function PublicLatestStories({ posts }: { posts: PublicBlogCard[] }) {
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             The Blog
           </p>
           <h2 id="latest-stories" className="mt-1 font-display text-[26px] text-ink md:text-[34px]">
@@ -121,7 +121,7 @@ export function PublicMoreStories({ posts }: { posts: PublicBlogCard[] }) {
     >
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-ink-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-muted">
             More from the Blog
           </p>
           <h2 id="more-stories" className="mt-1 font-display text-[24px] text-ink md:text-[30px]">
