@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HomeSection } from "@/components/home-section";
 import { WorkStoriesCarousel } from "@/components/home/work-stories-carousel";
 import { HomeFeaturedBlog } from "@/components/home/home-featured-blog";
-import { NowModule } from "@/components/home/now-module";
+import { NowBoardMobile } from "@/components/home/now-board-mobile";
 import { NowBoardDesktop } from "@/components/home/now-board-desktop";
 import { YourWorkshop } from "@/components/home/your-workshop";
 import { BlogRail } from "@/components/home/blog-rail";
