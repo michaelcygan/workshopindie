@@ -61,31 +61,29 @@ export function TopNav() {
 
         {/* Center: primary nav */}
         <nav className="flex flex-1 items-center justify-center gap-1">
-          {loading ? null : user ? (
-            <>
-              <GroupsNavItem />
-              <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Collabs
-              </Link>
-              <MoreNavMenu />
-            </>
-          ) : (
+          {loading ? null : (
             <>
               <Link to="/blog" className={navLinkBase} activeProps={{ className: navLinkActive }}>
                 Blog
               </Link>
-              <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Gallery
+              <Link to="/groups" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Groups
               </Link>
               <Link to="/collab" className={navLinkBase} activeProps={{ className: navLinkActive }}>
                 Collabs
               </Link>
-              <Link to="/groups" className={navLinkBase} activeProps={{ className: navLinkActive }}>
-                Groups
+              <Link to="/gallery" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                Gallery
               </Link>
+              {user ? (
+                <Link to="/events" className={navLinkBase} activeProps={{ className: navLinkActive }}>
+                  Events
+                </Link>
+              ) : null}
             </>
           )}
         </nav>
+
 
         <div className="flex flex-1 items-center justify-end gap-2">
           {loading ? null : user ? (
