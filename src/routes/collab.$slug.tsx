@@ -799,7 +799,7 @@ function CollabDetail() {
                             </div>
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
-                          {!isOwner && post.status === "open" && (
+                          {!isOwner && acceptingNow && (
                             <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
@@ -812,7 +812,7 @@ function CollabDetail() {
               </>
             )}
 
-            {!isOwner && post.status === "open" && post.accepts_suggestions && !isShipped && (
+            {!isOwner && acceptingNow && (
               <div className={cn("rounded-2xl border border-dashed border-border bg-surface/60 p-4", roles.length > 0 ? "mt-4" : "")}>
                 <h3 className="font-medium text-ink">Suggest how you can help</h3>
                 <p className="mt-1 text-sm text-ink-muted">
