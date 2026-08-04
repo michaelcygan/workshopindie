@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import type { PublicCollabCall } from "@/lib/home-types";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
+import { CategoryPlaceholder } from "@/components/home/category-placeholder";
 
 /**
  * An arts-publication "open calls" board — typography and rules only.
@@ -40,8 +41,13 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
               <Link
                 to="/collab/$slug"
                 params={{ slug: c.slug }}
-                className="group block py-5 transition"
+                className="group flex items-start gap-3 py-5 transition md:gap-4"
               >
+                <CategoryPlaceholder
+                  category={c.category as Category}
+                  className="mt-0.5 h-16 w-16 shrink-0 md:h-24 md:w-24"
+                />
+                <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
                   <span className="text-coral">Open</span>
                   <span aria-hidden>·</span>
@@ -67,6 +73,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
                     {c.extraRoles > 0 ? ` +${c.extraRoles} more` : ""}
                   </p>
                 ) : null}
+                </div>
               </Link>
             </li>
           ))}
