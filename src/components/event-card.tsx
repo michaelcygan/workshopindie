@@ -111,22 +111,8 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
     </>
   );
 
-  if (isExternal) {
-    return (
-      <a
-        href={event.external_url!}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cn(
-          "group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift",
-          className,
-        )}
-      >
-        {Body}
-      </a>
-    );
-  }
-
+  // Every card — including externally-sourced events — terminates on the
+  // canonical Workshop event page. The outbound link lives on that page.
   return (
     <Link
       to="/g/$slug/e/$eventSlug"

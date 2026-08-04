@@ -680,19 +680,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
     </>
   );
 
-  if (isExternal) {
-    return (
-      <a
-        href={ev.external_url!}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="group flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift"
-      >
-        {Inner}
-      </a>
-    );
-  }
-
+  // Canonical destination only — outbound links live on the event page.
   return (
     <Link
       to="/g/$slug/e/$eventSlug"
