@@ -38,13 +38,12 @@ function shouldHide(pathname: string): boolean {
 export function SiteFooter() {
   const matches = useMatches();
   const pathname = matches[matches.length - 1]?.pathname ?? "/";
-  if (shouldHide(pathname)) return null;
-
   const { user } = useAuth();
   const subscribe = useServerFn(subscribeToNewsletter);
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [busy, setBusy] = useState(false);
+
 
   async function onSubscribe(e: React.FormEvent) {
     e.preventDefault();
@@ -62,7 +61,10 @@ export function SiteFooter() {
     }
   }
 
+  if (shouldHide(pathname)) return null;
+
   return (
+
     <footer className="mt-16 border-t border-border/70 bg-surface-2/40">
       <div className="mx-auto max-w-7xl px-4 py-12 md:px-6 md:py-16">
         <div className="grid gap-10 md:grid-cols-3">
