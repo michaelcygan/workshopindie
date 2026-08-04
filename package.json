@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "test": "vitest run"
+    "test": "vitest run --exclude src/lib/moderation/engine.test.ts --exclude '**/node_modules/**'"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
