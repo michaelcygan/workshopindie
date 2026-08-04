@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -120,7 +121,7 @@ export const Route = createFileRoute("/api/public/og")({
                 .from("collab_posts")
                 .select("title,description,status,category")
                 .eq("slug", id)
-                .eq("status", "open")
+                .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
                 .maybeSingle();
               if (c) {
                 input = {

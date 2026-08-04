@@ -1,3 +1,4 @@
+import { NON_PUBLIC_STATUSES, RECRUITING_DEADLINE_OR } from "@/lib/collab/query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -77,7 +78,7 @@ export function WorkshopCollabsPanel({
         .from("collab_posts")
         .select("id,title,slug,category,description,user_id,roles:collab_roles(id,role_name,quantity,sort_order)")
         .in("user_id", userIds)
-        .eq("status", "open")
+        .is("archived_at", null).not("status", "in", NON_PUBLIC_STATUSES).is("resulting_work_id", null).eq("applications_open", true).or(RECRUITING_DEADLINE_OR())
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
