@@ -251,7 +251,7 @@ function MemberBlogEditorPage() {
           </Button>
           {!isPublished && (
             <Button
-              className="h-11 shrink-0 rounded-full px-5 gradient-motion text-primary-foreground"
+              className="h-11 shrink-0 px-5 bg-primary text-primary-foreground"
               disabled={(!access.canPublish && !publishBlockedByQuota) || publishMut.isPending}
               onClick={() => publishBlockedByQuota ? setBlogGateOpen(true) : publishMut.mutate()}
             >

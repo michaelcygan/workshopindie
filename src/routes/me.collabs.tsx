@@ -401,7 +401,7 @@ function MyCollabsPage() {
                 {r.work?.cover_url ? (
                   <img src={r.work.cover_url} alt="" className="h-14 w-14 rounded-xl object-cover" />
                 ) : (
-                  <div className="h-14 w-14 rounded-xl gradient-motion" />
+                  <div className="h-14 w-14 rounded-xl bg-secondary" />
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium text-ink">{r.work?.title ?? r.title}</p>

@@ -46,7 +46,7 @@ export function PlusGate({ open, onOpenChange, title, description, reason }: Pro
             </div>
 
             <div className="mx-auto mt-6 flex max-w-sm flex-col gap-2 pb-6">
-              <Button size="lg" className="gradient-motion rounded-full gap-2 text-primary-foreground" onClick={() => setCheckout(true)}>
+              <Button size="lg" className="gap-2 bg-primary text-primary-foreground" onClick={() => setCheckout(true)}>
                 <Sparkles className="h-4 w-4" /> Go Plus — $4.99/mo
               </Button>
               <button

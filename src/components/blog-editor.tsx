@@ -534,7 +534,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
             {cover ? (
               <img src={cover} alt="" className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full gradient-motion" />
+              <div className="aspect-video w-full bg-secondary" />
             )}
             <div className="p-3">
               <div className="text-xs text-ink-muted">workshopindie.com</div>

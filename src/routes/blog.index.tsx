@@ -71,7 +71,7 @@ function PostRow({ post }: { post: BlogListItem }) {
           loading="lazy"
         />
       ) : (
-        <div className="h-20 w-20 shrink-0 rounded-xl gradient-motion" aria-hidden />
+        <div className="h-20 w-20 shrink-0 rounded-xl bg-secondary" aria-hidden />
       )}
       <div className="min-w-0 flex-1">
         <div className="font-display text-[17px] leading-snug text-ink line-clamp-2">{post.title}</div>
@@ -99,7 +99,7 @@ function PostCard({ post }: { post: BlogListItem }) {
           loading="lazy"
         />
       ) : (
-        <div className="aspect-[16/10] w-full gradient-motion" aria-hidden />
+        <div className="aspect-[16/10] w-full bg-secondary" aria-hidden />
       )}
       <div className="p-5">
         <div className="font-display text-xl leading-snug text-ink group-hover:underline">

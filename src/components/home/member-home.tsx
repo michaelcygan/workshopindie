@@ -47,7 +47,7 @@ function CircleCard({ item }: { item: HomeCircleStory }) {
           className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="aspect-[16/10] w-full gradient-motion opacity-60" />
+        <div className="aspect-[16/10] w-full bg-secondary opacity-60" />
       )}
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <span className="inline-flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-ink-muted">
@@ -250,7 +250,7 @@ export function MemberHome() {
                     className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
                   />
                 ) : (
-                  <div className="aspect-[16/10] w-full gradient-motion opacity-60" />
+                  <div className="aspect-[16/10] w-full bg-secondary opacity-60" />
                 )}
                 <div className="p-4">
                   <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-ink-muted">

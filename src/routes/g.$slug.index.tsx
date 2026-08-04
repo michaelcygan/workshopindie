@@ -638,7 +638,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
   const Inner = (
     <>
       <div
-        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
+        className={cn("relative h-32 w-full", ev.cover_url ? "bg-cover bg-center" : "bg-secondary")}
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
       >
         <div className="absolute left-3 top-3 rounded-xl bg-background/90 px-2 py-1 text-center shadow-soft">

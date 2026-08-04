@@ -142,7 +142,7 @@ function MyBlogPage() {
           </Button>
           <Button
             size="sm"
-            className="rounded-full gradient-motion text-primary-foreground"
+            className="bg-primary text-primary-foreground"
             disabled={!acc?.canCreateDraft || createMut.isPending}
             onClick={() => createMut.mutate()}
           >
@@ -180,7 +180,7 @@ function MyBlogPage() {
             </p>
             {acc?.canCreateDraft && (
               <Button
-                className="mt-4 rounded-full gradient-motion text-primary-foreground"
+                className="mt-4 bg-primary text-primary-foreground"
                 onClick={() => createMut.mutate()}
                 disabled={createMut.isPending}
               >
@@ -206,7 +206,7 @@ function MyBlogPage() {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="hidden h-16 w-24 shrink-0 rounded-lg gradient-motion sm:block" />
+                    <div className="hidden h-16 w-24 shrink-0 rounded-lg bg-secondary sm:block" />
                   )}
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">

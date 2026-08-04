@@ -45,7 +45,7 @@ function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: strin
             }}
           />
         ) : (
-          <div className="aspect-[16/10] w-full gradient-motion" />
+          <div className="aspect-[16/10] w-full bg-secondary" />
         )}
       </Link>
 

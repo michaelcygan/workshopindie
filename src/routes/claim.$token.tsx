@@ -79,7 +79,7 @@ function ClaimPage() {
                 : `You're Plus until ${result.accessEndsAt ? new Date(result.accessEndsAt).toLocaleDateString() : "—"}.`}
             </p>
             <Link to="/me" className="inline-block">
-              <Button className="gradient-motion rounded-full text-primary-foreground">Go to my dashboard</Button>
+              <Button className="bg-primary text-primary-foreground">Go to my dashboard</Button>
             </Link>
           </div>
         ) : (
@@ -87,7 +87,7 @@ function ClaimPage() {
             <Button
               onClick={onClaim}
               disabled={busy}
-              className="gradient-motion mt-6 w-full rounded-full text-primary-foreground"
+              className="mt-6 w-full bg-primary text-primary-foreground"
             >
               {busy ? "Claiming…" : "Claim Workshop Plus"}
             </Button>

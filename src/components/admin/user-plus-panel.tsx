@@ -122,7 +122,7 @@ export function UserPlusPanel({ userId }: { userId: string }) {
               </div>
             )}
             <Button
-              className="gradient-motion rounded-full text-primary-foreground"
+              className="bg-primary text-primary-foreground"
               disabled={create.isPending || (benefitType === "months" && !Number(months))}
               onClick={() => create.mutate()}
             >

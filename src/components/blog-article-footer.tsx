@@ -73,7 +73,7 @@ export function BlogArticleFooter({
           ) : (
             <Link
               to="/signup"
-              className="gradient-motion inline-flex items-center rounded-full px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               Join Workshop
             </Link>
@@ -110,7 +110,7 @@ export function BlogArticleFooter({
             <button
               type="submit"
               disabled={busy}
-              className="gradient-motion rounded-full px-5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
             >
               {busy ? "…" : "Subscribe"}
             </button>

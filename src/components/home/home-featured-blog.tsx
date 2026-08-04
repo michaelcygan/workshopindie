@@ -39,7 +39,7 @@ function Slide({ post }: { post: HomeBlogCard }) {
             className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
           />
         ) : (
-          <div className="flex h-full w-full items-end gradient-motion p-2 opacity-80">
+          <div className="flex h-full w-full items-end bg-secondary p-2 opacity-80">
             <span className="font-display text-[11px] uppercase tracking-widest text-ink/70">
               Workshop
             </span>

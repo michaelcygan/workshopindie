@@ -131,7 +131,7 @@ export function ProfileBlogTab({
                   decoding="async"
                 />
               ) : (
-                <div className="aspect-[16/10] w-full gradient-motion" />
+                <div className="aspect-[16/10] w-full bg-secondary" />
               )}
               <div className="p-3 md:p-4">
                 <div className="text-[10px] uppercase tracking-wider text-ink-muted">

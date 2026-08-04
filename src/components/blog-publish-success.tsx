@@ -119,7 +119,7 @@ export function BlogPublishSuccessDialog({
         <div className="mt-1 space-y-2">
           {canNativeShare && (
             <Button
-              className="h-12 w-full justify-center gap-2 rounded-full gradient-motion text-primary-foreground"
+              className="h-12 w-full justify-center gap-2 bg-primary text-primary-foreground"
               onClick={nativeShare}
             >
               <Share2 className="h-4 w-4" /> Share post

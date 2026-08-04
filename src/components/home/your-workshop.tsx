@@ -34,7 +34,7 @@ function Cover({
     );
   }
   return (
-    <div className="flex aspect-[16/10] w-full items-end gradient-motion p-3 opacity-80">
+    <div className="flex aspect-[16/10] w-full items-end bg-secondary p-3 opacity-80">
       <span className="line-clamp-2 font-display text-sm leading-snug text-ink/80">{title}</span>
     </div>
   );

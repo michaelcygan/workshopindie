@@ -21,7 +21,7 @@ function BlogRailCard({ post }: { post: HomeBlogCard }) {
           className="aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.03]"
         />
       ) : (
-        <div className="flex aspect-[16/10] w-full flex-col justify-end gradient-motion p-4 opacity-85">
+        <div className="flex aspect-[16/10] w-full flex-col justify-end bg-secondary p-4 opacity-85">
           <span className="text-[10px] uppercase tracking-[0.12em] text-ink/60">Workshop</span>
           <span className="line-clamp-3 font-display text-lg leading-snug text-ink/85">
             {post.title}

@@ -51,11 +51,11 @@ function RedeemPage() {
           <div className="mt-6">
             <p className="text-sm text-ink">You're Plus until <span className="font-medium">{new Date(done).toLocaleDateString()}</span>.</p>
             <Link to="/me" className="mt-4 inline-block">
-              <Button className="gradient-motion rounded-full text-primary-foreground">Go to my dashboard</Button>
+              <Button className="bg-primary text-primary-foreground">Go to my dashboard</Button>
             </Link>
           </div>
         ) : (
-          <Button onClick={onRedeem} disabled={busy} className="gradient-motion mt-6 w-full rounded-full text-primary-foreground">
+          <Button onClick={onRedeem} disabled={busy} className="mt-6 w-full bg-primary text-primary-foreground">
             {busy ? "Redeeming…" : "Redeem Plus"}
           </Button>
         )}

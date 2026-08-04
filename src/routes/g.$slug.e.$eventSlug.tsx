@@ -219,7 +219,7 @@ function EventPage() {
     <main className="pb-28 md:pb-20">
       {/* Cover */}
       <div
-        className={cn("relative h-56 w-full md:h-80", ev.cover_url ? "bg-cover bg-center" : "gradient-motion")}
+        className={cn("relative h-56 w-full md:h-80", ev.cover_url ? "bg-cover bg-center" : "bg-secondary")}
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
       >
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-background" />

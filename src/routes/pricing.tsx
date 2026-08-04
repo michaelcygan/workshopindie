@@ -57,7 +57,7 @@ function PricingPage() {
             isPlus ? (
               <Button variant="outline" className="w-full rounded-full" disabled>You're Plus ✨</Button>
             ) : (
-              <Button onClick={handleGoPlus} className="gradient-motion w-full rounded-full gap-2 text-primary-foreground">
+              <Button onClick={handleGoPlus} className="w-full gap-2 bg-primary text-primary-foreground">
                 <Sparkles className="h-4 w-4" /> Start 14-day free trial
               </Button>
             )

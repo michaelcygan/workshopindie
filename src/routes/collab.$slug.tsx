@@ -642,7 +642,7 @@ function CollabDetail() {
             {resultingWork.cover_url ? (
               <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
             ) : (
-              <div className="aspect-video w-full gradient-motion" />
+              <div className="aspect-video w-full bg-secondary" />
             )}
             <div className="flex items-center gap-3 p-4">
               <div className="min-w-0 flex-1">

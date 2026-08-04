@@ -81,7 +81,7 @@ export function FeaturedHero({ post, inCarousel = false }: { post: BlogListItem;
               className="aspect-[16/10] w-full object-cover md:aspect-auto md:h-full"
             />
           ) : (
-            <div className="aspect-[16/10] w-full gradient-motion md:aspect-auto md:h-full" />
+            <div className="aspect-[16/10] w-full bg-secondary md:aspect-auto md:h-full" />
           )}
           <span className="absolute left-3 top-3 rounded-full bg-surface/90 px-2.5 py-1 text-[10px] font-medium uppercase tracking-widest text-ink backdrop-blur">
             Featured

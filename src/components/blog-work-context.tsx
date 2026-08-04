@@ -34,7 +34,7 @@ function WorkCard({ tag }: { tag: RichWork }) {
             }}
           />
         ) : (
-          <div className="aspect-[16/10] w-full gradient-motion" />
+          <div className="aspect-[16/10] w-full bg-secondary" />
         )}
       </div>
 

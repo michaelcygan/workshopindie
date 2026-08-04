@@ -48,7 +48,7 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
       <div
         className={cn(
           "relative h-36 w-full",
-          event.cover_url ? "bg-cover bg-center" : "gradient-motion",
+          event.cover_url ? "bg-cover bg-center" : "bg-secondary",
         )}
         style={event.cover_url ? { backgroundImage: `url(${event.cover_url})` } : undefined}
       >
