@@ -223,7 +223,7 @@ function PeekBody({
           {isSelf ? (
             <Button
               variant="outline"
-              className="rounded-full gap-1.5"
+              className="rounded-md gap-1.5"
               onClick={() => navigate({ to: "/settings" })}
             >
               <Pencil className="h-4 w-4" /> Edit profile
@@ -238,7 +238,7 @@ function PeekBody({
               {mutual?.iFollow && mutual?.theyFollow && (
                 <Button
                   variant="outline"
-                  className="rounded-full gap-1.5"
+                  className="rounded-md gap-1.5"
                   onClick={handleMessage}
                   disabled={opening}
                 >

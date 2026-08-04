@@ -464,7 +464,7 @@ function TodayChat({ group, expanded = false }: { group: GroupRefForToday; expan
           <Button
             type="submit"
             size="sm"
-            className={cn("h-8 gap-1 rounded-full", body.trim() ? "" : "opacity-50")}
+            className={cn("h-8 gap-1 rounded-md", body.trim() ? "" : "opacity-50")}
             disabled={!canPost || !body.trim() || post.isPending}
           >
             <Send className="h-3.5 w-3.5" />

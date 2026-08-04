@@ -91,7 +91,7 @@ export function GroupSeedLinksPanel() {
   };
 
   return (
-    <section className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
+    <section className="rounded-xl border border-border bg-surface p-6 shadow-soft">
       <h2 className="font-display text-xl text-ink">Group seed links</h2>
       <p className="mt-1 text-sm text-ink-muted">
         Shareable link for ads. Visitors land on the group page and are auto-joined after sign-up.
@@ -172,7 +172,7 @@ export function GroupSeedLinksPanel() {
           </div>
         </div>
 
-        <Button type="submit" disabled={creating || !selected} className="rounded-full gap-2">
+        <Button type="submit" disabled={creating || !selected} className="rounded-md gap-2">
           {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
           Create seed link
         </Button>
@@ -227,10 +227,10 @@ export function GroupSeedLinksPanel() {
                         }}
                       />
                     </div>
-                    <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => copy(slug, l.token)}>
+                    <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => copy(slug, l.token)}>
                       <Copy className="h-3.5 w-3.5" /> Copy
                     </Button>
-                    <Button size="sm" variant="outline" className="rounded-full gap-1" asChild>
+                    <Button size="sm" variant="outline" className="rounded-md gap-1" asChild>
                       <a href={url} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5" /> Open
                       </a>
@@ -238,7 +238,7 @@ export function GroupSeedLinksPanel() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="rounded-full text-rose-600 hover:bg-rose-50"
+                      className="rounded-md text-rose-600 hover:bg-rose-50"
                       onClick={async () => {
                         if (!confirm("Delete this seed link? Past joins are kept.")) return;
                         try {

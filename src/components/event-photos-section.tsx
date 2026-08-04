@@ -41,7 +41,7 @@ export function EventPhotosSection({ eventId, canUpload }: Props) {
   const items = photos ?? [];
 
   return (
-    <section className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+    <section className="rounded-xl border border-border bg-surface p-5 shadow-soft">
       <header className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h3 className="font-display text-lg text-ink">Photos</h3>
@@ -169,7 +169,7 @@ function PhotoUploader({ eventId, onUploaded }: { eventId: string; onUploaded: (
       <Button
         type="button"
         size="sm"
-        className="rounded-full gap-1.5"
+        className="rounded-md gap-1.5"
         onClick={() => inputRef.current?.click()}
         disabled={busy}
       >
@@ -293,7 +293,7 @@ export function EventPhotosProjectorButton({ eventId }: { eventId: string }) {
       <Button
         size="sm"
         variant="outline"
-        className="rounded-full gap-1.5"
+        className="rounded-md gap-1.5"
         onClick={() => setOpen(true)}
         title="Project photos fullscreen"
       >

@@ -28,7 +28,7 @@ export function GroupFeaturedCard({
   const Icon = group.kind === "city" ? MapPin : Sparkles;
 
   return (
-    <article className="group relative flex h-full flex-col overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:-translate-y-0.5 hover:shadow-lift">
       <div
         className="relative aspect-[16/10] w-full overflow-hidden"
         style={

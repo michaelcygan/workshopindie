@@ -647,7 +647,7 @@ function DmsThread() {
         style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
       >
         <label htmlFor="dm-composer" className="sr-only">Message</label>
-        <div className="relative flex items-end gap-2 rounded-3xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
+        <div className="relative flex items-end gap-2 rounded-xl border border-border bg-surface px-2 py-1.5 focus-within:border-primary">
           <MentionPopover
             open={mentionOpen}
             query={mention?.query ?? ""}

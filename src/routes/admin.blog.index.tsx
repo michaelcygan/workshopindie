@@ -94,10 +94,10 @@ function AdminBlogIndex() {
         </div>
         <div className="flex items-center gap-2">
           <Link to="/admin/blog/subscribers">
-            <Button variant="outline" size="sm" className="rounded-full">Subscribers</Button>
+            <Button variant="outline" size="sm" className="rounded-md">Subscribers</Button>
           </Link>
           <Link to="/admin/blog/new">
-            <Button size="sm" className="rounded-full gap-1.5">
+            <Button size="sm" className="rounded-md gap-1.5">
               <Plus className="h-4 w-4" /> New post
             </Button>
           </Link>

@@ -46,7 +46,7 @@ function Index() {
         <Skeleton className="h-10 w-64" />
         <div className="mt-8 grid gap-4 md:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-40 rounded-3xl" />
+            <Skeleton key={i} className="h-40 rounded-xl" />
           ))}
         </div>
       </main>

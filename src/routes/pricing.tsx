@@ -44,7 +44,7 @@ function PricingPage() {
           name="Free"
           price="$0"
           tagline="The complete Workshop, within generous limits."
-          cta={user ? <Button variant="outline" className="w-full rounded-full" disabled>You're on Free</Button> : <Link to="/signup" className="block"><Button variant="outline" className="w-full rounded-full">Start free</Button></Link>}
+          cta={user ? <Button variant="outline" className="w-full rounded-md" disabled>You're on Free</Button> : <Link to="/signup" className="block"><Button variant="outline" className="w-full rounded-md">Start free</Button></Link>}
           features={freePlanBullets()}
         />
         <PlanCard
@@ -55,7 +55,7 @@ function PricingPage() {
           tagline="Same Workshop, without the limits."
           cta={
             isPlus ? (
-              <Button variant="outline" className="w-full rounded-full" disabled>You're Plus ✨</Button>
+              <Button variant="outline" className="w-full rounded-md" disabled>You're Plus ✨</Button>
             ) : (
               <Button onClick={handleGoPlus} className="w-full gap-2 bg-primary text-primary-foreground">
                 <Sparkles className="h-4 w-4" /> Start 14-day free trial
@@ -100,7 +100,7 @@ function PlanCard({
   highlight?: boolean;
 }) {
   return (
-    <div className={`rounded-3xl border bg-surface p-6 md:p-8 ${highlight ? "border-border-strong shadow-lift" : "border-border"}`}>
+    <div className={`rounded-xl border bg-surface p-6 md:p-8 ${highlight ? "border-border-strong shadow-lift" : "border-border"}`}>
       <div className="flex items-baseline justify-between">
         <h2 className="font-display text-2xl text-ink">{name}</h2>
         {highlight && (

@@ -78,7 +78,7 @@ function Login() {
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
         Make something today.
       </h1>
-      <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="space-y-3">
           <GoogleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
@@ -97,7 +97,7 @@ function Login() {
             </div>
             <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={loading}>
+          <Button type="submit" className="w-full rounded-md" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </Button>
         </form>

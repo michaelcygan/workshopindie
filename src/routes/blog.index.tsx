@@ -131,7 +131,7 @@ function BlogIndexPage() {
       </p>
 
       {posts.length === 0 ? (
-        <div className="mt-10 rounded-3xl border border-dashed border-border bg-surface-2/40 p-8 text-center md:mt-14 md:p-10">
+        <div className="mt-10 rounded-xl border border-dashed border-border bg-surface-2/40 p-8 text-center md:mt-14 md:p-10">
           <div className="font-display text-xl text-ink">Nothing published yet.</div>
           <p className="mt-2 text-ink-muted">The first notes are being written. Come back soon.</p>
         </div>

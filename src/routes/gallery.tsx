@@ -396,7 +396,7 @@ function GalleryPage() {
             </p>
           </div>
           <Link to="/works/new" className="shrink-0">
-            <Button size="sm" className="rounded-full">
+            <Button size="sm" className="rounded-md">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Post to Gallery</span>
               <span className="sm:hidden">Post</span>
@@ -590,7 +590,7 @@ function GalleryPage() {
                 ? "Tap the heart on any piece to save it here."
                 : "Follow people, then come back here to see what they're making."
             }
-            cta={<Link to="/login"><Button className="rounded-full">Sign in</Button></Link>}
+            cta={<Link to="/login"><Button className="rounded-md">Sign in</Button></Link>}
           />
         ) : isLoading ? (
           <Grid>
@@ -604,7 +604,7 @@ function GalleryPage() {
               title="Your Following feed is empty"
               body="Follow people on their profiles to fill this up."
               cta={
-                <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-full">
+                <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-md">
                   Browse For you
                 </Button>
               }
@@ -614,7 +614,7 @@ function GalleryPage() {
               title="Nothing favorited yet"
               body="Tap the heart on any piece to save it here for later."
               cta={
-                <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-full">
+                <Button onClick={() => setSearch({ tab: "for-you" })} className="rounded-md">
                   Browse For you
                 </Button>
               }
@@ -629,8 +629,8 @@ function GalleryPage() {
               }
               cta={
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  <Link to="/works/new"><Button className="rounded-full">Post to Gallery</Button></Link>
-                  <Button variant="outline" onClick={clearAll} className="rounded-full">
+                  <Link to="/works/new"><Button className="rounded-md">Post to Gallery</Button></Link>
+                  <Button variant="outline" onClick={clearAll} className="rounded-md">
                     Clear filters
                   </Button>
                 </div>
@@ -665,7 +665,7 @@ function GalleryPage() {
         to="/works/new"
         className="fixed bottom-4 right-4 z-40 md:hidden"
       >
-        <Button className="rounded-full shadow-lift">
+        <Button className="rounded-md shadow-lift">
           <Plus className="h-4 w-4" />
           Post to Gallery
         </Button>
@@ -685,7 +685,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 
 function EmptyState({ title, body, cta }: { title: string; body: string; cta?: React.ReactNode }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+    <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
       <h3 className="font-display text-2xl text-ink">{title}</h3>
       <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">{body}</p>
       {cta && <div className="mt-5 inline-block">{cta}</div>}

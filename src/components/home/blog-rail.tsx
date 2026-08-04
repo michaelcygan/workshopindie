@@ -11,7 +11,7 @@ function BlogRailCard({ post }: { post: HomeBlogCard }) {
     <Link
       to="/blog/$slug"
       params={{ slug: post.slug }}
-      className="group flex w-[74vw] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-auto"
+      className="group flex w-[74vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-auto"
     >
       {post.coverUrl ? (
         <img

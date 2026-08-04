@@ -243,7 +243,7 @@ function MemberBlogEditorPage() {
           )}
           <Button
             variant="outline"
-            className="h-11 shrink-0 rounded-full px-4"
+            className="h-11 shrink-0 rounded-md px-4"
             disabled={!dirty || saveMut.isPending || readOnly}
             onClick={() => saveMut.mutate(undefined)}
           >
@@ -384,7 +384,7 @@ function MemberBlogEditorPage() {
               <img
                 src={cover}
                 alt={coverAlt || title}
-                className="mb-6 w-full rounded-3xl border border-border object-cover"
+                className="mb-6 w-full rounded-xl border border-border object-cover"
               />
             )}
             <h1 className="font-display text-4xl text-ink">{title || "Untitled"}</h1>

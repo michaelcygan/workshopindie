@@ -338,8 +338,8 @@ export function PostWorkshopFromCitySheet({ open, onOpenChange, city, isAdmin, o
           )}
 
           <DialogFooter className="gap-2">
-            <Button type="button" variant="ghost" className="rounded-full" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={submitting} className="rounded-full">
+            <Button type="button" variant="ghost" className="rounded-md" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={submitting} className="rounded-md">
               {submitting ? "Posting…" : when === "now" ? "Go live now" : "Schedule Workshop"}
             </Button>
           </DialogFooter>

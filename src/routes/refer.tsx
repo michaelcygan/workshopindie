@@ -108,7 +108,7 @@ function ReferPage() {
               </Button>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
-              <Button onClick={shareInstagram} variant="outline" size="sm" className="rounded-full gap-1.5">
+              <Button onClick={shareInstagram} variant="outline" size="sm" className="rounded-md gap-1.5">
                 <Instagram className="h-4 w-4" /> Share to Instagram
               </Button>
               <Button onClick={shareNative} variant="outline" size="sm" className="rounded-full gap-1.5">

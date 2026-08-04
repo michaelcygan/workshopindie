@@ -75,7 +75,7 @@ export function ReportDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="ghost" size="sm" className="rounded-full gap-1.5 text-ink-muted hover:text-ink">
+          <Button variant="ghost" size="sm" className="rounded-md gap-1.5 text-ink-muted hover:text-ink">
             <Flag className="h-4 w-4" /> Report
           </Button>
         )}

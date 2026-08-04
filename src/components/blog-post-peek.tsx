@@ -115,7 +115,7 @@ export function BlogPostPeek({
               <BlogArticleFooter postId={post.id} mode="peek" onSelectPost={onSelectPost} />
             </article>
             <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-border bg-background/95 p-3 backdrop-blur">
-              <Button variant="ghost" size="sm" className="rounded-full gap-1.5" onClick={copyLink}>
+              <Button variant="ghost" size="sm" className="rounded-md gap-1.5" onClick={copyLink}>
                 <Link2 className="h-4 w-4" /> Copy link
               </Button>
               <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">

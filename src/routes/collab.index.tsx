@@ -296,13 +296,13 @@ function CollabPage() {
           <div className="flex flex-wrap items-center gap-2">
             {user && (
               <Link to="/me/collabs">
-                <Button variant="outline" size="sm" className="rounded-full gap-2">
+                <Button variant="outline" size="sm" className="rounded-md gap-2">
                   <Briefcase className="h-4 w-4" /> My Collabs
                 </Button>
               </Link>
             )}
             <Link to="/collab/new">
-              <Button size="sm" className="rounded-full gap-2">
+              <Button size="sm" className="rounded-md gap-2">
                 <Megaphone className="h-4 w-4" /> Post Collab
               </Button>
             </Link>
@@ -420,11 +420,11 @@ function CollabPage() {
         {isLoading ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-56 animate-pulse rounded-3xl bg-surface-2" />
+              <div key={i} className="h-56 animate-pulse rounded-xl bg-surface-2" />
             ))}
           </div>
         ) : !posts || posts.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+          <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
             <h3 className="font-display text-2xl text-ink">
               {filters.city || filters.online ? "Nothing open here yet." : "Nothing open right now."}
             </h3>
@@ -434,7 +434,7 @@ function CollabPage() {
                 : "Post yours — list the roles, the people show up."}
             </p>
             <Link to="/collab/new" className="mt-5 inline-block">
-              <Button className="rounded-full">Post a Collab</Button>
+              <Button className="rounded-md">Post a Collab</Button>
             </Link>
           </div>
         ) : (

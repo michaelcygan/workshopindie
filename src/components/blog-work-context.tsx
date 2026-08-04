@@ -16,7 +16,7 @@ function WorkCard({ tag }: { tag: RichWork }) {
     <Link
       to="/works/$slug"
       params={{ slug: tag.slug }}
-      className="group flex flex-col gap-4 rounded-3xl border border-border bg-surface p-3 transition hover:border-ink/20 hover:shadow-soft sm:flex-row sm:items-center sm:p-4"
+      className="group flex flex-col gap-4 rounded-xl border border-border bg-surface p-3 transition hover:border-ink/20 hover:shadow-soft sm:flex-row sm:items-center sm:p-4"
     >
       <div className="w-full shrink-0 overflow-hidden rounded-2xl bg-muted sm:w-40">
         {w.cover_url ? (

@@ -266,7 +266,7 @@ export function WorkshopCollabsPanel({
         <Button
           size="sm"
           variant="ghost"
-          className="h-7 rounded-full gap-1 text-xs"
+          className="h-7 rounded-md gap-1 text-xs"
           onClick={() => doUnpin.mutate(existing.id)}
           disabled={doUnpin.isPending}
         >
@@ -278,7 +278,7 @@ export function WorkshopCollabsPanel({
       <Button
         size="sm"
         variant="ghost"
-        className="h-7 rounded-full gap-1 text-xs"
+        className="h-7 rounded-md gap-1 text-xs"
         onClick={() => handlePinClick(collabId)}
         disabled={doPin.isPending}
       >
@@ -345,7 +345,7 @@ export function WorkshopCollabsPanel({
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="h-7 rounded-full gap-1 text-xs"
+                          className="h-7 rounded-md gap-1 text-xs"
                           onClick={() => doUnpin.mutate(p.id)}
                           disabled={doUnpin.isPending}
                         >
@@ -402,7 +402,7 @@ export function WorkshopCollabsPanel({
                       isOwnerMe ? (
                         <DropdownMenu key={r.id}>
                           <DropdownMenuTrigger asChild>
-                            <Button size="sm" variant="outline" className="h-7 rounded-full gap-1 text-xs">
+                            <Button size="sm" variant="outline" className="h-7 rounded-md gap-1 text-xs">
                               <UserPlus className="h-3 w-3" /> Invite to {r.role_name}
                             </Button>
                           </DropdownMenuTrigger>
@@ -442,7 +442,7 @@ export function WorkshopCollabsPanel({
                   <div className="mt-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-7 rounded-full gap-1 text-xs text-ink-muted">
+                        <Button size="sm" variant="ghost" className="h-7 rounded-md gap-1 text-xs text-ink-muted">
                           <UserPlus className="h-3 w-3" /> General invite
                         </Button>
                       </DropdownMenuTrigger>
@@ -503,9 +503,9 @@ export function WorkshopCollabsPanel({
             placeholder="Quick intro: who you are, why this caught your eye, links to your work…"
           />
           <DialogFooter>
-            <Button variant="ghost" className="rounded-full" onClick={() => setApplyOpen(false)}>Cancel</Button>
+            <Button variant="ghost" className="rounded-md" onClick={() => setApplyOpen(false)}>Cancel</Button>
             <Button
-              className="rounded-full"
+              className="rounded-md"
               disabled={!applyMsg.trim() || sendApply.isPending}
               onClick={() => sendApply.mutate()}
             >

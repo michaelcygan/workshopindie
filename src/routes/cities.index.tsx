@@ -102,7 +102,7 @@ function CitiesIndex() {
 
       <div className="mt-6 grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
         {/* Left: featured city callout */}
-        <div className="rounded-3xl border border-border bg-surface p-6 shadow-soft">
+        <div className="rounded-xl border border-border bg-surface p-6 shadow-soft">
           <div className="text-[10.5px] font-bold uppercase tracking-[0.18em] text-ink-muted/70">
             Most active
           </div>
@@ -127,7 +127,7 @@ function CitiesIndex() {
         </div>
 
         {/* Right: searchable list */}
-        <div className="flex min-h-0 flex-col rounded-3xl border border-border bg-surface shadow-soft">
+        <div className="flex min-h-0 flex-col rounded-xl border border-border bg-surface shadow-soft">
           <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3">
             <Search className="h-4 w-4 text-ink-muted" />
             <input

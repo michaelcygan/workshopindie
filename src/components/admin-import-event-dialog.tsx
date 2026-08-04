@@ -331,7 +331,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                   </p>
                 </div>
                 {err && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{err}</p>}
-                <Button type="submit" disabled={busy || !url} className="w-full rounded-full">
+                <Button type="submit" disabled={busy || !url} className="w-full rounded-md">
                   {busy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Reading page…</> : "Fetch event"}
                 </Button>
               </form>
@@ -357,7 +357,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                 />
               </div>
               {bulkErr && <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{bulkErr}</p>}
-              <Button type="button" onClick={runBulk} disabled={bulkBusy || !bulkText.trim()} className="w-full rounded-full">
+              <Button type="button" onClick={runBulk} disabled={bulkBusy || !bulkText.trim()} className="w-full rounded-md">
                 {bulkBusy ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Fetching all…</> : "Fetch all"}
               </Button>
 
@@ -387,7 +387,7 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                             </div>
                           </div>
                           {r.ok && (
-                            <Button size="sm" variant="ghost" className="h-7 rounded-full" onClick={() => editBulkRow(i)}>
+                            <Button size="sm" variant="ghost" className="h-7 rounded-md" onClick={() => editBulkRow(i)}>
                               <Pencil className="mr-1 h-3 w-3" /> Edit
                             </Button>
                           )}
@@ -398,13 +398,13 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
-                      className="flex-1 rounded-full"
+                      className="flex-1 rounded-md"
                       disabled={bulkBusy || !bulkResults.some((r) => rowStatus(r) === "ready")}
                       onClick={publishAllReady}
                     >
                       Save all ready as drafts
                     </Button>
-                    <Button type="button" variant="outline" className="rounded-full" onClick={() => setBulkResults(null)}>
+                    <Button type="button" variant="outline" className="rounded-md" onClick={() => setBulkResults(null)}>
                       Clear
                     </Button>
                   </div>
@@ -563,10 +563,10 @@ export function AdminImportEventDialog({ onCreated }: { onCreated: () => void })
             </div>
 
             <div className="flex items-center gap-2 pt-2">
-              <Button type="button" variant="outline" className="flex-1 rounded-full" disabled={busy} onClick={() => submit(false)}>
+              <Button type="button" variant="outline" className="flex-1 rounded-md" disabled={busy} onClick={() => submit(false)}>
                 Save as draft
               </Button>
-              <Button type="button" className="flex-1 rounded-full" disabled={busy} onClick={() => submit(true)}>
+              <Button type="button" className="flex-1 rounded-md" disabled={busy} onClick={() => submit(true)}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Publish now"}
               </Button>
             </div>

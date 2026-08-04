@@ -96,7 +96,7 @@ export function EntityBlogPosts({
             <Button
               variant="outline"
               size="sm"
-              className="rounded-full gap-1.5"
+              className="rounded-md gap-1.5"
               disabled={createMut.isPending}
               onClick={() => createMut.mutate()}
             >

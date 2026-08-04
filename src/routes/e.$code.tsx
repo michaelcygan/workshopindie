@@ -19,7 +19,7 @@ export const Route = createFileRoute("/e/$code")({
       <main className="mx-auto max-w-md px-4 py-20 text-center">
         <h1 className="font-display text-2xl text-ink">Couldn't open that link.</h1>
         <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
-        <Button onClick={() => { reset(); router.invalidate(); }} className="mt-6 rounded-full">Try again</Button>
+        <Button onClick={() => { reset(); router.invalidate(); }} className="mt-6 rounded-md">Try again</Button>
       </main>
     );
   },

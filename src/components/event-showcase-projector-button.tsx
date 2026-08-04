@@ -30,7 +30,7 @@ export function EventShowcaseProjectorButton({ eventId }: Props) {
       <Button
         size="sm"
         variant="outline"
-        className="rounded-full gap-1.5"
+        className="rounded-md gap-1.5"
         onClick={() => setOpen(true)}
         title="Project the showcase fullscreen"
       >

@@ -53,13 +53,13 @@ function CheckoutReturn() {
       <div className="mt-6 flex gap-2">
         {destination === "blog" ? (
           <>
-            <Link to="/me/blog"><Button className="rounded-full">Continue writing</Button></Link>
-            <Link to="/me"><Button variant="outline" className="rounded-full">Your profile</Button></Link>
+            <Link to="/me/blog"><Button className="rounded-md">Continue writing</Button></Link>
+            <Link to="/me"><Button variant="outline" className="rounded-md">Your profile</Button></Link>
           </>
         ) : (
           <>
-            <Link to="/me"><Button className="rounded-full">Go to your profile</Button></Link>
-            <Link to="/groups"><Button variant="outline" className="rounded-full">Find your group</Button></Link>
+            <Link to="/me"><Button className="rounded-md">Go to your profile</Button></Link>
+            <Link to="/groups"><Button variant="outline" className="rounded-md">Find your group</Button></Link>
           </>
         )}
       </div>

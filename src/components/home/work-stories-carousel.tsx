@@ -23,7 +23,7 @@ function StoryCard({ item, onPeek }: { item: HomeWorkStory; onPeek: (slug: strin
   const rest = item.stories.slice(1);
 
   return (
-    <article className="flex w-[86vw] shrink-0 snap-start flex-col overflow-hidden rounded-3xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-[420px]">
+    <article className="flex w-[86vw] shrink-0 snap-start flex-col overflow-hidden rounded-xl border border-border bg-surface transition hover:border-ink/20 hover:shadow-soft sm:w-[420px]">
       <Link
         to="/works/$slug"
         params={{ slug: w.slug }}

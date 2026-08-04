@@ -51,12 +51,12 @@ export function GalleryLoggedOutHero() {
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <Link to="/login">
-            <Button variant="outline" className="rounded-full">
+            <Button variant="outline" className="rounded-md">
               Sign in
             </Button>
           </Link>
           <Link to="/works/new">
-            <Button className="rounded-full">Post to Gallery</Button>
+            <Button className="rounded-md">Post to Gallery</Button>
           </Link>
         </div>
       </div>

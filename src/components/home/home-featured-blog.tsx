@@ -160,7 +160,7 @@ export function HomeFeaturedBlog({
     >
       <p className="font-display text-lg leading-tight text-ink md:text-xl">{greeting}.</p>
 
-      <div className="mt-2 rounded-3xl border border-border bg-surface p-3 md:p-4">
+      <div className="mt-2 rounded-xl border border-border bg-surface p-3 md:p-4">
         <div className="flex items-center justify-between gap-3">
           <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-ink-muted">
             {isFallback ? "Latest from the Blog" : "Featured from the Blog"}

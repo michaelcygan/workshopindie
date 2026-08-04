@@ -17,7 +17,7 @@ export function GroupsVerticalMarquee({ groups, title = "Fresh in", speed = 60 }
   if (groups.length === 0) return null;
   const loop = [...groups, ...groups];
   return (
-    <section className="rounded-3xl border border-border bg-surface p-3">
+    <section className="rounded-xl border border-border bg-surface p-3">
       <div className="mb-2 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 text-ink-muted" />

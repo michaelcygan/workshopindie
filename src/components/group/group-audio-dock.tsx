@@ -150,7 +150,7 @@ export function GroupAudioDock({
                 <>
                   <Button
                     variant="outline"
-                    className="min-h-11 gap-2 rounded-full"
+                    className="min-h-11 gap-2 rounded-md"
                     onClick={() => void audio.toggleMute()}
                   >
                     {audio.muted ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
@@ -158,7 +158,7 @@ export function GroupAudioDock({
                   </Button>
                   <Button
                     variant="outline"
-                    className="min-h-11 gap-2 rounded-full"
+                    className="min-h-11 gap-2 rounded-md"
                     onClick={() => void audio.leaveMic()}
                   >
                     Give up mic
@@ -167,14 +167,14 @@ export function GroupAudioDock({
               ) : audio.role === "waiting" || audio.role === "offered" ? (
                 <Button
                   variant="outline"
-                  className="min-h-11 gap-2 rounded-full"
+                  className="min-h-11 gap-2 rounded-md"
                   onClick={() => void audio.leaveQueue()}
                 >
                   Leave the mic queue
                 </Button>
               ) : (
                 <Button
-                  className="min-h-11 gap-2 rounded-full"
+                  className="min-h-11 gap-2 rounded-md"
                   disabled={audio.busy}
                   onClick={() => void audio.requestMic()}
                 >
@@ -184,7 +184,7 @@ export function GroupAudioDock({
 
               <Button
                 variant="ghost"
-                className="min-h-11 gap-2 rounded-full text-ink-muted"
+                className="min-h-11 gap-2 rounded-md text-ink-muted"
                 onClick={() => void leave()}
               >
                 <LogOut className="h-4 w-4" /> Leave audio

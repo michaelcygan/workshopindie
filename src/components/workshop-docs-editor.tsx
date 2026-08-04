@@ -121,10 +121,10 @@ export function WorkshopDocsEditor({ scope }: { scope: DocsScope }) {
 
   if (docs.length === 0) {
     return (
-      <div className="rounded-3xl border border-dashed border-border bg-surface px-8 py-16 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-surface px-8 py-16 text-center">
         <p className="font-display text-lg text-ink">A blank page for the room.</p>
         <p className="mt-1 text-sm text-ink-muted">Notes, drafts, scripts — autosaves as you type.</p>
-        <Button onClick={addDoc} className="mt-6 rounded-full gap-2 px-5">
+        <Button onClick={addDoc} className="mt-6 rounded-md gap-2 px-5">
           <Plus className="h-4 w-4" /> Start writing
         </Button>
       </div>
@@ -326,7 +326,7 @@ function DocEditor({
     <div
       ref={wrapRef}
       className={cn(
-        "relative rounded-3xl border border-border bg-surface flex flex-col",
+        "relative rounded-xl border border-border bg-surface flex flex-col",
         fullscreen ? "min-h-[calc(100vh-3rem)]" : "min-h-[520px]",
       )}
     >

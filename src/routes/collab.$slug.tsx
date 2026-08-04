@@ -308,7 +308,7 @@ function CollabDetail() {
     },
   });
 
-  if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-3xl bg-surface-2" /></main>;
+  if (isLoading) return <main className="mx-auto max-w-3xl p-10"><div className="h-64 animate-pulse rounded-xl bg-surface-2" /></main>;
   if (!post) return <main className="mx-auto max-w-3xl p-10 text-center text-ink-muted">Not found.</main>;
 
   const isOwner = user?.id === post.user_id;
@@ -401,12 +401,12 @@ function CollabDetail() {
                 {/* Desktop: keep the flat action row */}
                 <div className="hidden sm:flex sm:items-center sm:gap-2">
                   {isDraft && (
-                    <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                    <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
                       <Eye className="h-3.5 w-3.5" /> Publish
                     </Button>
                   )}
                   {(post.status === "open" || isDraft) && (
-                    <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                    <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Link>
@@ -414,11 +414,11 @@ function CollabDetail() {
                   )}
                   {!isDraft && <PinCollabButton collabId={post.id} />}
                   {post.status === "open" && (
-                    <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
+                    <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Mark this collab as closed? You can still publish the Work that came out of it.")) closeMut.mutate(); }}>
                       <CheckCircle2 className="h-3.5 w-3.5" /> Close
                     </Button>
                   )}
-                  <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
+                  <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Delete this post?")) deletePost.mutate(); }}>
                     <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
                 </div>
@@ -426,11 +426,11 @@ function CollabDetail() {
                 {/* Mobile: one inline primary + kebab for the rest */}
                 <div className="flex items-center gap-2 sm:hidden">
                   {isDraft ? (
-                    <Button size="sm" className="rounded-full gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
+                    <Button size="sm" className="rounded-md gap-1" onClick={() => publishMut.mutate()} disabled={publishMut.isPending}>
                       <Eye className="h-3.5 w-3.5" /> Publish
                     </Button>
                   ) : post.status === "open" ? (
-                    <Button asChild size="sm" variant="outline" className="rounded-full gap-1">
+                    <Button asChild size="sm" variant="outline" className="rounded-md gap-1">
                       <Link to="/collab/$slug/edit" params={{ slug: post.slug }}>
                         <Pencil className="h-3.5 w-3.5" /> Edit
                       </Link>
@@ -472,7 +472,7 @@ function CollabDetail() {
             ) : (
               <>
                 {membership?.isMember && (
-                  <Button size="sm" variant="ghost" className="rounded-full text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
+                  <Button size="sm" variant="ghost" className="rounded-md text-ink-muted gap-1" onClick={() => { if (confirm("Leave this Collab? The owner will be notified.")) leaveMut.mutate(); }}>
                     <LogOut className="h-3.5 w-3.5" /> Leave
                   </Button>
                 )}
@@ -503,10 +503,10 @@ function CollabDetail() {
               <p className="text-amber-800/90">Review the details above. To stay on board, accept the changes — or leave.</p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <Button size="sm" className="rounded-full" onClick={() => acceptChangesMut.mutate()} disabled={acceptChangesMut.isPending}>
+              <Button size="sm" className="rounded-md" onClick={() => acceptChangesMut.mutate()} disabled={acceptChangesMut.isPending}>
                 Accept changes
               </Button>
-              <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Leave this Collab?")) leaveMut.mutate(); }}>
+              <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Leave this Collab?")) leaveMut.mutate(); }}>
                 Leave
               </Button>
             </div>
@@ -556,7 +556,7 @@ function CollabDetail() {
                     </p>
                     <p className="text-xs text-ink-muted">Fast replies double the odds people stay engaged.</p>
                   </div>
-                  <Button size="sm" className="rounded-full gap-1" asChild>
+                  <Button size="sm" className="rounded-md gap-1" asChild>
                     <a href="#applicants">
                       <Inbox className="h-3.5 w-3.5" /> Review applicants
                     </a>
@@ -599,16 +599,16 @@ function CollabDetail() {
               </p>
               <p className="text-xs text-ink-muted">It's hidden from the public board but still live for you. What's next?</p>
             </div>
-            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => {
+            <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => {
               const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
               if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate(next);
             }}>
               <Clock className="h-3.5 w-3.5" /> Extend
             </Button>
-            <Button size="sm" variant="outline" className="rounded-full gap-1" onClick={() => { if (confirm("Close this collab without publishing?")) closeMut.mutate(); }}>
+            <Button size="sm" variant="outline" className="rounded-md gap-1" onClick={() => { if (confirm("Close this collab without publishing?")) closeMut.mutate(); }}>
               <CheckCircle2 className="h-3.5 w-3.5" /> Close
             </Button>
-            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+            <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
               <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
             </Button>
           </div>
@@ -622,10 +622,10 @@ function CollabDetail() {
               <p className="font-medium text-ink">Archived{post.closed_at ? ` on ${new Date(post.closed_at).toLocaleDateString()}` : ""}.</p>
               <p className="text-xs text-ink-muted">Only you can see this page. Post to Gallery to make it public, or delete it.</p>
             </div>
-            <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this post permanently?")) deletePost.mutate(); }}>
+            <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this post permanently?")) deletePost.mutate(); }}>
               <Trash2 className="h-3.5 w-3.5" /> Delete
             </Button>
-            <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishOpen(true)}>
+            <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishOpen(true)}>
               <Sparkles className="h-3.5 w-3.5" /> Post to Gallery from this
             </Button>
           </div>
@@ -637,7 +637,7 @@ function CollabDetail() {
           <Link
             to="/works/$slug"
             params={{ slug: resultingWork.slug }}
-            className="mb-6 block overflow-hidden rounded-3xl border border-border bg-surface shadow-soft transition hover:shadow-lift"
+            className="mb-6 block overflow-hidden rounded-xl border border-border bg-surface shadow-soft transition hover:shadow-lift"
           >
             {resultingWork.cover_url ? (
               <img src={resultingWork.cover_url} alt={resultingWork.title} className="aspect-video w-full object-cover" />
@@ -649,7 +649,7 @@ function CollabDetail() {
                 <p className="text-[11px] uppercase tracking-wide text-ink-muted">From this Collab</p>
                 <p className="truncate font-display text-xl text-ink">{resultingWork.title}</p>
               </div>
-              <Button size="sm" className="rounded-full gap-1 shrink-0">
+              <Button size="sm" className="rounded-md gap-1 shrink-0">
                 View the Work <ExternalLink className="h-3.5 w-3.5" />
               </Button>
             </div>
@@ -716,7 +716,7 @@ function CollabDetail() {
                             {r.description && <p className="mt-1 text-sm text-ink-muted">{r.description}</p>}
                           </div>
                           {!isOwner && post.status === "open" && (
-                            <Button size="sm" className="rounded-full gap-1" onClick={() => openContact(r.id)}>
+                            <Button size="sm" className="rounded-md gap-1" onClick={() => openContact(r.id)}>
                               {post.contact_mode === "external_link" && user ? <><ExternalLink className="h-3.5 w-3.5" /> Reach out</> : <><MessageCircle className="h-3.5 w-3.5" /> Apply</>}
                             </Button>
                           )}
@@ -735,7 +735,7 @@ function CollabDetail() {
                   Don't see a role that fits? Pitch what you'd bring — the organizer will read it.
                 </p>
                 <div className="mt-3">
-                  <Button variant="outline" className="rounded-full gap-2" onClick={() => openContact(null)}>
+                  <Button variant="outline" className="rounded-md gap-2" onClick={() => openContact(null)}>
                     <MessageCircle className="h-4 w-4" /> Suggest a way to help
                   </Button>
                 </div>
@@ -781,8 +781,8 @@ function CollabDetail() {
             {(hostUser?.display_name || "The host")} will see this in their inbox with a link back to your profile.
           </p>
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row">
-            <Button variant="ghost" className="w-full rounded-full sm:w-auto" onClick={() => setContactOpen(false)}>Cancel</Button>
-            <Button className="w-full rounded-full sm:w-auto" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
+            <Button variant="ghost" className="w-full rounded-md sm:w-auto" onClick={() => setContactOpen(false)}>Cancel</Button>
+            <Button className="w-full rounded-md sm:w-auto" disabled={!message.trim() || sendContact.isPending} onClick={() => sendContact.mutate()}>
               {sendContact.isPending ? "Sending…" : "Send"}
             </Button>
           </DialogFooter>

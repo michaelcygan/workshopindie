@@ -156,7 +156,7 @@ export function WorkPeek({
                 <span className="inline-flex items-center gap-1"><Eye className="h-3.5 w-3.5" /> {formatCount(work.view_count)}</span>
               </div>
               <div className="flex items-center justify-end pt-2">
-                <Button asChild variant="outline" size="sm" className="rounded-full gap-1.5">
+                <Button asChild variant="outline" size="sm" className="rounded-md gap-1.5">
                   <a href={`/works/${work.slug}`} target="_blank" rel="noopener noreferrer">
                     Open full piece <ExternalLink className="h-3.5 w-3.5" />
                   </a>

@@ -13,7 +13,7 @@ export function EmptySpark({ title, body, action, className }: Props) {
   return (
     <div
       className={cn(
-        "rounded-3xl border border-dashed border-border bg-surface p-10 text-center",
+        "rounded-xl border border-dashed border-border bg-surface p-10 text-center",
         className,
       )}
     >

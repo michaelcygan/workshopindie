@@ -31,7 +31,7 @@ export function EventWhoStrip({ eventId, phase }: Props) {
   const label = phase === "live" ? "Who's here" : "Who was here";
 
   return (
-    <section className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+    <section className="rounded-xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="font-display text-lg text-ink">{label}</h3>
         <span className="inline-flex items-center gap-1 text-xs text-ink-muted">

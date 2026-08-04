@@ -231,7 +231,7 @@ function EventsIndexPage() {
           backTo="/"
           backLabel="Home"
           right={
-            <Button asChild variant="outline" size="sm" className="rounded-full">
+            <Button asChild variant="outline" size="sm" className="rounded-md">
               <Link to="/groups">Host an event</Link>
             </Button>
           }
@@ -353,7 +353,7 @@ function EventsIndexPage() {
               {Array.from({ length: 6 }).map((_, i) => (
                 <div
                   key={i}
-                  className="h-56 animate-pulse rounded-3xl border border-border bg-muted/30"
+                  className="h-56 animate-pulse rounded-xl border border-border bg-muted/30"
                 />
               ))}
             </div>
@@ -372,7 +372,7 @@ function EventsIndexPage() {
                     : "Events hosted by the Groups you join will list here."
               }
               action={
-                <Button asChild className="rounded-full" onClick={() => mineActive && setMine(false)}>
+                <Button asChild className="rounded-md" onClick={() => mineActive && setMine(false)}>
                   <Link to={mineActive ? "/events" : "/groups"} search={mineActive ? { mine: false } as never : undefined}>
                     {mineActive ? "Browse events" : "Browse Groups"}
                   </Link>

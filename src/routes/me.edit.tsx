@@ -521,7 +521,7 @@ function EditProfile() {
                   className="max-w-[12rem]"
                 />
                 {!birthdateLocked && birthdate && (
-                  <Button type="button" size="sm" variant="outline" className="rounded-full" disabled={savingBirthdate} onClick={onSaveBirthdate}>
+                  <Button type="button" size="sm" variant="outline" className="rounded-md" disabled={savingBirthdate} onClick={onSaveBirthdate}>
                     {savingBirthdate ? "Saving…" : "Save"}
                   </Button>
                 )}
@@ -618,7 +618,7 @@ function EditProfile() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>External links</Label>
-                <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={() => set("links", [...form.links, { label: "", url: "" }])}>
+                <Button type="button" size="sm" variant="ghost" className="rounded-md gap-1" onClick={() => set("links", [...form.links, { label: "", url: "" }])}>
                   <Plus className="h-3.5 w-3.5" /> Add link
                 </Button>
               </div>
@@ -667,10 +667,10 @@ function EditProfile() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="text-sm text-ink-muted">Unsaved changes</span>
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="rounded-full" onClick={() => setForm(initial)} disabled={saving}>
+            <Button type="button" variant="ghost" className="rounded-md" onClick={() => setForm(initial)} disabled={saving}>
               Discard
             </Button>
-            <Button type="button" disabled={saving} className="rounded-full" onClick={() => onSubmit()}>
+            <Button type="button" disabled={saving} className="rounded-md" onClick={() => onSubmit()}>
               {saving ? "Saving…" : "Save profile"}
             </Button>
           </div>

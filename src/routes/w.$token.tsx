@@ -82,7 +82,7 @@ function LinkLanding() {
         <p className="mt-2 text-sm text-ink-muted">
           The link may have expired. Ask whoever shared it for a new one.
         </p>
-        <Button asChild className="mt-6 rounded-full">
+        <Button asChild className="mt-6 rounded-md">
           <a href="/">Back to Workshop</a>
         </Button>
       </div>
@@ -92,7 +92,7 @@ function LinkLanding() {
   return (
     <div className="mx-auto max-w-2xl px-4 py-10">
       {/* Group audio shell — gated peek */}
-      <div className="relative overflow-hidden rounded-3xl border border-border bg-surface shadow-soft">
+      <div className="relative overflow-hidden rounded-xl border border-border bg-surface shadow-soft">
         {link.cover_url ? (
           <div className="relative aspect-[16/9] w-full">
             <img
@@ -132,7 +132,7 @@ function LinkLanding() {
           <div className="flex justify-center pt-2">
             <Button
               size="lg"
-              className="rounded-full gap-2"
+              className="rounded-md gap-2"
               disabled={joining}
               onClick={() => (user ? enterWorkshop() : setGateOpen(true))}
             >

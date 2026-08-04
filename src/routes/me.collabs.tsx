@@ -237,7 +237,7 @@ function MyCollabsPage() {
           </p>
         </div>
         <Link to="/collab/new">
-          <Button className="rounded-full gap-2">
+          <Button className="rounded-md gap-2">
             <Megaphone className="h-4 w-4" /> Post a Collab
           </Button>
         </Link>
@@ -273,7 +273,7 @@ function MyCollabsPage() {
             <EmptyState
               title="No Collabs yet."
               body="Post one to find collaborators. Roles, deadline, comp — it takes a minute."
-              cta={<Link to="/collab/new"><Button className="rounded-full">Post a Collab</Button></Link>}
+              cta={<Link to="/collab/new"><Button className="rounded-md">Post a Collab</Button></Link>}
             />
           ) : (
             <>
@@ -322,30 +322,30 @@ function MyCollabsPage() {
                     </div>
                     {isArchived ? (
                       <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
+                        <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => dismissMut.mutate(r.id)}>
                           <X className="h-3.5 w-3.5" /> Dismiss
                         </Button>
-                        <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this archived collab permanently?")) deleteMut.mutate(r.id); }}>
+                        <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this archived collab permanently?")) deleteMut.mutate(r.id); }}>
                           <Trash2 className="h-3.5 w-3.5" /> Delete
                         </Button>
-                        <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
+                        <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
                           <Sparkles className="h-3.5 w-3.5" /> Post to Gallery
                         </Button>
                       </div>
                     ) : passed ? (
                       <div className="flex flex-wrap gap-1.5">
-                        <Button size="sm" variant="ghost" className="rounded-full" onClick={() => {
+                        <Button size="sm" variant="ghost" className="rounded-md" onClick={() => {
                           const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
                           if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
                         }}>Extend</Button>
-                        <Button size="sm" variant="outline" className="rounded-full" onClick={() => { if (confirm("Close this collab?")) closeMut.mutate(r.id); }}>Close</Button>
-                        <Button size="sm" className="rounded-full gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
+                        <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Close this collab?")) closeMut.mutate(r.id); }}>Close</Button>
+                        <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
                           <Sparkles className="h-3.5 w-3.5" /> Publish
                         </Button>
                       </div>
                     ) : (
                       <Link to="/collab/$slug" params={{ slug: r.slug }}>
-                        <Button size="sm" variant="outline" className="rounded-full">Manage</Button>
+                        <Button size="sm" variant="outline" className="rounded-md">Manage</Button>
                       </Link>
                     )}
                   </div>
@@ -360,7 +360,7 @@ function MyCollabsPage() {
             <EmptyState
               title="No drafts."
               body="Start a Collab and save it as a draft — it'll wait for you here."
-              cta={<Link to="/collab/new"><Button className="rounded-full">Post a Collab</Button></Link>}
+              cta={<Link to="/collab/new"><Button className="rounded-md">Post a Collab</Button></Link>}
             />
           ) : (
             drafts.map((r) => (
@@ -376,11 +376,11 @@ function MyCollabsPage() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  <Button size="sm" variant="ghost" className="rounded-full gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
+                  <Button size="sm" variant="ghost" className="rounded-md gap-1 text-ink-muted" onClick={() => { if (confirm("Delete this draft?")) deleteMut.mutate(r.id); }}>
                     <Trash2 className="h-3.5 w-3.5" /> Delete
                   </Button>
                   <Link to="/collab/$slug/edit" params={{ slug: r.slug }}>
-                    <Button size="sm" className="rounded-full gap-1">
+                    <Button size="sm" className="rounded-md gap-1">
                       <Pencil className="h-3.5 w-3.5" /> Resume editing
                     </Button>
                   </Link>
@@ -409,7 +409,7 @@ function MyCollabsPage() {
                 </div>
                 {r.work && (
                   <Link to="/works/$slug" params={{ slug: r.work.slug }}>
-                    <Button size="sm" variant="outline" className="rounded-full gap-1">
+                    <Button size="sm" variant="outline" className="rounded-md gap-1">
                       Open Work <ExternalLink className="h-3.5 w-3.5" />
                     </Button>
                   </Link>
@@ -424,7 +424,7 @@ function MyCollabsPage() {
             <EmptyState
               title="You haven't applied to anything yet."
               body="Browse the Collab Board — apply to a role in one tap."
-              cta={<Link to="/collab"><Button className="rounded-full">Browse Collabs</Button></Link>}
+              cta={<Link to="/collab"><Button className="rounded-md">Browse Collabs</Button></Link>}
             />
           ) : (
             applied.map((r) => r.post && (
@@ -458,7 +458,7 @@ function MyCollabsPage() {
 
 function EmptyState({ title, body, cta }: { title: string; body: string; cta?: React.ReactNode }) {
   return (
-    <div className="rounded-3xl border border-dashed border-border bg-surface p-12 text-center">
+    <div className="rounded-xl border border-dashed border-border bg-surface p-12 text-center">
       <h3 className="font-display text-2xl text-ink">{title}</h3>
       <p className="mx-auto mt-2 max-w-sm text-sm text-ink-muted">{body}</p>
       {cta && <div className="mt-5">{cta}</div>}

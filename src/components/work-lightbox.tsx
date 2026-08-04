@@ -98,9 +98,9 @@ export function WorkLightbox({
 
           <div className="mx-auto flex min-h-full max-w-5xl flex-col items-stretch gap-6 px-4 py-12 md:px-8 md:py-16">
             {/* Media */}
-            <div className="overflow-hidden rounded-3xl bg-surface-2 shadow-lift">
+            <div className="overflow-hidden rounded-xl bg-surface-2 shadow-lift">
               {work.embed_url ? (
-                <EmbedPlayer url={work.embed_url} provider={provider} title={work.title} poster={work.cover_url} className="rounded-3xl border-0" />
+                <EmbedPlayer url={work.embed_url} provider={provider} title={work.title} poster={work.cover_url} className="rounded-xl border-0" />
               ) : work.cover_url ? (
                 <img src={work.cover_url} alt={work.title} className="w-full object-contain" style={{ maxHeight: "70vh" }} />
               ) : (
@@ -160,7 +160,7 @@ export function WorkLightbox({
 
               <div className="flex flex-wrap gap-2 pt-2">
                 <Link to="/works/$slug" params={{ slug: work.slug }} onClick={onClose}>
-                  <Button className="rounded-full gap-1.5">
+                  <Button className="rounded-md gap-1.5">
                     Open full page <ExternalLink className="h-4 w-4" />
                   </Button>
                 </Link>
@@ -169,7 +169,7 @@ export function WorkLightbox({
 
             {/* Mobile prev/next */}
             <div className="flex items-center justify-between gap-2 pt-4 md:hidden">
-              <Button variant="outline" className={cn("rounded-full gap-1.5", !hasPrev && "invisible")} onClick={goPrev}>
+              <Button variant="outline" className={cn("rounded-md gap-1.5", !hasPrev && "invisible")} onClick={goPrev}>
                 <ChevronLeft className="h-4 w-4" /> Prev
               </Button>
               <Button variant="outline" className={cn("rounded-full gap-1.5", !hasNext && "invisible")} onClick={goNext}>

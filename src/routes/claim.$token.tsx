@@ -64,7 +64,7 @@ function ClaimPage() {
 
   return (
     <main className="mx-auto max-w-md px-4 py-16">
-      <div className="rounded-3xl border border-border bg-surface p-8 text-center shadow-soft">
+      <div className="rounded-xl border border-border bg-surface p-8 text-center shadow-soft">
         <Sparkles className="mx-auto h-8 w-8 text-signal" />
         <h1 className="mt-3 font-display text-2xl text-ink">Claim Workshop Plus</h1>
         <p className="mt-1 text-sm text-ink-muted">

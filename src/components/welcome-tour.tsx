@@ -119,7 +119,7 @@ export function WelcomeTour() {
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 40, opacity: 0 }}
             transition={{ type: "spring", stiffness: 280, damping: 28 }}
-            className="relative w-full max-w-lg rounded-t-3xl border border-border bg-surface p-6 shadow-soft sm:rounded-3xl"
+            className="relative w-full max-w-lg rounded-t-3xl border border-border bg-surface p-6 shadow-soft sm:rounded-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <button

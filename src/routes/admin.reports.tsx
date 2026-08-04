@@ -131,22 +131,22 @@ function ReportsQueue() {
                 <div className="flex flex-wrap gap-2">
                   {r.status === "open" && (
                     <>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => hideEntity(r)} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => hideEntity(r)} disabled={acting === r.id}>
                         <EyeOff className="h-3.5 w-3.5" /> Hide
                       </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "reviewed")} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "reviewed")} disabled={acting === r.id}>
                         <Eye className="h-3.5 w-3.5" /> Mark reviewed
                       </Button>
-                      <Button size="sm" variant="outline" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "dismissed")} disabled={acting === r.id}>
+                      <Button size="sm" variant="outline" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "dismissed")} disabled={acting === r.id}>
                         <X className="h-3.5 w-3.5" /> Dismiss
                       </Button>
-                      <Button size="sm" className="rounded-full gap-1.5" onClick={() => setStatus(r.id, "action_taken")} disabled={acting === r.id}>
+                      <Button size="sm" className="rounded-md gap-1.5" onClick={() => setStatus(r.id, "action_taken")} disabled={acting === r.id}>
                         <Check className="h-3.5 w-3.5" /> Action taken
                       </Button>
                     </>
                   )}
                   {r.status !== "open" && (
-                    <Button size="sm" variant="outline" className="rounded-full" onClick={() => setStatus(r.id, "open")}>Reopen</Button>
+                    <Button size="sm" variant="outline" className="rounded-md" onClick={() => setStatus(r.id, "open")}>Reopen</Button>
                   )}
                 </div>
               </div>

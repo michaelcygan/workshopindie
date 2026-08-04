@@ -102,7 +102,7 @@ export function ShareSheet({ entity, trigger }: Props) {
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (v) ensureRef(); }}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button variant="outline" size="sm" className="rounded-full gap-1.5">
+          <Button variant="outline" size="sm" className="rounded-md gap-1.5">
             <Share2 className="h-4 w-4" /> Share
           </Button>
         )}

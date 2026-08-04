@@ -309,7 +309,7 @@ export function CollabTasks({
         <Button
           type="submit"
           size="sm"
-          className="min-h-[44px] rounded-full gap-1"
+          className="min-h-[44px] rounded-md gap-1"
           disabled={!draft.trim() || create.isPending}
         >
           <Plus className="h-4 w-4" /> Add
@@ -329,7 +329,7 @@ export function CollabTasks({
             <Button
               size="sm"
               variant="outline"
-              className="mt-2 rounded-full"
+              className="mt-2 rounded-md"
               onClick={() => tasksQ.refetch()}
             >
               Try again

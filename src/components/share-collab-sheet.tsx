@@ -112,7 +112,7 @@ export function ShareCollabSheet(props: Props) {
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" className="rounded-full gap-2">
+          <Button variant="outline" className="rounded-md gap-2">
             <Share2 className="h-4 w-4" /> Share
           </Button>
         </DialogTrigger>

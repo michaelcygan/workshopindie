@@ -80,7 +80,7 @@ export function EventLocationCard({
                       <Button
                         size="sm"
                         variant="ghost"
-                        className="h-7 shrink-0 rounded-full px-2"
+                        className="h-7 shrink-0 rounded-md px-2"
                         onClick={copyAddress}
                         aria-label="Copy address"
                         title="Copy address"
@@ -122,7 +122,7 @@ export function EventLocationCard({
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 rounded-full px-2"
+                  className="h-7 rounded-md px-2"
                   onClick={() => {
                     navigator.clipboard.writeText(onlineUrl);
                     toast.success("Copied");

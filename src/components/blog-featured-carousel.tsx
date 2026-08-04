@@ -68,7 +68,7 @@ export function FeaturedHero({ post, inCarousel = false }: { post: BlogListItem;
     <Link
       to="/blog/$slug"
       params={{ slug: post.slug }}
-      className={`group block overflow-hidden rounded-3xl border border-border bg-surface hover:bg-muted ${
+      className={`group block overflow-hidden rounded-xl border border-border bg-surface hover:bg-muted ${
         inCarousel ? "h-full" : "mt-6 md:mt-10"
       }`}
     >
@@ -160,7 +160,7 @@ export function BlogFeaturedCarousel({ posts }: { posts: BlogListItem[] }) {
         setInteracting(false);
       }}
     >
-      <div className="overflow-hidden rounded-3xl">
+      <div className="overflow-hidden rounded-xl">
         <div
           className="flex transition-transform duration-500 ease-out"
           style={{ transform: `translateX(-${index * 100}%)` }}

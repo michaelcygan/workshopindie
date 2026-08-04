@@ -79,7 +79,7 @@ export function NowModule({
   const topLounge = lounges[0];
 
   return (
-    <div className="divide-y divide-border overflow-hidden rounded-3xl border border-border bg-surface md:grid md:grid-cols-3 md:divide-x md:divide-y-0">
+    <div className="divide-y divide-border overflow-hidden rounded-xl border border-border bg-surface md:grid md:grid-cols-3 md:divide-x md:divide-y-0">
       {topToday ? (
         <Row
           icon={MessageSquare}

@@ -174,7 +174,7 @@ export function NewMessageDialog({
         </div>
 
         <div className="mt-2 flex justify-end">
-          <Button variant="ghost" className="rounded-full" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" className="rounded-md" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
         </div>

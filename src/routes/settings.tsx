@@ -346,7 +346,7 @@ function AccountSection() {
         <Button
           variant="outline"
           size="sm"
-          className="rounded-full"
+          className="rounded-md"
           onClick={() => { setNewEmail(""); setEmailOpen(true); }}
         >
           Change
@@ -361,7 +361,7 @@ function AccountSection() {
           <Button
             variant="outline"
             size="sm"
-            className="rounded-full"
+            className="rounded-md"
             disabled={resetting}
             onClick={sendPasswordReset}
           >
@@ -503,12 +503,12 @@ function PlusSection() {
         <UsageSummary />
         <div className="mt-4 flex flex-wrap gap-2">
           <Link to="/pricing">
-            <Button size="sm" className="rounded-full">
+            <Button size="sm" className="rounded-md">
               <Sparkles className="mr-1.5 h-3.5 w-3.5" /> Go Plus
             </Button>
           </Link>
           <Link to="/me/blog">
-            <Button size="sm" variant="outline" className="rounded-full">
+            <Button size="sm" variant="outline" className="rounded-md">
               Manage Blog
             </Button>
           </Link>
@@ -546,7 +546,7 @@ function PlusSection() {
         <Button
           size="sm"
           variant="outline"
-          className="rounded-full"
+          className="rounded-md"
           onClick={openPortal}
           disabled={opening}
         >
@@ -554,13 +554,13 @@ function PlusSection() {
           <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
         </Button>
         <Link to="/me/blog">
-          <Button size="sm" variant="outline" className="rounded-full">
+          <Button size="sm" variant="outline" className="rounded-md">
             Manage Blog
           </Button>
         </Link>
         {willCancel && (
           <Link to="/pricing">
-            <Button size="sm" className="rounded-full">
+            <Button size="sm" className="rounded-md">
               Resume subscription
             </Button>
           </Link>
@@ -974,7 +974,7 @@ function BlockedSection() {
             <Button
               variant="outline"
               size="sm"
-              className="rounded-full gap-1.5"
+              className="rounded-md gap-1.5"
               onClick={() => unblock(row.blocked_user_id)}
             >
               <Ban className="h-3.5 w-3.5" /> Unblock
@@ -1028,7 +1028,7 @@ function DangerSection() {
       <Button
         variant="destructive"
         size="sm"
-        className="mt-3 rounded-full"
+        className="mt-3 rounded-md"
         onClick={() => setOpen(true)}
       >
         Delete my account
@@ -1257,7 +1257,7 @@ function DataSection() {
         comments, follows, blocks, and reports filed. Useful for keeping a personal backup or
         moving your portfolio elsewhere.
       </p>
-      <Button size="sm" variant="outline" className="mt-3 rounded-full gap-1.5" onClick={download} disabled={busy}>
+      <Button size="sm" variant="outline" className="mt-3 rounded-md gap-1.5" onClick={download} disabled={busy}>
         <Download className="h-3.5 w-3.5" /> {busy ? "Preparing…" : "Download my data"}
       </Button>
       <p className="mt-3 text-xs text-ink-muted">

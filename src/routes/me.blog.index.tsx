@@ -137,7 +137,7 @@ function MyBlogPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm" className="rounded-full">
+          <Button asChild variant="outline" size="sm" className="rounded-md">
             <Link to="/blog">Public blog</Link>
           </Button>
           <Button
@@ -157,7 +157,7 @@ function MyBlogPage() {
           <p>{acc.reason}</p>
           {(acc.mode === "free" || acc.mode === "lapsed") && (
             <div className="mt-3">
-              <Button asChild size="sm" className="rounded-full">
+              <Button asChild size="sm" className="rounded-md">
                 <Link to="/pricing">Go Plus for unlimited publishing</Link>
               </Button>
             </div>
@@ -173,7 +173,7 @@ function MyBlogPage() {
             ))}
           </div>
         ) : list.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+          <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
             <PenLine className="mx-auto h-6 w-6 text-ink-muted" />
             <p className="mt-3 text-ink-muted">
               You haven't drafted anything yet. Start a post to share what you're working on.

@@ -80,7 +80,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed 
               <Label htmlFor="gate-password">Password</Label>
               <Input id="gate-password" type="password" autoComplete={mode === "signup" ? "new-password" : "current-password"} required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
-            <Button type="submit" disabled={loading} className="w-full rounded-full">
+            <Button type="submit" disabled={loading} className="w-full rounded-md">
               {loading ? "…" : mode === "signup" ? "Create account & join" : "Sign in & join"}
             </Button>
           </form>

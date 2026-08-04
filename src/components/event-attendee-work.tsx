@@ -59,7 +59,7 @@ export function EventAttendeeWork({ eventId }: { eventId: string }) {
   const openWork = (id: string) => setPeekWorkId(id);
 
   return (
-    <section className="mt-6 rounded-3xl border border-border bg-surface p-5 shadow-soft">
+    <section className="mt-6 rounded-xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <div>
           <h3 className="font-display text-lg text-ink">What people are working on</h3>
@@ -107,7 +107,7 @@ export function EventAttendeeWork({ eventId }: { eventId: string }) {
 
       {!isEmpty && activeAttendees > 0 && (
         <div className="mt-4 text-center">
-          <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)} className="rounded-full">
+          <Button variant="ghost" size="sm" onClick={() => setExpanded((v) => !v)} className="rounded-md">
             {expanded
               ? "Show less"
               : tab === "collabs"

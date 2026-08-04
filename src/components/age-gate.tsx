@@ -108,7 +108,7 @@ export function AgeGate() {
       aria-labelledby="age-gate-title"
       className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 px-4 backdrop-blur-sm"
     >
-      <div className="w-full max-w-md rounded-3xl border border-border bg-surface p-6 shadow-soft sm:p-8">
+      <div className="w-full max-w-md rounded-xl border border-border bg-surface p-6 shadow-soft sm:p-8">
         {view === "ask" ? (
           <>
             <h2 id="age-gate-title" className="font-display text-2xl text-ink">
@@ -132,7 +132,7 @@ export function AgeGate() {
               </div>
               <Button
                 type="submit"
-                className="w-full rounded-full"
+                className="w-full rounded-md"
                 disabled={submitting || !birthdate}
               >
                 {submitting ? "Saving…" : "Confirm"}

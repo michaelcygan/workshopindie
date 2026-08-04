@@ -93,7 +93,7 @@ export function GroupTabBar({
             <Button
               variant="ghost"
               size="sm"
-              className="shrink-0 gap-1 rounded-full"
+              className="shrink-0 gap-1 rounded-md"
               aria-label="Create in this group"
             >
               <Plus className="h-4 w-4" /> Create

@@ -38,7 +38,7 @@ export function FeaturedEventsCarousel({
 
       <div className="mt-8">
       {events.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+        <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center">
           <div className="mx-auto mb-3 inline-flex h-12 w-12 items-center justify-center rounded-full bg-muted text-ink-soft">
             <CalendarHeart className="h-6 w-6" />
           </div>
@@ -49,13 +49,13 @@ export function FeaturedEventsCarousel({
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
             {isAdmin ? (
               <Link to="/admin/events">
-                <Button className="rounded-full gap-2">
+                <Button className="rounded-md gap-2">
                   <CalendarPlus className="h-4 w-4" /> Post the first event
                 </Button>
               </Link>
             ) : (
               <Link to="/groups">
-                <Button variant="outline" className="rounded-full">Browse groups</Button>
+                <Button variant="outline" className="rounded-md">Browse groups</Button>
               </Link>
             )}
           </div>

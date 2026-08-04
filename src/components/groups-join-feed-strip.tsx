@@ -31,7 +31,7 @@ export function GroupsJoinFeedStrip({ hasGroups, onBrowseAll }: Props) {
   // Empty/auth states render as a single inline line (no marquee).
   if (!user || !hasGroups || isLoading || items.length === 0) {
     return (
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-border bg-surface px-4 py-3 shadow-soft">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-3 shadow-soft">
         <div className="flex min-w-0 items-center gap-2">
           <Sparkles className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
           <span className="text-[11px] font-medium uppercase tracking-[0.18em] text-ink-muted">
@@ -72,7 +72,7 @@ export function GroupsJoinFeedStrip({ hasGroups, onBrowseAll }: Props) {
   return (
     <section
       aria-label="Live opportunities in your groups"
-      className="rounded-3xl border border-border bg-surface shadow-soft"
+      className="rounded-xl border border-border bg-surface shadow-soft"
     >
       <div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-2.5">
         <div className="flex items-center gap-2">

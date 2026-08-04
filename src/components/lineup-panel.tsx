@@ -132,7 +132,7 @@ export function LineupPanel({
   }
 
   return (
-    <div className="rounded-3xl border border-border bg-surface p-5 shadow-soft">
+    <div className="rounded-xl border border-border bg-surface p-5 shadow-soft">
       <div className="mb-4 flex items-end justify-between gap-2">
         <div>
           <h3 className="font-display text-lg text-ink">Lineup</h3>
@@ -143,11 +143,11 @@ export function LineupPanel({
           </p>
         </div>
         {!mine ? (
-          <Button size="sm" className="rounded-full" onClick={handleSignUp}>
+          <Button size="sm" className="rounded-md" onClick={handleSignUp}>
             I'm performing
           </Button>
         ) : (
-          <Button size="sm" variant="ghost" className="rounded-full text-destructive" onClick={handleRelease}>
+          <Button size="sm" variant="ghost" className="rounded-md text-destructive" onClick={handleRelease}>
             <X className="mr-1 h-3.5 w-3.5" /> Drop my spot
           </Button>
         )}
@@ -165,7 +165,7 @@ export function LineupPanel({
                 <span className="text-ink-soft">
                   {mine.note ? <>doing <span className="font-medium text-ink">{mine.note}</span></> : <span className="text-ink-muted">add what you're doing (optional)</span>}
                 </span>
-                <Button size="sm" variant="ghost" className="ml-auto h-7 rounded-full" onClick={() => { setNoteDraft(mine.note ?? ""); setEditing(true); }}>
+                <Button size="sm" variant="ghost" className="ml-auto h-7 rounded-md" onClick={() => { setNoteDraft(mine.note ?? ""); setEditing(true); }}>
                   <Pencil className="mr-1 h-3 w-3" /> {mine.note ? "Edit" : "Add"}
                 </Button>
               </>
@@ -179,8 +179,8 @@ export function LineupPanel({
                   maxLength={80}
                   placeholder="e.g. 5 min standup, DJ set, instagram.com/me"
                 />
-                <Button size="sm" className="h-7 rounded-full" onClick={saveNote}><Check className="h-3.5 w-3.5" /></Button>
-                <Button size="sm" variant="ghost" className="h-7 rounded-full" onClick={() => setEditing(false)}><X className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" className="h-7 rounded-md" onClick={saveNote}><Check className="h-3.5 w-3.5" /></Button>
+                <Button size="sm" variant="ghost" className="h-7 rounded-md" onClick={() => setEditing(false)}><X className="h-3.5 w-3.5" /></Button>
               </div>
             )}
           </div>

@@ -90,7 +90,7 @@ function AdminEventsPage() {
                     <Button
                       size="sm"
                       variant={ev.featured_at ? "default" : "ghost"}
-                      className="mr-1 h-7 rounded-full"
+                      className="mr-1 h-7 rounded-md"
                       onClick={async () => {
                         await setFeatFn({ data: { id: ev.id, featured: !ev.featured_at } });
                         refetch();
@@ -101,7 +101,7 @@ function AdminEventsPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="h-7 rounded-full text-destructive"
+                      className="h-7 rounded-md text-destructive"
                       onClick={async () => {
                         if (!confirm("Cancel this event? RSVPs will be notified.")) return;
                         await cancelFn({ data: { id: ev.id } });
@@ -459,7 +459,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               When set, anyone signed in can self-sign up. Extras go to a waitlist and auto-promote when spots open. First come, first served.
             </p>
           </div>
-          <Button type="submit" className="w-full rounded-full">Create event</Button>
+          <Button type="submit" className="w-full rounded-md">Create event</Button>
         </form>
       </DialogContent>
     </Dialog>
@@ -556,7 +556,7 @@ function ReportsAlertStrip({ onAnyChange }: { onAnyChange: () => void }) {
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 rounded-full text-destructive"
+                    className="h-7 rounded-md text-destructive"
                     onClick={async () => {
                       if (!confirm(`Cancel "${r.event.title}"? RSVPs will be notified.`)) return;
                       await cancelFn({ data: { id: r.event.id, reason: "Reported as not a real event." } });
@@ -571,7 +571,7 @@ function ReportsAlertStrip({ onAnyChange }: { onAnyChange: () => void }) {
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-7 rounded-full"
+                  className="h-7 rounded-md"
                   onClick={async () => {
                     await dismissFn({ data: { report_ids: r.report_ids } });
                     qc.invalidateQueries({ queryKey: ["admin-event-reports"] });

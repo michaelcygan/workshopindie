@@ -182,7 +182,7 @@ function Signup() {
           ? "Your application is sent. Members get replied to faster — finish your profile so the host can see your face and past work."
           : "Show your Work. Join a Group, or post a Collab and pull a team together."}
       </p>
-      <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
           <GoogleSignIn label="Sign up with Google" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
@@ -240,7 +240,7 @@ function Signup() {
               Workshop is 18+. Private — never shown on your profile.
             </p>
           </div>
-          <Button type="submit" className="w-full rounded-full" disabled={loading}>
+          <Button type="submit" className="w-full rounded-md" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
           <p className="text-center text-[11px] text-ink-muted">

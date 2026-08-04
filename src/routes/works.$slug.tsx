@@ -49,8 +49,8 @@ export const Route = createFileRoute("/works/$slug")({
       <h1 className="font-display text-3xl text-ink">Couldn't load this piece</h1>
       <p className="mt-2 text-sm text-ink-muted">{error.message}</p>
       <div className="mt-6 flex justify-center gap-2">
-        <Button onClick={reset} className="rounded-full">Try again</Button>
-        <Link to="/gallery"><Button variant="outline" className="rounded-full">Back to Gallery</Button></Link>
+        <Button onClick={reset} className="rounded-md">Try again</Button>
+        <Link to="/gallery"><Button variant="outline" className="rounded-md">Back to Gallery</Button></Link>
       </div>
     </main>
   ),
@@ -59,7 +59,7 @@ export const Route = createFileRoute("/works/$slug")({
       <h1 className="font-display text-4xl text-ink">Not found</h1>
       <p className="mt-2 text-sm text-ink-muted">It may have been removed or made private.</p>
       <Link to="/gallery" className="mt-6 inline-block">
-        <Button variant="outline" className="rounded-full">Back to Gallery</Button>
+        <Button variant="outline" className="rounded-md">Back to Gallery</Button>
       </Link>
     </main>
   ),
@@ -190,13 +190,13 @@ function WorkDetail() {
   } : null);
 
   if (isLoading) {
-    return <main className="mx-auto max-w-4xl px-4 py-10"><div className="aspect-video animate-pulse rounded-3xl bg-surface-2" /></main>;
+    return <main className="mx-auto max-w-4xl px-4 py-10"><div className="aspect-video animate-pulse rounded-xl bg-surface-2" /></main>;
   }
   if (!work) {
     return (
       <main className="mx-auto max-w-3xl px-4 py-20 text-center">
         <h1 className="font-display text-4xl text-ink">Not found</h1>
-        <Link to="/gallery" className="mt-6 inline-block"><Button variant="outline" className="rounded-full">Back to Gallery</Button></Link>
+        <Link to="/gallery" className="mt-6 inline-block"><Button variant="outline" className="rounded-md">Back to Gallery</Button></Link>
       </main>
     );
   }
@@ -245,7 +245,7 @@ function WorkDetail() {
           </motion.div>
         ) : work.cover_url && (
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}
-            className="mt-8 overflow-hidden rounded-3xl border border-border bg-surface-2">
+            className="mt-8 overflow-hidden rounded-xl border border-border bg-surface-2">
             <img src={work.cover_url} alt={work.title} className="w-full object-cover" />
           </motion.div>
         )}

@@ -519,7 +519,7 @@ function ToolItems({ scope, tool }: { scope: ToolsScope; tool: { id: string; too
             placeholder={preset.urlPlaceholder ?? "https://…"} />
         )}
         <div className="flex justify-end">
-          <Button type="submit" size="sm" className="rounded-full" disabled={submitting}>Add</Button>
+          <Button type="submit" size="sm" className="rounded-md" disabled={submitting}>Add</Button>
         </div>
       </form>
 

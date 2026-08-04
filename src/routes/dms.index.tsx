@@ -253,7 +253,7 @@ function DmsIndex() {
         <Button
           type="button"
           onClick={() => setComposeOpen(true)}
-          className="shrink-0 rounded-full gap-1.5"
+          className="shrink-0 rounded-md gap-1.5"
         >
           <Pencil className="h-4 w-4" />
           <span className="hidden sm:inline">New message</span>
@@ -380,7 +380,7 @@ function DmsIndex() {
 
 function EmptyInbox({ onNew }: { onNew: () => void }) {
   return (
-    <div className="relative mt-6 overflow-hidden rounded-3xl border border-dashed border-border bg-surface p-10 text-center">
+    <div className="relative mt-6 overflow-hidden rounded-xl border border-dashed border-border bg-surface p-10 text-center">
       <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background-image:radial-gradient(circle,var(--ink)_1px,transparent_1px)] [background-size:18px_18px]" />
       <div className="relative">
         <div className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -391,14 +391,14 @@ function EmptyInbox({ onNew }: { onNew: () => void }) {
           DM your mutuals, or anyone you're connected to through a collab or Group audio.
         </p>
         <div className="mt-5 flex flex-wrap justify-center gap-2">
-          <Button onClick={onNew} className="rounded-full gap-1.5">
+          <Button onClick={onNew} className="rounded-md gap-1.5">
             <Plus className="h-4 w-4" /> New message
           </Button>
           <Link to="/collab">
             <Button variant="outline" className="rounded-full">Browse the Collab Board</Button>
           </Link>
           <Link to="/groups">
-            <Button variant="outline" className="rounded-full">Find your groups</Button>
+            <Button variant="outline" className="rounded-md">Find your groups</Button>
           </Link>
         </div>
       </div>

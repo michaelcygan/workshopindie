@@ -91,7 +91,7 @@ function Consent() {
         bypass Workshop's permissions — everything still runs under your account's access.
       </p>
 
-      <div className="mt-6 rounded-3xl border border-border bg-surface p-8 shadow-soft">
+      <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         {details?.scopes && details.scopes.length > 0 && (
           <div className="mb-4">
             <p className="text-xs uppercase tracking-wide text-ink-muted">Requested access</p>
@@ -110,7 +110,7 @@ function Consent() {
         <div className="flex flex-col gap-2">
           <Button
             type="button"
-            className="w-full rounded-full"
+            className="w-full rounded-md"
             disabled={busy}
             onClick={() => decide(true)}
           >
@@ -119,7 +119,7 @@ function Consent() {
           <Button
             type="button"
             variant="outline"
-            className="w-full rounded-full"
+            className="w-full rounded-md"
             disabled={busy}
             onClick={() => decide(false)}
           >

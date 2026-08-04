@@ -525,7 +525,7 @@ export function CollabComposer({
           <section className="space-y-2">
             <div className="flex items-center justify-between">
               <Label>Roles you need</Label>
-              <Button type="button" size="sm" variant="ghost" className="rounded-full gap-1" onClick={() => addRole()}>
+              <Button type="button" size="sm" variant="ghost" className="rounded-md gap-1" onClick={() => addRole()}>
                 <Plus className="h-3.5 w-3.5" /> Add role
               </Button>
             </div>
@@ -606,7 +606,7 @@ export function CollabComposer({
           "flex flex-wrap justify-end gap-2",
           embed ? "" : "md:hidden",
         )}>
-          <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
+          <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
           <Button
             type="submit"
             variant="outline"
@@ -616,7 +616,7 @@ export function CollabComposer({
           >
             Save as draft
           </Button>
-          <Button type="submit" disabled={submitting} className="rounded-full" onClick={() => setSaveAsDraft(false)}>
+          <Button type="submit" disabled={submitting} className="rounded-md" onClick={() => setSaveAsDraft(false)}>
             {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
           </Button>
         </div>
@@ -639,7 +639,7 @@ export function CollabComposer({
                     : "Add the contact link people should use."}
             </p>
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" className="rounded-full" onClick={() => onCancel?.()}>Cancel</Button>
+              <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
               <Button
                 type="button"
                 variant="outline"
@@ -702,7 +702,7 @@ export function CollabComposer({
             <Label htmlFor="share-url" className="text-xs text-ink-muted">Shareable link</Label>
             <div className="flex items-center gap-2">
               <Input id="share-url" readOnly value={shareUrl} onFocus={(e) => e.currentTarget.select()} className="flex-1 text-xs" />
-              <Button type="button" size="sm" variant="secondary" className="gap-1.5 rounded-full" onClick={copyShareLink}>
+              <Button type="button" size="sm" variant="secondary" className="gap-1.5 rounded-md" onClick={copyShareLink}>
                 {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                 {copied ? "Copied" : "Copy"}
               </Button>
@@ -710,13 +710,13 @@ export function CollabComposer({
             <p className="text-[11px] text-ink-muted">Drop it in IG stories, a group chat, or anywhere your people live.</p>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" className="rounded-full" onClick={() => setPostedDialog(null)}>
+            <Button type="button" variant="ghost" className="rounded-md" onClick={() => setPostedDialog(null)}>
               Stay here
             </Button>
             {fromLounge ? (
               <Button
                 type="button"
-                className="rounded-full"
+                className="rounded-md"
                 onClick={() => {
                   const lounge = fromLounge;
                   setPostedDialog(null);
@@ -728,7 +728,7 @@ export function CollabComposer({
             ) : (
               <Button
                 type="button"
-                className="rounded-full"
+                className="rounded-md"
                 onClick={() => {
                   const posted = postedDialog!;
                   setPostedDialog(null);
