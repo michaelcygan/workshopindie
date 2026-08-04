@@ -509,24 +509,28 @@ export async function upcomingEventsServer(
     .in("status", ["going", "maybe"]);
   const rsvpIds = ((rsvps ?? []) as Array<{ event_id: string }>).map((r) => r.event_id);
 
+  const groupIds = groups.map((g) => g.id);
+
   async function fetchEvents(
     apply: (q: ReturnType<typeof baseQuery>) => ReturnType<typeof baseQuery>,
+    // `group_only` rows may only be surfaced for groups the viewer belongs to.
+    allowGroupOnly = false,
   ) {
-    const { data } = await apply(baseQuery());
+    const { data } = await apply(baseQuery(allowGroupOnly));
     return (data ?? []) as unknown as Row[];
   }
-  function baseQuery() {
+  function baseQuery(allowGroupOnly: boolean) {
     return supabaseAdmin
       .from("group_events")
       .select(EVENT_SELECT)
       .gt("starts_at", nowIso)
       .is("deleted_at", null)
-      .in("visibility", ["public", "group_only"])
+      .in("status", DISCOVERABLE_STATUSES as unknown as string[])
+      .in("visibility", allowGroupOnly ? ["public", "group_only"] : ["public"])
       .order("starts_at", { ascending: true })
       .limit(5);
   }
 
-  const groupIds = groups.map((g) => g.id);
   const candidates: Array<{ row: Row; reason: HomeEvent["reason"]; rsvped: boolean }> = [];
   const seen = new Set<string>();
   const push = (row: Row, reason: HomeEvent["reason"], rsvped: boolean) => {
@@ -536,10 +540,11 @@ export async function upcomingEventsServer(
   };
 
   if (rsvpIds.length) {
-    for (const row of await fetchEvents((q) => q.in("id", rsvpIds))) push(row, "rsvp", true);
+    // The viewer already RSVPed, so a group_only row is one they could see.
+    for (const row of await fetchEvents((q) => q.in("id", rsvpIds), true)) push(row, "rsvp", true);
   }
   if (candidates.length < max && groupIds.length) {
-    for (const row of await fetchEvents((q) => q.in("group_id", groupIds))) {
+    for (const row of await fetchEvents((q) => q.in("group_id", groupIds), true)) {
       push(row, "group", false);
     }
   }
@@ -553,6 +558,7 @@ export async function upcomingEventsServer(
       push(row, "online", false);
     }
   }
+
   if (!candidates.length) return [];
 
   const picks = candidates.slice(0, max);
