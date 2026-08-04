@@ -456,7 +456,10 @@ export type Database = {
           collab_post_id: string
           collab_role_id: string | null
           id: string
+          is_application: boolean
           message_preview: string | null
+          review_status: Database["public"]["Enums"]["collab_review_status"]
+          reviewed_at: string | null
           sender_user_id: string
           sent_at: string
         }
@@ -464,7 +467,10 @@ export type Database = {
           collab_post_id: string
           collab_role_id?: string | null
           id?: string
+          is_application?: boolean
           message_preview?: string | null
+          review_status?: Database["public"]["Enums"]["collab_review_status"]
+          reviewed_at?: string | null
           sender_user_id: string
           sent_at?: string
         }
@@ -472,7 +478,10 @@ export type Database = {
           collab_post_id?: string
           collab_role_id?: string | null
           id?: string
+          is_application?: boolean
           message_preview?: string | null
+          review_status?: Database["public"]["Enums"]["collab_review_status"]
+          reviewed_at?: string | null
           sender_user_id?: string
           sent_at?: string
         }
@@ -555,6 +564,7 @@ export type Database = {
           phone: string | null
           portfolio_url: string | null
           reel_url: string | null
+          review_status: Database["public"]["Enums"]["collab_review_status"]
           status: string
           user_agent: string | null
         }
@@ -576,6 +586,7 @@ export type Database = {
           phone?: string | null
           portfolio_url?: string | null
           reel_url?: string | null
+          review_status?: Database["public"]["Enums"]["collab_review_status"]
           status?: string
           user_agent?: string | null
         }
@@ -597,6 +608,7 @@ export type Database = {
           phone?: string | null
           portfolio_url?: string | null
           reel_url?: string | null
+          review_status?: Database["public"]["Enums"]["collab_review_status"]
           status?: string
           user_agent?: string | null
         }
@@ -721,6 +733,8 @@ export type Database = {
         Row: {
           accepts_suggestions: boolean
           also_cities: string[]
+          applications_open: boolean
+          archived_at: string | null
           boost_count: number
           categories: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
@@ -735,6 +749,7 @@ export type Database = {
           ends_on: string | null
           external_contact_url: string | null
           id: string
+          lifecycle_state: string | null
           live_workshop_id: string | null
           location_mode: Database["public"]["Enums"]["location_type"]
           pinned_at: string | null
@@ -755,6 +770,8 @@ export type Database = {
         Insert: {
           accepts_suggestions?: boolean
           also_cities?: string[]
+          applications_open?: boolean
+          archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
           category: Database["public"]["Enums"]["category"]
@@ -769,6 +786,7 @@ export type Database = {
           ends_on?: string | null
           external_contact_url?: string | null
           id?: string
+          lifecycle_state?: string | null
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           pinned_at?: string | null
@@ -789,6 +807,8 @@ export type Database = {
         Update: {
           accepts_suggestions?: boolean
           also_cities?: string[]
+          applications_open?: boolean
+          archived_at?: string | null
           boost_count?: number
           categories?: Database["public"]["Enums"]["category"][]
           category?: Database["public"]["Enums"]["category"]
@@ -803,6 +823,7 @@ export type Database = {
           ends_on?: string | null
           external_contact_url?: string | null
           id?: string
+          lifecycle_state?: string | null
           live_workshop_id?: string | null
           location_mode?: Database["public"]["Enums"]["location_type"]
           pinned_at?: string | null
@@ -840,6 +861,13 @@ export type Database = {
             columns: ["live_workshop_id"]
             isOneToOne: false
             referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collab_posts_resulting_work_id_fkey"
+            columns: ["resulting_work_id"]
+            isOneToOne: false
+            referencedRelation: "works"
             referencedColumns: ["id"]
           },
           {
@@ -5385,6 +5413,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "works_source_collab_post_id_fkey"
+            columns: ["source_collab_post_id"]
+            isOneToOne: false
+            referencedRelation: "collab_posts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "works_source_workshop_id_fkey"
             columns: ["source_workshop_id"]
             isOneToOne: false
@@ -7248,6 +7283,19 @@ export type Database = {
         Args: { _room_id: string }
         Returns: undefined
       }
+      publish_work_from_collab: {
+        Args: {
+          _category: Database["public"]["Enums"]["category"]
+          _collab: string
+          _cover_url: string
+          _credited_user_ids: string[]
+          _description: string
+          _extra_credits: Json
+          _primary_url: string
+          _title: string
+        }
+        Returns: Json
+      }
       realtime_can_access_dm: {
         Args: { _conversation_id: string }
         Returns: boolean
@@ -7370,6 +7418,7 @@ export type Database = {
         | "jam"
         | "standup"
         | "writing_book"
+        | "other"
       collab_invite_status:
         | "pending"
         | "accepted"
@@ -7377,6 +7426,13 @@ export type Database = {
         | "withdrawn"
         | "left"
       collab_post_status: "open" | "closed" | "archived" | "removed" | "draft"
+      collab_review_status:
+        | "new"
+        | "reviewing"
+        | "accepted"
+        | "declined"
+        | "withdrawn"
+        | "spam"
       compensation_type:
         | "paid"
         | "unpaid"
@@ -7644,6 +7700,7 @@ export const Constants = {
         "jam",
         "standup",
         "writing_book",
+        "other",
       ],
       collab_invite_status: [
         "pending",
@@ -7653,6 +7710,14 @@ export const Constants = {
         "left",
       ],
       collab_post_status: ["open", "closed", "archived", "removed", "draft"],
+      collab_review_status: [
+        "new",
+        "reviewing",
+        "accepted",
+        "declined",
+        "withdrawn",
+        "spam",
+      ],
       compensation_type: [
         "paid",
         "unpaid",

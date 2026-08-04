@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createHash } from "crypto";
 import { getRequestHeader } from "@tanstack/react-start/server";
+import { applicationRejectionReason } from "@/lib/collab/lifecycle";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
@@ -59,12 +60,13 @@ export const submitGuestApplication = createServerFn({ method: "POST" })
     // 2. Confirm post is real and open.
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id,accepts_suggestions")
+      .select("id,status,user_id,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
-    if (post.status !== "open") throw new Error("This collab post is no longer accepting applications.");
+    const guestBlocked = applicationRejectionReason(post);
+    if (guestBlocked) throw new Error(guestBlocked);
 
     // 2a. Validate the application path (role vs suggestion).
     let resolvedRoleName: string | null = null;
@@ -381,12 +383,13 @@ export const applyToCollab = createServerFn({ method: "POST" })
 
     const { data: post, error: postErr } = await supabaseAdmin
       .from("collab_posts")
-      .select("id,status,user_id,title,slug,accepts_suggestions")
+      .select("id,status,user_id,title,slug,accepts_suggestions,applications_open,archived_at,resulting_work_id,ends_on")
       .eq("id", data.collabPostId)
       .maybeSingle();
     if (postErr) throw new Error(postErr.message);
     if (!post) throw new Error("This collab post no longer exists.");
-    if (post.status !== "open") throw new Error("This collab is no longer accepting applications.");
+    const blocked = applicationRejectionReason(post);
+    if (blocked) throw new Error(blocked);
     if (post.user_id === userId) throw new Error("You can't apply to your own collab.");
 
     // Validate the selected application path (role vs suggestion).
@@ -595,7 +598,7 @@ const updateSchema = z.object({
     rights_arrangement: z
       .enum(["owner_retains", "equal_split", "creative_commons", "decide_later"])
       .optional(),
-    status: z.enum(["draft", "open"]).optional(),
+    applications_open: z.boolean().optional(),
     accepts_suggestions: z.boolean().optional(),
     roles: z.array(roleDraftSchema).max(20).optional(),
   }),

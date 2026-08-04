@@ -11,7 +11,7 @@ import { CategoryChip } from "@/components/category-chip";
 import { StateBadge } from "@/components/state-badge";
 import { PublishFromCollabSheet } from "@/components/publish-from-collab-sheet";
 import {
-  closeCollab,
+  setCollabApplicationsOpen,
   extendCollabDeadline,
   dismissPublishNudge,
 } from "@/lib/collab-publish.functions";
@@ -82,7 +82,7 @@ function MyCollabsPage() {
     if (!loading && !user) navigate({ to: "/login" });
   }, [user, loading, navigate]);
 
-  const closeFn = useServerFn(closeCollab);
+  const closeFn = useServerFn(setCollabApplicationsOpen);
   
   const extendFn = useServerFn(extendCollabDeadline);
   const dismissFn = useServerFn(dismissPublishNudge);
@@ -186,8 +186,8 @@ function MyCollabsPage() {
   }
 
   const closeMut = useMutation({
-    mutationFn: (id: string) => closeFn({ data: { collabPostId: id } }),
-    onSuccess: () => { toast.success("Closed"); invalidateAll(); },
+    mutationFn: (id: string) => closeFn({ data: { collabPostId: id, open: false } }),
+    onSuccess: () => { toast.success("Submissions paused"); invalidateAll(); },
     onError: (e: Error) => toast.error(e.message),
   });
   const extendMut = useMutation({
@@ -338,7 +338,7 @@ function MyCollabsPage() {
                           const next = prompt("Extend until (YYYY-MM-DD)", new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10));
                           if (next && /^\d{4}-\d{2}-\d{2}$/.test(next)) extendMut.mutate({ id: r.id, endsOn: next });
                         }}>Extend</Button>
-                        <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Close this collab?")) closeMut.mutate(r.id); }}>Close</Button>
+                        <Button size="sm" variant="outline" className="rounded-md" onClick={() => { if (confirm("Pause submissions on this Collab?")) closeMut.mutate(r.id); }}>Pause</Button>
                         <Button size="sm" className="rounded-md gap-1" onClick={() => setPublishTarget({ id: r.id, title: r.title, description: r.description })}>
                           <Sparkles className="h-3.5 w-3.5" /> Publish
                         </Button>

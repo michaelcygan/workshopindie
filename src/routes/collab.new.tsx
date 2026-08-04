@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { type Category, type WorkCategory } from "@/lib/categories";
+import { COLLAB_CATEGORIES, type Category, type CollabCategory } from "@/lib/categories";
 import { CategoryMultiPicker } from "@/components/category-multi-picker";
 import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { TimelinePicker, type TimelineValue } from "@/components/timeline-picker";
@@ -118,6 +118,8 @@ const ROLE_PRESETS: Record<Category, string[]> = {
   open_mic: [],
   jam: [],
   standup: [],
+  other: ["Collaborator", "Producer", "Designer", "Writer", "Editor"],
+
 };
 
 export function CollabComposer({
@@ -150,8 +152,8 @@ export function CollabComposer({
   }, [preselect.data]);
 
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState<WorkCategory>("visual");
-  const [extraCategories, setExtraCategories] = useState<WorkCategory[]>([]);
+  const [category, setCategory] = useState<CollabCategory>("other");
+  const [extraCategories, setExtraCategories] = useState<CollabCategory[]>([]);
   const [description, setDescription] = useState("");
   const [timeline, setTimeline] = useState<TimelineValue>({ mode: "flexible", starts_on: null, ends_on: null });
   const [timelineNote, setTimelineNote] = useState("");
@@ -171,7 +173,6 @@ export function CollabComposer({
   const [submitting, setSubmitting] = useState(false);
   const [postedDialog, setPostedDialog] = useState<{ id: string; slug: string } | null>(null);
   const [copied, setCopied] = useState(false);
-  const [saveAsDraft, setSaveAsDraft] = useState(false);
 
   // Starter prompt: fills empty fields once, on first mount. Never overwrites
   // anything the member has already typed, and never submits on its own.
@@ -183,7 +184,7 @@ export function CollabComposer({
     promptSeeded.current = true;
     setTitle((t) => (t.trim() ? t : seed.title));
     setDescription((d) => (d.trim() ? d : seed.description));
-    setCategory((c) => (c === "visual" ? seed.category : c));
+    setCategory((c) => (c === "other" ? seed.category : c));
   }, [promptId]);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
@@ -220,26 +221,25 @@ export function CollabComposer({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!user) return;
-    if (!title.trim()) return toast.error("Give your Collab a title");
-    if (!description.trim()) return toast.error("Add a sentence on what's the idea");
+    if (!title.trim()) return toast.error("Give your Collab a title or one-line idea");
     if (contactMode === "external_link" && !externalUrl.trim()) return toast.error("Add a link people can use to contact you");
     if (locationMode !== "online" && !city) return toast.error("Pick a city or set location to Remote");
 
-    // Roles are optional. If none are defined AND suggestions aren't accepted,
-    // there's nothing for people to apply to.
+    // Roles are always optional — freeform pitches are part of the basic model.
     const cleanRoles = roles.filter((r) => r.role_name.trim() && r.quantity > 0);
-    if (cleanRoles.length === 0 && !acceptsSuggestions) {
-      return toast.error("Add at least one role, or turn on 'Open to suggestions'.");
-    }
 
-    const targetStatus: "draft" | "open" = saveAsDraft ? "draft" : "open";
+    const targetStatus = "open" as const;
 
-    if (!isPlus && targetStatus === "open") {
+    if (!isPlus) {
+      const today = new Date().toISOString().slice(0, 10);
       const { count } = await supabase
         .from("collab_posts")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user.id)
-        .eq("status", "open");
+        .eq("applications_open", true)
+        .is("archived_at", null)
+        .is("resulting_work_id", null)
+        .or(`ends_on.is.null,ends_on.gte.${today}`);
       if ((count ?? 0) >= FREE_OPEN_COLLAB_CAP) {
         setPlusGate(true);
         return;
@@ -265,7 +265,8 @@ export function CollabComposer({
       external_contact_url: contactMode === "external_link" ? externalUrl.trim() : null,
       user_id: user.id,
       rights_arrangement: rights,
-      accepts_suggestions: acceptsSuggestions,
+      accepts_suggestions: true,
+      applications_open: true,
       status: targetStatus,
     }).select("id,slug").single();
 
@@ -318,11 +319,6 @@ export function CollabComposer({
     setSubmitting(false);
     qc.invalidateQueries({ queryKey: ["member-home"] });
 
-    if (targetStatus === "draft") {
-      toast.success("Draft saved — find it in My Collabs.");
-      onDraftSaved?.();
-      return;
-    }
     if (embed) {
       // Host surface (e.g. Lounge dialog) handles the "posted" UX.
       onPosted?.(post.slug, post.id);
@@ -350,7 +346,7 @@ export function CollabComposer({
   }
 
   // Validation snapshots for progress dots + submit affordance.
-  const pitchValid = title.trim().length > 0 && description.trim().length > 0;
+  const pitchValid = title.trim().length > 0;
   const shapeValid = locationMode === "online" || !!city;
   const teamValid = contactMode === "email_relay" || externalUrl.trim().length > 0;
   const allValid = pitchValid && shapeValid && teamValid;
@@ -369,8 +365,8 @@ export function CollabComposer({
     )}>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="font-display text-4xl text-ink">Post a Collab</h1>
-        <p className="mt-1 text-ink-muted">Share what you're making and the roles you need. People reach out — you pick your team.</p>
+        <h1 className="font-display text-4xl text-ink">Start a Collab</h1>
+        <p className="mt-1 text-ink-muted">Start with an idea. Add roles, timing and detail whenever you want — it's In Progress from the moment you start it.</p>
         <div className="mt-4 flex items-center gap-2" aria-label="Form progress">
           {dots.map((d, i) => (
             <div key={i} className="flex items-center gap-1.5">
@@ -398,6 +394,7 @@ export function CollabComposer({
 
           <CategoryMultiPicker
             label="Medium"
+            options={COLLAB_CATEGORIES}
             primary={category}
             onPrimaryChange={(next) => setCategory(next)}
             extras={extraCategories}
@@ -406,8 +403,8 @@ export function CollabComposer({
           />
 
           <section className="space-y-1.5">
-            <Label htmlFor="desc">What's the idea</Label>
-            <Textarea id="desc" required rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
+            <Label htmlFor="desc">What's the idea (optional)</Label>
+            <Textarea id="desc" rows={5} maxLength={3000} value={description} onChange={(e) => setDescription(e.target.value)}
               placeholder="Even a sentence works: ‘I want to make a short film this week.’ You can flesh it out later." />
             <p className="text-[11px] text-ink-muted">A line is fine. You can edit anytime.</p>
           </section>
@@ -578,20 +575,11 @@ export function CollabComposer({
                 </div>
               ))}
             </div>
-            <label className="mt-2 flex cursor-pointer items-start gap-2 rounded-xl border border-border bg-background/60 p-2.5">
-              <input
-                type="checkbox"
-                className="mt-1 accent-ink"
-                checked={acceptsSuggestions}
-                onChange={(e) => setAcceptsSuggestions(e.target.checked)}
-              />
-              <span className="flex-1">
-                <span className="block text-sm font-medium text-ink">Open to suggestions</span>
-                <span className="block text-[11px] text-ink-muted">
-                  Let people pitch how they can help even if none of the listed roles fit.
-                </span>
-              </span>
-            </label>
+            <p className="mt-2 rounded-xl border border-border bg-background/60 p-2.5 text-[11px] text-ink-muted">
+              Roles are optional. While submissions are open, anyone can also pitch
+              another way they could help.
+            </p>
+
           </section>
 
           <GroupPicker value={selectedGroups} onChange={setSelectedGroups} max={3} />
@@ -627,17 +615,8 @@ export function CollabComposer({
           embed ? "" : "md:hidden",
         )}>
           <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={submitting || !title.trim()}
-            className="rounded-full"
-            onClick={() => setSaveAsDraft(true)}
-          >
-            Save as draft
-          </Button>
-          <Button type="submit" disabled={submitting} className="rounded-md" onClick={() => setSaveAsDraft(false)}>
-            {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
+          <Button type="submit" disabled={submitting || !title.trim()} className="rounded-md">
+            {submitting ? "Starting…" : "Start Collab"}
           </Button>
         </div>
       </form>
@@ -651,9 +630,9 @@ export function CollabComposer({
           <div className="flex items-center justify-between gap-3 py-3">
             <p className="text-xs text-ink-muted">
               {allValid
-                ? "All set — post, or save it as a draft to flesh out later."
+                ? "All set — start it. You can edit everything later."
                 : !pitchValid
-                  ? "Add a title and a sentence on the idea to continue."
+                  ? "Add a title or one-line idea to continue."
                   : !shapeValid
                     ? "Pick a city or set location to Remote."
                     : "Add the contact link people should use."}
@@ -662,42 +641,28 @@ export function CollabComposer({
               <Button type="button" variant="ghost" className="rounded-md" onClick={() => onCancel?.()}>Cancel</Button>
               <Button
                 type="button"
-                variant="outline"
                 disabled={submitting || !title.trim()}
-                className="rounded-full"
-                onClick={() => {
-                  setSaveAsDraft(true);
-                  const form = document.querySelector("form");
-                  if (form) form.requestSubmit();
-                }}
-              >
-                {submitting && saveAsDraft ? "Saving…" : "Save as draft"}
-              </Button>
-              <Button
-                type="button"
-                disabled={submitting}
                 variant={allValid ? "default" : "outline"}
                 className="rounded-full"
                 onClick={(e) => {
-                  setSaveAsDraft(false);
                   const form = document.querySelector("form");
                   if (form) form.requestSubmit();
                   else onSubmit(e as unknown as React.FormEvent);
                 }}
               >
-                {submitting && !saveAsDraft ? "Posting…" : "Post Collab"}
+                {submitting ? "Starting…" : "Start Collab"}
               </Button>
             </div>
           </div>
           <p className="pb-2 text-[11px] text-ink-muted">
             What happens next:&nbsp;
-            <span className="text-ink-soft">Post (or draft)</span>
+            <span className="text-ink-soft">Start it</span>
             <span className="mx-1.5 opacity-50">→</span>
             <span className="text-ink-soft">Edit anytime</span>
             <span className="mx-1.5 opacity-50">→</span>
             <span className="text-ink-soft">People apply</span>
             <span className="mx-1.5 opacity-50">→</span>
-            <span className="text-ink-soft">Post to Gallery</span>
+            <span className="text-ink-soft">Publish Work</span>
           </p>
         </div>
       </div>

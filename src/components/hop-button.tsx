@@ -46,7 +46,7 @@ export function HopButton({ roomId, medium, mode, tone = "outline", fullWidth = 
     try {
       const exclude = Array.from(new Set([roomId, ...recentExitIds()]));
       const res = medium
-        ? await dropMedium({ data: { medium, excludeRoomIds: exclude } })
+        ? await dropMedium({ data: { medium: medium as Exclude<typeof medium, "other">, excludeRoomIds: exclude } })
         : await drop({ data: { excludeRoomIds: exclude } });
       // Superseded by a later hop, or unmounted — don't act on this response.
       if (my !== reqRef.current || !mountedRef.current) return;

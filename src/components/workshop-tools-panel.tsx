@@ -78,7 +78,7 @@ const CATEGORY_DEFAULTS: Record<Category, ShippedToolType> = {
   film: "drive", music: "player", writing: "drive", writing_book: "drive", build: "drive", visual: "drive",
   critique: "drive", business: "drive", coworking: "drive",
   office_hours: "drive", roundtable: "drive", pitch: "drive",
-  listen_party: "player", open_mic: "player", jam: "player", standup: "drive",
+  listen_party: "player", open_mic: "player", jam: "player", standup: "drive", other: "drive",
 };
 
 // Stored tool_type values that may appear on existing rows.
