@@ -174,6 +174,7 @@ export type HomeBlogCard = {
   title: string;
   excerpt: string | null;
   coverUrl: string | null;
+  categorySlug: string | null;
   publishedAt: string | null;
   authorName: string | null;
   authorAvatar: string | null;
@@ -240,6 +241,7 @@ export type PublicBlogCard = {
   excerpt: string | null;
   coverUrl: string | null;
   coverAlt: string | null;
+  categorySlug: string | null;
   publishedAt: string | null;
   authorName: string | null;
   authorAvatar: string | null;

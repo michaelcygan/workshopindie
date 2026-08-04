@@ -13,6 +13,7 @@ export function toBlogCard(p: BlogListItem): PublicBlogCard {
     excerpt: p.excerpt,
     coverUrl: p.cover_image_url,
     coverAlt: p.cover_image_alt,
+    categorySlug: p.category_slug ?? null,
     publishedAt: p.published_at,
     authorName: profile?.display_name || p.author_name || null,
     authorAvatar: profile?.avatar_url ?? null,

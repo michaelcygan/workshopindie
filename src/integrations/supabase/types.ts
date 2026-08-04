@@ -214,6 +214,7 @@ export type Database = {
           author_name: string
           author_profile_id: string | null
           body_markdown: string
+          category_slug: string
           cover_image_alt: string | null
           cover_image_url: string | null
           created_at: string
@@ -236,6 +237,7 @@ export type Database = {
           author_name?: string
           author_profile_id?: string | null
           body_markdown?: string
+          category_slug?: string
           cover_image_alt?: string | null
           cover_image_url?: string | null
           created_at?: string
@@ -258,6 +260,7 @@ export type Database = {
           author_name?: string
           author_profile_id?: string | null
           body_markdown?: string
+          category_slug?: string
           cover_image_alt?: string | null
           cover_image_url?: string | null
           created_at?: string

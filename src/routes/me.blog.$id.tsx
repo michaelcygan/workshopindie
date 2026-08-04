@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
+import { BLOG_CATEGORIES, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
@@ -56,6 +57,7 @@ type EditorPost = {
   status: "draft" | "published";
   publication_type: "editorial" | "member";
   show_in_blog_index: boolean;
+  category_slug: string | null;
   published_at: string | null;
   updated_at: string;
 };
@@ -91,6 +93,7 @@ function MemberBlogEditorPage() {
   const [seoTitle, setSeoTitle] = useState("");
   const [seoDesc, setSeoDesc] = useState("");
   const [listInBlog, setListInBlog] = useState(true);
+  const [categorySlug, setCategorySlug] = useState<BlogCategorySlug>("general");
   const [dirty, setDirty] = useState(false);
   const [loadedForId, setLoadedForId] = useState<string | null>(null);
   const [entityTags, setEntityTags] = useState<BlogEntityTag[]>([]);
@@ -112,6 +115,7 @@ function MemberBlogEditorPage() {
     setSeoTitle(p.seo_title ?? "");
     setSeoDesc(p.seo_description ?? "");
     setListInBlog(p.show_in_blog_index !== false);
+    setCategorySlug(toBlogCategorySlug(p.category_slug));
     setEntityTags(post.entity_tags ?? []);
     setDirty(false);
     setLoadedForId(p.id);
@@ -137,6 +141,7 @@ function MemberBlogEditorPage() {
           seo_title: seoTitle || null,
           seo_description: seoDesc || null,
           show_in_blog_index: listInBlog,
+          category_slug: categorySlug,
           tags: entityTags.map((t) => ({ kind: t.kind, id: t.id })),
           expected_updated_at: post?.post.updated_at,
         },
@@ -396,6 +401,34 @@ function MemberBlogEditorPage() {
         </TabsContent>
 
         <TabsContent value="details" className="mt-4 space-y-4">
+          <div className="rounded-2xl border border-border bg-surface px-4 py-3">
+            <div className="text-sm font-medium text-ink">Category</div>
+            <p className="mt-1 text-[11px] text-ink-muted">
+              One category per post. It decides where your story shows up on the Blog.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {BLOG_CATEGORIES.map((c) => {
+                const active = c.slug === categorySlug;
+                return (
+                  <button
+                    key={c.slug}
+                    type="button"
+                    disabled={readOnly}
+                    onClick={() => { setCategorySlug(c.slug); setDirty(true); }}
+                    aria-pressed={active}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+                      active
+                        ? "border-ink bg-ink text-surface"
+                        : "border-border bg-surface text-ink-soft hover:border-ink/40"
+                    }`}
+                  >
+                    {c.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
             <div className="min-w-0">
               <div className="text-sm font-medium text-ink">List on the public Blog page</div>

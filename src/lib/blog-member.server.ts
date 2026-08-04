@@ -7,6 +7,11 @@ import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 import { generateExcerpt } from "@/lib/blog-excerpt";
 import { moderateFields } from "@/lib/moderation/service.server";
 import { resolveBlogAccess } from "@/lib/blog-access.server";
+import {
+  blogCategoryFromWorkCategory,
+  isBlogCategorySlug,
+  type BlogCategorySlug,
+} from "@/lib/blog-categories";
 
 type AuthContext = {
   supabase: SupabaseClient<Database>;
@@ -14,10 +19,10 @@ type AuthContext = {
 };
 
 const DASHBOARD_FIELDS =
-  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at";
+  "id,title,slug,excerpt,status,publication_type,show_in_blog_index,cover_image_url,published_at,updated_at,created_at,category_slug";
 
 const EDITOR_FIELDS =
-  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name";
+  "id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,status,publication_type,show_in_blog_index,published_at,updated_at,created_at,created_by,author_name,category_slug";
 
 // ---------- helpers ----------
 
@@ -217,6 +222,24 @@ export async function createMyBlogDraftServer(
   if (error) throw new Error(error.message);
   await audit("blog.member.draft_create", data as string, context.userId);
   const seeded = seedTag ? await seedDraftTag(data as string, context.userId, seedTag) : true;
+
+  // A brand-new Work-seeded draft inherits that Work's medium. Reused drafts
+  // above return untouched, so an existing category is never overwritten.
+  if (seedTag?.kind === "work") {
+    const { data: work } = await supabaseAdmin
+      .from("works")
+      .select("category")
+      .eq("id", seedTag.id)
+      .maybeSingle();
+    const slug = blogCategoryFromWorkCategory((work as { category: string | null } | null)?.category);
+    if (slug !== "general") {
+      await supabaseAdmin
+        .from("blog_posts")
+        .update({ category_slug: slug })
+        .eq("id", data as string)
+        .eq("created_by", context.userId);
+    }
+  }
   // Starter copy only ever lands on a brand-new draft — a reused draft above is
   // returned untouched so we can never overwrite someone's writing.
   if (seedPromptId && BLOG_SEED_PROMPTS[seedPromptId]) {
@@ -256,6 +279,7 @@ type MemberUpdateInput = {
   seo_title?: string | null;
   seo_description?: string | null;
   show_in_blog_index?: boolean;
+  category_slug?: BlogCategorySlug;
   expected_updated_at?: string;
   tags?: Array<{ kind: "work" | "collab" | "group" | "event" | "profile"; id: string }>;
 };
@@ -313,6 +337,11 @@ export async function updateMyBlogPostServer(context: AuthContext, id: string, i
   }
 
   if (input.show_in_blog_index !== undefined) patch.show_in_blog_index = input.show_in_blog_index;
+
+  // Allowlisted metadata: never moderated, never affects the article slug.
+  if (input.category_slug !== undefined && isBlogCategorySlug(input.category_slug)) {
+    patch.category_slug = input.category_slug;
+  }
 
   // Slug editable only before first publish.
   if (input.slug !== undefined) {

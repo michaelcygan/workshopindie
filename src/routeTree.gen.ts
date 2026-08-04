@@ -90,6 +90,7 @@ import { Route as WorksSlugEditRouteImport } from './routes/works.$slug.edit'
 import { Route as MeBlogIdRouteImport } from './routes/me.blog.$id'
 import { Route as CollabClaimTokenRouteImport } from './routes/collab.claim.$token'
 import { Route as CollabSlugEditRouteImport } from './routes/collab.$slug.edit'
+import { Route as BlogCCategoryRouteImport } from './routes/blog.c.$category'
 import { Route as ApiPublicOgRouteImport } from './routes/api/public/og'
 import { Route as AdminUsersIdRouteImport } from './routes/admin.users.$id'
 import { Route as AdminBlogSubscribersRouteImport } from './routes/admin.blog.subscribers'
@@ -515,6 +516,11 @@ const CollabSlugEditRoute = CollabSlugEditRouteImport.update({
   path: '/edit',
   getParentRoute: () => CollabSlugRoute,
 } as any)
+const BlogCCategoryRoute = BlogCCategoryRouteImport.update({
+  id: '/blog/c/$category',
+  path: '/blog/c/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicOgRoute = ApiPublicOgRouteImport.update({
   id: '/api/public/og',
   path: '/api/public/og',
@@ -683,6 +689,7 @@ export interface FileRoutesByFullPath {
   '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/me/blog/$id': typeof MeBlogIdRoute
@@ -777,6 +784,7 @@ export interface FileRoutesByTo {
   '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/me/blog/$id': typeof MeBlogIdRoute
@@ -878,6 +886,7 @@ export interface FileRoutesById {
   '/admin/blog/subscribers': typeof AdminBlogSubscribersRoute
   '/admin/users/$id': typeof AdminUsersIdRoute
   '/api/public/og': typeof ApiPublicOgRoute
+  '/blog/c/$category': typeof BlogCCategoryRoute
   '/collab/$slug/edit': typeof CollabSlugEditRoute
   '/collab/claim/$token': typeof CollabClaimTokenRoute
   '/me/blog/$id': typeof MeBlogIdRoute
@@ -980,6 +989,7 @@ export interface FileRouteTypes {
     | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/api/public/og'
+    | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/me/blog/$id'
@@ -1074,6 +1084,7 @@ export interface FileRouteTypes {
     | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/api/public/og'
+    | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/me/blog/$id'
@@ -1174,6 +1185,7 @@ export interface FileRouteTypes {
     | '/admin/blog/subscribers'
     | '/admin/users/$id'
     | '/api/public/og'
+    | '/blog/c/$category'
     | '/collab/$slug/edit'
     | '/collab/claim/$token'
     | '/me/blog/$id'
@@ -1244,6 +1256,7 @@ export interface RootRouteChildren {
   DotlovableOauthConsentRoute: typeof DotlovableOauthConsentRoute
   Char91DotmcpChar93InvokeToolToolRoute: typeof Char91DotmcpChar93InvokeToolToolRoute
   ApiPublicOgRoute: typeof ApiPublicOgRoute
+  BlogCCategoryRoute: typeof BlogCCategoryRoute
   MeBlogIdRoute: typeof MeBlogIdRoute
   WorksCollabNewRoute: typeof WorksCollabNewRoute
   WorksInviteTokenRoute: typeof WorksInviteTokenRoute
@@ -1827,6 +1840,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CollabSlugEditRouteImport
       parentRoute: typeof CollabSlugRoute
     }
+    '/blog/c/$category': {
+      id: '/blog/c/$category'
+      path: '/blog/c/$category'
+      fullPath: '/blog/c/$category'
+      preLoaderRoute: typeof BlogCCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/og': {
       id: '/api/public/og'
       path: '/api/public/og'
@@ -2188,6 +2208,7 @@ const rootRouteChildren: RootRouteChildren = {
   DotlovableOauthConsentRoute: DotlovableOauthConsentRoute,
   Char91DotmcpChar93InvokeToolToolRoute: Char91DotmcpChar93InvokeToolToolRoute,
   ApiPublicOgRoute: ApiPublicOgRoute,
+  BlogCCategoryRoute: BlogCCategoryRoute,
   MeBlogIdRoute: MeBlogIdRoute,
   WorksCollabNewRoute: WorksCollabNewRoute,
   WorksInviteTokenRoute: WorksInviteTokenRoute,

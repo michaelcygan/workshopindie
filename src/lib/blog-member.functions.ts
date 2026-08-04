@@ -12,6 +12,7 @@ import {
   deleteMyBlogDraftServer,
 } from "@/lib/blog-member.server";
 import { BLOG_SEED_PROMPT_IDS } from "@/lib/blog-seed-prompts";
+import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 
 const cursorSchema = z
   .object({ updated_at: z.string(), id: z.string().uuid() })
@@ -68,6 +69,7 @@ export const updateMyBlogPost = createServerFn({ method: "POST" })
         seo_title: z.string().max(120).nullable().optional(),
         seo_description: z.string().max(240).nullable().optional(),
         show_in_blog_index: z.boolean().optional(),
+        category_slug: z.enum(BLOG_CATEGORY_SLUGS).optional(),
         tags: z
           .array(
             z.object({

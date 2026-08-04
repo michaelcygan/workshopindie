@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, ExternalLink, Pencil, EyeOff, Star, Briefcase, Users, MapPin, Calendar, User } from "lucide-react";
 import type { BlogEntityKind } from "@/lib/blog-entity-tags";
+import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug } from "@/lib/blog-categories";
 
 export const Route = createFileRoute("/admin/blog/")({
   component: AdminBlogIndex,
@@ -17,6 +18,7 @@ type PubType = "all" | "editorial" | "member";
 type Status = "all" | "published" | "draft";
 type Vis = "all" | "public" | "hidden";
 type Conn = "all" | "some" | "none";
+type Cat = "all" | (typeof BLOG_CATEGORIES)[number]["slug"];
 
 type Connection = { kind: BlogEntityKind; id: string; label: string };
 
@@ -54,6 +56,7 @@ function AdminBlogIndex() {
   const [status, setStatus] = useState<Status>("all");
   const [vis, setVis] = useState<Vis>("all");
   const [conn, setConn] = useState<Conn>("all");
+  const [cat, setCat] = useState<Cat>("all");
   const [q, setQ] = useState("");
 
   const filtered = useMemo(() => {
@@ -67,6 +70,7 @@ function AdminBlogIndex() {
       if (vis === "hidden" && p.show_in_blog_index !== false) return false;
       if (conn === "some" && connections.length === 0) return false;
       if (conn === "none" && connections.length > 0) return false;
+      if (cat !== "all" && toBlogCategorySlug(p.category_slug) !== cat) return false;
       if (
         term &&
         !(
@@ -79,7 +83,7 @@ function AdminBlogIndex() {
         return false;
       return true;
     });
-  }, [data, pubType, status, vis, conn, q]);
+  }, [data, pubType, status, vis, conn, cat, q]);
 
 
   return (
@@ -109,6 +113,12 @@ function AdminBlogIndex() {
         <FilterChips label="Status" value={status} onChange={setStatus} options={[["all","All"],["published","Published"],["draft","Draft"]]} />
         <FilterChips label="Visibility" value={vis} onChange={setVis} options={[["all","All"],["public","In index"],["hidden","Profile-only"]]} />
         <FilterChips label="Connections" value={conn} onChange={setConn} options={[["all","All"],["some","Has connections"],["none","None"]]} />
+        <FilterChips
+          label="Category"
+          value={cat}
+          onChange={setCat}
+          options={[["all", "All"], ...BLOG_CATEGORIES.map((c) => [c.slug, c.label] as [Cat, string])]}
+        />
         <Input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -162,6 +172,9 @@ function AdminBlogIndex() {
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
                       {p.publication_type ?? "editorial"}
+                    </span>
+                    <span className="ml-1 rounded-full border border-border px-2 py-0.5 text-[11px] uppercase tracking-wide text-ink-muted">
+                      {blogCategoryLabel(p.category_slug)}
                     </span>
                   </td>
                   <td className="px-4 py-3">
