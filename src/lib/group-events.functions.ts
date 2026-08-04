@@ -130,6 +130,31 @@ export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(asyn
 
 
 
+/**
+ * Public: the /events feed. Filters run through the shared discovery layer so
+ * the feed can never disagree with group tabs, city pages, or the Now board.
+ */
+export const listPublicEvents = createServerFn({ method: "GET" })
+  .inputValidator((i) =>
+    z
+      .object({
+        when: z.enum(["upcoming", "past"]).default("upcoming"),
+        format: z.enum(["all", "in_person", "online"]).default("all"),
+        cityId: z.string().uuid().nullish(),
+        limit: z.number().int().min(1).max(100).default(60),
+      })
+      .parse(i ?? {}),
+  )
+  .handler(async ({ data }) => {
+    const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
+    return listDiscoveryEvents({
+      when: data.when,
+      format: data.format,
+      cityId: data.cityId ?? null,
+      limit: data.limit,
+    });
+  });
+
 export const listGroupEvents = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupId: z.string().uuid() }).parse(i))
   .handler(async ({ data }) => {
@@ -142,10 +167,12 @@ export const listGroupEvents = createServerFn({ method: "GET" })
     if (linkErr) throw new Error(linkErr.message);
     const eventIds = (links ?? []).map((l) => l.event_id as string);
     if (eventIds.length === 0) return [];
+    const { DISCOVERABLE_STATUSES } = await import("@/lib/events/discovery.server");
     const { data: rows, error } = await supabase
       .from("group_events")
       .select(EVENT_FIELDS)
       .in("id", eventIds)
+      .in("status", DISCOVERABLE_STATUSES as never)
       .is("deleted_at", null)
       .order("starts_at", { ascending: false })
       .limit(50);
