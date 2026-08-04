@@ -21,6 +21,7 @@ type BlogWrite = {
   seo_description?: string | null;
   author_name: string;
   author_profile_username?: string | null;
+  category_slug?: string;
 };
 
 function publicClient() {
@@ -119,7 +120,7 @@ export function blogPublicCacheHeader() {
 export async function listPublishedPostsServer() {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at,featured,publication_type,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
+    .select("id,title,slug,excerpt,cover_image_url,cover_image_alt,author_name,published_at,updated_at,featured,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
     .eq("status", "published")
     .eq("show_in_blog_index", true)
     .lte("published_at", new Date().toISOString())
@@ -132,7 +133,7 @@ export async function listPublishedPostsServer() {
 export async function getPublishedPostServer(slug: string) {
   const { data, error } = await publicClient()
     .from("blog_posts")
-    .select("id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
+    .select("id,title,slug,excerpt,body_markdown,cover_image_url,cover_image_alt,seo_title,seo_description,author_name,published_at,updated_at,show_in_blog_index,publication_type,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(username,display_name,avatar_url)")
     .eq("slug", slug)
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
@@ -176,7 +177,7 @@ export async function listProfileBlogPostsServer(profileId: string, cursor: { pu
 
   let qb = publicClient()
     .from("blog_posts")
-    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,published_at")
+    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,published_at,category_slug")
     .in("id", ids)
     .eq("status", "published")
     .lte("published_at", new Date().toISOString())
@@ -220,7 +221,7 @@ export async function listPostsByAuthorsServer(profileIds: string[], limit: numb
   if (postIds.length === 0) return [];
   const { data, error } = await client
     .from("blog_posts")
-    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at")
+    .select("id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,category_slug")
     .in("id", postIds)
     .eq("status", "published")
     .eq("show_in_blog_index", true)
@@ -249,7 +250,7 @@ export async function adminListPostsServer(context: AuthContext) {
   await requireAdmin(context);
   const { data, error } = await supabaseAdmin
     .from("blog_posts")
-    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id")
+    .select("id,title,slug,status,author_name,published_at,updated_at,created_at,cover_image_url,publication_type,show_in_blog_index,featured,author_profile_id,category_slug")
     .order("updated_at", { ascending: false })
     .limit(500);
   if (error) throw new Error(error.message);
@@ -386,6 +387,7 @@ export async function adminCreateDraftServer(context: AuthContext, data: BlogWri
       seo_description: data.seo_description ?? null,
       author_name: data.author_name,
       author_profile_id: authorProfileId,
+      category_slug: data.category_slug ?? "general",
       status: "draft",
       created_by: context.userId,
       updated_by: context.userId,
@@ -427,6 +429,7 @@ export async function adminUpdatePostServer(context: AuthContext, data: BlogWrit
       seo_description: data.seo_description ?? null,
       author_name: data.author_name,
       author_profile_id: authorProfileId,
+      ...(data.category_slug ? { category_slug: data.category_slug } : {}),
       updated_by: context.userId,
     })
     .eq("id", data.id);

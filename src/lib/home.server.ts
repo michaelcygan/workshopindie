@@ -1359,7 +1359,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
 /* ───────────────────── Blog: featured header + rail ───────────────────── */
 
 const BLOG_CARD_COLS =
-  "id,slug,title,excerpt,cover_image_url,author_name,published_at,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
+  "id,slug,title,excerpt,cover_image_url,author_name,published_at,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
 
 type BlogCardRow = {
   id: string;
@@ -1369,6 +1369,7 @@ type BlogCardRow = {
   cover_image_url: string | null;
   author_name: string | null;
   published_at: string | null;
+  category_slug: string | null;
   author_profile: { display_name: string | null; avatar_url: string | null } | null;
 };
 
@@ -1379,6 +1380,7 @@ function toBlogCard(r: BlogCardRow): HomeBlogCard {
     title: r.title,
     excerpt: r.excerpt,
     coverUrl: r.cover_image_url,
+    categorySlug: r.category_slug ?? null,
     publishedAt: r.published_at,
     authorName: r.author_profile?.display_name || r.author_name,
     authorAvatar: r.author_profile?.avatar_url ?? null,
@@ -1601,7 +1603,7 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
 /* ─────────────────────── Public (logged-out) home ─────────────────────── */
 
 const PUBLIC_BLOG_COLS =
-  "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
+  "id,slug,title,excerpt,cover_image_url,cover_image_alt,author_name,published_at,category_slug,author_profile:profiles!blog_posts_author_profile_id_fkey(display_name,avatar_url)";
 
 type PublicBlogRow = {
   id: string;
@@ -1612,6 +1614,7 @@ type PublicBlogRow = {
   cover_image_alt: string | null;
   author_name: string | null;
   published_at: string | null;
+  category_slug: string | null;
   author_profile: { display_name: string | null; avatar_url: string | null } | null;
 };
 
@@ -1623,6 +1626,7 @@ function toPublicBlogCard(r: PublicBlogRow): PublicBlogCard {
     excerpt: r.excerpt,
     coverUrl: r.cover_image_url,
     coverAlt: r.cover_image_alt,
+    categorySlug: r.category_slug ?? null,
     publishedAt: r.published_at,
     authorName: r.author_profile?.display_name || r.author_name,
     authorAvatar: r.author_profile?.avatar_url ?? null,

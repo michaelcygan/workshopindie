@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { setResponseHeader } from "@tanstack/react-start/server";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { BLOG_CATEGORY_SLUGS } from "@/lib/blog-categories";
 
 export const listPublishedPosts = createServerFn({ method: "GET" })
   .handler(async () => {
@@ -123,6 +124,7 @@ export const adminCreateDraft = createServerFn({ method: "POST" })
     seo_description: z.string().trim().max(160).nullable().optional(),
     author_name: z.string().trim().min(1).max(120).default("Workshop"),
     author_profile_username: z.string().trim().max(80).nullable().optional(),
+    category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { adminCreateDraftServer } = await import("./blog.server");
@@ -143,6 +145,7 @@ export const adminUpdatePost = createServerFn({ method: "POST" })
     seo_description: z.string().trim().max(160).nullable().optional(),
     author_name: z.string().trim().min(1).max(120).default("Workshop"),
     author_profile_username: z.string().trim().max(80).nullable().optional(),
+    category_slug: z.enum(BLOG_CATEGORY_SLUGS).default("general"),
   }).parse(d))
   .handler(async ({ data, context }) => {
     const { adminUpdatePostServer } = await import("./blog.server");

@@ -18,6 +18,7 @@ import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
+import { BLOG_CATEGORIES, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
 
 const SITE = "https://workshopindie.com";
 
@@ -32,6 +33,7 @@ export type BlogEditorInitial = {
   seo_title?: string | null;
   seo_description?: string | null;
   author_name?: string;
+  category_slug?: string | null;
   author_profile?: { username: string | null } | null;
   status?: "draft" | "published";
   published_at?: string | null;
@@ -56,6 +58,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
   const [authorName, setAuthorName] = useState(initial?.author_name ?? "Workshop");
+  const [categorySlug, setCategorySlug] = useState<BlogCategorySlug>(toBlogCategorySlug(initial?.category_slug));
   const [authorProfileUsername, setAuthorProfileUsername] = useState(initial?.author_profile?.username ?? "");
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -197,6 +200,7 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
       seo_description: seoDesc.trim() || null,
       author_name: authorName.trim() || "Workshop",
       author_profile_username: authorProfileUsername.trim().replace(/^@/, "") || null,
+      category_slug: categorySlug,
     };
   }
 
@@ -311,6 +315,21 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               onChange={(e) => setAuthorName(e.target.value)}
               className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted" htmlFor="blog-category">
+              Category
+            </label>
+            <select
+              id="blog-category"
+              value={categorySlug}
+              onChange={(e) => { setCategorySlug(toBlogCategorySlug(e.target.value)); setDirty(true); }}
+              className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
+            >
+              {BLOG_CATEGORIES.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.label}</option>
+              ))}
+            </select>
           </div>
         </div>
 

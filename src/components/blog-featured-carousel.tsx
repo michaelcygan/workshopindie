@@ -20,6 +20,7 @@ export type BlogListItem = {
   updated_at: string;
   featured?: boolean | null;
   publication_type?: string | null;
+  category_slug?: string | null;
   author_profile?: BlogAuthorProfile;
 };
 

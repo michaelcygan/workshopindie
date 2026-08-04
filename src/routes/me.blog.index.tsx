@@ -30,6 +30,7 @@ import {
   deleteMyBlogDraft,
 } from "@/lib/blog-member.functions";
 import { PenLine, Plus, ExternalLink, ChevronRight, MoreVertical, Trash2, Loader2 } from "lucide-react";
+import { blogCategoryLabel } from "@/lib/blog-categories";
 
 
 export const Route = createFileRoute("/me/blog/")({
@@ -50,6 +51,7 @@ type Post = {
   excerpt: string;
   status: "draft" | "published";
   publication_type: "editorial" | "member";
+  category_slug: string | null;
   show_in_blog_index: boolean;
   cover_image_url: string | null;
   published_at: string | null;
@@ -221,6 +223,9 @@ function MyBlogPage() {
                         }`}
                       >
                         {p.status}
+                      </span>
+                      <span className="rounded-full border border-border px-2 py-0.5 text-[10px] uppercase tracking-wider text-ink-muted">
+                        {blogCategoryLabel(p.category_slug)}
                       </span>
                     </div>
                     {p.excerpt && (
