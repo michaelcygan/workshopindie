@@ -201,15 +201,20 @@ export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
     const { data: mem } = await supabase.from("group_members").select("group_id").eq("user_id", userId);
     const ids = (mem ?? []).map((r) => r.group_id);
     if (ids.length === 0) return [];
+    const { DISCOVERABLE_STATUSES, sanitizeDiscoveryRows } = await import(
+      "@/lib/events/discovery.server"
+    );
     const { data, error } = await supabase
       .from("group_events")
-      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`)
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url,deleted_at)`)
       .in("group_id", ids)
+      .in("status", DISCOVERABLE_STATUSES as never)
       .gt("starts_at", new Date().toISOString())
       .is("deleted_at", null)
       .order("starts_at", { ascending: true })
       .limit(12);
     if (error) throw new Error(error.message);
+    return sanitizeDiscoveryRows(data) as unknown as NonNullable<typeof data>;
     return data ?? [];
   });
 
