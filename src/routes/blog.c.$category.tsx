@@ -63,7 +63,10 @@ function CategoryNotFound() {
 }
 
 function BlogCategoryPage() {
-  const { posts, category } = Route.useLoaderData();
+  const { posts, category } = Route.useLoaderData() as {
+    posts: BlogListItem[];
+    category: ReturnType<typeof getBlogCategory>;
+  };
 
   const featured = posts.filter((p) => p.featured);
   const featuredIds = new Set(featured.map((p) => p.id));

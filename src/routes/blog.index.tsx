@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { listPublishedPosts } from "@/lib/blog.functions";
 import type { BlogListItem } from "@/components/blog-featured-carousel";
 import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
+import { BlogCategoryNav } from "@/components/blog/blog-category-nav";
 import {
   BlogArchive,
   BlogLatestStories,
@@ -93,6 +94,7 @@ function BlogIndexPage() {
   return (
     <div className="pb-28 md:pb-16">
       <Masthead />
+      <BlogCategoryNav active="all" />
 
       {posts.length === 0 ? (
         <div className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">

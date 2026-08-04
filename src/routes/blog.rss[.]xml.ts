@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { blogCategoryLabel } from "@/lib/blog-categories";
 
 const SITE = "https://workshopindie.com";
 
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/blog/rss.xml")({
 
         const { data: posts } = await sb
           .from("blog_posts")
-          .select("title,slug,excerpt,author_name,published_at,cover_image_url")
+          .select("title,slug,excerpt,author_name,published_at,cover_image_url,category_slug")
           .eq("status", "published")
           .eq("show_in_blog_index", true)
           .order("published_at", { ascending: false })
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/blog/rss.xml")({
             `      <guid isPermaLink="true">${url}</guid>`,
             `      <pubDate>${pubDate}</pubDate>`,
             p.author_name ? `      <dc:creator><![CDATA[${p.author_name}]]></dc:creator>` : "",
+            `      <category>${xmlEscape(blogCategoryLabel(p.category_slug))}</category>`,
             p.excerpt ? `      <description><![CDATA[${p.excerpt}]]></description>` : "",
             p.cover_image_url ? `      <enclosure url="${xmlEscape(p.cover_image_url)}" type="image/jpeg" />` : "",
             "    </item>",
