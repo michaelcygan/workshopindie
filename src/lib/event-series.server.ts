@@ -23,7 +23,14 @@ export const TARGET_FUTURE_OCCURRENCES = 8;
 
 // ---------------------------------------------------------------- timezone --
 
-type LocalParts = { year: number; month: number; day: number; hour: number; minute: number; second: number };
+type LocalParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
 
 /** Offset (ms) between the given instant's wall clock in `tz` and UTC. */
 function tzOffsetMs(instant: Date, timeZone: string): number {
@@ -67,7 +74,14 @@ export function toZonedParts(instant: Date, timeZone: string): LocalParts {
 
 /** Convert wall-clock parts in a timezone back to a UTC instant. */
 export function zonedPartsToUtc(parts: LocalParts, timeZone: string): Date {
-  const naive = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+  const naive = Date.UTC(
+    parts.year,
+    parts.month - 1,
+    parts.day,
+    parts.hour,
+    parts.minute,
+    parts.second,
+  );
   let ts = naive - tzOffsetMs(new Date(naive), timeZone);
   // One correction pass settles DST boundaries.
   ts = naive - tzOffsetMs(new Date(ts), timeZone);

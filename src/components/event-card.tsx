@@ -17,7 +17,7 @@ export type EventCardData = {
   going_count: number;
   capacity: number | null;
   featured_at: string | null;
-  
+
   group: { slug: string; name: string; avatar_url: string | null };
   source?: "workshop" | "external" | null;
   external_url?: string | null;
@@ -39,9 +39,7 @@ function formatTime(iso: string) {
 export function EventCard({ event, className }: { event: EventCardData; className?: string }) {
   const isExternal = event.source === "external" && !!event.external_url;
   const isOnline = event.format === "online" || event.format === "hybrid";
-  const locationLabel = isOnline
-    ? "Online"
-    : event.venue_name ?? event.venue_address ?? "TBA";
+  const locationLabel = isOnline ? "Online" : (event.venue_name ?? event.venue_address ?? "TBA");
 
   const Body = (
     <>
@@ -89,7 +87,8 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
         {event.tagline && <p className="text-xs text-ink-muted line-clamp-2">{event.tagline}</p>}
         <div className="mt-auto flex items-center justify-between pt-2 text-[11px] text-ink-muted">
           <span className="inline-flex items-center gap-1">
-            <Calendar className="h-3 w-3" /> {formatDate(event.starts_at)} · {formatTime(event.starts_at)}
+            <Calendar className="h-3 w-3" /> {formatDate(event.starts_at)} ·{" "}
+            {formatTime(event.starts_at)}
           </span>
           {isExternal ? (
             <span className="inline-flex items-center gap-1 text-ink-soft">
@@ -104,7 +103,7 @@ export function EventCard({ event, className }: { event: EventCardData; classNam
         <div className="flex items-center gap-1.5 pt-1 text-[11px] text-ink-muted">
           <span>{isExternal ? "External event ·" : "by"}</span>
           <span className="font-medium text-ink-soft">
-            {isExternal ? (event.external_organizer || event.group.name) : event.group.name}
+            {isExternal ? event.external_organizer || event.group.name : event.group.name}
           </span>
         </div>
       </div>

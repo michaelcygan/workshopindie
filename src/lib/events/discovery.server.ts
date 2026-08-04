@@ -30,8 +30,7 @@ export const EVENT_CARD_FIELDS =
 export const GROUP_JOIN =
   "group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,accent_color,visibility,deleted_at)";
 
-export const CITY_JOIN =
-  "city:cities!group_events_venue_city_id_fkey(id,name,slug)";
+export const CITY_JOIN = "city:cities!group_events_venue_city_id_fkey(id,name,slug)";
 
 export type DiscoveryEvent = {
   id: string;
@@ -143,9 +142,7 @@ export async function listDiscoveryEvents(
 
   const supabase = client ?? publicEventsClient();
   const nowIso = new Date().toISOString();
-  const select = [fields, GROUP_JOIN, withCity ? CITY_JOIN : null]
-    .filter(Boolean)
-    .join(",");
+  const select = [fields, GROUP_JOIN, withCity ? CITY_JOIN : null].filter(Boolean).join(",");
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = supabase

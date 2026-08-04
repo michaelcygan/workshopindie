@@ -16,9 +16,12 @@ import { CityCombobox, type CityValue } from "@/components/city-combobox";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useDefaultCity, useApplyDefaultCity } from "@/hooks/use-default-city";
-import { listMyUpcomingRsvps, listMyPastRsvps, listPublicEvents } from "@/lib/group-events.functions";
+import {
+  listMyUpcomingRsvps,
+  listMyPastRsvps,
+  listPublicEvents,
+} from "@/lib/group-events.functions";
 import { cn } from "@/lib/utils";
-
 
 // Public events feed. Drop-in surface for visitors and logged-out crawlers —
 // groups still own their event pages and RSVP still auto-joins the host group.
@@ -29,11 +32,17 @@ type When = "upcoming" | "past";
 const searchSchema = z.object({
   when: fallback(z.enum(["upcoming", "past"]), "upcoming").default("upcoming"),
   format: fallback(z.enum(["all", "in_person", "online"]), "all").default("all"),
-  city: z.string().uuid().catch(undefined as unknown as string).optional(),
-  cityName: z.string().catch(undefined as unknown as string).optional(),
+  city: z
+    .string()
+    .uuid()
+    .catch(undefined as unknown as string)
+    .optional(),
+  cityName: z
+    .string()
+    .catch(undefined as unknown as string)
+    .optional(),
   mine: fallback(z.boolean(), false).default(false),
 });
-
 
 async function fetchPublicEvents(
   fn: (opts: { data: { when: When; format: Format; cityId?: string | null } }) => Promise<unknown>,
@@ -44,7 +53,6 @@ async function fetchPublicEvents(
   const rows = await fn({ data: { when, format, cityId: cityId ?? null } });
   return rows as unknown as EventCardData[];
 }
-
 
 export const Route = createFileRoute("/events/")({
   validateSearch: zodValidator(searchSchema),
@@ -193,8 +201,6 @@ function EventsIndexPage() {
     navigate({ search: (prev: SearchShape) => ({ ...prev, mine: next }) });
   }
 
-
-
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;
 
   const defaultCityQuery = useDefaultCity();
@@ -296,19 +302,21 @@ function EventsIndexPage() {
             )}
           </div>
 
-
-          {!mineActive && defaultCity && cityId === defaultCity.id && defaultCity.source === "ip" && (
-            <p className="px-1 text-xs text-ink-muted">
-              Based on your location ·{" "}
-              <button
-                type="button"
-                onClick={() => setCity(null)}
-                className="underline underline-offset-2 hover:text-ink"
-              >
-                see worldwide
-              </button>
-            </p>
-          )}
+          {!mineActive &&
+            defaultCity &&
+            cityId === defaultCity.id &&
+            defaultCity.source === "ip" && (
+              <p className="px-1 text-xs text-ink-muted">
+                Based on your location ·{" "}
+                <button
+                  type="button"
+                  onClick={() => setCity(null)}
+                  className="underline underline-offset-2 hover:text-ink"
+                >
+                  see worldwide
+                </button>
+              </p>
+            )}
           {!mineActive && !cityId && format !== "online" && defaultCity && (
             <p className="px-1 text-xs text-ink-muted">
               Near you:{" "}
@@ -321,7 +329,6 @@ function EventsIndexPage() {
               </button>
             </p>
           )}
-
         </div>
 
         {when === "upcoming" && !mineActive && (
@@ -329,7 +336,6 @@ function EventsIndexPage() {
             <FeaturedEventsCompact />
           </section>
         )}
-
 
         <section className="mt-10">
           {isLoading && (
@@ -357,14 +363,16 @@ function EventsIndexPage() {
               }
               action={
                 <Button asChild className="rounded-md" onClick={() => mineActive && setMine(false)}>
-                  <Link to={mineActive ? "/events" : "/groups"} search={mineActive ? { mine: false } as never : undefined}>
+                  <Link
+                    to={mineActive ? "/events" : "/groups"}
+                    search={mineActive ? ({ mine: false } as never) : undefined}
+                  >
                     {mineActive ? "Browse events" : "Browse Groups"}
                   </Link>
                 </Button>
               }
             />
           )}
-
 
           {!isLoading && buckets.length > 0 && (
             <div className="space-y-10">

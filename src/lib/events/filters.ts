@@ -6,11 +6,7 @@
  * canceled events never appear in discovery, and events whose owning group
  * is soft-deleted are always dropped.
  */
-export const DISCOVERABLE_STATUSES = [
-  "scheduled",
-  "live",
-  "completed",
-] as const;
+export const DISCOVERABLE_STATUSES = ["scheduled", "live", "completed"] as const;
 
 export type DiscoverableStatus = (typeof DISCOVERABLE_STATUSES)[number];
 

@@ -34,9 +34,7 @@ describe("timezone round-tripping", () => {
   it("keeps local wall-clock time across a fall-back DST boundary", () => {
     const before = "2026-10-28T00:00:00.000Z"; // 19:00 Oct 27 Chicago (CDT)
     const after = advanceInstant(before, "WEEKLY", CHI);
-    expect(toZonedParts(new Date(after), CHI).hour).toBe(
-      toZonedParts(new Date(before), CHI).hour,
-    );
+    expect(toZonedParts(new Date(after), CHI).hour).toBe(toZonedParts(new Date(before), CHI).hour);
   });
 });
 
