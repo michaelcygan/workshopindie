@@ -1254,7 +1254,7 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
 
   const [
     loungesR,
-    eventR,
+    eventsR,
     continueR,
     suggestR,
     circleR,
@@ -1263,9 +1263,11 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
     coverWorkR,
     featuredR,
     mineR,
+    cityR,
+    cityGroupR,
   ] = await Promise.allSettled([
     myGroupLoungesServer(groups),
-    nextEventServer(userId, groups, homeCityId),
+    upcomingEventsServer(userId, groups, homeCityId, 4),
     continueActionsServer(userId, groups, today),
     groups.length
       ? Promise.resolve([] as HomeGroupSuggestion[])
@@ -1282,6 +1284,20 @@ export async function getMemberHomeServer(userId: string): Promise<MemberHomePay
       : Promise.resolve({ data: null }),
     featuredBlogServer(),
     myWorkshopServer(userId),
+    homeCityId
+      ? supabaseAdmin.from("cities").select("id,name,slug").eq("id", homeCityId).maybeSingle()
+      : Promise.resolve({ data: null }),
+    homeCityId
+      ? supabaseAdmin
+          .from("groups")
+          .select("id,name,slug")
+          .eq("city_id", homeCityId)
+          .eq("visibility", "public")
+          .is("deleted_at", null)
+          .order("member_count", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ]);
 
   const lounges = loungesR.status === "fulfilled" ? loungesR.value : [];
