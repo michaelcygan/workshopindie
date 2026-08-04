@@ -202,7 +202,7 @@ export const listApplicants = createServerFn({ method: "POST" })
     const [eventsRes, guestsRes] = await Promise.all([
       supabase
         .from("collab_contact_events")
-        .select("id,sent_at,message_preview,collab_role_id,sender_user_id")
+        .select("id,sent_at,message_preview,collab_role_id,sender_user_id,review_status,is_application")
         .eq("collab_post_id", data.collabPostId)
         .order("sent_at", { ascending: false }),
       supabase
@@ -210,14 +210,16 @@ export const listApplicants = createServerFn({ method: "POST" })
         .select(
           // claim_token is deliberately excluded: it must never be visible to the post
           // owner, only to the guest who submitted the application.
-          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,collab_role_id,matched_user_id",
+          "id,created_at,name,email,phone,message,portfolio_url,reel_url,instagram_handle,status,review_status,collab_role_id,matched_user_id",
         )
         .eq("collab_post_id", data.collabPostId)
         .order("created_at", { ascending: false }),
     ]);
 
-    const events = eventsRes.data ?? [];
+    // Legacy rows predate `is_application` (null) — treat those as applications.
+    const events = (eventsRes.data ?? []).filter((e) => e.is_application !== false);
     const guestRows = (guestsRes.data ?? []).filter((g) => !g.matched_user_id);
+
 
     // Hydrate sender profiles in one batched query.
     const senderIds = Array.from(new Set(events.map((e) => e.sender_user_id).filter(Boolean)));
