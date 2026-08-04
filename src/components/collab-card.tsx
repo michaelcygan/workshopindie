@@ -3,6 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { Clock, Radio } from "lucide-react";
 import { CategoryChipsCompact } from "./category-chips";
 import { StateBadge } from "./state-badge";
+import { collabLifecycleState, recruitmentState } from "@/lib/collab/lifecycle";
 import type { Category } from "@/lib/categories";
 import { timelineBadgeText, type TimelineMode } from "./timeline-picker";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,8 @@ export type CollabCardData = {
   created_at: string;
   live_workshop_id?: string | null;
   resulting_work_id?: string | null;
+  applications_open?: boolean | null;
+  archived_at?: string | null;
   user?: { display_name: string | null; username: string | null; avatar_url: string | null } | null;
   city?: { name: string } | null;
   roles?: { id: string; role_name: string; sort_order: number }[] | null;
@@ -86,11 +89,13 @@ export function CollabCard({
     : null;
   const tlLabel = tlBadge ?? post.timeline_text;
   const isLive = !!post.live_workshop_id;
-  const isShipped = post.status === "closed" && !!post.resulting_work_id;
+  const lifecycle = collabLifecycleState(post);
+  const recruitment = recruitmentState(post);
   const daysToDeadline = post.ends_on
     ? Math.ceil((new Date(post.ends_on).getTime() - Date.now()) / 86400000)
     : null;
-  const closingSoon = post.status === "open" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
+  const deadlineSoon =
+    recruitment === "accepting" && daysToDeadline !== null && daysToDeadline >= 0 && daysToDeadline <= 7;
 
   return (
     <motion.article
@@ -114,11 +119,21 @@ export function CollabCard({
 
       <div className="flex flex-wrap items-center gap-2 px-5 pt-5">
         <CategoryChipsCompact primary={post.category} categories={post.categories} />
-        {post.status === "open" ? (
-          <StateBadge tone="open" label="Open" sublabel={closingSoon ? "Closing soon" : "Casting"} />
-        ) : isShipped ? (
-          <StateBadge tone="closed" label="Closed" sublabel="Published" />
-        ) : null}
+        {lifecycle === "published" ? (
+          <StateBadge tone="closed" label="Published" />
+        ) : (
+          <StateBadge
+            tone={recruitment === "accepting" ? "open" : "closed"}
+            label="In Progress"
+            sublabel={
+              recruitment === "accepting"
+                ? deadlineSoon
+                  ? "Deadline soon"
+                  : "Accepting collaborators"
+                : "Not accepting"
+            }
+          />
+        )}
         {isLive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
             <span className="relative flex h-1.5 w-1.5">

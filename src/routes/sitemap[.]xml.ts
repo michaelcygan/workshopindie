@@ -1,3 +1,4 @@
+import { publicCollabs } from "@/lib/collab/query";
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
@@ -37,7 +38,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           sb.from("works").select("slug,published_at").eq("status", "published").in("visibility", ["public", "unlisted"]).order("published_at", { ascending: false }).limit(45000),
           sb.from("profiles").select("username,updated_at").not("username", "is", null).limit(45000),
           sb.from("workshops").select("slug,updated_at").in("status", ["open", "check_in", "active", "finalizing", "shipped"]).limit(10000),
-          sb.from("collab_posts").select("slug,updated_at").eq("status", "open").limit(10000),
+          publicCollabs(sb.from("collab_posts").select("slug,updated_at")).limit(10000),
           sb.from("cities").select("slug").limit(2000),
           sb.from("blog_posts").select("slug,updated_at,published_at").eq("status", "published").eq("show_in_blog_index", true).order("published_at", { ascending: false }).limit(5000),
         ]);
