@@ -72,6 +72,7 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
                     {c.extraRoles > 0 ? ` +${c.extraRoles} more` : ""}
                   </p>
                 ) : null}
+                </div>
               </Link>
             </li>
           ))}
