@@ -13,11 +13,11 @@
  */
 
 @theme inline {
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-2xl: 32px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -38,6 +38,9 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-signal: var(--signal);
+  --color-signal-foreground: var(--signal-foreground);
+  --color-signal-soft: var(--signal-soft);
   --color-violet: var(--violet);
   --color-violet-foreground: var(--violet-foreground);
   --color-destructive: var(--destructive);
@@ -99,7 +102,7 @@
 }
 
 :root {
-  --radius: 16px;
+  --radius: 8px;
 
   /* Mobile island bottom clearance. Overridden per-viewport below and
      cleared to 0 by MobileActionIsland when the island is hidden. */
@@ -120,9 +123,14 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.16 0.02 270);
 
-  /* Warm coral primary; Plus/premium accents use the site-wide gradient utilities. */
-  --primary: oklch(0.68 0.17 32);
+  /* Monochrome primary action: near-black ink on white. */
+  --primary: oklch(0.17 0.015 270);
   --primary-foreground: oklch(0.99 0 0);
+
+  /* Blueprint Cobalt — the single Workshop signal color. Used sparingly. */
+  --signal: oklch(0.518 0.213 267);
+  --signal-foreground: oklch(0.99 0 0);
+  --signal-soft: oklch(0.947 0.022 272);
   --primary-warm: oklch(0.72 0.16 45);
   --primary-deep: oklch(0.62 0.18 28);
 
@@ -143,7 +151,7 @@
   --border: oklch(0.92 0.005 80);
   --border-strong: oklch(0.86 0.008 80);
   --input: oklch(0.92 0.005 80);
-  --ring: oklch(0.68 0.17 32 / 0.4);
+  --ring: oklch(0.518 0.213 267);
 
   /* Category pastel tints + their ink */
   --cat-film: oklch(0.94 0.04 30);     /* warm peach */
@@ -207,8 +215,11 @@
   --card-foreground: oklch(0.98 0.005 80);
   --popover: oklch(0.20 0.02 270);
   --popover-foreground: oklch(0.98 0.005 80);
-  --primary: oklch(0.72 0.16 32);
-  --primary-foreground: oklch(0.14 0.02 270);
+  --primary: oklch(0.97 0.008 80);
+  --primary-foreground: oklch(0.16 0.02 270);
+  --signal: oklch(0.70 0.16 267);
+  --signal-foreground: oklch(0.14 0.02 270);
+  --signal-soft: oklch(0.30 0.07 267);
   --violet: oklch(0.70 0.22 295);
   --violet-foreground: oklch(0.14 0.02 270);
   --secondary: oklch(0.26 0.02 270);
@@ -222,7 +233,7 @@
   --border: oklch(1 0 0 / 0.10);
   --border-strong: oklch(1 0 0 / 0.18);
   --input: oklch(1 0 0 / 0.14);
-  --ring: oklch(0.72 0.16 32 / 0.5);
+  --ring: oklch(0.70 0.16 267);
 }
 
 @layer base {
@@ -235,7 +246,7 @@
     text-rendering: optimizeLegibility;
   }
   .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
-  ::selection { background: oklch(0.62 0.22 350 / 0.20); }
+  ::selection { background: oklch(0.518 0.213 267 / 0.18); }
 }
 
 @layer utilities {
