@@ -17,6 +17,7 @@ export type NowContext = {
   groupSlug: string | null;
   work: string | null;
   workSlug: string | null;
+  citySlug: string | null;
   daypart: string;
   hasWork: boolean;
   hasGroups: boolean;
@@ -54,15 +55,15 @@ const LIVE: NowSeed[] = [
   { id: "live-today-city", lane: "live", source: "city", status: "TODAY", title: "See what {city} is making today", detail: "Your city's board.", to: "/g/$slug", params: { slug: "{cityGroupSlug}" }, needs: ["cityGroup"], weight: 5 },
   { id: "live-audio-open", lane: "live", source: "audio", status: "AUDIO", title: "Open an audio room in {group}", detail: "Work out loud for twenty minutes.", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 4 },
   { id: "live-audio-city", lane: "live", source: "audio", status: "AUDIO", title: "Start a room for {city}", detail: "Someone else is probably up too.", to: "/g/$slug", params: { slug: "{cityGroupSlug}" }, needs: ["cityGroup"], hours: [20, 24], weight: 4 },
-  { id: "live-events-tonight", lane: "live", source: "event", status: "TONIGHT", title: "What's on tonight", detail: "Events happening in the next few hours.", to: "/events", search: { when: "today" }, weight: 4 },
-  { id: "live-events-week", lane: "live", source: "event", status: "THIS WEEK", title: "This week's events", to: "/events", search: { when: "week" }, weight: 3 },
+  { id: "live-events-tonight", lane: "live", source: "event", status: "TONIGHT", title: "What's on tonight", detail: "Events happening in the next few hours.", to: "/events", search: { when: "upcoming" }, weight: 4 },
+  { id: "live-events-week", lane: "live", source: "event", status: "THIS WEEK", title: "This week's events", to: "/events", search: { when: "upcoming" }, weight: 3 },
   { id: "live-events-city", lane: "live", source: "event", status: "{city}", title: "Events near you in {city}", to: "/events", needs: ["city"], weight: 3 },
   { id: "live-events-online", lane: "live", source: "event", status: "ONLINE", title: "Online sessions you can join from anywhere", to: "/events", search: { format: "online" }, weight: 2 },
   { id: "live-groups-browse", lane: "live", source: "group", status: "GROUPS", title: "Find a room that's actually talking", to: "/groups", weight: 2 },
   { id: "live-today-checkin", lane: "live", source: "today", status: "CHECK IN", title: "{daypart} check-in: what changed today?", detail: "Two sentences, then back to work.", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 3 },
   { id: "live-today-blocker", lane: "live", source: "today", status: "TODAY", title: "Name the thing that's blocking you", detail: "Someone in {group} has hit it before.", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 3 },
   { id: "live-today-wip", lane: "live", source: "today", status: "WIP", title: "Drop a work-in-progress frame", detail: "Unfinished is the point.", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 3 },
-  { id: "live-weekend-plan", lane: "live", source: "event", status: "WEEKEND", title: "Make a weekend plan with people", to: "/events", search: { when: "weekend" }, days: [4, 5, 6], weight: 4 },
+  { id: "live-weekend-plan", lane: "live", source: "event", status: "WEEKEND", title: "Make a weekend plan with people", to: "/events", search: { when: "upcoming" }, days: [4, 5, 6], weight: 4 },
   { id: "live-monday-set", lane: "live", source: "today", status: "MONDAY", title: "Set one goal for the week", detail: "Post it so it's real.", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], days: [1], weight: 4 },
   { id: "live-friday-recap", lane: "live", source: "today", status: "FRIDAY", title: "Recap the week in three lines", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], days: [5], weight: 4 },
   { id: "live-morning-open", lane: "live", source: "today", status: "MORNING", title: "Say what you're starting today", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], hours: [5, 11], weight: 3 },
@@ -93,7 +94,7 @@ const MAKE: NowSeed[] = [
   { id: "make-collab-table-read", lane: "make", source: "evergreen", status: "COLLAB", title: "Table read for a draft script", action: { kind: "collab-prompt", prompt: "table-read" }, weight: 3 },
   { id: "make-collab-photo-walk", lane: "make", source: "city", status: "COLLAB", title: "Photo walk in {city}", action: { kind: "collab-prompt", prompt: "photo-walk" }, needs: ["city"], weight: 4 },
   { id: "make-ask-feedback", lane: "make", source: "group", status: "FEEDBACK", title: "Ask {group} for one hard note", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 4 },
-  { id: "make-give-feedback", lane: "make", source: "evergreen", status: "FEEDBACK", title: "Give someone a real note today", to: "/gallery", search: { sort: "new" }, weight: 4 },
+  { id: "make-give-feedback", lane: "make", source: "evergreen", status: "FEEDBACK", title: "Give someone a real note today", to: "/gallery", search: { sort: "recent" }, weight: 4 },
   { id: "make-timebox-20", lane: "make", source: "evergreen", status: "20 MIN", title: "Twenty minutes, one small piece, publish it", to: "/works/new", weight: 3 },
   { id: "make-timebox-60", lane: "make", source: "evergreen", status: "1 HOUR", title: "One hour of undistracted work, then post the result", to: "/works/new", weight: 3 },
   { id: "make-b-side", lane: "make", source: "evergreen", status: "B-SIDE", title: "Publish the version you rejected", to: "/works/new", weight: 3 },
@@ -125,7 +126,7 @@ const MAKE: NowSeed[] = [
 /* ────────────────────────── EXPLORE lane ────────────────────────── */
 
 const EXPLORE: NowSeed[] = [
-  { id: "exp-gallery-new", lane: "explore", source: "evergreen", status: "GALLERY", title: "Newest work on Workshop", to: "/gallery", search: { sort: "new" }, weight: 5 },
+  { id: "exp-gallery-new", lane: "explore", source: "evergreen", status: "GALLERY", title: "Newest work on Workshop", to: "/gallery", search: { sort: "recent" }, weight: 5 },
   { id: "exp-gallery-medium", lane: "explore", source: "medium", status: "{medium}", title: "The best new {medium} this week", to: "/gallery", needs: ["medium"], weight: 5 },
   { id: "exp-gallery-city", lane: "explore", source: "city", status: "{city}", title: "Work being made in {city}", to: "/gallery", needs: ["city"], weight: 5 },
   { id: "exp-blog-latest", lane: "explore", source: "evergreen", status: "READ", title: "Latest stories from the Workshop blog", to: "/blog", weight: 5 },
@@ -138,15 +139,15 @@ const EXPLORE: NowSeed[] = [
   { id: "exp-network", lane: "explore", source: "network", status: "PEOPLE", title: "People whose work you should know", to: "/me/network", weight: 3 },
   { id: "exp-friends", lane: "explore", source: "network", status: "CIRCLE", title: "What your circle has been posting", to: "/me/friends", weight: 3 },
   { id: "exp-workshops", lane: "explore", source: "evergreen", status: "WORKSHOPS", title: "Workshops you can sit in on", to: "/workshops", weight: 3 },
-  { id: "exp-gallery-photo", lane: "explore", source: "evergreen", status: "PHOTO", title: "Photography worth ten minutes", to: "/gallery", search: { cat: "photography" }, weight: 2 },
+  { id: "exp-gallery-photo", lane: "explore", source: "evergreen", status: "PHOTO", title: "Photography worth ten minutes", to: "/gallery", search: { cat: "visual" }, weight: 2 },
   { id: "exp-gallery-music", lane: "explore", source: "evergreen", status: "MUSIC", title: "New music from members", to: "/gallery", search: { cat: "music" }, weight: 2 },
   { id: "exp-gallery-film", lane: "explore", source: "evergreen", status: "FILM", title: "Short film and video", to: "/gallery", search: { cat: "film" }, weight: 2 },
   { id: "exp-gallery-writing", lane: "explore", source: "evergreen", status: "WRITING", title: "Writing from the community", to: "/gallery", search: { cat: "writing" }, weight: 2 },
-  { id: "exp-gallery-design", lane: "explore", source: "evergreen", status: "DESIGN", title: "Design and visual identity work", to: "/gallery", search: { cat: "design" }, weight: 2 },
-  { id: "exp-gallery-art", lane: "explore", source: "evergreen", status: "ART", title: "Painting, drawing, and mixed media", to: "/gallery", search: { cat: "art" }, weight: 2 },
+  { id: "exp-gallery-design", lane: "explore", source: "evergreen", status: "DESIGN", title: "Design and visual identity work", to: "/gallery", search: { cat: "visual" }, weight: 2 },
+  { id: "exp-gallery-art", lane: "explore", source: "evergreen", status: "ART", title: "Painting, drawing, and mixed media", to: "/gallery", search: { cat: "visual" }, weight: 2 },
   { id: "exp-group-mine", lane: "explore", source: "group", status: "{group}", title: "Catch up on {group}", to: "/g/$slug", params: { slug: "{groupSlug}" }, needs: ["group"], weight: 4 },
   { id: "exp-city-group", lane: "explore", source: "city", status: "{city}", title: "The {city} group board", to: "/g/$slug", params: { slug: "{cityGroupSlug}" }, needs: ["cityGroup"], weight: 4 },
-  { id: "exp-events-weekend", lane: "explore", source: "event", status: "WEEKEND", title: "Weekend plans, sorted", to: "/events", search: { when: "weekend" }, days: [3, 4, 5, 6], weight: 3 },
+  { id: "exp-events-weekend", lane: "explore", source: "event", status: "WEEKEND", title: "Weekend plans, sorted", to: "/events", search: { when: "upcoming" }, days: [3, 4, 5, 6], weight: 3 },
   { id: "exp-blog-long", lane: "explore", source: "evergreen", status: "LONG READ", title: "Something longer than a feed post", to: "/blog", weight: 3 },
   { id: "exp-gallery-random", lane: "explore", source: "evergreen", status: "WANDER", title: "Scroll the gallery with no agenda", to: "/gallery", weight: 2 },
   { id: "exp-pricing", lane: "explore", source: "evergreen", status: "PLUS", title: "What Workshop Plus unlocks", to: "/pricing", weight: 1 },
@@ -154,7 +155,7 @@ const EXPLORE: NowSeed[] = [
   { id: "exp-profile", lane: "explore", source: "continue", status: "PROFILE", title: "Your profile could say more about the work", to: "/me/edit", weight: 2 },
   { id: "exp-mycollabs", lane: "explore", source: "continue", status: "YOURS", title: "Check in on your open calls", to: "/me/collabs", weight: 2 },
   { id: "exp-myblog", lane: "explore", source: "continue", status: "DRAFTS", title: "You have writing waiting in drafts", to: "/me/blog", weight: 3 },
-  { id: "exp-gallery-city-new", lane: "explore", source: "city", status: "{city}", title: "Newest from {city} makers", to: "/gallery", search: { sort: "new" }, needs: ["city"], weight: 3 },
+  { id: "exp-gallery-city-new", lane: "explore", source: "city", status: "{city}", title: "Newest from {city} makers", to: "/gallery", search: { sort: "recent" }, needs: ["city"], weight: 3 },
   { id: "exp-collab-cat", lane: "explore", source: "evergreen", status: "CREW", title: "Projects looking for crew", to: "/collab", weight: 3 },
   { id: "exp-morning-read", lane: "explore", source: "evergreen", status: "MORNING", title: "One story with your coffee", to: "/blog", hours: [5, 11], weight: 3 },
   { id: "exp-evening-read", lane: "explore", source: "evergreen", status: "EVENING", title: "Wind down with someone's process notes", to: "/blog", hours: [19, 24], weight: 3 },
@@ -173,7 +174,7 @@ export const NOW_SEEDS: NowSeed[] = [...LIVE, ...MAKE, ...EXPLORE];
 
 const TOKEN = /\{(city|citySlug|cityGroupSlug|medium|group|groupSlug|work|workSlug|daypart)\}/g;
 
-function fill(text: string, ctx: NowContext & { citySlug: string | null }): string | null {
+function fill(text: string, ctx: NowContext): string | null {
   let ok = true;
   const out = text.replace(TOKEN, (_m, key: string) => {
     const value = (ctx as unknown as Record<string, string | null>)[key];
@@ -189,6 +190,7 @@ function fill(text: string, ctx: NowContext & { citySlug: string | null }): stri
 function meetsNeeds(seed: NowSeed, ctx: NowContext): boolean {
   for (const need of seed.needs ?? []) {
     if (need === "city" && !ctx.city) return false;
+    if (need === "city" && seed.to === "/cities/$slug" && !ctx.citySlug) return false;
     if (need === "cityGroup" && !ctx.cityGroupSlug) return false;
     if (need === "medium" && !ctx.medium) return false;
     if (need === "group" && !(ctx.group && ctx.groupSlug)) return false;
@@ -205,10 +207,7 @@ function meetsNeeds(seed: NowSeed, ctx: NowContext): boolean {
 /** Resolve a seed against context, or return null when it cannot be rendered. */
 export function resolveSeed(seed: NowSeed, ctx: NowContext): HomeNowItem | null {
   if (!meetsNeeds(seed, ctx)) return null;
-  const full = {
-    ...ctx,
-    citySlug: ctx.city ? ctx.city.toLowerCase().replace(/[^a-z0-9]+/g, "-") : null,
-  };
+  const full = ctx;
 
   const title = fill(seed.title, full);
   if (!title) return null;
