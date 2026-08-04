@@ -38,13 +38,12 @@ function shouldHide(pathname: string): boolean {
 export function SiteFooter() {
   const matches = useMatches();
   const pathname = matches[matches.length - 1]?.pathname ?? "/";
-  if (shouldHide(pathname)) return null;
-
   const { user } = useAuth();
   const subscribe = useServerFn(subscribeToNewsletter);
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState(""); // honeypot
   const [busy, setBusy] = useState(false);
+
 
   async function onSubscribe(e: React.FormEvent) {
     e.preventDefault();
