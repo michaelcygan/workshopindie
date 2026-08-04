@@ -47,6 +47,7 @@ export function PublicRecentWorkCarousel({ works }: { works: PublicWorkTile[] })
               key={w.id}
               to="/works/$slug"
               params={{ slug: w.slug }}
+              search={{ story: undefined }}
               className="group shrink-0 snap-start"
             >
               <div className="w-[210px] md:w-[240px]">
