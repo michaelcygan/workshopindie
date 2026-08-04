@@ -40,8 +40,13 @@ export function PublicOpenCollabs({ collabs }: { collabs: PublicCollabCall[] }) 
               <Link
                 to="/collab/$slug"
                 params={{ slug: c.slug }}
-                className="group block py-5 transition"
+                className="group flex items-start gap-3 py-5 transition md:gap-4"
               >
+                <CategoryPlaceholder
+                  category={c.category as Category}
+                  className="mt-0.5 h-16 w-16 shrink-0 md:h-24 md:w-24"
+                />
+                <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] uppercase tracking-[0.1em] text-ink-muted">
                   <span className="text-coral">Open</span>
                   <span aria-hidden>·</span>
