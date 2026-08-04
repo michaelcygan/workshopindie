@@ -1,11 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { listPublishedPosts } from "@/lib/blog.functions";
+import type { BlogListItem } from "@/components/blog-featured-carousel";
+import { PublicFeaturedStories } from "@/components/home/public-featured-stories";
 import {
-  BlogFeaturedCarousel,
-  Byline,
-  FeaturedHero,
-  type BlogListItem,
-} from "@/components/blog-featured-carousel";
+  BlogArchive,
+  BlogLatestStories,
+  BlogMoreStories,
+  toBlogCard,
+} from "@/components/blog/blog-editorial-sections";
 
 const SITE = "https://workshopindie.com";
 const TITLE = "Workshop Blog — Creative Collaboration, Independent Art & Artist Portfolios";
