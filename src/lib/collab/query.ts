@@ -11,6 +11,9 @@ export const NON_PUBLIC_STATUSES = "(draft,removed,archived)";
 
 const today = () => new Date().toISOString().slice(0, 10);
 
+/** `.or()` clause matching Collabs whose deadline has not passed. */
+export const RECRUITING_DEADLINE_OR = (now = today()) => `ends_on.is.null,ends_on.gte.${now}`;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Filterable = {
   is: (col: string, val: null) => any;

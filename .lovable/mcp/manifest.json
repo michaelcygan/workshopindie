@@ -66,7 +66,7 @@
       {
         "name": "search_collabs",
         "title": "Search Collabs",
-        "description": "Search open Workshop Collabs (casting briefs) by title text. Returns collabs the caller can see.",
+        "description": "Search Workshop Collabs that are accepting collaborators, by title text. Returns collabs the caller can see.",
         "annotations": {
           "readOnlyHint": true,
           "idempotentHint": true,

@@ -6,7 +6,7 @@ import { z } from "zod";
 export default defineTool({
   name: "search_collabs",
   title: "Search Collabs",
-  description: "Search open Workshop Collabs (casting briefs) by title text. Returns collabs the caller can see.",
+  description: "Search Workshop Collabs that are accepting collaborators, by title text. Returns collabs the caller can see.",
   inputSchema: {
     query: z.string().trim().min(1).describe("Text to match against collab titles."),
     limit: z.number().int().min(1).max(50).optional().describe("Max results (default 20)."),
