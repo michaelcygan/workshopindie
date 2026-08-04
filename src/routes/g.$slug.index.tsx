@@ -39,6 +39,7 @@ import { GroupLiveShell } from "@/components/group/group-live-shell";
 import { GroupPostsTab, useGroupBlogPosts } from "@/components/group/group-posts-tab";
 import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
+import { useEventsRealtime } from "@/hooks/use-events-realtime";
 
 
 
@@ -402,6 +403,7 @@ function GroupPage() {
 
 
 function GroupEventsTab({ group }: { group: GroupRow }) {
+  useEventsRealtime(group.id);
   const { user } = useAuth();
   const { data: isAdmin } = useQuery({
     queryKey: ["is-admin", user?.id],
