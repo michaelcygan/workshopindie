@@ -31,9 +31,7 @@ async function fetchEvent(groupSlug: string, eventSlug: string): Promise<PeekEve
   if (!group) return null;
   const { data } = await supabase
     .from("group_events")
-    .select(
-      "id,slug,title,tagline,cover_url,starts_at,venue_name,online_url,going_count",
-    )
+    .select("id,slug,title,tagline,cover_url,starts_at,venue_name,online_url,going_count")
     .eq("group_id", group.id)
     .eq("slug", eventSlug)
     .is("deleted_at", null)
@@ -119,9 +117,7 @@ function Body({ groupSlug, eventSlug }: { groupSlug: string; eventSlug: string }
       )}
       <div className="p-4 space-y-2">
         <div className="font-display text-base text-ink line-clamp-2">{data.title}</div>
-        {data.group && (
-          <div className="text-[11px] text-ink-muted">in {data.group.name}</div>
-        )}
+        {data.group && <div className="text-[11px] text-ink-muted">in {data.group.name}</div>}
         <div className="flex items-center gap-1.5 text-xs text-ink-soft">
           <Calendar className="h-3.5 w-3.5 text-ink-muted" />
           <span>{when}</span>

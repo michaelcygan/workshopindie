@@ -23,11 +23,11 @@ export function useEventsRealtime(groupId?: string | null) {
         ["my-groups-upcoming-events"],
       ];
       if (groupId) {
-        keys.push(["group", groupId, "events"], ["group", groupId, "next-event"], [
-          "group",
-          groupId,
-          "today",
-        ]);
+        keys.push(
+          ["group", groupId, "events"],
+          ["group", groupId, "next-event"],
+          ["group", groupId, "today"],
+        );
       }
       for (const queryKey of keys) qc.invalidateQueries({ queryKey });
     };

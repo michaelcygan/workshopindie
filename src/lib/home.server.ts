@@ -41,7 +41,6 @@ const MAX_STORIES_PER_WORK = 3;
 export const FEATURED_POST_CAP = 5;
 const MAX_MINE_ITEMS = 6;
 
-
 type PostRow = {
   id: string;
   slug: string;
@@ -649,11 +648,13 @@ export async function continueActionsServer(
       .maybeSingle(),
   ]);
 
-  const draft = ((draftsRes.data ?? []) as Array<{
-    id: string;
-    title: string;
-    cover_image_url: string | null;
-  }>)[0];
+  const draft = (
+    (draftsRes.data ?? []) as Array<{
+      id: string;
+      title: string;
+      cover_image_url: string | null;
+    }>
+  )[0];
   if (draft) {
     actions.push({
       kind: "blog_draft",
@@ -665,7 +666,6 @@ export async function continueActionsServer(
       coverUrl: draft.cover_image_url,
     });
   }
-
 
   const collabs = (collabsRes.data ?? []) as Array<{ id: string; slug: string; title: string }>;
   if (collabs.length) {
@@ -1463,7 +1463,11 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
       .eq("status", "published")
       .order("published_at", { ascending: false })
       .limit(8),
-    supabaseAdmin.from("blog_post_authors").select("blog_post_id").eq("profile_id", userId).limit(30),
+    supabaseAdmin
+      .from("blog_post_authors")
+      .select("blog_post_id")
+      .eq("profile_id", userId)
+      .limit(30),
     supabaseAdmin
       .from("collab_posts")
       .select("id,slug,title,description,created_at")
@@ -1607,7 +1611,6 @@ export async function myWorkshopServer(userId: string): Promise<HomeMineItem[]> 
   }
   return out;
 }
-
 
 /* ─────────────────────── Public (logged-out) home ─────────────────────── */
 
@@ -1819,7 +1822,10 @@ export async function getPublicHomeServer(): Promise<PublicHomePayload> {
         category: w.category,
         coverUrl: w.cover_url as string,
         creditName:
-          credit?.profiles?.display_name || credit?.display_name || credit?.profiles?.username || null,
+          credit?.profiles?.display_name ||
+          credit?.display_name ||
+          credit?.profiles?.username ||
+          null,
       };
     });
   const recentWorks = allWorkTiles.slice(0, 8);

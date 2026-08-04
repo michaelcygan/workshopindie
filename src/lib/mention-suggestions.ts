@@ -59,7 +59,11 @@ export function useUserSuggestions(query: string, enabled: boolean) {
  * The signed-in user's open Collabs, filtered by title. Mirrors the collab
  * source used on the Today board.
  */
-export function useMyCollabSuggestions(userId: string | undefined, query: string, enabled: boolean) {
+export function useMyCollabSuggestions(
+  userId: string | undefined,
+  query: string,
+  enabled: boolean,
+) {
   const q = query.trim().toLowerCase();
   return useQuery({
     queryKey: ["mention-my-collabs", userId ?? "anon", q],

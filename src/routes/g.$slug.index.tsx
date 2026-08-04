@@ -3,7 +3,12 @@ import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Plus, X, Search, ChevronDown } from "lucide-react";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
@@ -41,8 +46,6 @@ import { GroupNewsTicker } from "@/components/group/group-news-ticker";
 import { setGroupNewsFeed, setGroupParent } from "@/lib/group-admin.functions";
 import { useEventsRealtime } from "@/hooks/use-events-realtime";
 
-
-
 type GroupRow = {
   id: string;
   slug: string;
@@ -63,7 +66,6 @@ type GroupRow = {
   news_feed_url: string | null;
   parent: { id: string; slug: string; name: string } | null;
 };
-
 
 async function fetchGroup(slug: string): Promise<GroupRow> {
   const { data, error } = await supabase
@@ -89,10 +91,18 @@ async function fetchGroup(slug: string): Promise<GroupRow> {
   return { ...(data as Omit<GroupRow, "parent">), parent };
 }
 
-
-const TAB_VALUES = ["today", "collab", "work", "links", "posts", "events", "members", "subgroups", "about"] as const;
+const TAB_VALUES = [
+  "today",
+  "collab",
+  "work",
+  "links",
+  "posts",
+  "events",
+  "members",
+  "subgroups",
+  "about",
+] as const;
 type TabValue = (typeof TAB_VALUES)[number];
-
 
 export const Route = createFileRoute("/g/$slug/")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -170,7 +180,6 @@ export const Route = createFileRoute("/g/$slug/")({
   },
 });
 
-
 type Tab = GroupTab;
 
 function GroupPage() {
@@ -193,12 +202,9 @@ function GroupPage() {
     });
   };
 
-
-
   const qc = useQueryClient();
   // Audio admission is membership-gated; viewing the Group never is.
   const isGroupMember = useIsMemberOfGroup(group.id).data === true;
-
 
   // Admin seed-link flow (?j=<token>):
   //  • Always call resolve once (records click, surfaces banner copy).
@@ -221,7 +227,9 @@ function GroupPage() {
           "ws.pendingGroupJoin",
           JSON.stringify({ token: seedToken, slug: group.slug }),
         );
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     }
     resolveSeed({ data: { token: seedToken } })
       .then((info) => {
@@ -250,7 +258,6 @@ function GroupPage() {
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedToken, user]);
-
 
   const { data: nextEvent } = useQuery({
     queryKey: ["group", group.id, "next-event"],
@@ -291,8 +298,6 @@ function GroupPage() {
   const hasBlogPosts = groupBlogPosts.length > 0;
   const viewTab: Tab = tab === "posts" && !groupBlogLoading && !hasBlogPosts ? "today" : tab;
 
-
-
   // Full child-group payload — only fetched when the Subgroups tab is opened.
   const { data: childGroups = [] } = useQuery({
     enabled: tab === "subgroups" && childCount > 0,
@@ -312,20 +317,30 @@ function GroupPage() {
     },
   });
 
-
-
   useEffect(() => {
     const channel = supabase
       .channel(`group-${group.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_members", filter: `group_id=eq.${group.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["group", group.id] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_works", filter: `group_id=eq.${group.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["group", group.id, "works"] });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "group_collabs", filter: `group_id=eq.${group.id}` }, () => {
-        qc.invalidateQueries({ queryKey: ["group", group.id, "collabs"] });
-      })
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_members", filter: `group_id=eq.${group.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["group", group.id] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_works", filter: `group_id=eq.${group.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["group", group.id, "works"] });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "group_collabs", filter: `group_id=eq.${group.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["group", group.id, "collabs"] });
+        },
+      )
 
       .subscribe();
     return () => {
@@ -334,73 +349,65 @@ function GroupPage() {
   }, [group.id, qc]);
 
   return (
-    <GroupLiveShell
-      groupId={group.id}
-      groupName={group.name}
-      isMember={isGroupMember}
-    >
-    <main className="mx-auto max-w-7xl pb-20">
-      {seedToken && !user && seedInfo && (
-        <div className="px-4 md:px-6">
-          <GroupSeedJoinPrompt
-            groupName={seedInfo.group_name}
-            groupSlug={seedInfo.group_slug}
-            token={seedToken}
-          />
-        </div>
-      )}
+    <GroupLiveShell groupId={group.id} groupName={group.name} isMember={isGroupMember}>
+      <main className="mx-auto max-w-7xl pb-20">
+        {seedToken && !user && seedInfo && (
+          <div className="px-4 md:px-6">
+            <GroupSeedJoinPrompt
+              groupName={seedInfo.group_name}
+              groupSlug={seedInfo.group_slug}
+              token={seedToken}
+            />
+          </div>
+        )}
 
-      <div className="space-y-2">
-        <GroupHero group={group} nextEvent={nextEvent} />
+        <div className="space-y-2">
+          <GroupHero group={group} nextEvent={nextEvent} />
 
-        <GroupNewsTicker slug={group.slug} />
+          <GroupNewsTicker slug={group.slug} />
 
-        <div className="px-4 md:px-6">
-          <GroupTabBar
-            tab={viewTab}
-            setTab={setTab}
-            slug={group.slug}
-            counts={{
-              collab: group.collab_count,
-              work: group.work_count,
-              members: group.member_count,
-            }}
-            childCount={childCount}
-            showPosts={groupBlogLoading || hasBlogPosts}
-          />
+          <div className="px-4 md:px-6">
+            <GroupTabBar
+              tab={viewTab}
+              setTab={setTab}
+              slug={group.slug}
+              counts={{
+                collab: group.collab_count,
+                work: group.work_count,
+                members: group.member_count,
+              }}
+              childCount={childCount}
+              showPosts={groupBlogLoading || hasBlogPosts}
+            />
 
-        <div className="mt-5">
+            <div className="mt-5">
+              {viewTab === "today" && <GroupTodayTab group={group} />}
+              {viewTab === "collab" && <GroupCollabTab group={group} />}
 
-          {viewTab === "today" && <GroupTodayTab group={group} />}
-          {viewTab === "collab" && <GroupCollabTab group={group} />}
-
-          {viewTab === "work" && <GroupWorkTab group={group} />}
-          {viewTab === "links" && <GroupLinksTab group={group} />}
-          {viewTab === "posts" && <GroupPostsTab group={group} />}
-          {viewTab === "events" && <GroupEventsTab group={group} />}
-          {viewTab === "subgroups" && (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {childGroups.map((g) => (
-                <GroupCard key={g.id} group={g} />
-              ))}
+              {viewTab === "work" && <GroupWorkTab group={group} />}
+              {viewTab === "links" && <GroupLinksTab group={group} />}
+              {viewTab === "posts" && <GroupPostsTab group={group} />}
+              {viewTab === "events" && <GroupEventsTab group={group} />}
+              {viewTab === "subgroups" && (
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {childGroups.map((g) => (
+                    <GroupCard key={g.id} group={g} />
+                  ))}
+                </div>
+              )}
+              {viewTab === "members" && <GroupMembersTab group={group} />}
+              {viewTab === "about" && <GroupAboutTab group={group} />}
             </div>
-          )}
-          {viewTab === "members" && <GroupMembersTab group={group} />}
-          {viewTab === "about" && <GroupAboutTab group={group} />}
-        </div>
 
-        <div className="mt-16">
-          <AdjacentGroupsRail groupId={group.id} />
+            <div className="mt-16">
+              <AdjacentGroupsRail groupId={group.id} />
+            </div>
+          </div>
         </div>
-
-      </div>
-      </div>
-    </main>
+      </main>
     </GroupLiveShell>
   );
 }
-
-
 
 function GroupEventsTab({ group }: { group: GroupRow }) {
   useEventsRealtime(group.id);
@@ -409,7 +416,12 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     queryKey: ["is-admin", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase.from("user_roles").select("role").eq("user_id", user!.id).eq("role", "admin").maybeSingle();
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user!.id)
+        .eq("role", "admin")
+        .maybeSingle();
       return !!data;
     },
   });
@@ -418,7 +430,9 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("group_events")
-        .select("id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url")
+        .select(
+          "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url",
+        )
         .eq("group_id", group.id)
         .in("status", DISCOVERABLE_STATUSES as never)
         .is("deleted_at", null)
@@ -457,7 +471,9 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
       return new Date(a.starts_at).getTime() - new Date(b.starts_at).getTime();
     });
   const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
-  const upcoming = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now && matches(e));
+  const upcoming = all.filter(
+    (e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now && matches(e),
+  );
   const past = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) < now);
   const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
   const hasFilters = kind !== "all" || format !== "all" || q.trim().length > 0;
@@ -477,7 +493,8 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     class: "Class",
     other: "Other",
   };
-  const kindLabel = (k: string) => KIND_LABELS[k] ?? k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const kindLabel = (k: string) =>
+    KIND_LABELS[k] ?? k.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <div className="space-y-10">
@@ -510,7 +527,9 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={() => setKind("all")}>All kinds</DropdownMenuItem>
                 {availableKinds.map((k) => (
-                  <DropdownMenuItem key={k} onClick={() => setKind(k)}>{kindLabel(k)}</DropdownMenuItem>
+                  <DropdownMenuItem key={k} onClick={() => setKind(k)}>
+                    {kindLabel(k)}
+                  </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -534,19 +553,37 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
-                onBlur={() => { if (!q) setSearchOpen(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQ("");
+                    setSearchOpen(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!q) setSearchOpen(false);
+                }}
                 placeholder={`Search events…`}
                 className="h-8 w-[200px] text-xs"
               />
               {q && (
-                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                <button
+                  onClick={() => {
+                    setQ("");
+                    setSearchOpen(false);
+                  }}
+                  className="rounded-full p-1 hover:bg-surface-2"
+                  aria-label="Clear search"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           ) : (
-            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search events">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="rounded-full p-1.5 hover:bg-surface-2"
+              aria-label="Search events"
+            >
               <Search className="h-4 w-4" />
             </button>
           )}
@@ -577,11 +614,22 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
         </section>
       )}
 
-      {!isLoading && !hasAnyMatch && (
-        hasFilters ? (
+      {!isLoading &&
+        !hasAnyMatch &&
+        (hasFilters ? (
           <div className="text-center text-sm text-ink-muted">
             No events match your filters.{" "}
-            <button onClick={() => { setKind("all"); setFormat("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+            <button
+              onClick={() => {
+                setKind("all");
+                setFormat("all");
+                setQ("");
+                setSearchOpen(false);
+              }}
+              className="underline hover:text-ink"
+            >
+              Clear
+            </button>
           </div>
         ) : isAdmin ? (
           <Link
@@ -591,23 +639,33 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
             <span className="inline-flex items-center gap-2 font-medium text-ink">
               <Plus className="h-4 w-4" /> Add the first event to {group.name}
             </span>
-            <span className="text-xs text-ink-muted">New events will appear here as they are added.</span>
+            <span className="text-xs text-ink-muted">
+              New events will appear here as they are added.
+            </span>
           </Link>
         ) : (
           <p className="rounded-2xl border border-dashed border-border bg-surface p-8 text-center text-sm text-ink-muted">
             The calendar is quiet for now. New events will appear here as they are added.
           </p>
-        )
-      )}
+        ))}
 
       {past.length > 0 && (
         <details className="rounded-2xl border border-border bg-surface p-4">
-          <summary className="cursor-pointer text-sm font-medium text-ink-soft">Past events ({past.length})</summary>
+          <summary className="cursor-pointer text-sm font-medium text-ink-soft">
+            Past events ({past.length})
+          </summary>
           <ul className="mt-3 space-y-2">
             {past.map((e) => (
               <li key={e.id}>
-                <Link to="/g/$slug/e/$eventSlug" params={{ slug: group.slug, eventSlug: e.slug }} className="text-sm text-ink-soft hover:text-ink">
-                  · {e.title} <span className="text-ink-muted">— {new Date(e.starts_at).toLocaleDateString()}</span>
+                <Link
+                  to="/g/$slug/e/$eventSlug"
+                  params={{ slug: group.slug, eventSlug: e.slug }}
+                  className="text-sm text-ink-soft hover:text-ink"
+                >
+                  · {e.title}{" "}
+                  <span className="text-ink-muted">
+                    — {new Date(e.starts_at).toLocaleDateString()}
+                  </span>
                 </Link>
               </li>
             ))}
@@ -619,10 +677,19 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
 }
 
 type EventLite = {
-  id: string; slug: string; title: string; tagline: string | null; kind: string;
-  format: "in_person" | "online" | "hybrid"; cover_url: string | null;
-  starts_at: string; venue_name: string | null; venue_address: string | null;
-  going_count: number; capacity: number | null; featured_at: string | null;
+  id: string;
+  slug: string;
+  title: string;
+  tagline: string | null;
+  kind: string;
+  format: "in_person" | "online" | "hybrid";
+  cover_url: string | null;
+  starts_at: string;
+  venue_name: string | null;
+  venue_address: string | null;
+  going_count: number;
+  capacity: number | null;
+  featured_at: string | null;
   source: "workshop" | "external" | null;
   external_url: string | null;
   external_organizer: string | null;
@@ -636,9 +703,7 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
   const starts = new Date(ev.starts_at);
   const isExternal = ev.source === "external" && !!ev.external_url;
   const isOnline = ev.format === "online" || ev.format === "hybrid";
-  const locationLine = isOnline
-    ? "Online"
-    : (ev.venue_name ?? ev.venue_address ?? "TBA");
+  const locationLine = isOnline ? "Online" : (ev.venue_name ?? ev.venue_address ?? "TBA");
 
   const Inner = (
     <>
@@ -647,12 +712,16 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
         style={ev.cover_url ? { backgroundImage: `url(${ev.cover_url})` } : undefined}
       >
         <div className="absolute left-3 top-3 rounded-xl bg-background/90 px-2 py-1 text-center shadow-soft">
-          <div className="text-[9px] font-medium uppercase text-ink-muted">{starts.toLocaleDateString(undefined, { month: "short" })}</div>
+          <div className="text-[9px] font-medium uppercase text-ink-muted">
+            {starts.toLocaleDateString(undefined, { month: "short" })}
+          </div>
           <div className="font-display text-base leading-none text-ink">{starts.getDate()}</div>
         </div>
         <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
           {ev.pinned_at && (
-            <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">Pinned</span>
+            <span className="rounded-full bg-background/90 px-2 py-0.5 text-[10px] font-medium text-ink shadow-soft">
+              Pinned
+            </span>
           )}
           {ev.is_recurring && (
             <span className="rounded-full bg-primary/90 px-2 py-0.5 text-[10px] font-medium text-primary-foreground shadow-soft">
@@ -675,7 +744,9 @@ function EventCardLite({ groupSlug, ev }: { groupSlug: string; ev: EventLite }) 
               : `${ev.going_count} going${ev.capacity ? ` / ${ev.capacity}` : ""}`}
           </span>
           {isExternal ? (
-            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">View event ↗</span>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-ink-soft">
+              View event ↗
+            </span>
           ) : null}
         </div>
       </div>
@@ -759,8 +830,7 @@ function GroupSubgroupsSection({ group }: { group: GroupRow }) {
   };
 
   const unlink = useMutation({
-    mutationFn: (childId: string) =>
-      setParent({ data: { id: childId, parent_group_id: null } }),
+    mutationFn: (childId: string) => setParent({ data: { id: childId, parent_group_id: null } }),
     onSuccess: () => {
       toast.success("Subgroup unlinked");
       invalidate();
@@ -834,13 +904,7 @@ function GroupSubgroupsSection({ group }: { group: GroupRow }) {
   );
 }
 
-function GroupSubgroupAttacher({
-  group,
-  onChanged,
-}: {
-  group: GroupRow;
-  onChanged: () => void;
-}) {
+function GroupSubgroupAttacher({ group, onChanged }: { group: GroupRow; onChanged: () => void }) {
   const setParent = useServerFn(setGroupParent);
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
@@ -904,7 +968,9 @@ function GroupSubgroupAttacher({
             >
               <div className="min-w-0">
                 <div className="truncate text-sm text-ink">{r.name}</div>
-                <div className="text-[11px] text-ink-muted">{r.kind} · /g/{r.slug}</div>
+                <div className="text-[11px] text-ink-muted">
+                  {r.kind} · /g/{r.slug}
+                </div>
               </div>
               <Button
                 size="sm"
@@ -970,9 +1036,8 @@ function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
     <section className="max-w-3xl rounded-xl border border-border bg-surface p-4">
       <h3 className="font-display text-base text-ink">News feed</h3>
       <p className="mt-1 text-xs text-ink-muted">
-        Paste a Google News RSS URL (news.google.com/rss/search?q=…) — text
-        headlines only, scrolled as a ticker above the tabs. Leave blank to
-        hide the ticker.
+        Paste a Google News RSS URL (news.google.com/rss/search?q=…) — text headlines only, scrolled
+        as a ticker above the tabs. Leave blank to hide the ticker.
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <input
@@ -994,11 +1059,17 @@ function GroupNewsFeedSetting({ group }: { group: GroupRow }) {
   );
 }
 
-
 /* ---------- WORKS ---------- */
-type WorkAuthor = { username: string | null; display_name: string | null; avatar_url: string | null };
+type WorkAuthor = {
+  username: string | null;
+  display_name: string | null;
+  avatar_url: string | null;
+};
 type WorkRow = {
-  id: string; title: string; slug: string; cover_url: string | null;
+  id: string;
+  title: string;
+  slug: string;
+  cover_url: string | null;
   category: Category | null;
   published_at: string | null;
   author: WorkAuthor | null;
@@ -1010,19 +1081,22 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
   const [searchOpen, setSearchOpen] = useState(false);
   const [q, setQ] = useState("");
 
-
   const { data: works = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "works"],
     queryFn: async (): Promise<WorkRow[]> => {
       const { data } = await supabase
         .from("group_works")
-        .select("work:works(id,title,slug,cover_url,category,published_at, author:profiles!works_created_by_fkey(username,display_name,avatar_url))")
+        .select(
+          "work:works(id,title,slug,cover_url,category,published_at, author:profiles!works_created_by_fkey(username,display_name,avatar_url))",
+        )
         .eq("group_id", group.id)
         .limit(48);
-      return (data ?? [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((r: any) => r.work)
-        .filter((w: WorkRow | null) => !!w && w.published_at) as WorkRow[];
+      return (
+        (data ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((r: any) => r.work)
+          .filter((w: WorkRow | null) => !!w && w.published_at) as WorkRow[]
+      );
     },
   });
 
@@ -1054,7 +1128,6 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
     return list;
   })();
 
-
   return (
     <div>
       {/* Utility strip */}
@@ -1065,7 +1138,7 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -1098,14 +1171,24 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
-                onBlur={() => { if (!q) setSearchOpen(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQ("");
+                    setSearchOpen(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!q) setSearchOpen(false);
+                }}
                 placeholder={`Search in ${group.name}…`}
                 className="h-8 w-[200px] text-xs"
               />
               {q && (
                 <button
-                  onClick={() => { setQ(""); setSearchOpen(false); }}
+                  onClick={() => {
+                    setQ("");
+                    setSearchOpen(false);
+                  }}
                   className="rounded-full p-1 hover:bg-surface-2"
                   aria-label="Clear search"
                 >
@@ -1146,7 +1229,15 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
       ) : filtered.length === 0 ? (
         <div className="mt-8 text-center text-sm text-ink-muted">
           No Works match “{q}”.{" "}
-          <button onClick={() => { setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+          <button
+            onClick={() => {
+              setQ("");
+              setSearchOpen(false);
+            }}
+            className="underline hover:text-ink"
+          >
+            Clear
+          </button>
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -1199,7 +1290,6 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
                   )}
                 </div>
               </Link>
-
             );
           })}
         </div>
@@ -1208,12 +1298,14 @@ function GroupWorkTab({ group }: { group: GroupRow }) {
   );
 }
 
-
-
 /* ---------- COLLABS ---------- */
 type CollabRow = {
-  id: string; title: string; slug: string; description: string | null;
-  status?: string | null; resulting_work_id?: string | null;
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  status?: string | null;
+  resulting_work_id?: string | null;
   category?: Category | null;
 };
 
@@ -1231,10 +1323,12 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
         .select("collab:collab_posts(id,title,slug,description,status,resulting_work_id,category)")
         .eq("group_id", group.id)
         .limit(48);
-      return (data ?? [])
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .map((r: any) => r.collab)
-        .filter((c: CollabRow | null) => !!c) as CollabRow[];
+      return (
+        (data ?? [])
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .map((r: any) => r.collab)
+          .filter((c: CollabRow | null) => !!c) as CollabRow[]
+      );
     },
   });
 
@@ -1271,14 +1365,16 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                  {category === "all" ? "All" : CATEGORY_LABELS[category] ?? "All"}
+                  {category === "all" ? "All" : (CATEGORY_LABELS[category] ?? "All")}
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-40">
                 <DropdownMenuItem onClick={() => setCategory("all")}>All</DropdownMenuItem>
                 {availableCategories.map((c) => (
-                  <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+                  <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
+                    {CATEGORY_LABELS[c]}
+                  </DropdownMenuItem>
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -1302,19 +1398,37 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
                 autoFocus
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
-                onBlur={() => { if (!q) setSearchOpen(false); }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setQ("");
+                    setSearchOpen(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (!q) setSearchOpen(false);
+                }}
                 placeholder="Search collabs…"
                 className="h-8 w-[200px] text-xs"
               />
               {q && (
-                <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+                <button
+                  onClick={() => {
+                    setQ("");
+                    setSearchOpen(false);
+                  }}
+                  className="rounded-full p-1 hover:bg-surface-2"
+                  aria-label="Clear search"
+                >
                   <X className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
           ) : (
-            <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search collabs">
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="rounded-full p-1.5 hover:bg-surface-2"
+              aria-label="Search collabs"
+            >
               <Search className="h-4 w-4" />
             </button>
           )}
@@ -1343,7 +1457,17 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
         <div className="mt-8 text-center text-sm text-ink-muted">
           No Collabs match your filters.{" "}
           {hasFilters && (
-            <button onClick={() => { setCategory("all"); setStatus("open"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+            <button
+              onClick={() => {
+                setCategory("all");
+                setStatus("open");
+                setQ("");
+                setSearchOpen(false);
+              }}
+              className="underline hover:text-ink"
+            >
+              Clear
+            </button>
           )}
         </div>
       ) : (
@@ -1367,9 +1491,6 @@ function GroupCollabTab({ group }: { group: GroupRow }) {
   );
 }
 
-
-
-
 /* ---------- MEMBERS ---------- */
 function GroupMembersTab({ group }: { group: GroupRow }) {
   const [category, setCategory] = useState<Category | "all">("all");
@@ -1391,7 +1512,10 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
         .select("id,username,display_name,avatar_url,hide_group_memberships,categories")
         .in("id", ids);
       return (profs ?? []).filter((p) => !p.hide_group_memberships) as {
-        id: string; username: string | null; display_name: string | null; avatar_url: string | null;
+        id: string;
+        username: string | null;
+        display_name: string | null;
+        avatar_url: string | null;
         categories: Category[] | null;
       }[];
     },
@@ -1399,7 +1523,9 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
 
   const availableCategories = Array.from(
     new Set(
-      members.flatMap((m) => m.categories ?? []).filter((c): c is Category => !!c && !!CATEGORY_LABELS[c]),
+      members
+        .flatMap((m) => m.categories ?? [])
+        .filter((c): c is Category => !!c && !!CATEGORY_LABELS[c]),
     ),
   );
 
@@ -1417,7 +1543,14 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
 
   if (isLoading) return <div className="h-32 animate-pulse rounded-2xl bg-surface-2" />;
   if (members.length === 0) {
-    return <EmptyState label="No public members yet." cta="Be the first to join" to="/g/$slug" toParams={{ slug: group.slug }} />;
+    return (
+      <EmptyState
+        label="No public members yet."
+        cta="Be the first to join"
+        to="/g/$slug"
+        toParams={{ slug: group.slug }}
+      />
+    );
   }
   return (
     <div>
@@ -1427,14 +1560,16 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs hover:bg-surface-2">
-                {category === "all" ? "All crafts" : CATEGORY_LABELS[category] ?? "All crafts"}
+                {category === "all" ? "All crafts" : (CATEGORY_LABELS[category] ?? "All crafts")}
                 <ChevronDown className="h-3 w-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-40">
               <DropdownMenuItem onClick={() => setCategory("all")}>All crafts</DropdownMenuItem>
               {availableCategories.map((c) => (
-                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>{CATEGORY_LABELS[c]}</DropdownMenuItem>
+                <DropdownMenuItem key={c} onClick={() => setCategory(c)}>
+                  {CATEGORY_LABELS[c]}
+                </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -1445,19 +1580,37 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
               autoFocus
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Escape") { setQ(""); setSearchOpen(false); } }}
-              onBlur={() => { if (!q) setSearchOpen(false); }}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") {
+                  setQ("");
+                  setSearchOpen(false);
+                }
+              }}
+              onBlur={() => {
+                if (!q) setSearchOpen(false);
+              }}
               placeholder="Search members…"
               className="h-8 w-[200px] text-xs"
             />
             {q && (
-              <button onClick={() => { setQ(""); setSearchOpen(false); }} className="rounded-full p-1 hover:bg-surface-2" aria-label="Clear search">
+              <button
+                onClick={() => {
+                  setQ("");
+                  setSearchOpen(false);
+                }}
+                className="rounded-full p-1 hover:bg-surface-2"
+                aria-label="Clear search"
+              >
                 <X className="h-3.5 w-3.5" />
               </button>
             )}
           </div>
         ) : (
-          <button onClick={() => setSearchOpen(true)} className="rounded-full p-1.5 hover:bg-surface-2" aria-label="Search members">
+          <button
+            onClick={() => setSearchOpen(true)}
+            className="rounded-full p-1.5 hover:bg-surface-2"
+            aria-label="Search members"
+          >
             <Search className="h-4 w-4" />
           </button>
         )}
@@ -1467,13 +1620,25 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
         <div className="text-center text-sm text-ink-muted">
           No members match your filters.{" "}
           {hasFilters && (
-            <button onClick={() => { setCategory("all"); setQ(""); setSearchOpen(false); }} className="underline hover:text-ink">Clear</button>
+            <button
+              onClick={() => {
+                setCategory("all");
+                setQ("");
+                setSearchOpen(false);
+              }}
+              className="underline hover:text-ink"
+            >
+              Clear
+            </button>
           )}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((m) => (
-            <div key={m.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted">
+            <div
+              key={m.id}
+              className="flex items-center gap-3 rounded-2xl border border-border bg-surface p-3 transition hover:bg-muted"
+            >
               <Link
                 to="/u/$username"
                 params={{ username: m.username ?? "" }}
@@ -1481,11 +1646,17 @@ function GroupMembersTab({ group }: { group: GroupRow }) {
               >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={m.avatar_url ?? undefined} />
-                  <AvatarFallback>{(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>
+                    {(m.display_name ?? m.username ?? "?")[0]?.toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-medium text-ink">{m.display_name ?? m.username}</div>
-                  {m.username && <div className="truncate text-xs text-ink-muted">@{m.username}</div>}
+                  <div className="truncate text-sm font-medium text-ink">
+                    {m.display_name ?? m.username}
+                  </div>
+                  {m.username && (
+                    <div className="truncate text-xs text-ink-muted">@{m.username}</div>
+                  )}
                 </div>
               </Link>
               <MessageButton otherUserId={m.id} />
@@ -1514,7 +1685,11 @@ function EmptyState({
     <div className="mt-6 rounded-xl border border-dashed border-border bg-surface p-10 text-center">
       <p className="text-sm text-ink-muted">{label}</p>
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-      <Link to={to as any} params={toParams} className="mt-3 inline-block text-sm text-primary underline">
+      <Link
+        to={to as any}
+        params={toParams}
+        className="mt-3 inline-block text-sm text-primary underline"
+      >
         {cta}
       </Link>
     </div>
@@ -1637,7 +1812,9 @@ function AddMineToGroup({
   return (
     <div
       className={cn(
-        compact ? "relative inline-block" : "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
+        compact
+          ? "relative inline-block"
+          : "rounded-2xl border border-dashed border-border bg-surface/60 p-3",
       )}
     >
       <button
@@ -1650,15 +1827,30 @@ function AddMineToGroup({
             : "w-full text-sm",
         )}
       >
-        {open ? <X className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} /> : <Plus className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />}
-        {open ? "Close" : compact ? `Add ${labelMap[entity]}` : `Add your ${labelMap[entity]} to ${group.name}`}
+        {open ? (
+          <X className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />
+        ) : (
+          <Plus className={cn("shrink-0", compact ? "h-3 w-3" : "h-4 w-4")} />
+        )}
+        {open
+          ? "Close"
+          : compact
+            ? `Add ${labelMap[entity]}`
+            : `Add your ${labelMap[entity]} to ${group.name}`}
       </button>
       {open && (
-        <div className={cn("space-y-1.5", compact ? "absolute left-0 top-full z-20 mt-2 w-[min(320px,90vw)]" : "mt-3")}>
+        <div
+          className={cn(
+            "space-y-1.5",
+            compact ? "absolute left-0 top-full z-20 mt-2 w-[min(320px,90vw)]" : "mt-3",
+          )}
+        >
           {myPostsQuery.isLoading ? (
             <p className="text-xs text-ink-muted">Loading your {labelMap[entity]}…</p>
           ) : (myPostsQuery.data ?? []).length === 0 ? (
-            <p className="text-xs text-ink-muted">You don't have any {labelMap[entity]} to add yet.</p>
+            <p className="text-xs text-ink-muted">
+              You don't have any {labelMap[entity]} to add yet.
+            </p>
           ) : (
             (myPostsQuery.data ?? []).map((p) => {
               const tagged = taggedQuery.data?.has(p.id) ?? false;
@@ -1676,9 +1868,7 @@ function AddMineToGroup({
                   )}
                 >
                   <span className="truncate">{p.title}</span>
-                  <span className="ml-3 shrink-0 text-xs">
-                    {tagged ? "Tagged" : "Add"}
-                  </span>
+                  <span className="ml-3 shrink-0 text-xs">{tagged ? "Tagged" : "Add"}</span>
                 </button>
               );
             })
