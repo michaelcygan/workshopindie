@@ -923,7 +923,9 @@ export async function circleStoriesServer(
           .in("group_id", groupIds)
           .gt("starts_at", nowIso)
           .is("deleted_at", null)
+          .in("status", DISCOVERABLE_STATUSES as unknown as never)
           .in("visibility", ["public", "group_only"])
+
           .order("starts_at", { ascending: true })
           .limit(6)
       : Promise.resolve({ data: [] }),
