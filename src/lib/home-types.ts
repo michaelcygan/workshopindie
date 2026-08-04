@@ -217,6 +217,16 @@ export type MemberHomePayload = {
   mine: HomeMineItem[];
   /** Recent public Blog posts, excluding whatever the header already shows. */
   blogRail: HomeBlogCard[];
+  /** The viewer's home city, when set on their profile. */
+  homeCity: { id: string; name: string; slug: string | null } | null;
+  /** A public Group representing that city, when one exists. */
+  homeCityGroup: { id: string; name: string; slug: string } | null;
+  /** The Groups the viewer belongs to (id/name/slug only). */
+  nowGroups: Array<{ id: string; name: string; slug: string }>;
+  /** The viewer's declared mediums. */
+  mediums: string[];
+  /** Several ranked upcoming Events; `nextEvent` is the first of these. */
+  upcomingEvents: HomeEvent[];
 };
 
 
