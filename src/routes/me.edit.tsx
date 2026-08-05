@@ -298,7 +298,12 @@ function EditProfile() {
     toast.success("Profile saved");
     setInitial({ ...form, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs });
     setForm((f) => ({ ...f, pinnedIds: cleanPinned, instagram: ig, languages: cleanLangs }));
+    const dest = safeDestination(next);
+    if (dest) {
+      navigate({ to: dest as never });
+    }
   }
+
 
   async function onSaveBirthdate() {
     if (!birthdate) return toast.error("Please pick your date of birth.");
