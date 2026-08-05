@@ -352,15 +352,16 @@ async function fetchPulse(): Promise<Pulse[]> {
   const today = new Date().toISOString();
 
   const [eventsRes, worksRes, collabsRes, groupsRes, blogRes] = await Promise.allSettled([
-    supabase
-      .from("group_events")
-      .select(
-        "id, slug, title, starts_at, cover_url, group:groups!group_events_group_id_fkey(slug,deleted_at)",
-      )
-      .in("status", DISCOVERABLE_STATUSES as unknown as never)
-      .eq("visibility", "public")
-      .is("deleted_at", null)
-      .gte("starts_at", today)
+    applyCurrentWindow(
+      applyDiscoverable(
+        supabase
+          .from("group_events")
+          .select(
+            "id, slug, title, starts_at, ends_at, cover_url, group:groups!group_events_group_id_fkey(slug,deleted_at)",
+          )
+          .eq("visibility", "public"),
+      ),
+    )
       .order("starts_at", { ascending: true })
       .limit(4),
     supabase

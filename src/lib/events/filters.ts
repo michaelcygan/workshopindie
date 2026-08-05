@@ -65,3 +65,33 @@ export function collapseSeries<T extends { series_key?: string | null }>(rows: T
   }
   return out;
 }
+
+/**
+ * Apply the discovery lifecycle invariants to any PostgREST query builder
+ * (browser or server): published, not archived, not soft-deleted, and only
+ * discoverable statuses. Keeps client-side rails from drifting from the
+ * server discovery artery.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function applyDiscoverable<T>(q: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const b = q as any;
+  return b
+    .in("status", DISCOVERABLE_STATUSES as never)
+    .not("published_at", "is", null)
+    .is("archived_at", null)
+    .is("deleted_at", null) as T;
+}
+
+/**
+ * "Still current" window: the event hasn't ended yet. Rows with no end time
+ * get the default grace window.
+ */
+export function applyCurrentWindow<T>(q: T, nowMs = Date.now()): T {
+  const nowIso = new Date(nowMs).toISOString();
+  const graceIso = new Date(nowMs - DEFAULT_EVENT_DURATION_MS).toISOString();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (q as any).or(
+    `ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`,
+  ) as T;
+}
