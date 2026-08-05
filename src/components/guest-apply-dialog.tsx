@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { submitGuestApplication } from "@/lib/collab.functions";
 import { toast } from "sonner";
+import { normalizeUrlOrKeep } from "@/lib/url-normalize";
 
 type Props = {
   open: boolean;
@@ -75,8 +76,8 @@ export function GuestApplyDialog(props: Props) {
           email: form.email.trim(),
           phone: form.phone.trim(),
           message: form.message.trim(),
-          portfolioUrl: form.portfolioUrl.trim(),
-          reelUrl: form.reelUrl.trim(),
+          portfolioUrl: normalizeUrlOrKeep(form.portfolioUrl),
+          reelUrl: normalizeUrlOrKeep(form.reelUrl),
           instagramHandle: form.instagramHandle.trim(),
         },
       });
@@ -183,11 +184,11 @@ export function GuestApplyDialog(props: Props) {
                 <div className="space-y-3 pt-1">
                   <div className="space-y-1.5">
                     <Label htmlFor="g-reel">Demo reel URL</Label>
-                    <Input id="g-reel" placeholder="https://…" value={form.reelUrl} onChange={(e) => update("reelUrl", e.target.value)} />
+                    <Input id="g-reel" placeholder="yoursite.com or https://…" value={form.reelUrl} onChange={(e) => update("reelUrl", e.target.value)} onBlur={(e) => update("reelUrl", normalizeUrlOrKeep(e.target.value))} />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="g-portfolio">Portfolio URL</Label>
-                    <Input id="g-portfolio" placeholder="https://…" value={form.portfolioUrl} onChange={(e) => update("portfolioUrl", e.target.value)} />
+                    <Input id="g-portfolio" placeholder="yoursite.com or https://…" value={form.portfolioUrl} onChange={(e) => update("portfolioUrl", e.target.value)} onBlur={(e) => update("portfolioUrl", normalizeUrlOrKeep(e.target.value))} />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
