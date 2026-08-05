@@ -7304,6 +7304,7 @@ export type Database = {
       lounge_minutes_this_month: { Args: { _user_id: string }; Returns: number }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
       medium_group_id: { Args: { _canonical: string }; Returns: string }
+      medium_to_canonical: { Args: { _medium: string }; Returns: string }
       moderate_lounge_speaker: {
         Args: { _action: string; _room_id: string; _target_user_id: string }
         Returns: undefined
@@ -7408,6 +7409,14 @@ export type Database = {
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
+      sync_profile_medium_groups: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      sync_work_medium_groups: {
+        Args: { _work_id: string }
+        Returns: undefined
+      }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
         Returns: {
