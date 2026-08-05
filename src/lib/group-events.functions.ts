@@ -100,66 +100,16 @@ export const listCityEventCounts = createServerFn({ method: "GET" }).handler(asy
 });
 
 export const listFeaturedEvents = createServerFn({ method: "GET" }).handler(async () => {
-  const supabase = publicClient();
-  const nowIso = new Date().toISOString();
-  const recentCutoffIso = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const baseSelect = `${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url)`;
-  const publicUndeleted = <T,>(q: T) =>
-    (q as any).is("deleted_at", null).eq("visibility", "public") as T;
-
-  // 1) Featured, upcoming.
-  const { data: featured, error } = await publicUndeleted(
-    supabase
-      .from("group_events")
-      .select(baseSelect)
-      .not("featured_at", "is", null)
-      .gt("starts_at", nowIso)
-      .order("starts_at", { ascending: true })
-      .limit(6),
-  );
-  if (error) throw new Error(error.message);
-  if (featured && featured.length > 0) return featured;
-
-  // 2) Any upcoming public event.
-  const { data: upcoming, error: upcomingErr } = await publicUndeleted(
-    supabase
-      .from("group_events")
-      .select(baseSelect)
-      .gt("starts_at", nowIso)
-      .order("starts_at", { ascending: true })
-      .limit(6),
-  );
-  if (upcomingErr) throw new Error(upcomingErr.message);
-  if (upcoming && upcoming.length > 0) return upcoming;
-
-  // 3) Ongoing — started already but hasn't ended.
-  const { data: ongoing, error: ongoingErr } = await publicUndeleted(
-    supabase
-      .from("group_events")
-      .select(baseSelect)
-      .lte("starts_at", nowIso)
-      .gt("ends_at", nowIso)
-      .order("starts_at", { ascending: false })
-      .limit(6),
-  );
-  if (ongoingErr) throw new Error(ongoingErr.message);
-  if (ongoing && ongoing.length > 0) return ongoing;
-
-  // 4) Recent past (last 7 days) — covers TBD placeholders and just-ended events.
-  const { data: recent, error: recentErr } = await publicUndeleted(
-    supabase
-      .from("group_events")
-      .select(baseSelect)
-      .lte("starts_at", nowIso)
-      .gt("starts_at", recentCutoffIso)
-      .order("starts_at", { ascending: false })
-      .limit(6),
-  );
-  if (recentErr) throw new Error(recentErr.message);
-  return recent ?? [];
+  const { listDiscoveryEvents } = await import("@/lib/events/discovery.server");
+  const fields = EVENT_FIELDS;
+  // Featured first, then anything current, then the freshest recent past.
+  const featured = await listDiscoveryEvents({ when: "upcoming", featuredOnly: true, limit: 6, fields });
+  if (featured.length > 0) return featured;
+  const upcoming = await listDiscoveryEvents({ when: "upcoming", limit: 6, fields });
+  if (upcoming.length > 0) return upcoming;
+  const recentCutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  return listDiscoveryEvents({ when: "past", after: recentCutoff, limit: 6, fields });
 });
-
-
 
 /**
  * Public: the /events feed. Filters run through the shared discovery layer so
@@ -187,7 +137,15 @@ export const listPublicEvents = createServerFn({ method: "GET" })
   });
 
 export const listGroupEvents = createServerFn({ method: "GET" })
-  .inputValidator((i) => z.object({ groupId: z.string().uuid() }).parse(i))
+  .inputValidator((i) =>
+    z
+      .object({
+        groupId: z.string().uuid(),
+        /** "current" = live + upcoming. "archive" = everything that has ended. */
+        scope: z.enum(["current", "archive"]).default("current"),
+      })
+      .parse(i),
+  )
   .handler(async ({ data }) => {
     const supabase = publicClient();
     // Events tagged to this group via event_groups (includes each event's primary group).
@@ -199,16 +157,34 @@ export const listGroupEvents = createServerFn({ method: "GET" })
     const eventIds = (links ?? []).map((l) => l.event_id as string);
     if (eventIds.length === 0) return [];
     const { DISCOVERABLE_STATUSES } = await import("@/lib/events/discovery.server");
-    const { data: rows, error } = await supabase
+    const { collapseSeries, DEFAULT_EVENT_DURATION_MS } = await import("@/lib/events/filters");
+    const nowIso = new Date().toISOString();
+    const graceIso = new Date(Date.now() - DEFAULT_EVENT_DURATION_MS).toISOString();
+    const archive = data.scope === "archive";
+
+    let q = supabase
       .from("group_events")
       .select(EVENT_FIELDS)
       .in("id", eventIds)
       .in("status", DISCOVERABLE_STATUSES as never)
-      .is("deleted_at", null)
-      .order("starts_at", { ascending: false })
+      .not("published_at", "is", null)
+      .is("deleted_at", null);
+
+    if (archive) {
+      // The archive is where ended and archived flyers live on.
+      q = q.or(`ends_at.lt.${nowIso},and(ends_at.is.null,starts_at.lt.${graceIso})`);
+    } else {
+      q = q
+        .is("archived_at", null)
+        .or(`ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`);
+    }
+
+    const { data: rows, error } = await q
+      .order("starts_at", { ascending: archive })
       .limit(50);
     if (error) throw new Error(error.message);
-    return rows ?? [];
+    // A recurring night shows once, as its nearest occurrence.
+    return collapseSeries((rows ?? []) as { series_key?: string | null }[]) as NonNullable<typeof rows>;
   });
 
 export const listEventGroups = createServerFn({ method: "POST" })
@@ -240,12 +216,15 @@ export const listUpcomingForMyGroups = createServerFn({ method: "GET" })
       .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(slug,name,avatar_url,deleted_at)`)
       .in("group_id", ids)
       .in("status", DISCOVERABLE_STATUSES as never)
-      .gt("starts_at", new Date().toISOString())
+      .not("published_at", "is", null)
+      .is("archived_at", null)
+      .or(`ends_at.gte.${new Date().toISOString()},and(ends_at.is.null,starts_at.gte.${new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()})`)
       .is("deleted_at", null)
       .order("starts_at", { ascending: true })
       .limit(12);
     if (error) throw new Error(error.message);
-    return sanitizeDiscoveryRows(data) as unknown as NonNullable<typeof data>;
+    const { collapseSeries } = await import("@/lib/events/filters");
+    return collapseSeries(sanitizeDiscoveryRows(data)) as unknown as NonNullable<typeof data>;
   });
 
 const rsvpSchema = z.object({
