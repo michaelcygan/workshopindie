@@ -521,7 +521,10 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
 
             <TabsContent value="preview">
               <div className="mt-2 rounded-2xl border border-border bg-surface p-6">
-                <h1 className="font-display text-3xl text-ink">{title || "Untitled"}</h1>
+                <div className="text-[11px] uppercase tracking-[0.18em] text-ink-soft">
+                  {blogCategoryLabel(categorySlug)}
+                </div>
+                <h1 className="mt-2 font-display text-3xl text-ink">{title || "Untitled"}</h1>
                 {excerpt && <p className="mt-2 text-lg text-ink-soft">{excerpt}</p>}
                 {cover && (
                   <img src={cover} alt={coverAlt} className="mt-4 w-full rounded-2xl border border-border object-cover" />
@@ -530,6 +533,10 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
                 <div className="mt-4">
                   <BlogPostBody markdown={body} />
                 </div>
+                <BlogPostContext
+                  context={deriveBlogPostContext({ categorySlug, tags: entityTags })}
+                  className="mt-10"
+                />
               </div>
             </TabsContent>
           </Tabs>
