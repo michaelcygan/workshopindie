@@ -15,7 +15,7 @@ import { setBlogPostEntityTagsForAdmin } from "@/lib/blog-entity-tags.functions"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
-import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
