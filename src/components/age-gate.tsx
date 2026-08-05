@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 import { getMyAgeFields, setMyBirthdate } from "@/lib/profile-age.functions";
 import { requestAccountDeletion } from "@/lib/account-deletion.functions";
+import { needsOnboarding } from "@/lib/post-auth-destination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
