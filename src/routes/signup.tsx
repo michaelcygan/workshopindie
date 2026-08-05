@@ -20,7 +20,7 @@ const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { email?: string; first?: string; last?: string; ig?: string; from?: string; ref?: string; claim?: string; join?: string; group?: string; redirect?: string } => ({
     email: typeof s.email === "string" ? s.email : undefined,
     first: typeof s.first === "string" ? s.first : undefined,
     last: typeof s.last === "string" ? s.last : undefined,

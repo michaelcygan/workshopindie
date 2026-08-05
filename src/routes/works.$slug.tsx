@@ -39,7 +39,7 @@ import { format } from "date-fns";
 
 export const Route = createFileRoute("/works/$slug")({
   // ?story=<slug> makes an open story peek shareable and back-button friendly.
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { story?: string } => ({
     story: typeof search.story === "string" && search.story ? search.story : undefined,
   }),
   component: WorkDetail,

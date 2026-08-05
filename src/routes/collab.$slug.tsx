@@ -44,7 +44,7 @@ import { PlusGate } from "@/components/plus-gate";
 
 export const Route = createFileRoute("/collab/$slug")({
   // ?story=<slug> makes an open story peek shareable and back-button friendly.
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (search: Record<string, unknown>): { story?: string } => ({
     story: typeof search.story === "string" && search.story ? search.story : undefined,
   }),
   component: CollabDetail,
