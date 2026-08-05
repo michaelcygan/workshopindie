@@ -89,11 +89,18 @@ export const Route = createFileRoute("/blog/$slug")({
             },
             mainEntityOfPage: url,
             url,
-            mentions: ((p.entity_tags ?? []) as BlogEntityTag[]).map((t) => ({
-              "@type": t.kind === "profile" ? "Person" : "Thing",
-              name: t.label,
-              url: `${SITE}${entityUrl(t)}`,
-            })),
+            mentions: contextMentions(
+              deriveBlogPostContext({
+                categorySlug: p.category_slug,
+                tags: (p.entity_tags ?? []) as BlogEntityTag[],
+                authorProfileIds: authors.map((a) => (a as { id?: string }).id),
+                authorUsernames: [
+                  ...authors.map((a) => a.username),
+                  p.author_profile?.username ?? null,
+                ],
+              }),
+              SITE,
+            ),
           }),
         },
         {
