@@ -9,8 +9,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ImageUpload } from "@/components/image-upload";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
-import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogAboutEditor } from "@/components/blog-about-editor";
+import { BlogPostContext } from "@/components/blog-post-context";
+import { deriveBlogPostContext } from "@/lib/blog-post-context";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
+
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
 import {
   getMyBlogPost,
