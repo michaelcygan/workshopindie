@@ -142,6 +142,7 @@ export const createEvent = createServerFn({ method: "POST" })
       venue_city_id: data.venue_city_id ?? null,
       status: effectiveStatus,
     });
+    if (effectiveStatus !== "draft") assertPublishable(data);
     const insertRow = {
       ...rest,
       venue_city_id: venueCityId,
@@ -151,6 +152,9 @@ export const createEvent = createServerFn({ method: "POST" })
       featured_at: featured ? new Date().toISOString() : null,
       pinned_at: pinned ? new Date().toISOString() : null,
       status: effectiveStatus,
+      // A draft is private until it is explicitly published.
+      published_at: effectiveStatus === "draft" ? null : new Date().toISOString(),
+      archived_at: null,
       is_official: data.source === "external" ? false : data.is_official ?? true,
     };
     const { data: row, error } = await supabase
