@@ -184,16 +184,23 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   });
   const [extraGroupIds, setExtraGroupIds] = useState<string[]>([]);
 
-  async function submit(e: React.FormEvent) {
+  const [saving, setSaving] = useState<null | "draft" | "publish">(null);
+
+  async function submit(e: React.FormEvent, mode: "draft" | "publish" = "publish") {
     e.preventDefault();
-    if (!form.group_id || !form.title || !form.starts_at || !form.ends_at) {
-      toast.error("Group, title, start and end are required.");
+    if (!form.group_id || !form.title) {
+      toast.error("Group and title are required.");
       return;
     }
-    if (form.source === "external" && !form.external_url) {
+    if (mode === "publish" && (!form.starts_at || !form.ends_at)) {
+      toast.error("Start and end are required to publish. Save it as a draft instead.");
+      return;
+    }
+    if (mode === "publish" && form.source === "external" && !form.external_url) {
       toast.error("External events need a URL.");
       return;
     }
+    setSaving(mode);
     try {
       const payload = {
         group_id: form.group_id,
@@ -214,7 +221,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         venue_city_id: form.venue_city_id,
         online_url: form.online_url || null,
         capacity: form.capacity ? Number(form.capacity) : null,
-
+        status: mode === "draft" ? ("draft" as const) : ("scheduled" as const),
         featured: form.featured,
         is_official: form.source === "workshop",
         lineup_capacity: form.lineup_capacity ? Number(form.lineup_capacity) : null,
@@ -235,12 +242,14 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         );
       } else {
         await createFn({ data: payload });
-        toast.success("Event created");
+        toast.success(mode === "draft" ? "Draft saved — only you can see it" : "Event published");
       }
       setOpen(false);
       onCreated();
     } catch (err) {
       toast.error((err as Error).message);
+    } finally {
+      setSaving(null);
     }
   }
 
