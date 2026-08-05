@@ -1908,6 +1908,7 @@ export type Database = {
           cover_url: string | null
           created_at: string
           created_by: string
+          creative_category: string | null
           deleted_at: string | null
           description: string | null
           ends_at: string
@@ -1958,6 +1959,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           created_by: string
+          creative_category?: string | null
           deleted_at?: string | null
           description?: string | null
           ends_at: string
@@ -2008,6 +2010,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           created_by?: string
+          creative_category?: string | null
           deleted_at?: string | null
           description?: string | null
           ends_at?: string
@@ -7409,6 +7412,18 @@ export type Database = {
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
+      sync_blog_medium_groups: {
+        Args: { _post_id: string }
+        Returns: undefined
+      }
+      sync_collab_medium_groups: {
+        Args: { _collab_id: string }
+        Returns: undefined
+      }
+      sync_event_medium_groups: {
+        Args: { _event_id: string }
+        Returns: undefined
+      }
       sync_profile_medium_groups: {
         Args: { _user_id: string }
         Returns: undefined
