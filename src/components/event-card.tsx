@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { Calendar, ExternalLink, MapPin, Pin, Radio, Repeat, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveEventHost } from "@/lib/events/host-label";
+
 
 export type EventCardData = {
   id: string;
