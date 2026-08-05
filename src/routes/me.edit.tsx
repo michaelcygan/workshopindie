@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { safeDestination } from "@/lib/safe-destination";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,7 +33,11 @@ import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-ag
 
 export const Route = createFileRoute("/me/edit")({
   component: () => <RequireAuth><EditProfile /></RequireAuth>,
+  validateSearch: (s: Record<string, unknown>): { next?: string } => ({
+    next: typeof s.next === "string" ? s.next : undefined,
+  }),
 });
+
 
 type ExtLink = { label: string; url: string };
 
@@ -78,6 +84,8 @@ const EMPTY: FormState = {
 function EditProfile() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const search = Route.useSearch();
+  const next = search.next;
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [initial, setInitial] = useState<FormState>(EMPTY);
@@ -87,6 +95,7 @@ function EditProfile() {
   const [birthdateLocked, setBirthdateLocked] = useState(false);
   const [savingBirthdate, setSavingBirthdate] = useState(false);
   const [bioLinkCopied, setBioLinkCopied] = useState(false);
+
 
   const bioLinkUrl = useMemo(() => {
     if (!form.username) return "";
