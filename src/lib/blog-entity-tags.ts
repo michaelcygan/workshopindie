@@ -20,6 +20,8 @@ export const BLOG_ENTITY_KIND_LABEL: Record<BlogEntityKind, string> = {
 export type BlogWorkSummary = {
   excerpt: string | null;
   categories: string[];
+  /** Free-form Work format ("Short film", "Remix", …). Absent on older Works. */
+  subtype?: string | null;
   cover_url: string | null;
   cover_aspect: string | null;
   cover_focal_x: number | null;

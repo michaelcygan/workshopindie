@@ -25,10 +25,10 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
       ? supabaseAdmin
           .from("works")
           .select(
-            "id,slug,title,category,categories,excerpt,cover_url,cover_aspect,cover_focal_x,cover_focal_y,visibility,status",
+            "id,slug,title,category,categories,subtype,excerpt,cover_url,cover_aspect,cover_focal_x,cover_focal_y,visibility,status",
           )
           .in("id", workIds)
-      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; category: string | null; categories: string[] | null; excerpt: string | null; cover_url: string | null; cover_aspect: string | null; cover_focal_x: number | null; cover_focal_y: number | null; visibility: string; status: string }> }),
+      : Promise.resolve({ data: [] as Array<{ id: string; slug: string; title: string; category: string | null; categories: string[] | null; subtype: string | null; excerpt: string | null; cover_url: string | null; cover_aspect: string | null; cover_focal_x: number | null; cover_focal_y: number | null; visibility: string; status: string }> }),
 
     collabIds.length
       ? supabaseAdmin
@@ -100,6 +100,7 @@ async function resolveTags(rows: Row[], opts: { publicOnly: boolean }): Promise<
           ? {
               excerpt: w.excerpt ?? null,
               categories: (w.categories ?? []).length ? (w.categories as string[]) : w.category ? [w.category] : [],
+              subtype: w.subtype ?? null,
               cover_url: w.cover_url ?? null,
               cover_aspect: w.cover_aspect ?? null,
               cover_focal_x: w.cover_focal_x ?? null,

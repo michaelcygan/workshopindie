@@ -2,9 +2,10 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { getPublishedPost } from "@/lib/blog.functions";
 import { BlogPostBody } from "@/components/blog-post-body";
 import { BlogArticleFooter } from "@/components/blog-article-footer";
-import { BlogEntityTags } from "@/components/blog-entity-tags";
-import { BlogWorkContext } from "@/components/blog-work-context";
-import { entityUrl, type BlogEntityTag } from "@/lib/blog-entity-tags";
+import { BlogPostContext } from "@/components/blog-post-context";
+import { deriveBlogPostContext, contextMentions } from "@/lib/blog-post-context";
+import { getBlogCategory } from "@/lib/blog-categories";
+import type { BlogEntityTag } from "@/lib/blog-entity-tags";
 import { ReportDialog } from "@/components/report-dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -88,11 +89,18 @@ export const Route = createFileRoute("/blog/$slug")({
             },
             mainEntityOfPage: url,
             url,
-            mentions: ((p.entity_tags ?? []) as BlogEntityTag[]).map((t) => ({
-              "@type": t.kind === "profile" ? "Person" : "Thing",
-              name: t.label,
-              url: `${SITE}${entityUrl(t)}`,
-            })),
+            mentions: contextMentions(
+              deriveBlogPostContext({
+                categorySlug: p.category_slug,
+                tags: (p.entity_tags ?? []) as BlogEntityTag[],
+                authorProfileIds: authors.map((a) => (a as { id?: string }).id),
+                authorUsernames: [
+                  ...authors.map((a) => a.username),
+                  p.author_profile?.username ?? null,
+                ],
+              }),
+              SITE,
+            ),
           }),
         },
         {
@@ -117,10 +125,19 @@ function BlogPostPage() {
   const { post } = Route.useLoaderData();
 
   const entityTags = (post.entity_tags ?? []) as BlogEntityTag[];
-  const richWorkIds = new Set(
-    entityTags.filter((t) => t.kind === "work" && !!t.work).map((t) => t.id),
-  );
-  const otherTags = entityTags.filter((t) => !(t.kind === "work" && richWorkIds.has(t.id)));
+  const authors = (post.authors ?? []) as Array<{
+    id: string;
+    username: string | null;
+    display_name: string | null;
+    role_label: string | null;
+  }>;
+  const context = deriveBlogPostContext({
+    categorySlug: post.category_slug,
+    tags: entityTags,
+    authorProfileIds: authors.map((a) => a.id),
+    authorUsernames: [...authors.map((a) => a.username), post.author_profile?.username ?? null],
+  });
+  const category = getBlogCategory(post.category_slug);
 
   const publishedAt = post.published_at ? new Date(post.published_at) : null;
   const updatedAt = post.updated_at ? new Date(post.updated_at) : null;
@@ -134,13 +151,14 @@ function BlogPostPage() {
       </Link>
 
       <header className="mt-6">
-        <div className="text-xs uppercase tracking-wider text-ink-muted">
-          {publishedAt?.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-          {meaningfullyUpdated && (
-            <> · Updated {updatedAt!.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}</>
-          )}
-        </div>
-        <h1 className="mt-3 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
+        <Link
+          to="/blog/c/$category"
+          params={{ category: category.slug }}
+          className="text-[11px] uppercase tracking-[0.18em] text-ink-soft hover:text-ink"
+        >
+          {category.label}
+        </Link>
+        <h1 className="mt-2 font-display text-4xl leading-tight text-ink md:text-5xl">{post.title}</h1>
         {post.excerpt && (
           <p className="mt-4 text-lg text-ink-soft">{post.excerpt}</p>
         )}
@@ -176,6 +194,26 @@ function BlogPostPage() {
           ) : (
             post.author_name || "Workshop"
           )}
+          {publishedAt && (
+            <>
+              {" · "}
+              {publishedAt.toLocaleDateString(undefined, {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })}
+            </>
+          )}
+          {meaningfullyUpdated && (
+            <>
+              {" · Updated "}
+              {updatedAt!.toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </>
+          )}
         </div>
       </header>
 
@@ -189,13 +227,12 @@ function BlogPostPage() {
         />
       )}
 
-      <BlogWorkContext tags={entityTags} className="mt-8" />
-
       <div className="mt-8">
         <BlogPostBody markdown={post.body_markdown} />
       </div>
 
-      <BlogEntityTags tags={otherTags} className="mt-10" />
+      <BlogPostContext context={context} className="mt-12 md:mt-14" />
+
 
       <ShareRow slug={post.slug} title={post.title} postId={post.id} />
 
