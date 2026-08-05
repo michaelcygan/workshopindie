@@ -4,6 +4,7 @@ import { X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Props = {
+  userId: string | undefined;
   hasAvatar: boolean;
   hasHomeCity: boolean;
   hasBio: boolean;
@@ -11,14 +12,18 @@ type Props = {
   className?: string;
 };
 
-const STORAGE_KEY = "profile-completion-dismissed";
+function storageKey(userId: string | undefined) {
+  if (!userId) return "profile-completion-dismissed";
+  return `profile-completion-dismissed:${userId}`;
+}
 
-export function ProfileCompletionChip({ hasAvatar, hasHomeCity, hasBio, hasWork, className }: Props) {
+export function ProfileCompletionChip({ userId, hasAvatar, hasHomeCity, hasBio, hasWork, className }: Props) {
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
   useEffect(() => {
-    setDismissed(typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY) === "1");
-  }, []);
+    setDismissed(typeof window !== "undefined" && localStorage.getItem(storageKey(userId)) === "1");
+  }, [userId]);
+
 
   const steps = [
     { key: "avatar", label: "Add a profile photo", done: hasAvatar, to: "/me/edit" as const },
@@ -60,9 +65,10 @@ export function ProfileCompletionChip({ hasAvatar, hasHomeCity, hasBio, hasWork,
         type="button"
         aria-label="Dismiss"
         onClick={() => {
-          localStorage.setItem(STORAGE_KEY, "1");
+          localStorage.setItem(storageKey(userId), "1");
           setDismissed(true);
         }}
+
         className="shrink-0 rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
       >
         <X className="h-3.5 w-3.5" />
