@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Calendar, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
+import { applyDiscoverable, applyCurrentWindow, collapseSeries } from "@/lib/events/filters";
 
 interface Props {
   group: { id: string; slug: string };
@@ -16,6 +16,8 @@ type EventRow = {
   venue_name: string | null;
   going_count: number | null;
   cover_url: string | null;
+  ends_at?: string | null;
+  series_key?: string | null;
 };
 
 function formatWhen(iso: string): { day: string; time: string; relative: string } {
@@ -45,17 +47,18 @@ export function GroupNextEvent({ group }: Props) {
   const { data: events = [], isLoading } = useQuery({
     queryKey: ["group", group.id, "upcoming-events"],
     queryFn: async (): Promise<EventRow[]> => {
-      const { data, error } = await supabase
-        .from("group_events")
-        .select("id,slug,title,starts_at,venue_name,going_count,cover_url")
-        .eq("group_id", group.id)
-        .in("status", DISCOVERABLE_STATUSES as never)
-        .is("deleted_at", null)
-        .gte("starts_at", new Date().toISOString())
+      const { data, error } = await applyCurrentWindow(
+        applyDiscoverable(
+          supabase
+            .from("group_events")
+            .select("id,slug,title,starts_at,ends_at,series_key,venue_name,going_count,cover_url")
+            .eq("group_id", group.id),
+        ),
+      )
         .order("starts_at", { ascending: true })
-        .limit(3);
+        .limit(6);
       if (error) throw error;
-      return (data ?? []) as EventRow[];
+      return collapseSeries<EventRow>((data ?? []) as EventRow[]).slice(0, 3);
     },
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,

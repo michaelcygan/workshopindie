@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { CATEGORY_LABELS, type Category } from "@/lib/categories";
 import { supabase } from "@/integrations/supabase/client";
-import { DISCOVERABLE_STATUSES } from "@/lib/events/filters";
+import { DISCOVERABLE_STATUSES, collapseSeries, effectiveEndMs } from "@/lib/events/filters";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { JoinGroupButton, useIsMemberOfGroup } from "@/components/join-group-button";
@@ -268,6 +268,8 @@ function GroupPage() {
         .select("slug,title,starts_at")
         .eq("group_id", group.id)
         .in("status", DISCOVERABLE_STATUSES as never)
+        .not("published_at", "is", null)
+        .is("archived_at", null)
         .is("deleted_at", null)
         .gt("starts_at", new Date().toISOString())
         .order("starts_at", { ascending: true })
@@ -432,14 +434,16 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
       const { data, error } = await supabase
         .from("group_events")
         .select(
-          "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url",
+          "id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,ends_at,venue_name,venue_address,going_count,capacity,featured_at,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,online_url,series_key",
         )
         .eq("group_id", group.id)
         .in("status", DISCOVERABLE_STATUSES as never)
+        .not("published_at", "is", null)
         .is("deleted_at", null)
         .order("starts_at", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as unknown as EventLite[];
+      // One card per recurring series — its nearest occurrence.
+      return collapseSeries((data ?? []) as unknown as EventLite[]);
     },
   });
   const [kind, setKind] = useState<string>("all");
@@ -473,9 +477,9 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
     });
   const pinnedIds = new Set(pinnedOrRecurring.map((e) => e.id));
   const upcoming = all.filter(
-    (e) => !pinnedIds.has(e.id) && new Date(e.starts_at) >= now && matches(e),
+    (e) => !pinnedIds.has(e.id) && effectiveEndMs(e) >= now.getTime() && matches(e),
   );
-  const past = all.filter((e) => !pinnedIds.has(e.id) && new Date(e.starts_at) < now);
+  const past = all.filter((e) => !pinnedIds.has(e.id) && effectiveEndMs(e) < now.getTime());
   const hasAnyMatch = pinnedOrRecurring.length + upcoming.length > 0;
   const hasFilters = kind !== "all" || format !== "all" || q.trim().length > 0;
 
@@ -678,6 +682,8 @@ function GroupEventsTab({ group }: { group: GroupRow }) {
 }
 
 type EventLite = {
+  ends_at?: string | null;
+  series_key?: string | null;
   id: string;
   slug: string;
   title: string;

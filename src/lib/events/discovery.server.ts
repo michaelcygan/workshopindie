@@ -17,15 +17,19 @@
 import { createClient } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { DISCOVERABLE_STATUSES as STATUSES } from "@/lib/events/filters";
+import {
+  DISCOVERABLE_STATUSES as STATUSES,
+  DEFAULT_EVENT_DURATION_MS,
+  collapseSeries,
+} from "@/lib/events/filters";
 
 /** Full column list for an event detail read. */
 export const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at,published_at,archived_at";
 
 /** Lean column list for cards / lists. */
 export const EVENT_CARD_FIELDS =
-  "id,group_id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,online_url,capacity,going_count,maybe_count,status,visibility,featured_at,pinned_at,is_recurring,recurrence_label,series_key,short_code";
+  "id,group_id,slug,title,tagline,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,online_url,capacity,going_count,maybe_count,status,visibility,featured_at,pinned_at,is_recurring,recurrence_label,series_key,short_code,published_at,archived_at";
 
 export const GROUP_JOIN =
   "group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,accent_color,visibility,deleted_at)";
@@ -60,6 +64,8 @@ export type DiscoveryEvent = {
   recurrence_label: string | null;
   series_key: string | null;
   short_code: string | null;
+  published_at?: string | null;
+  archived_at?: string | null;
   group: {
     id: string;
     slug: string;
@@ -112,6 +118,11 @@ export type DiscoveryFilters = {
   limit?: number;
   /** Column list override; defaults to EVENT_CARD_FIELDS. */
   fields?: string;
+  /**
+   * Collapse recurring series to their nearest occurrence. Default: true.
+   * A group's own archive/series view can opt out.
+   */
+  collapseRecurring?: boolean;
 };
 
 /** Statuses that may appear in discovery — `canceled` and `draft` never do. */
@@ -138,6 +149,7 @@ export async function listDiscoveryEvents(
     withCity = false,
     limit = 60,
     fields = EVENT_CARD_FIELDS,
+    collapseRecurring = true,
   } = filters;
 
   const supabase = client ?? publicEventsClient();
@@ -150,12 +162,29 @@ export async function listDiscoveryEvents(
     .select(select)
     .is("deleted_at", null)
     .eq("visibility", "public")
-    .in("status", STATUSES as never);
+    .in("status", STATUSES as never)
+    // Lifecycle: only published, non-archived flyers are discoverable.
+    .not("published_at", "is", null)
+    .is("archived_at", null);
+
+  // An event stays "current" until it ends, not until it starts. Rows with no
+  // end time get a fixed grace window so they don't linger forever.
+  const graceIso = new Date(Date.now() - DEFAULT_EVENT_DURATION_MS).toISOString();
 
   if (when === "upcoming") {
-    q = q.gte("starts_at", after ?? nowIso).order("starts_at", { ascending: true });
+    if (after) {
+      q = q.gte("starts_at", after);
+    } else {
+      q = q.or(`ends_at.gte.${nowIso},and(ends_at.is.null,starts_at.gte.${graceIso})`);
+    }
+    q = q.order("starts_at", { ascending: true });
   } else if (when === "past") {
-    q = q.lt("starts_at", before ?? nowIso).order("starts_at", { ascending: false });
+    if (before) {
+      q = q.lt("starts_at", before);
+    } else {
+      q = q.or(`ends_at.lt.${nowIso},and(ends_at.is.null,starts_at.lt.${graceIso})`);
+    }
+    q = q.order("starts_at", { ascending: false });
   } else {
     if (after) q = q.gte("starts_at", after);
     if (before) q = q.lte("starts_at", before);
@@ -175,7 +204,8 @@ export async function listDiscoveryEvents(
     console.error("[events/discovery] query failed:", error.message);
     return [];
   }
-  return sanitizeDiscoveryRows(data);
+  const rows = sanitizeDiscoveryRows(data);
+  return collapseRecurring ? collapseSeries(rows) : rows;
 }
 
 /**
