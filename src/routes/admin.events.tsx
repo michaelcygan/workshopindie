@@ -25,6 +25,7 @@ import {
   cancelEvent,
   setEventFeatured,
 } from "@/lib/group-events-admin.functions";
+import { MEDIUM_GROUPS, type MediumGroupKey } from "@/lib/medium-groups";
 import { toast } from "sonner";
 import { AdminImportEventDialog } from "@/components/admin-import-event-dialog";
 import { VenueAutocomplete } from "@/components/event/venue-autocomplete";
@@ -134,6 +135,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
   type FormState = {
     group_id: string; title: string; tagline: string; description: string;
     kind: "open_mic" | "listening_party" | "networking" | "screening" | "workshop_irl" | "online" | "other" | "lineup";
+    creative_category: "" | MediumGroupKey;
     format: "in_person" | "online" | "hybrid";
     cover_url: string; starts_at: string; ends_at: string;
     venue_name: string; venue_address: string; online_url: string;
@@ -156,6 +158,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
     tagline: "",
     description: "",
     kind: "open_mic",
+    creative_category: "",
     format: "in_person",
     cover_url: "",
     starts_at: "",
@@ -198,6 +201,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
         tagline: form.tagline || null,
         description: form.description || null,
         kind: form.kind,
+        creative_category: form.creative_category || null,
         format: form.format,
         cover_url: form.cover_url || null,
         starts_at: new Date(form.starts_at).toISOString(),
@@ -342,6 +346,21 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
                 <SelectContent>
                   {["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "lineup", "other"].map((k) => (
                     <SelectItem key={k} value={k}>{k.replace(/_/g, " ")}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Creative category</Label>
+              <Select
+                value={form.creative_category || "none"}
+                onValueChange={(v) => setForm({ ...form, creative_category: v === "none" ? "" : (v as MediumGroupKey) })}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {MEDIUM_GROUPS.map((m) => (
+                    <SelectItem key={m.key} value={m.key}>{m.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
