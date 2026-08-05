@@ -224,6 +224,7 @@ export async function materializeSeries(
     if (endsOn && startsAt > endsOn) break;
     const endsAt = new Date(startsAt.getTime() + series.duration_minutes * 60 * 1000);
 
+    const occurrenceStatus = (base.status as string | undefined) ?? "scheduled";
     const row = {
       ...base,
       group_id: series.group_id,
@@ -233,7 +234,11 @@ export async function materializeSeries(
       ends_at: endsAt.toISOString(),
       slug: "",
       created_by: createdBy,
-      status: (base.status as string | undefined) ?? "scheduled",
+      status: occurrenceStatus,
+      // A published series produces published occurrences; a draft series
+      // produces private drafts. Archival is never inherited.
+      published_at: occurrenceStatus === "draft" ? null : new Date().toISOString(),
+      archived_at: null,
     };
 
     // Unique index (series_key, starts_at) makes this idempotent.
