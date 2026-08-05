@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeDestination } from "@/lib/safe-destination";
@@ -13,16 +12,26 @@ import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
 import { sanitizeInstagramHandle } from "@/lib/display-name";
-import { attributeReferral, setReferredBy } from "@/lib/share.functions";
-import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
-import { setMyBirthdate } from "@/lib/profile-age.functions";
 import { toast } from "sonner";
 
 const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
-  validateSearch: (s: Record<string, unknown>): { email?: string; first?: string; last?: string; ig?: string; from?: string; ref?: string; claim?: string; join?: string; group?: string; redirect?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): {
+    email?: string;
+    first?: string;
+    last?: string;
+    ig?: string;
+    from?: string;
+    ref?: string;
+    claim?: string;
+    join?: string;
+    group?: string;
+    redirect?: string;
+  } => ({
     email: typeof s.email === "string" ? s.email : undefined,
     first: typeof s.first === "string" ? s.first : undefined,
     last: typeof s.last === "string" ? s.last : undefined,
@@ -36,80 +45,46 @@ export const Route = createFileRoute("/signup")({
   }),
 });
 
-
-
 function Signup() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const { user: signedInUser, loading: authLoading } = useAuth();
-
-  // A completed OAuth round-trip lands back here with a session — don't leave
-  // the user staring at the signup form.
-  useEffect(() => {
-    if (authLoading || !signedInUser) return;
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    if (search.join && search.group) return; // seed-link flow owns this
-    const dest = safeDestination(search.redirect);
-    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
-    // The callback route hands off to the lifecycle coordinator.
-    window.location.assign(AUTH_CALLBACK_PATH);
-  }, [signedInUser, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
 
   const [firstName, setFirstName] = useState(search.first ?? "");
   const [lastName, setLastName] = useState(search.last ?? "");
   const [instagram, setInstagram] = useState(search.ig ?? "");
   const [email, setEmail] = useState(search.email ?? "");
   const [password, setPassword] = useState("");
-  const [birthdate, setBirthdate] = useState("");
   const [loading, setLoading] = useState(false);
   const fromGuest = search.from === "guest_apply";
-  const lookupRef = useServerFn(attributeReferral);
-  const writeRef = useServerFn(setReferredBy);
-  const redeemSeed = useServerFn(redeemGroupSeedLink);
-  const saveBirthdate = useServerFn(setMyBirthdate);
 
-  // Today minus 18y — the date input refuses anything younger.
-  const maxBirthdate = (() => {
-    const d = new Date();
-    d.setFullYear(d.getFullYear() - 18);
-    return d.toISOString().slice(0, 10);
-  })();
-
-  // Stash seed-link token in sessionStorage so OAuth round-trips still join the group.
-  useEffect(() => {
-    if (search.join && search.group && typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem(
-          "ws.pendingGroupJoin",
-          JSON.stringify({ token: search.join, slug: search.group }),
-        );
-      } catch { /* ignore */ }
-    }
-  }, [search.join, search.group]);
-
-
-  // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it
+  // Capture ?ref=<username> into sessionStorage so OAuth round-trips preserve it.
+  // The PostAuthRunner migrates this into referral attribution once the lifecycle is ready.
   useEffect(() => {
     if (search.ref && typeof window !== "undefined") {
       sessionStorage.setItem(REF_KEY, search.ref.toLowerCase());
     }
   }, [search.ref]);
 
-  async function applyReferral(newUserId: string) {
-    const ref = (typeof window !== "undefined" && sessionStorage.getItem(REF_KEY)) || null;
-    if (!ref) return;
-    try {
-      const r = await lookupRef({ data: { referrerUsername: ref } });
-      if (r.ok && r.referrerId) {
-        await writeRef({ data: { userId: newUserId, referrerId: r.referrerId } });
-      }
-    } catch {
-      /* non-fatal */
-    } finally {
-      sessionStorage.removeItem(REF_KEY);
+  // A completed OAuth round-trip lands back here with a session — don't leave
+  // the user staring at the signup form.
+  useEffect(() => {
+    if (authLoading || !signedInUser) return;
+    setPostAuthIntentFromSearch(search);
+    window.location.assign(AUTH_CALLBACK_PATH);
+  }, [signedInUser, authLoading, search.claim, search.join, search.group, search.redirect]);
+
+  function setPostAuthIntentFromSearch(s: typeof search) {
+    if (s.claim) {
+      setPostAuthIntent({ kind: "return_to", returnTo: `/collab/claim/${s.claim}` });
+    } else if (s.join && s.group) {
+      setPostAuthIntent({
+        kind: "group_seed_join",
+        payload: { token: s.join, slug: s.group },
+        returnTo: `/g/${s.group}`,
+      });
+    } else {
+      const dest = safeDestination(s.redirect);
+      if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
     }
   }
 
@@ -120,22 +95,9 @@ function Signup() {
     if (!first || !last) {
       return toast.error("Please enter your first and last name.");
     }
-    if (!birthdate) {
-      return toast.error("Please enter your date of birth. Workshop is 18+.");
-    }
-    // Client-side 18+ check (the DB trigger is the real enforcement).
-    if (birthdate > maxBirthdate) {
-      return toast.error("Workshop is 18+. We can't create your account.");
-    }
     setLoading(true);
     const ig = sanitizeInstagramHandle(instagram);
-    // Preserve the destination across email confirmation.
-    const wanted = safeDestination(search.redirect);
-    if (wanted) setPostAuthIntent({ kind: "return_to", returnTo: wanted });
-    const safeRedirect =
-      search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")
-        ? search.redirect
-        : null;
+    setPostAuthIntentFromSearch(search);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -153,50 +115,25 @@ function Signup() {
       setLoading(false);
       return toast.error(error.message);
     }
-    // If email confirmation is off we have a session — persist DOB now so the
-    // 18+ trigger has the last word. If it rejects, sign the user out.
-    if (data.session) {
-      try {
-        await saveBirthdate({ data: { birthdate } });
-      } catch (err) {
-        await supabase.auth.signOut();
-        setLoading(false);
-        const msg = err instanceof Error ? err.message : "Couldn't create your account.";
-        return toast.error(msg);
-      }
-    }
     setLoading(false);
-    if (data.user?.id) await applyReferral(data.user.id);
+    if (data.session) {
+      // Email confirmation is off; session is active. The lifecycle coordinator takes over.
+      window.location.assign(AUTH_CALLBACK_PATH);
+      return;
+    }
+    // Email confirmation is on: the user must click the link before the lifecycle runs.
     toast.success("Check your inbox to confirm your email.");
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    // Seed-link auto-join: try to redeem immediately (works if email confirmation
-    // is off, i.e. session exists). Otherwise the __root.tsx auth listener will
-    // pick up sessionStorage on SIGNED_IN.
-    if (search.join && search.group) {
-      try {
-        await redeemSeed({ data: { token: search.join } });
-        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
-      } catch { /* listener will retry post-confirmation */ }
-      navigate({ to: "/g/$slug", params: { slug: search.group } });
-      return;
-    }
-    if (safeRedirect && data.session) {
-      window.location.assign(safeRedirect);
-      return;
-    }
-    navigate({ to: "/onboarding" });
   };
-
-
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip live>{search.join && search.group ? `Joining ${search.group}` : "Join the night"}</KickerChip>
-        <span className="text-xs text-ink-muted">{fromGuest ? "Finish your profile" : "Free to start"}</span>
+        <KickerChip live>
+          {search.join && search.group ? `Joining ${search.group}` : "Join the night"}
+        </KickerChip>
+        <span className="text-xs text-ink-muted">
+          {fromGuest ? "Finish your profile" : "Free to start"}
+        </span>
       </div>
 
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
@@ -209,8 +146,18 @@ function Signup() {
       </p>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
-          <GoogleSignIn label="Sign up with Google" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
-          <AppleSignIn label="Sign up with Apple" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
+          <GoogleSignIn
+            label="Sign up with Google"
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
+          <AppleSignIn
+            label="Sign up with Apple"
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
@@ -219,28 +166,59 @@ function Signup() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="first">First name</Label>
-              <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <Input
+                id="first"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="last">Last name</Label>
-              <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              <Input
+                id="last"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
             </div>
           </div>
           <p className="text-xs text-ink-muted -mt-1">
-            We show your first name and last initial (e.g. "{(firstName || "Jane").trim()} {(lastName.trim()[0] || "S").toUpperCase()}.") as a light trust signal. Your public @handle is separate.
+            We show your first name and last initial (e.g. "{(firstName || "Jane").trim()}{" "}
+            {(lastName.trim()[0] || "S").toUpperCase()}.") as a light trust signal. Your public
+            @handle is separate.
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              required
+              autoComplete="new-password"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ig">Instagram <span className="text-ink-muted font-normal">(optional)</span></Label>
+            <Label htmlFor="ig">
+              Instagram <span className="text-ink-muted font-normal">(optional)</span>
+            </Label>
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">@</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+                @
+              </span>
               <Input
                 id="ig"
                 value={instagram}
@@ -252,20 +230,6 @@ function Signup() {
               />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="dob">Date of birth</Label>
-            <Input
-              id="dob"
-              type="date"
-              required
-              max={maxBirthdate}
-              value={birthdate}
-              onChange={(e) => setBirthdate(e.target.value)}
-            />
-            <p className="text-xs text-ink-muted">
-              Workshop is 18+. Private — never shown on your profile.
-            </p>
-          </div>
           <Button type="submit" className="w-full rounded-md" disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </Button>
@@ -274,7 +238,10 @@ function Signup() {
           </p>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
-          Already here? <Link to="/login" className="text-signal hover:underline">Sign in</Link>
+          Already here?{" "}
+          <Link to="/login" className="text-signal hover:underline">
+            Sign in
+          </Link>
         </p>
       </div>
     </div>

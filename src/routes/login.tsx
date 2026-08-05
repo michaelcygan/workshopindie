@@ -1,6 +1,5 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
 import { safeDestination } from "@/lib/safe-destination";
@@ -12,12 +11,15 @@ import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
 import { AppleSignIn } from "@/components/apple-sign-in";
 import { KickerChip } from "@/components/kicker-chip";
-import { redeemGroupSeedLink } from "@/lib/group-seed-links.functions";
 import { toast } from "sonner";
+
+const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  validateSearch: (s: Record<string, unknown>): { claim?: string; join?: string; group?: string; redirect?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { claim?: string; join?: string; group?: string; redirect?: string } => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
@@ -25,43 +27,34 @@ export const Route = createFileRoute("/login")({
   }),
 });
 
-
 function Login() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
-  const redeemSeed = useServerFn(redeemGroupSeedLink);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { user, loading: authLoading } = useAuth();
 
-  // Already signed in? Never sit on the auth form — go where this person belongs.
+  // Already signed in? Never sit on the auth form — go to the lifecycle coordinator.
   useEffect(() => {
     if (authLoading || !user) return;
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    if (search.join && search.group) return; // handled by the seed-link flow
-    const dest = safeDestination(search.redirect);
-    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
-    // The callback route hands off to the lifecycle coordinator.
+    setPostAuthIntentFromSearch(search);
     window.location.assign(AUTH_CALLBACK_PATH);
-  }, [user, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
+  }, [user, authLoading, search.claim, search.join, search.group, search.redirect]);
 
-
-
-  // Stash seed-link for OAuth round-trips.
-  useEffect(() => {
-    if (search.join && search.group && typeof window !== "undefined") {
-      try {
-        sessionStorage.setItem(
-          "ws.pendingGroupJoin",
-          JSON.stringify({ token: search.join, slug: search.group }),
-        );
-      } catch { /* ignore */ }
+  function setPostAuthIntentFromSearch(s: typeof search) {
+    if (s.claim) {
+      setPostAuthIntent({ kind: "return_to", returnTo: `/collab/claim/${s.claim}` });
+    } else if (s.join && s.group) {
+      setPostAuthIntent({
+        kind: "group_seed_join",
+        payload: { token: s.join, slug: s.group },
+        returnTo: `/g/${s.group}`,
+      });
+    } else {
+      const dest = safeDestination(s.redirect);
+      if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
     }
-  }, [search.join, search.group]);
+  }
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,29 +62,16 @@ function Login() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) return toast.error(error.message);
-    if (search.claim) {
-      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
-      return;
-    }
-    if (search.join && search.group) {
-      try {
-        const r = await redeemSeed({ data: { token: search.join } });
-        if (typeof window !== "undefined") sessionStorage.removeItem("ws.pendingGroupJoin");
-        if (r.joined) toast.success("Joined");
-      } catch { /* listener will retry */ }
-      navigate({ to: "/g/$slug", params: { slug: search.group } });
-      return;
-    }
-    const dest = safeDestination(search.redirect);
-    if (dest) setPostAuthIntent({ kind: "return_to", returnTo: dest });
+    setPostAuthIntentFromSearch(search);
     window.location.assign(AUTH_CALLBACK_PATH);
   };
-
 
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip>{search.join && search.group ? `Joining ${search.group}` : "Welcome back"}</KickerChip>
+        <KickerChip>
+          {search.join && search.group ? `Joining ${search.group}` : "Welcome back"}
+        </KickerChip>
         <span className="text-xs text-ink-muted">Sign in to keep going</span>
       </div>
 
@@ -100,8 +80,16 @@ function Login() {
       </h1>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="space-y-3">
-          <GoogleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
-          <AppleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
+          <GoogleSignIn
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
+          <AppleSignIn
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
@@ -109,14 +97,30 @@ function Login() {
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-baseline justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link to="/forgot-password" className="text-xs text-ink-muted hover:underline">Forgot?</Link>
+              <Link to="/forgot-password" className="text-xs text-ink-muted hover:underline">
+                Forgot?
+              </Link>
             </div>
-            <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" className="w-full rounded-md" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}

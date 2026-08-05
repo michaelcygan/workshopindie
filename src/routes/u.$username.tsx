@@ -830,11 +830,13 @@ function ProfilePage() {
         {isOwn && (
           <ProfileCompletionChip
             className="mt-4 hidden md:flex"
+            userId={user?.id}
             hasAvatar={!!profile.avatar_url}
             hasHomeCity={!!profile.home_city}
             hasBio={!!(profile.bio && profile.bio.trim().length > 0)}
             hasWork={(ownedWorks?.length ?? 0) > 0}
           />
+
         )}
 
         {/* Wrap-up nudges now live in /me/collabs to keep the public profile clean. */}

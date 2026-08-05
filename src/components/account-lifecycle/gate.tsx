@@ -146,7 +146,12 @@ function UnderageStage() {
         removed. You have 30 days to sign back in and cancel the deletion.
       </p>
       <div className="mt-5 space-y-2">
-        <Button type="button" onClick={onAcceptDeletion} disabled={submitting} className="w-full rounded-full">
+        <Button
+          type="button"
+          onClick={onAcceptDeletion}
+          disabled={submitting}
+          className="w-full rounded-full"
+        >
           {submitting ? "Removing…" : "Remove my account"}
         </Button>
         <Button
@@ -240,7 +245,9 @@ function WelcomeStage() {
 
   return (
     <>
-      <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">Welcome to Workshop</p>
+      <p className="text-xs font-medium uppercase tracking-wider text-ink-muted">
+        Welcome to Workshop
+      </p>
       <h2 className="mt-1 font-display text-2xl text-ink">Make something. Find your people.</h2>
       <p className="mt-2 text-sm text-ink-muted">
         Workshop is an independent creative network: publish what you make, write about the process,
