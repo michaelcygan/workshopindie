@@ -403,37 +403,15 @@ function MemberBlogEditorPage() {
             <div className="mt-6">
               <BlogPostBody markdown={body} />
             </div>
+            <BlogPostContext
+              context={deriveBlogPostContext({ categorySlug, tags: entityTags })}
+              className="mt-10"
+            />
           </article>
         </TabsContent>
 
         <TabsContent value="details" className="mt-4 space-y-4">
-          <div className="rounded-2xl border border-border bg-surface px-4 py-3">
-            <div className="text-sm font-medium text-ink">Category</div>
-            <p className="mt-1 text-[11px] text-ink-muted">
-              One category per post. It decides where your story shows up on the Blog.
-            </p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {BLOG_CATEGORIES.map((c) => {
-                const active = c.slug === categorySlug;
-                return (
-                  <button
-                    key={c.slug}
-                    type="button"
-                    disabled={readOnly}
-                    onClick={() => { setCategorySlug(c.slug); setDirty(true); }}
-                    aria-pressed={active}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
-                      active
-                        ? "border-ink bg-ink text-surface"
-                        : "border-border bg-surface text-ink-soft hover:border-ink/40"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+
 
           <div className="flex items-start justify-between gap-4 rounded-2xl border border-border bg-surface px-4 py-3">
             <div className="min-w-0">
