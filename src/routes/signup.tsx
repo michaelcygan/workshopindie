@@ -46,7 +46,6 @@ export const Route = createFileRoute("/signup")({
 });
 
 function Signup() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const { user: signedInUser, loading: authLoading } = useAuth();
 
