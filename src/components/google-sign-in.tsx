@@ -28,8 +28,8 @@ export function GoogleSignIn({
         return;
       }
       if (result.redirected) return; // browser will redirect
-      // Session set inline; navigate to intended target
-      window.location.assign(safeRedirect ?? "/");
+      // Session set inline; send new accounts to onboarding, others onward.
+      goToPostAuth(await resolvePostAuthPath(safeRedirect));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setLoading(false);
