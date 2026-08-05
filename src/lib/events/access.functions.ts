@@ -1,11 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import {
-  loadEventAccessRow,
-  resolveEventAccess,
-  type EventAccess,
-} from "@/lib/events/access.server";
+import type { EventAccess } from "@/lib/events/access-types";
 
 /**
  * Server-resolved access for a signed-in viewer. Signed-out viewers never call
@@ -17,6 +13,7 @@ export const getMyEventAccess = createServerFn({ method: "POST" })
   .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
   .handler(async ({ data, context }): Promise<EventAccess | null> => {
     const { supabase, userId } = context;
+    const { loadEventAccessRow, resolveEventAccess } = await import("@/lib/events/access.server");
     const row = await loadEventAccessRow(supabase, data.event_id);
     if (!row || row.deleted_at) return null;
     const access = await resolveEventAccess(supabase, row, userId);

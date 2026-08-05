@@ -11,7 +11,7 @@ import {
   listEventRoster,
   undoCheckIn,
 } from "@/lib/events/participation.functions";
-import type { EventAccess } from "@/lib/events/access.server";
+import type { EventAccess } from "@/lib/events/access-types";
 
 type Props = {
   eventId: string;

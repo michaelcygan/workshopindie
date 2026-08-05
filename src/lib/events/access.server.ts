@@ -13,41 +13,10 @@ import {
   isCheckInOpen,
   isParticipationOpen,
   isRsvpOpen,
-  type EventLifecycle,
-  type EventMoment,
-  type LifecycleInput,
 } from "@/lib/events/lifecycle";
 
-export type EventAccessRow = LifecycleInput & {
-  id: string;
-  group_id: string;
-  created_by: string | null;
-  visibility: string;
-};
-
-export type EventAccess = {
-  eventId: string;
-  lifecycle: EventLifecycle;
-  moment: EventMoment;
-  /** ms epoch when Wall/Gallery freeze. */
-  interactionClosesAt: number | null;
-  viewerId: string | null;
-  isAdmin: boolean;
-  isHost: boolean;
-  /** RSVP row status, if any. */
-  rsvpStatus: "going" | "maybe" | "waitlist" | "declined" | "canceled" | null;
-  /** Confirmed attendance — the key that unlocks participation. */
-  isAttending: boolean;
-  isCheckedIn: boolean;
-  canSeeEvent: boolean;
-  canSeeOnlineUrl: boolean;
-  canRsvp: boolean;
-  canCheckIn: boolean;
-  canParticipate: boolean;
-  canSeeRoster: boolean;
-  canModerate: boolean;
-  canEdit: boolean;
-};
+export type { EventAccess, EventAccessRow } from "@/lib/events/access-types";
+import type { EventAccess, EventAccessRow } from "@/lib/events/access-types";
 
 const ATTENDING = new Set(["going", "maybe"]);
 
