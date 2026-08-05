@@ -363,12 +363,15 @@ function MemberBlogEditorPage() {
             </div>
           </div>
 
-          {/* Connections are post metadata: above the body, never buried under it. */}
-          <BlogEntityTagsEditor
-            value={entityTags}
+          {/* "About this post" — the authoring twin of the public colophon. */}
+          <BlogAboutEditor
+            categorySlug={categorySlug}
+            tags={entityTags}
             readOnly={readOnly}
-            onChange={(next) => { setEntityTags(next); setDirty(true); }}
+            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeTags={(next) => { setEntityTags(next); setDirty(true); }}
           />
+
 
           <div>
             <BlogBodyEditor
