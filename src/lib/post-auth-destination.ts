@@ -48,3 +48,8 @@ export async function needsOnboarding(): Promise<boolean> {
     return false;
   }
 }
+
+/** Hard-navigate to a resolved post-auth path (avoids typed-route gymnastics). */
+export function goToPostAuth(path: string) {
+  if (typeof window !== "undefined") window.location.assign(path);
+}
