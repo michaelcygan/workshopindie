@@ -11,10 +11,29 @@ import {
   __resetIntentGuards,
 } from "./post-auth-intent";
 
+// Minimal sessionStorage + window stub so these pure helpers run in the node
+// test environment without pulling in jsdom.
+class MemoryStorage {
+  private map = new Map<string, string>();
+  get length() { return this.map.size; }
+  clear() { this.map.clear(); }
+  getItem(k: string) { return this.map.has(k) ? this.map.get(k)! : null; }
+  setItem(k: string, v: string) { this.map.set(k, String(v)); }
+  removeItem(k: string) { this.map.delete(k); }
+  key(i: number) { return Array.from(this.map.keys())[i] ?? null; }
+}
+
+const memory = new MemoryStorage() as unknown as Storage;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).sessionStorage = memory;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+(globalThis as any).window = { sessionStorage: memory, location: { origin: "https://workshop.test" } };
+
 beforeEach(() => {
   sessionStorage.clear();
   __resetIntentGuards();
 });
+
 
 describe("post-auth intent", () => {
   it("serializes and reads a valid intent", () => {
