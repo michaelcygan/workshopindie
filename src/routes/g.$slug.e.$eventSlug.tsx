@@ -2,32 +2,28 @@ import { createFileRoute, Link, useRouter, notFound } from "@tanstack/react-rout
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
-import { Calendar, Users, ArrowLeft, Tag, Repeat, Info, ListMusic, Sparkles, MessageSquare, ExternalLink, Globe } from "lucide-react";
+import { Calendar, Users, ArrowLeft, Tag, Repeat, Info, MessageSquare, ExternalLink, Globe, Image as ImageIcon } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
-import { usePlus } from "@/hooks/use-plus";
 import { useUserRoles } from "@/hooks/use-user-role";
 import { supabase } from "@/integrations/supabase/client";
-import { getEventBySlug, getMyRsvp, listAttendees, listEventUpdates, listEventGroups } from "@/lib/group-events.functions";
+import { getEventBySlug, getMyRsvp, listEventUpdates, listEventGroups, getEventJoinLink } from "@/lib/group-events.functions";
+import { getMyEventAccess } from "@/lib/events/access.functions";
+import { getEventCounts } from "@/lib/events/participation.functions";
+import { eventStatusLabel, getEventLifecycle, getEventMoment } from "@/lib/events/lifecycle";
+import { EventWallFeed } from "@/components/events/event-wall-feed";
+import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
 import { EventLocationCard } from "@/components/event-location-card";
 import { EventRsvpBlock, type MyRsvp } from "@/components/event-rsvp-block";
 
-import { EventWall } from "@/components/event-wall";
-import { EventAttendeeWork } from "@/components/event-attendee-work";
 import { EventShareSheet } from "@/components/event-share-sheet";
-import { EventAttendeesSheet } from "@/components/event-attendees-sheet";
-import { ProfilePeek } from "@/components/profile-peek";
 
 import { ReportDialog } from "@/components/report-dialog";
 import { LineupPanel } from "@/components/lineup-panel";
-import { EventCompanionPanel } from "@/components/event-companion-panel";
 
-import { EventWhoStrip } from "@/components/event-who-strip";
-import { EventPhotosSection } from "@/components/event-photos-section";
-import { getEventPhase } from "@/lib/event-phase";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { EntityBlogPosts } from "@/components/entity-blog-posts";
@@ -106,6 +102,10 @@ type EventRow = {
   venue_lat: number | null;
   venue_lng: number | null;
   online_url: string | null;
+  has_online_url: boolean;
+  published_at: string | null;
+  archived_at: string | null;
+  deleted_at?: string | null;
   capacity: number | null;
   waitlist_enabled: boolean;
   visibility: "public" | "group_only" | "unlisted";
