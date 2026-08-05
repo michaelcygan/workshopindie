@@ -110,7 +110,7 @@ type SearchShape = z.infer<typeof searchSchema>;
 
 function EventsIndexPage() {
   const search = Route.useSearch();
-  const navigate = useNavigate({ from: "/events" });
+  const navigate = useNavigate({ from: "/events/" });
   const { when, format, city: cityId, cityName, mine } = search;
   const { user } = useAuth();
 
@@ -175,11 +175,11 @@ function EventsIndexPage() {
   }, [list, when]);
 
   function setWhen(next: When) {
-    navigate({ search: (prev: SearchShape) => ({ ...prev, when: next }) });
+    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, when: next }) });
   }
   function setFormat(next: Format) {
     navigate({
-      search: (prev: SearchShape) => ({
+      search: (prev: SearchShape): SearchShape => ({
         ...prev,
         format: next,
         // Online ignores city.
@@ -190,7 +190,7 @@ function EventsIndexPage() {
   }
   function setCity(next: CityValue | null) {
     navigate({
-      search: (prev: SearchShape) => ({
+      search: (prev: SearchShape): SearchShape => ({
         ...prev,
         city: next?.id,
         cityName: next?.name,
@@ -198,7 +198,7 @@ function EventsIndexPage() {
     });
   }
   function setMine(next: boolean) {
-    navigate({ search: (prev: SearchShape) => ({ ...prev, mine: next }) });
+    navigate({ search: (prev: SearchShape): SearchShape => ({ ...prev, mine: next }) });
   }
 
   const cityValue: CityValue | null = cityId && cityName ? { id: cityId, name: cityName } : null;

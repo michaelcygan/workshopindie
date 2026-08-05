@@ -105,7 +105,7 @@ export function ProfileBlogTab({
     navigate({
       to: "/u/$username",
       params: { username },
-      search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog", post: slug }),
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: "blog" as const, post: slug }),
     });
     onOpenPost(slug);
   }
