@@ -127,6 +127,56 @@ async function resolveEventCity(
   return inherited;
 }
 
+/**
+ * Publish gate. A published Event is a public promise, so it must be complete:
+ * real title, kind, format, a start, an end after the start, a sane timezone,
+ * a venue for anything in person, and a way in for anything online.
+ */
+export function assertPublishable(ev: {
+  title?: string | null;
+  kind?: string | null;
+  format?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  timezone?: string | null;
+  venue_name?: string | null;
+  venue_address?: string | null;
+  online_url?: string | null;
+  external_url?: string | null;
+}) {
+  const problems: string[] = [];
+  if (!ev.title || ev.title.trim().length < 2) problems.push("a title");
+  if (!ev.kind) problems.push("an event type");
+  if (!ev.format) problems.push("a format");
+  const start = ev.starts_at ? new Date(ev.starts_at).getTime() : NaN;
+  const end = ev.ends_at ? new Date(ev.ends_at).getTime() : NaN;
+  if (!Number.isFinite(start)) problems.push("a start time");
+  if (!Number.isFinite(end)) problems.push("an end time");
+  if (Number.isFinite(start) && Number.isFinite(end) && end <= start) {
+    problems.push("an end time after the start");
+  }
+  const tz = ev.timezone ?? "";
+  if (!tz) problems.push("a timezone");
+  else {
+    try {
+      new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    } catch {
+      problems.push("a valid timezone");
+    }
+  }
+  if (ev.format === "in_person" || ev.format === "hybrid") {
+    if (!ev.venue_name && !ev.venue_address) problems.push("a venue");
+  }
+  if (ev.format === "online" || ev.format === "hybrid") {
+    if (!ev.online_url && !ev.external_url) {
+      problems.push("an online link (or save it as a draft until you have one)");
+    }
+  }
+  if (problems.length > 0) {
+    throw new Error(`This Event still needs ${problems.join(", ")}.`);
+  }
+}
+
 export const createEvent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i) => baseSchema.parse(i))
@@ -142,6 +192,7 @@ export const createEvent = createServerFn({ method: "POST" })
       venue_city_id: data.venue_city_id ?? null,
       status: effectiveStatus,
     });
+    if (effectiveStatus !== "draft") assertPublishable(data);
     const insertRow = {
       ...rest,
       venue_city_id: venueCityId,
@@ -151,6 +202,9 @@ export const createEvent = createServerFn({ method: "POST" })
       featured_at: featured ? new Date().toISOString() : null,
       pinned_at: pinned ? new Date().toISOString() : null,
       status: effectiveStatus,
+      // A draft is private until it is explicitly published.
+      published_at: effectiveStatus === "draft" ? null : new Date().toISOString(),
+      archived_at: null,
       is_official: data.source === "external" ? false : data.is_official ?? true,
     };
     const { data: row, error } = await supabase
@@ -227,7 +281,85 @@ export const updateEvent = createServerFn({ method: "POST" })
     if (typeof pinned === "boolean") {
       patch.pinned_at = pinned ? new Date().toISOString() : null;
     }
+    // Moving a draft to scheduled through the editor publishes it.
+    if (rest.status === "scheduled") {
+      const { data: current } = await supabase
+        .from("group_events")
+        .select(
+          "title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
+        )
+        .eq("id", id)
+        .maybeSingle();
+      const merged = { ...(current ?? {}), ...rest } as Parameters<typeof assertPublishable>[0] & {
+        published_at?: string | null;
+      };
+      assertPublishable(merged);
+      if (!merged.published_at) patch.published_at = new Date().toISOString();
+      patch.archived_at = null;
+    }
+    if (rest.status === "draft") {
+      patch.published_at = null;
+    }
     const { error } = await supabase.from("group_events").update(patch as never).eq("id", id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Publish a draft Event — the one action that makes a flyer public. */
+export const publishEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { data: row, error: readErr } = await supabase
+      .from("group_events")
+      .select(
+        "id,title,kind,format,starts_at,ends_at,timezone,venue_name,venue_address,online_url,external_url,published_at",
+      )
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readErr) throw new Error(readErr.message);
+    if (!row) throw new Error("Event not found");
+    assertPublishable(row as Parameters<typeof assertPublishable>[0]);
+    const { error } = await supabase
+      .from("group_events")
+      .update({
+        status: "scheduled",
+        published_at: (row as { published_at: string | null }).published_at ?? new Date().toISOString(),
+        archived_at: null,
+      } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Send an Event to the archive early, or restore it. */
+export const setEventArchived = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid(), archived: z.boolean() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("group_events")
+      .update({ archived_at: data.archived ? new Date().toISOString() : null } as never)
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Pull a published Event back to a private draft. */
+export const unpublishEvent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await assertAdmin(supabase, userId);
+    const { error } = await supabase
+      .from("group_events")
+      .update({ status: "draft", published_at: null } as never)
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

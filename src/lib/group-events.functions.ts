@@ -13,7 +13,14 @@ function publicClient() {
 }
 
 const EVENT_FIELDS =
-  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+  "id,group_id,slug,title,tagline,description,kind,format,cover_url,accent_color,starts_at,ends_at,timezone,venue_name,venue_address,venue_city_id,venue_lat,venue_lng,online_url,capacity,waitlist_enabled,visibility,rsvp_mode,status,published_at,archived_at,is_official,featured_at,going_count,maybe_count,waitlist_count,created_by,created_at,series_key,short_code,lineup_capacity,source,external_url,external_organizer,is_recurring,recurrence_label,pinned_at";
+
+/** The flyer everyone can see. The join link is stripped — it is fetched
+ *  separately by confirmed participants via `getEventJoinLink`. */
+function toPublicFlyer<T extends { online_url: string | null }>(row: T) {
+  const { online_url, ...rest } = row;
+  return { ...rest, online_url: null as string | null, has_online_url: Boolean(online_url) };
+}
 
 export const getEventBySlug = createServerFn({ method: "GET" })
   .inputValidator((i) => z.object({ groupSlug: z.string(), eventSlug: z.string() }).parse(i))
@@ -29,8 +36,32 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     if (!row) throw new Error("Event not found");
     const g = (row as { group: { slug: string } }).group;
     if (g.slug !== data.groupSlug) throw new Error("Event not found");
-    return row;
+    return toPublicFlyer(row as typeof row & { online_url: string | null });
   });
+
+/**
+ * Same flyer, read as the signed-in viewer. Drafts are only readable by
+ * hosts and admins (enforced by RLS), so this is the path a host uses to
+ * preview an unpublished Event.
+ */
+export const getEventBySlugAsViewer = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ groupSlug: z.string(), eventSlug: z.string() }).parse(i))
+  .handler(async ({ data, context }) => {
+    const { data: row, error } = await context.supabase
+      .from("group_events")
+      .select(`${EVENT_FIELDS},group:groups!group_events_group_id_fkey!inner(id,slug,name,avatar_url,kind,accent_color,visibility,deleted_at)`)
+      .eq("slug", data.eventSlug)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!row) throw new Error("Event not found");
+    const g = (row as { group: { slug: string } }).group;
+    if (g.slug !== data.groupSlug) throw new Error("Event not found");
+    return toPublicFlyer(row as typeof row & { online_url: string | null });
+  });
+
+
 
 /** Public: upcoming public events that are tied to a city, for the homepage IRL strip. */
 export const listCityEventsStrip = createServerFn({ method: "GET" }).handler(async () => {
@@ -229,36 +260,67 @@ export const rsvp = createServerFn({ method: "POST" })
   .inputValidator((i) => rsvpSchema.parse(i))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const row = {
-      event_id: data.event_id,
-      user_id: userId,
-      status: data.status,
-      plus_ones: data.plus_ones ?? 0,
-      note: data.note ?? null,
-    };
-    const { error } = await supabase.from("group_event_rsvps").upsert(row, { onConflict: "event_id,user_id" });
-    if (error) throw new Error(error.message);
+    const { requireEventAccess } = await import("@/lib/events/access.server");
+    const { event, access } = await requireEventAccess(supabase, data.event_id, userId);
+    const attending = data.status === "going" || data.status === "maybe";
 
-    // Auto-join host group when the user is going/maybe/waitlist. Best-effort —
-    // any failure here must not block the RSVP itself. The group membership is
-    // the real stickiness lever for the post-event journey.
-    if (data.status === "going" || data.status === "maybe") {
-      const { data: ev } = await supabase
+    if (attending) {
+      if (access.lifecycle === "canceled") throw new Error("This Event was canceled.");
+      if (access.lifecycle === "draft") throw new Error("This Event isn't published yet.");
+      if (!access.canRsvp) throw new Error("RSVPs are closed for this Event.");
+    }
+
+    // Capacity / waitlist is decided here, never by the client.
+    let effectiveStatus: string = data.status;
+    if (attending) {
+      const { capacity, waitlist_enabled } = (await supabase
         .from("group_events")
-        .select("group_id")
+        .select("capacity,waitlist_enabled")
         .eq("id", data.event_id)
-        .maybeSingle();
-      if (ev?.group_id) {
-        await supabase
-          .from("group_members")
-          .upsert(
-            { group_id: ev.group_id, user_id: userId, role: "member" },
-            { onConflict: "group_id,user_id", ignoreDuplicates: true },
-          );
+        .maybeSingle()).data as { capacity: number | null; waitlist_enabled: boolean | null } ?? {
+        capacity: null,
+        waitlist_enabled: false,
+      };
+      if (capacity && access.rsvpStatus !== "going" && access.rsvpStatus !== "maybe") {
+        const { count } = await supabase
+          .from("group_event_rsvps")
+          .select("user_id", { count: "exact", head: true })
+          .eq("event_id", data.event_id)
+          .in("status", ["going", "maybe"]);
+        if ((count ?? 0) >= capacity) {
+          if (!waitlist_enabled) throw new Error("This Event is full.");
+          effectiveStatus = "waitlist";
+        }
       }
     }
 
-    return { ok: true };
+    const row = {
+      event_id: data.event_id,
+      user_id: userId,
+      status: effectiveStatus,
+      plus_ones: data.plus_ones ?? 0,
+      note: data.note ?? null,
+      // Undoing an RSVP relocks participation immediately — including a live
+      // check-in. Posts and photos are never deleted.
+      ...(attending ? {} : { checked_in_at: null }),
+    };
+    const { error } = await supabase
+      .from("group_event_rsvps")
+      .upsert(row as never, { onConflict: "event_id,user_id" });
+    if (error) throw new Error(error.message);
+
+    // Auto-join host group when the user is attending. Best-effort —
+    // any failure here must not block the RSVP itself.
+    if (attending && effectiveStatus !== "waitlist" && event.group_id) {
+      await supabase
+        .from("group_members")
+        .upsert(
+          { group_id: event.group_id, user_id: userId, role: "member" },
+          { onConflict: "group_id,user_id", ignoreDuplicates: true },
+        );
+    }
+
+    return { ok: true, status: effectiveStatus };
   });
 
 export const getMyRsvp = createServerFn({ method: "POST" })
@@ -268,11 +330,31 @@ export const getMyRsvp = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: r } = await supabase
       .from("group_event_rsvps")
-      .select("status,plus_ones,note")
+      .select("status,plus_ones,note,checked_in_at")
       .eq("event_id", data.event_id)
       .eq("user_id", userId)
       .maybeSingle();
     return r;
+  });
+
+/**
+ * The join link is never part of the public flyer — only confirmed
+ * participants, hosts and admins can read it.
+ */
+export const getEventJoinLink = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((i) => z.object({ event_id: z.string().uuid() }).parse(i))
+  .handler(async ({ data, context }): Promise<{ online_url: string | null }> => {
+    const { supabase, userId } = context;
+    const { requireEventAccess } = await import("@/lib/events/access.server");
+    const { access } = await requireEventAccess(supabase, data.event_id, userId);
+    if (!access.canSeeOnlineUrl) return { online_url: null };
+    const { data: row } = await supabase
+      .from("group_events")
+      .select("online_url")
+      .eq("id", data.event_id)
+      .maybeSingle();
+    return { online_url: (row as { online_url: string | null } | null)?.online_url ?? null };
   });
 
 export const listAttendees = createServerFn({ method: "POST" })

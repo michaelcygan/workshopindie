@@ -33,6 +33,16 @@ export const Route = createFileRoute("/api/public/events/sweep")({
           .in("status", ["scheduled", "live"])
           .lt("ends_at", nowIso);
 
+        // Archival stamp — indexing only. Access is always decided by the
+        // lifecycle helper, which archives on time whether or not this ran.
+        const archiveCutoff = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+        await supabaseAdmin
+          .from("group_events")
+          .update({ archived_at: nowIso })
+          .is("archived_at", null)
+          .not("published_at", "is", null)
+          .lt("ends_at", archiveCutoff);
+
         async function notifyWindow(column: "notified_24h_at" | "notified_2h_at", kind: string, hoursAhead: number) {
           const winStart = new Date(now.getTime() + (hoursAhead - 0.1) * 3600 * 1000).toISOString();
           const winEnd = new Date(now.getTime() + (hoursAhead + 0.1) * 3600 * 1000).toISOString();
