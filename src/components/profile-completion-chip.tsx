@@ -17,13 +17,19 @@ function storageKey(userId: string | undefined) {
   return `profile-completion-dismissed:${userId}`;
 }
 
-export function ProfileCompletionChip({ userId, hasAvatar, hasHomeCity, hasBio, hasWork, className }: Props) {
+export function ProfileCompletionChip({
+  userId,
+  hasAvatar,
+  hasHomeCity,
+  hasBio,
+  hasWork,
+  className,
+}: Props) {
   const [dismissed, setDismissed] = useState(true); // start hidden to avoid flash
 
   useEffect(() => {
     setDismissed(typeof window !== "undefined" && localStorage.getItem(storageKey(userId)) === "1");
   }, [userId]);
-
 
   const steps = [
     { key: "avatar", label: "Add a profile photo", done: hasAvatar, to: "/me/edit" as const },
@@ -38,21 +44,25 @@ export function ProfileCompletionChip({ userId, hasAvatar, hasHomeCity, hasBio, 
   if (completed === total || dismissed || !nextStep) return null;
 
   return (
-    <div className={cn("flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-soft", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-soft",
+        className,
+      )}
+    >
       <div className="flex gap-1">
         {steps.map((s) => (
           <span
             key={s.key}
-            className={cn(
-              "h-1.5 w-6 rounded-full transition",
-              s.done ? "bg-primary" : "bg-muted",
-            )}
+            className={cn("h-1.5 w-6 rounded-full transition", s.done ? "bg-primary" : "bg-muted")}
             aria-hidden
           />
         ))}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-ink">Profile {completed}/{total} — almost there</div>
+        <div className="text-sm font-medium text-ink">
+          Profile {completed}/{total} — almost there
+        </div>
         <div className="truncate text-xs text-ink-muted">Next: {nextStep.label}</div>
       </div>
       <Link
@@ -68,7 +78,6 @@ export function ProfileCompletionChip({ userId, hasAvatar, hasHomeCity, hasBio, 
           localStorage.setItem(storageKey(userId), "1");
           setDismissed(true);
         }}
-
         className="shrink-0 rounded-full p-1 text-ink-muted hover:bg-muted hover:text-ink"
       >
         <X className="h-3.5 w-3.5" />

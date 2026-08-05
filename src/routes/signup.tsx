@@ -18,7 +18,20 @@ const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/signup")({
   component: Signup,
-  validateSearch: (s: Record<string, unknown>): { email?: string; first?: string; last?: string; ig?: string; from?: string; ref?: string; claim?: string; join?: string; group?: string; redirect?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): {
+    email?: string;
+    first?: string;
+    last?: string;
+    ig?: string;
+    from?: string;
+    ref?: string;
+    claim?: string;
+    join?: string;
+    group?: string;
+    redirect?: string;
+  } => ({
     email: typeof s.email === "string" ? s.email : undefined,
     first: typeof s.first === "string" ? s.first : undefined,
     last: typeof s.last === "string" ? s.last : undefined,
@@ -116,8 +129,12 @@ function Signup() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip live>{search.join && search.group ? `Joining ${search.group}` : "Join the night"}</KickerChip>
-        <span className="text-xs text-ink-muted">{fromGuest ? "Finish your profile" : "Free to start"}</span>
+        <KickerChip live>
+          {search.join && search.group ? `Joining ${search.group}` : "Join the night"}
+        </KickerChip>
+        <span className="text-xs text-ink-muted">
+          {fromGuest ? "Finish your profile" : "Free to start"}
+        </span>
       </div>
 
       <h1 className="font-display text-3xl leading-[1.05] text-ink md:text-4xl">
@@ -130,8 +147,18 @@ function Signup() {
       </p>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="mt-6 space-y-3">
-          <GoogleSignIn label="Sign up with Google" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
-          <AppleSignIn label="Sign up with Apple" redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
+          <GoogleSignIn
+            label="Sign up with Google"
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
+          <AppleSignIn
+            label="Sign up with Apple"
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
@@ -140,28 +167,59 @@ function Signup() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="first">First name</Label>
-              <Input id="first" required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              <Input
+                id="first"
+                required
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="last">Last name</Label>
-              <Input id="last" required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+              <Input
+                id="last"
+                required
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
             </div>
           </div>
           <p className="text-xs text-ink-muted -mt-1">
-            We show your first name and last initial (e.g. "{(firstName || "Jane").trim()} {(lastName.trim()[0] || "S").toUpperCase()}.") as a light trust signal. Your public @handle is separate.
+            We show your first name and last initial (e.g. "{(firstName || "Jane").trim()}{" "}
+            {(lastName.trim()[0] || "S").toUpperCase()}.") as a light trust signal. Your public
+            @handle is separate.
           </p>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required autoComplete="new-password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              required
+              autoComplete="new-password"
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ig">Instagram <span className="text-ink-muted font-normal">(optional)</span></Label>
+            <Label htmlFor="ig">
+              Instagram <span className="text-ink-muted font-normal">(optional)</span>
+            </Label>
             <div className="relative">
-              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">@</span>
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+                @
+              </span>
               <Input
                 id="ig"
                 value={instagram}
@@ -181,7 +239,10 @@ function Signup() {
           </p>
         </form>
         <p className="mt-6 text-center text-sm text-ink-muted">
-          Already here? <Link to="/login" className="text-signal hover:underline">Sign in</Link>
+          Already here?{" "}
+          <Link to="/login" className="text-signal hover:underline">
+            Sign in
+          </Link>
         </p>
       </div>
     </div>

@@ -18,7 +18,9 @@ const REF_KEY = "signup-ref";
 
 export const Route = createFileRoute("/login")({
   component: Login,
-  validateSearch: (s: Record<string, unknown>): { claim?: string; join?: string; group?: string; redirect?: string } => ({
+  validateSearch: (
+    s: Record<string, unknown>,
+  ): { claim?: string; join?: string; group?: string; redirect?: string } => ({
     claim: typeof s.claim === "string" ? s.claim : undefined,
     join: typeof s.join === "string" ? s.join : undefined,
     group: typeof s.group === "string" ? s.group : undefined,
@@ -69,7 +71,9 @@ function Login() {
   return (
     <div className="mx-auto flex min-h-[80vh] max-w-md flex-col justify-center px-4 py-10">
       <div className="mb-4 flex items-center gap-2">
-        <KickerChip>{search.join && search.group ? `Joining ${search.group}` : "Welcome back"}</KickerChip>
+        <KickerChip>
+          {search.join && search.group ? `Joining ${search.group}` : "Welcome back"}
+        </KickerChip>
         <span className="text-xs text-ink-muted">Sign in to keep going</span>
       </div>
 
@@ -78,8 +82,16 @@ function Login() {
       </h1>
       <div className="mt-6 rounded-xl border border-border bg-surface p-8 shadow-soft">
         <div className="space-y-3">
-          <GoogleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
-          <AppleSignIn redirectTo={search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined} />
+          <GoogleSignIn
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
+          <AppleSignIn
+            redirectTo={
+              search.redirect && search.redirect.startsWith("/") ? search.redirect : undefined
+            }
+          />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
@@ -87,14 +99,30 @@ function Login() {
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-baseline justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link to="/forgot-password" className="text-xs text-ink-muted hover:underline">Forgot?</Link>
+              <Link to="/forgot-password" className="text-xs text-ink-muted hover:underline">
+                Forgot?
+              </Link>
             </div>
-            <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" className="w-full rounded-md" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}

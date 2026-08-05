@@ -17,7 +17,6 @@ import { type Category, categoryClass } from "@/lib/categories";
 import {
   WORK_MEDIUMS,
   EXTRA_MEDIUMS,
-  
   isExtraMedium,
   MAX_TOOLS,
   MAX_TOOL_LEN,
@@ -32,12 +31,15 @@ import { PinnedWorksPicker, type PinnableWork } from "@/components/pinned-works-
 import { getMyAgeFields, setMyBirthdate, setMyAgeFilter } from "@/lib/profile-age.functions";
 
 export const Route = createFileRoute("/me/edit")({
-  component: () => <RequireAuth><EditProfile /></RequireAuth>,
+  component: () => (
+    <RequireAuth>
+      <EditProfile />
+    </RequireAuth>
+  ),
   validateSearch: (s: Record<string, unknown>): { next?: string } => ({
     next: typeof s.next === "string" ? s.next : undefined,
   }),
 });
-
 
 type ExtLink = { label: string; url: string };
 
@@ -71,14 +73,30 @@ type FormState = {
   links: ExtLink[];
   cityId: string;
   pinnedIds: string[];
-  ageFilterMin: number | null;     // private: 18 / 21 / null
+  ageFilterMin: number | null; // private: 18 / 21 / null
 };
 
 const EMPTY: FormState = {
   username: "",
-  firstName: "", lastName: "", aliases: [], aliasUrls: [], instagram: "",
-  headline: "", bio: "", artistStatement: "", avatar: null, cover: null, coverWorkId: null, cats: [], mediums: [], tools: [], languages: [], links: [],
-  cityId: "", pinnedIds: [], ageFilterMin: null,
+  firstName: "",
+  lastName: "",
+  aliases: [],
+  aliasUrls: [],
+  instagram: "",
+  headline: "",
+  bio: "",
+  artistStatement: "",
+  avatar: null,
+  cover: null,
+  coverWorkId: null,
+  cats: [],
+  mediums: [],
+  tools: [],
+  languages: [],
+  links: [],
+  cityId: "",
+  pinnedIds: [],
+  ageFilterMin: null,
 };
 
 function EditProfile() {
@@ -91,15 +109,15 @@ function EditProfile() {
   const [initial, setInitial] = useState<FormState>(EMPTY);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [activeSection, setActiveSection] = useState<SectionId>("identity");
-  const [birthdate, setBirthdate] = useState<string>("");      // YYYY-MM-DD
+  const [birthdate, setBirthdate] = useState<string>(""); // YYYY-MM-DD
   const [birthdateLocked, setBirthdateLocked] = useState(false);
   const [savingBirthdate, setSavingBirthdate] = useState(false);
   const [bioLinkCopied, setBioLinkCopied] = useState(false);
 
-
   const bioLinkUrl = useMemo(() => {
     if (!form.username) return "";
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://workshopindie.com";
+    const origin =
+      typeof window !== "undefined" ? window.location.origin : "https://workshopindie.com";
     return `${origin}/u/${form.username}`;
   }, [form.username]);
 
@@ -119,9 +137,12 @@ function EditProfile() {
   const saveBirthdateFn = useServerFn(setMyBirthdate);
   const saveAgeFilterFn = useServerFn(setMyAgeFilter);
 
-  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }));
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
-  useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [user, loading, navigate]);
+  useEffect(() => {
+    if (!loading && !user) navigate({ to: "/login" });
+  }, [user, loading, navigate]);
 
   const { data: cities = [] } = useQuery({
     queryKey: ["cities-all"],
@@ -147,60 +168,79 @@ function EditProfile() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,languages,external_links,city_id,pinned_work_ids").eq("id", user.id).maybeSingle().then(({ data, error }) => {
-      if (error) { toast.error(error.message); setHydrated(true); return; }
-      if (!data) return;
-      const first = (data.first_name as string | null) ?? "";
-      const last = (data.last_name as string | null) ?? "";
-      const loaded: FormState = {
-        username: data.username ?? "",
-        firstName: first,
-        lastName: last,
-        aliases: ((data.aliases as string[] | null) ?? []),
-        aliasUrls: (() => {
-          const a = ((data.aliases as string[] | null) ?? []);
-          const u = (((data as { alias_urls?: string[] | null }).alias_urls) ?? []);
-          return a.map((_, i) => u[i] ?? "");
-        })(),
+    supabase
+      .from("profiles")
+      .select(
+        "id,username,first_name,last_name,aliases,alias_urls,instagram_handle,headline,bio,artist_statement,avatar_url,cover_url,cover_work_id,categories,mediums,tools,languages,external_links,city_id,pinned_work_ids",
+      )
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error(error.message);
+          setHydrated(true);
+          return;
+        }
+        if (!data) return;
+        const first = (data.first_name as string | null) ?? "";
+        const last = (data.last_name as string | null) ?? "";
+        const loaded: FormState = {
+          username: data.username ?? "",
+          firstName: first,
+          lastName: last,
+          aliases: (data.aliases as string[] | null) ?? [],
+          aliasUrls: (() => {
+            const a = (data.aliases as string[] | null) ?? [];
+            const u = (data as { alias_urls?: string[] | null }).alias_urls ?? [];
+            return a.map((_, i) => u[i] ?? "");
+          })(),
 
-        instagram: data.instagram_handle ?? "",
-        headline: data.headline ?? "",
-        bio: data.bio ?? "",
-        artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
-        avatar: data.avatar_url ?? null,
-        cover: data.cover_url ?? null,
-        coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
-        cats: (data.categories ?? []) as Category[],
-        mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
-        tools: ((data.tools as string[] | null) ?? []),
-        languages: (((data as { languages?: string[] | null }).languages) ?? []),
-        links: ((data.external_links as ExtLink[] | null) ?? []),
-        cityId: data.city_id ?? "",
-        pinnedIds: (data.pinned_work_ids ?? []) as string[],
-        ageFilterMin: null,
-      };
-      setInitial(loaded);
-      setForm(loaded);
-      setHydrated(true);
-    });
+          instagram: data.instagram_handle ?? "",
+          headline: data.headline ?? "",
+          bio: data.bio ?? "",
+          artistStatement: (data as { artist_statement?: string | null }).artist_statement ?? "",
+          avatar: data.avatar_url ?? null,
+          cover: data.cover_url ?? null,
+          coverWorkId: (data as { cover_work_id?: string | null }).cover_work_id ?? null,
+          cats: (data.categories ?? []) as Category[],
+          mediums: ((data.mediums as string[] | null) ?? []).filter(isExtraMedium) as ExtraMedium[],
+          tools: (data.tools as string[] | null) ?? [],
+          languages: (data as { languages?: string[] | null }).languages ?? [],
+          links: (data.external_links as ExtLink[] | null) ?? [],
+          cityId: data.city_id ?? "",
+          pinnedIds: (data.pinned_work_ids ?? []) as string[],
+          ageFilterMin: null,
+        };
+        setInitial(loaded);
+        setForm(loaded);
+        setHydrated(true);
+      });
 
-    fetchAge().then((r) => {
-      setBirthdate(r.birthdate ?? "");
-      setBirthdateLocked(r.locked);
-      setInitial((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
-      setForm((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
-    }).catch(() => { /* ignore */ });
+    fetchAge()
+      .then((r) => {
+        setBirthdate(r.birthdate ?? "");
+        setBirthdateLocked(r.locked);
+        setInitial((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+        setForm((prev) => ({ ...prev, ageFilterMin: r.ageFilterMin }));
+      })
+      .catch(() => {
+        /* ignore */
+      });
   }, [user, fetchAge]);
 
   const dirty = useMemo(() => JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
 
   // Sticky sub-nav active section tracker.
-  const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>({} as Record<SectionId, HTMLElement | null>);
+  const sectionRefs = useRef<Record<SectionId, HTMLElement | null>>(
+    {} as Record<SectionId, HTMLElement | null>,
+  );
   useEffect(() => {
     if (!hydrated) return;
     const obs = new IntersectionObserver(
       (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
         if (visible[0]) setActiveSection(visible[0].target.id as SectionId);
       },
       { rootMargin: "-30% 0px -55% 0px", threshold: [0, 0.25, 0.5, 1] },
@@ -230,7 +270,9 @@ function EditProfile() {
     }
     setSaving(true);
     const ig = sanitizeInstagramHandle(form.instagram);
-    const cleanPinned = form.pinnedIds.filter((id) => ownedWorks.some((w) => w.id === id)).slice(0, 6);
+    const cleanPinned = form.pinnedIds
+      .filter((id) => ownedWorks.some((w) => w.id === id))
+      .slice(0, 6);
     const finalDisplay = `${first} ${last}`.trim();
     const seenAlias = new Set<string>();
     const normalizeAliasUrl = (raw: string): string => {
@@ -258,31 +300,37 @@ function EditProfile() {
     const cleanAliases = pairs.map((p) => p.a);
     const cleanAliasUrls = pairs.map((p) => normalizeAliasUrl(p.u));
     const cleanLangs = cleanLanguages(form.languages);
-    const { error } = await supabase.from("profiles").update({
-      display_name: finalDisplay,
-      username: form.username || null,
-      first_name: first,
-      last_name: last,
-      aliases: cleanAliases,
-      alias_urls: cleanAliasUrls,
+    const { error } = await supabase
+      .from("profiles")
+      .update({
+        display_name: finalDisplay,
+        username: form.username || null,
+        first_name: first,
+        last_name: last,
+        aliases: cleanAliases,
+        alias_urls: cleanAliasUrls,
 
-      instagram_handle: ig || null,
-      headline: form.headline || null,
-      bio: form.bio || null,
-      artist_statement: form.artistStatement.trim() || null,
-      avatar_url: form.avatar,
-      cover_url: form.cover,
-      cover_work_id: form.cover ? form.coverWorkId : null,
-      categories: form.cats,
-      mediums: form.mediums,
-      tools: form.tools,
-      languages: cleanLangs,
-      external_links: form.links.filter((l) => l.url),
-      city_id: form.cityId || null,
-      pinned_work_ids: cleanPinned,
-      onboarded: true,
-    } as never).eq("id", user.id);
-    if (error) { setSaving(false); return toast.error(error.message); }
+        instagram_handle: ig || null,
+        headline: form.headline || null,
+        bio: form.bio || null,
+        artist_statement: form.artistStatement.trim() || null,
+        avatar_url: form.avatar,
+        cover_url: form.cover,
+        cover_work_id: form.cover ? form.coverWorkId : null,
+        categories: form.cats,
+        mediums: form.mediums,
+        tools: form.tools,
+        languages: cleanLangs,
+        external_links: form.links.filter((l) => l.url),
+        city_id: form.cityId || null,
+        pinned_work_ids: cleanPinned,
+        onboarded: true,
+      } as never)
+      .eq("id", user.id);
+    if (error) {
+      setSaving(false);
+      return toast.error(error.message);
+    }
 
     // Age filter saves through a server fn (column is server-protected).
     if (form.ageFilterMin !== initial.ageFilterMin) {
@@ -304,7 +352,6 @@ function EditProfile() {
     }
   }
 
-
   async function onSaveBirthdate() {
     if (!birthdate) return toast.error("Please pick your date of birth.");
     setSavingBirthdate(true);
@@ -319,13 +366,16 @@ function EditProfile() {
     }
   }
 
-  if (!hydrated) return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
+  if (!hydrated)
+    return <main className="mx-auto max-w-2xl px-4 py-20 text-ink-muted">Loading…</main>;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 pb-40 md:px-6 md:py-12 md:pb-32">
       <header className="mb-6">
         <h1 className="font-display text-3xl text-ink md:text-4xl">Edit profile</h1>
-        <p className="mt-1 text-sm text-ink-muted">How you show up in the gallery, Groups, and across the network.</p>
+        <p className="mt-1 text-sm text-ink-muted">
+          How you show up in the gallery, Groups, and across the network.
+        </p>
       </header>
 
       {/* Mobile sub-nav */}
@@ -359,10 +409,17 @@ function EditProfile() {
                   onClick={() => scrollTo(s.id)}
                   className={cn(
                     "group flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition",
-                    active ? "bg-muted text-ink" : "text-ink-muted hover:bg-muted/60 hover:text-ink",
+                    active
+                      ? "bg-muted text-ink"
+                      : "text-ink-muted hover:bg-muted/60 hover:text-ink",
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", active ? "text-ink" : "text-ink-muted group-hover:text-ink")} />
+                  <Icon
+                    className={cn(
+                      "h-4 w-4",
+                      active ? "text-ink" : "text-ink-muted group-hover:text-ink",
+                    )}
+                  />
                   {s.label}
                 </button>
               );
@@ -372,62 +429,110 @@ function EditProfile() {
 
         <form onSubmit={onSubmit} className="min-w-0 space-y-12">
           {/* IDENTITY */}
-          <Section id="identity" title="Identity" subtitle="Your face, your name, your handle." refMap={sectionRefs}>
+          <Section
+            id="identity"
+            title="Identity"
+            subtitle="Your face, your name, your handle."
+            refMap={sectionRefs}
+          >
             <div className="space-y-2">
               <Label>Cover image</Label>
               <CoverImagePicker
                 value={form.cover}
                 onChange={(v) => set("cover", v)}
                 onWorkChange={(id) => set("coverWorkId", id)}
-                works={ownedWorks.map((w) => ({ id: w.id, title: w.title, cover_url: w.cover_url }))}
+                works={ownedWorks.map((w) => ({
+                  id: w.id,
+                  title: w.title,
+                  cover_url: w.cover_url,
+                }))}
                 worksLoading={worksLoading}
               />
-              <p className="text-xs text-ink-muted">Upload a wide image, or pick one from a Work you've published.</p>
+              <p className="text-xs text-ink-muted">
+                Upload a wide image, or pick one from a Work you've published.
+              </p>
             </div>
 
             <div className="flex gap-4 items-start">
               <div className="shrink-0">
                 <Label className="mb-2 block">Profile picture</Label>
                 <div className="h-20 w-20">
-                  <ImageUpload value={form.avatar} onChange={(v) => set("avatar", v)} bucket="avatars" aspect="square" label="Upload" />
+                  <ImageUpload
+                    value={form.avatar}
+                    onChange={(v) => set("avatar", v)}
+                    bucket="avatars"
+                    aspect="square"
+                    label="Upload"
+                  />
                 </div>
               </div>
               <div className="flex-1 min-w-0 space-y-3 pt-7">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label htmlFor="fn">First name</Label>
-                    <Input id="fn" required value={form.firstName} onChange={(e) => set("firstName", e.target.value)} />
+                    <Input
+                      id="fn"
+                      required
+                      value={form.firstName}
+                      onChange={(e) => set("firstName", e.target.value)}
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="ln">Last name</Label>
-                    <Input id="ln" required value={form.lastName} onChange={(e) => set("lastName", e.target.value)} />
+                    <Input
+                      id="ln"
+                      required
+                      value={form.lastName}
+                      onChange={(e) => set("lastName", e.target.value)}
+                    />
                   </div>
                 </div>
                 <p className="text-xs text-ink-muted">
-                  Shown as "{(form.firstName || "Jane").trim()} {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it counts.
+                  Shown as "{(form.firstName || "Jane").trim()}{" "}
+                  {(form.lastName.trim()[0] || "S").toUpperCase()}." as a trust signal where it
+                  counts.
                 </p>
                 <div className="space-y-1.5">
                   <Label htmlFor="un">Username</Label>
-                  <Input id="un" value={form.username} onChange={(e) => set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))} placeholder="your-handle" />
-                  <p className="text-xs text-ink-muted">Your public @handle — used in your profile URL.</p>
+                  <Input
+                    id="un"
+                    value={form.username}
+                    onChange={(e) =>
+                      set("username", e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ""))
+                    }
+                    placeholder="your-handle"
+                  />
+                  <p className="text-xs text-ink-muted">
+                    Your public @handle — used in your profile URL.
+                  </p>
                   {form.username ? (
                     <div className="mt-2 space-y-1">
                       <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2">
                         <Link2 className="h-3.5 w-3.5 shrink-0 text-ink-muted" />
-                        <span className="min-w-0 flex-1 truncate text-xs text-ink">{bioLinkUrl.replace(/^https?:\/\//, "")}</span>
+                        <span className="min-w-0 flex-1 truncate text-xs text-ink">
+                          {bioLinkUrl.replace(/^https?:\/\//, "")}
+                        </span>
                         <button
                           type="button"
                           onClick={copyBioLink}
                           className="inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-medium text-ink-soft transition hover:bg-muted hover:text-ink"
                         >
-                          {bioLinkCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                          {bioLinkCopied ? (
+                            <Check className="h-3 w-3" />
+                          ) : (
+                            <Copy className="h-3 w-3" />
+                          )}
                           {bioLinkCopied ? "Copied" : "Copy"}
                         </button>
                       </div>
-                      <p className="text-[11px] text-ink-muted">Use as your link in bio — Instagram, TikTok, email signature.</p>
+                      <p className="text-[11px] text-ink-muted">
+                        Use as your link in bio — Instagram, TikTok, email signature.
+                      </p>
                     </div>
                   ) : (
-                    <p className="mt-2 text-[11px] text-ink-muted">Pick a username to get your link-in-bio URL.</p>
+                    <p className="mt-2 text-[11px] text-ink-muted">
+                      Pick a username to get your link-in-bio URL.
+                    </p>
                   )}
                 </div>
               </div>
@@ -437,8 +542,13 @@ function EditProfile() {
             <div className="space-y-2 rounded-xl border border-border bg-surface p-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Label className="block">Artist aliases <span className="text-ink-muted font-normal">(optional)</span></Label>
-                  <p className="text-xs text-ink-muted">Other names you go by — stage name, DJ name, real name. Shown as small chips on your profile. Up to 5.</p>
+                  <Label className="block">
+                    Artist aliases <span className="text-ink-muted font-normal">(optional)</span>
+                  </Label>
+                  <p className="text-xs text-ink-muted">
+                    Other names you go by — stage name, DJ name, real name. Shown as small chips on
+                    your profile. Up to 5.
+                  </p>
                 </div>
                 {form.aliases.length < 5 && (
                   <Button
@@ -458,13 +568,21 @@ function EditProfile() {
               {form.aliases.length > 0 && (
                 <div className="space-y-3">
                   {form.aliases.map((a, i) => (
-                    <div key={i} className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2">
+                    <div
+                      key={i}
+                      className="space-y-1.5 rounded-lg border border-border/60 bg-background p-2"
+                    >
                       <div className="flex gap-2">
                         <Input
                           value={a}
                           maxLength={40}
                           placeholder="e.g. DJ Nightowl"
-                          onChange={(e) => set("aliases", form.aliases.map((x, j) => j === i ? e.target.value : x))}
+                          onChange={(e) =>
+                            set(
+                              "aliases",
+                              form.aliases.map((x, j) => (j === i ? e.target.value : x)),
+                            )
+                          }
                         />
                         <Button
                           type="button"
@@ -472,8 +590,14 @@ function EditProfile() {
                           size="icon"
                           aria-label="Remove alias"
                           onClick={() => {
-                            set("aliases", form.aliases.filter((_, j) => j !== i));
-                            set("aliasUrls", form.aliasUrls.filter((_, j) => j !== i));
+                            set(
+                              "aliases",
+                              form.aliases.filter((_, j) => j !== i),
+                            );
+                            set(
+                              "aliasUrls",
+                              form.aliasUrls.filter((_, j) => j !== i),
+                            );
                           }}
                         >
                           <X className="h-4 w-4" />
@@ -499,16 +623,19 @@ function EditProfile() {
                         className="text-xs"
                       />
                     </div>
-
                   ))}
                 </div>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="ig">Instagram <span className="text-ink-muted font-normal">(optional)</span></Label>
+              <Label htmlFor="ig">
+                Instagram <span className="text-ink-muted font-normal">(optional)</span>
+              </Label>
               <div className="relative">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">@</span>
+                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-muted">
+                  @
+                </span>
                 <Input
                   id="ig"
                   value={form.instagram}
@@ -523,19 +650,30 @@ function EditProfile() {
 
             {/* Date of birth (private) */}
             <div className="space-y-1.5">
-              <Label htmlFor="dob">Date of birth <span className="text-ink-muted font-normal">(private)</span></Label>
+              <Label htmlFor="dob">
+                Date of birth <span className="text-ink-muted font-normal">(private)</span>
+              </Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="dob"
                   type="date"
                   value={birthdate}
                   onChange={(e) => setBirthdate(e.target.value)}
-                  max={new Date(Date.now() - 13 * 365.25 * 24 * 3600 * 1000).toISOString().slice(0, 10)}
+                  max={new Date(Date.now() - 13 * 365.25 * 24 * 3600 * 1000)
+                    .toISOString()
+                    .slice(0, 10)}
                   disabled={birthdateLocked}
                   className="max-w-[12rem]"
                 />
                 {!birthdateLocked && birthdate && (
-                  <Button type="button" size="sm" variant="outline" className="rounded-md" disabled={savingBirthdate} onClick={onSaveBirthdate}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="rounded-md"
+                    disabled={savingBirthdate}
+                    onClick={onSaveBirthdate}
+                  >
                     {savingBirthdate ? "Saving…" : "Save"}
                   </Button>
                 )}
@@ -548,19 +686,32 @@ function EditProfile() {
             </div>
           </Section>
 
-
           {/* MEDIUMS & BIO */}
-          <Section id="mediums" title="Mediums & bio" subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you." refMap={sectionRefs}>
+          <Section
+            id="mediums"
+            title="Mediums & bio"
+            subtitle="Drives your Gallery tabs, gallery filters, and which Groups show up for you."
+            refMap={sectionRefs}
+          >
             <div className="space-y-2">
               <Label>Mediums</Label>
               <div className="flex flex-wrap gap-2">
                 {WORK_MEDIUMS.map((c) => {
                   const on = form.cats.includes(c.id);
                   return (
-                    <button type="button" key={c.id}
-                      onClick={() => set("cats", on ? form.cats.filter((x) => x !== c.id) : [...form.cats, c.id])}
-                      className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                        on ? cn("border-transparent", categoryClass(c.id)) : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() =>
+                        set("cats", on ? form.cats.filter((x) => x !== c.id) : [...form.cats, c.id])
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition",
+                        on
+                          ? cn("border-transparent", categoryClass(c.id))
+                          : "border-border bg-surface text-ink-soft hover:bg-muted",
+                      )}
+                    >
                       {c.label}
                     </button>
                   );
@@ -568,31 +719,55 @@ function EditProfile() {
                 {EXTRA_MEDIUMS.map((m) => {
                   const on = form.mediums.includes(m.id);
                   return (
-                    <button type="button" key={m.id}
-                      onClick={() => set("mediums", on ? form.mediums.filter((x) => x !== m.id) : [...form.mediums, m.id])}
-                      className={cn("rounded-full border px-3 py-1.5 text-sm transition",
-                        on ? "border-transparent bg-ink text-background" : "border-border bg-surface text-ink-soft hover:bg-muted")}>
+                    <button
+                      type="button"
+                      key={m.id}
+                      onClick={() =>
+                        set(
+                          "mediums",
+                          on ? form.mediums.filter((x) => x !== m.id) : [...form.mediums, m.id],
+                        )
+                      }
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-sm transition",
+                        on
+                          ? "border-transparent bg-ink text-background"
+                          : "border-border bg-surface text-ink-soft hover:bg-muted",
+                      )}
+                    >
                       {m.label}
                     </button>
                   );
                 })}
               </div>
-              <p className="text-xs text-ink-muted">Pick all that apply. Your Gallery tabs come from Film, Music, Writing, Build, and Visual — the rest just describe your practice.</p>
+              <p className="text-xs text-ink-muted">
+                Pick all that apply. Your Gallery tabs come from Film, Music, Writing, Build, and
+                Visual — the rest just describe your practice.
+              </p>
             </div>
 
-            <ToolsField
-              tools={form.tools}
-              onChange={(next) => set("tools", next)}
-            />
+            <ToolsField tools={form.tools} onChange={(next) => set("tools", next)} />
 
             <div className="space-y-1.5">
               <Label htmlFor="hl">Headline</Label>
-              <Input id="hl" maxLength={120} value={form.headline} onChange={(e) => set("headline", e.target.value)} placeholder="Director shooting on Super 8 in Brooklyn." />
+              <Input
+                id="hl"
+                maxLength={120}
+                value={form.headline}
+                onChange={(e) => set("headline", e.target.value)}
+                placeholder="Director shooting on Super 8 in Brooklyn."
+              />
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="bio">Bio</Label>
-              <Textarea id="bio" rows={5} maxLength={500} value={form.bio} onChange={(e) => set("bio", e.target.value)} />
+              <Textarea
+                id="bio"
+                rows={5}
+                maxLength={500}
+                value={form.bio}
+                onChange={(e) => set("bio", e.target.value)}
+              />
               <p className="text-right text-xs text-ink-muted">{form.bio.length}/500</p>
             </div>
 
@@ -606,18 +781,32 @@ function EditProfile() {
                 onChange={(e) => set("artistStatement", e.target.value)}
                 placeholder="A short manifesto — what your practice is about. Sits above your Gallery. Leave blank to hide."
               />
-              <p className="text-right text-xs text-ink-muted">{form.artistStatement.length}/1000</p>
+              <p className="text-right text-xs text-ink-muted">
+                {form.artistStatement.length}/1000
+              </p>
             </div>
           </Section>
 
-
           {/* LOCATION & LANGUAGES */}
-          <Section id="location" title="Location & languages" subtitle="Help people understand where you are and how you connect." refMap={sectionRefs}>
+          <Section
+            id="location"
+            title="Location & languages"
+            subtitle="Help people understand where you are and how you connect."
+            refMap={sectionRefs}
+          >
             <div className="space-y-2">
               <Label>City</Label>
-              <select value={form.cityId} onChange={(e) => set("cityId", e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm">
+              <select
+                value={form.cityId}
+                onChange={(e) => set("cityId", e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
                 <option value="">— None —</option>
-                {cities.map((c) => <option key={c.id} value={c.id}>{c.name}, {c.country}</option>)}
+                {cities.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}, {c.country}
+                  </option>
+                ))}
               </select>
             </div>
             <LanguagesField
@@ -626,25 +815,62 @@ function EditProfile() {
             />
           </Section>
 
-
           {/* LINKS */}
-          <Section id="links" title="Links" subtitle="Portfolio, label, agency, anywhere else you live online." refMap={sectionRefs}>
+          <Section
+            id="links"
+            title="Links"
+            subtitle="Portfolio, label, agency, anywhere else you live online."
+            refMap={sectionRefs}
+          >
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label>External links</Label>
-                <Button type="button" size="sm" variant="ghost" className="rounded-md gap-1" onClick={() => set("links", [...form.links, { label: "", url: "" }])}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-md gap-1"
+                  onClick={() => set("links", [...form.links, { label: "", url: "" }])}
+                >
                   <Plus className="h-3.5 w-3.5" /> Add link
                 </Button>
               </div>
               <div className="space-y-2">
-                {form.links.length === 0 && (
-                  <p className="text-sm text-ink-muted">No links yet.</p>
-                )}
+                {form.links.length === 0 && <p className="text-sm text-ink-muted">No links yet.</p>}
                 {form.links.map((l, i) => (
                   <div key={i} className="flex gap-2">
-                    <Input placeholder="Label" value={l.label} className="max-w-[10rem]" onChange={(e) => set("links", form.links.map((x, j) => j === i ? { ...x, label: e.target.value } : x))} />
-                    <Input placeholder="https://…" value={l.url} onChange={(e) => set("links", form.links.map((x, j) => j === i ? { ...x, url: e.target.value } : x))} />
-                    <Button type="button" variant="ghost" size="icon" onClick={() => set("links", form.links.filter((_, j) => j !== i))}>
+                    <Input
+                      placeholder="Label"
+                      value={l.label}
+                      className="max-w-[10rem]"
+                      onChange={(e) =>
+                        set(
+                          "links",
+                          form.links.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)),
+                        )
+                      }
+                    />
+                    <Input
+                      placeholder="https://…"
+                      value={l.url}
+                      onChange={(e) =>
+                        set(
+                          "links",
+                          form.links.map((x, j) => (j === i ? { ...x, url: e.target.value } : x)),
+                        )
+                      }
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() =>
+                        set(
+                          "links",
+                          form.links.filter((_, j) => j !== i),
+                        )
+                      }
+                    >
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -654,7 +880,12 @@ function EditProfile() {
           </Section>
 
           {/* PINNED WORKS */}
-          <Section id="pinned" title="Pinned works" subtitle="Feature up to 6 of your published pieces in your profile Pin Bar. Collabs are pinned from the Collab page." refMap={sectionRefs}>
+          <Section
+            id="pinned"
+            title="Pinned works"
+            subtitle="Feature up to 6 of your published pieces in your profile Pin Bar. Collabs are pinned from the Collab page."
+            refMap={sectionRefs}
+          >
             <PinnedWorksPicker
               works={ownedWorks}
               value={form.pinnedIds}
@@ -665,11 +896,13 @@ function EditProfile() {
 
           <p className="px-1 pt-2 text-xs text-ink-muted">
             Looking for privacy, DMs, notifications, or blocked users? Those live in{" "}
-            <a href="/settings" className="underline underline-offset-2 hover:text-ink">Settings</a>.
+            <a href="/settings" className="underline underline-offset-2 hover:text-ink">
+              Settings
+            </a>
+            .
           </p>
         </form>
       </div>
-
 
       {/* Sticky save bar */}
       <div
@@ -681,10 +914,21 @@ function EditProfile() {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 md:px-6">
           <span className="text-sm text-ink-muted">Unsaved changes</span>
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="rounded-md" onClick={() => setForm(initial)} disabled={saving}>
+            <Button
+              type="button"
+              variant="ghost"
+              className="rounded-md"
+              onClick={() => setForm(initial)}
+              disabled={saving}
+            >
               Discard
             </Button>
-            <Button type="button" disabled={saving} className="rounded-md" onClick={() => onSubmit()}>
+            <Button
+              type="button"
+              disabled={saving}
+              className="rounded-md"
+              onClick={() => onSubmit()}
+            >
               {saving ? "Saving…" : "Save profile"}
             </Button>
           </div>
@@ -695,7 +939,11 @@ function EditProfile() {
 }
 
 function Section({
-  id, title, subtitle, children, refMap,
+  id,
+  title,
+  subtitle,
+  children,
+  refMap,
 }: {
   id: SectionId;
   title: string;
@@ -706,7 +954,9 @@ function Section({
   return (
     <section
       id={id}
-      ref={(el) => { refMap.current[id] = el; }}
+      ref={(el) => {
+        refMap.current[id] = el;
+      }}
       className="scroll-mt-24 space-y-5"
     >
       <div>
@@ -718,13 +968,7 @@ function Section({
   );
 }
 
-function ToolsField({
-  tools,
-  onChange,
-}: {
-  tools: string[];
-  onChange: (next: string[]) => void;
-}) {
+function ToolsField({ tools, onChange }: { tools: string[]; onChange: (next: string[]) => void }) {
   const [draft, setDraft] = useState("");
 
   const commit = (raw: string) => {
@@ -744,10 +988,15 @@ function ToolsField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="tools">What you use <span className="text-ink-muted">(optional)</span></Label>
+      <Label htmlFor="tools">
+        What you use <span className="text-ink-muted">(optional)</span>
+      </Label>
       <div className="flex flex-wrap gap-1.5">
         {tools.map((t, i) => (
-          <span key={`${t}-${i}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+          <span
+            key={`${t}-${i}`}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink"
+          >
             {t}
             <button
               type="button"
@@ -764,7 +1013,9 @@ function ToolsField({
         id="tools"
         value={draft}
         maxLength={MAX_TOOL_LEN}
-        placeholder={tools.length >= MAX_TOOLS ? "Max reached" : "Camera, Telecaster, Loom, Kiln, Figma…"}
+        placeholder={
+          tools.length >= MAX_TOOLS ? "Max reached" : "Camera, Telecaster, Loom, Kiln, Figma…"
+        }
         disabled={tools.length >= MAX_TOOLS}
         onChange={(e) => {
           const v = e.target.value;
@@ -779,9 +1030,14 @@ function ToolsField({
             onChange(tools.slice(0, -1));
           }
         }}
-        onBlur={() => { if (draft.trim()) commit(draft); }}
+        onBlur={() => {
+          if (draft.trim()) commit(draft);
+        }}
       />
-      <p className="text-xs text-ink-muted">Cameras, instruments, software, looms, kilns — whatever you work with. Press Enter or comma to add. {tools.length}/{MAX_TOOLS}</p>
+      <p className="text-xs text-ink-muted">
+        Cameras, instruments, software, looms, kilns — whatever you work with. Press Enter or comma
+        to add. {tools.length}/{MAX_TOOLS}
+      </p>
     </div>
   );
 }
@@ -830,10 +1086,15 @@ function LanguagesField({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="languages">Languages <span className="text-ink-muted">(optional)</span></Label>
+      <Label htmlFor="languages">
+        Languages <span className="text-ink-muted">(optional)</span>
+      </Label>
       <div className="flex flex-wrap gap-1.5">
         {languages.map((l, i) => (
-          <span key={`${l}-${i}`} className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink">
+          <span
+            key={`${l}-${i}`}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink"
+          >
             {l}
             <button
               type="button"
@@ -865,11 +1126,14 @@ function LanguagesField({
             onChange(languages.slice(0, -1));
           }
         }}
-        onBlur={() => { if (draft.trim()) commit(draft); }}
+        onBlur={() => {
+          if (draft.trim()) commit(draft);
+        }}
       />
-      <p className="text-xs text-ink-muted">Languages you are comfortable creating or connecting in. Shown in the About section of your profile. Press Enter or comma to add. {languages.length}/{MAX_LANGUAGES}</p>
+      <p className="text-xs text-ink-muted">
+        Languages you are comfortable creating or connecting in. Shown in the About section of your
+        profile. Press Enter or comma to add. {languages.length}/{MAX_LANGUAGES}
+      </p>
     </div>
   );
 }
-
-
