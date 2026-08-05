@@ -17,9 +17,9 @@ const EVENT_FIELDS =
 
 /** The flyer everyone can see. The join link is stripped — it is fetched
  *  separately by confirmed participants via `getEventJoinLink`. */
-function toPublicFlyer<T extends Record<string, unknown>>(row: T): Omit<T, "online_url"> & { online_url: null; has_online_url: boolean } {
-  const { online_url, ...rest } = row as T & { online_url: string | null };
-  return { ...(rest as Omit<T, "online_url">), online_url: null, has_online_url: Boolean(online_url) };
+function toPublicFlyer<T extends { online_url: string | null }>(row: T) {
+  const { online_url, ...rest } = row;
+  return { ...rest, online_url: null as string | null, has_online_url: Boolean(online_url) };
 }
 
 export const getEventBySlug = createServerFn({ method: "GET" })
@@ -36,7 +36,7 @@ export const getEventBySlug = createServerFn({ method: "GET" })
     if (!row) throw new Error("Event not found");
     const g = (row as { group: { slug: string } }).group;
     if (g.slug !== data.groupSlug) throw new Error("Event not found");
-    return toPublicFlyer(row as Record<string, unknown>);
+    return toPublicFlyer(row as typeof row & { online_url: string | null });
   });
 
 /**
@@ -58,7 +58,7 @@ export const getEventBySlugAsViewer = createServerFn({ method: "POST" })
     if (!row) throw new Error("Event not found");
     const g = (row as { group: { slug: string } }).group;
     if (g.slug !== data.groupSlug) throw new Error("Event not found");
-    return toPublicFlyer(row as Record<string, unknown>);
+    return toPublicFlyer(row as typeof row & { online_url: string | null });
   });
 
 
