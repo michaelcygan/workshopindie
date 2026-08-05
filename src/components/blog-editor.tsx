@@ -477,16 +477,19 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           )}
         </div>
 
-        {/* Connections are post metadata: above the body, never buried under it. */}
+        {/* "About this post" — category + connections, above the body. */}
         <div className="mt-4">
-          <BlogEntityTagsEditor
-            value={entityTags}
-            onChange={(next) => {
+          <BlogAboutEditor
+            categorySlug={categorySlug}
+            tags={entityTags}
+            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeTags={(next) => {
               setEntityTags(next);
               setDirty(true);
             }}
           />
         </div>
+
 
         <div className="mt-6">
           <Tabs defaultValue="edit">
