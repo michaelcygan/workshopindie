@@ -3,6 +3,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { generateOgCard } from "@/lib/og-card";
+import { resolveEventHost } from "@/lib/events/host-label";
+
 import { z } from "zod";
 
 const querySchema = z.object({
