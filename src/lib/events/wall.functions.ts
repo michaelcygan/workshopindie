@@ -145,7 +145,8 @@ export const postToEventWall = createServerFn({ method: "POST" })
       );
     }
     const { moderateOrThrow } = await import("@/lib/moderation/service.server");
-    const body = await moderateOrThrow(data.body, { surface: "event_wall", userId });
+    await moderateOrThrow({ text: data.body, surface: "event_wall", userId, subjectId: data.event_id });
+    const body = data.body;
     const { error } = await supabase
       .from("group_event_comments")
       .insert({ event_id: data.event_id, user_id: userId, body, parent_id: null });
