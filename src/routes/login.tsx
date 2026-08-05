@@ -43,7 +43,7 @@ function Login() {
     if (search.join && search.group) return; // handled by the seed-link flow
     let cancelled = false;
     resolvePostAuthPath(safePath(search.redirect)).then((path) => {
-      if (!cancelled) navigate({ to: path, replace: true });
+      if (!cancelled) goToPostAuth(path);
     });
     return () => {
       cancelled = true;
