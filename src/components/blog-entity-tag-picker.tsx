@@ -338,11 +338,21 @@ export function BlogEntityTagPicker({
               Nothing to show. Try a different search.
             </div>
           )}
+          {onRequestCreateWork && (tab === "all" || tab === "work") && (
+            <button
+              type="button"
+              onClick={onRequestCreateWork}
+              className="mt-3 w-full rounded-xl border border-dashed border-border px-3 py-2 text-left text-xs text-primary hover:bg-muted"
+            >
+              Can't find it? Create a Work →
+            </button>
+          )}
           {visible.map((g) => (
             <div key={g.kind} className="mt-3">
               <div className="mb-1 px-1 text-[11px] font-medium uppercase tracking-wider text-ink-muted">
                 {g.label}
               </div>
+
               {g.loading && g.results.length === 0 && (
                 <div className="px-2 py-2 text-xs text-ink-muted">Loading…</div>
               )}
