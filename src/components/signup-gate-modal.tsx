@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { GoogleSignIn } from "@/components/google-sign-in";
+import { AppleSignIn } from "@/components/apple-sign-in";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -68,6 +69,7 @@ export function SignupGateModal({ open, onOpenChange, title, subtitle, onAuthed 
         </DialogHeader>
         <div className="space-y-3">
           <GoogleSignIn label={mode === "signup" ? "Sign up with Google" : "Continue with Google"} />
+          <AppleSignIn label={mode === "signup" ? "Sign up with Apple" : "Continue with Apple"} />
           <div className="flex items-center gap-3 text-xs uppercase tracking-wide text-ink-muted">
             <span className="h-px flex-1 bg-border" /> or <span className="h-px flex-1 bg-border" />
           </div>
