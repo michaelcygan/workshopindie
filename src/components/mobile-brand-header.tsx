@@ -16,9 +16,9 @@ export function MobileBrandHeader() {
         <div className="ml-auto flex items-center gap-1">
           {loading ? null : user ? (
             <>
-              <SettingsMenuButton />
-              <MessagesInboxButton />
               <NotificationsBell />
+              <MessagesInboxButton />
+              <SettingsMenuButton />
             </>
           ) : (
             <>
