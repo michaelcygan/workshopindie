@@ -45,19 +45,31 @@ export function CoverImagePicker({ value, onChange, onWorkChange, works, worksLo
 
   async function handleFile(file: File | undefined) {
     if (!file || !user) return;
-    if (file.size > MAX_BYTES * 4) {
+    const isGif = file.type === "image/gif" || /\.gif$/i.test(file.name);
+    if (isGif) {
+      if (file.size > MAX_GIF_BYTES) {
+        return toast.error("GIF too large. Max 8MB — try a shorter or smaller GIF.");
+      }
+    } else if (file.size > MAX_BYTES * 4) {
       return toast.error("Image too large. Max 12MB before resize.");
     }
     setUploading(true);
     try {
-      const { blob } = await resizeImageToJpeg(file, MAX_EDGE, 0.82);
-      const sized = blob.size > MAX_BYTES ? (await resizeImageToJpeg(file, 1600, 0.78)).blob : blob;
-      const out = sized instanceof File
-        ? sized
-        : new File([sized], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+      // Animated GIFs upload untouched; photos get downscaled to JPEG.
+      let out: File;
+      if (isGif) {
+        out = file;
+      } else {
+        const { blob } = await resizeImageToJpeg(file, MAX_EDGE, 0.82);
+        const sized = blob.size > MAX_BYTES ? (await resizeImageToJpeg(file, 1600, 0.78)).blob : blob;
+        out = sized instanceof File
+          ? sized
+          : new File([sized], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+      }
       const url = await uploadToBucket("covers", user.id, out);
       onChange(url);
       onWorkChange?.(null);
+
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
