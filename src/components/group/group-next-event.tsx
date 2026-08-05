@@ -16,6 +16,8 @@ type EventRow = {
   venue_name: string | null;
   going_count: number | null;
   cover_url: string | null;
+  ends_at?: string | null;
+  series_key?: string | null;
 };
 
 function formatWhen(iso: string): { day: string; time: string; relative: string } {
@@ -56,7 +58,7 @@ export function GroupNextEvent({ group }: Props) {
         .order("starts_at", { ascending: true })
         .limit(6);
       if (error) throw error;
-      return collapseSeries((data ?? []) as EventRow[]).slice(0, 3);
+      return collapseSeries<EventRow>((data ?? []) as EventRow[]).slice(0, 3);
     },
     staleTime: 60_000,
     refetchInterval: 5 * 60_000,

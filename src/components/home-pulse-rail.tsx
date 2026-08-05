@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Calendar, Hammer, Megaphone, Users, Sparkles, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
-import { DISCOVERABLE_STATUSES, dropDeletedGroups } from "@/lib/events/filters";
+import { dropDeletedGroups, applyDiscoverable, applyCurrentWindow } from "@/lib/events/filters";
 
 type Pulse =
   | {
