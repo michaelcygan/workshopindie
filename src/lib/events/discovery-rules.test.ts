@@ -55,13 +55,13 @@ describe("collapseSeries", () => {
       { id: "b", series_key: "weekly" },
       { id: "c", series_key: "monthly" },
       { id: "d", series_key: null },
-      { id: "e" },
+      { id: "e", series_key: null },
     ];
     expect(collapseSeries(rows).map((r) => r.id)).toEqual(["a", "c", "d", "e"]);
   });
 
   it("leaves one-off events untouched", () => {
-    const rows = [{ id: "a" }, { id: "b" }];
+    const rows = [{ id: "a", series_key: null }, { id: "b", series_key: null }];
     expect(collapseSeries(rows)).toHaveLength(2);
   });
 });
