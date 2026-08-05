@@ -7,30 +7,48 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { findHateSlur } from "./profanity.server";
 
-const httpsUrl = z
-  .string()
-  .trim()
-  .max(500)
-  .url()
-  .refine((u) => u.startsWith("https://") || u.startsWith("http://"), "Must be a valid URL");
+const httpsUrl = z.preprocess(
+  (v) => (typeof v === "string" ? normalizeUrlOrKeep(v) : v),
+  z
+    .string()
+    .trim()
+    .max(500, "Link is too long")
+    .url("That doesn't look like a web address")
+    .refine((u) => u.startsWith("https://") || u.startsWith("http://"), "That doesn't look like a web address"),
+);
 
 const guestSchema = z.object({
   collabPostId: z.string().uuid(),
   collabRoleId: z.string().uuid().nullable().optional(),
-  name: z.string().trim().min(1).max(80),
-  email: z.string().trim().toLowerCase().email().max(255),
+  name: z.string().trim().min(1, "Please add your name").max(80, "Name is too long"),
+  email: z.string().trim().toLowerCase().email("Please enter a valid email address").max(255),
   phone: z.string().trim().max(40).optional().or(z.literal("")),
-  message: z.string().trim().min(10).max(1000),
+  message: z
+    .string()
+    .trim()
+    .min(10, "Tell the host a bit more (at least 10 characters)")
+    .max(1000, "Keep it under 1000 characters"),
   portfolioUrl: httpsUrl.optional().or(z.literal("")),
   reelUrl: httpsUrl.optional().or(z.literal("")),
   instagramHandle: z
     .string()
     .trim()
     .max(40)
-    .regex(/^@?[a-zA-Z0-9_.]{1,30}$/, "Invalid Instagram handle")
+    .regex(/^@?[a-zA-Z0-9_.]{1,30}$/, "That doesn't look like an Instagram handle")
     .optional()
     .or(z.literal("")),
 });
+
+const GUEST_LABELS: Record<string, string> = {
+  name: "Your name",
+  email: "Email",
+  message: "How you can help",
+  phone: "Phone",
+  portfolioUrl: "Portfolio URL",
+  reelUrl: "Demo reel URL",
+  instagramHandle: "Instagram",
+};
+
 
 function clientIpHash(): string | null {
   const raw =
