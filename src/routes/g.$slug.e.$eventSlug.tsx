@@ -13,6 +13,8 @@ import { getEventBySlug, getMyRsvp, listEventUpdates, listEventGroups, getEventJ
 import { getMyEventAccess } from "@/lib/events/access.functions";
 import { getEventCounts } from "@/lib/events/participation.functions";
 import { eventStatusLabel, getEventLifecycle, getEventMoment } from "@/lib/events/lifecycle";
+import { resolveEventHost } from "@/lib/events/host-label";
+
 import { EventWallFeed } from "@/components/events/event-wall-feed";
 import { EventWhosHere } from "@/components/events/event-whos-here";
 import { updateEventSeriesFuture, cancelEventSeriesFuture } from "@/lib/group-events-admin.functions";
@@ -123,7 +125,7 @@ type EventRow = {
   lineup_capacity: number | null;
   external_organizer: string | null;
   external_url: string | null;
-  group: { id: string; slug: string; name: string; avatar_url: string | null };
+  group: { id: string; slug: string; name: string; avatar_url: string | null; kind?: string | null };
 };
 
 
@@ -199,6 +201,8 @@ function EventPage() {
   const isDraft = lifecycle === "draft";
   const statusLabel = eventStatusLabel(ev);
   const isFull = ev.capacity !== null && ev.going_count >= ev.capacity;
+  const host = resolveEventHost(ev);
+
 
   const canonicalUrl = typeof window !== "undefined"
     ? `${window.location.origin}/g/${ev.group.slug}/e/${ev.slug}`
@@ -274,41 +278,40 @@ function EventPage() {
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            {ev.external_organizer ? (
-              ev.external_url ? (
-                <a
-                  href={ev.external_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink"
-                >
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
-                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
-                  </span>
-                  <span>
-                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
-                  </span>
-                  <ExternalLink className="h-3 w-3 text-ink-muted" />
-                </a>
-              ) : (
-                <span className="inline-flex items-center gap-2 text-sm text-ink-soft">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
-                    <Globe className="h-3.5 w-3.5 text-ink-muted" />
-                  </span>
-                  <span>
-                    Hosted by <span className="font-medium text-ink">{ev.external_organizer}</span>
-                  </span>
-                </span>
-              )
-            ) : (
+            {host.kind === "group" ? (
               <Link to="/g/$slug" params={{ slug: ev.group.slug }} className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink">
                 <Avatar className="h-7 w-7">
                   <AvatarImage src={ev.group.avatar_url ?? undefined} />
                   <AvatarFallback>{ev.group.name.slice(0, 1)}</AvatarFallback>
                 </Avatar>
-                <span>Hosted by <span className="font-medium text-ink">{ev.group.name}</span></span>
+                <span>Hosted by <span className="font-medium text-ink">{host.label}</span></span>
               </Link>
+            ) : host.href ? (
+              <a
+                href={host.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-sm text-ink-soft hover:text-ink"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                  <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                </span>
+                <span>
+                  Hosted by <span className="font-medium text-ink">{host.label}</span>
+                </span>
+                <ExternalLink className="h-3 w-3 text-ink-muted" />
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-2 text-sm text-ink-soft">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-muted">
+                  <Globe className="h-3.5 w-3.5 text-ink-muted" />
+                </span>
+                <span>
+                  Hosted by <span className="font-medium text-ink">{host.label}</span>
+                </span>
+              </span>
             )}
+
 
             <div className="flex items-center gap-1">
               <ReportDialog entityType="group_event" entityId={ev.id} />
