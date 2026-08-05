@@ -37,6 +37,26 @@ export const Route = createFileRoute("/signup")({
 function Signup() {
   const navigate = useNavigate();
   const search = Route.useSearch();
+  const { user: signedInUser, loading: authLoading } = useAuth();
+
+  // A completed OAuth round-trip lands back here with a session — don't leave
+  // the user staring at the signup form.
+  useEffect(() => {
+    if (authLoading || !signedInUser) return;
+    if (search.claim) {
+      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
+      return;
+    }
+    if (search.join && search.group) return; // seed-link flow owns this
+    let cancelled = false;
+    resolvePostAuthPath(safePath(search.redirect)).then((path) => {
+      if (!cancelled) goToPostAuth(path);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [signedInUser, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
+
   const [firstName, setFirstName] = useState(search.first ?? "");
   const [lastName, setLastName] = useState(search.last ?? "");
   const [instagram, setInstagram] = useState(search.ig ?? "");
