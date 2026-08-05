@@ -65,6 +65,8 @@ const baseSchema = z.object({
   tagline: z.string().max(140).nullable().optional(),
   description: z.string().max(6000).nullable().optional(),
   kind: z.enum(["open_mic", "listening_party", "networking", "screening", "workshop_irl", "online", "other", "lineup"]),
+  /** Optional creative medium — auto-connects the event to its Medium Group. */
+  creative_category: z.enum(["music", "film_video", "writing", "visual_art", "games_tech"]).nullable().optional(),
   format: z.enum(["in_person", "online", "hybrid"]),
   cover_url: safeHttpUrl.nullable().optional(),
   accent_color: z.string().max(20).nullable().optional(),

@@ -1908,6 +1908,7 @@ export type Database = {
           cover_url: string | null
           created_at: string
           created_by: string
+          creative_category: string | null
           deleted_at: string | null
           description: string | null
           ends_at: string
@@ -1958,6 +1959,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           created_by: string
+          creative_category?: string | null
           deleted_at?: string | null
           description?: string | null
           ends_at: string
@@ -2008,6 +2010,7 @@ export type Database = {
           cover_url?: string | null
           created_at?: string
           created_by?: string
+          creative_category?: string | null
           deleted_at?: string | null
           description?: string | null
           ends_at?: string
@@ -2081,23 +2084,52 @@ export type Database = {
           group_id: string
           joined_at: string
           role: Database["public"]["Enums"]["group_member_role"]
+          source_type: string
           user_id: string
         }
         Insert: {
           group_id: string
           joined_at?: string
           role?: Database["public"]["Enums"]["group_member_role"]
+          source_type?: string
           user_id: string
         }
         Update: {
           group_id?: string
           joined_at?: string
           role?: Database["public"]["Enums"]["group_member_role"]
+          source_type?: string
           user_id?: string
         }
         Relationships: [
           {
             foreignKeyName: "group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_membership_optouts: {
+        Row: {
+          created_at: string
+          group_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_membership_optouts_group_id_fkey"
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
@@ -2346,7 +2378,9 @@ export type Database = {
           news_feed_url: string | null
           parent_group_id: string | null
           slug: string
+          system_type: string | null
           tagline: string | null
+          taxonomy_key: string | null
           updated_at: string
           visibility: Database["public"]["Enums"]["group_visibility"]
           work_count: number
@@ -2373,7 +2407,9 @@ export type Database = {
           news_feed_url?: string | null
           parent_group_id?: string | null
           slug: string
+          system_type?: string | null
           tagline?: string | null
+          taxonomy_key?: string | null
           updated_at?: string
           visibility?: Database["public"]["Enums"]["group_visibility"]
           work_count?: number
@@ -2400,7 +2436,9 @@ export type Database = {
           news_feed_url?: string | null
           parent_group_id?: string | null
           slug?: string
+          system_type?: string | null
           tagline?: string | null
+          taxonomy_key?: string | null
           updated_at?: string
           visibility?: Database["public"]["Enums"]["group_visibility"]
           work_count?: number
@@ -7087,6 +7125,7 @@ export type Database = {
         Returns: boolean
       }
       can_dm: { Args: { _a: string; _b: string }; Returns: boolean }
+      canonical_from_storage: { Args: { _value: string }; Returns: string }
       cast_workshop_poll_vote: {
         Args: { _choice_index: number; _poll_id: string }
         Returns: undefined
@@ -7119,6 +7158,10 @@ export type Database = {
       create_member_blog_draft: {
         Args: { _author_name: string; _user_id: string }
         Returns: string
+      }
+      ensure_medium_membership: {
+        Args: { _canonical: string; _source: string; _user_id: string }
+        Returns: undefined
       }
       finalize_host_claim: { Args: { _room_id: string }; Returns: undefined }
       gen_event_short_code: { Args: never; Returns: string }
@@ -7263,6 +7306,8 @@ export type Database = {
           }
       lounge_minutes_this_month: { Args: { _user_id: string }; Returns: number }
       lounge_minutes_today: { Args: { _user_id: string }; Returns: number }
+      medium_group_id: { Args: { _canonical: string }; Returns: string }
+      medium_to_canonical: { Args: { _medium: string }; Returns: string }
       moderate_lounge_speaker: {
         Args: { _action: string; _room_id: string; _target_user_id: string }
         Returns: undefined
@@ -7367,6 +7412,26 @@ export type Database = {
       start_host_claim: { Args: { _room_id: string }; Returns: undefined }
       sweep_stale_lounge_speakers: { Args: never; Returns: number }
       sweep_stale_lounges: { Args: never; Returns: undefined }
+      sync_blog_medium_groups: {
+        Args: { _post_id: string }
+        Returns: undefined
+      }
+      sync_collab_medium_groups: {
+        Args: { _collab_id: string }
+        Returns: undefined
+      }
+      sync_event_medium_groups: {
+        Args: { _event_id: string }
+        Returns: undefined
+      }
+      sync_profile_medium_groups: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      sync_work_medium_groups: {
+        Args: { _work_id: string }
+        Returns: undefined
+      }
       toggle_work_reaction: {
         Args: { _reaction: string; _work_id: string }
         Returns: {
