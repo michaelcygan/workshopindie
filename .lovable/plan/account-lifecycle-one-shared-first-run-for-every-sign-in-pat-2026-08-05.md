@@ -65,7 +65,7 @@ Order is enforced: age always resolves before welcome. Only one overlay renders.
 
 Add: `src/lib/account-lifecycle.functions.ts`, `src/lib/account-lifecycle-state.ts` (+test), `src/lib/safe-destination.ts` (+test), `src/lib/post-auth-intent.ts` (+test), `src/lib/auth-launcher.ts`, `src/routes/auth.complete.tsx`, `src/components/account-lifecycle/*` (+tests).
 
-Modify: `src/routes/__root.tsx`, `login.tsx`, `signup.tsx`, `onboarding.tsx`, `me.edit.tsx`, `me.index.tsx`, `w.$token.tsx`, collab claim route, `google-sign-in.tsx`, `apple-sign-in.tsx`, `signup-gate-modal.tsx`, `event-rsvp-auth-sheet.tsx`, follow/join/work-action components, `use-pending-rsvp.ts`, `profile-completion-chip.tsx`, `post-auth-destination.ts`, `profile-age.functions.ts` (comment only).
+Modify: `src/routes/__root.tsx`, `login.tsx`, `signup.tsx`, `onboarding.tsx`, `me.edit.tsx`, `me.index.tsx`, `w.$token`, collab claim route, `google-sign-in.tsx`, `apple-sign-in.tsx`, `signup-gate-modal.tsx`, `event-rsvp-auth-sheet.tsx`, follow/join/work-action components, `use-pending-rsvp.ts`, `profile-completion-chip.tsx`, `post-auth-destination.ts`, `profile-age.functions.ts` (comment only).
 
 Remove after replacement: `src/components/age-gate.tsx`, `src/components/welcome-tour.tsx`, `first-run-hint` forcing path.
 
