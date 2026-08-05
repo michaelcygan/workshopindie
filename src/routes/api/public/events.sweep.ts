@@ -41,8 +41,7 @@ export const Route = createFileRoute("/api/public/events/sweep")({
           .update({ archived_at: nowIso })
           .is("archived_at", null)
           .not("published_at", "is", null)
-          .lt("ends_at", archiveCutoff)
-          .limit(200);
+          .lt("ends_at", archiveCutoff);
 
         async function notifyWindow(column: "notified_24h_at" | "notified_2h_at", kind: string, hoursAhead: number) {
           const winStart = new Date(now.getTime() + (hoursAhead - 0.1) * 3600 * 1000).toISOString();
