@@ -32,7 +32,9 @@ export type QuickWorkResult = {
   subtype: string | null;
 };
 
-export const WORK_LIMIT_ERROR = "Free tier work limit reached";
+export { WORK_LIMIT_ERROR } from "@/lib/works-quick.shared";
+import { WORK_LIMIT_ERROR } from "@/lib/works-quick.shared";
+
 
 export async function createQuickWorkServer(
   context: AuthContext,
