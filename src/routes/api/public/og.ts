@@ -79,24 +79,31 @@ export const Route = createFileRoute("/api/public/og")({
             case "event": {
               const { data: e } = await sb
                 .from("group_events")
-                .select("title,tagline,description,cover_url,kind,group:groups!group_events_group_id_fkey!inner(name)")
+                .select("title,tagline,description,cover_url,kind,external_organizer,external_url,group:groups!group_events_group_id_fkey!inner(name,kind)")
                 .eq("slug", id)
                 .is("deleted_at", null)
                 .eq("visibility", "public")
                 .maybeSingle();
               if (e) {
-                const group = (e as unknown as { group: { name: string } }).group;
+                const group = (e as unknown as { group: { name: string; kind: string | null } }).group;
+                const host = resolveEventHost({
+                  title: e.title,
+                  external_organizer: e.external_organizer,
+                  external_url: e.external_url,
+                  group,
+                });
                 input = {
                   type: "event",
                   title: e.title,
                   subtitle: e.tagline || e.description,
                   image: e.cover_url,
                   accent: e.kind ?? undefined,
-                  detail: group?.name ? `Hosted by ${group.name}` : "",
+                  detail: `Hosted by ${host.label}`,
                 };
               }
               break;
             }
+
             case "workshop": {
               const { data: w } = await sb
                 .from("workshops")
