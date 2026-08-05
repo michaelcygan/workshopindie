@@ -29,7 +29,7 @@ export function AppleSignIn({
         return;
       }
       if (result.redirected) return; // browser will redirect
-      window.location.assign(safeRedirect ?? "/");
+      goToPostAuth(await resolvePostAuthPath(safeRedirect));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Apple sign-in failed");
       setLoading(false);
