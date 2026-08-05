@@ -33,6 +33,8 @@ type Props = {
   description?: string;
   /** Tab the picker opens on. Defaults to every kind. */
   initialKind?: BlogEntityKind | "all";
+  /** Renders "Can't find it? Create a Work" in the Works group. */
+  onRequestCreateWork?: () => void;
 };
 
 const KIND_TABS: Array<{ value: BlogEntityKind | "all"; label: string }> = [
@@ -52,9 +54,11 @@ export function BlogEntityTagPicker({
   title,
   description,
   initialKind = "all",
+  onRequestCreateWork,
 }: Props) {
   const [tab, setTab] = useState<BlogEntityKind | "all">(initialKind);
   const [q, setQ] = useState("");
+  const [uid, setUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
@@ -65,35 +69,95 @@ export function BlogEntityTagPicker({
     }
   }, [open, initialKind]);
 
+  useEffect(() => {
+    if (!open) return;
+    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+  }, [open]);
+
   const disabled = useMemo(() => new Set(disabledKeys ?? []), [disabledKeys]);
 
   const query = q.trim().toLowerCase();
   const enabled = open;
 
   const worksQ = useQuery({
-    queryKey: ["blog-tag-picker-works", query],
+    queryKey: ["blog-tag-picker-works", query, uid],
     enabled: enabled && (tab === "all" || tab === "work"),
     staleTime: 30_000,
     queryFn: async (): Promise<BlogEntityTag[]> => {
+      const fields = "id,slug,title,category,subtype,cover_url,status,visibility,created_by";
       let req = supabase
         .from("works")
-        .select("id,slug,title,category,cover_url")
+        .select(fields)
         .eq("status", "published")
         .eq("visibility", "public")
         .order("published_at", { ascending: false, nullsFirst: false })
         .limit(8);
       if (query) req = req.ilike("title", `%${query}%`);
-      const { data } = await req;
-      return (data ?? []).map((r) => ({
-        kind: "work" as const,
-        id: r.id,
-        slug: r.slug,
-        label: r.title,
-        sublabel: r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null,
-        image: r.cover_url ?? null,
-      }));
+
+      // Owners can connect their own Works even when unpublished or unlisted —
+      // the public filter above would otherwise hide their drafts entirely.
+      const mineReq = uid
+        ? (() => {
+            let r = supabase
+              .from("works")
+              .select(fields)
+              .eq("created_by", uid)
+              .order("updated_at", { ascending: false })
+              .limit(8);
+            if (query) r = r.ilike("title", `%${query}%`);
+            return r;
+          })()
+        : null;
+
+      const [pub, mine] = await Promise.all([req, mineReq]);
+      const rows = [...(mine?.data ?? []), ...(pub.data ?? [])] as Array<{
+        id: string;
+        slug: string;
+        title: string;
+        category: string | null;
+        subtype: string | null;
+        cover_url: string | null;
+        status: string | null;
+        visibility: string | null;
+      }>;
+
+      const seen = new Set<string>();
+      const out: BlogEntityTag[] = [];
+      for (const r of rows) {
+        if (seen.has(r.id)) continue;
+        seen.add(r.id);
+        const state =
+          r.status !== "published"
+            ? "Draft"
+            : r.visibility !== "public"
+              ? "Unlisted"
+              : null;
+        const base =
+          r.subtype ||
+          (r.category ? r.category.charAt(0).toUpperCase() + r.category.slice(1) : null);
+        out.push({
+          kind: "work" as const,
+          id: r.id,
+          slug: r.slug,
+          label: r.title,
+          sublabel: [state, base].filter(Boolean).join(" · ") || null,
+          image: r.cover_url ?? null,
+          work: {
+            excerpt: null,
+            categories: r.category ? [r.category] : [],
+            subtype: r.subtype,
+            cover_url: r.cover_url ?? null,
+            cover_aspect: null,
+            cover_focal_x: null,
+            cover_focal_y: null,
+            credits: [],
+          },
+        });
+      }
+      return out.slice(0, 12);
     },
   });
+
 
   const collabsQ = useQuery({
     queryKey: ["blog-tag-picker-collabs", query],
@@ -274,11 +338,21 @@ export function BlogEntityTagPicker({
               Nothing to show. Try a different search.
             </div>
           )}
+          {onRequestCreateWork && (tab === "all" || tab === "work") && (
+            <button
+              type="button"
+              onClick={onRequestCreateWork}
+              className="mt-3 w-full rounded-xl border border-dashed border-border px-3 py-2 text-left text-xs text-primary hover:bg-muted"
+            >
+              Can't find it? Create a Work →
+            </button>
+          )}
           {visible.map((g) => (
             <div key={g.kind} className="mt-3">
               <div className="mb-1 px-1 text-[11px] font-medium uppercase tracking-wider text-ink-muted">
                 {g.label}
               </div>
+
               {g.loading && g.results.length === 0 && (
                 <div className="px-2 py-2 text-xs text-ink-muted">Loading…</div>
               )}

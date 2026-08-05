@@ -15,10 +15,10 @@ import { setBlogPostEntityTagsForAdmin } from "@/lib/blog-entity-tags.functions"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
 import { BlogBodyEditor } from "@/components/blog-body-editor";
-import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
+import { BlogAboutEditor } from "@/components/blog-about-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
-import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
 import { BlogPostContext } from "@/components/blog-post-context";
 import { deriveBlogPostContext } from "@/lib/blog-post-context";
 
@@ -318,21 +318,8 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
               className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
             />
           </div>
-          <div>
-            <label className="block text-xs font-medium uppercase tracking-wider text-ink-muted" htmlFor="blog-category">
-              Category
-            </label>
-            <select
-              id="blog-category"
-              value={categorySlug}
-              onChange={(e) => { setCategorySlug(toBlogCategorySlug(e.target.value)); setDirty(true); }}
-              className="mt-1 w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink focus:border-primary focus:outline-none"
-            >
-              {BLOG_CATEGORIES.map((c) => (
-                <option key={c.slug} value={c.slug}>{c.label}</option>
-              ))}
-            </select>
-          </div>
+          {/* Category lives in the "About this post" panel below. */}
+
         </div>
 
         <div className="mt-4 rounded-2xl border border-border bg-surface p-4">
@@ -490,16 +477,19 @@ export function BlogEditor({ initial }: { initial?: BlogEditorInitial }) {
           )}
         </div>
 
-        {/* Connections are post metadata: above the body, never buried under it. */}
+        {/* "About this post" — category + connections, above the body. */}
         <div className="mt-4">
-          <BlogEntityTagsEditor
-            value={entityTags}
-            onChange={(next) => {
+          <BlogAboutEditor
+            categorySlug={categorySlug}
+            tags={entityTags}
+            onChangeCategory={(slug) => { setCategorySlug(slug); setDirty(true); }}
+            onChangeTags={(next) => {
               setEntityTags(next);
               setDirty(true);
             }}
           />
         </div>
+
 
         <div className="mt-6">
           <Tabs defaultValue="edit">
