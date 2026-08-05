@@ -550,10 +550,16 @@ export const createEventSeries = createServerFn({ method: "POST" })
       status: effectiveStatus,
       is_official: rest.source === "external" ? false : rest.is_official ?? true,
       is_recurring: true,
+      // Credit travels with the series: every future week keeps the organizer
+      // and their link, so occurrences never fall back to the city Group.
+      source: rest.source ?? "workshop",
+      external_url: rest.external_url ?? null,
+      external_organizer: rest.external_organizer ?? null,
       // Pin intent belongs to the series; only its nearest future occurrence
       // ever carries `pinned_at`.
       __pin: pinned === true,
     };
+
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
