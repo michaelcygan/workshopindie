@@ -18,7 +18,9 @@ import { BlogBodyEditor } from "@/components/blog-body-editor";
 import { BlogEntityTagsEditor } from "@/components/blog-entity-tags-editor";
 import { BlogEntityTagPicker } from "@/components/blog-entity-tag-picker";
 import { entityMarkdown, tagKey, invalidateEntityTagCaches, type BlogEntityTag } from "@/lib/blog-entity-tags";
-import { BLOG_CATEGORIES, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { BLOG_CATEGORIES, blogCategoryLabel, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { BlogPostContext } from "@/components/blog-post-context";
+import { deriveBlogPostContext } from "@/lib/blog-post-context";
 
 const SITE = "https://workshopindie.com";
 
