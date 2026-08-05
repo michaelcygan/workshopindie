@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MAX_BLOG_ENTITY_TAGS } from "@/lib/blog-entity-tags";
 import { ArrowLeft, Loader2, MoreHorizontal } from "lucide-react";
-import { BLOG_CATEGORIES, toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
+import { toBlogCategorySlug, type BlogCategorySlug } from "@/lib/blog-categories";
 
 export const Route = createFileRoute("/me/blog/$id")({
   head: () => ({
