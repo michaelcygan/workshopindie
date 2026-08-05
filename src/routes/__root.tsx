@@ -15,8 +15,7 @@ import { RefCapture } from "@/components/ref-capture";
 import { PresenceHeartbeat } from "@/components/presence-heartbeat";
 import { AccountLifecycleProvider } from "@/components/account-lifecycle/provider";
 import { AccountLifecycleGate } from "@/components/account-lifecycle/gate";
-import { PostAuthRunner } from "@/components/account-lifecycle/post-auth-runner";
-import { clearPendingAuthState } from "@/components/account-lifecycle/post-auth-runner";
+import { PostAuthRunner, clearPendingAuthState } from "@/components/account-lifecycle/post-auth-runner";
 import { useTitleBadge } from "@/hooks/use-title-badge";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteFooter } from "@/components/site-footer";
@@ -184,35 +183,16 @@ function TitleBadge() {
  */
 function SignOutCacheReset() {
   const qc = useQueryClient();
-  const router = useRouter();
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === "SIGNED_OUT") {
         await qc.cancelQueries();
         qc.clear();
-        return;
-      }
-      // Flush pending group seed-link join after OAuth round-trip or email confirm.
-      if (event === "SIGNED_IN" && typeof window !== "undefined") {
-        const raw = sessionStorage.getItem("ws.pendingGroupJoin");
-        if (!raw) return;
-        let parsed: { token?: string; slug?: string } | null = null;
-        try { parsed = JSON.parse(raw); } catch { parsed = null; }
-        if (!parsed?.token || !parsed?.slug) {
-          sessionStorage.removeItem("ws.pendingGroupJoin");
-          return;
-        }
-        sessionStorage.removeItem("ws.pendingGroupJoin");
-        try {
-          const { redeemGroupSeedLink } = await import("@/lib/group-seed-links.functions");
-          await redeemGroupSeedLink({ data: { token: parsed.token } });
-          qc.invalidateQueries({ queryKey: ["my-group-ids"] });
-          router.navigate({ to: "/g/$slug", params: { slug: parsed.slug } });
-        } catch { /* swallow */ }
+        clearPendingAuthState();
       }
     });
     return () => sub.subscription.unsubscribe();
-  }, [qc, router]);
+  }, [qc]);
   return null;
 }
 
