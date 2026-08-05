@@ -31,6 +31,26 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const { user, loading: authLoading } = useAuth();
+
+  // Already signed in? Never sit on the auth form — go where this person belongs.
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (search.claim) {
+      navigate({ to: "/collab/claim/$token", params: { token: search.claim } });
+      return;
+    }
+    if (search.join && search.group) return; // handled by the seed-link flow
+    let cancelled = false;
+    resolvePostAuthPath(safePath(search.redirect)).then((path) => {
+      if (!cancelled) navigate({ to: path, replace: true });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading, search.claim, search.join, search.group, search.redirect, navigate]);
+
+
 
   // Stash seed-link for OAuth round-trips.
   useEffect(() => {
