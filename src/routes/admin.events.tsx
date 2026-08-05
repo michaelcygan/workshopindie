@@ -262,7 +262,7 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader><DialogTitle>Create event</DialogTitle></DialogHeader>
-        <form onSubmit={submit} className="space-y-3">
+        <form onSubmit={(e) => submit(e, "publish")} className="space-y-3">
           <div>
             <Label>Primary group</Label>
             <Select value={form.group_id} onValueChange={(v) => setForm({ ...form, group_id: v })}>
@@ -507,7 +507,20 @@ function CreateEventDialog({ onCreated }: { onCreated: () => void }) {
               When set, anyone signed in can self-sign up. Extras go to a waitlist and auto-promote when spots open. First come, first served.
             </p>
           </div>
-          <Button type="submit" className="w-full rounded-md">Create event</Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 rounded-md"
+              disabled={saving !== null}
+              onClick={(e) => submit(e, "draft")}
+            >
+              {saving === "draft" ? "Saving…" : "Save draft"}
+            </Button>
+            <Button type="submit" className="flex-1 rounded-md" disabled={saving !== null}>
+              {saving === "publish" ? "Publishing…" : "Publish Event"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
